@@ -1,0 +1,36 @@
+package com.company.ftthgis.domain.user.entity;
+
+import com.company.ftthgis.domain.common.BaseEntity;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.envers.Audited;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "roles")
+@Getter
+@Setter
+@Audited
+public class Role extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String name; // e.g., "super_admin", "admin", "technician"
+
+    private String displayName;
+
+    private String description;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
+    private Set<Permission> permissions = new HashSet<>();
+
+    @OneToMany(mappedBy = "role")
+    private Set<User> users = new HashSet<>();
+}

@@ -1,0 +1,20 @@
+package com.company.ftthgis.domain.network.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.locationtech.jts.geom.LineString;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class FiberCableDto {
+    private Long id;
+    private String code;
+    private LineString geom;
+    private Integer fiberCount;
+    private String status;
+    private Double lengthMeters;
+}

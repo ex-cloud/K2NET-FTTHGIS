@@ -1,0 +1,55 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: ftth-gis-core
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ftth_gis
+    username: postgres
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update # Stable mode after fresh init
+    properties:
+      "[hibernate.format_sql]": true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/ftth-realm
+          jwk-set-uri: http://localhost:8081/realms/ftth-realm/protocol/openid-connect/certs
+
+# Keycloak Admin Configuration
+keycloak:
+  server-url: http://localhost:8081
+  realm: ftth-realm
+  # Service Account for Backend to manage users
+  client-id: ftth-gis-backend
+  client-secret: sA5ras1iCWdAabeHQVQMRsnNfoGhZb2R
+
+# Custom Config for App Security
+# Note: 'app' is a custom property. The IDE warning 'Unknown property' is safe to ignore
+# as it is not part of the internal Spring Boot schema.
+app:
+  security:
+    cors:
+      allowed-origins: "http://localhost:3000"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+
+logging:
+  level:
+    "[org.hibernate.SQL]": INFO
+    "[org.hibernate.type.descriptor.sql.BasicBinder]": TRACE
+    "[org.springframework.security]": DEBUG
