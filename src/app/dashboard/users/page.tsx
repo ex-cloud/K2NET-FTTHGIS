@@ -1,0 +1,113 @@
+import { UserStats } from "@/components/dashboard/users/user-stats";
+import { UserTable } from "@/components/dashboard/users/user-table";
+import { UserFilters } from "@/components/dashboard/users/user-filters";
+import { UserSearch } from "@/components/dashboard/users/user-search";
+import {
+  UserPlus,
+  Bell,
+  ChevronRight,
+  LayoutDashboard,
+  Shield,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { auth } from "@/auth";
+import { getUsers } from "@/lib/api/users";
+
+export default async function UserManagementPage(props: {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    role?: string;
+    status?: string;
+  }>;
+}) {
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams.page) || 0;
+  const search = searchParams.q || "";
+
+  const session = await auth();
+  const token = session?.accessToken as string | undefined;
+
+  let usersData = null;
+
+  if (token) {
+    try {
+      usersData = await getUsers(
+        page,
+        10,
+        search,
+        searchParams.role,
+        searchParams.status,
+        token,
+      );
+    } catch (e) {
+      // Log error but render page
+      console.error("Fetch users error", e);
+    }
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden bg-background relative">
+      {/* Grid Background Effect */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]"
+        style={{
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      {/* Main Content (Left + Center) */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+        {/* Custom Header for User Module */}
+        <header className="h-16 px-6 flex items-center justify-between border-b border-border/40 bg-background/50 backdrop-blur shrink-0">
+          {/* Module Breadcrumb */}
+          <nav className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground font-bold hidden md:flex">
+            <span className="flex items-center gap-2">
+              <LayoutDashboard className="w-3 h-3" />
+              System
+            </span>
+            <ChevronRight className="w-3 h-3" />
+            <span>Access Control</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-foreground flex items-center gap-2">
+              <Shield className="w-3 h-3 text-emerald-500" />
+              User Management
+            </span>
+          </nav>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md px-4 lg:px-12">
+            <UserSearch placeholder="Search user ID, name, or terminal..." />
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-4">
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] font-bold text-xs uppercase tracking-tight h-9">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add New User
+            </Button>
+            <div className="h-6 w-px bg-border/40 mx-2 hidden sm:block"></div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-muted-foreground hover:text-foreground hidden sm:flex"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
+            </Button>
+          </div>
+        </header>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <UserStats />
+          <UserTable data={usersData} currentPage={page} />
+        </div>
+      </div>
+
+      {/* Right Sidebar Filters */}
+      <UserFilters />
+    </div>
+  );
+}
