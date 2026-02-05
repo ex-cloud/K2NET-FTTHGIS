@@ -84,7 +84,7 @@ export function StatsPanel() {
       case "sky":
         return "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]";
       default:
-        return "bg-slate-500";
+        return "bg-zinc-500";
     }
   };
 

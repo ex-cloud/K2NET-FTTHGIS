@@ -14,7 +14,11 @@ interface SearchResult {
   lat: number;
 }
 
-export function SearchPanel() {
+export function SearchPanel({
+  placeholder = "Search ODC, ODP, or code...",
+}: {
+  placeholder?: string;
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,7 +86,7 @@ export function SearchPanel() {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
       <Input
         className="w-full bg-transparent border-0 pl-10 h-10 focus-visible:ring-0 focus-visible:ring-offset-0 font-medium"
-        placeholder="Search ODC, ODP, or code..."
+        placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query.length >= 2 && setShowResults(true)}

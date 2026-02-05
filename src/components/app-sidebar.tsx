@@ -8,7 +8,7 @@ import {
   Command,
   Frame,
   GalleryVerticalEnd,
-  Map as MapIcon,
+  Network,
   PieChart,
   Settings2,
   SquareTerminal,
@@ -58,13 +58,21 @@ const data = {
       ],
     },
     {
-      title: "Network Map",
-      url: "/dashboard/map",
-      icon: MapIcon,
+      title: "Infrastructure",
+      url: "/dashboard/infrastructure",
+      icon: Network,
       items: [
         {
-          title: "GIS View",
-          url: "/dashboard/map",
+          title: "Topology View",
+          url: "/dashboard/infrastructure/topology",
+        },
+        {
+          title: "Heatmap",
+          url: "/dashboard/infrastructure/heatmap",
+        },
+        {
+          title: "Canvas Visual Builder",
+          url: "/dashboard/infrastructure/canvas",
         },
       ],
     },
@@ -133,7 +141,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     : data.user;
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar
+      collapsible="icon"
+      className="bg-transparent border-r-zinc-800/50"
+      {...props}
+    >
       <SidebarHeader>
         <div className="flex items-center gap-2 px-4 py-2">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">

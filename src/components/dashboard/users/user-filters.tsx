@@ -149,7 +149,7 @@ export function UserFilters() {
       </ScrollArea>
 
       <div className="p-6 border-t border-border/40 bg-muted/10 mt-auto">
-        <Button className="w-full bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold uppercase tracking-widest border border-border/10">
+        <Button className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold uppercase tracking-widest border border-border/10">
           Clear All Filters
         </Button>
       </div>

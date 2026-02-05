@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
 
       {/* Animated Network Pattern */}
       <div className="absolute inset-0 opacity-20">

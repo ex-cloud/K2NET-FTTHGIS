@@ -1,20 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/mode-toggle";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SessionProvider } from "next-auth/react";
+import { TopHeader } from "@/components/dashboard/top-header";
 
 export default function DashboardLayout({
   children,
@@ -23,32 +10,21 @@ export default function DashboardLayout({
 }) {
   return (
     <SessionProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Overview</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              <div className="ml-auto flex items-center gap-2">
-                <ModeToggle />
-              </div>
+      <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500 overflow-hidden">
+        {/* Global Background Grid Pattern - Behind everything */}
+        <div className="fixed inset-0 opacity-[0.03] dark:opacity-[0.03] pointer-events-none bg-[radial-gradient(#000000_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] z-0" />
+
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset className="bg-transparent transition-colors duration-500 relative overflow-visible">
+            <TopHeader />
+
+            <div className="flex flex-1 flex-col overflow-auto relative z-10">
+              {children}
             </div>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
-        </SidebarInset>
-      </SidebarProvider>
+          </SidebarInset>
+        </SidebarProvider>
+      </div>
     </SessionProvider>
   );
 }

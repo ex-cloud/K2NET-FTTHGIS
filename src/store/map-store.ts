@@ -6,9 +6,13 @@ interface MapCenter {
   zoom: number;
 }
 
+export type MapStyleMode = "base" | "topology" | "satellite";
+
 interface MapState {
   mapCenter: MapCenter;
+  mapStyle: MapStyleMode;
   setMapCenter: (center: MapCenter) => void;
+  setMapStyle: (style: MapStyleMode) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -17,5 +21,7 @@ export const useMapStore = create<MapState>((set) => ({
     lat: -6.9175,
     zoom: 13,
   },
+  mapStyle: "base",
   setMapCenter: (center) => set({ mapCenter: center }),
+  setMapStyle: (style) => set({ mapStyle: style }),
 }));
