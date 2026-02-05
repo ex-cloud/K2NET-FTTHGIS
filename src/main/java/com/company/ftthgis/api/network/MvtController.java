@@ -37,13 +37,20 @@ public class MvtController {
                           AND ST_Intersects(c.geom, bounds.bbox_geom)
                     )
                     """;
+
         } else {
-            // Use full detail for high zoom levels
+            // Use full detail for high zoom levels with code from child tables
             nodeQuery = """
                     mvt_nodes AS (
                         SELECT ST_AsMvtGeom(ST_Transform(n.geom, 3857), bounds.tile_geom) AS geom,
-                               n.id, n.node_type, n.status, n.signal_db, 1 AS point_count
-                        FROM network_nodes n, bounds
+                               n.id, n.node_type, n.status, n.signal_db, 1 AS point_count,
+                               COALESCE(olt.code, odc.code, odp.code, cust.code) AS code
+                        FROM network_nodes n
+                        LEFT JOIN olt ON n.id = olt.id
+                        LEFT JOIN odc ON n.id = odc.id
+                        LEFT JOIN odp ON n.id = odp.id
+                        LEFT JOIN customers cust ON n.id = cust.id
+                        CROSS JOIN bounds
                         WHERE n.geom && bounds.bbox_geom
                           AND ST_Intersects(n.geom, bounds.bbox_geom)
                     )
