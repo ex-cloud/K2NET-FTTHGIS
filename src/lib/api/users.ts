@@ -1,7 +1,7 @@
 import { PaginatedResponse, User } from "@/types/user";
+import { getBackendBaseUrl } from "../api-config";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9090";
+const BACKEND_URL = getBackendBaseUrl();
 
 export async function getUsers(
   page: number = 0,

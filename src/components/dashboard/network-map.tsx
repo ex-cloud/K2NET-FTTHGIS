@@ -21,6 +21,7 @@ import { FeatureCollection, Feature } from "geojson";
 import { useTheme } from "next-themes";
 import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
+import { getBackendBaseUrl } from "@/lib/api-config";
 import { MapLayerMouseEvent } from "maplibre-gl";
 
 // Default viewport centered on Bandung (based on seeder data)
@@ -105,7 +106,8 @@ export function NetworkMap() {
   }, []);
 
   const mvtTileUrl = useMemo(() => {
-    return `${process.env.NEXT_PUBLIC_API_URL}/network/mvt/{z}/{x}/{y}`;
+    const baseUrl = getBackendBaseUrl();
+    return `${baseUrl}/network/mvt/{z}/{x}/{y}`;
   }, []);
 
   const onMapClick = (evt: MapLayerMouseEvent) => {
@@ -161,7 +163,17 @@ export function NetworkMap() {
         "line-join": "round",
       },
       paint: {
-        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 15, 4],
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          10,
+          0.5,
+          15,
+          1.5,
+          18,
+          2.5,
+        ],
         // Priority: Status (DOWN=red) > Cable Type (color coding)
         "line-color": [
           "case",
@@ -188,7 +200,7 @@ export function NetworkMap() {
             "#94a3b8", // Slate 400 (default)
           ],
         ],
-        "line-opacity": 0.9,
+        "line-opacity": 0.7,
         // Dashed line pattern: dash length, gap length
         "line-dasharray": [4, 2],
       },
