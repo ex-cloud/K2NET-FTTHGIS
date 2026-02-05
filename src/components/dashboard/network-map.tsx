@@ -285,187 +285,191 @@ export function NetworkMap() {
     [isTopologyMode],
   );
 
-  // --- TOPOLOGY MODE: Nodes (OLT, ODC, ODP saja - tanpa CUSTOMER) ---
-  const topologyNodeLayer = useMemo<CircleLayerSpecification>(
+  // --- OLT LAYERS (POP/Backbone) ---
+  const oltNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "topology-nodes",
+      id: "olt-nodes",
       type: "circle",
       source: "network-source",
       "source-layer": "nodes",
-      filter: ["!=", ["get", "node_type"], "CUSTOMER"],
-      layout: {
-        visibility: isTopologyMode ? "visible" : "none",
-      },
+      filter: ["==", ["get", "node_type"], "OLT"],
+      minzoom: 12,
       paint: {
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          10,
-          ["match", ["get", "node_type"], "OLT", 6, "ODC", 5, "ODP", 4, 3],
-          15,
-          ["match", ["get", "node_type"], "OLT", 12, "ODC", 10, "ODP", 8, 6],
-        ],
-        "circle-color": "#0a0a0f",
-        "circle-stroke-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          10,
-          2,
-          15,
-          3,
-        ],
-        "circle-stroke-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          "#38bdf8",
-        ],
-      },
-    }),
-    [isTopologyMode],
-  );
-
-  // --- STANDARD MODE: Nodes (Base & Satellite - semua nodes) ---
-  const standardNodeLayer = useMemo<CircleLayerSpecification>(
-    () => ({
-      id: "standard-nodes",
-      type: "circle",
-      source: "network-source",
-      "source-layer": "nodes",
-      layout: {
-        visibility: isTopologyMode ? "none" : "visible",
-      },
-      paint: {
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          10,
-          [
-            "match",
-            ["get", "node_type"],
-            "OLT",
-            6,
-            "ODC",
-            5,
-            "ODP",
-            4,
-            "CUSTOMER",
-            2,
-            3,
-          ],
-          15,
-          [
-            "match",
-            ["get", "node_type"],
-            "OLT",
-            14,
-            "ODC",
-            12,
-            "ODP",
-            10,
-            "CUSTOMER",
-            5,
-            6,
-          ],
-        ],
-        "circle-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
-          "#f59e0b",
-          [
-            "match",
-            ["get", "node_type"],
-            "OLT",
-            "#f59e0b",
-            "ODC",
-            "#0ea5e9",
-            "ODP",
-            "#22c55e",
-            "CUSTOMER",
-            "#10b981",
-            "#94a3b8",
-          ],
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 15, 14],
+        "circle-color": isTopologyMode ? "#0a0a0f" : "#f59e0b",
         "circle-stroke-width": 2,
-        "circle-stroke-color": "#ffffff",
+        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
+        "circle-stroke-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          12.5,
+          0,
+          13,
+          1,
+        ],
       },
     }),
     [isTopologyMode],
   );
 
-  // --- TOPOLOGY MODE: Labels (OLT, ODC, ODP dengan kode teknis) ---
-  const topologyLabelLayer = useMemo<SymbolLayerSpecification>(
+  const oltLabelLayer = useMemo<SymbolLayerSpecification>(
     () => ({
-      id: "topology-labels",
+      id: "olt-labels",
       type: "symbol",
       source: "network-source",
       "source-layer": "nodes",
-      filter: ["!=", ["get", "node_type"], "CUSTOMER"],
-      minzoom: 12,
+      filter: ["==", ["get", "node_type"], "OLT"],
+      minzoom: 12.5,
       layout: {
-        visibility: isTopologyMode ? "visible" : "none",
-        "text-field": [
-          "case",
-          ["==", ["get", "node_type"], "OLT"],
-          ["concat", "BACKBONE / ", ["coalesce", ["get", "code"], "OLT"]],
-          ["coalesce", ["get", "code"], ["get", "node_type"]],
-        ],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 12, 9, 15, 11],
-        "text-offset": [0, 1.6],
-        "text-anchor": "top",
+        "text-field": isTopologyMode
+          ? ["concat", "BACKBONE / ", ["coalesce", ["get", "code"], "OLT"]]
+          : ["coalesce", ["get", "code"], "OLT"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 12, 9, 15, 12],
+        "text-offset": [0, 1.5],
         "text-font": ["DIN Offc Pro Bold", "Arial Unicode MS Bold"],
-        "text-transform": "uppercase",
-        "text-letter-spacing": 0.05,
-        "text-allow-overlap": false,
+        "text-anchor": "top",
       },
       paint: {
         "text-color": "#ffffff",
         "text-halo-color": "#000000",
         "text-halo-width": 2,
+        "text-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
       },
     }),
     [isTopologyMode],
   );
 
-  // --- STANDARD MODE: Labels (Base & Satellite - semua aset dengan kode) ---
-  const standardLabelLayer = useMemo<SymbolLayerSpecification>(
+  // --- ODC LAYERS (Distribution) ---
+  const odcNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "standard-labels",
+      id: "odc-nodes",
+      type: "circle",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "ODC"],
+      minzoom: 14,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 12],
+        "circle-color": isTopologyMode ? "#0a0a0f" : "#0ea5e9",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15, 1],
+        "circle-stroke-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          14.5,
+          0,
+          15,
+          1,
+        ],
+      },
+    }),
+    [isTopologyMode],
+  );
+
+  const odcLabelLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "odc-labels",
       type: "symbol",
       source: "network-source",
       "source-layer": "nodes",
-      minzoom: 13,
+      filter: ["==", ["get", "node_type"], "ODC"],
+      minzoom: 15,
       layout: {
-        visibility: isTopologyMode ? "none" : "visible",
-        "text-field": ["coalesce", ["get", "code"], ["get", "node_type"]],
-        "text-size": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 12],
+        "text-field": ["coalesce", ["get", "code"], "ODC"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 15, 9, 18, 12],
         "text-offset": [0, 1.5],
-        "text-anchor": "top",
         "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
-        "text-allow-overlap": false,
+        "text-anchor": "top",
       },
       paint: {
-        "text-color":
-          theme === "dark" || isSatelliteMode ? "#ffffff" : "#1e293b",
-        "text-halo-color":
-          theme === "dark" || isSatelliteMode ? "#0f172a" : "#ffffff",
+        "text-color": "#ffffff",
+        "text-halo-color": "#000000",
         "text-halo-width": 2,
+        "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.5, 0, 16, 1],
       },
     }),
-    [isTopologyMode, isSatelliteMode, theme],
+    [],
+  );
+
+  // --- ODP LAYERS (Access) ---
+  const odpNodeLayer = useMemo<CircleLayerSpecification>(
+    () => ({
+      id: "odp-nodes",
+      type: "circle",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "ODP"],
+      minzoom: 16,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 4, 19, 10],
+        "circle-color": isTopologyMode ? "#0a0a0f" : "#22c55e",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 16.5, 0, 17, 1],
+        "circle-stroke-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          16.5,
+          0,
+          17,
+          1,
+        ],
+      },
+    }),
+    [isTopologyMode],
+  );
+
+  const odpLabelLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "odp-labels",
+      type: "symbol",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "ODP"],
+      minzoom: 17,
+      layout: {
+        "text-field": ["coalesce", ["get", "code"], "ODP"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 17, 9, 20, 12],
+        "text-offset": [0, 1.5],
+        "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
+        "text-anchor": "top",
+      },
+      paint: {
+        "text-color": "#ffffff",
+        "text-halo-color": "#000000",
+        "text-halo-width": 2,
+        "text-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
+      },
+    }),
+    [],
+  );
+
+  // --- CUSTOMER LAYER (Standard only) ---
+  const customerNodeLayer = useMemo<CircleLayerSpecification>(
+    () => ({
+      id: "customer-nodes",
+      type: "circle",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "CUSTOMER"],
+      minzoom: 17,
+      layout: {
+        visibility: isTopologyMode ? "none" : "visible",
+      },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 17, 2, 20, 6],
+        "circle-color": "#10b981",
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
+      },
+    }),
+    [isTopologyMode],
   );
 
   // --- HIGHLIGHT LAYERS ---
@@ -606,16 +610,22 @@ export function NetworkMap() {
         onMove={onMapMove}
         maxZoom={22}
         interactiveLayerIds={[
-          "topology-nodes",
+          "olt-nodes",
+          "odc-nodes",
+          "odp-nodes",
+          "customer-nodes",
           "topology-cables",
-          "standard-nodes",
           "standard-cables",
         ]}
       >
         <NavigationControl position="top-right" showCompass={false} />
         <ScaleControl />
 
-        {/* SATELLITE MODE: Raster Tile Layer */}
+        {/* 
+          STRATEGI HYBRID SATELLITE: 
+          1. Layer Raster Satelit ditaruh paling bawah.
+          2. Layer Vektor (Jalan, Building) menyusul di atasnya jika di mode Satellite.
+        */}
         {isSatelliteMode && (
           <Source
             id="satellite-tiles"
@@ -630,7 +640,7 @@ export function NetworkMap() {
           </Source>
         )}
 
-        {/* INFRASTRUCTURE DATA */}
+        {/* INFRASTRUCTURE DATA (Selalu di atas satelit/basemap) */}
         <Source
           id="network-source"
           type="vector"
@@ -638,15 +648,20 @@ export function NetworkMap() {
           minzoom={0}
           maxzoom={22}
         >
-          {/* Topology Layers (Garis putus-putus, tanpa glow) */}
-          <Layer {...topologyCableLayer} />
-          <Layer {...topologyNodeLayer} />
-          <Layer {...topologyLabelLayer} />
-
-          {/* Standard Layers (Base & Satellite) */}
+          {/* Infrastructure Layers with Enterprise Zoom Hierarchy */}
           <Layer {...standardCableLayer} />
-          <Layer {...standardNodeLayer} />
-          <Layer {...standardLabelLayer} />
+          <Layer {...topologyCableLayer} />
+
+          <Layer {...oltNodeLayer} />
+          <Layer {...oltLabelLayer} />
+
+          <Layer {...odcNodeLayer} />
+          <Layer {...odcLabelLayer} />
+
+          <Layer {...odpNodeLayer} />
+          <Layer {...odpLabelLayer} />
+
+          <Layer {...customerNodeLayer} />
 
           {/* Highlight Layers (Semua Mode) */}
           <Layer {...highlightEdgeLayer} />
