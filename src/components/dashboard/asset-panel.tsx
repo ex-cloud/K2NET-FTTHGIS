@@ -26,6 +26,22 @@ export function AssetPanel() {
         return;
       }
 
+      if (selectedAsset.type === "COORDINATE") {
+        setDetails({
+          id: selectedAsset.id,
+          code: selectedAsset.code || "SEARCH TARGET",
+          type: "COORDINATE",
+          status: "MANUAL_PIN",
+          properties: {
+            Latitude: selectedAsset.lat?.toFixed(6) || "0",
+            Longitude: selectedAsset.lng?.toFixed(6) || "0",
+            Source: "Manual Coordinate Search",
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const response = await fetch(
@@ -105,16 +121,25 @@ export function AssetPanel() {
                 <h1 className="text-2xl font-black font-mono tracking-tighter text-foreground">
                   {details.code}
                 </h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                      details.status === "ACTIVE"
-                        ? "bg-emerald-500/20 text-emerald-500"
-                        : "bg-red-500/20 text-red-500"
-                    }`}
-                  >
-                    {details.status}
-                  </span>
+                <div className="flex flex-col gap-1 mt-1">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded w-fit italic">
+                    <span className="opacity-70">LAT:</span>{" "}
+                    {selectedAsset?.lat?.toFixed(6) || "0"}
+                    <span className="opacity-70 ml-2">LNG:</span>{" "}
+                    {selectedAsset?.lng?.toFixed(6) || "0"}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                        details?.status === "ACTIVE" ||
+                        details?.status === "MANUAL_PIN"
+                          ? "bg-emerald-500/20 text-emerald-500"
+                          : "bg-red-500/20 text-red-500"
+                      }`}
+                    >
+                      {details?.status || "UNKNOWN"}
+                    </span>
+                  </div>
                 </div>
               </div>
               <Button

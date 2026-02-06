@@ -6,8 +6,6 @@ import { AssetPanel } from "@/components/dashboard/asset-panel";
 import { TopCenterStatus } from "@/components/dashboard/top-center-status";
 import { MapStyleSelector } from "@/components/dashboard/map-style-selector";
 import { SearchPanel } from "@/components/dashboard/search-panel";
-import { Plus, Minus, Crosshair } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default async function TopologyPage() {
   const session = await auth();
@@ -39,30 +37,6 @@ export default async function TopologyPage() {
         {/* Left Panel */}
         <div className="pointer-events-auto">
           <StatsPanel />
-        </div>
-
-        {/* Map Controls */}
-        <div className="pointer-events-auto fixed bottom-8 right-6 flex flex-col gap-2 z-20">
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-10 w-10 rounded-lg shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-10 w-10 rounded-lg shadow-lg"
-          >
-            <Minus className="w-5 h-5" />
-          </Button>
-          <Button
-            size="icon"
-            className="h-10 w-10 rounded-lg shadow-lg bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
-            <Crosshair className="w-5 h-5" />
-          </Button>
         </div>
 
         {/* Right Panel */}

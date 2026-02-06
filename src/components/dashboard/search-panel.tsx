@@ -12,6 +12,7 @@ interface SearchResult {
   type: string;
   lng: number;
   lat: number;
+  status: string;
 }
 
 export function SearchPanel({
@@ -72,6 +73,7 @@ export function SearchPanel({
       code: result.code,
       lng: result.lng,
       lat: result.lat,
+      status: result.status,
     });
     setMapCenter({ lng: result.lng, lat: result.lat, zoom: 18 }); // Zoom in close to the asset
     setShowResults(false);
@@ -97,48 +99,92 @@ export function SearchPanel({
         </div>
       )}
 
-      {showResults && results.length > 0 && (
-        <div className="absolute top-12 left-0 right-0 bg-background/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden z-50">
-          <div className="p-2 space-y-1">
-            {results.map((result) => (
-              <button
-                key={`${result.type}-${result.id}`}
-                onClick={() => handleSelect(result)}
-                className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted rounded-lg transition-colors group"
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] ${
-                    result.type === "ODC"
-                      ? "bg-sky-500/10 text-sky-500"
-                      : result.type === "ODP"
-                        ? "bg-rose-500/10 text-rose-500"
-                        : result.type === "OLT"
-                          ? "bg-amber-500/10 text-amber-500"
-                          : "bg-emerald-500/10 text-emerald-500" // CUSTOMER
-                  }`}
-                >
-                  {result.type === "CUSTOMER" ? "CUST" : result.type}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold font-mono group-hover:text-emerald-500 transition-colors">
-                    {result.code}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <MapPin className="w-2 h-2" />
-                    {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {showResults &&
+        (results.length > 0 ||
+          /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(query)) && (
+          <div className="absolute top-12 left-0 right-0 bg-background/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden z-50">
+            <div className="p-2 space-y-1">
+              {/* Coordinate Jump Option */}
+              {/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(query) && (
+                <button
+                  onClick={() => {
+                    const [lat, lng] = query
+                      .split(",")
+                      .map((s) => parseFloat(s.trim()));
 
-      {showResults && query.length >= 2 && results.length === 0 && !loading && (
-        <div className="absolute top-12 left-0 right-0 bg-background/95 backdrop-blur-md rounded-xl border border-border/50 p-4 text-center text-xs text-muted-foreground">
-          No matches found for &quot;{query}&quot;
-        </div>
-      )}
+                    // Proactively set selected asset to open detail panel
+                    setSelectedAsset({
+                      id: "target",
+                      type: "COORDINATE",
+                      code: "SEARCH TARGET",
+                      lat,
+                      lng,
+                      status: "ACTIVE", // Manual coordinate search color is always blue/active
+                    });
+
+                    setMapCenter({ lng, lat, zoom: 19 });
+                    setShowResults(false);
+                    setQuery("");
+                  }}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-emerald-500/10 rounded-lg transition-colors group border-b border-border/20 mb-1"
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold text-emerald-500">
+                      Go to Coordinates
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      {query}
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {results.map((result) => (
+                <button
+                  key={`${result.type}-${result.id}`}
+                  onClick={() => handleSelect(result)}
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted rounded-lg transition-colors group"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] ${
+                      result.type === "ODC"
+                        ? "bg-sky-500/10 text-sky-500"
+                        : result.type === "ODP"
+                          ? "bg-rose-500/10 text-rose-500"
+                          : result.type === "OLT"
+                            ? "bg-amber-500/10 text-amber-500"
+                            : "bg-emerald-500/10 text-emerald-500" // CUSTOMER
+                    }`}
+                  >
+                    {result.type === "CUSTOMER" ? "CUST" : result.type}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold font-mono group-hover:text-emerald-500 transition-colors">
+                      {result.code}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-2 h-2" />
+                      {result.lat.toFixed(6)}, {result.lng.toFixed(6)}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+      {showResults &&
+        query.length >= 2 &&
+        results.length === 0 &&
+        !loading &&
+        !/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(query) && (
+          <div className="absolute top-12 left-0 right-0 bg-background/95 backdrop-blur-md rounded-xl border border-border/50 p-4 text-center text-xs text-muted-foreground">
+            No matches found for &quot;{query}&quot;
+          </div>
+        )}
     </div>
   );
 }

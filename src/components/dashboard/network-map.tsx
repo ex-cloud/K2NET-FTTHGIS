@@ -4,7 +4,6 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 import Map, {
   Source,
   Layer,
-  NavigationControl,
   ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
@@ -24,6 +23,8 @@ import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { MapLayerMouseEvent } from "maplibre-gl";
+import { Plus, Minus, Crosshair } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Default viewport centered on Bandung (based on seeder data)
 const INITIAL_VIEW_STATE = {
@@ -90,6 +91,28 @@ export function NetworkMap() {
       selectedAsset.lat,
       selectedAsset.signalDb || -20,
     );
+  }, [selectedAsset]);
+
+  // Derived data for search target pulse (Works for any selected asset with coordinates)
+  const searchTargetData = useMemo<FeatureCollection | null>(() => {
+    if (!selectedAsset?.lng || !selectedAsset?.lat) return null;
+    return {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [selectedAsset.lng, selectedAsset.lat],
+          },
+          properties: {
+            id: "search-target",
+            isCoordinate: selectedAsset.type === "COORDINATE",
+            status: selectedAsset.status || "ACTIVE", // Transfer status to map properties
+          },
+        },
+      ],
+    };
   }, [selectedAsset]);
 
   // Watch mapCenter changes (e.g. from Search) and fly there
@@ -163,6 +186,7 @@ export function NetworkMap() {
         lng,
         lat,
         signalDb: feature.properties.signal_db,
+        status: feature.properties.status,
       });
     } else {
       setSelectedAsset(null);
@@ -174,6 +198,25 @@ export function NetworkMap() {
   }) => {
     const { longitude, latitude, zoom } = evt.viewState;
     setMapCenter({ lng: longitude, lat: latitude, zoom });
+  };
+
+  const handleZoomIn = () => {
+    mapRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapRef.current?.zoomOut();
+  };
+
+  const handleResetView = () => {
+    mapRef.current?.flyTo({
+      center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
+      zoom: INITIAL_VIEW_STATE.zoom,
+      bearing: 0,
+      pitch: 0,
+      duration: 2000,
+      essential: true,
+    });
   };
 
   // ============================================================
@@ -497,6 +540,40 @@ export function NetworkMap() {
     [selectedAsset],
   );
 
+  const searchHighlightLayer = useMemo<CircleLayerSpecification>(
+    () => ({
+      id: "search-highlight",
+      type: "circle",
+      source: "search-source",
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 10, 20, 45],
+        "circle-color": [
+          "match",
+          ["get", "status"],
+          ["DOWN", "FIBERCUT", "BROKEN"],
+          "rgba(239, 68, 68, 0.75)", // Red if down
+          "MAINTENANCE",
+          "rgba(245, 158, 11, 0.75)", // Amber if maintenance
+          "rgba(58, 166, 255, 0.75)", // Default Blue (Active)
+        ],
+        "circle-blur": 0.5,
+        "circle-opacity": 0.5,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": [
+          "match",
+          ["get", "status"],
+          ["DOWN", "FIBERCUT", "BROKEN"],
+          "#ef4444",
+          "MAINTENANCE",
+          "#f59e0b",
+          "#2563eb",
+        ],
+        "circle-stroke-opacity": 0.5,
+      },
+    }),
+    [],
+  );
+
   const highlightEdgeLayer = useMemo<LineLayerSpecification>(
     () => ({
       id: "highlight-edge",
@@ -618,7 +695,6 @@ export function NetworkMap() {
           "standard-cables",
         ]}
       >
-        <NavigationControl position="top-right" showCompass={false} />
         <ScaleControl />
 
         {/* 
@@ -637,6 +713,13 @@ export function NetworkMap() {
             maxzoom={18}
           >
             <Layer id="satellite-imagery" type="raster" />
+          </Source>
+        )}
+
+        {/* Search Target Highlight (Static Bold Blue) */}
+        {searchTargetData && (
+          <Source id="search-source" type="geojson" data={searchTargetData}>
+            <Layer {...searchHighlightLayer} beforeId="standard-cables" />
           </Source>
         )}
 
@@ -682,6 +765,36 @@ export function NetworkMap() {
           </Source>
         )}
       </Map>
+
+      {/* Floating Map Controls (Zoom & Reset) */}
+      <div className="absolute bottom-8 right-6 flex flex-col gap-2 z-30 pointer-events-auto">
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-10 w-10 rounded-lg shadow-xl bg-background/80 backdrop-blur-md border-border hover:bg-background transition-all"
+          onClick={handleZoomIn}
+          title="Zoom In"
+        >
+          <Plus className="w-5 h-5 text-foreground" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          className="h-10 w-10 rounded-lg shadow-xl bg-background/80 backdrop-blur-md border-border hover:bg-background transition-all"
+          onClick={handleZoomOut}
+          title="Zoom Out"
+        >
+          <Minus className="w-5 h-5 text-foreground" />
+        </Button>
+        <Button
+          size="icon"
+          className="h-10 w-10 rounded-lg shadow-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-all transform active:scale-95"
+          onClick={handleResetView}
+          title="Reset View"
+        >
+          <Crosshair className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   );
 }
