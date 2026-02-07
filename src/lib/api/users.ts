@@ -22,7 +22,7 @@ export async function getUsers(
   if (role && role !== "all") params.append("role", role);
   if (status && status !== "all") params.append("status", status);
 
-  const res = await fetch(`${BACKEND_URL}/api/users?${params.toString()}`, {
+  const res = await fetch(`${BACKEND_URL}/users?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -45,7 +45,7 @@ export async function updateUser(
   data: { role?: string; status?: string },
   token: string,
 ): Promise<User> {
-  const res = await fetch(`${BACKEND_URL}/api/users/${id}`, {
+  const res = await fetch(`${BACKEND_URL}/users/${id}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -57,6 +57,30 @@ export async function updateUser(
   if (!res.ok) {
     const error = await res.text();
     throw new Error(error || "Failed to update user");
+  }
+
+  return res.json();
+}
+
+export async function getUserStats(token: string): Promise<{
+  totalUsers: number;
+  activeUsers: number;
+  pendingRequests: number;
+}> {
+  if (!token) {
+    throw new Error("No access token provided");
+  }
+
+  const res = await fetch(`${BACKEND_URL}/users/stats`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch user stats");
   }
 
   return res.json();

@@ -13,6 +13,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "next-auth/react";
 
 interface Stats {
   totalNodes: number;
@@ -37,16 +39,22 @@ interface Stats {
 }
 
 export function StatsPanel() {
+  const { data: session } = useSession();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
+      if (!session?.accessToken) return;
+
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/network/analytics/stats`,
-        );
+        const baseUrl = getBackendBaseUrl();
+        const res = await fetch(`${baseUrl}/network/analytics/stats`, {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+        });
         if (!res.ok) throw new Error("Failed to fetch statistics");
         const data = await res.json();
         setStats(data);
@@ -59,7 +67,7 @@ export function StatsPanel() {
       }
     }
     fetchStats();
-  }, []);
+  }, [session?.accessToken]);
 
   if (loading) {
     return (

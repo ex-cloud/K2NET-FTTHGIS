@@ -4,7 +4,10 @@ import { X, Cloud, ZapOff, BugPlay, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSelectionStore } from "@/store/selection-store";
+import { useMapStore } from "@/store/map-store";
 import { useEffect, useState } from "react";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "next-auth/react";
 
 interface AssetDetails {
   id: string;
@@ -15,7 +18,9 @@ interface AssetDetails {
 }
 
 export function AssetPanel() {
+  const { data: session } = useSession();
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
+  const { statusOverrides } = useMapStore();
   const [details, setDetails] = useState<AssetDetails | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -44,9 +49,40 @@ export function AssetPanel() {
 
       setLoading(true);
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/network/assets/${selectedAsset.type}/${selectedAsset.id}`,
+        const baseUrl = getBackendBaseUrl();
+        const url = `${baseUrl}/network/assets/${selectedAsset.type}/${selectedAsset.id}`;
+        console.log(
+          "Fetching asset detail:",
+          url,
+          "with token length:",
+          session?.accessToken?.length || 0,
         );
+
+        if (!session?.accessToken) {
+          console.warn("No access token available for fetchAssetDetails");
+          setLoading(false);
+          return;
+        }
+
+        let response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+        });
+
+        // Fallback to searching by Code if ID lookup fails (useful if IDs changed due to seeding)
+        if (!response.ok && response.status === 404 && selectedAsset.code) {
+          console.warn(
+            `Asset not found by ID [${selectedAsset.id}], attempting fallback by code [${selectedAsset.code}]`,
+          );
+          const fallbackUrl = `${baseUrl}/network/assets/${selectedAsset.type}/code/${selectedAsset.code}`;
+          response = await fetch(fallbackUrl, {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          });
+        }
+
         if (!response.ok) throw new Error("Asset not found");
         const data = await response.json();
         setDetails(data);
@@ -59,7 +95,7 @@ export function AssetPanel() {
     }
 
     fetchAssetDetails();
-  }, [selectedAsset]);
+  }, [selectedAsset, session?.accessToken]);
 
   if (!selectedAsset) {
     return (
@@ -131,13 +167,15 @@ export function AssetPanel() {
                   <div className="flex items-center gap-2 mt-1">
                     <span
                       className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                        details?.status === "ACTIVE" ||
-                        details?.status === "MANUAL_PIN"
+                        (statusOverrides[details.code] || details.status) ===
+                          "ACTIVE" || details.status === "MANUAL_PIN"
                           ? "bg-emerald-500/20 text-emerald-500"
                           : "bg-red-500/20 text-red-500"
                       }`}
                     >
-                      {details?.status || "UNKNOWN"}
+                      {statusOverrides[details.code] ||
+                        details.status ||
+                        "UNKNOWN"}
                     </span>
                   </div>
                 </div>

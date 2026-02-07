@@ -21,10 +21,11 @@ import { FeatureCollection, Feature } from "geojson";
 import { useTheme } from "next-themes";
 import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { getMartinBaseUrl } from "@/lib/api-config";
 import { MapLayerMouseEvent } from "maplibre-gl";
 import { Plus, Minus, Crosshair } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMapNotifications } from "@/hooks/use-map-notifications";
 
 // Default viewport centered on Bandung (based on seeder data)
 const INITIAL_VIEW_STATE = {
@@ -56,8 +57,9 @@ export function NetworkMap() {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  useMapNotifications(); // Initialize Real-time SSE Connection
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
-  const { mapCenter, setMapCenter, mapStyle } = useMapStore();
+  const { mapCenter, setMapCenter, mapStyle, statusOverrides } = useMapStore();
 
   // Derived state for cleaner mode checks
   const isTopologyMode = mapStyle === "topology";
@@ -108,12 +110,16 @@ export function NetworkMap() {
           properties: {
             id: "search-target",
             isCoordinate: selectedAsset.type === "COORDINATE",
-            status: selectedAsset.status || "ACTIVE", // Transfer status to map properties
+            status: selectedAsset.code
+              ? statusOverrides[selectedAsset.code] ||
+                selectedAsset.status ||
+                "ACTIVE"
+              : selectedAsset.status || "ACTIVE",
           },
         },
       ],
     };
-  }, [selectedAsset]);
+  }, [selectedAsset, statusOverrides]);
 
   // Watch mapCenter changes (e.g. from Search) and fly there
   useEffect(() => {
@@ -155,8 +161,9 @@ export function NetworkMap() {
   }, []);
 
   const mvtTileUrl = useMemo(() => {
-    const baseUrl = getBackendBaseUrl();
-    return `${baseUrl}/network/mvt/{z}/{x}/{y}`;
+    const baseUrl = getMartinBaseUrl();
+    // Use Martin RPC Function endpoint
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}`;
   }, []);
 
   const onMapClick = (evt: MapLayerMouseEvent) => {

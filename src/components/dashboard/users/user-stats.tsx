@@ -3,7 +3,15 @@
 import { Users, Activity, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function UserStats() {
+interface UserStatsProps {
+  stats: {
+    totalUsers: number;
+    activeUsers: number;
+    pendingRequests: number;
+  } | null;
+}
+
+export function UserStats({ stats }: UserStatsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
       {/* Total Users */}
@@ -16,7 +24,9 @@ export function UserStats() {
             <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               Total Users
             </div>
-            <div className="text-2xl font-mono font-bold">1,284</div>
+            <div className="text-2xl font-mono font-bold">
+              {stats?.totalUsers.toLocaleString() || "..."}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -31,7 +41,9 @@ export function UserStats() {
             <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               Active Now
             </div>
-            <div className="text-2xl font-mono font-bold">412</div>
+            <div className="text-2xl font-mono font-bold">
+              {stats?.activeUsers.toLocaleString() || "..."}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -46,7 +58,9 @@ export function UserStats() {
             <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               Open Requests
             </div>
-            <div className="text-2xl font-mono font-bold">07</div>
+            <div className="text-2xl font-mono font-bold">
+              {stats?.pendingRequests.toString().padStart(2, "0") || "00"}
+            </div>
           </div>
         </CardContent>
       </Card>

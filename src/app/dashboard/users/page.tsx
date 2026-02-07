@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/auth";
-import { getUsers } from "@/lib/api/users";
+import { getUsers, getUserStats } from "@/lib/api/users";
 
 export default async function UserManagementPage(props: {
   searchParams: Promise<{
@@ -29,20 +29,26 @@ export default async function UserManagementPage(props: {
   const token = session?.accessToken as string | undefined;
 
   let usersData = null;
+  let statsData = null;
 
   if (token) {
     try {
-      usersData = await getUsers(
-        page,
-        10,
-        search,
-        searchParams.role,
-        searchParams.status,
-        token,
-      );
+      const [users, stats] = await Promise.all([
+        getUsers(
+          page,
+          10,
+          search,
+          searchParams.role,
+          searchParams.status,
+          token,
+        ),
+        getUserStats(token),
+      ]);
+      usersData = users;
+      statsData = stats;
     } catch (e) {
       // Log error but render page
-      console.error("Fetch users error", e);
+      console.error("Fetch users/stats error", e);
     }
   }
 
@@ -101,7 +107,7 @@ export default async function UserManagementPage(props: {
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <UserStats />
+          <UserStats stats={statsData} />
           <UserTable data={usersData} currentPage={page} />
         </div>
       </div>

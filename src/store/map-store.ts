@@ -11,8 +11,10 @@ export type MapStyleMode = "base" | "topology" | "satellite";
 interface MapState {
   mapCenter: MapCenter;
   mapStyle: MapStyleMode;
+  statusOverrides: Record<string, string>; // code -> status
   setMapCenter: (center: MapCenter) => void;
   setMapStyle: (style: MapStyleMode) => void;
+  updateStatusOverride: (code: string, status: string) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -22,6 +24,11 @@ export const useMapStore = create<MapState>((set) => ({
     zoom: 13,
   },
   mapStyle: "base",
+  statusOverrides: {},
   setMapCenter: (center) => set({ mapCenter: center }),
   setMapStyle: (style) => set({ mapStyle: style }),
+  updateStatusOverride: (code, status) =>
+    set((state) => ({
+      statusOverrides: { ...state.statusOverrides, [code]: status },
+    })),
 }));

@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "next-auth/react";
 
 interface SearchResult {
   id: string;
@@ -20,6 +22,7 @@ export function SearchPanel({
 }: {
   placeholder?: string;
 }) {
+  const { data: session } = useSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,9 +53,12 @@ export function SearchPanel({
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/network/assets/search?q=${query}`,
-        );
+        const baseUrl = getBackendBaseUrl();
+        const res = await fetch(`${baseUrl}/network/assets/search?q=${query}`, {
+          headers: {
+            Authorization: `Bearer ${session?.accessToken}`,
+          },
+        });
         const data = await res.json();
         setResults(data);
         setShowResults(true);
@@ -64,7 +70,7 @@ export function SearchPanel({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, session?.accessToken]);
 
   const handleSelect = (result: SearchResult) => {
     setSelectedAsset({
