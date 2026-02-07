@@ -160,11 +160,13 @@ export function NetworkMap() {
     return () => cancelAnimationFrame(handle);
   }, []);
 
+  const [tileTimestamp] = useState(() => Date.now());
+
   const mvtTileUrl = useMemo(() => {
     const baseUrl = getMartinBaseUrl();
-    // Use Martin RPC Function endpoint
-    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}`;
-  }, []);
+    // Add timestamp as cache buster for development
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?t=${tileTimestamp}`;
+  }, [tileTimestamp]);
 
   const onMapClick = (evt: MapLayerMouseEvent) => {
     const features = evt.features;
