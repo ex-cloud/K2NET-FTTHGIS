@@ -27,12 +27,12 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8081/realms/ftth-realm
-          jwk-set-uri: http://localhost:8081/realms/ftth-realm/protocol/openid-connect/certs
+          issuer-uri: http://127.0.0.1:8081/realms/ftth-realm
+          jwk-set-uri: http://127.0.0.1:8081/realms/ftth-realm/protocol/openid-connect/certs
 
 # Keycloak Admin Configuration
 keycloak:
-  server-url: http://localhost:8081
+  server-url: http://127.0.0.1:8081
   realm: ftth-realm
   # Service Account for Backend to manage users
   client-id: ftth-gis-backend
@@ -44,7 +44,7 @@ keycloak:
 app:
   security:
     cors:
-      allowed-origins: "http://localhost:3000,http://192.168.40.11:3000"
+      allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
       allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
       allowed-headers: "*"
 

@@ -1,0 +1,20 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.company:ftth-gis >------------------------
+[INFO] Building FTTH GIS Network Analyzer 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ ftth-gis ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ ftth-gis ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 66 source files with javac [debug release 21] to target\classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  15.365 s
+[INFO] Finished at: 2026-02-07T08:56:59+07:00
+[INFO] ------------------------------------------------------------------------

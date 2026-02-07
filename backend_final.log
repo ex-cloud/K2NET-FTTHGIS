@@ -1,0 +1,168 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.company:ftth-gis >------------------------
+[INFO] Building FTTH GIS Network Analyzer 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.4.2:run (default-cli) > test-compile @ ftth-gis >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ ftth-gis ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ ftth-gis ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ ftth-gis ---
+[INFO] skip non existing resourceDirectory D:\Backup\xampp\project5\backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ ftth-gis ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.4.2:run (default-cli) < test-compile @ ftth-gis <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.4.2:run (default-cli) @ ftth-gis ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.2)
+
+2026-02-07T10:20:40.389+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.FtthGisApplication   : Starting FtthGisApplication using Java 21.0.9 with PID 19248 (D:\Backup\xampp\project5\backend\target\classes started by Andiansyah in D:\Backup\xampp\project5\backend)
+2026-02-07T10:20:40.412+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.FtthGisApplication   : No active profile set, falling back to 1 default profile: "default"
+2026-02-07T10:20:44.005+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-02-07T10:20:44.014+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-07T10:20:44.831+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 794 ms. Found 11 JPA repository interfaces.
+2026-02-07T10:20:44.869+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-02-07T10:20:44.873+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-02-07T10:20:45.002+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.AssetCategoryRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.004+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.AssetRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.021+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.CustomerRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.022+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.FiberCableRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.023+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.NetworkNodeRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.029+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.ODCRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.030+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.ODPRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.031+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.network.repository.OLTRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.031+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.user.repository.PermissionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.032+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.user.repository.RoleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.033+07:00  INFO 19248 --- [ftth-gis-core] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.company.ftthgis.domain.user.repository.UserRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-02-07T10:20:45.035+07:00  INFO 19248 --- [ftth-gis-core] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 118 ms. Found 0 Redis repository interfaces.
+2026-02-07T10:20:47.436+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 9090 (http)
+2026-02-07T10:20:47.486+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-07T10:20:47.487+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
+2026-02-07T10:20:47.673+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-02-07T10:20:47.677+07:00  INFO 19248 --- [ftth-gis-core] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 7083 ms
+2026-02-07T10:20:48.922+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-07T10:20:49.116+07:00  INFO 19248 --- [ftth-gis-core] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2026-02-07T10:20:49.146+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.spatial.integration.SpatialService   : HHH80000001: hibernate-spatial integration enabled : true
+2026-02-07T10:20:49.227+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-07T10:20:49.539+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-07T10:20:50.183+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@813ab53
+2026-02-07T10:20:50.188+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-07T10:20:50.376+07:00  INFO 19248 --- [ftth-gis-core] [           main] org.hibernate.spatial                    : HHH80000003: hibernate-spatial adding type contributions from : org.hibernate.spatial.dialect.postgis.PostgisDialectContributor
+2026-02-07T10:20:50.387+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.boot.internal.EnversServiceImpl    : Envers integration enabled? : true
+2026-02-07T10:20:50.734+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-07T10:20:50.783+07:00  INFO 19248 --- [ftth-gis-core] [           main] org.hibernate.spatial                    : HHH80000003: hibernate-spatial adding type contributions from : org.hibernate.spatial.dialect.postgis.PostgisDialectContributor
+2026-02-07T10:20:51.434+07:00  WARN 19248 --- [ftth-gis-core] [           main] o.h.boot.model.internal.EntityBinder     : HHH000457: Joined inheritance hierarchy [com.company.ftthgis.domain.network.entity.NetworkNode] defined explicit @DiscriminatorColumn.  Legacy Hibernate behavior was to ignore the @DiscriminatorColumn.  However, as part of issue HHH-6911 we now apply the explicit @DiscriminatorColumn.  If you would prefer the legacy behavior, enable the `hibernate.discriminator.ignore_explicit_for_joined` setting (hibernate.discriminator.ignore_explicit_for_joined=true)
+2026-02-07T10:20:52.091+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.user.entity.User
+2026-02-07T10:20:52.116+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.NetworkNode
+2026-02-07T10:20:52.125+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.ODC
+2026-02-07T10:20:52.128+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.Customer
+2026-02-07T10:20:52.128+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.user.entity.Role
+2026-02-07T10:20:52.134+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.OLT
+2026-02-07T10:20:52.134+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.Asset
+2026-02-07T10:20:52.137+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.ODP
+2026-02-07T10:20:52.137+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.FiberCable
+2026-02-07T10:20:52.138+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.network.entity.AssetCategory
+2026-02-07T10:20:52.141+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.c.i.m.AuditMetadataGenerator       : Adding properties for entity: com.company.ftthgis.domain.user.entity.Permission
+2026-02-07T10:20:52.953+07:00  INFO 19248 --- [ftth-gis-core] [           main] org.hibernate.spatial                    : HHH80000004: hibernate-spatial adding function contributions from : org.hibernate.spatial.dialect.postgis.PostgisDialectContributor
+2026-02-07T10:20:54.482+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-07T10:20:54.648+07:00  WARN 19248 --- [ftth-gis-core] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Warning Code: 0, SQLState: 00000
+2026-02-07T10:20:54.648+07:00  WARN 19248 --- [ftth-gis-core] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : drop cascades to materialized view mv_clustered_nodes
+2026-02-07T10:20:55.048+07:00  INFO 19248 --- [ftth-gis-core] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-07T10:20:55.963+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-07T10:20:57.666+07:00 DEBUG 19248 --- [ftth-gis-core] [           main] swordEncoderAuthenticationManagerBuilder : No authenticationProviders and no parentAuthenticationManager defined. Returning null.
+2026-02-07T10:20:58.392+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-02-07T10:20:58.684+07:00 DEBUG 19248 --- [ftth-gis-core] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, BearerTokenAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-02-07T10:20:59.751+07:00  INFO 19248 --- [ftth-gis-core] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 9090 (http) with context path '/'
+2026-02-07T10:20:59.779+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.FtthGisApplication   : Started FtthGisApplication in 21.908 seconds (process running for 22.811)
+2026-02-07T10:20:59.788+07:00  INFO 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Refreshing clustered materialized view ---
+2026-02-07T10:20:59.803+07:00  WARN 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Could not refresh clustered view (not created yet or no concurrent index): StatementCallback; bad SQL grammar [REFRESH MATERIALIZED VIEW CONCURRENTLY mv_clustered_nodes] ---
+2026-02-07T10:20:59.804+07:00 ERROR 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Critical: Failed to refresh clustered view: StatementCallback; bad SQL grammar [REFRESH MATERIALIZED VIEW mv_clustered_nodes] ---
+2026-02-07T10:20:59.809+07:00  INFO 19248 --- [ftth-gis-core] [   scheduling-1] c.c.f.d.n.s.DataReconciliationService    : Starting scheduled data reconciliation (PostGIS <-> Redis)...
+2026-02-07T10:20:59.997+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : Starting Advanced GIS Network Seeder (Bandung Hierarchy)...
+2026-02-07T10:21:00.000+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [CLEAN] Purging existing network data for fresh hierarchy ---
+2026-02-07T10:21:00.005+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [FIX] Redundant 'code' columns dropped from sub-tables (JOINED inheritance fix) ---
+2026-02-07T10:21:00.172+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [CLUSTER] Creating materialized view for low-zoom clustering ---
+2026-02-07T10:21:00.210+07:00  INFO 19248 --- [ftth-gis-core] [   scheduling-1] c.c.f.d.n.s.DataReconciliationService    : Data reconciliation complete.
+2026-02-07T10:21:00.213+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [CLUSTER] Materialized view created successfully ---
+2026-02-07T10:21:00.213+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [GIS] Creating/Updating get_mvt_data PostGIS function for Martin ---
+2026-02-07T10:21:00.236+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [GIS] Global MVT function (get_mvt_data) is registered and ready for Martin server on Port 3001 ---
+2026-02-07T10:21:00.237+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [SEED] Building Bandung Office Hierarchy (OLT -> ODC -> ODP -> Customer) ---
+2026-02-07T10:21:03.000+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [SEED] Building OFFICE Network Hierarchy ---
+2026-02-07T10:21:03.510+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [SEED] Office Network Complete ---
+2026-02-07T10:21:03.510+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       :     - 1 OLT (ACTIVE)
+2026-02-07T10:21:03.510+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       :     - 3 ODCs (2 ACTIVE, 1 DOWN)
+2026-02-07T10:21:03.510+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       :     - 9 ODPs (5 ACTIVE, 1 FIBERCUT, 3 DOWN)
+2026-02-07T10:21:03.511+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       :     - 45 Customers (25 ACTIVE, 20 DOWN)
+2026-02-07T10:21:03.511+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [CLUSTER] Refreshing clustered view after seeding ---
+2026-02-07T10:21:03.524+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [AUDIT] Schema check complete ---
+2026-02-07T10:21:03.529+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : --- [AUDIT] Clustered nodes count: 15 ---
+2026-02-07T10:21:03.530+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.config.DataInitializer       : Seeding Complete. Topology Verified.
+2026-02-07T10:21:03.530+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : --- [USER SEEDER] Starting User, Role & Permission Seeding ---
+2026-02-07T10:21:03.640+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: nodes.view
+2026-02-07T10:21:03.645+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: nodes.create
+2026-02-07T10:21:03.651+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: users.view
+2026-02-07T10:21:03.657+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: audit.view
+2026-02-07T10:21:03.663+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: tickets.create
+2026-02-07T10:21:03.669+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: tickets.assign
+2026-02-07T10:21:03.674+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: heatmap.view
+2026-02-07T10:21:03.680+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: nodes.delete
+2026-02-07T10:21:03.684+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: settings.manage
+2026-02-07T10:21:03.689+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: tickets.update
+2026-02-07T10:21:03.694+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: dashboard.view
+2026-02-07T10:21:03.699+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: users.manage
+2026-02-07T10:21:03.703+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: nodes.edit
+2026-02-07T10:21:03.708+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Permission: tickets.view
+2026-02-07T10:21:03.777+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Role: admin with 11 permissions
+2026-02-07T10:21:03.823+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Role: super_admin with 14 permissions
+2026-02-07T10:21:03.847+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Role: supervisor with 7 permissions
+2026-02-07T10:21:03.856+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Role: viewer with 2 permissions
+2026-02-07T10:21:03.868+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Role: technician with 3 permissions
+2026-02-07T10:21:06.791+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User superadmin@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:06.860+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: superadmin@example.com with Keycloak Subject: 774174cd-6d01-46d6-aae5-0586a699fd22
+2026-02-07T10:21:06.941+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User admin@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:06.958+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: admin@example.com with Keycloak Subject: cf9745be-2f90-4392-8af5-bdd4c81865c6
+2026-02-07T10:21:07.041+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User supervisor@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:07.058+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: supervisor@example.com with Keycloak Subject: 460988ca-7abc-4597-ac08-42f1886f5055
+2026-02-07T10:21:07.129+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User technician@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:07.147+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: technician@example.com with Keycloak Subject: 0c87ee3d-7264-49f2-92db-bcdd0a38ce7c
+2026-02-07T10:21:07.217+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User viewer@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:07.237+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: viewer@example.com with Keycloak Subject: 34a10d4d-909e-4aa0-bbf0-e7c3f6ee8db9
+2026-02-07T10:21:07.305+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.f.service.KeycloakAdminService       : User inactive@example.com already exists in Keycloak. Skipping creation.
+2026-02-07T10:21:07.332+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : Created Local User Profile: inactive@example.com with Keycloak Subject: f22b8e65-3a36-4b68-a00b-cb4e95847656
+2026-02-07T10:21:07.333+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.service.UserSyncService      : Starting Full User Synchronization from Keycloak...
+2026-02-07T10:21:07.503+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.service.UserSyncService      : Provisioning new local user profile for excloud@example.com (Keycloak ID: 31e30102-1e3f-4102-bbf7-870ec4661e51)
+2026-02-07T10:21:07.563+07:00  INFO 19248 --- [ftth-gis-core] [           main] c.c.ftthgis.service.UserSyncService      : Full User Synchronization Complete. Synced 7 users.
+2026-02-07T10:21:07.569+07:00  INFO 19248 --- [ftth-gis-core] [           main] com.company.ftthgis.config.UserSeeder    : --- [USER SEEDER] Seeding Complete ---
+2026-02-07T10:30:59.047+07:00  INFO 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-02-07T10:30:59.047+07:00  INFO 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-02-07T10:30:59.050+07:00  INFO 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-02-07T10:30:59.080+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.s.security.web.FilterChainProxy        : Securing GET /api/v1/network/notifications/map-updates
+2026-02-07T10:30:59.154+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.s.s.w.a.AnonymousAuthenticationFilter  : Set SecurityContextHolder to anonymous SecurityContext
+2026-02-07T10:30:59.160+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-1] o.s.security.web.FilterChainProxy        : Secured GET /api/v1/network/notifications/map-updates
+2026-02-07T10:30:59.784+07:00  INFO 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Refreshing clustered materialized view ---
+2026-02-07T10:31:00.285+07:00  WARN 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Could not refresh clustered view (not created yet or no concurrent index): StatementCallback; bad SQL grammar [REFRESH MATERIALIZED VIEW CONCURRENTLY mv_clustered_nodes] ---
+2026-02-07T10:31:00.290+07:00 ERROR 19248 --- [ftth-gis-core] [   scheduling-1] c.c.ftthgis.config.ClusterRefreshConfig  : --- [SCHEDULE] Critical: Failed to refresh clustered view: StatementCallback; bad SQL grammar [REFRESH MATERIALIZED VIEW mv_clustered_nodes] ---
+2026-02-07T10:31:05.500+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-3] o.s.security.web.FilterChainProxy        : Securing OPTIONS /api/v1/network/analytics/stats
+2026-02-07T10:31:05.541+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-2] o.s.security.web.FilterChainProxy        : Securing GET /api/v1/network/analytics/stats
+2026-02-07T10:31:05.884+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-2] o.s.s.oauth2.jwt.JwtTimestampValidator   : Jwt expired at 2026-02-07T03:13:17Z
+2026-02-07T10:31:05.885+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-2] o.s.s.oauth2.jwt.JwtClaimValidator       : The iss claim is not valid
+2026-02-07T10:31:05.885+07:00 DEBUG 19248 --- [ftth-gis-core] [nio-9090-exec-2] o.s.s.o.s.r.a.JwtAuthenticationProvider  : Failed to authenticate since the JWT was invalid

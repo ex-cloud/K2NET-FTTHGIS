@@ -23,6 +23,9 @@ public abstract class NetworkNode extends BaseEntity {
     @Column(unique = true)
     private Long osmid;
 
+    @Column(nullable = false, unique = true)
+    private String code;
+
     @Column(columnDefinition = "geometry(Point, 4326)", nullable = false)
     private Point geom;
 
@@ -32,6 +35,9 @@ public abstract class NetworkNode extends BaseEntity {
 
     @Column(name = "signal_db")
     private Double signalDb;
+
+    @Column(name = "last_maintenance")
+    private java.time.LocalDateTime lastMaintenance;
 
     @Column(name = "node_type", insertable = false, updatable = false)
     private String nodeType;

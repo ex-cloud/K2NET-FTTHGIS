@@ -35,6 +35,9 @@ public class FiberCable extends BaseEntity {
     @Column(name = "length_meters")
     private Double lengthMeters;
 
+    @Column(name = "last_maintenance")
+    private java.time.LocalDateTime lastMaintenance;
+
     // Routing Topology Fields (Mapped to Legacy)
     @Column(name = "source")
     private Integer source;

@@ -117,6 +117,15 @@ public class UserSeeder implements CommandLineRunner {
             log.warn("Failed to sync user {} to Keycloak: {}", email, e.getMessage());
         }
 
+        // Always attempt to sync role to Keycloak to ensure consistency
+        if (keycloakId != null) {
+            try {
+                keycloakAdminService.updateUserRole(email, roleName);
+            } catch (Exception e) {
+                log.warn("Failed to sync role {} for user {} to Keycloak: {}", roleName, email, e.getMessage());
+            }
+        }
+
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isEmpty()) {
             Role role = roleRepository.findByName(roleName)
@@ -138,6 +147,14 @@ public class UserSeeder implements CommandLineRunner {
             User user = existingUser.get();
             boolean changed = false;
 
+            // Update role locally if different
+            if (!user.getRole().getName().equals(roleName)) {
+                Role newRole = roleRepository.findByName(roleName)
+                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                user.setRole(newRole);
+                changed = true;
+            }
+
             // Backfill Keycloak Subject
             if (user.getKeycloakSubject() == null && keycloakId != null) {
                 user.setKeycloakSubject(keycloakId);
@@ -153,7 +170,7 @@ public class UserSeeder implements CommandLineRunner {
 
             if (changed) {
                 userRepository.save(user);
-                log.info("Updated Local User Profile {} with missing data (Subject/Avatar).", email);
+                log.info("Updated Local User Profile {} with missing or changed data.", email);
             }
         }
     }

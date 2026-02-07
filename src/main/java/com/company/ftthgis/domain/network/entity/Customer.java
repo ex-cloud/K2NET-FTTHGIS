@@ -14,9 +14,6 @@ import org.hibernate.envers.Audited;
 @Audited
 public class Customer extends NetworkNode {
 
-    @Column(nullable = false, unique = true)
-    private String code;
-
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -42,12 +42,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
-                        .requestMatchers("/api/v1/network/trace-path/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
-                        .requestMatchers("/api/v1/network/analytics/**").permitAll()
-                        .requestMatchers("/api/v1/network/assets/**").permitAll()
+                        .requestMatchers("/api/v1/network/notifications/**").permitAll()
+                        .requestMatchers("/api/v1/network/trace-path/**").authenticated()
+                        .requestMatchers("/api/v1/network/assets/**").authenticated()
+                        .requestMatchers("/api/v1/network/analytics/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MANAGER")
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
@@ -101,20 +103,42 @@ public class SecurityConfig {
      * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak.
      */
     static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+        private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakRoleConverter.class);
+
         @Override
         @SuppressWarnings("unchecked")
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            Map<String, Object> realmAccess = (Map<String, Object>) jwt.getClaims().get("realm_access");
+            java.util.Set<String> roles = new java.util.HashSet<>();
 
-            if (realmAccess == null || realmAccess.isEmpty()) {
-                return List.of();
+            // Debug: Log complete claims if debug level is enabled
+            log.debug("Full JWT Claims for Subject {}: {}", jwt.getSubject(), jwt.getClaims());
+
+            // 1. Extract Realm Roles
+            Map<String, Object> realmAccess = (Map<String, Object>) jwt.getClaims().get("realm_access");
+            if (realmAccess != null && realmAccess.containsKey("roles")) {
+                Collection<String> realmRoles = (Collection<String>) realmAccess.get("roles");
+                log.debug("Extracted Realm Roles: {}", realmRoles);
+                roles.addAll(realmRoles);
             }
 
-            Collection<String> roles = (Collection<String>) realmAccess.get("roles");
-            return roles.stream()
+            // 2. Extract Client Roles (specifically for our frontend client)
+            Map<String, Object> resourceAccess = (Map<String, Object>) jwt.getClaims().get("resource_access");
+            if (resourceAccess != null && resourceAccess.containsKey("ftth-gis-frontend")) {
+                Map<String, Object> clientAccess = (Map<String, Object>) resourceAccess.get("ftth-gis-frontend");
+                if (clientAccess != null && clientAccess.containsKey("roles")) {
+                    Collection<String> clientRoles = (Collection<String>) clientAccess.get("roles");
+                    log.debug("Extracted Client Roles: {}", clientRoles);
+                    roles.addAll(clientRoles);
+                }
+            }
+
+            Collection<GrantedAuthority> authorities = roles.stream()
                     .map(roleName -> "ROLE_" + roleName.toUpperCase())
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
+
+            log.info("Final Mapped Authorities for {}: {}", jwt.getSubject(), authorities);
+            return authorities;
         }
     }
 }

@@ -2,9 +2,17 @@ package com.company.ftthgis.domain.network.service;
 
 import com.company.ftthgis.domain.network.dto.FiberCableMapDto;
 import com.company.ftthgis.domain.network.dto.ODCDto;
+import com.company.ftthgis.domain.network.entity.Customer;
+import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
+import com.company.ftthgis.domain.network.entity.ODP;
+import com.company.ftthgis.domain.network.entity.OLT;
+import com.company.ftthgis.domain.network.event.MapEventPublisher;
+import com.company.ftthgis.domain.network.repository.CustomerRepository;
 import com.company.ftthgis.domain.network.repository.FiberCableRepository;
+import com.company.ftthgis.domain.network.repository.ODPRepository;
 import com.company.ftthgis.domain.network.repository.ODCRepository;
+import com.company.ftthgis.domain.network.repository.OLTRepository;
 import com.company.ftthgis.domain.network.repository.projection.FiberCableProjection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +30,12 @@ import java.util.stream.Collectors;
 public class NetworkServiceImpl implements NetworkService {
 
     private final ODCRepository odcRepository;
+    private final ODPRepository odpRepository;
+    private final OLTRepository oltRepository;
+    private final CustomerRepository customerRepository;
     private final FiberCableRepository fiberCableRepository;
+    private final StatusCacheService statusCacheService;
+    private final MapEventPublisher mapEventPublisher;
 
     @Override
     @Transactional
@@ -85,5 +98,43 @@ public class NetworkServiceImpl implements NetworkService {
         })
                 .filter(dto -> dto != null)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void updateAssetStatus(String code, String type, String status) {
+        // 1. Update DB (Persistent)
+        if ("ODP".equalsIgnoreCase(type)) {
+            odpRepository.findByCode(code).ifPresent((ODP asset) -> {
+                asset.setStatus(status);
+                odpRepository.save(asset);
+            });
+        } else if ("ODC".equalsIgnoreCase(type)) {
+            odcRepository.findByCode(code).ifPresent((ODC asset) -> {
+                asset.setStatus(status);
+                odcRepository.save(asset);
+            });
+        } else if ("OLT".equalsIgnoreCase(type)) {
+            oltRepository.findByCode(code).ifPresent((OLT asset) -> {
+                asset.setStatus(status);
+                oltRepository.save(asset);
+            });
+        } else if ("CABLE".equalsIgnoreCase(type)) {
+            fiberCableRepository.findByCode(code).ifPresent((FiberCable asset) -> {
+                asset.setStatus(status);
+                fiberCableRepository.save(asset);
+            });
+        } else if ("CUSTOMER".equalsIgnoreCase(type)) {
+            customerRepository.findByCode(code).ifPresent((Customer asset) -> {
+                asset.setStatus(status);
+                customerRepository.save(asset);
+            });
+        }
+
+        // 2. Update Cache (Fast Path)
+        statusCacheService.setStatus(code, status);
+
+        // 3. Notify Map (Real-time Broadcast)
+        mapEventPublisher.publishStatusChange(code, status, type);
     }
 }

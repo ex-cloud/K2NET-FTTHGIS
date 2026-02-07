@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ODPRepository extends JpaRepository<ODP, Long> {
     boolean existsByCode(String code);
+
+    java.util.Optional<ODP> findByCode(String code);
 }

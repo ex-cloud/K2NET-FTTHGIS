@@ -58,10 +58,8 @@ public class NetworkAnalyticsController {
 
                         // 2. Active Maintenance Monitoring (Nodes with status non-ACTIVE)
                         List<NetworkStatsDto.MaintenanceItem> maintenances = jdbcTemplate.query(
-                                        "SELECT n.id, n.node_type, n.status, COALESCE(o.code, p.code) as code " +
+                                        "SELECT n.id, n.node_type, n.status, n.code " +
                                                         "FROM network_nodes n " +
-                                                        "LEFT JOIN odc o ON n.id = o.id " +
-                                                        "LEFT JOIN odp p ON n.id = p.id " +
                                                         "WHERE n.status IN ('BROKEN', 'MAINTENANCE', 'UNDER_REPAIR') LIMIT 5",
                                         (rs, rowNum) -> NetworkStatsDto.MaintenanceItem.builder()
                                                         .id(rs.getString("id"))

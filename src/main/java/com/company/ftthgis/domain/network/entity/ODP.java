@@ -14,9 +14,6 @@ import org.hibernate.envers.Audited;
 @Audited
 public class ODP extends NetworkNode {
 
-    @Column(nullable = false, unique = true)
-    private String code;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "odc_id")
     private ODC odc;

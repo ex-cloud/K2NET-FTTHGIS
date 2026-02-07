@@ -14,9 +14,6 @@ import org.hibernate.envers.Audited;
 @Audited
 public class ODC extends NetworkNode {
 
-    @Column(nullable = false, unique = true)
-    private String code;
-
     private String name;
 
     private Integer capacity;

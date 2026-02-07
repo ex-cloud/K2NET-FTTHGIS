@@ -13,4 +13,9 @@ public interface NetworkService {
      * Menemukan jalur terpendek antara dua node.
      */
     List<FiberCableMapDto> tracePath(int startNode, int endNode);
+
+    /**
+     * Update asset status across DB, Cache, and notify Map
+     */
+    void updateAssetStatus(String code, String type, String status);
 }

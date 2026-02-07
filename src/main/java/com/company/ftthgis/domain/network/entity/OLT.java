@@ -13,7 +13,5 @@ import org.hibernate.envers.Audited;
 @Setter
 @Audited
 public class OLT extends NetworkNode {
-    @Column(nullable = false, unique = true)
-    private String code;
     private String name;
 }

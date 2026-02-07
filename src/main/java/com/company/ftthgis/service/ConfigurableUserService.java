@@ -1,6 +1,7 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.user.dto.UserDto;
+import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,14 @@ public class ConfigurableUserService {
     private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final UserRepository userRepository; // Added back
+
+    public UserStatsDto getUserStats() {
+        return UserStatsDto.builder()
+                .totalUsers(userRepository.count())
+                .activeUsers(userRepository.countByStatus("ACTIVE"))
+                .pendingRequests(0)
+                .build();
+    }
 
     public UserDto updateUser(Long id, String roleName, String status) {
         User user = userRepository.findById(id)

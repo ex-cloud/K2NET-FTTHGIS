@@ -82,24 +82,38 @@ public class KeycloakAdminService {
         UserResource userResource = usersResource.get(userId);
 
         try {
-            // Remove old roles (Optional: depending on your logic, you might want to keep
-            // some)
-            List<RoleRepresentation> currentRoles = userResource.roles().realmLevel().listAll();
-            if (!currentRoles.isEmpty()) {
-                userResource.roles().realmLevel().remove(currentRoles);
+            // 1. Ensure the role exists in the Realm
+            try {
+                keycloak.realm(realm).roles().get(newRoleName).toRepresentation();
+            } catch (Exception e) {
+                log.info("Role {} does not exist in Keycloak Realm. Creating it...", newRoleName);
+                RoleRepresentation roleRep = new RoleRepresentation();
+                roleRep.setName(newRoleName);
+                roleRep.setDescription("Auto-created by FTTH GIS Backend");
+                keycloak.realm(realm).roles().create(roleRep);
             }
 
-            // Assign new role
-            try {
-                RoleRepresentation newRoleRep = keycloak.realm(realm).roles().get(newRoleName).toRepresentation();
-                userResource.roles().realmLevel().add(Collections.singletonList(newRoleRep));
-                log.info("Assigned role {} to user {} in Keycloak", newRoleName, email);
-            } catch (Exception re) {
-                log.warn("Role {} probably does not exist in Keycloak, skipping role assignment.", newRoleName);
+            // 2. Fetch all current roles of the user to avoid duplicate assignment or clean
+            // up
+            List<RoleRepresentation> currentRoles = userResource.roles().realmLevel().listAll();
+
+            // Optional: If you want 'strict' role sync (user only has the latest role):
+            // if (!currentRoles.isEmpty()) {
+            // userResource.roles().realmLevel().remove(currentRoles); }
+
+            // 3. Assign the new role if not already present
+            RoleRepresentation targetRole = keycloak.realm(realm).roles().get(newRoleName).toRepresentation();
+            boolean alreadyHasRole = currentRoles.stream().anyMatch(r -> r.getName().equals(newRoleName));
+
+            if (!alreadyHasRole) {
+                userResource.roles().realmLevel().add(Collections.singletonList(targetRole));
+                log.info("Successfully assigned role {} to user {} in Keycloak", newRoleName, email);
+            } else {
+                log.info("User {} already has role {} in Keycloak.", email, newRoleName);
             }
 
         } catch (Exception e) {
-            log.error("Failed to update role in Keycloak for user {}: {}", email, e.getMessage());
+            log.error("Failed to update/assign role in Keycloak for user {}: {}", email, e.getMessage());
         }
     }
 

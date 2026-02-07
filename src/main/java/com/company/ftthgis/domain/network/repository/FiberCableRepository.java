@@ -12,6 +12,8 @@ import java.util.List;
 public interface FiberCableRepository extends JpaRepository<FiberCable, Long> {
         boolean existsByCode(String code);
 
+        java.util.Optional<FiberCable> findByCode(String code);
+
         // Removed ::geometry casts to avoid Hibernate detecting them as parameters
         @Query(value = "SELECT id as id, code as code, ST_SetSRID(COALESCE(geometry_simple, geom), 4326) as geometry, status as status "
                         +

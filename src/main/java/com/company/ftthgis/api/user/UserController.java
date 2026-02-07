@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.user;
 
 import com.company.ftthgis.api.user.dto.UserDto;
+import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.service.ConfigurableUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -9,11 +10,16 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final ConfigurableUserService userService;
+
+    @GetMapping("/stats")
+    public UserStatsDto getStats() {
+        return userService.getUserStats();
+    }
 
     @GetMapping
     public Page<UserDto> index(
