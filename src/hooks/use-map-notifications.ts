@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { toast } from "sonner";
 
 export function useMapNotifications() {
   const { updateStatusOverride } = useMapStore();
@@ -36,6 +37,20 @@ export function useMapNotifications() {
           setSelectedAsset({
             ...selectedAsset,
             status: status,
+          });
+        }
+
+        // 3. Show Toast Notification
+        if (status === "DOWN") {
+          toast.error(`Device ${assetCode} is DOWN`, {
+            description:
+              "Connection to device lost. Please check power and network.",
+            duration: 8000,
+          });
+        } else if (status === "UP") {
+          toast.success(`Device ${assetCode} is UP`, {
+            description: "Connection restored successfully.",
+            duration: 5000,
           });
         }
       } catch (err) {
