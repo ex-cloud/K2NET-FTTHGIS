@@ -14,4 +14,10 @@ import org.hibernate.envers.Audited;
 @Audited
 public class OLT extends NetworkNode {
     private String name;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "snmp_community")
+    private String snmpCommunity;
 }

@@ -78,4 +78,26 @@ public class MapNotificationController {
 
         emitters.removeAll(deadEmitters);
     }
+
+    /**
+     * Broadcast map update to all connected SSE clients.
+     * Called by RedisSubscriberConfig when receiving events from Go Poller.
+     */
+    public void broadcastMapUpdate(String eventType, String message, String assetCode) {
+        log.info("📢 Broadcasting {} event for {} to {} clients", eventType, assetCode, emitters.size());
+
+        List<SseEmitter> deadEmitters = new CopyOnWriteArrayList<>();
+
+        emitters.forEach(emitter -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name(eventType)
+                        .data(String.format("{\"assetCode\":\"%s\",\"status\":\"%s\"}", assetCode, message)));
+            } catch (IOException e) {
+                deadEmitters.add(emitter);
+            }
+        });
+
+        emitters.removeAll(deadEmitters);
+    }
 }
