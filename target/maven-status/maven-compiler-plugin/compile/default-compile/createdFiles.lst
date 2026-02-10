@@ -11,6 +11,7 @@ com\company\ftthgis\config\security\SecurityConfig.class
 com\company\ftthgis\api\network\NetworkController.class
 com\company\ftthgis\config\KeycloakConfig.class
 com\company\ftthgis\domain\network\repository\AssetCategoryRepository.class
+com\company\ftthgis\domain\analytics\service\AnalyticsService.class
 com\company\ftthgis\domain\network\repository\AssetRepository.class
 com\company\ftthgis\api\network\dto\NetworkStatsDto$MaintenanceItem$MaintenanceItemBuilder.class
 com\company\ftthgis\config\JpaAuditingConfig.class
@@ -19,6 +20,7 @@ com\company\ftthgis\domain\network\dto\AssetDto.class
 com\company\ftthgis\domain\network\entity\Asset.class
 com\company\ftthgis\api\user\UserController$UpdateUserRequest.class
 com\company\ftthgis\domain\common\audit\AuditRevisionEntity$AuditRevisionListener.class
+com\company\ftthgis\domain\analytics\repository\AnalyticsRepository.class
 com\company\ftthgis\config\AppProperties$Security.class
 com\company\ftthgis\domain\common\BaseEntity.class
 com\company\ftthgis\domain\network\dto\RouteRequestDto.class
@@ -31,6 +33,7 @@ com\company\ftthgis\service\ConfigurableUserService.class
 com\company\ftthgis\domain\network\service\NetworkService.class
 com\company\ftthgis\api\network\NetworkAssetController.class
 com\company\ftthgis\api\user\dto\UserStatsDto$UserStatsDtoBuilder.class
+com\company\ftthgis\domain\analytics\dto\DashboardStatsDTO.class
 com\company\ftthgis\domain\network\service\NetworkServiceImpl.class
 com\company\ftthgis\config\security\SecurityAuditorAware.class
 com\company\ftthgis\api\exception\GlobalExceptionHandler$ErrorResponse.class
@@ -42,7 +45,10 @@ com\company\ftthgis\api\network\dto\NetworkStatsDto$NetworkStatsDtoBuilder.class
 com\company\ftthgis\config\ClusterRefreshConfig.class
 com\company\ftthgis\domain\network\dto\FiberCableMapDto.class
 com\company\ftthgis\api\exception\GlobalExceptionHandler$ErrorResponse$ErrorResponseBuilder.class
+com\company\ftthgis\config\RedisSubscriberConfig.class
+com\company\ftthgis\domain\analytics\dto\DashboardStatsDTO$DashboardStatsDTOBuilder.class
 com\company\ftthgis\service\UserSyncService.class
+com\company\ftthgis\domain\analytics\controller\AnalyticsController.class
 com\company\ftthgis\domain\network\repository\NetworkNodeRepository.class
 com\company\ftthgis\domain\network\entity\FiberSplice.class
 com\company\ftthgis\api\exception\GlobalExceptionHandler.class
@@ -67,6 +73,7 @@ com\company\ftthgis\domain\network\entity\NetworkNode.class
 com\company\ftthgis\domain\network\event\MapEventPublisher.class
 com\company\ftthgis\domain\network\repository\ODPRepository.class
 com\company\ftthgis\domain\network\service\DataReconciliationService.class
+com\company\ftthgis\domain\network\service\StatusPropagationService.class
 com\company\ftthgis\config\MetadataCheckConfig.class
 com\company\ftthgis\domain\network\event\MapEventPublisher$MapUpdateEvent.class
 com\company\ftthgis\domain\user\repository\RoleRepository.class

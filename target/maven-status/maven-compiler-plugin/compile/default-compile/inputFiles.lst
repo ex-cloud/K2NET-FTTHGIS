@@ -21,10 +21,12 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\networ
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\AssetCategoryRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\KeycloakConfig.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\FiberSplice.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\repository\AnalyticsRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\security\SecurityAuditorAware.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\OLT.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\common\BaseEntity.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\ODP.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\service\StatusPropagationService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\user\UserController.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\dto\ODCDto.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\service\NetworkService.java
@@ -38,6 +40,7 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\networ
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\entity\Role.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\Customer.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\entity\User.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\service\AnalyticsService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\FiberCableRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\repository\RoleRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\repository\UserRepository.java
@@ -46,9 +49,11 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\service\UserS
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\exception\GlobalExceptionHandler.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\dto\FiberCableMapDto.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\AppProperties.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\dto\DashboardStatsDTO.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\service\ConfigurableUserService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\service\KeycloakAdminService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\LargeScalePerformanceSeeder.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\controller\AnalyticsController.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\CustomerRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\OLTRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\network\dto\NetworkStatsDto.java

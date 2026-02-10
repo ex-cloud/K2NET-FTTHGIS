@@ -54,8 +54,10 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
         olt.setCode("OLT-PERF-TEST");
         olt.setName("OLT Performance Cluster");
         olt.setGeom(geometryFactory.createPoint(new Coordinate(baseLon, baseLat)));
-        olt.setStatus("ACTIVE");
+        olt.setStatus("UP");
         olt.setSignalDb(0.0);
+        olt.setIpAddress("127.0.0.1");
+        olt.setSnmpCommunity("public");
         olt = oltRepository.save(olt);
         Coordinate oltCoord = olt.getGeom().getCoordinate();
 
@@ -72,8 +74,9 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
             odc.setGeom(geometryFactory.createPoint(odcCoord));
             odc.setCapacity(288);
             odc.setUsedCapacity(10);
-            odc.setStatus(random.nextDouble() < 0.1 ? "DOWN" : "ACTIVE"); // 10% chance of failure
+            odc.setStatus(random.nextDouble() < 0.1 ? "DOWN" : "UP"); // 10% chance of failure
             odc.setSignalDb(-3.0);
+            odc.setOlt(olt); // ESTABLISH RELATIONSHIP
             odcs.add(odcRepository.save(odc));
 
             createCable(oltCoord, odcCoord, "FEEDER-PERF-" + i, odc.getStatus());

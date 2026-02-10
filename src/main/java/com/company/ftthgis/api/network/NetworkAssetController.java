@@ -6,31 +6,27 @@ import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
 import com.company.ftthgis.domain.network.entity.OLT;
-import com.company.ftthgis.domain.network.repository.CustomerRepository;
-import com.company.ftthgis.domain.network.repository.FiberCableRepository;
-import com.company.ftthgis.domain.network.repository.ODCRepository;
-import com.company.ftthgis.domain.network.repository.ODPRepository;
-import com.company.ftthgis.domain.network.repository.OLTRepository;
+import com.company.ftthgis.domain.network.repository.*;
 import com.company.ftthgis.domain.network.service.StatusCacheService;
+import com.company.ftthgis.domain.network.service.StatusPropagationService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/network/assets")
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class NetworkAssetController {
 
@@ -40,164 +36,219 @@ public class NetworkAssetController {
     private final CustomerRepository customerRepository;
     private final FiberCableRepository fiberCableRepository;
     private final StatusCacheService statusCacheService;
+    private final StatusPropagationService statusPropagationService;
 
-    @GetMapping("/{type}/{id}")
-    public ResponseEntity<AssetDetailDto> getAssetDetail(
-            @PathVariable String type,
-            @PathVariable Long id) {
+    @PostMapping("/simulate-failure")
+    public ResponseEntity<Map<String, Object>> simulateFailure(
+            @RequestParam String targetCode,
+            @RequestParam String targetType,
+            @RequestParam String status) {
 
-        log.info("Request detail for asset type [{}] with id [{}]", type, id);
-        log.info("Type class: {}, Id class: {}", type.getClass().getName(), id.getClass().getName());
+        log.info("🎮 Manual simulation triggered for {}: {}", targetCode, status);
 
-        AssetDetailDto.AssetDetailDtoBuilder builder = AssetDetailDto.builder()
-                .id(id.toString())
-                .type(type.toUpperCase());
-
-        Map<String, Object> props = new HashMap<>();
-
-        try {
-            if ("ODC".equalsIgnoreCase(type)) {
-                ODC odc = odcRepository.findById(id).orElseThrow(() -> {
-                    log.error("ODC not found with ID: {}", id);
-                    return new java.util.NoSuchElementException("ODC not found");
-                });
-                log.info("Found ODC: {}", odc.getCode());
-                String status = statusCacheService.getStatus(odc.getCode());
-                builder.code(odc.getCode())
-                        .status(status != null ? status : odc.getStatus())
-                        .lastMaintenance(odc.getLastMaintenance() != null ? odc.getLastMaintenance().toString() : null);
-                props.put("Name", odc.getName());
-                props.put("Capacity", odc.getCapacity());
-                props.put("Used", odc.getUsedCapacity());
-            } else if ("ODP".equalsIgnoreCase(type)) {
-                ODP odp = odpRepository.findById(id).orElseThrow(() -> {
-                    log.error("ODP not found with ID: {}", id);
-                    return new java.util.NoSuchElementException("ODP not found");
-                });
-                log.info("Found ODP: {}", odp.getCode());
-                String status = statusCacheService.getStatus(odp.getCode());
-                builder.code(odp.getCode())
-                        .status(status != null ? status : odp.getStatus())
-                        .lastMaintenance(odp.getLastMaintenance() != null ? odp.getLastMaintenance().toString() : null);
-                props.put("Total Ports", odp.getTotalPort());
-                props.put("Used Ports", odp.getUsedPort());
-                props.put("Signal (dB)", odp.getSignalDb());
-                if (odp.getOdc() != null) {
-                    props.put("Parent ODC", odp.getOdc().getCode());
-                }
-            } else if ("OLT".equalsIgnoreCase(type)) {
-                OLT olt = oltRepository.findById(id).orElseThrow(() -> {
-                    log.error("OLT not found with ID: {}", id);
-                    return new java.util.NoSuchElementException("OLT not found");
-                });
-                log.info("Found OLT: {}", olt.getCode());
-                String status = statusCacheService.getStatus(olt.getCode());
-                builder.code(olt.getCode())
-                        .status(status != null ? status : olt.getStatus())
-                        .lastMaintenance(olt.getLastMaintenance() != null ? olt.getLastMaintenance().toString() : null);
-                props.put("Name", olt.getName());
-                props.put("Type", "Core Hub");
-            } else if ("CUSTOMER".equalsIgnoreCase(type)) {
-                Customer cust = customerRepository.findById(id).orElseThrow();
-                String status = statusCacheService.getStatus(cust.getCode());
-                builder.code(cust.getCode())
-                        .status(status != null ? status : cust.getStatus())
-                        .lastMaintenance(
-                                cust.getLastMaintenance() != null ? cust.getLastMaintenance().toString() : null);
-                props.put("Name", cust.getName());
-                props.put("Redaman (dB)", cust.getSignalDb());
-                if (cust.getOdp() != null) {
-                    props.put("Parent ODP", cust.getOdp().getCode());
-                }
-            } else if ("CABLE".equalsIgnoreCase(type)) {
-                FiberCable cable = fiberCableRepository.findById(id).orElseThrow();
-                String status = statusCacheService.getStatus(cable.getCode());
-                builder.code(cable.getCode())
-                        .status(status != null ? status : cable.getStatus())
-                        .lastMaintenance(
-                                cable.getLastMaintenance() != null ? cable.getLastMaintenance().toString() : null);
-                props.put("Fiber Count", cable.getFiberCount());
-                props.put("Length", String.format("%.2f m", cable.getLengthMeters()));
-            }
-        } catch (Exception e) {
-            log.error("Error fetching asset details", e);
-            throw e;
+        if ("OLT".equalsIgnoreCase(targetType)) {
+            statusPropagationService.handleOltStatusChange(targetCode, status);
+        } else if ("ODC".equalsIgnoreCase(targetType)) {
+            statusPropagationService.simulateCableFailure("SIM-CABLE-01", targetCode, status);
+        } else if ("ODP".equalsIgnoreCase(targetType)) {
+            statusPropagationService.handleOdpStatusChange(targetCode, status);
+        } else if ("CUSTOMER".equalsIgnoreCase(targetType)) {
+            statusPropagationService.handleCustomerStatusChange(targetCode, status);
         }
 
-        builder.properties(props);
-        return ResponseEntity.ok(builder.build());
+        return ResponseEntity.ok(Map.of("success", true, "message", "Simulation triggered for " + targetCode));
     }
 
-    @GetMapping("/{type}/code/{code}")
+    /**
+     * Get detail by ID (Safer version to avoid 500 on string IDs)
+     */
+    @GetMapping("/{type}/{id}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getAssetDetail(
+            @PathVariable String type,
+            @PathVariable String id) {
+
+        log.info("Fetching detail lookup for {} : {}", type, id);
+
+        // If ID is not a number, try to treat it as a code
+        try {
+            Long numericId = Long.parseLong(id);
+            String code = null;
+            if ("ODC".equalsIgnoreCase(type)) {
+                code = odcRepository.findById(numericId).map(ODC::getCode).orElse(null);
+            } else if ("ODP".equalsIgnoreCase(type)) {
+                code = odpRepository.findById(numericId).map(ODP::getCode).orElse(null);
+            } else if ("OLT".equalsIgnoreCase(type)) {
+                code = oltRepository.findById(numericId).map(OLT::getCode).orElse(null);
+            } else if ("CUSTOMER".equalsIgnoreCase(type)) {
+                code = customerRepository.findById(numericId).map(Customer::getCode).orElse(null);
+            } else if ("CABLE".equalsIgnoreCase(type)) {
+                code = fiberCableRepository.findById(numericId).map(FiberCable::getCode).orElse(null);
+            }
+
+            if (code != null) {
+                return getAssetDetailByCode(type, code);
+            }
+        } catch (NumberFormatException e) {
+            log.warn("ID {} is not numeric, attempting fallback to code lookup", id);
+            return getAssetDetailByCode(type, id);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/by-code/{type}/{code}")
+    @Transactional(readOnly = true)
     public ResponseEntity<AssetDetailDto> getAssetDetailByCode(
             @PathVariable String type,
             @PathVariable String code) {
 
-        log.info("Request detail for asset type [{}] with code [{}]", type, code);
-
-        Long id = null;
+        log.info("Fetching detail for {} with code: {}", type, code);
         try {
-            if ("ODC".equalsIgnoreCase(type)) {
-                id = odcRepository.findByCode(code).map(ODC::getId).orElse(null);
-            } else if ("ODP".equalsIgnoreCase(type)) {
-                id = odpRepository.findByCode(code).map(ODP::getId).orElse(null);
-            } else if ("OLT".equalsIgnoreCase(type)) {
-                id = oltRepository.findByCode(code).map(OLT::getId).orElse(null);
-            } else if ("CUSTOMER".equalsIgnoreCase(type)) {
-                id = customerRepository.findByCode(code).map(Customer::getId).orElse(null);
-            } else if ("CABLE".equalsIgnoreCase(type)) {
-                id = fiberCableRepository.findByCode(code).map(FiberCable::getId).orElse(null);
+            AssetDetailDto dto = new AssetDetailDto();
+            dto.setCode(code);
+            dto.setType(type.toUpperCase());
+
+            String status = statusCacheService.getStatus(code);
+            List<String> labels = new java.util.ArrayList<>();
+            if (status != null) {
+                if ("FIBERCUT".equalsIgnoreCase(status)) {
+                    labels.add("DOWN");
+                    labels.add("FIBERCUT");
+                } else {
+                    labels.add(status);
+                }
             }
+            dto.setLabels(labels);
+
+            if ("ODC".equalsIgnoreCase(type)) {
+                odcRepository.findByCode(code).ifPresent(o -> {
+                    dto.setName(o.getName());
+                    dto.setId(o.getId().toString());
+                    String finalStatus = status != null ? status : o.getStatus();
+                    dto.setStatus(finalStatus);
+                    if (labels.isEmpty())
+                        labels.add(finalStatus);
+                    Map<String, Object> attrs = new HashMap<>();
+                    attrs.put("Capacity", o.getCapacity());
+                    attrs.put("Used", o.getUsedCapacity());
+                    dto.setAttributes(attrs);
+                });
+            } else if ("ODP".equalsIgnoreCase(type)) {
+                odpRepository.findByCode(code).ifPresent(o -> {
+                    dto.setName(o.getCode());
+                    dto.setId(o.getId().toString());
+                    String finalStatus = status != null ? status : o.getStatus();
+                    dto.setStatus(finalStatus);
+                    if (labels.isEmpty())
+                        labels.add(finalStatus);
+                    Map<String, Object> attrs = new HashMap<>();
+                    attrs.put("Total Ports", o.getTotalPort());
+                    attrs.put("Used Ports", o.getUsedPort());
+                    if (o.getOdc() != null)
+                        attrs.put("Parent ODC", o.getOdc().getCode());
+                    dto.setAttributes(attrs);
+                });
+            } else if ("OLT".equalsIgnoreCase(type)) {
+                oltRepository.findByCode(code).ifPresent(o -> {
+                    dto.setName(o.getName());
+                    dto.setId(o.getId().toString());
+                    String finalStatus = status != null ? status : o.getStatus();
+                    dto.setStatus(finalStatus);
+                    if (labels.isEmpty())
+                        labels.add(finalStatus);
+                    Map<String, Object> attrs = new HashMap<>();
+                    attrs.put("IP Address", o.getIpAddress());
+                    dto.setAttributes(attrs);
+                });
+            } else if ("CUSTOMER".equalsIgnoreCase(type)) {
+                customerRepository.findByCode(code).ifPresent(o -> {
+                    dto.setName(o.getName());
+                    dto.setId(o.getId().toString());
+                    String finalStatus = status != null ? status : o.getStatus();
+                    dto.setStatus(finalStatus);
+                    if (labels.isEmpty())
+                        labels.add(finalStatus);
+                    Map<String, Object> attrs = new HashMap<>();
+                    attrs.put("Address", o.getAddress());
+                    if (o.getOdp() != null)
+                        attrs.put("Connected ODP", o.getOdp().getCode());
+                    dto.setAttributes(attrs);
+                });
+            } else if ("CABLE".equalsIgnoreCase(type)) {
+                fiberCableRepository.findByCode(code).ifPresent(o -> {
+                    dto.setId(o.getId().toString());
+                    String finalStatus = status != null ? status : o.getStatus();
+                    dto.setStatus(finalStatus);
+                    if (labels.isEmpty())
+                        labels.add(finalStatus);
+                    Map<String, Object> attrs = new HashMap<>();
+                    attrs.put("Fiber Count", o.getFiberCount());
+                    attrs.put("Length (m)",
+                            o.getLengthMeters() != null ? String.format("%.2f", o.getLengthMeters()) : "0");
+                    dto.setAttributes(attrs);
+                });
+            }
+
+            if (dto.getId() == null)
+                return ResponseEntity.notFound().build();
+
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
-            log.error("Error looking up asset ID by code", e);
+            log.error("Error fetching detail for {} - {}", code, e.getMessage(), e);
+            return ResponseEntity.status(500).build();
         }
+    }
 
-        if (id == null) {
-            log.error("{} not found with code: {}", type, code);
-            return ResponseEntity.notFound().build();
+    @PostMapping("/{type}/{code}/diagnostics")
+    public ResponseEntity<Map<String, Object>> runDiagnostics(
+            @PathVariable String type,
+            @PathVariable String code) {
+
+        log.info("🔍 Running diagnostics for {}: {}", type, code);
+        try {
+            Map<String, Object> result = statusPropagationService.calculateDiagnostics(type, code);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("CRITICAL: Diagnostics failed for {} - {}", code, e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
-
-        return getAssetDetail(type, id);
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<AssetSearchResult>> search(@RequestParam String q) {
-        log.info("Searching for assets with query: {}", q);
         List<AssetSearchResult> results = new ArrayList<>();
+        String query = q.toLowerCase();
 
-        // Search ODCs
         odcRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(q.toLowerCase()))
+                .filter(o -> o.getCode().toLowerCase().contains(query)
+                        || (o.getName() != null && o.getName().toLowerCase().contains(query)))
                 .limit(5)
                 .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC",
-                        o.getGeom().getX(), o.getGeom().getY(), o.getStatus())));
+                        o.getGeom().getX(), o.getGeom().getY(),
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 
-        // Search ODPs
         odpRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(q.toLowerCase()))
+                .filter(o -> o.getCode().toLowerCase().contains(query))
                 .limit(5)
                 .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP",
-                        o.getGeom().getX(), o.getGeom().getY(), o.getStatus())));
+                        o.getGeom().getX(), o.getGeom().getY(),
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 
-        // Search OLTs
         oltRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(q.toLowerCase()))
+                .filter(o -> o.getCode().toLowerCase().contains(query)
+                        || (o.getName() != null && o.getName().toLowerCase().contains(query)))
                 .limit(5)
                 .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT",
-                        o.getGeom().getX(), o.getGeom().getY(), o.getStatus())));
-
-        // Search Customers
-        customerRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(q.toLowerCase()))
-                .limit(5)
-                .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER",
-                        o.getGeom().getX(), o.getGeom().getY(), o.getStatus())));
+                        o.getGeom().getX(), o.getGeom().getY(),
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 
         return ResponseEntity.ok(results);
     }
 
-    @lombok.Data
-    @lombok.AllArgsConstructor
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class AssetSearchResult {
         private String id;
         private String code;

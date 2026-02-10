@@ -46,8 +46,7 @@ public class DataInitializer implements CommandLineRunner {
             seedBandungNetworkHierarchy();
             seedOfficeNetworkHierarchy(); // User's office location
 
-            log.info("--- [CLUSTER] Refreshing clustered view after seeding ---");
-            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_clustered_nodes");
+            log.info("--- [CLUSTER] Clustered view ready for dynamic updates ---");
         } catch (Exception e) {
             log.warn("Seeding or refresh encountered issues: {}", e.getMessage());
         }
@@ -82,11 +81,13 @@ public class DataInitializer implements CommandLineRunner {
         double centerLat = -6.9175;
         Coordinate oltCoord = new Coordinate(centerLon, centerLat);
         OLT olt = new OLT();
-        olt.setCode("OLT-BDG-CENTER");
-        olt.setName("OLT Bandung Main Office");
+        olt.setCode("OLT-BANDUNG-01");
+        olt.setName("OLT Bandung Pusat (DB)");
         olt.setGeom(geometryFactory.createPoint(oltCoord));
-        olt.setStatus("ACTIVE");
+        olt.setStatus("UP");
         olt.setSignalDb(0.0);
+        olt.setIpAddress("127.0.0.1");
+        olt.setSnmpCommunity("public");
         olt = oltRepository.save(olt);
 
         // 2. ODCs (Radius ~500m)
@@ -103,6 +104,7 @@ public class DataInitializer implements CommandLineRunner {
             odc.setUsedCapacity(0);
             odc.setStatus("ACTIVE");
             odc.setSignalDb(-3.5); // Feeder loss
+            odc.setOlt(olt);
             odc = odcRepository.save(odc);
 
             createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), "ACTIVE");
@@ -167,19 +169,21 @@ public class DataInitializer implements CommandLineRunner {
         double officeLat = -6.903921011329491;
         Coordinate oltCoord = new Coordinate(officeLon, officeLat);
 
-        // 1. OLT Utama di Kantor
+        // 1. OLT Utama di Kantor (Rename to match Poller default: OLT-TEST-01)
         OLT olt = new OLT();
-        olt.setCode("OLT-OFFICE-MAIN");
-        olt.setName("OLT Office Headquarters");
+        olt.setCode("OLT-TEST-01");
+        olt.setName("OLT Office Headlines (Test)");
         olt.setGeom(geometryFactory.createPoint(oltCoord));
-        olt.setStatus("ACTIVE");
+        olt.setStatus("UP");
         olt.setSignalDb(0.0);
+        olt.setIpAddress("127.0.0.1"); // Default local IP for simulation
+        olt.setSnmpCommunity("public");
         olt = oltRepository.save(olt);
 
         // 2. ODCs (3 cabinets around office)
         // ODC-OFFICE-SOUTH will be DOWN (simulating major failure)
         String[] odcNames = { "ODC-OFFICE-NORTH", "ODC-OFFICE-EAST", "ODC-OFFICE-SOUTH" };
-        String[] odcStatuses = { "ACTIVE", "ACTIVE", "DOWN" }; // South is DOWN
+        String[] odcStatuses = { "UP", "UP", "DOWN" }; // South is DOWN
         double[][] odcOffsets = { { 0.002, 0.003 }, { 0.004, -0.001 }, { -0.002, -0.003 } };
 
         for (int i = 0; i < odcNames.length; i++) {
@@ -193,13 +197,14 @@ public class DataInitializer implements CommandLineRunner {
             odc.setUsedCapacity(0);
             odc.setStatus(odcStatuses[i]);
             odc.setSignalDb(isOdcDown ? -40.0 : -3.2); // Critical signal loss if DOWN
+            odc.setOlt(olt); // LINK TO PARENT OLT
             odc = odcRepository.save(odc);
 
-            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), isOdcDown ? "DOWN" : "ACTIVE");
+            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), isOdcDown ? "DOWN" : "UP");
 
-            // 3. ODPs per ODC
-            for (int j = 1; j <= 3; j++) {
-                double a = Math.toRadians(j * 120);
+            // 3. ODPs per ODC (Increasing to 10 for Massive Outage testing)
+            for (int j = 1; j <= 10; j++) {
+                double a = Math.toRadians(j * 36);
                 Coordinate odpCoord = new Coordinate(odcCoord.x + Math.cos(a) * 0.0012,
                         odcCoord.y + Math.sin(a) * 0.0012);
                 ODP odp = new ODP();
@@ -301,17 +306,15 @@ public class DataInitializer implements CommandLineRunner {
                                raw_nodes.id, raw_nodes.node_type, raw_nodes.status, raw_nodes.signal_db, raw_nodes.point_count, raw_nodes.code
                         FROM (
                             SELECT
-                                CASE WHEN z < 10 THEN c.geom ELSE n.geom END as geom,
-                                CASE WHEN z < 10 THEN c.id ELSE n.id END as id,
-                                CASE WHEN z < 10 THEN c.node_type ELSE n.node_type END as node_type,
-                                CASE WHEN z < 10 THEN aggregated_status ELSE n.status END as status,
-                                CASE WHEN z < 10 THEN avg_signal_db ELSE n.signal_db END as signal_db,
-                                CASE WHEN z < 10 THEN point_count ELSE 1 END as point_count,
-                                CASE WHEN z >= 10 THEN n.code ELSE NULL END as code
-                            FROM bounds
-                            LEFT JOIN mv_clustered_nodes c ON z < 10 AND c.geom && bounds.bbox_geom
-                            LEFT JOIN network_nodes n ON z >= 10 AND n.geom && bounds.bbox_geom
-                            WHERE (z < 10 AND c.id IS NOT NULL) OR (z >= 10 AND n.id IS NOT NULL)
+                                n.geom,
+                                n.id,
+                                n.node_type,
+                                n.status,
+                                n.signal_db,
+                                1 as point_count,
+                                n.code
+                            FROM bounds, network_nodes n
+                            WHERE n.geom && bounds.bbox_geom
                         ) raw_nodes, bounds
                     ),
                     mvt_edges AS (
@@ -349,39 +352,8 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createClusteredView() {
-        log.info("--- [CLUSTER] Creating materialized view for low-zoom clustering ---");
-        try {
-            // Drop existing view if exists
-            jdbcTemplate.execute("DROP MATERIALIZED VIEW IF EXISTS mv_clustered_nodes CASCADE");
-
-            // Create materialized view with ST_SnapToGrid clustering
-            String createViewSql = """
-                    CREATE MATERIALIZED VIEW mv_clustered_nodes AS
-                    SELECT
-                        row_number() OVER () as id,
-                        ST_Centroid(ST_Collect(geom)) as geom,
-                        COUNT(*) as point_count,
-                        node_type,
-                        CASE
-                            WHEN COUNT(*) FILTER (WHERE status = 'DOWN') > 0 THEN 'DOWN'
-                            WHEN COUNT(*) FILTER (WHERE status = 'FIBERCUT') > 0 THEN 'FIBERCUT'
-                            WHEN COUNT(*) FILTER (WHERE status = 'MAINTENANCE') > 0 THEN 'MAINTENANCE'
-                            ELSE 'ACTIVE'
-                        END as aggregated_status,
-                        AVG(signal_db) as avg_signal_db
-                    FROM network_nodes
-                    GROUP BY ST_SnapToGrid(geom, 0.01), node_type
-                    """;
-            jdbcTemplate.execute(createViewSql);
-
-            // Create spatial index on clustered view
-            jdbcTemplate.execute(
-                    "CREATE INDEX IF NOT EXISTS idx_mv_clustered_geom ON mv_clustered_nodes USING GIST (geom)");
-
-            log.info("--- [CLUSTER] Materialized view created successfully ---");
-        } catch (Exception e) {
-            log.warn("Clustered view creation skipped (may not have enough data): {}", e.getMessage());
-        }
+        // Disabled for direct real-time rendering flexibility
+        log.info("--- [CLUSTER] Clustering view skipped for maximum real-time accuracy ---");
     }
 
     private void performSchemaAudit() {

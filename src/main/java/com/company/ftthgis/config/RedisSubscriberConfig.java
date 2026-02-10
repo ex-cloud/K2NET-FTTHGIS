@@ -1,6 +1,6 @@
 package com.company.ftthgis.config;
 
-import com.company.ftthgis.api.network.MapNotificationController;
+import com.company.ftthgis.domain.network.service.StatusPropagationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 @Slf4j
 public class RedisSubscriberConfig {
 
-    private final MapNotificationController mapNotificationController;
+    private final StatusPropagationService statusPropagationService;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -56,13 +56,10 @@ public class RedisSubscriberConfig {
                 String deviceCode = event.get("code").asText();
                 String status = event.get("status").asText();
 
-                log.info("🔔 Device {} status changed to: {}", deviceCode, status);
+                log.info("🔔 Processing status change for {}: {}", deviceCode, status);
 
-                // Broadcast to all connected SSE clients
-                mapNotificationController.broadcastMapUpdate(
-                        "STATUS_CHANGE",
-                        status,
-                        deviceCode);
+                // Use the service to handle database updates and propagation
+                statusPropagationService.handleOltStatusChange(deviceCode, status);
 
             } catch (Exception e) {
                 log.error("❌ Failed to process network event: {}", e.getMessage(), e);

@@ -20,4 +20,8 @@ public class ODC extends NetworkNode {
 
     @Column(name = "used_capacity")
     private Integer usedCapacity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "olt_id")
+    private OLT olt;
 }

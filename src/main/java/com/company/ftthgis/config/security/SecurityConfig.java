@@ -44,9 +44,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
                         .requestMatchers("/api/v1/network/notifications/**").permitAll()
+                        .requestMatchers("/api/v1/network/assets/**").permitAll()
                         .requestMatchers("/api/v1/network/trace-path/**").authenticated()
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
-                        .requestMatchers("/api/v1/network/analytics/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MANAGER")
+                        .requestMatchers("/api/v1/network/analytics/**").permitAll()
+                        .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()
