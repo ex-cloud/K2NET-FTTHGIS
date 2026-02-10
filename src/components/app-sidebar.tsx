@@ -2,14 +2,10 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
   BookOpen,
-  Bot,
   Command,
-  Frame,
   GalleryVerticalEnd,
   Network,
-  PieChart,
   Settings2,
   SquareTerminal,
   Users,
@@ -77,7 +73,7 @@ const data = {
       ],
     },
     {
-      title: "Data Management",
+      title: "Network Inventory",
       url: "/dashboard/data",
       icon: BookOpen,
       items: [
@@ -90,8 +86,31 @@ const data = {
           url: "/dashboard/data/odp",
         },
         {
-          title: "Cables",
+          title: "Cable Management",
           url: "/dashboard/data/cables",
+        },
+        {
+          title: "Customer Database",
+          url: "/dashboard/data/customers",
+        },
+      ],
+    },
+    {
+      title: "Core Infrastructure",
+      url: "/dashboard/core",
+      icon: Command,
+      items: [
+        {
+          title: "OLT Management",
+          url: "/dashboard/core/olt",
+        },
+        {
+          title: "Routers & Switches",
+          url: "/dashboard/core/routers",
+        },
+        {
+          title: "Servers & Services",
+          url: "/dashboard/core/servers",
         },
       ],
     },
