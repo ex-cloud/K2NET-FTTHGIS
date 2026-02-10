@@ -38,37 +38,87 @@ const MOCK_HEALTH_DATA = [
   { name: "Critical", value: 3, color: "#ef4444" },
 ];
 
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { getBackendBaseUrl } from "@/lib/api-config";
+
+interface DashboardStats {
+  totalNodes: number;
+  activeNodes: number;
+  totalUsers: number;
+  totalNetworkLengthKm: number;
+  activeAlerts: number;
+  networkUptime: number;
+  customerReach: number;
+  maintenanceProgress: number;
+}
+
 export function ExecutiveDashboard() {
+  const { data: session } = useSession();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (!session?.accessToken) return;
+      try {
+        const baseUrl = getBackendBaseUrl();
+        const res = await fetch(`${baseUrl}/analytics/summary`, {
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch dashboard stats", e);
+      }
+    }
+
+    fetchStats();
+
+    // Listen for real-time updates to refresh stats
+    const handleRefresh = () => {
+      console.log(
+        "🔄 Real-time update detected, refreshing dashboard stats...",
+      );
+      fetchStats();
+    };
+
+    window.addEventListener("network-data-update", handleRefresh);
+    return () =>
+      window.removeEventListener("network-data-update", handleRefresh);
+  }, [session]);
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 pt-24 min-h-full transition-colors duration-500 relative">
       {/* Top Metric Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Network Uptime"
-          value="99.9%"
+          value={stats ? `${stats.networkUptime}%` : "--%"}
           icon={Activity}
           trend={{ value: "0.02%", isUp: true }}
           color="emerald"
         />
         <MetricCard
           title="Active Alerts"
-          value="12"
+          value={stats ? stats.activeAlerts.toString() : "-"}
           icon={AlertTriangle}
-          trend={{ value: "3", isUp: false }}
+          trend={{ value: "0", isUp: false }}
           color="rose"
         />
         <MetricCard
           title="Maintenance Progress"
-          value="85%"
+          value={stats ? `${stats.maintenanceProgress}%` : "--%"}
           icon={Settings}
-          progress={85}
+          progress={stats?.maintenanceProgress || 0}
           color="amber"
         />
         <MetricCard
           title="Customer Reach"
-          value="50.95M"
+          value={stats ? stats.customerReach.toLocaleString() : "-"}
           icon={TrendingUp}
-          trend={{ value: "1.2M", isUp: true }}
+          trend={{ value: "+12%", isUp: true }}
           color="sky"
         />
       </div>

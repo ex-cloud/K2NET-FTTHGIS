@@ -60,6 +60,7 @@ export function NetworkMap() {
   useMapNotifications(); // Initialize Real-time SSE Connection
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
   const { mapCenter, setMapCenter, mapStyle, statusOverrides } = useMapStore();
+  const [tileRefreshKey, setTileRefreshKey] = useState(0);
 
   // Derived state for cleaner mode checks
   const isTopologyMode = mapStyle === "topology";
@@ -113,8 +114,8 @@ export function NetworkMap() {
             status: selectedAsset.code
               ? statusOverrides[selectedAsset.code] ||
                 selectedAsset.status ||
-                "ACTIVE"
-              : selectedAsset.status || "ACTIVE",
+                "UP"
+              : selectedAsset.status || "UP",
           },
         },
       ],
@@ -160,13 +161,27 @@ export function NetworkMap() {
     return () => cancelAnimationFrame(handle);
   }, []);
 
+  // Real-time status update via tile refresh (debounced)
+  useEffect(() => {
+    if (!mapRef.current || !mounted) return;
+
+    // Debounced tile refresh when status changes
+    if (Object.keys(statusOverrides).length > 0) {
+      const timeoutId = setTimeout(() => {
+        setTileRefreshKey((prev) => prev + 1);
+      }, 2000); // 2 second debounce to avoid flickering
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [statusOverrides, mounted]);
+
   const [tileTimestamp] = useState(() => Date.now());
 
   const mvtTileUrl = useMemo(() => {
     const baseUrl = getMartinBaseUrl();
-    // Add timestamp as cache buster for development
-    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?t=${tileTimestamp}`;
-  }, [tileTimestamp]);
+    // Add timestamp and refresh key to force tile reload when needed
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?t=${tileTimestamp}&r=${tileRefreshKey}`;
+  }, [tileTimestamp, tileRefreshKey]);
 
   const onMapClick = (evt: MapLayerMouseEvent) => {
     const features = evt.features;
@@ -348,9 +363,29 @@ export function NetworkMap() {
       minzoom: 12,
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 15, 14],
-        "circle-color": isTopologyMode ? "#0a0a0f" : "#f59e0b",
+        "circle-color": [
+          "case",
+          isTopologyMode,
+          "#0a0a0f",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          "#f59e0b",
+        ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-stroke-color": [
+          "case",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          isTopologyMode ? "#38bdf8" : "#ffffff",
+        ],
         "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
         "circle-stroke-opacity": [
           "interpolate",
@@ -404,9 +439,33 @@ export function NetworkMap() {
       minzoom: 14,
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 12],
-        "circle-color": isTopologyMode ? "#0a0a0f" : "#0ea5e9",
+        "circle-color": [
+          "case",
+          isTopologyMode,
+          "#0a0a0f",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#f59e0b",
+          "#0ea5e9",
+        ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-stroke-color": [
+          "case",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#f59e0b",
+          isTopologyMode ? "#38bdf8" : "#ffffff",
+        ],
         "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15, 1],
         "circle-stroke-opacity": [
           "interpolate",
@@ -458,9 +517,33 @@ export function NetworkMap() {
       minzoom: 16,
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 4, 19, 10],
-        "circle-color": isTopologyMode ? "#0a0a0f" : "#22c55e",
+        "circle-color": [
+          "case",
+          isTopologyMode,
+          "#0a0a0f",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#f59e0b",
+          "#22c55e",
+        ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": isTopologyMode ? "#38bdf8" : "#ffffff",
+        "circle-stroke-color": [
+          "case",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#f59e0b",
+          isTopologyMode ? "#38bdf8" : "#ffffff",
+        ],
         "circle-opacity": ["interpolate", ["linear"], ["zoom"], 16.5, 0, 17, 1],
         "circle-stroke-opacity": [
           "interpolate",
@@ -515,9 +598,29 @@ export function NetworkMap() {
       },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 17, 2, 20, 6],
-        "circle-color": "#10b981",
+        "circle-color": [
+          "case",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#f59e0b",
+          "#10b981",
+        ],
         "circle-stroke-width": 1,
-        "circle-stroke-color": "#ffffff",
+        "circle-stroke-color": [
+          "case",
+          [
+            "in",
+            ["get", "status"],
+            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
+          ],
+          "#ef4444",
+          "#ffffff",
+        ],
         "circle-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
       },
     }),

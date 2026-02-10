@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { SessionProvider } from "next-auth/react";
 import { TopHeader } from "@/components/dashboard/top-header";
+import { RealTimeNotificationClient } from "@/components/real-time-notification-client";
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
   return (
     <SessionProvider>
       <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-500 overflow-hidden">
+        <RealTimeNotificationClient />
         {/* Global Background Grid Pattern - Behind everything */}
         <div className="fixed inset-0 opacity-[0.03] dark:opacity-[0.03] pointer-events-none bg-[radial-gradient(#000000_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] z-0" />
 
