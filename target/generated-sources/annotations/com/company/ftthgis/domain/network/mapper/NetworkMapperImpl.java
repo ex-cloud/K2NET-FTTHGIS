@@ -4,17 +4,19 @@ import com.company.ftthgis.domain.network.dto.AssetDto;
 import com.company.ftthgis.domain.network.dto.FiberCableDto;
 import com.company.ftthgis.domain.network.dto.ODCDto;
 import com.company.ftthgis.domain.network.dto.ODPDto;
+import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.Asset;
 import com.company.ftthgis.domain.network.entity.AssetCategory;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
+import com.company.ftthgis.domain.network.entity.OLT;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-02-09T13:45:59+0700",
+    date = "2026-02-10T17:53:24+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
@@ -60,6 +62,27 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDPDto.setNodeType( "ODP" );
 
         return oDPDto;
+    }
+
+    @Override
+    public OLTDto toOLTDto(OLT olt) {
+        if ( olt == null ) {
+            return null;
+        }
+
+        OLTDto oLTDto = new OLTDto();
+
+        oLTDto.setId( olt.getId() );
+        oLTDto.setCode( olt.getCode() );
+        oLTDto.setName( olt.getName() );
+        oLTDto.setIpAddress( olt.getIpAddress() );
+        oLTDto.setSnmpCommunity( olt.getSnmpCommunity() );
+        oLTDto.setStatus( olt.getStatus() );
+        oLTDto.setGeom( olt.getGeom() );
+
+        oLTDto.setNodeType( "OLT" );
+
+        return oLTDto;
     }
 
     @Override

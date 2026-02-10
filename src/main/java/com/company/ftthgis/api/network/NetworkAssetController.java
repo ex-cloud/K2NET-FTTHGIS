@@ -49,9 +49,20 @@ public class NetworkAssetController {
         if ("OLT".equalsIgnoreCase(targetType)) {
             statusPropagationService.handleOltStatusChange(targetCode, status);
         } else if ("ODC".equalsIgnoreCase(targetType)) {
-            statusPropagationService.simulateCableFailure("SIM-CABLE-01", targetCode, status);
+            // For ODC, if status is FIBERCUT, use the proper FIBERCUT handler
+            if ("FIBERCUT".equalsIgnoreCase(status)) {
+                statusPropagationService.simulateCableFailure("SIM-CABLE-ODC-" + targetCode, targetCode, "FIBERCUT");
+            } else {
+                statusPropagationService.simulateCableFailure("SIM-CABLE-01", targetCode, status);
+            }
         } else if ("ODP".equalsIgnoreCase(targetType)) {
-            statusPropagationService.handleOdpStatusChange(targetCode, status);
+            // For ODP FIBERCUT simulation, we need special handling
+            if ("FIBERCUT".equalsIgnoreCase(status)) {
+                // Mark as FIBERCUT and propagate
+                statusPropagationService.handleOdpStatusChange(targetCode, "FIBERCUT");
+            } else {
+                statusPropagationService.handleOdpStatusChange(targetCode, status);
+            }
         } else if ("CUSTOMER".equalsIgnoreCase(targetType)) {
             statusPropagationService.handleCustomerStatusChange(targetCode, status);
         }

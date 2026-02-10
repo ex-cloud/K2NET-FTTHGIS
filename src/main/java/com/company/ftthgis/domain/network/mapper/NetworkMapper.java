@@ -4,10 +4,12 @@ import com.company.ftthgis.domain.network.dto.AssetDto;
 import com.company.ftthgis.domain.network.dto.FiberCableDto;
 import com.company.ftthgis.domain.network.dto.ODCDto;
 import com.company.ftthgis.domain.network.dto.ODPDto;
+import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.Asset;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
+import com.company.ftthgis.domain.network.entity.OLT;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -19,6 +21,9 @@ public interface NetworkMapper {
 
     @Mapping(target = "nodeType", constant = "ODP")
     ODPDto toODPDto(ODP odp);
+
+    @Mapping(target = "nodeType", constant = "OLT")
+    OLTDto toOLTDto(OLT olt);
 
     @Mapping(target = "geom", source = "geometry")
     FiberCableDto toFiberCableDto(FiberCable cable);
