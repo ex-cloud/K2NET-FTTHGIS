@@ -55,6 +55,7 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\service\Confi
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\service\KeycloakAdminService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\LargeScalePerformanceSeeder.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\controller\AnalyticsController.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\dto\SnapshotDTO.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\CustomerRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\OLTRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\network\dto\NetworkStatsDto.java
@@ -69,8 +70,10 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\networ
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\common\audit\AuditRevisionEntity.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\repository\PermissionRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\user\entity\Permission.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\repository\DashboardSnapshotRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\network\NetworkAssetController.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\network\dto\AssetDetailDto.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\RedisConfig.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\entity\DashboardSnapshot.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\AssetCategory.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\FiberCable.java

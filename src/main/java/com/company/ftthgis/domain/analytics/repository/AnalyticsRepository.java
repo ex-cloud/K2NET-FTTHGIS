@@ -8,17 +8,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AnalyticsRepository extends JpaRepository<NetworkNode, Long> {
 
-    @Query(value = "SELECT COUNT(*) FROM network_nodes WHERE status = 'UP'", nativeQuery = true)
+    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE n.status = 'UP' OR n.status = 'ACTIVE'")
     long countActiveNodes();
 
-    @Query(value = "SELECT COUNT(*) FROM network_nodes WHERE status = 'DOWN'", nativeQuery = true)
+    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE n.status = 'DOWN' OR n.status = 'BROKEN' OR n.status = 'FIBERCUT' OR n.status = 'MAINTENANCE'")
     long countDownNodes();
 
     @Query(value = "SELECT COALESCE(SUM(ST_Length(CAST(geom AS geography))) / 1000, 0) FROM network_edges", nativeQuery = true)
     double calculateTotalNetworkLengthKm();
 
-    // Just a helper to count all nodes (JpaRepository has count() but explicit
-    // query is sometimes clearer for specific criteria)
-    @Query(value = "SELECT COUNT(*) FROM network_nodes", nativeQuery = true)
+    @Query("SELECT COUNT(n) FROM NetworkNode n")
     long countTotalNodes();
 }

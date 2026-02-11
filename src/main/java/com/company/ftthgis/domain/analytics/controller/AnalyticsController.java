@@ -1,13 +1,16 @@
 package com.company.ftthgis.domain.analytics.controller;
 
 import com.company.ftthgis.domain.analytics.dto.DashboardStatsDTO;
+import com.company.ftthgis.domain.analytics.dto.SnapshotDTO;
 import com.company.ftthgis.domain.analytics.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/analytics")
@@ -20,5 +23,18 @@ public class AnalyticsController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
     public ResponseEntity<DashboardStatsDTO> getDashboardStats() {
         return ResponseEntity.ok(analyticsService.getDashboardStats());
+    }
+
+    /**
+     * Returns historical dashboard snapshots within a date range.
+     * Example: GET
+     * /api/v1/analytics/history?from=2026-02-10T00:00:00&to=2026-02-11T23:59:59
+     */
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
+    public ResponseEntity<List<SnapshotDTO>> getSnapshotHistory(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return ResponseEntity.ok(analyticsService.getSnapshotHistory(from, to));
     }
 }
