@@ -19,6 +19,31 @@ export function useRealTimeUpdates() {
 
   // Ref to track last notifications to prevent duplicate/spam (simple throttling)
   const lastNotificationRef = useRef<Record<string, number>>({});
+  // Global cooldown to prevent toast storms (e.g. 50 alerts in 1 sec)
+  const globalCooldownRef = useRef<number>(0);
+  const massiveOutageCountRef = useRef<number>(0);
+  const massiveOutageTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Event Batching State
+  const eventBufferRef = useRef<Array<{ assetCode: string; status: string }>>(
+    [],
+  );
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const flushEvents = useCallback(() => {
+    if (eventBufferRef.current.length === 0) return;
+
+    const batch = [...eventBufferRef.current];
+    eventBufferRef.current = []; // Clear buffer
+
+    // Dispatch BATCH event
+    console.log(`🚀 Dispatching batch update: ${batch.length} events`);
+    window.dispatchEvent(
+      new CustomEvent("network-batch-update", {
+        detail: { events: batch },
+      }),
+    );
+  }, []);
 
   const handleUpdate = useCallback(
     (
@@ -34,12 +59,19 @@ export function useRealTimeUpdates() {
         updateStatusOverride(assetCode, status);
       }
 
-      // 2. Trigger global statistics refresh
-      window.dispatchEvent(
-        new CustomEvent("network-data-update", {
-          detail: { assetCode, status },
-        }),
-      );
+      // 2. Buffer events for batch dispatch (Prevent UI Storms)
+      eventBufferRef.current.push({ assetCode, status });
+
+      // If buffer gets too large, flush immediately to prevent memory growth
+      if (eventBufferRef.current.length > 500) {
+        flushEvents();
+      } else if (!flushTimerRef.current) {
+        // Schedule flush
+        flushTimerRef.current = setTimeout(() => {
+          flushEvents();
+          flushTimerRef.current = null;
+        }, 300); // 300ms batch window
+      }
 
       // 3. Smart Notification Logic
       if (severity === "SILENT") return;
@@ -56,6 +88,38 @@ export function useRealTimeUpdates() {
 
       if (severity === "CRITICAL") {
         const isMassive = assetCode.includes("MASSIVE-OUTAGE");
+
+        // MASSIVE OUTAGE DETECTION / STORM PROTECTION
+        // If we get many critical alerts in short time, suppress individual ones
+        massiveOutageCountRef.current += 1;
+
+        // Reset counter after 2 seconds of silence
+        if (massiveOutageTimerRef.current)
+          clearTimeout(massiveOutageTimerRef.current);
+        massiveOutageTimerRef.current = setTimeout(() => {
+          massiveOutageCountRef.current = 0;
+        }, 2000);
+
+        // If we have more than 3 critical alerts in 2 seconds, show summary only
+        if (massiveOutageCountRef.current > 3 && !isMassive) {
+          // Throttle the "Massive Outage" generic warning too (once every 5s)
+          if (now - globalCooldownRef.current > 5000) {
+            toast.error("🚨 HIGH VOLUME ALERT", {
+              description:
+                "Multiple critical failures detected. Checking for massive outage...",
+              duration: 5000,
+              id: "massive-outage-warning",
+            });
+            globalCooldownRef.current = now;
+          }
+          return;
+        }
+
+        // Global rate limit: Max 1 toast every 300ms to allow UI to breathe
+        if (now - globalCooldownRef.current < 300) {
+          return;
+        }
+        globalCooldownRef.current = now;
 
         toast.error(
           isMassive
@@ -81,7 +145,7 @@ export function useRealTimeUpdates() {
         console.info(`[Net Log] ${assetCode} changed to ${status}`);
       }
     },
-    [updateStatusOverride],
+    [updateStatusOverride, flushEvents],
   );
 
   useEffect(() => {

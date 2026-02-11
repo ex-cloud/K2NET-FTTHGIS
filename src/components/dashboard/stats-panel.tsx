@@ -68,19 +68,29 @@ export function StatsPanel() {
     }
     fetchStats();
 
-    // Listen for real-time network updates to refresh stats
-    const handleNetworkUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<{ assetCode: string }>;
+    // Listen for batched real-time network updates to refresh stats
+    const handleNetworkBatchUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        events: Array<{ assetCode: string; status: string }>;
+      }>;
+      const events = customEvent.detail.events;
+
       console.log(
-        "[Stats Sync] Refreshing due to network event:",
-        customEvent.detail?.assetCode,
+        `[Stats Sync] Refreshing due to batch update (${events.length} events)`,
       );
+
+      // Debounced fetch
+      // We don't need complex debounce here because the event itself is already a 300ms batch.
+      // But to be safe, we can trigger it.
       fetchStats();
     };
 
-    window.addEventListener("network-data-update", handleNetworkUpdate);
+    window.addEventListener("network-batch-update", handleNetworkBatchUpdate);
     return () =>
-      window.removeEventListener("network-data-update", handleNetworkUpdate);
+      window.removeEventListener(
+        "network-batch-update",
+        handleNetworkBatchUpdate,
+      );
   }, [session?.accessToken]);
 
   if (loading) {

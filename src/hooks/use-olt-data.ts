@@ -50,40 +50,46 @@ export function useOltData() {
     fetchData();
   }, [fetchData]);
 
-  // Handle Real-time Updates synchronization
+  // Handle Real-time Updates synchronization (Batched)
   useEffect(() => {
-    const handleNetworkUpdate = (event: Event) => {
+    const handleNetworkBatchUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<{
-        assetCode: string;
-        status: string;
+        events: Array<{ assetCode: string; status: string }>;
       }>;
-      const { assetCode, status } = customEvent.detail;
+      const events = customEvent.detail.events;
 
       console.log(
-        `[OLT Table Sync] Received update for ${assetCode}: ${status}`,
+        `[OLT Table Sync] Received batch update: ${events.length} events`,
       );
 
-      // 1. Immediate local state patch for "snappy" UI
+      // 1. Immediate local state patch (Batch process)
       setData((prevData) => {
-        const index = prevData.findIndex((olt) => olt.code === assetCode);
-        if (index !== -1) {
-          const newData = [...prevData];
-          newData[index] = { ...newData[index], status };
-          return newData;
-        }
-        return prevData;
+        const newData = [...prevData];
+        let hasChanges = false;
+
+        events.forEach(({ assetCode, status }) => {
+          const index = newData.findIndex((olt) => olt.code === assetCode);
+          if (index !== -1) {
+            newData[index] = { ...newData[index], status };
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newData : prevData;
       });
 
       // 2. Silent background refresh after a short delay
-      // Using silent refresh to avoid flickering the table with loading skeletons
       setTimeout(() => {
         fetchData(true);
       }, 1000);
     };
 
-    window.addEventListener("network-data-update", handleNetworkUpdate);
+    window.addEventListener("network-batch-update", handleNetworkBatchUpdate);
     return () =>
-      window.removeEventListener("network-data-update", handleNetworkUpdate);
+      window.removeEventListener(
+        "network-batch-update",
+        handleNetworkBatchUpdate,
+      );
   }, [fetchData]);
 
   return {
