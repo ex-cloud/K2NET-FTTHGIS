@@ -41,15 +41,15 @@ export default function OltListPage() {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [oltToDelete, setOltToDelete] = React.useState<OLT | null>(null);
 
-  const handleCreate = () => {
+  const handleCreate = React.useCallback(() => {
     setSelectedOlt(null);
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  const handleEdit = (olt: OLT) => {
+  const handleEdit = React.useCallback((olt: OLT) => {
     setSelectedOlt(olt);
     setIsDialogOpen(true);
-  };
+  }, []);
 
   const handleDelete = async () => {
     if (!oltToDelete || !session?.accessToken) return;
@@ -76,125 +76,131 @@ export default function OltListPage() {
     }
   };
 
-  const handlePoll = async (olt: OLT) => {
-    if (!session?.accessToken) return;
-    toast.info(`Triggering SNMP poll for ${olt.code}...`);
-    // Logic for polling will be integrated here
-  };
+  const handlePoll = React.useCallback(
+    async (olt: OLT) => {
+      if (!session?.accessToken) return;
+      toast.info(`Triggering SNMP poll for ${olt.code}...`);
+      // Logic for polling will be integrated here
+    },
+    [session?.accessToken],
+  );
 
-  const columns: ColumnDef<OLT>[] = [
-    {
-      accessorKey: "code",
-      header: "Code",
-      cell: ({ row }) => (
-        <span className="font-bold text-emerald-500">
-          {row.getValue("code")}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "name",
-      header: "Name",
-    },
-    {
-      accessorKey: "ipAddress",
-      header: "IP Address",
-      cell: ({ row }) => (
-        <span className="text-muted-foreground font-mono">
-          {row.getValue("ipAddress") || "-"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = (row.getValue("status") as string) || "UNKNOWN";
-        return (
-          <Badge
-            variant={status === "UP" ? "outline" : "destructive"}
-            className={
-              status === "UP"
-                ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/5"
-                : ""
-            }
-          >
-            {status}
-          </Badge>
-        );
+  const columns = React.useMemo<ColumnDef<OLT>[]>(
+    () => [
+      {
+        accessorKey: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="font-bold text-emerald-500">
+            {row.getValue("code")}
+          </span>
+        ),
       },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const olt = row.original;
-        return (
-          <div className="flex items-center gap-2 justify-end">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-500"
-              onClick={() => {
-                router.push(
-                  `/dashboard/infrastructure/topology?search=${olt.code}`,
-                );
-              }}
+      {
+        accessorKey: "name",
+        header: "Name",
+      },
+      {
+        accessorKey: "ipAddress",
+        header: "IP Address",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground font-mono">
+            {row.getValue("ipAddress") || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = (row.getValue("status") as string) || "UNKNOWN";
+          return (
+            <Badge
+              variant={status === "UP" ? "outline" : "destructive"}
+              className={
+                status === "UP"
+                  ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/5"
+                  : ""
+              }
             >
-              <MapPin className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 bg-zinc-950/90 backdrop-blur-xl border-white/10 shadow-2xl"
-              >
-                <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 font-bold tracking-widest">
-                  Device Operations
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/5" />
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() =>
-                    router.push(
-                      `/dashboard/infrastructure/topology?search=${olt.code}`,
-                    )
-                  }
-                >
-                  View Topology
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handlePoll(olt)}
-                >
-                  Poll SNMP Now
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleEdit(olt)}
-                >
-                  Edit Connection
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/5" />
-                <DropdownMenuItem
-                  className="text-red-500 focus:text-white focus:bg-red-500 cursor-pointer"
-                  onClick={() => {
-                    setOltToDelete(olt);
-                    setIsDeleting(true);
-                  }}
-                >
-                  Delete Device
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
+              {status}
+            </Badge>
+          );
+        },
       },
-    },
-  ];
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const olt = row.original;
+          return (
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-500"
+                onClick={() => {
+                  router.push(
+                    `/dashboard/infrastructure/topology?search=${olt.code}`,
+                  );
+                }}
+              >
+                <MapPin className="h-4 w-4" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 bg-zinc-950/90 backdrop-blur-xl border-white/10 shadow-2xl"
+                >
+                  <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 font-bold tracking-widest">
+                    Device Operations
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/infrastructure/topology?search=${olt.code}`,
+                      )
+                    }
+                  >
+                    View Topology
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => handlePoll(olt)}
+                  >
+                    Poll SNMP Now
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => handleEdit(olt)}
+                  >
+                    Edit Connection
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  <DropdownMenuItem
+                    className="text-red-500 focus:text-white focus:bg-red-500 cursor-pointer"
+                    onClick={() => {
+                      setOltToDelete(olt);
+                      setIsDeleting(true);
+                    }}
+                  >
+                    Delete Device
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [router, handleEdit, handlePoll],
+  );
 
   return (
     <div className="flex flex-col h-full bg-zinc-950 pt-24 pb-8 px-8 space-y-8 overflow-y-auto relative">

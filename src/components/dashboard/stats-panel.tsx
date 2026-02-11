@@ -67,6 +67,20 @@ export function StatsPanel() {
       }
     }
     fetchStats();
+
+    // Listen for real-time network updates to refresh stats
+    const handleNetworkUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ assetCode: string }>;
+      console.log(
+        "[Stats Sync] Refreshing due to network event:",
+        customEvent.detail?.assetCode,
+      );
+      fetchStats();
+    };
+
+    window.addEventListener("network-data-update", handleNetworkUpdate);
+    return () =>
+      window.removeEventListener("network-data-update", handleNetworkUpdate);
   }, [session?.accessToken]);
 
   if (loading) {
