@@ -2,6 +2,8 @@ package com.company.ftthgis.domain.analytics.controller;
 
 import com.company.ftthgis.domain.analytics.dto.DashboardStatsDTO;
 import com.company.ftthgis.domain.analytics.dto.SnapshotDTO;
+import com.company.ftthgis.domain.analytics.entity.NetworkEvent;
+import com.company.ftthgis.domain.analytics.repository.NetworkEventRepository;
 import com.company.ftthgis.domain.analytics.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,6 +20,7 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final NetworkEventRepository networkEventRepository;
 
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
@@ -36,5 +39,16 @@ public class AnalyticsController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         return ResponseEntity.ok(analyticsService.getSnapshotHistory(from, to));
+    }
+
+    /**
+     * Returns individual network events for scatter plot visualization.
+     */
+    @GetMapping("/events")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
+    public ResponseEntity<List<NetworkEvent>> getEventHistory(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return ResponseEntity.ok(networkEventRepository.findByTimestampBetweenOrderByTimestampAsc(from, to));
     }
 }

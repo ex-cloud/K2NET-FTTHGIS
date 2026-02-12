@@ -19,4 +19,9 @@ public class ODCDto {
     private Integer capacity;
     private Integer usedCapacity;
     private String status;
+
+    // Parent OLT Relation
+    private Long oltId;
+    private String oltName;
+    private String oltCode;
 }

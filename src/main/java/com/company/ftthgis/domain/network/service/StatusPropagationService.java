@@ -1,6 +1,8 @@
 package com.company.ftthgis.domain.network.service;
 
 import com.company.ftthgis.api.network.MapNotificationController;
+import com.company.ftthgis.domain.analytics.entity.NetworkEvent;
+import com.company.ftthgis.domain.analytics.repository.NetworkEventRepository;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
@@ -29,6 +31,7 @@ public class StatusPropagationService {
     private final FiberCableRepository fiberCableRepository;
     private final MapNotificationController mapNotificationController;
     private final StatusCacheService statusCacheService;
+    private final NetworkEventRepository networkEventRepository;
 
     // Industry Standard: Alert Aggregation state
     private final ConcurrentHashMap<String, Long> lastAreaAlertTime = new ConcurrentHashMap<>();
@@ -46,6 +49,9 @@ public class StatusPropagationService {
             statusCacheService.setStatus(oltCode, status);
 
             mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, oltCode);
+
+            // Log Event
+            logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE");
 
             List<ODC> childOdcs = odcRepository.findByOlt(olt);
             for (ODC odc : childOdcs) {
@@ -78,6 +84,9 @@ public class StatusPropagationService {
             odp.setStatus(status);
             odpRepository.save(odp);
             statusCacheService.setStatus(odpCode, status);
+
+            // Log Event
+            logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE");
 
             // Update associated DIST cable
             updateCableStatus("DIST-" + odpCode, status);
@@ -138,6 +147,12 @@ public class StatusPropagationService {
         odc.setStatus(status);
         odcRepository.save(odc);
         statusCacheService.setStatus(odc.getCode(), status);
+
+        // Log Event if it's a direct update (not silent propagation to avoid double
+        // logging if needed,
+        // but for Scatter Plot we WANT to see ODC down even if caused by OLT)
+        // ...actually let's log everything for OLT/ODC/ODP.
+        logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE");
 
         // Update FEEDER cable status
         updateCableStatus("FEEDER-" + odc.getCode(), status);
@@ -227,5 +242,22 @@ public class StatusPropagationService {
         result.put("message", "Signal within operational parameters.");
 
         return result;
+    }
+
+    private void logEvent(String assetCode, String assetType, String oldStatus, String newStatus, String eventType) {
+        try {
+            NetworkEvent event = NetworkEvent.builder()
+                    .assetCode(assetCode)
+                    .assetType(assetType)
+                    .oldStatus(oldStatus) // We might not have the old status readily available without extra query, so
+                                          // 'UNKNOWN' is partial fix
+                    .newStatus(newStatus)
+                    .eventType(eventType)
+                    .timestamp(java.time.LocalDateTime.now())
+                    .build();
+            networkEventRepository.save(event);
+        } catch (Exception e) {
+            log.error("Failed to log network event for {}", assetCode, e);
+        }
     }
 }

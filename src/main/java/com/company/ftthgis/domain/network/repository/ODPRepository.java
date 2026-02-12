@@ -8,8 +8,10 @@ import com.company.ftthgis.domain.network.entity.ODC;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface ODPRepository extends JpaRepository<ODP, Long> {
+public interface ODPRepository extends JpaRepository<ODP, Long>, JpaSpecificationExecutor<ODP> {
     boolean existsByCode(String code);
 
     Optional<ODP> findByCode(String code);
