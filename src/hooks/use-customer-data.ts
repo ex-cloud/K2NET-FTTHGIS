@@ -1,0 +1,99 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "next-auth/react";
+import { Customer, PageResponse } from "@/types/network";
+
+export function useCustomerData() {
+  const { data: session } = useSession();
+  const [data, setData] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+    pageCount: 0,
+  });
+  const [search, setSearch] = useState("");
+
+  const fetchData = useCallback(
+    async (silent = false) => {
+      if (!session?.accessToken) return;
+      try {
+        if (!silent) setLoading(true);
+        const baseUrl = getBackendBaseUrl();
+        const params = new URLSearchParams({
+          page: pagination.pageIndex.toString(),
+          size: pagination.pageSize.toString(),
+          search: search,
+        });
+
+        const res = await fetch(`${baseUrl}/network/customers?${params}`, {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch customers");
+        const result: PageResponse<Customer> = await res.json();
+        setData(result.content);
+        setPagination((prev) => ({ ...prev, pageCount: result.totalPages }));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search],
+  );
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Handle Real-time Updates synchronization (Batched)
+  useEffect(() => {
+    const handleNetworkBatchUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        events: Array<{ assetCode: string; status: string }>;
+      }>;
+      const events = customEvent.detail.events;
+
+      // 1. Immediate local state patch
+      setData((prevData) => {
+        const newData = [...prevData];
+        let hasChanges = false;
+
+        events.forEach(({ assetCode, status }) => {
+          const index = newData.findIndex((cust) => cust.code === assetCode);
+          if (index !== -1) {
+            newData[index] = { ...newData[index], status };
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newData : prevData;
+      });
+
+      // 2. Silent background refresh after a short delay
+      setTimeout(() => {
+        fetchData(true);
+      }, 1000);
+    };
+
+    window.addEventListener("network-batch-update", handleNetworkBatchUpdate);
+    return () =>
+      window.removeEventListener(
+        "network-batch-update",
+        handleNetworkBatchUpdate,
+      );
+  }, [fetchData]);
+
+  return {
+    data,
+    loading,
+    pagination,
+    setPagination,
+    setSearch,
+    refresh: () => fetchData(true),
+  };
+}

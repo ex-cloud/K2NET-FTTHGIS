@@ -79,19 +79,19 @@ const data = {
       items: [
         {
           title: "ODC List",
-          url: "/dashboard/data/odc",
+          url: "/dashboard/infrastructure/odc",
         },
         {
           title: "ODP List",
-          url: "/dashboard/data/odp",
+          url: "/dashboard/infrastructure/odp",
         },
         {
           title: "Cable Management",
-          url: "/dashboard/data/cables",
+          url: "/dashboard/infrastructure/cables",
         },
         {
           title: "Customer Database",
-          url: "/dashboard/data/customers",
+          url: "/dashboard/infrastructure/customer",
         },
       ],
     },

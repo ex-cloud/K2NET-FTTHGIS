@@ -9,8 +9,6 @@ import {
   Database,
   ShieldCheck,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   Calendar,
 } from "lucide-react";
 import { MetricCard } from "./metric-card";
@@ -26,6 +24,7 @@ import {
   Line,
   ComposedChart,
   Area,
+  Scatter,
 } from "recharts";
 import type {
   NameType,
@@ -66,6 +65,7 @@ interface SnapshotPoint {
   activeNodes: number;
   downNodes: number;
   uptime: number;
+  rawDate?: Date; // Added for date calculation
 }
 
 interface TimeRange {
@@ -73,10 +73,33 @@ interface TimeRange {
   hours: number;
 }
 
+interface NetworkEvent {
+  id: number;
+  assetCode: string;
+  assetType: string;
+  oldStatus: string;
+  newStatus: string;
+  eventType: string;
+  timestamp: string;
+}
+
+interface EventPoint {
+  time: string; // Matches XAxis category
+  yValue: number; // Y-axis position
+  color: string;
+  details: NetworkEvent;
+}
+
 interface CustomTooltipProps {
   active?: boolean;
   payload?: ReadonlyArray<Payload<ValueType, NameType>>;
   label?: string;
+}
+
+interface ScatterShapeProps {
+  cx?: number;
+  cy?: number;
+  payload?: EventPoint;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -101,30 +124,74 @@ function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
       <p className="text-xs font-bold text-zinc-900 dark:text-white mb-2 border-b border-zinc-100 dark:border-zinc-800 pb-1.5">
         {label}
       </p>
-      {payload.map((entry, idx) => (
-        <div
-          key={idx}
-          className="flex items-center justify-between gap-4 py-0.5"
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: entry.color ?? "#71717a" }}
-            />
-            <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-              {String(entry.name ?? "")}
+      {payload
+        .filter(
+          (entry) => !["time", "yValue"].includes(entry.dataKey as string),
+        )
+        .map((entry, idx) => (
+          <div
+            key={idx}
+            className="flex items-center justify-between gap-4 py-0.5"
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: entry.color ?? "#71717a" }}
+              />
+              <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                {String(entry.name ?? "")}
+              </span>
+            </div>
+            <span
+              className="text-[11px] font-bold"
+              style={{ color: entry.color ?? "#71717a" }}
+            >
+              {String(entry.name ?? "").includes("Uptime")
+                ? `${Number(entry.value ?? 0).toFixed(2)}%`
+                : Number(entry.value ?? 0).toLocaleString()}
             </span>
           </div>
-          <span
-            className="text-[11px] font-bold"
-            style={{ color: entry.color ?? "#71717a" }}
-          >
-            {String(entry.name ?? "").includes("Uptime")
-              ? `${Number(entry.value ?? 0).toFixed(2)}%`
-              : Number(entry.value ?? 0).toLocaleString()}
-          </span>
-        </div>
-      ))}
+        ))}
+
+      {/* Event Tooltip Extra Info — search ALL payload entries */}
+      {(() => {
+        const eventEntry = payload.find(
+          (p) => (p.payload as EventPoint)?.details?.assetCode,
+        );
+        if (!eventEntry) return null;
+        const det = (eventEntry.payload as EventPoint).details;
+        return (
+          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="text-[10px] font-bold text-zinc-500">
+              Event Details:
+            </p>
+            <p className="text-[10px] text-zinc-600 dark:text-zinc-300">
+              <span className="font-bold">{det.assetCode}</span>
+              <span className="text-zinc-500 mx-1">({det.assetType})</span>
+            </p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[9px] text-zinc-400 capitalize">
+                {det.oldStatus}
+              </span>
+              <span className="text-[9px] text-zinc-400">→</span>
+              <span
+                className={`text-[10px] font-bold ${
+                  ["UP", "ACTIVE", "RECOVERY"].includes(det.newStatus)
+                    ? "text-emerald-500"
+                    : ["DOWN", "FIBERCUT", "BROKEN"].includes(det.newStatus)
+                      ? "text-rose-500"
+                      : "text-amber-500"
+                }`}
+              >
+                {det.newStatus}
+              </span>
+            </div>
+            <p className="text-[9px] text-zinc-400 mt-1">
+              {new Date(det.timestamp).toLocaleTimeString()}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -140,16 +207,26 @@ export function ExecutiveDashboard() {
 
   // History state
   const [historyData, setHistoryData] = useState<SnapshotPoint[]>([]);
+  const [eventData, setEventData] = useState<EventPoint[]>([]); // New state for Scatter Plot
+  const [hoveredAssetCode, setHoveredAssetCode] = useState<string | null>(null); // New state for Hairline
+
+  // Custom Zoom/Pan State
+  const [zoomState, setZoomState] = useState<{ left: number; right: number }>({
+    left: 0,
+    right: 0,
+  });
+  // Use refs for drag tracking (instant response, no re-render delay)
+  const isDraggingRef = useRef(false);
+  const lastClientXRef = useRef(0);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedRange, setSelectedRange] = useState<TimeRange>(TIME_RANGES[2]); // default: 24H
-  const [historyPage, setHistoryPage] = useState(0);
-  const historyPageSize = 24; // show 24 data points at a time
 
   // Calendar state
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarFrom, setCalendarFrom] = useState("");
   const [calendarTo, setCalendarTo] = useState("");
   const calendarRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // ─── Derived State (no setState inside setState!) ─────────────────────
 
@@ -181,15 +258,12 @@ export function ExecutiveDashboard() {
       ]
     : [];
 
-  // History pagination
-  const totalPages = Math.max(
-    1,
-    Math.ceil(historyData.length / historyPageSize),
-  );
-  const paginatedHistory = historyData.slice(
-    historyPage * historyPageSize,
-    (historyPage + 1) * historyPageSize,
-  );
+  // Derived: filter event data to only visible zoom range
+  const visibleEventData = (() => {
+    const slice = historyData.slice(zoomState.left, zoomState.right + 1);
+    const timeSet = new Set(slice.map((p) => p.time));
+    return eventData.filter((e) => timeSet.has(e.time));
+  })();
 
   // ─── Backend Fetch Functions ──────────────────────────────────────────
 
@@ -262,20 +336,89 @@ export function ExecutiveDashboard() {
             activeNodes: d.activeNodes,
             downNodes: d.downNodes,
             uptime: d.networkUptime,
+            rawDate: new Date(d.recordedAt), // Store raw date for accurate nearest-search
           }));
 
           setHistoryData(points);
-          setHistoryPage(
-            Math.max(0, Math.ceil(points.length / historyPageSize) - 1),
-          ); // go to last page
+          setZoomState({ left: 0, right: Math.max(0, points.length - 1) });
+
+          // 2. Fetch Events (Parallel or after)
+          // 2. Fetch Events (Parallel or after)
+          const eventsRes = await fetch(
+            `${baseUrl}/analytics/events?from=${fromISO}&to=${toISO}`,
+            { headers: { Authorization: `Bearer ${session.accessToken}` } },
+          );
+
+          if (eventsRes.ok) {
+            const events: NetworkEvent[] = await eventsRes.json();
+            const newEventPoints: EventPoint[] = [];
+
+            events.forEach((evt) => {
+              const evtTime = new Date(evt.timestamp).getTime();
+
+              // Find nearest snapshot point to snap this event to
+              let closestPoint: SnapshotPoint | null = null;
+              let minDiff = Infinity;
+
+              // Optimization: We could binary search if points are sorted, but linear is fine for <100 points
+              for (const p of points) {
+                const pTime = p.rawDate?.getTime() ?? 0;
+                const diff = Math.abs(evtTime - pTime);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestPoint = p;
+                }
+              }
+
+              // Only add if we found a reasonably close snapshot (within 60 mins -> 3600000ms ?)
+              // Let's ensure strict matching for visual clarity.
+              if (closestPoint) {
+                let color = "#10b981"; // Green (UP)
+                const s = evt.newStatus?.toUpperCase() ?? "";
+                if (["DOWN", "FIBERCUT", "BROKEN"].includes(s))
+                  color = "#ef4444"; // Red
+                else if (s === "MAINTENANCE") color = "#f59e0b"; // Orange
+
+                // Stable Jitter based on asset code to spread dots vertically
+                const maxActive = Math.max(
+                  ...points.map((p) => p.activeNodes),
+                  10,
+                );
+
+                // Safety clamp for maxActive to prevent runaway axis
+                const safeMaxActive = Math.min(maxActive, 1000);
+
+                const charSum = evt.assetCode
+                  .split("")
+                  .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const jitterFactor = (charSum % 100) / 100; // 0.0 to 0.99
+
+                // Position dot randomly between 15% and 85% of chart height
+                const jitteredY =
+                  safeMaxActive * 0.15 + jitterFactor * (safeMaxActive * 0.7);
+
+                newEventPoints.push({
+                  time: closestPoint.time,
+                  yValue: jitteredY,
+                  color: color,
+                  details: evt,
+                });
+              }
+            });
+            setEventData(newEventPoints);
+          } else {
+            setEventData([]); // Clear on error or empty
+          }
         }
       } catch (e) {
         console.error("Failed to fetch history", e);
+        setHistoryData([]); // Clear on error
+        setEventData([]);
       } finally {
         setHistoryLoading(false);
       }
     },
-    [session?.accessToken],
+    [session?.accessToken, setHistoryData, setZoomState, setEventData],
   );
 
   const fetchHistoryByDateRange = useCallback(
@@ -314,18 +457,75 @@ export function ExecutiveDashboard() {
           }));
 
           setHistoryData(points);
-          setHistoryPage(
-            Math.max(0, Math.ceil(points.length / historyPageSize) - 1),
+          // Initialize zoom to show all data
+          setZoomState({ left: 0, right: Math.max(0, points.length - 1) });
+
+          // Also fetch events for this custom range!
+          const eventsRes = await fetch(
+            `${baseUrl}/analytics/events?from=${fromISO}&to=${toISO}`,
+            { headers: { Authorization: `Bearer ${session.accessToken}` } },
           );
+
+          if (eventsRes.ok) {
+            const events: NetworkEvent[] = await eventsRes.json();
+            const newEventPoints: EventPoint[] = [];
+
+            events.forEach((evt) => {
+              const evtTime = new Date(evt.timestamp).getTime();
+              let closestPoint: SnapshotPoint | null = null;
+              let minDiff = Infinity;
+              for (const p of points) {
+                const pTime = p.rawDate?.getTime() ?? 0;
+                const diff = Math.abs(evtTime - pTime);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestPoint = p;
+                }
+              }
+
+              if (closestPoint) {
+                let color = "#10b981";
+                const s = evt.newStatus?.toUpperCase() ?? "";
+                if (["DOWN", "FIBERCUT", "BROKEN"].includes(s))
+                  color = "#ef4444";
+                else if (s === "MAINTENANCE") color = "#f59e0b";
+
+                const maxActive = Math.max(
+                  ...points.map((p) => p.activeNodes),
+                  10,
+                );
+                const safeMaxActive = Math.min(maxActive, 1000);
+
+                const charSum = evt.assetCode
+                  .split("")
+                  .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const jitterFactor = (charSum % 100) / 100;
+                const jitteredY =
+                  safeMaxActive * 0.15 + jitterFactor * (safeMaxActive * 0.7);
+
+                newEventPoints.push({
+                  time: closestPoint.time,
+                  yValue: jitteredY,
+                  color: color,
+                  details: evt,
+                });
+              }
+            });
+            setEventData(newEventPoints);
+          } else {
+            setEventData([]);
+          }
         }
       } catch (e) {
         console.error("Failed to fetch history by date range", e);
+        setEventData([]);
+        setHistoryData([]);
       } finally {
         setHistoryLoading(false);
         setShowCalendar(false);
       }
     },
-    [session?.accessToken],
+    [session?.accessToken, setHistoryData, setZoomState, setEventData],
   );
 
   // ─── Effects ──────────────────────────────────────────────────────────
@@ -423,6 +623,42 @@ export function ExecutiveDashboard() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Non-passive wheel handler for scroll-to-zoom (passive listeners can't preventDefault)
+  useEffect(() => {
+    const el = chartContainerRef.current;
+    if (!el || historyData.length === 0) return;
+
+    const len = historyData.length;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const ZOOM_SPEED = 2;
+      const delta = Math.sign(e.deltaY) * ZOOM_SPEED;
+
+      setZoomState((prev) => {
+        let { left, right } = prev;
+
+        if (delta < 0) {
+          // Zoom In
+          const range = right - left;
+          if (range < 5) return prev;
+          left = Math.min(len - 5, Math.max(0, left + 1));
+          right = Math.max(left + 5, Math.min(len - 1, right - 1));
+        } else {
+          // Zoom Out
+          left = Math.max(0, left - 1);
+          right = Math.min(len - 1, right + 1);
+        }
+        return { left, right };
+      });
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [historyData.length]);
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
@@ -551,7 +787,6 @@ export function ExecutiveDashboard() {
                   key={range.label}
                   onClick={() => {
                     setSelectedRange(range);
-                    setHistoryPage(0);
                     fetchHistory(range.hours);
                   }}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
@@ -634,20 +869,52 @@ export function ExecutiveDashboard() {
             </div>
           </div>
 
-          {/* Chart */}
-          <div className="h-[260px]">
+          {/* Chart with Manual Zoom/Pan */}
+          <div
+            ref={chartContainerRef}
+            className="h-[260px] w-full relative select-none cursor-crosshair"
+            onMouseDown={(e) => {
+              isDraggingRef.current = true;
+              lastClientXRef.current = e.clientX;
+            }}
+            onMouseMove={(e) => {
+              if (!isDraggingRef.current) return;
+              const deltaX = lastClientXRef.current - e.clientX;
+              if (Math.abs(deltaX) > 10) {
+                const shift = Math.sign(deltaX);
+
+                setZoomState((prev) => {
+                  const { left, right } = prev;
+                  const len = historyData.length;
+
+                  let newLeft = left + shift;
+                  let newRight = right + shift;
+
+                  if (newLeft < 0) {
+                    newLeft = 0;
+                    newRight = right - left;
+                  }
+                  if (newRight >= len) {
+                    newRight = len - 1;
+                    newLeft = newRight - (right - left);
+                  }
+                  return { left: newLeft, right: newRight };
+                });
+                lastClientXRef.current = e.clientX;
+              }
+            }}
+            onMouseUp={() => (isDraggingRef.current = false)}
+            onMouseLeave={() => (isDraggingRef.current = false)}
+          >
             {historyLoading ? (
               <div className="h-full flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto" />
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Loading history...
-                  </p>
-                </div>
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
               </div>
-            ) : paginatedHistory.length > 0 ? (
+            ) : historyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={paginatedHistory}>
+                <ComposedChart
+                  data={historyData.slice(zoomState.left, zoomState.right + 1)}
+                >
                   <defs>
                     <linearGradient id="gradActive" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -669,6 +936,15 @@ export function ExecutiveDashboard() {
                     interval="preserveStartEnd"
                   />
                   <YAxis
+                    hide={false}
+                    domain={[
+                      0,
+                      (dataMax: number) => {
+                        // Safety clamp to prevent 99999999 explosion if data is bad
+                        const safeMax = isFinite(dataMax) ? dataMax : 150;
+                        return Math.min(Math.max(safeMax + 20, 150), 2000);
+                      },
+                    ]}
                     stroke="#71717a"
                     fontSize={10}
                     tickLine={false}
@@ -690,9 +966,7 @@ export function ExecutiveDashboard() {
                     fillOpacity={1}
                     fill="url(#gradActive)"
                     name="Active Nodes"
-                    isAnimationActive={true}
-                    animationDuration={800}
-                    animationEasing="ease-in-out"
+                    isAnimationActive={false}
                   />
                   <Line
                     type="monotone"
@@ -702,50 +976,66 @@ export function ExecutiveDashboard() {
                     dot={{ r: 3, fill: "#ef4444" }}
                     activeDot={{ r: 5, fill: "#ef4444" }}
                     name="Down Nodes"
-                    isAnimationActive={true}
-                    animationDuration={800}
-                    animationEasing="ease-in-out"
+                    isAnimationActive={false}
+                  />
+
+                  {/* HAIRLINE: Always rendered, filtered by hoveredAssetCode */}
+                  <Line
+                    type="monotone"
+                    data={
+                      hoveredAssetCode
+                        ? visibleEventData.filter(
+                            (d) => d.details.assetCode === hoveredAssetCode,
+                          )
+                        : []
+                    }
+                    dataKey="yValue"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    dot={{ r: 3, fill: "#3b82f6" }}
+                    activeDot={false}
+                    isAnimationActive={false}
+                    connectNulls={true}
+                  />
+
+                  <Scatter
+                    data={visibleEventData}
+                    dataKey="yValue"
+                    fill="#8884d8"
+                    shape={(props: ScatterShapeProps) => {
+                      const { cx, cy, payload } = props;
+                      if (typeof cx !== "number" || typeof cy !== "number")
+                        return <></>;
+                      const isHovered =
+                        hoveredAssetCode === payload?.details?.assetCode;
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={isHovered ? 6 : 4}
+                          fill={payload?.color}
+                          stroke={isHovered ? "#3b82f6" : "none"}
+                          strokeWidth={isHovered ? 2 : 0}
+                          style={{ cursor: "pointer", transition: "all 0.2s" }}
+                          onMouseEnter={() => {
+                            if (payload?.details?.assetCode) {
+                              setHoveredAssetCode(payload.details.assetCode);
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredAssetCode(null)}
+                        />
+                      );
+                    }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <Activity className="w-8 h-8 text-zinc-400 dark:text-zinc-600 mx-auto" />
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    No history data yet. Snapshots are recorded every 5 minutes.
-                  </p>
-                </div>
+                <p className="text-xs text-zinc-500">No history data yet.</p>
               </div>
             )}
           </div>
-
-          {/* Pagination arrows */}
-          {historyData.length > historyPageSize && (
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-              <button
-                onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                disabled={historyPage === 0}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeft className="w-3 h-3" />
-                Older
-              </button>
-              <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-500">
-                Page {historyPage + 1} / {totalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setHistoryPage((p) => Math.min(totalPages - 1, p + 1))
-                }
-                disabled={historyPage >= totalPages - 1}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                Newer
-                <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
-          )}
         </div>
 
         {/* System Health Donut */}

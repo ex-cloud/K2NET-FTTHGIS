@@ -15,6 +15,28 @@ export interface OLT extends NetworkNode {
   snmpCommunity: string;
 }
 
+export interface ODC extends NetworkNode {
+  capacity: number;
+  usedCapacity: number;
+  oltId: number;
+  oltName: string;
+  oltCode: string;
+}
+
+export interface ODP extends NetworkNode {
+  totalPort: number;
+  usedPort: number;
+  odcId: number;
+  odcName: string;
+  odcCode: string;
+}
+
+export interface Customer extends NetworkNode {
+  address: string;
+  odpId: number;
+  odpCode: string;
+}
+
 export interface PageResponse<T> {
   content: T[];
   totalPages: number;
