@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-02-12T14:08:51+0700",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
+    date = "2026-02-18T09:01:22+0700",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.45.0.v20260128-0750, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
 public class NetworkMapperImpl implements NetworkMapper {
@@ -30,13 +30,16 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         ODCDto oDCDto = new ODCDto();
 
-        oDCDto.setId( odc.getId() );
-        oDCDto.setCode( odc.getCode() );
-        oDCDto.setName( odc.getName() );
-        oDCDto.setGeom( odc.getGeom() );
+        oDCDto.setOltId( odcOltId( odc ) );
+        oDCDto.setOltName( odcOltName( odc ) );
+        oDCDto.setOltCode( odcOltCode( odc ) );
         oDCDto.setCapacity( odc.getCapacity() );
-        oDCDto.setUsedCapacity( odc.getUsedCapacity() );
+        oDCDto.setCode( odc.getCode() );
+        oDCDto.setGeom( odc.getGeom() );
+        oDCDto.setId( odc.getId() );
+        oDCDto.setName( odc.getName() );
         oDCDto.setStatus( odc.getStatus() );
+        oDCDto.setUsedCapacity( odc.getUsedCapacity() );
 
         oDCDto.setNodeType( "ODC" );
 
@@ -51,13 +54,16 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         ODPDto oDPDto = new ODPDto();
 
-        oDPDto.setId( odp.getId() );
-        oDPDto.setOsmid( odp.getOsmid() );
+        oDPDto.setOdcId( odpOdcId( odp ) );
+        oDPDto.setOdcName( odpOdcName( odp ) );
+        oDPDto.setOdcCode( odpOdcCode( odp ) );
         oDPDto.setCode( odp.getCode() );
         oDPDto.setGeom( odp.getGeom() );
+        oDPDto.setId( odp.getId() );
+        oDPDto.setOsmid( odp.getOsmid() );
+        oDPDto.setStatus( odp.getStatus() );
         oDPDto.setTotalPort( odp.getTotalPort() );
         oDPDto.setUsedPort( odp.getUsedPort() );
-        oDPDto.setStatus( odp.getStatus() );
 
         oDPDto.setNodeType( "ODP" );
 
@@ -72,13 +78,13 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         OLTDto oLTDto = new OLTDto();
 
-        oLTDto.setId( olt.getId() );
         oLTDto.setCode( olt.getCode() );
-        oLTDto.setName( olt.getName() );
+        oLTDto.setGeom( olt.getGeom() );
+        oLTDto.setId( olt.getId() );
         oLTDto.setIpAddress( olt.getIpAddress() );
+        oLTDto.setName( olt.getName() );
         oLTDto.setSnmpCommunity( olt.getSnmpCommunity() );
         oLTDto.setStatus( olt.getStatus() );
-        oLTDto.setGeom( olt.getGeom() );
 
         oLTDto.setNodeType( "OLT" );
 
@@ -94,11 +100,11 @@ public class NetworkMapperImpl implements NetworkMapper {
         FiberCableDto fiberCableDto = new FiberCableDto();
 
         fiberCableDto.setGeom( cable.getGeometry() );
-        fiberCableDto.setId( cable.getId() );
         fiberCableDto.setCode( cable.getCode() );
         fiberCableDto.setFiberCount( cable.getFiberCount() );
-        fiberCableDto.setStatus( cable.getStatus() );
+        fiberCableDto.setId( cable.getId() );
         fiberCableDto.setLengthMeters( cable.getLengthMeters() );
+        fiberCableDto.setStatus( cable.getStatus() );
 
         return fiberCableDto;
     }
@@ -113,13 +119,103 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         assetDto.setCategoryName( assetCategoryName( asset ) );
         assetDto.setId( asset.getId() );
-        assetDto.setSerialNumber( asset.getSerialNumber() );
         assetDto.setName( asset.getName() );
-        assetDto.setStatus( asset.getStatus() );
         assetDto.setPrice( asset.getPrice() );
         assetDto.setPurchaseDate( asset.getPurchaseDate() );
+        assetDto.setSerialNumber( asset.getSerialNumber() );
+        assetDto.setStatus( asset.getStatus() );
 
         return assetDto;
+    }
+
+    private Long odcOltId(ODC oDC) {
+        if ( oDC == null ) {
+            return null;
+        }
+        OLT olt = oDC.getOlt();
+        if ( olt == null ) {
+            return null;
+        }
+        Long id = olt.getId();
+        if ( id == null ) {
+            return null;
+        }
+        return id;
+    }
+
+    private String odcOltName(ODC oDC) {
+        if ( oDC == null ) {
+            return null;
+        }
+        OLT olt = oDC.getOlt();
+        if ( olt == null ) {
+            return null;
+        }
+        String name = olt.getName();
+        if ( name == null ) {
+            return null;
+        }
+        return name;
+    }
+
+    private String odcOltCode(ODC oDC) {
+        if ( oDC == null ) {
+            return null;
+        }
+        OLT olt = oDC.getOlt();
+        if ( olt == null ) {
+            return null;
+        }
+        String code = olt.getCode();
+        if ( code == null ) {
+            return null;
+        }
+        return code;
+    }
+
+    private Long odpOdcId(ODP oDP) {
+        if ( oDP == null ) {
+            return null;
+        }
+        ODC odc = oDP.getOdc();
+        if ( odc == null ) {
+            return null;
+        }
+        Long id = odc.getId();
+        if ( id == null ) {
+            return null;
+        }
+        return id;
+    }
+
+    private String odpOdcName(ODP oDP) {
+        if ( oDP == null ) {
+            return null;
+        }
+        ODC odc = oDP.getOdc();
+        if ( odc == null ) {
+            return null;
+        }
+        String name = odc.getName();
+        if ( name == null ) {
+            return null;
+        }
+        return name;
+    }
+
+    private String odpOdcCode(ODP oDP) {
+        if ( oDP == null ) {
+            return null;
+        }
+        ODC odc = oDP.getOdc();
+        if ( odc == null ) {
+            return null;
+        }
+        String code = odc.getCode();
+        if ( code == null ) {
+            return null;
+        }
+        return code;
     }
 
     private String assetCategoryName(Asset asset) {

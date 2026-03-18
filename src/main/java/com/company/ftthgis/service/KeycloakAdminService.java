@@ -26,19 +26,40 @@ public class KeycloakAdminService {
     @Value("${keycloak.realm}")
     private String realm;
 
-    public String createUser(String email, String password, String firstName, String lastName, String roleName) {
+    public String createUser(String email, String username, String password, String firstName, String lastName,
+            String roleName) {
         UsersResource usersResource = keycloak.realm(realm).users();
 
         // Check if user already exists
         List<UserRepresentation> existing = usersResource.search(email, true);
         if (!existing.isEmpty()) {
-            log.info("User {} already exists in Keycloak. Skipping creation.", email);
-            return existing.get(0).getId();
+            UserRepresentation existingUser = existing.get(0);
+            String targetUsername = username != null && !username.isEmpty() ? username : email;
+
+            if (!targetUsername.equals(existingUser.getUsername())) {
+                log.info("Keycloak: Attempting to update username for {} from {} to {}", email,
+                        existingUser.getUsername(), targetUsername);
+                try {
+                    existingUser.setUsername(targetUsername);
+                    usersResource.get(existingUser.getId()).update(existingUser);
+                    log.info("Keycloak: Successfully updated username for {}", email);
+                } catch (Exception e) {
+                    log.error(
+                            "Keycloak: Failed to update username for {}. Potential cause: 'Edit username' setting is DISABLED in Realm settings or username conflict. Error: {}",
+                            email, e.getMessage());
+                    // Revert local changes if we strictly follow Keycloak, but for seeding
+                    // we might want to know it failed.
+                    throw e;
+                }
+            } else {
+                log.info("Keycloak: Username for {} is already correct ({}). skipping update.", email, targetUsername);
+            }
+            return existingUser.getId();
         }
 
         UserRepresentation user = new UserRepresentation();
         user.setEnabled(true);
-        user.setUsername(email);
+        user.setUsername(username != null && !username.isEmpty() ? username : email);
         user.setEmail(email);
         user.setFirstName(firstName);
         user.setLastName(lastName);

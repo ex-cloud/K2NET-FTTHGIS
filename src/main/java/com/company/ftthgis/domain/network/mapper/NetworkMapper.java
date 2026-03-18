@@ -17,9 +17,15 @@ import org.mapstruct.Mapping;
 public interface NetworkMapper {
 
     @Mapping(target = "nodeType", constant = "ODC")
+    @Mapping(target = "oltId", source = "olt.id")
+    @Mapping(target = "oltName", source = "olt.name")
+    @Mapping(target = "oltCode", source = "olt.code")
     ODCDto toODCDto(ODC odc);
 
     @Mapping(target = "nodeType", constant = "ODP")
+    @Mapping(target = "odcId", source = "odc.id")
+    @Mapping(target = "odcName", source = "odc.name")
+    @Mapping(target = "odcCode", source = "odc.code")
     ODPDto toODPDto(ODP odp);
 
     @Mapping(target = "nodeType", constant = "OLT")

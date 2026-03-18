@@ -20,7 +20,13 @@ public class ConfigurableUserService {
 
     private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
     private final KeycloakAdminService keycloakAdminService;
-    private final UserRepository userRepository; // Added back
+    private final UserRepository userRepository;
+
+    public UserDto getCurrentUser(String keycloakSubject) {
+        return userRepository.findByKeycloakSubject(keycloakSubject)
+                .map(this::mapToDto)
+                .orElseThrow(() -> new RuntimeException("User not found in local database: " + keycloakSubject));
+    }
 
     public UserStatsDto getUserStats() {
         return UserStatsDto.builder()
@@ -58,6 +64,7 @@ public class ConfigurableUserService {
                 String likePattern = "%" + search.toLowerCase() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("email")), likePattern),
+                        cb.like(cb.lower(root.get("username")), likePattern),
                         cb.like(cb.lower(root.get("fullName")), likePattern)));
             }
 
@@ -79,6 +86,7 @@ public class ConfigurableUserService {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
+        dto.setUsername(user.getUsername());
         dto.setFullName(user.getFullName());
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setStatus(user.getStatus());

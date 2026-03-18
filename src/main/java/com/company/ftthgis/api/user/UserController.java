@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +17,11 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final ConfigurableUserService userService;
+
+    @GetMapping("/me")
+    public UserDto me(@AuthenticationPrincipal Jwt jwt) {
+        return userService.getCurrentUser(jwt.getSubject());
+    }
 
     @GetMapping("/stats")
     public UserStatsDto getStats() {

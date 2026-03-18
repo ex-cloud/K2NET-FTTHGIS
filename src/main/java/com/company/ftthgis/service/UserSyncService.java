@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.keycloak.representations.idm.UserRepresentation;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,21 +38,23 @@ public class UserSyncService {
             String firstName = kUser.getFirstName() != null ? kUser.getFirstName() : "";
             String lastName = kUser.getLastName() != null ? kUser.getLastName() : "";
             String name = (firstName + " " + lastName).trim();
+            String username = kUser.getUsername();
 
             if (email == null)
                 continue;
 
-            userRepository.findByKeycloakSubject(keycloakId)
-                    .map(user -> updateExistingUser(user, email, name))
-                    .orElseGet(() -> {
-                        return userRepository.findByEmail(email)
-                                .map(user -> {
-                                    log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                                    user.setKeycloakSubject(keycloakId);
-                                    return updateExistingUser(user, email, name);
-                                })
-                                .orElseGet(() -> createNewUser(keycloakId, email, name));
-                    });
+            Optional<User> existingUser = userRepository.findByKeycloakSubject(keycloakId);
+            if (existingUser.isPresent()) {
+                updateExistingUser(existingUser.get(), email, name, username);
+            } else {
+                userRepository.findByEmail(email)
+                        .map(user -> {
+                            log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
+                            user.setKeycloakSubject(keycloakId);
+                            return updateExistingUser(user, email, name, username);
+                        })
+                        .orElseGet(() -> createNewUser(keycloakId, email, name, username));
+            }
         }
         log.info("Full User Synchronization Complete. Synced {} users.", keycloakUsers.size());
     }
@@ -64,29 +67,37 @@ public class UserSyncService {
         String keycloakId = jwt.getSubject();
         String email = jwt.getClaimAsString("email");
         String name = jwt.getClaimAsString("name");
+        String username = jwt.getClaimAsString("preferred_username");
 
         if (email == null) {
             log.warn("JWT Token for {} does not contain email claim. Skipping sync.", keycloakId);
             return null;
         }
 
-        return userRepository.findByKeycloakSubject(keycloakId)
-                .map(user -> updateExistingUser(user, email, name))
-                .orElseGet(() -> {
-                    return userRepository.findByEmail(email)
-                            .map(user -> {
-                                log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                                user.setKeycloakSubject(keycloakId);
-                                return updateExistingUser(user, email, name);
-                            })
-                            .orElseGet(() -> createNewUser(keycloakId, email, name));
-                });
+        Optional<User> existingUser = userRepository.findByKeycloakSubject(keycloakId);
+        if (existingUser.isPresent()) {
+            return updateExistingUser(existingUser.get(), email, name, username);
+        } else {
+            return userRepository.findByEmail(email)
+                    .map(user -> {
+                        log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
+                        user.setKeycloakSubject(keycloakId);
+                        return updateExistingUser(user, email, name, username);
+                    })
+                    .orElseGet(() -> createNewUser(keycloakId, email, name, username));
+        }
     }
 
-    private User updateExistingUser(User user, String email, String name) {
+    private User updateExistingUser(User user, String email, String name, String username) {
         boolean changed = false;
         if (name != null && !name.isEmpty() && (user.getFullName() == null || !user.getFullName().equals(name))) {
             user.setFullName(name);
+            changed = true;
+        }
+
+        if (username != null && !username.isEmpty()
+                && (user.getUsername() == null || !user.getUsername().equals(username))) {
+            user.setUsername(username);
             changed = true;
         }
 
@@ -104,7 +115,7 @@ public class UserSyncService {
         return user;
     }
 
-    private User createNewUser(String keycloakId, String email, String name) {
+    private User createNewUser(String keycloakId, String email, String name, String username) {
         log.info("Provisioning new local user profile for {} (Keycloak ID: {})", email, keycloakId);
 
         Role viewerRole = roleRepository.findByName("viewer")
@@ -114,6 +125,7 @@ public class UserSyncService {
         user.setKeycloakSubject(keycloakId);
         user.setEmail(email);
         user.setFullName(name != null && !name.isEmpty() ? name : email);
+        user.setUsername(username);
         user.setRole(viewerRole);
         user.setStatus("ACTIVE");
 

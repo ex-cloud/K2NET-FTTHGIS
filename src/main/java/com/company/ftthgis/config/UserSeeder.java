@@ -100,18 +100,23 @@ public class UserSeeder implements CommandLineRunner {
 
     private void seedUsers() {
         String defaultPassword = "Password@123";
-        createUserIfNotExists("superadmin@example.com", "Super Admin User", "super_admin", defaultPassword, "ACTIVE");
-        createUserIfNotExists("admin@example.com", "Admin User", "admin", defaultPassword, "ACTIVE");
-        createUserIfNotExists("supervisor@example.com", "Supervisor User", "supervisor", defaultPassword, "ACTIVE");
-        createUserIfNotExists("technician@example.com", "Technician User", "technician", defaultPassword, "ACTIVE");
-        createUserIfNotExists("viewer@example.com", "Viewer User", "viewer", defaultPassword, "ACTIVE");
-        createUserIfNotExists("inactive@example.com", "Inactive User", "viewer", defaultPassword, "INACTIVE");
+        createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin",
+                defaultPassword, "ACTIVE");
+        createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE");
+        createUserIfNotExists("supervisor@example.com", "xsupervisor", "Supervisor User", "supervisor", defaultPassword,
+                "ACTIVE");
+        createUserIfNotExists("technician@example.com", "xtechnician", "Technician User", "technician", defaultPassword,
+                "ACTIVE");
+        createUserIfNotExists("viewer@example.com", "xviewer", "Viewer User", "viewer", defaultPassword, "ACTIVE");
+        createUserIfNotExists("inactive@example.com", "xinactive", "Inactive User", "viewer", defaultPassword,
+                "INACTIVE");
     }
 
-    private void createUserIfNotExists(String email, String fullName, String roleName, String password, String status) {
+    private void createUserIfNotExists(String email, String username, String fullName, String roleName, String password,
+            String status) {
         String keycloakId = null;
         try {
-            keycloakId = keycloakAdminService.createUser(email, password, fullName.split(" ")[0],
+            keycloakId = keycloakAdminService.createUser(email, username, password, fullName.split(" ")[0],
                     fullName.contains(" ") ? fullName.split(" ")[1] : "", roleName);
         } catch (Exception e) {
             log.warn("Failed to sync user {} to Keycloak: {}", email, e.getMessage());
@@ -133,6 +138,7 @@ public class UserSeeder implements CommandLineRunner {
 
             User user = new User();
             user.setEmail(email);
+            user.setUsername(username); // Set username for new user
             user.setFullName(fullName);
             user.setKeycloakSubject(keycloakId);
             user.setRole(role);
@@ -142,10 +148,18 @@ public class UserSeeder implements CommandLineRunner {
             user.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
 
             userRepository.save(user);
-            log.info("Created Local User Profile: {} with Keycloak Subject: {}", email, keycloakId);
+            log.info("Created Local User Profile: {} with Username: {} and Keycloak Subject: {}", email, username,
+                    keycloakId);
         } else {
             User user = existingUser.get();
             boolean changed = false;
+
+            // Update username locally if different
+            if (username != null && !username.equals(user.getUsername())) {
+                log.info("Updating local username for {} from {} to {}", email, user.getUsername(), username);
+                user.setUsername(username);
+                changed = true;
+            }
 
             // Update role locally if different
             if (!user.getRole().getName().equals(roleName)) {
