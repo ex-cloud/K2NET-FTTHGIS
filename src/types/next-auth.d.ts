@@ -1,26 +1,45 @@
-import { DefaultSession } from "next-auth";
+import "next-auth";
+import "next-auth/jwt";
 
 declare module "next-auth" {
-  /**
-   * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
-   */
   interface Session {
     accessToken?: string;
-    user: {
-      /** The user's role. */
-      role?: string;
-    } & DefaultSession["user"];
+    idToken?: string;
     error?: "RefreshAccessTokenError";
+    user: {
+      id?: string;
+      email?: string | null;
+      name?: string | null;
+      username?: string | null;
+      avatar_url?: string | null;
+    } & import("next-auth").DefaultSession["user"];
+  }
+
+  interface User {
+    username?: string | null;
+    avatar_url?: string | null;
+    tokens?: {
+      access_token: string;
+      refresh_token: string;
+      id_token: string;
+      expires_in: number;
+    };
   }
 }
 
 declare module "next-auth/jwt" {
-  /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
-    /** OpenID Access Token */
     accessToken?: string;
     refreshToken?: string;
+    idToken?: string;
     expiresAt?: number;
     error?: "RefreshAccessTokenError";
+    user?: {
+      id?: string;
+      email?: string | null;
+      name?: string | null;
+      username?: string | null;
+      avatar_url?: string | null;
+    };
   }
 }

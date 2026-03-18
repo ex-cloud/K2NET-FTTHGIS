@@ -20,7 +20,7 @@ export async function proxy(request: NextRequest) {
   const isLoggedIn = !!token;
 
   // Protected routes
-  const protectedRoutes = ["/dashboard"];
+  const protectedRoutes = ["/dashboard", "/org"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
   );
@@ -32,9 +32,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If logged in and trying to access login page, redirect to dashboard
+  // If logged in and trying to access login page, redirect to /org
   if (isLoggedIn && pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/org", request.url));
   }
 
   return NextResponse.next();

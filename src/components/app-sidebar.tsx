@@ -162,7 +162,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       collapsible="icon"
-      className="bg-transparent border-r-zinc-800/50"
+      className="bg-transparent border-r-border/50"
       {...props}
     >
       <SidebarHeader>

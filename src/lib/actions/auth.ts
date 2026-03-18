@@ -14,9 +14,9 @@ export async function authenticate(
 ): Promise<LoginState> {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
+      username: formData.get("username"),
       password: formData.get("password"),
-      redirectTo: "/dashboard",
+      redirectTo: "/org",
     });
     return { success: true };
   } catch (error) {
