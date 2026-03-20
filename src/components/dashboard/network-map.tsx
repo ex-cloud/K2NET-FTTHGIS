@@ -23,9 +23,23 @@ import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
 import { getMartinBaseUrl } from "@/lib/api-config";
 import { MapLayerMouseEvent } from "maplibre-gl";
-import { Plus, Minus, Crosshair } from "lucide-react";
+import {
+  Plus,
+  Minus,
+  Crosshair,
+  MousePointer2,
+  PenTool,
+  GitCommit,
+  Cable,
+  Box,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMapNotifications } from "@/hooks/use-map-notifications";
+import { MapDrawControl } from "@/components/map/map-draw-control";
+import { AssetFormSidebar } from "@/components/dashboard/asset-form-sidebar";
+import type MapboxDraw from "@mapbox/mapbox-gl-draw";
+import type { DrawAssetType } from "@/store/map-store";
 
 // Default viewport centered on Bandung (based on seeder data)
 const INITIAL_VIEW_STATE = {
@@ -53,14 +67,65 @@ const TOPOLOGY_STYLE: StyleSpecification = {
   ],
 };
 
-export function NetworkMap() {
+interface NetworkMapProps {
+  allowEditing?: boolean;
+}
+
+export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useMapNotifications(); // Initialize Real-time SSE Connection
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
-  const { mapCenter, setMapCenter, mapStyle, statusOverrides } = useMapStore();
-  const [tileRefreshKey, setTileRefreshKey] = useState(0);
+  const {
+    mapCenter,
+    setMapCenter,
+    mapStyle,
+    statusOverrides,
+    isEditMode,
+    setIsEditMode,
+    drawingAssetType,
+    setDrawingAssetType,
+    isFormOpen,
+    setIsFormOpen,
+    setDrawnFeature,
+    tileRefreshKey,
+    triggerTileRefresh,
+    setEditingAsset,
+  } = useMapStore();
+
+  const drawRef = useRef<MapboxDraw>(null);
+
+  const onDrawCreate = React.useCallback(
+    (e: { features: Feature[] }) => {
+      setDrawnFeature(e.features[0]);
+      setIsFormOpen(true);
+    },
+    [setDrawnFeature, setIsFormOpen],
+  );
+
+  const onDrawUpdate = React.useCallback(
+    (e: { features: Feature[]; action: string }) => {
+      setDrawnFeature(e.features[0]);
+      setIsFormOpen(true);
+    },
+    [setDrawnFeature, setIsFormOpen],
+  );
+
+  const onDrawDelete = React.useCallback(() => {
+    setDrawnFeature(null);
+    setIsFormOpen(false);
+  }, [setDrawnFeature, setIsFormOpen]);
+
+  const startDrawing = React.useCallback(
+    (type: DrawAssetType, mode: string) => {
+      if (!drawRef.current) return;
+      setIsEditMode(true);
+      setDrawingAssetType(type);
+      drawRef.current.changeMode(mode);
+    },
+    [setIsEditMode, setDrawingAssetType],
+  );
 
   // Derived state for cleaner mode checks
   const isTopologyMode = mapStyle === "topology";
@@ -168,12 +233,22 @@ export function NetworkMap() {
     // Debounced tile refresh when status changes
     if (Object.keys(statusOverrides).length > 0) {
       const timeoutId = setTimeout(() => {
-        setTileRefreshKey((prev) => prev + 1);
+        triggerTileRefresh();
       }, 2000); // 2 second debounce to avoid flickering
 
       return () => clearTimeout(timeoutId);
     }
-  }, [statusOverrides, mounted]);
+  }, [statusOverrides, mounted, triggerTileRefresh]);
+
+  // Sync Form Close with Draw Cleanup
+  useEffect(() => {
+    if (!isFormOpen && drawRef.current) {
+      drawRef.current.deleteAll();
+      setDrawnFeature(null);
+      setDrawingAssetType(null);
+      setEditingAsset(null);
+    }
+  }, [isFormOpen, setDrawnFeature, setDrawingAssetType, setEditingAsset]);
 
   const [tileTimestamp] = useState(() => Date.now());
 
@@ -184,6 +259,9 @@ export function NetworkMap() {
   }, [tileTimestamp, tileRefreshKey]);
 
   const onMapClick = (evt: MapLayerMouseEvent) => {
+    // If actively drawing a NEW feature, don't allow selecting existing ones
+    if (drawingAssetType) return;
+
     const features = evt.features;
     if (features && features.length > 0) {
       const feature = features[0];
@@ -203,17 +281,55 @@ export function NetworkMap() {
         lat = coords[1];
       }
 
-      setSelectedAsset({
-        id: id.toString(),
-        type,
-        code,
-        lng,
-        lat,
-        signalDb: feature.properties.signal_db,
-        status: feature.properties.status,
-      });
+      // If in edit mode, we set the editingAsset to the selected feature
+      if (isEditMode && allowEditing) {
+        setEditingAsset({
+          id: id.toString(),
+          type: type as DrawAssetType,
+          code,
+          properties: feature.properties,
+        });
+
+        // Set drawnFeature for the form to calculate location/length
+        const drawFeature = {
+          type: "Feature",
+          geometry: feature.geometry,
+          properties: feature.properties,
+          id: feature.id || feature.properties.id || id, // ensure it has an id for Draw
+        } as unknown as Feature;
+
+        setDrawnFeature(drawFeature);
+        setIsFormOpen(true);
+
+        // Also add to Mapbox Draw to allow geometry editing
+        if (drawRef.current) {
+          drawRef.current.deleteAll();
+          drawRef.current.add(drawFeature);
+          const mode =
+            feature.geometry.type === "Point"
+              ? "simple_select"
+              : "direct_select";
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          drawRef.current.changeMode(mode as any, {
+            featureId: drawFeature.id as string,
+          });
+        }
+      } else {
+        // Normal selection (viewing)
+        setSelectedAsset({
+          id: id.toString(),
+          type,
+          code,
+          lng,
+          lat,
+          signalDb: feature.properties.signal_db,
+          status: feature.properties.status,
+        });
+      }
     } else {
-      setSelectedAsset(null);
+      if (!isEditMode) {
+        setSelectedAsset(null);
+      }
     }
   };
 
@@ -807,6 +923,15 @@ export function NetworkMap() {
           "standard-cables",
         ]}
       >
+        {allowEditing && isEditMode && (
+          <MapDrawControl
+            ref={drawRef}
+            displayControlsDefault={false}
+            onCreate={onDrawCreate}
+            onUpdate={onDrawUpdate}
+            onDelete={onDrawDelete}
+          />
+        )}
         <ScaleControl />
 
         {/* 
@@ -907,6 +1032,76 @@ export function NetworkMap() {
           <Crosshair className="w-5 h-5" />
         </Button>
       </div>
+
+      {/* Editor Toolbar */}
+      {allowEditing && (
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-background/90 backdrop-blur-md p-2 rounded-full border shadow-xl transition-all duration-300 pointer-events-auto">
+          <Button
+            variant={!isEditMode ? "default" : "ghost"}
+            size="sm"
+            className="rounded-full h-8 px-3"
+            onClick={() => {
+              setIsEditMode(false);
+              setDrawingAssetType(null);
+              drawRef.current?.changeMode("simple_select");
+            }}
+          >
+            <MousePointer2 className="h-4 w-4 mr-2" /> View
+          </Button>
+          <Button
+            variant={isEditMode && !drawingAssetType ? "default" : "ghost"}
+            size="sm"
+            className="rounded-full h-8 px-3"
+            onClick={() => setIsEditMode(true)}
+          >
+            <PenTool className="h-4 w-4 mr-2" /> Edit
+          </Button>
+
+          {isEditMode && (
+            <div className="flex items-center animate-in fade-in zoom-in duration-300">
+              <div className="w-px h-5 bg-border mx-1" />
+              <Button
+                variant={drawingAssetType === "OLT" ? "secondary" : "ghost"}
+                size="icon"
+                className="rounded-full h-8 w-8"
+                onClick={() => startDrawing("OLT", "draw_point")}
+                title="Add OLT"
+              >
+                <Layers className="h-4 w-4 text-emerald-500" />
+              </Button>
+              <Button
+                variant={drawingAssetType === "ODC" ? "secondary" : "ghost"}
+                size="icon"
+                className="rounded-full h-8 w-8"
+                onClick={() => startDrawing("ODC", "draw_point")}
+                title="Add ODC"
+              >
+                <Box className="h-4 w-4 text-sky-500" />
+              </Button>
+              <Button
+                variant={drawingAssetType === "ODP" ? "secondary" : "ghost"}
+                size="icon"
+                className="rounded-full h-8 w-8"
+                onClick={() => startDrawing("ODP", "draw_point")}
+                title="Add ODP"
+              >
+                <GitCommit className="h-4 w-4 text-emerald-400" />
+              </Button>
+              <Button
+                variant={drawingAssetType === "CABLE" ? "secondary" : "ghost"}
+                size="icon"
+                className="rounded-full h-8 w-8"
+                onClick={() => startDrawing("CABLE", "draw_line_string")}
+                title="Draw Cable"
+              >
+                <Cable className="h-4 w-4 text-slate-400" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {allowEditing && <AssetFormSidebar />}
     </div>
   );
 }
