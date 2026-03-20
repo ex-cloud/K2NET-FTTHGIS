@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
         log.error("Unhandled exception occurred", ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-                "An unexpected error occurred. Please contact administrator.");
+                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.");
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, String details) {

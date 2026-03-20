@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "app.seeder.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable/disable the DataInitializer seeder. When true, all network data is purged and re-seeded on startup.",
+      "defaultValue": false
+    }
+  ]
+}

@@ -12,8 +12,9 @@ import com.company.ftthgis.domain.network.entity.ODP;
 import com.company.ftthgis.domain.network.entity.OLT;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface NetworkMapper {
 
     @Mapping(target = "nodeType", constant = "ODC")
@@ -33,6 +34,9 @@ public interface NetworkMapper {
 
     @Mapping(target = "geom", source = "geometry")
     FiberCableDto toFiberCableDto(FiberCable cable);
+
+    @Mapping(target = "geometry", source = "geom")
+    FiberCable toEntity(FiberCableDto dto);
 
     @Mapping(target = "categoryName", source = "category.name")
     AssetDto toAssetDto(Asset asset);

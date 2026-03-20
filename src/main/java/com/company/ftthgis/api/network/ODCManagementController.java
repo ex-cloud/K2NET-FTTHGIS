@@ -1,6 +1,8 @@
 package com.company.ftthgis.api.network;
 
 import com.company.ftthgis.domain.network.dto.ODCDto;
+import com.company.ftthgis.domain.network.entity.AssetDeletionLog;
+import com.company.ftthgis.domain.network.repository.AssetDeletionLogRepository;
 import com.company.ftthgis.domain.network.service.ODCService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class ODCManagementController {
 
     private final ODCService odcService;
+    private final AssetDeletionLogRepository deletionLogRepository;
 
     @GetMapping
     public ResponseEntity<Page<ODCDto>> getAll(
@@ -38,8 +41,16 @@ public class ODCManagementController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        odcService.deleteOdc(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id,
+                                       @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
+        String deletedCode = odcService.deleteOdc(id);
+
+        AssetDeletionLog log = new AssetDeletionLog();
+        log.setAssetCode(deletedCode);
+        log.setAssetType("ODC");
+        log.setReason(reason);
+        deletionLogRepository.save(log);
+
         return ResponseEntity.noContent().build();
     }
 }

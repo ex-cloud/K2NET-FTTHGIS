@@ -63,11 +63,12 @@ public class ODCService {
         return toDto(odc);
     }
 
-    public void deleteOdc(Long id) {
+    public String deleteOdc(Long id) {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found"));
-        // Check for dependencies if necessary (e.g. ODPs linked to this ODC)
+        String code = odc.getCode();
         odcRepository.delete(odc);
+        return code;
     }
 
     private ODCDto toDto(ODC odc) {

@@ -42,6 +42,8 @@ keycloak:
 # Note: 'app' is a custom property. The IDE warning 'Unknown property' is safe to ignore
 # as it is not part of the internal Spring Boot schema.
 app:
+  seeder:
+    enabled: false  # Set to true to re-seed demo data (WARNING: purges all existing data)
   security:
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"

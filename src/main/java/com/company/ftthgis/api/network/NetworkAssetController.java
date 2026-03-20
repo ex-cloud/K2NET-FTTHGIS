@@ -37,6 +37,7 @@ public class NetworkAssetController {
     private final FiberCableRepository fiberCableRepository;
     private final StatusCacheService statusCacheService;
     private final StatusPropagationService statusPropagationService;
+    private final NetworkNodeRepository networkNodeRepository;
 
     @PostMapping("/simulate-failure")
     public ResponseEntity<Map<String, Object>> simulateFailure(
@@ -68,6 +69,19 @@ public class NetworkAssetController {
         }
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Simulation triggered for " + targetCode));
+    }
+
+    /**
+     * Check if an Asset Code is already used globally
+     */
+    @GetMapping("/check-code")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> checkAssetCode(@RequestParam String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("exists", false, "error", "Code is required"));
+        }
+        boolean exists = networkNodeRepository.existsByCode(code.trim());
+        return ResponseEntity.ok(Map.of("exists", exists, "available", !exists));
     }
 
     /**

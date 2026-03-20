@@ -13,6 +13,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Random;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Configuration
 @Profile("!performance-test")
 @RequiredArgsConstructor
@@ -30,22 +32,31 @@ public class DataInitializer implements CommandLineRunner {
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     private final Random random = new Random();
 
+    @Value("${app.seeder.enabled:false}")
+    private boolean seederEnabled;
+
     @Override
     public void run(String... args) {
-        log.info("Starting Advanced GIS Network Seeder (Bandung Hierarchy)...");
-
         try {
             jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS postgis");
         } catch (Exception e) {
         }
 
-        cleanDatabase();
+        // Always ensure spatial indexes and MVT function exist
         ensureSpatialIndexes();
+
+        if (!seederEnabled) {
+            log.info("Seeder DISABLED (app.seeder.enabled=false). Skipping data seed. Set to true in application.yml to re-seed.");
+            performSchemaAudit();
+            return;
+        }
+
+        log.info("Starting Advanced GIS Network Seeder (Bandung Hierarchy)...");
+        cleanDatabase();
 
         try {
             seedBandungNetworkHierarchy();
-            seedOfficeNetworkHierarchy(); // User's office location
-
+            seedOfficeNetworkHierarchy();
             log.info("--- [CLUSTER] Clustered view ready for dynamic updates ---");
         } catch (Exception e) {
             log.warn("Seeding or refresh encountered issues: {}", e.getMessage());
@@ -329,7 +340,7 @@ public class DataInitializer implements CommandLineRunner {
 
                     RETURN mvt;
                 END;
-                $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
+                $$ LANGUAGE plpgsql VOLATILE STRICT PARALLEL SAFE;
                 """;
 
         String commentSql = """

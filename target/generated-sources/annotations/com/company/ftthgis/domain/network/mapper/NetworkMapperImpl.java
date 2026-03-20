@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-02-18T09:01:22+0700",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.45.0.v20260128-0750, environment: Java 21.0.9 (Eclipse Adoptium)"
+    date = "2026-03-20T07:52:17+0700",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
 public class NetworkMapperImpl implements NetworkMapper {
@@ -33,13 +33,13 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDCDto.setOltId( odcOltId( odc ) );
         oDCDto.setOltName( odcOltName( odc ) );
         oDCDto.setOltCode( odcOltCode( odc ) );
-        oDCDto.setCapacity( odc.getCapacity() );
-        oDCDto.setCode( odc.getCode() );
-        oDCDto.setGeom( odc.getGeom() );
         oDCDto.setId( odc.getId() );
+        oDCDto.setCode( odc.getCode() );
         oDCDto.setName( odc.getName() );
-        oDCDto.setStatus( odc.getStatus() );
+        oDCDto.setGeom( odc.getGeom() );
+        oDCDto.setCapacity( odc.getCapacity() );
         oDCDto.setUsedCapacity( odc.getUsedCapacity() );
+        oDCDto.setStatus( odc.getStatus() );
 
         oDCDto.setNodeType( "ODC" );
 
@@ -57,13 +57,13 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDPDto.setOdcId( odpOdcId( odp ) );
         oDPDto.setOdcName( odpOdcName( odp ) );
         oDPDto.setOdcCode( odpOdcCode( odp ) );
-        oDPDto.setCode( odp.getCode() );
-        oDPDto.setGeom( odp.getGeom() );
         oDPDto.setId( odp.getId() );
         oDPDto.setOsmid( odp.getOsmid() );
-        oDPDto.setStatus( odp.getStatus() );
+        oDPDto.setCode( odp.getCode() );
+        oDPDto.setGeom( odp.getGeom() );
         oDPDto.setTotalPort( odp.getTotalPort() );
         oDPDto.setUsedPort( odp.getUsedPort() );
+        oDPDto.setStatus( odp.getStatus() );
 
         oDPDto.setNodeType( "ODP" );
 
@@ -78,13 +78,13 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         OLTDto oLTDto = new OLTDto();
 
-        oLTDto.setCode( olt.getCode() );
-        oLTDto.setGeom( olt.getGeom() );
         oLTDto.setId( olt.getId() );
-        oLTDto.setIpAddress( olt.getIpAddress() );
+        oLTDto.setCode( olt.getCode() );
         oLTDto.setName( olt.getName() );
+        oLTDto.setIpAddress( olt.getIpAddress() );
         oLTDto.setSnmpCommunity( olt.getSnmpCommunity() );
         oLTDto.setStatus( olt.getStatus() );
+        oLTDto.setGeom( olt.getGeom() );
 
         oLTDto.setNodeType( "OLT" );
 
@@ -100,13 +100,31 @@ public class NetworkMapperImpl implements NetworkMapper {
         FiberCableDto fiberCableDto = new FiberCableDto();
 
         fiberCableDto.setGeom( cable.getGeometry() );
+        fiberCableDto.setId( cable.getId() );
         fiberCableDto.setCode( cable.getCode() );
         fiberCableDto.setFiberCount( cable.getFiberCount() );
-        fiberCableDto.setId( cable.getId() );
-        fiberCableDto.setLengthMeters( cable.getLengthMeters() );
         fiberCableDto.setStatus( cable.getStatus() );
+        fiberCableDto.setLengthMeters( cable.getLengthMeters() );
 
         return fiberCableDto;
+    }
+
+    @Override
+    public FiberCable toEntity(FiberCableDto dto) {
+        if ( dto == null ) {
+            return null;
+        }
+
+        FiberCable fiberCable = new FiberCable();
+
+        fiberCable.setGeometry( dto.getGeom() );
+        fiberCable.setId( dto.getId() );
+        fiberCable.setCode( dto.getCode() );
+        fiberCable.setFiberCount( dto.getFiberCount() );
+        fiberCable.setStatus( dto.getStatus() );
+        fiberCable.setLengthMeters( dto.getLengthMeters() );
+
+        return fiberCable;
     }
 
     @Override
@@ -119,11 +137,11 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         assetDto.setCategoryName( assetCategoryName( asset ) );
         assetDto.setId( asset.getId() );
+        assetDto.setSerialNumber( asset.getSerialNumber() );
         assetDto.setName( asset.getName() );
+        assetDto.setStatus( asset.getStatus() );
         assetDto.setPrice( asset.getPrice() );
         assetDto.setPurchaseDate( asset.getPurchaseDate() );
-        assetDto.setSerialNumber( asset.getSerialNumber() );
-        assetDto.setStatus( asset.getStatus() );
 
         return assetDto;
     }

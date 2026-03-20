@@ -62,10 +62,12 @@ public class ODPService {
         return toDto(odp);
     }
 
-    public void deleteOdp(Long id) {
+    public String deleteOdp(Long id) {
         ODP odp = odpRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODP not found"));
+        String code = odp.getCode();
         odpRepository.delete(odp);
+        return code;
     }
 
     private ODPDto toDto(ODP odp) {

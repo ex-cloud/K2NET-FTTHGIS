@@ -4,6 +4,7 @@ import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.OLT;
 import com.company.ftthgis.domain.network.mapper.NetworkMapper;
 import com.company.ftthgis.domain.network.repository.OLTRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -53,8 +54,12 @@ public class OLTService {
     }
 
     @Transactional
-    public void deleteOlt(Long id) {
-        oltRepository.deleteById(id);
+    public String deleteOlt(Long id) {
+        OLT olt = oltRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("OLT not found with ID: " + id));
+        String code = olt.getCode();
+        oltRepository.delete(olt);
+        return code;
     }
 
     private void updateEntityFromDto(OLT olt, OLTDto dto) {
