@@ -5,6 +5,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { ODP, PageResponse } from "@/types/network";
+import { useDebounce } from "./use-debounce";
 
 export function useOdpData() {
   const { data: session } = useSession();
@@ -18,6 +19,12 @@ export function useOdpData() {
     pageCount: 0,
   });
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 400);
+
+  // Reset to page 0 when search changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [debouncedSearch]);
 
   const fetchData = useCallback(
     async (silent = false) => {
@@ -28,7 +35,7 @@ export function useOdpData() {
         const urlParams = new URLSearchParams({
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
-          search: search,
+          search: debouncedSearch,
         });
 
         const headers: HeadersInit = {
@@ -50,7 +57,7 @@ export function useOdpData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search, projectId],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, debouncedSearch, projectId],
   );
 
   useEffect(() => {
@@ -65,7 +72,6 @@ export function useOdpData() {
       }>;
       const events = customEvent.detail.events;
 
-      // 1. Immediate local state patch
       setData((prevData) => {
         const newData = [...prevData];
         let hasChanges = false;
@@ -81,7 +87,6 @@ export function useOdpData() {
         return hasChanges ? newData : prevData;
       });
 
-      // 2. Silent background refresh after a short delay
       setTimeout(() => {
         fetchData(true);
       }, 1000);

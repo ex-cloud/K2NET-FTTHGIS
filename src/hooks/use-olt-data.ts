@@ -5,6 +5,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { OLT, PageResponse } from "@/types/network";
+import { useDebounce } from "./use-debounce";
 
 export function useOltData() {
   const { data: session } = useSession();
@@ -18,6 +19,12 @@ export function useOltData() {
     pageCount: 0,
   });
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 400);
+
+  // Reset to page 0 when search changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [debouncedSearch]);
 
   const fetchData = useCallback(
     async (silent = false) => {
@@ -28,7 +35,7 @@ export function useOltData() {
         const urlParams = new URLSearchParams({
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
-          search: search,
+          search: debouncedSearch,
         });
 
         const headers: HeadersInit = {
@@ -50,7 +57,7 @@ export function useOltData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search, projectId],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, debouncedSearch, projectId],
   );
 
   useEffect(() => {
@@ -65,11 +72,6 @@ export function useOltData() {
       }>;
       const events = customEvent.detail.events;
 
-      console.log(
-        `[OLT Table Sync] Received batch update: ${events.length} events`,
-      );
-
-      // 1. Immediate local state patch (Batch process)
       setData((prevData) => {
         const newData = [...prevData];
         let hasChanges = false;
@@ -85,7 +87,6 @@ export function useOltData() {
         return hasChanges ? newData : prevData;
       });
 
-      // 2. Silent background refresh after a short delay
       setTimeout(() => {
         fetchData(true);
       }, 1000);
@@ -105,6 +106,6 @@ export function useOltData() {
     pagination,
     setPagination,
     setSearch,
-    refresh: () => fetchData(false), // Manual refresh is always non-silent
+    refresh: () => fetchData(false),
   };
 }

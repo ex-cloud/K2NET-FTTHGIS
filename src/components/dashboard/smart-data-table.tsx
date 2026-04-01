@@ -185,7 +185,7 @@ export function SmartDataTable<TData, TValue>({
               variant="outline"
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
-              disabled={pagination.pageIndex === 0}
+              disabled={loading || pagination.pageIndex === 0}
               className="h-8 text-xs px-3 border-border bg-card"
             >
               <ChevronLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -202,7 +202,7 @@ export function SmartDataTable<TData, TValue>({
               variant="outline"
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
-              disabled={pagination.pageIndex >= pagination.pageCount - 1}
+              disabled={loading || pagination.pageIndex >= pagination.pageCount - 1}
               className="h-8 text-xs px-3 border-border bg-card"
             >
               Next
