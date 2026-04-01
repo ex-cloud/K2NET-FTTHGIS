@@ -3,8 +3,8 @@
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { SmartDataTable } from "@/components/dashboard/smart-data-table";
-import { useCustomerData } from "@/hooks/use-customer-data";
-import { Customer } from "@/types/network";
+import { useOdcData } from "@/hooks/use-odc-data";
+import { ODC } from "@/types/network";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus, MapPin } from "lucide-react";
@@ -17,62 +17,61 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { CustomerDialog } from "@/components/dashboard/customer-dialogs";
+import { OdcDialog } from "@/components/dashboard/odc-dialogs";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 
-export default function CustomerListPage() {
+export default function OdcListPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { data, loading, pagination, setPagination, setSearch, refresh } =
-    useCustomerData();
+    useOdcData();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedCustomer, setSelectedCustomer] =
-    React.useState<Customer | null>(null);
+  const [selectedOdc, setSelectedOdc] = React.useState<ODC | null>(null);
 
   const handleCreate = React.useCallback(() => {
-    setSelectedCustomer(null);
+    setSelectedOdc(null);
     setIsDialogOpen(true);
   }, []);
 
-  const handleEdit = React.useCallback((customer: Customer) => {
-    setSelectedCustomer(customer);
+  const handleEdit = React.useCallback((odc: ODC) => {
+    setSelectedOdc(odc);
     setIsDialogOpen(true);
   }, []);
 
   const handleDelete = React.useCallback(
-    async (customer: Customer) => {
+    async (odc: ODC) => {
       if (!session?.accessToken) return;
-      if (!confirm(`Are you sure you want to delete ${customer.code}?`)) return;
+      if (!confirm(`Are you sure you want to delete ${odc.code}?`)) return;
 
       try {
         const baseUrl = getBackendBaseUrl();
-        const res = await fetch(`${baseUrl}/network/customers/${customer.id}`, {
+        const res = await fetch(`${baseUrl}/network/odcs/${odc.id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${session.accessToken}`,
           },
         });
 
-        if (!res.ok) throw new Error("Failed to delete customer");
+        if (!res.ok) throw new Error("Failed to delete ODC");
 
-        toast.success(`Customer ${customer.code} deleted successfully`);
+        toast.success(`ODC ${odc.code} deleted successfully`);
         refresh();
       } catch (err) {
         console.error(err);
-        toast.error("Failed to delete customer");
+        toast.error("Failed to delete ODC");
       }
     },
     [session?.accessToken, refresh],
   );
 
-  const columns = React.useMemo<ColumnDef<Customer>[]>(
+  const columns = React.useMemo<ColumnDef<ODC>[]>(
     () => [
       {
         accessorKey: "code",
-        header: "CUST ID",
+        header: "Code",
         cell: ({ row }) => (
           <span className="font-bold text-emerald-500">
             {row.getValue("code")}
@@ -82,32 +81,46 @@ export default function CustomerListPage() {
       {
         accessorKey: "name",
         header: "Name",
+      },
+      {
+        header: "Parent OLT",
+        accessorKey: "oltCode",
         cell: ({ row }) => (
-          <span className="font-medium text-zinc-200">
-            {row.getValue("name")}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-mono text-xs text-zinc-400">
+              {row.original.oltCode || "-"}
+            </span>
+            <span className="text-xs truncate max-w-[150px]">
+              {row.original.oltName}
+            </span>
+          </div>
         ),
       },
       {
-        accessorKey: "address",
-        header: "Address",
-        cell: ({ row }) => (
-          <span
-            className="text-xs text-zinc-400 truncate max-w-[200px]"
-            title={row.getValue("address")}
-          >
-            {row.getValue("address")}
-          </span>
-        ),
-      },
-      {
-        header: "Connected to ODP",
-        accessorKey: "odpCode",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-blue-400">
-            {row.original.odpCode || "-"}
-          </span>
-        ),
+        header: "Capacity",
+        cell: ({ row }) => {
+          const cap = row.original.capacity || 144;
+          const used = row.original.usedCapacity || 0;
+          const pct = Math.round((used / cap) * 100);
+          return (
+            <div className="flex flex-col gap-1.5 min-w-[120px]">
+              <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
+                <span className="text-muted-foreground">{used} / {cap} Cores</span>
+                <span className={pct > 80 ? "text-red-500" : "text-emerald-500"}>{pct}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-zinc-800/50 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    pct > 90 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" : 
+                    pct > 70 ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" : 
+                    "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  }`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -116,28 +129,17 @@ export default function CustomerListPage() {
           const status = row.getValue("status") as string;
           let variant: "default" | "destructive" | "outline" | "secondary" =
             "default";
-          if (status === "TERMINATED") variant = "destructive";
-          if (status === "SUSPENDED") variant = "secondary";
-          if (status === "ACTIVE") variant = "default";
+          if (status === "DOWN" || status === "BROKEN") variant = "destructive";
+          if (status === "MAINTENANCE") variant = "secondary";
+          if (status === "PLANNING") variant = "outline";
 
-          return (
-            <Badge
-              variant={variant}
-              className={
-                status === "ACTIVE"
-                  ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/20"
-                  : ""
-              }
-            >
-              {status}
-            </Badge>
-          );
+          return <Badge variant={variant}>{status}</Badge>;
         },
       },
       {
         id: "actions",
         cell: ({ row }) => {
-          const customer = row.original;
+          const odc = row.original;
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -154,7 +156,7 @@ export default function CustomerListPage() {
                 <DropdownMenuItem
                   className="cursor-pointer hover:bg-white/5"
                   onClick={() =>
-                    router.push(`/dashboard/map?flyTo=${customer.code}`)
+                    router.push(`/dashboard/map?flyTo=${odc.code}`)
                   }
                 >
                   <MapPin className="mr-2 h-4 w-4" />
@@ -163,15 +165,15 @@ export default function CustomerListPage() {
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem
                   className="cursor-pointer hover:bg-white/5"
-                  onClick={() => handleEdit(customer)}
+                  onClick={() => handleEdit(odc)}
                 >
                   Edit Details
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => handleDelete(customer)}
+                  onClick={() => handleDelete(odc)}
                 >
-                  Delete Record
+                  Delete Cabinet
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -183,28 +185,27 @@ export default function CustomerListPage() {
   );
 
   return (
-    <div className="flex flex-col h-full space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Customer Management
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex flex-row items-center justify-between px-8 py-4 border-b border-border bg-card/30">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Optical Distribution Cabinets
           </h2>
-          <p className="text-muted-foreground">
-            View and manage all connected customers and their termination
-            status.
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
+            {data.length} Cabinets Found
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-3">
           <Button
             onClick={handleCreate}
-            className="bg-emerald-600 hover:bg-emerald-500 font-bold text-white"
+            className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 shadow-sm"
           >
-            <Plus className="mr-2 h-4 w-4" /> Add Customer
+            <Plus className="mr-2 h-4 w-4" /> New ODC
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-md border border-white/10 bg-black/20 backdrop-blur-sm">
+      <div className="flex-1 overflow-auto p-8 pt-6">
         <SmartDataTable
           columns={columns}
           data={data}
@@ -221,10 +222,10 @@ export default function CustomerListPage() {
         />
       </div>
 
-      <CustomerDialog
+      <OdcDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        customer={selectedCustomer}
+        odc={selectedOdc}
         onSuccess={refresh}
       />
     </div>

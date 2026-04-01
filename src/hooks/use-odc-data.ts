@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { ODC, PageResponse } from "@/types/network";
 
 export function useOdcData() {
   const { data: session } = useSession();
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const [data, setData] = useState<ODC[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -22,17 +25,22 @@ export function useOdcData() {
       try {
         if (!silent) setLoading(true);
         const baseUrl = getBackendBaseUrl();
-        const params = new URLSearchParams({
+        const urlParams = new URLSearchParams({
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
           search: search,
         });
 
-        const res = await fetch(`${baseUrl}/network/odcs?${params}`, {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${session.accessToken}`,
+        };
+        
+        // Inject Tenant ID for backend filtering if available
+        if (projectId) {
+          headers["X-Project-ID"] = projectId;
+        }
+
+        const res = await fetch(`${baseUrl}/network/odcs?${urlParams}`, { headers });
         if (!res.ok) throw new Error("Failed to fetch ODCs");
         const result: PageResponse<ODC> = await res.json();
         setData(result.content);
@@ -43,7 +51,7 @@ export function useOdcData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search, projectId],
   );
 
   useEffect(() => {

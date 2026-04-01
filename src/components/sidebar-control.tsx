@@ -31,78 +31,79 @@ export function SidebarControl() {
   if (isMobile) return null; // Hide on mobile
 
   return (
-    <div className="flex items-center px-2">
+    <div className="flex items-center px-1">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="h-4 w-4 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors rounded-md"
+            className="h-6 w-6 text-zinc-500 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all duration-200 rounded-md"
           >
             <PanelLeftDashed
-              className="h-4 w-4"
-              strokeWidth={1}
-              fill="none"
-              stroke="currentColor"
+              className="h-3.5 w-3.5"
+              strokeWidth={1.5}
             />
             <span className="sr-only">Sidebar Control</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align="start"
-          side="top"
-          className="w-40 bg-popover border-border shadow-2xl p-1"
-          sideOffset={15}
+          align="end"
+          side="right"
+          className="w-48 bg-zinc-950 border-white/10 shadow-2xl p-1 animate-in fade-in zoom-in duration-200"
+          sideOffset={10}
         >
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-2 py-1.5 text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
-              Sidebar control
+            <DropdownMenuLabel className="px-2 py-2 text-[9px] font-bold text-zinc-500 uppercase tracking-[0.2em]">
+              Display Mode
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator className="bg-white/5" />
             <DropdownMenuItem
               onClick={() => handleModeChange("expanded")}
-              className="flex items-center align-center px-2 py-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
-                className={`w-3 h-3 rounded-full border border-border flex items-center justify-center ${sidebarMode === "expanded" ? "border-emerald-500 bg-emerald-500/10" : "bg-transparent"}`}
+                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "expanded" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
               >
                 {sidebarMode === "expanded" && (
-                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </div>
-              <span className="text-xs font-medium text-foreground group-hover:text-foreground">
+              <span className={`text-xs font-semibold ${sidebarMode === "expanded" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                 Expanded
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleModeChange("collapsed")}
-              className="flex items-center align-center px-2 py-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
-                className={`w-3 h-3 rounded-full border border-border flex items-center justify-center ${sidebarMode === "collapsed" ? "border-emerald-500 bg-emerald-500/10" : "bg-transparent"}`}
+                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "collapsed" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
               >
                 {sidebarMode === "collapsed" && (
-                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </div>
-              <span className="text-xs font-medium text-foreground group-hover:text-foreground">
+              <span className={`text-xs font-semibold ${sidebarMode === "collapsed" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                 Collapsed
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleModeChange("hover")}
-              className="flex items-center align-center px-2 py-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
-                className={`w-3 h-3 rounded-full border border-border flex items-center justify-center ${sidebarMode === "hover" ? "border-emerald-500 bg-emerald-500/10" : "bg-transparent"}`}
+                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "hover" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
               >
                 {sidebarMode === "hover" && (
-                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </div>
-              <span className="text-xs font-medium text-foreground group-hover:text-foreground">
-                Expand on hover
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className={`text-xs font-semibold ${sidebarMode === "hover" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
+                  Expand on Hover
+                </span>
+                <span className="text-[9px] text-zinc-600 font-medium">Reveals on mouse enter</span>
+              </div>
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

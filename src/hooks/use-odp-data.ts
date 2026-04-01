@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { ODP, PageResponse } from "@/types/network";
 
 export function useOdpData() {
   const { data: session } = useSession();
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const [data, setData] = useState<ODP[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -22,17 +25,21 @@ export function useOdpData() {
       try {
         if (!silent) setLoading(true);
         const baseUrl = getBackendBaseUrl();
-        const params = new URLSearchParams({
+        const urlParams = new URLSearchParams({
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
           search: search,
         });
 
-        const res = await fetch(`${baseUrl}/network/odps?${params}`, {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${session.accessToken}`,
+        };
+        
+        if (projectId) {
+          headers["X-Project-ID"] = projectId;
+        }
+
+        const res = await fetch(`${baseUrl}/network/odps?${urlParams}`, { headers });
         if (!res.ok) throw new Error("Failed to fetch ODPs");
         const result: PageResponse<ODP> = await res.json();
         setData(result.content);
@@ -43,7 +50,7 @@ export function useOdpData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search, projectId],
   );
 
   useEffect(() => {

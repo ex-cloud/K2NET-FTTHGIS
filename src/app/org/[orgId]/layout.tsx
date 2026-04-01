@@ -1,23 +1,24 @@
-import { ProjectSidebar } from "@/components/project-sidebar";
-import { SidebarInset } from "@/components/ui/sidebar";
+"use client";
 
-export default async function OrganizationContextLayout({
+import { MainSidebar } from "@/components/main-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { useSidebarMode } from "@/components/sidebar-mode-context";
+
+export default function OrganizationContextLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ orgId: string }>;
 }) {
-  const { orgId } = await params;
+  const { open, setOpen } = useSidebarMode();
+
   return (
-    <div
-      className="flex h-full w-full overflow-hidden bg-background"
-      data-org-id={orgId}
-    >
-      <ProjectSidebar className="border-r border-border hidden md:block z-20 shrink-0" />
-      <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
-        <main className="flex-1 overflow-auto relative p-0">{children}</main>
-      </SidebarInset>
+    <div className="flex h-full w-full overflow-hidden bg-background relative">
+      <MainSidebar />
+      <SidebarProvider open={open} onOpenChange={setOpen}>
+        <div className="flex flex-1 overflow-hidden relative">
+          <main className="flex-1 overflow-auto relative p-0">{children}</main>
+        </div>
+      </SidebarProvider>
     </div>
   );
 }

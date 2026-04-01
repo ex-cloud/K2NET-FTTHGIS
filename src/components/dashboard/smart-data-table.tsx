@@ -52,6 +52,7 @@ export function SmartDataTable<TData, TValue>({
     [],
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -70,14 +71,14 @@ export function SmartDataTable<TData, TValue>({
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="relative w-full max-w-sm">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search assets..."
+            placeholder="Search resources..."
             onChange={(event) => onSearchChange?.(event.target.value)}
-            className="pl-9 h-10 bg-background/50 border-white/5"
+            className="pl-9 h-9 bg-muted/40 border-border focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all text-sm"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -87,28 +88,28 @@ export function SmartDataTable<TData, TValue>({
               size="icon"
               onClick={onRefresh}
               disabled={loading}
-              className="h-10 w-10 border-white/5 text-muted-foreground hover:text-foreground"
+              className="h-9 w-9 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 transition-all"
             >
               <RefreshCcw
-                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
               />
             </Button>
           )}
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/5 bg-background/50 backdrop-blur-sm overflow-hidden">
+      <div className="border border-border bg-card rounded-xl overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-muted/30">
+          <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="hover:bg-transparent border-white/5"
+                className="hover:bg-transparent border-border"
               >
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-[10px] uppercase tracking-wider font-bold"
+                    className="h-10 text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-0"
                   >
                     {header.isPlaceholder
                       ? null
@@ -126,10 +127,14 @@ export function SmartDataTable<TData, TValue>({
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={columns.length}
-                  className="h-48 text-center text-muted-foreground"
+                  className="h-64 text-center text-muted-foreground"
                 >
-                  <RefreshCcw className="w-6 h-6 animate-spin mx-auto mb-2 opacity-20" />
-                  Loading data...
+                  <div className="flex flex-col items-center gap-3">
+                    <RefreshCcw className="w-6 h-6 animate-spin opacity-20" />
+                    <span className="text-sm font-medium opacity-50">
+                      Fetching data...
+                    </span>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
@@ -137,10 +142,10 @@ export function SmartDataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-white/5 hover:bg-white/5 transition-colors"
+                  className="border-border hover:bg-muted/30 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3 font-mono text-xs">
+                    <TableCell key={cell.id} className="py-2.5 font-medium">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -153,9 +158,15 @@ export function SmartDataTable<TData, TValue>({
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={columns.length}
-                  className="h-48 text-center text-muted-foreground"
+                  className="h-64 text-center text-muted-foreground"
                 >
-                  No assets found.
+                  <div className="flex flex-col items-center gap-2 opacity-40">
+                    <Search className="w-8 h-8 mb-2" />
+                    <p className="text-sm font-medium">No records found</p>
+                    <p className="text-xs">
+                      Try adjusting your search or filters
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -164,26 +175,27 @@ export function SmartDataTable<TData, TValue>({
       </div>
 
       {pagination && (
-        <div className="flex items-center justify-between px-2 py-4">
-          <div className="text-xs text-muted-foreground">
-            Total {data.length} items
+        <div className="flex items-center justify-between px-2 pt-2 pb-6">
+          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            Showing <span className="text-foreground">{data.length}</span>{" "}
+            results
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
               disabled={pagination.pageIndex === 0}
-              className="h-8 border-white/5 bg-background/50"
+              className="h-8 text-xs px-3 border-border bg-card"
             >
-              <ChevronLeft className="w-4 h-4 mr-2" />
+              <ChevronLeft className="w-3.5 h-3.5 mr-1.5" />
               Previous
             </Button>
-            <div className="flex items-center gap-1.5 px-4 font-mono text-xs text-muted-foreground">
-              <span className="text-foreground font-bold">
+            <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
+              <span className="text-emerald-500 font-bold bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
                 {pagination.pageIndex + 1}
               </span>
-              <span>/</span>
+              <span>OF</span>
               <span>{pagination.pageCount}</span>
             </div>
             <Button
@@ -191,10 +203,10 @@ export function SmartDataTable<TData, TValue>({
               size="sm"
               onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
               disabled={pagination.pageIndex >= pagination.pageCount - 1}
-              className="h-8 border-white/5 bg-background/50"
+              className="h-8 text-xs px-3 border-border bg-card"
             >
               Next
-              <ChevronRight className="w-4 h-4 ml-2" />
+              <ChevronRight className="w-3.5 h-3.5 ml-1.5" />
             </Button>
           </div>
         </div>

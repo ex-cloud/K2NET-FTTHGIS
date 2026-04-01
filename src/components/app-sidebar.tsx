@@ -1,14 +1,17 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import {
-  BookOpen,
-  Command,
-  GalleryVerticalEnd,
-  Network,
   Settings2,
-  SquareTerminal,
+  Home,
+  Network,
+  Cpu,
+  Map as MapIcon,
   Users,
+  CreditCard,
+  Briefcase,
+  Hexagon,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -21,168 +24,130 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { useSession } from "next-auth/react";
-
-// This is sample data.
-const data = {
-  user: {
-    name: "User",
-    email: "user@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "FTTH GIS",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/dashboard",
-        },
-        {
-          title: "Analytics",
-          url: "/dashboard/analytics",
-        },
-      ],
-    },
-    {
-      title: "Infrastructure",
-      url: "/dashboard/infrastructure",
-      icon: Network,
-      items: [
-        {
-          title: "Topology View",
-          url: "/dashboard/infrastructure/topology",
-        },
-        {
-          title: "Heatmap",
-          url: "/dashboard/infrastructure/heatmap",
-        },
-        {
-          title: "Canvas Visual Builder",
-          url: "/dashboard/infrastructure/canvas",
-        },
-      ],
-    },
-    {
-      title: "Network Inventory",
-      url: "/dashboard/data",
-      icon: BookOpen,
-      items: [
-        {
-          title: "ODC List",
-          url: "/dashboard/infrastructure/odc",
-        },
-        {
-          title: "ODP List",
-          url: "/dashboard/infrastructure/odp",
-        },
-        {
-          title: "Cable Management",
-          url: "/dashboard/infrastructure/cables",
-        },
-        {
-          title: "Customer Database",
-          url: "/dashboard/infrastructure/customer",
-        },
-      ],
-    },
-    {
-      title: "Core Infrastructure",
-      url: "/dashboard/core",
-      icon: Command,
-      items: [
-        {
-          title: "OLT Management",
-          url: "/dashboard/core/olt",
-        },
-        {
-          title: "Routers & Switches",
-          url: "/dashboard/core/routers",
-        },
-        {
-          title: "Servers & Services",
-          url: "/dashboard/core/servers",
-        },
-      ],
-    },
-    {
-      title: "User Management",
-      url: "/dashboard/users",
-      icon: Users,
-      items: [
-        {
-          title: "All Users",
-          url: "/dashboard/users",
-        },
-        {
-          title: "Roles & Permissions",
-          url: "/dashboard/users/roles",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "/dashboard/settings",
-        },
-        {
-          title: "Team",
-          url: "/dashboard/settings/team",
-        },
-      ],
-    },
-  ],
-};
+import { useSidebarMode } from "./sidebar-mode-context";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const { sidebarMode, setOpen: setContextOpen } = useSidebarMode();
 
-  // Use session data if available
+  // Route sniffing
+  const isInsideProject = pathname?.includes("/project/");
+
+  // Extract orgId and projectId from URL pattern: /org/[orgId]/project/[projectId]
+  const match = pathname?.match(/\/org\/([^\/]+)(?:\/project\/([^\/]+))?/);
+  const orgId = match ? match[1] : "default";
+  const projectId = match && match[2] ? match[2] : "";
+
+  // Auto-collapse logic removed to give full control to the 3-mode switcher.
+
+  // Dynamic Navigation Models
+  const orgNavMain = [
+    {
+      title: "Projects",
+      url: `/org/${orgId}`,
+      icon: Briefcase,
+      isActive: !isInsideProject,
+    },
+    {
+      title: "Team",
+      url: "#",
+      icon: Users,
+    },
+    {
+      title: "Billing",
+      url: "#",
+      icon: CreditCard,
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
+    },
+  ];
+
+  const projectNavMain = [
+    {
+      title: "Project Overview",
+      url: `/org/${orgId}/project/${projectId}`,
+      icon: Home,
+      isActive: pathname === `/org/${orgId}/project/${projectId}`,
+    },
+    {
+      title: "Infrastructure",
+      url: `/org/${orgId}/project/${projectId}/infrastructure`,
+      icon: Network,
+      isActive: pathname?.includes("/infrastructure"),
+    },
+    {
+      title: "Network Inventory",
+      url: `/org/${orgId}/project/${projectId}/inventory`,
+      icon: MapIcon,
+      isActive: pathname?.includes("/inventory"),
+    },
+    {
+      title: "Core Infrastructure",
+      url: `/org/${orgId}/project/${projectId}/core`,
+      icon: Cpu,
+      isActive: pathname?.includes("/core"),
+    },
+    {
+      title: "Settings",
+      url: `/org/${orgId}/project/${projectId}/settings`,
+      icon: Settings2,
+      isActive: pathname?.includes("/settings"),
+    },
+  ];
+
+  const currentNav = isInsideProject ? projectNavMain : orgNavMain;
+
+  // Render Session User
   const user = session?.user
     ? {
         name: session.user.name || "User",
         email: session.user.email || "user@example.com",
         avatar: session.user.image || "/avatars/shadcn.jpg",
       }
-    : data.user;
+    : {
+        name: "User",
+        email: "user@example.com",
+        avatar: "/avatars/shadcn.jpg",
+      };
 
   return (
     <Sidebar
       collapsible="icon"
-      className="bg-transparent border-r-border/50"
+      className="border-r border-white/5 bg-sidebar transition-all duration-300 ease-in-out"
+      onMouseEnter={() => {
+        if (sidebarMode === "hover") setContextOpen(true);
+      }}
+      onMouseLeave={() => {
+        if (sidebarMode === "hover") setContextOpen(false);
+      }}
       {...props}
     >
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
+      <SidebarHeader className="h-16 border-b border-white/5 flex flex-row items-center px-4">
+        <div className="flex flex-row items-center overflow-hidden">
+          <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <Hexagon className="size-4 fill-emerald-500/20" />
           </div>
-          <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold">FTTH GIS</span>
-            <span className="">v1.0.0</span>
+          <div className="ml-3 flex flex-col gap-0.5 leading-none transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0 overflow-hidden">
+            <span className="font-bold text-sm tracking-tight truncate">
+              ex-cloud&apos;s Org
+            </span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-500/70 truncate">
+              Free Plan
+            </span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
+      <SidebarContent className="py-4">
+        <NavMain items={currentNav} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-white/5 p-2">
         <NavUser user={user} />
       </SidebarFooter>
-      <SidebarRail />
+      <SidebarRail className="hover:after:bg-emerald-500/20" />
     </Sidebar>
   );
 }

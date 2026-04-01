@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { Customer, PageResponse } from "@/types/network";
 
 export function useCustomerData() {
   const { data: session } = useSession();
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const [data, setData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -22,18 +25,22 @@ export function useCustomerData() {
       try {
         if (!silent) setLoading(true);
         const baseUrl = getBackendBaseUrl();
-        const params = new URLSearchParams({
+        const urlParams = new URLSearchParams({
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
           search: search,
         });
 
-        const res = await fetch(`${baseUrl}/network/customers?${params}`, {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch customers");
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${session.accessToken}`,
+        };
+        
+        if (projectId) {
+          headers["X-Project-ID"] = projectId;
+        }
+
+        const res = await fetch(`${baseUrl}/network/customers?${urlParams}`, { headers });
+        if (!res.ok) throw new Error("Failed to fetch Customers");
         const result: PageResponse<Customer> = await res.json();
         setData(result.content);
         setPagination((prev) => ({ ...prev, pageCount: result.totalPages }));
@@ -43,7 +50,7 @@ export function useCustomerData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, search, projectId],
   );
 
   useEffect(() => {

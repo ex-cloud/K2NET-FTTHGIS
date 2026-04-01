@@ -25,7 +25,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 export function NavUser({
   user,
@@ -45,17 +45,19 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-white/5 data-[state=open]:text-white hover:bg-white/5 transition-colors duration-200"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar className="h-8 w-8 rounded-lg border border-white/10">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-bold">
+                  {user.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                <span className="truncate font-bold text-zinc-200">{user.name}</span>
+                <span className="truncate text-[10px] text-zinc-500 font-mono tracking-tight">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <ChevronsUpDown className="ml-auto size-3 text-zinc-600" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
