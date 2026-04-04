@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Feature } from "geojson";
+import type { Feature, FeatureCollection, LineString } from "geojson";
 
 interface MapCenter {
   lng: number;
@@ -9,6 +9,9 @@ interface MapCenter {
 
 export type MapStyleMode = "base" | "topology" | "satellite";
 export type DrawAssetType = "ODP" | "ODC" | "OLT" | "CABLE" | null;
+
+// Trace Path mode state
+export type TraceMode = "idle" | "selecting-target";
 
 interface MapState {
   mapCenter: MapCenter;
@@ -23,8 +26,13 @@ interface MapState {
     id: string;
     type: DrawAssetType;
     code: string;
-    properties: any;
+    properties: Record<string, string | number | boolean | null | undefined>;
   } | null;
+
+  // Trace Path state
+  traceMode: TraceMode;
+  traceSourceNode: { id: string; code: string } | null;
+  tracedPath: FeatureCollection<LineString> | null;
 
   setMapCenter: (center: MapCenter) => void;
   setMapStyle: (style: MapStyleMode) => void;
@@ -33,8 +41,13 @@ interface MapState {
   setDrawingAssetType: (type: DrawAssetType) => void;
   setDrawnFeature: (feature: Feature | null) => void;
   setIsFormOpen: (isOpen: boolean) => void;
-  setEditingAsset: (asset: { id: string; type: DrawAssetType; code: string; properties: any } | null) => void;
+  setEditingAsset: (asset: { id: string; type: DrawAssetType; code: string; properties: Record<string, string | number | boolean | null | undefined> } | null) => void;
   triggerTileRefresh: () => void;
+
+  // Trace Path actions
+  startTraceMode: (sourceNode: { id: string; code: string }) => void;
+  setTracedPath: (path: FeatureCollection<LineString> | null) => void;
+  clearTrace: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -52,6 +65,11 @@ export const useMapStore = create<MapState>((set) => ({
   tileRefreshKey: 0,
   editingAsset: null,
 
+  // Trace Path defaults
+  traceMode: "idle",
+  traceSourceNode: null,
+  tracedPath: null,
+
   setMapCenter: (center) => set({ mapCenter: center }),
   setMapStyle: (style) => set({ mapStyle: style }),
   updateStatusOverride: (code, status) =>
@@ -64,4 +82,12 @@ export const useMapStore = create<MapState>((set) => ({
   setIsFormOpen: (isOpen) => set({ isFormOpen: isOpen }),
   setEditingAsset: (asset) => set({ editingAsset: asset }),
   triggerTileRefresh: () => set((state) => ({ tileRefreshKey: state.tileRefreshKey + 1 })),
+
+  // Trace Path actions
+  startTraceMode: (sourceNode) =>
+    set({ traceMode: "selecting-target", traceSourceNode: sourceNode, tracedPath: null }),
+  setTracedPath: (path) =>
+    set({ tracedPath: path, traceMode: "idle" }),
+  clearTrace: () =>
+    set({ tracedPath: null, traceMode: "idle", traceSourceNode: null }),
 }));

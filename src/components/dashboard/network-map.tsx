@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { MapTooltip, type HoveredFeature } from "@/components/dashboard/map-tooltip";
+import { useTracePath } from "@/hooks/use-trace-path";
+import { useMapClusters } from "@/hooks/use-map-clusters";
 import Map, {
   Source,
   Layer,
@@ -14,6 +17,7 @@ import type {
   HeatmapLayerSpecification,
   FillLayerSpecification,
   StyleSpecification,
+  GeoJSONSource,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as turfUtils from "@/lib/turf-utils";
@@ -92,9 +96,25 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     tileRefreshKey,
     triggerTileRefresh,
     setEditingAsset,
+    // Trace Path state
+    traceMode,
+    traceSourceNode,
+    tracedPath,
+    setTracedPath,
+    clearTrace,
   } = useMapStore();
 
-  const drawRef = useRef<MapboxDraw>(null);
+  // Trace Path hook
+  const { fetchTracePath, loading: traceLoading } = useTracePath();
+
+  // Clustering data
+  const { geoJSON: clusterGeoJSON } = useMapClusters();
+
+  // Hover tooltip state
+  const [hoveredFeature, setHoveredFeature] = useState<HoveredFeature | null>(null);
+
+  // Use a more specific type than 'any' but avoid 'never' issues with constructor/instance confusion
+  const drawRef = useRef<MapboxDraw | null>(null);
 
   const onDrawCreate = React.useCallback(
     (e: { features: Feature[] }) => {
@@ -258,9 +278,89 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?t=${tileTimestamp}&r=${tileRefreshKey}`;
   }, [tileTimestamp, tileRefreshKey]);
 
+  // Mouse hover handler for tooltip (no API calls, reads from MVT properties)
+  const onMouseMove = useCallback(
+    (evt: MapLayerMouseEvent) => {
+      const features = evt.features;
+      if (features && features.length > 0) {
+        const feature = features[0];
+        const sourceLayer = feature.sourceLayer;
+        const type =
+          sourceLayer === "nodes" ? feature.properties.node_type : "CABLE";
+        setHoveredFeature({
+          code: feature.properties.code || `${type}-${feature.properties.id}`,
+          type,
+          status: statusOverrides[feature.properties.code] || feature.properties.status || "UP",
+          x: evt.point.x,
+          y: evt.point.y,
+        });
+        // Change cursor to pointer
+        if (mapRef.current) {
+          mapRef.current.getCanvas().style.cursor = traceMode === "selecting-target" ? "crosshair" : "pointer";
+        }
+      } else {
+        setHoveredFeature(null);
+        if (mapRef.current) {
+          mapRef.current.getCanvas().style.cursor = traceMode === "selecting-target" ? "crosshair" : "";
+        }
+      }
+    },
+    [statusOverrides, traceMode]
+  );
+
+  const onMouseLeave = useCallback(() => {
+    setHoveredFeature(null);
+    if (mapRef.current) {
+      mapRef.current.getCanvas().style.cursor = traceMode === "selecting-target" ? "crosshair" : "";
+    }
+  }, [traceMode]);
+
+  const onClusterClick = (event: MapLayerMouseEvent) => {
+    const features = event.features;
+    if (features && features.length > 0) {
+      const feature = features[0];
+      const clusterId = feature.properties?.cluster_id;
+      const map = mapRef.current?.getMap();
+      if (map && clusterId !== undefined) {
+        const source = map.getSource("network-clusters") as GeoJSONSource;
+        if (source && source.getClusterExpansionZoom) {
+          source.getClusterExpansionZoom(clusterId).then((zoom) => {
+            if (zoom !== undefined) {
+              map.easeTo({
+                center: (feature.geometry as { type: "Point"; coordinates: [number, number] }).coordinates,
+                zoom: zoom,
+              });
+            }
+          }).catch(err => {
+            console.error("Cluster expansion error", err);
+          });
+        }
+      }
+    }
+  };
+
   const onMapClick = (evt: MapLayerMouseEvent) => {
     // If actively drawing a NEW feature, don't allow selecting existing ones
     if (drawingAssetType) return;
+
+    // TRACE MODE: selecting target node
+    if (traceMode === "selecting-target" && traceSourceNode) {
+      const features = evt.features;
+      if (features && features.length > 0) {
+        const feature = features[0];
+        if (feature.sourceLayer === "nodes") {
+          const targetId = feature.properties.id?.toString();
+          if (targetId && targetId !== traceSourceNode.id) {
+            fetchTracePath(traceSourceNode.id, targetId).then((result) => {
+              if (result) {
+                setTracedPath(result);
+              }
+            });
+          }
+        }
+      }
+      return;
+    }
 
     const features = evt.features;
     if (features && features.length > 0) {
@@ -309,9 +409,12 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
             feature.geometry.type === "Point"
               ? "simple_select"
               : "direct_select";
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          drawRef.current.changeMode(mode as any, {
-            featureId: drawFeature.id as string,
+          // Cast to the expected Draw methods to satisfy TS without using 'any'
+          const drawInstance = drawRef.current as unknown as { 
+            changeMode: (mode: string, options?: object) => void 
+          };
+          drawInstance.changeMode(mode, {
+            featureId: (drawFeature.id as string | number).toString(),
           });
         }
       } else {
@@ -476,7 +579,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       source: "network-source",
       "source-layer": "nodes",
       filter: ["==", ["get", "node_type"], "OLT"],
-      minzoom: 12,
+      minzoom: 12.5,
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 15, 14],
         "circle-color": [
@@ -911,8 +1014,18 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         initialViewState={INITIAL_VIEW_STATE}
         mapStyle={currentMapStyle}
         style={{ width: "100%", height: "100%" }}
-        onClick={onMapClick}
         onMove={onMapMove}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
+        onClick={(e) => {
+          const firstFeature = e.features?.[0];
+          const clickedLayer = firstFeature?.layer?.id;
+          if (clickedLayer === "clusters") {
+            onClusterClick(e);
+          } else {
+            onMapClick(e);
+          }
+        }}
         maxZoom={22}
         interactiveLayerIds={[
           "olt-nodes",
@@ -921,6 +1034,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           "customer-nodes",
           "topology-cables",
           "standard-cables",
+          "clusters",
         ]}
       >
         {allowEditing && isEditMode && (
@@ -992,6 +1106,115 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         {coverageData && (
           <Source id="coverage-source" type="geojson" data={coverageData}>
             <Layer {...coverageLayer} />
+          </Source>
+        )}
+
+        {/* TRACED ROUTE OVERLAY */}
+        {tracedPath && (
+          <Source id="trace-path-source" type="geojson" data={tracedPath}>
+            {/* Glow effect (wider, semi-transparent) */}
+            <Layer
+              id="trace-path-glow"
+              type="line"
+              paint={{
+                "line-width": 10,
+                "line-color": "#06b6d4",
+                "line-opacity": 0.3,
+                "line-blur": 4,
+              }}
+            />
+            {/* Main traced route line */}
+            <Layer
+              id="trace-path-line"
+              type="line"
+              layout={{
+                "line-cap": "round",
+                "line-join": "round",
+              }}
+              paint={{
+                "line-width": 4,
+                "line-color": "#06b6d4",
+                "line-opacity": 0.9,
+                "line-dasharray": [2, 2],
+              }}
+            />
+          </Source>
+        )}
+
+        {/* CLUSTERING SOURCE (only active at zoom < 12.5) */}
+        {clusterGeoJSON && (
+          <Source
+            id="network-clusters"
+            type="geojson"
+            data={clusterGeoJSON}
+            cluster={true}
+            clusterMaxZoom={14}
+            clusterRadius={50}
+          >
+            <Layer
+              id="clusters"
+              type="circle"
+              filter={["has", "point_count"]}
+              paint={{
+                "circle-color": [
+                  "step",
+                  ["get", "point_count"],
+                  "#22c55e",
+                  50,
+                  "#f59e0b",
+                  200,
+                  "#ef4444",
+                ],
+                "circle-radius": [
+                  "step",
+                  ["get", "point_count"],
+                  20,
+                  50,
+                  30,
+                  200,
+                  40,
+                ],
+                "circle-stroke-width": 4,
+                "circle-stroke-color": "white",
+                "circle-opacity": 0.8,
+                "circle-stroke-opacity": 0.5,
+              }}
+            />
+            <Layer
+              id="cluster-count"
+              type="symbol"
+              filter={["has", "point_count"]}
+              layout={{
+                "text-field": "{point_count}",
+                "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+                "text-size": 14,
+              }}
+              paint={{
+                "text-color": "white",
+              }}
+            />
+            <Layer
+              id="unclustered-point"
+              type="circle"
+              filter={["!", ["has", "point_count"]]}
+              maxzoom={12.5}
+              paint={{
+                "circle-color": [
+                  "match",
+                  ["get", "type"],
+                  "OLT",
+                  "#f59e0b",
+                  "ODC",
+                  "#3b82f6",
+                  "ODP",
+                  "#06b6d4",
+                  "#22c55e",
+                ],
+                "circle-radius": 6,
+                "circle-stroke-width": 1,
+                "circle-stroke-color": "#fff",
+              }}
+            />
           </Source>
         )}
 
@@ -1102,6 +1325,43 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       )}
 
       {allowEditing && <AssetFormSidebar />}
+
+      {/* Hover Tooltip */}
+      <MapTooltip feature={hoveredFeature} />
+
+      {/* Trace Mode Banner */}
+      {traceMode === "selecting-target" && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3 bg-cyan-500/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl shadow-cyan-500/30">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="text-sm font-bold tracking-wide">
+              {traceLoading ? "Tracing route..." : `Click a target node to trace from ${traceSourceNode?.code || "source"}`}
+            </span>
+            <button
+              onClick={clearTrace}
+              className="ml-2 text-white/70 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Traced Route Clear Button */}
+      {tracedPath && traceMode === "idle" && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3 bg-cyan-500/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl shadow-cyan-500/30">
+            <Cable className="w-4 h-4" />
+            <span className="text-sm font-bold">Route traced successfully</span>
+            <button
+              onClick={clearTrace}
+              className="ml-2 text-white/70 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

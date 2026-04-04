@@ -106,8 +106,8 @@ export function AssetFormSidebar() {
           }
           setFormData({
             code: editingAsset.code,
-            name: editingAsset.properties?.name || editingAsset.properties?.code || "",
-            status: editingAsset.properties?.status || "UP",
+            name: (editingAsset.properties?.name as string) || (editingAsset.properties?.code as string) || "",
+            status: (editingAsset.properties?.status as string) || "UP",
             lng: coords[0] || 0,
             lat: coords[1] || 0
           });
@@ -216,13 +216,13 @@ export function AssetFormSidebar() {
       } else {
         // preserve existing values if editing
         if (type === "ODP") {
-          payload.totalPort = editingAsset.properties?.total_port;
-          payload.usedPort = editingAsset.properties?.used_port;
+          payload.totalPort = editingAsset.properties?.total_port as number;
+          payload.usedPort = editingAsset.properties?.used_port as number;
         } else if (type === "ODC") {
-          payload.capacity = editingAsset.properties?.capacity;
-          payload.usedCapacity = editingAsset.properties?.used_capacity;
+          payload.capacity = editingAsset.properties?.capacity as number;
+          payload.usedCapacity = editingAsset.properties?.used_capacity as number;
         } else if (type === "CABLE") {
-          payload.fiberCount = editingAsset.properties?.fiber_count;
+          payload.fiberCount = editingAsset.properties?.fiber_count as number;
         }
       }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Cloud, ZapOff, PlayCircle, Loader2, Activity } from "lucide-react";
+import { X, Cloud, ZapOff, PlayCircle, Loader2, Activity, Cable } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSelectionStore } from "@/store/selection-store";
@@ -27,7 +27,7 @@ interface DiagnosticResult {
 
 export function AssetPanel() {
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
-  const { statusOverrides } = useMapStore();
+  const { statusOverrides, startTraceMode, traceMode } = useMapStore();
   const [details, setDetails] = useState<AssetDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
@@ -294,6 +294,24 @@ export function AssetPanel() {
               <PlayCircle className="w-4 h-4 mr-2" />
               {diagnosing ? "ANALYZING..." : "RUN DIAGNOSTICS"}
             </Button>
+
+            {/* Trace Route Button — only for nodes, not cables/coordinates */}
+            {details && ["OLT", "ODC", "ODP"].includes(details.type) && (
+              <Button
+                variant="outline"
+                className="w-full rounded-2xl h-10 font-bold tracking-wide border-cyan-500/30 text-cyan-500 hover:bg-cyan-500/10 mt-2"
+                onClick={() => {
+                  startTraceMode({
+                    id: details.id,
+                    code: details.code,
+                  });
+                }}
+                disabled={traceMode === "selecting-target"}
+              >
+                <Cable className="w-4 h-4 mr-2" />
+                {traceMode === "selecting-target" ? "SELECT TARGET ON MAP..." : "TRACE FIBER ROUTE"}
+              </Button>
+            )}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground text-center">
