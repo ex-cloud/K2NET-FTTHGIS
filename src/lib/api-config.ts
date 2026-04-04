@@ -5,7 +5,7 @@
  */
 export const getBackendBaseUrl = () => {
   const defaultUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:9090/api/v1";
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:9090/api/v1";
 
   // Hanya jalankan logika ini di sisi browser (client-side)
   if (typeof window !== "undefined") {

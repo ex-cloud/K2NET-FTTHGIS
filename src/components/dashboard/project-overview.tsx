@@ -25,11 +25,12 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 interface ProjectStats {
   totalNodes: number;
   activeNodes: number;
-  totalOdc: number;
-  totalOdp: number;
-  totalCables: number;
+  totalUsers: number;
+  totalNetworkLengthKm: number;
   activeAlerts: number;
   networkUptime: number;
+  customerReach: number;
+  maintenanceProgress: number;
 }
 
 interface MetricBoxProps {
@@ -284,7 +285,7 @@ export function ProjectOverview() {
       };
       if (projectId) headers["X-Project-ID"] = projectId;
 
-      const res = await fetch(`${baseUrl}/network/dashboard/stats`, {
+      const res = await fetch(`${baseUrl}/analytics/summary`, {
         headers,
       });
       if (!res.ok) throw new Error("Failed to fetch stats");
@@ -295,11 +296,12 @@ export function ProjectOverview() {
       setStats({
         totalNodes: 0,
         activeNodes: 0,
-        totalOdc: 0,
-        totalOdp: 0,
-        totalCables: 0,
+        totalUsers: 0,
+        totalNetworkLengthKm: 0,
         activeAlerts: 0,
         networkUptime: 99.9,
+        customerReach: 0,
+        maintenanceProgress: 0,
       });
     } finally {
       setLoading(false);
@@ -435,7 +437,7 @@ export function ProjectOverview() {
 
       {/* --- Network Stats Section --- */}
       {stats &&
-        (stats.totalOdc > 0 || stats.totalOdp > 0 || stats.totalNodes > 0) && (
+        (stats.totalNodes > 0 || stats.totalUsers > 0) && (
           <div>
             <h2 className="text-base font-semibold text-foreground mb-4">
               Network Infrastructure
@@ -455,14 +457,14 @@ export function ProjectOverview() {
               />
               <MetricBox
                 icon={Database}
-                label="ODC Points"
-                value={stats.totalOdc}
+                label="Network Length"
+                value={`${stats.totalNetworkLengthKm.toFixed(2)} km`}
                 color="violet"
               />
               <MetricBox
                 icon={Database}
-                label="ODP Points"
-                value={stats.totalOdp}
+                label="Customer Reach"
+                value={stats.customerReach}
                 color="amber"
               />
             </div>

@@ -1,11 +1,7 @@
-import { Metadata } from "next";
+"use client";
+
 import { LoginForm } from "@/components/auth/login-form";
 import { Network } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Login | FTTH GIS",
-  description: "Sign in to your FTTH GIS account",
-};
 
 export default function LoginPage() {
   return (
