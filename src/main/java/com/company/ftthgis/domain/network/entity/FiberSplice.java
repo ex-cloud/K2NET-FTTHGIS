@@ -28,6 +28,18 @@ public class FiberSplice {
     @Column(name = "splice_type")
     private String spliceType; // FUSION, MECHANICAL, CONNECTOR
 
+    @Column(name = "from_port_id")
+    private Long fromPortId;
+
+    @Column(name = "to_port_id")
+    private Long toPortId;
+
+    @Column(name = "loss_db")
+    private Double lossDb; // Splice attenuation in dB
+
+    @Column(length = 500)
+    private String notes; // Technician notes
+
     @Column(columnDefinition = "geometry(Point, 4326)")
     private Point location;
 

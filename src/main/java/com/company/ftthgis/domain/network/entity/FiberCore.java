@@ -26,7 +26,13 @@ public class FiberCore {
     @Column(nullable = false)
     private String status; // USED, BROKEN, RESERVED, AVAILABLE
 
-    // Basic connectivity info (can be enhanced with proper Node entity relation later)
+    @Column(length = 20)
+    private String color; // Blue, Orange, Green, Brown, Slate, White, Red, Black
+
+    @Column(name = "attenuation_db")
+    private Double attenuationDb; // Loss per km (dB/km)
+
+    // Basic connectivity info
     @Column(name = "from_node_id")
     private Long fromNodeId; 
 

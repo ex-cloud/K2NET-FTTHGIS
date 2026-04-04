@@ -40,6 +40,12 @@
       "sourceType": "com.company.ftthgis.config.AppProperties$Security$Cors"
     },
     {
+      "name": "app.seeder.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable\/disable the DataInitializer seeder. When true, all network data is purged and re-seeded on startup.",
+      "defaultValue": false
+    },
+    {
       "name": "keycloak.client-id",
       "type": "java.lang.String",
       "sourceType": "com.company.ftthgis.config.KeycloakProperties"
