@@ -9,13 +9,13 @@
       "name": "app.security",
       "type": "com.company.ftthgis.config.AppProperties$Security",
       "sourceType": "com.company.ftthgis.config.AppProperties",
-      "sourceMethod": "getSecurity()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security getSecurity() "
     },
     {
       "name": "app.security.cors",
       "type": "com.company.ftthgis.config.AppProperties$Security$Cors",
       "sourceType": "com.company.ftthgis.config.AppProperties$Security",
-      "sourceMethod": "getCors()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security.Cors getCors() "
     },
     {
       "name": "keycloak",

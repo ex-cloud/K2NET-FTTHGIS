@@ -35,8 +35,8 @@ public class NetworkController {
 
     @GetMapping("/trace-path")
     public ResponseEntity<List<FiberCableMapDto>> tracePath(
-            @RequestParam int startNode,
-            @RequestParam int endNode) {
-        return ResponseEntity.ok(networkService.tracePath(startNode, endNode));
+            @RequestParam Long startNodeId,
+            @RequestParam Long endNodeId) {
+        return ResponseEntity.ok(networkService.tracePath(startNodeId, endNodeId));
     }
 }

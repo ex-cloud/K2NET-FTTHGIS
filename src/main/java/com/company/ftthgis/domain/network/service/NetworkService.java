@@ -12,7 +12,7 @@ public interface NetworkService {
     /**
      * Menemukan jalur terpendek antara dua node.
      */
-    List<FiberCableMapDto> tracePath(int startNode, int endNode);
+    List<FiberCableMapDto> tracePath(Long startNodeId, Long endNodeId);
 
     /**
      * Update asset status across DB, Cache, and notify Map

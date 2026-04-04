@@ -26,9 +26,11 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, Long> {
         @Query(value = "SELECT c.id as id, c.code as code, c.geom as geometry, c.status as status " +
                         "FROM pgr_dijkstra(" +
                         "  'SELECT id, source, target, cost FROM network_edges', " +
-                        "  :startNode, :endNode, false" +
+                        "  (SELECT v.id FROM network_edges_vertices_pgr v JOIN network_nodes n ON ST_DWithin(n.geom, v.the_geom, 0.00001) WHERE n.id = :startNodeId LIMIT 1), " +
+                        "  (SELECT v.id FROM network_edges_vertices_pgr v JOIN network_nodes n ON ST_DWithin(n.geom, v.the_geom, 0.00001) WHERE n.id = :endNodeId LIMIT 1), " +
+                        "  false" +
                         ") as r " +
                         "JOIN network_edges c ON r.edge = c.id " +
                         "ORDER BY r.seq", nativeQuery = true)
-        List<FiberCableProjection> findShortestPath(int startNode, int endNode);
+        List<FiberCableProjection> findShortestPath(Long startNodeId, Long endNodeId);
 }

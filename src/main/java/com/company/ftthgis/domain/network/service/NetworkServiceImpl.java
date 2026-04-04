@@ -60,8 +60,8 @@ public class NetworkServiceImpl implements NetworkService {
     }
 
     @Override
-    public List<FiberCableMapDto> tracePath(int startNode, int endNode) {
-        List<FiberCableProjection> projections = fiberCableRepository.findShortestPath(startNode, endNode);
+    public List<FiberCableMapDto> tracePath(Long startNodeId, Long endNodeId) {
+        List<FiberCableProjection> projections = fiberCableRepository.findShortestPath(startNodeId, endNodeId);
         return mapProjectionsToDtos(projections);
     }
 

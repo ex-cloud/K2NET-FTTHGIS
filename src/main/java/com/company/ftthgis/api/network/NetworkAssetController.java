@@ -240,6 +240,31 @@ public class NetworkAssetController {
         }
     }
 
+    @GetMapping("/all-nodes")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<AssetSearchResult>> getAllNodes() {
+        log.info("📍 Fetching all nodes for map clustering...");
+        List<AssetSearchResult> results = new ArrayList<>();
+        
+        oltRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT", 
+                o.getGeom().getX(), o.getGeom().getY(), 
+                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+        
+        odcRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC", 
+                o.getGeom().getX(), o.getGeom().getY(), 
+                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+        
+        odpRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP", 
+                o.getGeom().getX(), o.getGeom().getY(), 
+                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+        
+        customerRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER", 
+                o.getGeom().getX(), o.getGeom().getY(), 
+                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+        
+        return ResponseEntity.ok(results);
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<AssetSearchResult>> search(@RequestParam String q) {
         List<AssetSearchResult> results = new ArrayList<>();
