@@ -8,7 +8,7 @@ import { OLT } from "@/types/network";
 import { useSelectionStore } from "@/store/selection-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus, MapPin } from "lucide-react";
+import { MoreHorizontal, Plus, MapPin, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { OltDialog } from "@/components/dashboard/olt-dialogs";
 import {
   Dialog,
@@ -27,20 +27,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 
 export default function OltListPage() {
   const router = useRouter();
+  const params = useParams();
   const { data: session } = useSession();
+  
+  const orgId = params?.orgId as string;
+  const projectId = params?.projectId as string;
+  
   const { setSelectedAsset } = useSelectionStore();
   const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useOltData();
-
+ 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedOlt, setSelectedOlt] = React.useState<OLT | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteReason, setDeleteReason] = React.useState("");
   const [oltToDelete, setOltToDelete] = React.useState<OLT | null>(null);
 
   const handleCreate = React.useCallback(() => {
@@ -52,6 +59,18 @@ export default function OltListPage() {
     setSelectedOlt(olt);
     setIsDialogOpen(true);
   }, []);
+
+  React.useEffect(() => {
+    const onEditRequest = (e: Event) => {
+      const customEvent = e as CustomEvent<{ asset: OLT & { type: string } }>;
+      const asset = customEvent.detail.asset;
+      if (asset && asset.type === "OLT") {
+        handleEdit(asset);
+      }
+    };
+    window.addEventListener("trigger-asset-edit", onEditRequest);
+    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
+  }, [handleEdit]);
 
   const handleDelete = async () => {
     if (!oltToDelete || !session?.accessToken) return;
@@ -142,7 +161,7 @@ export default function OltListPage() {
                 className="h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-500"
                 onClick={() => {
                   router.push(
-                    `/dashboard/infrastructure/topology?search=${olt.code}`,
+                    `/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${olt.code}`,
                   );
                 }}
               >
@@ -166,7 +185,7 @@ export default function OltListPage() {
                     className="cursor-pointer"
                     onClick={() =>
                       router.push(
-                        `/dashboard/infrastructure/topology?search=${olt.code}`,
+                        `/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${olt.code}`,
                       )
                     }
                   >
@@ -189,9 +208,11 @@ export default function OltListPage() {
                     className="text-red-500 focus:text-white focus:bg-red-500 cursor-pointer"
                     onClick={() => {
                       setOltToDelete(olt);
+                      setDeleteReason("");
                       setIsDeleting(true);
                     }}
                   >
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Delete Device
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -201,7 +222,7 @@ export default function OltListPage() {
         },
       },
     ],
-    [router, handleEdit, handlePoll],
+    [router, handleEdit, handlePoll, orgId, projectId],
   );
 
   return (
@@ -256,31 +277,50 @@ export default function OltListPage() {
         onSuccess={refresh}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Modern Purge Confirmation Dialog */}
       <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-white">
+        <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              Are you sure you want to delete{" "}
-              <strong>{oltToDelete?.code}</strong> ({oltToDelete?.name})? This
-              action cannot be undone and will affect associated network
-              monitoring.
+            <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              PURGE DEVICE
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 font-medium">
+              Are you sure you want to permanently delete OLT <span className="text-white font-bold">{oltToDelete?.code}</span>?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="olt-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Reason for Removal
+              </Label>
+              <textarea
+                id="olt-reason"
+                placeholder="Why is this core device being removed?"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none font-medium"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
             <Button
-              variant="outline"
-              className="bg-zinc-900 border-white/5 text-white hover:bg-zinc-800"
+              variant="ghost"
+              className="text-zinc-500 hover:text-white h-11 font-bold"
               onClick={() => setIsDeleting(false)}
             >
-              Cancel
+              Abort
             </Button>
             <Button
-              className="bg-rose-600 hover:bg-rose-500 text-white font-bold"
+              className="bg-red-600 hover:bg-red-500 text-white font-black h-11 px-8 shadow-lg shadow-red-900/20 active:scale-95 transition-all"
               onClick={handleDelete}
+              disabled={!deleteReason.trim()}
             >
-              Confirm Delete
+              Confirm Purge
             </Button>
           </DialogFooter>
         </DialogContent>

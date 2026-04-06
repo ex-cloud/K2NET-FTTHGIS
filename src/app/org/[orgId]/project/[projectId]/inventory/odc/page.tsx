@@ -17,21 +17,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { OdcDialog } from "@/components/dashboard/odc-dialogs";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Trash2 } from "lucide-react";
 
 export default function OdcListPage() {
   const router = useRouter();
+  const params = useParams();
   const { data: session } = useSession();
+  
+  const orgId = params?.orgId as string;
+  const projectId = params?.projectId as string;
+  
   const { setSelectedAsset } = useSelectionStore();
   const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useOdcData();
-
+ 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedOdc, setSelectedOdc] = React.useState<ODC | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [deleteReason, setDeleteReason] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [odcToDelete, setOdcToDelete] = React.useState<ODC | null>(null);
 
   const handleCreate = React.useCallback(() => {
     setSelectedOdc(null);
@@ -43,31 +62,59 @@ export default function OdcListPage() {
     setIsDialogOpen(true);
   }, []);
 
-  const handleDelete = React.useCallback(
-    async (odc: ODC) => {
-      if (!session?.accessToken) return;
-      if (!confirm(`Are you sure you want to delete ${odc.code}?`)) return;
-
-      try {
-        const baseUrl = getBackendBaseUrl();
-        const res = await fetch(`${baseUrl}/network/odcs/${odc.id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to delete ODC");
-
-        toast.success(`ODC ${odc.code} deleted successfully`);
-        refresh();
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to delete ODC");
+  React.useEffect(() => {
+    const onEditRequest = (e: Event) => {
+      const customEvent = e as CustomEvent<{ asset: ODC & { type: string } }>;
+      const asset = customEvent.detail.asset;
+      if (asset && asset.type === "ODC") {
+        handleEdit(asset);
       }
-    },
-    [session?.accessToken, refresh],
-  );
+    };
+    window.addEventListener("trigger-asset-edit", onEditRequest);
+    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
+  }, [handleEdit]);
+
+  const handleDelete = async () => {
+    if (!odcToDelete || !session?.accessToken) return;
+    
+    if (!deleteReason.trim()) {
+      toast.error("Please provide a reason for deletion");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const url = new URL(`${baseUrl}/network/odcs/${odcToDelete.id}`);
+      url.searchParams.append("reason", deleteReason);
+
+      const res = await fetch(url.toString(), {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete ODC");
+
+      toast.success(`ODC ${odcToDelete.code} purged from registry`);
+      setIsDeleteDialogOpen(false);
+      setDeleteReason("");
+      refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete ODC record");
+    } finally {
+      setIsDeleting(false);
+      setOdcToDelete(null);
+    }
+  };
+
+  const openDeleteDialog = (odc: ODC) => {
+    setOdcToDelete(odc);
+    setDeleteReason("");
+    setIsDeleteDialogOpen(true);
+  };
 
   const columns = React.useMemo<ColumnDef<ODC>[]>(
     () => [
@@ -158,7 +205,7 @@ export default function OdcListPage() {
                 <DropdownMenuItem
                   className="cursor-pointer hover:bg-white/5"
                   onClick={() =>
-                    router.push(`/dashboard/map?flyTo=${odc.code}`)
+                    router.push(`/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${odc.code}`)
                   }
                 >
                   <MapPin className="mr-2 h-4 w-4" />
@@ -173,9 +220,10 @@ export default function OdcListPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => handleDelete(odc)}
+                  onClick={() => openDeleteDialog(odc)}
                 >
-                  Delete Cabinet
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete ODC
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -183,7 +231,7 @@ export default function OdcListPage() {
         },
       },
     ],
-    [handleEdit, handleDelete, router],
+    [handleEdit, orgId, projectId, router],
   );
 
   return (
@@ -233,6 +281,55 @@ export default function OdcListPage() {
         odc={selectedOdc}
         onSuccess={refresh}
       />
+
+      {/* Modern Purge Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              DELETE CABINET
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 font-medium">
+              Are you sure you want to permanently delete ODC <span className="text-white font-bold">{odcToDelete?.code}</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="odc-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Reason for Removal
+              </Label>
+              <textarea
+                id="odc-reason"
+                placeholder="Why is this cabinet being removed?"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none font-medium"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="text-zinc-500 hover:text-white font-bold"
+            >
+              Abort
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting || !deleteReason.trim()}
+              className="bg-red-600 hover:bg-red-500 text-white font-black px-8 shadow-lg shadow-red-900/20"
+            >
+              {isDeleting ? "Purging..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

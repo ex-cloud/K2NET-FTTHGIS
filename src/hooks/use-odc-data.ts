@@ -37,6 +37,7 @@ export function useOdcData() {
           page: pagination.pageIndex.toString(),
           size: pagination.pageSize.toString(),
           search: debouncedSearch,
+          _t: Date.now().toString(), // Cache-busting
         });
 
         const headers: HeadersInit = {
@@ -97,12 +98,18 @@ export function useOdcData() {
       }, 1000);
     };
 
+    const onRefetch = () => fetchData(true);
+    
     window.addEventListener("network-batch-update", handleNetworkBatchUpdate);
-    return () =>
+    window.addEventListener("refetch-network-data", onRefetch);
+    
+    return () => {
       window.removeEventListener(
         "network-batch-update",
         handleNetworkBatchUpdate,
       );
+      window.removeEventListener("refetch-network-data", onRefetch);
+    };
   }, [fetchData]);
 
   const exportToCsv = useCallback(async () => {

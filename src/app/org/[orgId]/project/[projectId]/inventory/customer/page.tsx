@@ -17,22 +17,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { CustomerDialog } from "@/components/dashboard/customer-dialogs";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Trash2 } from "lucide-react";
 
 export default function CustomerListPage() {
   const router = useRouter();
+  const params = useParams();
   const { data: session } = useSession();
+  
+  const orgId = params?.orgId as string;
+  const projectId = params?.projectId as string;
+  
   const { setSelectedAsset } = useSelectionStore();
   const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useCustomerData();
-
+ 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedCustomer, setSelectedCustomer] =
-    React.useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [deleteReason, setDeleteReason] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [customerToDelete, setCustomerToDelete] = React.useState<Customer | null>(null);
 
   const handleCreate = React.useCallback(() => {
     setSelectedCustomer(null);
@@ -44,31 +62,60 @@ export default function CustomerListPage() {
     setIsDialogOpen(true);
   }, []);
 
-  const handleDelete = React.useCallback(
-    async (customer: Customer) => {
-      if (!session?.accessToken) return;
-      if (!confirm(`Are you sure you want to delete ${customer.code}?`)) return;
-
-      try {
-        const baseUrl = getBackendBaseUrl();
-        const res = await fetch(`${baseUrl}/network/customers/${customer.id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to delete customer");
-
-        toast.success(`Customer ${customer.code} deleted successfully`);
-        refresh();
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to delete customer");
+  React.useEffect(() => {
+    const onEditRequest = (e: Event) => {
+      const customEvent = e as CustomEvent<{ asset: Customer & { type: string } }>;
+      const asset = customEvent.detail.asset;
+      if (asset && asset.type === "CUSTOMER") {
+        handleEdit(asset);
       }
-    },
-    [session?.accessToken, refresh],
-  );
+    };
+    window.addEventListener("trigger-asset-edit", onEditRequest);
+    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
+  }, [handleEdit]);
+
+  const handleDelete = async () => {
+    if (!customerToDelete || !session?.accessToken) return;
+    
+    if (!deleteReason.trim()) {
+      toast.error("Please provide a reason for records removal");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const url = new URL(`${baseUrl}/network/customers/${customerToDelete.id}`);
+      // Add reason even if backend doesn't support it yet for future proofing
+      url.searchParams.append("reason", deleteReason);
+
+      const res = await fetch(url.toString(), {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete customer");
+
+      toast.success(`Customer ${customerToDelete.code} record removed`);
+      setIsDeleteDialogOpen(false);
+      setDeleteReason("");
+      refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("Registry error: Unable to remove customer record.");
+    } finally {
+      setIsDeleting(false);
+      setCustomerToDelete(null);
+    }
+  };
+
+  const openDeleteDialog = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteReason("");
+    setIsDeleteDialogOpen(true);
+  };
 
   const columns = React.useMemo<ColumnDef<Customer>[]>(
     () => [
@@ -156,7 +203,7 @@ export default function CustomerListPage() {
                 <DropdownMenuItem
                   className="cursor-pointer hover:bg-white/5"
                   onClick={() =>
-                    router.push(`/dashboard/map?flyTo=${customer.code}`)
+                    router.push(`/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${customer.code}`)
                   }
                 >
                   <MapPin className="mr-2 h-4 w-4" />
@@ -171,9 +218,10 @@ export default function CustomerListPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => handleDelete(customer)}
+                  onClick={() => openDeleteDialog(customer)}
                 >
-                  Delete Record
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Customer
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -181,7 +229,7 @@ export default function CustomerListPage() {
         },
       },
     ],
-    [handleEdit, handleDelete, router],
+    [handleEdit, orgId, projectId, router],
   );
 
   return (
@@ -231,6 +279,55 @@ export default function CustomerListPage() {
         customer={selectedCustomer}
         onSuccess={refresh}
       />
+
+      {/* Modern Purge Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              PURGE CUSTOMER
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 font-medium">
+              Are you sure you want to permanently delete record for <span className="text-white font-bold">{customerToDelete?.name}</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cust-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Reason for Termination
+              </Label>
+              <textarea
+                id="cust-reason"
+                placeholder="Specify reason (e.g., Unsubscription, Double record)..."
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none font-medium"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="text-zinc-500 hover:text-white font-bold"
+            >
+              Abort
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting || !deleteReason.trim()}
+              className="bg-red-600 hover:bg-red-500 text-white font-black px-8 shadow-lg shadow-red-900/20"
+            >
+              {isDeleting ? "Purging..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

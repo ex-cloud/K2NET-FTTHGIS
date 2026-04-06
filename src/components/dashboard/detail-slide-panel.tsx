@@ -22,7 +22,18 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface AssetDetails {
   id: string;
@@ -34,11 +45,30 @@ interface AssetDetails {
   relatedAssets?: Array<{id: string, code: string, type: string, status: string}>;
 }
 
+interface DiagnosticReport {
+  overallHealth: number;
+  status: string;
+  notes: string;
+}
+
 export function DetailSlidePanel() {
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
   const [details, setDetails] = React.useState<AssetDetails | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [deleteReason, setDeleteReason] = React.useState("");
+  const [isPolling, setIsPolling] = React.useState(false);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = React.useState(false);
+  const [diagnosticResult, setDiagnosticResult] = React.useState<DiagnosticReport | null>(null);
+  
   const pathname = usePathname();
+  const router = useRouter();
+  const params = useParams();
+  const { data: session } = useSession();
+  
+  const orgId = params?.orgId as string;
+  const projectId = params?.projectId as string;
 
   // Don't show slide panel if on topology/map view (where AssetPanel is primary)
   const isMapView = pathname?.includes("/infrastructure/topology") || pathname?.includes("/dashboard/map");
@@ -76,7 +106,104 @@ export function DetailSlidePanel() {
     if (isOpen) fetchDetails();
   }, [isOpen, fetchDetails]);
 
-  const handleClose = () => setSelectedAsset(null);
+  const handleClose = () => {
+    setSelectedAsset(null);
+    setIsDeleteDialogOpen(false);
+    setDeleteReason("");
+  };
+
+  const handleDelete = async () => {
+    if (!details || !selectedAsset || !session?.accessToken) return;
+    
+    // Validate reason
+    if (!deleteReason.trim()) {
+      toast.error("Please provide a reason for purging this physical record");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      let endpoint = "";
+      const type = details.type.toLowerCase();
+      
+      if (type === "olt") endpoint = `/network/olts/${details.id}`;
+      else if (type === "odc") endpoint = `/network/odcs/${details.id}`;
+      else if (type === "odp") endpoint = `/network/odps/${details.id}`;
+      else if (type === "customer") endpoint = `/network/customers/${details.id}`;
+      
+      if (!endpoint) throw new Error("Delete endpoint not defined for this type");
+
+      const url = new URL(`${baseUrl}${endpoint}`);
+      url.searchParams.append("reason", deleteReason);
+
+      const res = await fetch(url.toString(), {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${session.accessToken}`,
+        }
+      });
+
+      if (!res.ok) throw new Error("Failed to delete record from registry");
+
+      toast.success(`${details.type} [${details.code}] purged successfully`);
+      
+      // Success!
+      handleClose();
+      // Signal refresh to any registered data hooks
+      window.dispatchEvent(new CustomEvent("refetch-network-data"));
+      
+    } catch (err) {
+      console.error(err);
+      toast.error("Registry error: Unable to purge record. Please check connectivity.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteDialog = () => setIsDeleteDialogOpen(true);
+
+  const handleModify = () => {
+    if (!details) return;
+    // Dispatch event to page for editing
+    window.dispatchEvent(new CustomEvent("trigger-asset-edit", { 
+      detail: { asset: { ...details } } 
+    }));
+  };
+
+  const handleViewOnMap = () => {
+    if (!details) return;
+    
+    // Fix navigation path using dynamic orgId and projectId
+    if (orgId && projectId) {
+      router.push(`/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${details.code}`);
+    } else {
+      // Fallback for safety (though params should exist if on inventory page)
+      router.push(`/dashboard/map?flyTo=${details.code}`);
+    }
+  };
+
+  const handlePulse = async () => {
+    if (!details) return;
+    setIsPolling(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await fetch(`${baseUrl}/network/assets/${details.type.toLowerCase()}/${details.code}/diagnostics`, {
+        method: "POST"
+      });
+      
+      if (!res.ok) throw new Error("Diagnostic engine failed");
+      const result = await res.json();
+      setDiagnosticResult(result);
+      setIsDiagnosticOpen(true);
+      toast.success("Diagnostic pulse captured successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Pulse Check Failed: Could not reach diagnostic engine.");
+    } finally {
+      setIsPolling(false);
+    }
+  };
 
   const getTypeColor = (type: string) => {
     switch(type) {
@@ -100,22 +227,22 @@ export function DetailSlidePanel() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 p-0 shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col z-[100]"
+        className="w-full sm:max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 p-0 shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col z-[100] [&>button]:hidden"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Asset Details - {details?.code}</SheetTitle>
           <SheetDescription>In-depth technical specifications and operational status for {details?.type} {details?.code}</SheetDescription>
         </SheetHeader>
 
-        {/* Navigation Action Hook */}
-        <div className="absolute top-0 right-0 p-4 z-50">
+        {/* Intuitive Close Action Hook (Top Left) */}
+        <div className="absolute top-0 left-0 p-4 z-50">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={handleClose}
-            className="rounded-full hover:bg-white/5 text-zinc-400 group"
+            className="rounded-full hover:bg-white/5 text-zinc-400 group transition-all"
           >
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5" />
           </Button>
         </div>
 
@@ -137,33 +264,44 @@ export function DetailSlidePanel() {
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent opacity-40" />
               
               <div className="relative space-y-6">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className={`rounded-xl px-4 py-1.5 font-black tracking-widest text-[10px] border-2 shadow-sm ${getTypeColor(details.type)}`}>
-                    {details.type}
-                  </Badge>
-                  <div className="flex items-center gap-3 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
-                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor(details.status)} shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse`} />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">{details.status}</span>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className={`rounded-xl px-4 py-1.5 font-black tracking-widest text-[10px] border-2 shadow-sm ${getTypeColor(details.type)}`}>
+                      {details.type}
+                    </Badge>
+                    <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(details.status)} shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse`} />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">{details.status}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={handleModify}
+                      className="bg-white text-black hover:bg-zinc-200 font-black rounded-xl h-9 px-4 shadow-xl active:scale-95 transition-all text-[10px] tracking-tight"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1.5" /> MODIFY
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={handleViewOnMap}
+                      className="h-9 w-9 border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl text-white transition-all shadow-lg active:scale-95"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <h1 className="text-4xl font-black tracking-tighter text-white drop-shadow-2xl leading-none">
+                <div className="space-y-1.5 pt-2">
+                  <h1 className="text-2xl font-black tracking-tighter text-white drop-shadow-2xl leading-tight break-all">
                     {details.code}
                   </h1>
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-[0.25em] flex items-center">
-                    <MapPin className="w-3.5 h-3.5 mr-2 text-emerald-500/50" />
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.25em] flex items-center">
+                    <MapPin className="w-3 h-3 mr-2 text-emerald-500/50" />
                     Layer Grid Identifier: {details.id}
                   </p>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <Button size="sm" className="bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-10 px-6 shadow-xl active:scale-95 transition-all">
-                    <Edit2 className="w-4 h-4 mr-2" /> MODIFY
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-10 px-4 border-white/10 hover:bg-white/10 hover:border-white/20 rounded-2xl text-white font-bold transition-all shadow-lg active:scale-95">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Button>
                 </div>
               </div>
             </div>
@@ -210,9 +348,16 @@ export function DetailSlidePanel() {
                    <div className="flex items-center gap-2 text-[10px] font-black text-red-500/50 uppercase tracking-widest">
                     <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-700" /> Danger Zone
                   </div>
-                  <Button variant="outline" className="w-full flex justify-between h-14 rounded-2xl border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 group transition-all shadow-sm active:scale-[0.98]">
+                  <Button 
+                    variant="outline" 
+                    onClick={openDeleteDialog}
+                    disabled={isDeleting}
+                    className="w-full flex justify-between h-14 rounded-2xl border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 group transition-all shadow-sm active:scale-[0.98]"
+                  >
                     <div className="flex flex-col items-start gap-0.5">
-                      <span className="text-xs font-black text-red-500 group-hover:text-red-400 uppercase tracking-tight">Purge Physical Record</span>
+                      <span className="text-xs font-black text-red-500 group-hover:text-red-400 uppercase tracking-tight">
+                        Purge Physical Record
+                      </span>
                       <span className="text-[10px] font-medium text-red-900/60 lowercase italic">Irreversible Registry Action</span>
                     </div>
                     <Trash2 className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-all" />
@@ -220,6 +365,120 @@ export function DetailSlidePanel() {
                 </div>
               </div>
             </ScrollArea>
+
+            {/* Modern Purge Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px] overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-red-500/10 via-transparent to-transparent pointer-events-none" />
+                <DialogHeader className="relative">
+                  <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                    </div>
+                    PURGE REGISTRY
+                  </DialogTitle>
+                  <DialogDescription className="text-zinc-400 font-medium">
+                    This will permanently destroy the physical record of <span className="text-white font-black">{details.code}</span> in the network registry.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-4 py-4 relative">
+                  <div className="space-y-3">
+                    <Label htmlFor="reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                      Reason for Registry Action
+                    </Label>
+                    <textarea
+                      id="reason"
+                      placeholder="Specify why this asset is being purged (e.g., Replacement, Decommissioning)..."
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      className="w-full min-h-[100px] bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all resize-none font-medium"
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter className="relative gap-3 sm:gap-0">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsDeleteDialogOpen(false)}
+                    className="font-bold text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl h-11"
+                  >
+                    ABORT
+                  </Button>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={isDeleting || !deleteReason.trim()}
+                    className="bg-red-600 hover:bg-red-500 text-white font-black rounded-xl h-11 px-8 shadow-lg shadow-red-900/20 active:scale-95 transition-all"
+                  >
+                    {isDeleting ? "PURGING..." : "EXECUTE PURGE"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Premium Diagnostic Report Dialog */}
+            <Dialog open={isDiagnosticOpen} onOpenChange={setIsDiagnosticOpen}>
+              <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[450px] overflow-hidden p-0 rounded-3xl">
+                <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-blue-500/5 pointer-events-none" />
+                
+                <div className="p-8 space-y-8 relative">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/80">Diagnostic Pulse</div>
+                      <DialogTitle className="text-3xl font-black tracking-tighter">NETWORK REPORT</DialogTitle>
+                    </div>
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                      <Zap className="w-8 h-8 text-emerald-500 animate-pulse" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Health Meter */}
+                    <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 shadow-inner space-y-4">
+                      <div className="flex justify-between items-end">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Health Score</span>
+                        <span className="text-4xl font-black text-white font-mono tracking-tighter">
+                          {diagnosticResult?.overallHealth || 100}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-white/5">
+                        <div 
+                          className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)] transition-all duration-1000" 
+                          style={{ width: `${diagnosticResult?.overallHealth || 100}%` }} 
+                        />
+                      </div>
+                    </div>
+
+                    {/* Report Data */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between py-2 border-b border-white/5">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Asset Code</span>
+                        <span className="text-sm font-bold text-zinc-200">{details.code}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-2 border-b border-white/5">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Signal Status</span>
+                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 bg-emerald-500/5 font-black uppercase text-[10px] tracking-widest">
+                          {diagnosticResult?.status || 'OPTIMAL'}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-2 pt-2">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Technical Notes</span>
+                        <p className="text-xs text-zinc-400 leading-relaxed font-medium bg-zinc-900 p-4 rounded-2xl border border-white/5 italic">
+                          &quot;{diagnosticResult?.notes || 'Signal harmony detected. No interference in the local grid segment. All physical connectors are reporting optimal impedance.'}&quot;
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={() => setIsDiagnosticOpen(false)}
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black rounded-2xl shadow-xl active:scale-95 transition-all"
+                  >
+                    CLOSE REPORT
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Bottom Insight Bar */}
             <div className="p-8 bg-zinc-950 border-t border-white/5 backdrop-blur-3xl shadow-[0_-10px_25px_-12px_rgba(0,0,0,0.5)]">
@@ -231,8 +490,13 @@ export function DetailSlidePanel() {
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-0.5">Performance Harmony</div>
                   <div className="text-sm font-bold text-zinc-200 uppercase tracking-tight">Optimal Grid Stability</div>
                 </div>
-                <Button size="icon" className="w-12 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
-                  <Zap className="w-5 h-5 fill-current" />
+                <Button 
+                  size="icon" 
+                  onClick={handlePulse}
+                  disabled={isPolling}
+                  className={`w-12 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20 active:scale-95 transition-all ${isPolling ? "animate-pulse opacity-50" : ""}`}
+                >
+                  <Zap className={`w-5 h-5 fill-current ${isPolling ? "animate-bounce" : ""}`} />
                 </Button>
               </div>
             </div>
