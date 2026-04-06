@@ -1,6 +1,7 @@
 import { ProjectSidebar } from "@/components/project-sidebar";
 import { RealTimeNotificationClient } from "@/components/real-time-notification-client";
 import { SessionProvider } from "next-auth/react";
+import { DetailSlidePanel } from "@/components/dashboard/detail-slide-panel";
 
 export default function ProjectLayout({
   children,
@@ -10,6 +11,7 @@ export default function ProjectLayout({
   return (
     <SessionProvider>
       <RealTimeNotificationClient />
+      <DetailSlidePanel />
       
       {/* Container for Secondary Sidebar and Main Content */}
       <div className="flex flex-1 h-full overflow-hidden w-full">

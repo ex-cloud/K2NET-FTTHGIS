@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { SmartDataTable } from "@/components/dashboard/smart-data-table";
 import { useOltData } from "@/hooks/use-olt-data";
 import { OLT } from "@/types/network";
+import { useSelectionStore } from "@/store/selection-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus, MapPin } from "lucide-react";
@@ -33,7 +34,8 @@ import { useSession } from "next-auth/react";
 export default function OltListPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { data, loading, pagination, setPagination, setSearch, refresh } =
+  const { setSelectedAsset } = useSelectionStore();
+  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useOltData();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -234,10 +236,13 @@ export default function OltListPage() {
           loading={loading}
           onSearchChange={setSearch}
           onRefresh={refresh}
+          onExport={exportToCsv}
+          onRowClick={(olt) => setSelectedAsset({ ...olt, id: String(olt.id), type: "OLT" })}
           pagination={{
             pageIndex: pagination.pageIndex,
             pageSize: pagination.pageSize,
             pageCount: pagination.pageCount,
+            totalCount: pagination.totalCount,
             onPageChange: (index) =>
               setPagination((prev) => ({ ...prev, pageIndex: index })),
           }}

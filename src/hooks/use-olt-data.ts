@@ -17,6 +17,7 @@ export function useOltData() {
     pageIndex: 0,
     pageSize: 10,
     pageCount: 0,
+    totalCount: 0,
   });
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
@@ -50,7 +51,11 @@ export function useOltData() {
         if (!res.ok) throw new Error("Failed to fetch OLTs");
         const result: PageResponse<OLT> = await res.json();
         setData(result.content);
-        setPagination((prev) => ({ ...prev, pageCount: result.totalPages }));
+        setPagination((prev) => ({ 
+          ...prev, 
+          pageCount: result.totalPages,
+          totalCount: result.totalElements 
+        }));
       } catch (err) {
         console.error(err);
       } finally {
@@ -100,12 +105,54 @@ export function useOltData() {
       );
   }, [fetchData]);
 
+  const exportToCsv = useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const headers: HeadersInit = { Authorization: `Bearer ${session.accessToken}` };
+      if (projectId) headers["X-Project-ID"] = projectId;
+
+      const res = await fetch(`${baseUrl}/network/olts?size=1000&search=${search}`, { headers });
+      if (!res.ok) throw new Error("Export failed");
+      const result: PageResponse<OLT> = await res.json();
+      
+      const rows = result.content.map(olt => ({
+        Code: olt.code,
+        Name: olt.name,
+        Status: olt.status,
+        "IP Address": olt.ipAddress,
+        Latitude: olt.lat,
+        Longitude: olt.lng
+      }));
+
+      if (rows.length === 0) return;
+
+      const csvContent = [
+        Object.keys(rows[0]).join(","),
+        ...rows.map(row => Object.values(row).map(v => `"${v}"`).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `olt_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [session?.accessToken, projectId, search]);
+
   return {
     data,
     loading,
     pagination,
     setPagination,
     setSearch,
-    refresh: () => fetchData(false),
+    exportToCsv,
+    refresh: () => fetchData(true),
   };
 }

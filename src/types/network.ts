@@ -4,6 +4,8 @@ export interface NetworkNode {
   name: string;
   status: string;
   nodeType: string;
+  lat?: number;
+  lng?: number;
   geom?: {
     type: string;
     coordinates: number[] | number[][];

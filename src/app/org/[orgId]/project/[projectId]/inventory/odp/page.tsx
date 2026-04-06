@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { SmartDataTable } from "@/components/dashboard/smart-data-table";
 import { useOdpData } from "@/hooks/use-odp-data";
 import { ODP } from "@/types/network";
+import { useSelectionStore } from "@/store/selection-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus, MapPin } from "lucide-react";
@@ -25,7 +26,8 @@ import { useSession } from "next-auth/react";
 export default function OdpListPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { data, loading, pagination, setPagination, setSearch, refresh } =
+  const { setSelectedAsset } = useSelectionStore();
+  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useOdpData();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -207,11 +209,14 @@ export default function OdpListPage() {
           data={data}
           onSearchChange={setSearch}
           onRefresh={refresh}
+          onExport={exportToCsv}
+          onRowClick={(odp) => setSelectedAsset({ ...odp, id: String(odp.id), type: "ODP" })}
           loading={loading}
           pagination={{
             pageIndex: pagination.pageIndex,
             pageSize: pagination.pageSize,
             pageCount: pagination.pageCount,
+            totalCount: pagination.totalCount,
             onPageChange: (index) =>
               setPagination((prev) => ({ ...prev, pageIndex: index })),
           }}

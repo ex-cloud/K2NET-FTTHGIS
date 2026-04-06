@@ -23,7 +23,23 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Search, RefreshCcw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Search, 
+  RefreshCcw, 
+  Download,
+  Columns
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface SmartDataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -31,9 +47,12 @@ interface SmartDataTableProps<TData, TValue> {
   loading?: boolean;
   onSearchChange?: (value: string) => void;
   onRefresh?: () => void;
+  onExport?: () => void;
+  onRowClick?: (data: TData) => void;
   pagination?: {
     pageIndex: number;
     pageSize: number;
+    totalCount: number;
     pageCount: number;
     onPageChange: (index: number) => void;
   };
@@ -45,169 +64,316 @@ export function SmartDataTable<TData, TValue>({
   loading,
   onSearchChange,
   onRefresh,
+  onExport,
+  onRowClick,
   pagination,
 }: SmartDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  const tableColumns = React.useMemo(() => {
+    const selectColumn: ColumnDef<TData> = {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value: boolean | "indeterminate") => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          onClick={(e: React.MouseEvent) => e.stopPropagation()} // Prevent opening detail panel on checkbox click
+          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    };
+    return [selectColumn, ...columns];
+  }, [columns]);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
+      columnVisibility,
+      rowSelection,
     },
     manualPagination: !!pagination,
     pageCount: pagination?.pageCount,
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <div className="flex flex-col gap-5">
+      {/* Header Toolbar */}
+      <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/40 p-4 rounded-2xl border border-border/50 backdrop-blur-sm shadow-sm overflow-hidden">
+        {/* Bulk Actions Overlay */}
+        {table.getSelectedRowModel().rows.length > 0 && (
+          <div className="absolute inset-0 z-10 flex items-center justify-between bg-emerald-500/90 backdrop-blur-xl px-6 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-black text-white uppercase tracking-[0.2em] drop-shadow-sm">
+                ⚡ {table.getSelectedRowModel().rows.length} Assets Targeted
+              </span>
+              <div className="h-4 w-[1px] bg-white/30" />
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-[10px] uppercase font-black tracking-widest text-white/80 hover:text-white hover:bg-white/10"
+                onClick={() => table.toggleAllPageRowsSelected(false)}
+              >
+                Clear GRID
+              </Button>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button size="sm" className="h-8 bg-white text-emerald-600 hover:bg-white/90 font-black text-[10px] tracking-widest rounded-lg shadow-xl px-4">
+                BATCH DEPLOY
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 border-white/20 text-white hover:bg-white/10 font-black text-[10px] tracking-widest rounded-lg px-4">
+                DROP CACHE
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="relative w-full sm:max-w-xs group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
           <Input
-            placeholder="Search resources..."
+            placeholder="Quick search indexed records..."
             onChange={(event) => onSearchChange?.(event.target.value)}
-            className="pl-9 h-9 bg-muted/40 border-border focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all text-sm"
+            className="pl-9 h-10 bg-background/50 border-border group-focus-within:border-emerald-500/50 group-focus-within:ring-4 group-focus-within:ring-emerald-500/10 transition-all rounded-xl text-sm italic"
           />
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
+          {onExport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              disabled={loading || data.length === 0}
+              className="h-10 px-3.5 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/5 hover:text-emerald-400 font-bold rounded-xl transition-all shadow-sm"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline font-black tracking-widest text-[10px] uppercase">Export</span>
+            </Button>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3.5 border-border text-muted-foreground hover:text-foreground font-bold rounded-xl shadow-sm"
+              >
+                <Columns className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[150px] bg-card border-border rounded-xl shadow-xl">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-50">Toggle Visibility</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border/50" />
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize text-xs cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-500"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {onRefresh && (
             <Button
               variant="outline"
               size="icon"
               onClick={onRefresh}
               disabled={loading}
-              className="h-9 w-9 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 transition-all"
+              className="h-10 w-10 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 rounded-xl transition-all shadow-sm"
             >
               <RefreshCcw
-                className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
               />
             </Button>
           )}
         </div>
       </div>
 
-      <div className="border border-border bg-card rounded-xl overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow
-                key={headerGroup.id}
-                className="hover:bg-transparent border-border"
-              >
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="h-10 text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-0"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-64 text-center text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <RefreshCcw className="w-6 h-6 animate-spin opacity-20" />
-                    <span className="text-sm font-medium opacity-50">
-                      Fetching data...
-                    </span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+      {/* Main Table Area */}
+      <div className="relative group bg-card/30 rounded-2xl border border-border/50 shadow-lg overflow-hidden transition-all hover:border-emerald-500/20">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/40 backdrop-blur-md">
+              {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="border-border hover:bg-muted/30 transition-colors"
+                  key={headerGroup.id}
+                  className="hover:bg-transparent border-border/50"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-2.5 font-medium">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className="h-12 text-[10px] uppercase tracking-widest font-black text-muted-foreground/70 py-0 px-6 select-none"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-64 text-center text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center gap-2 opacity-40">
-                    <Search className="w-8 h-8 mb-2" />
-                    <p className="text-sm font-medium">No records found</p>
-                    <p className="text-xs">
-                      Try adjusting your search or filters
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody className="relative min-h-[400px]">
+              {loading ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-80 text-center"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-4 py-12">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-2 border-emerald-500/10 border-t-emerald-500 animate-spin" />
+                        <div className="absolute inset-0 bg-emerald-500/5 blur-xl animate-pulse rounded-full" />
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-sm font-bold text-foreground">
+                          Syncing Data...
+                        </span>
+                        <span className="text-xs text-muted-foreground font-medium italic">
+                          Optimization in progress
+                        </span>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    onClick={(e) => {
+                      // Prevent row click if clicking on a button, link, input, checkbox or menu item
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, a, input, [role="menuitem"], [role="checkbox"]')) {
+                        return;
+                      }
+                      onRowClick?.(row.original);
+                    }}
+                    className={`border-border/50 group/row hover:bg-emerald-500/[0.02] transition-colors ${onRowClick ? "cursor-pointer" : "cursor-default"}`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="py-4 px-6 font-medium text-sm">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-80 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-4 py-12 opacity-40 group-hover:opacity-60 transition-opacity">
+                      <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center border-border shadow-inner">
+                        <Search className="w-7 h-7" />
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <p className="text-sm font-black uppercase tracking-widest text-foreground">No records found</p>
+                        <p className="text-xs font-medium">Try adjusting your search criteria</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
+      {/* Pagination Footer */}
       {pagination && (
-        <div className="flex items-center justify-between px-2 pt-2 pb-6">
-          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            Showing <span className="text-foreground">{data.length}</span>{" "}
-            results
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
-              disabled={loading || pagination.pageIndex === 0}
-              className="h-8 text-xs px-3 border-border bg-card"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1.5" />
-              Previous
-            </Button>
-            <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
-              <span className="text-emerald-500 font-bold bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10">
-                {pagination.pageIndex + 1}
-              </span>
-              <span>OF</span>
-              <span>{pagination.pageCount}</span>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 bg-muted/20 rounded-2xl border border-border/30 mb-8">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] border-r border-border/50 pr-4">
+              Inventory State
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
-              disabled={loading || pagination.pageIndex >= pagination.pageCount - 1}
-              className="h-8 text-xs px-3 border-border bg-card"
-            >
-              Next
-              <ChevronRight className="w-3.5 h-3.5 ml-1.5" />
-            </Button>
+            <div className="text-xs font-bold text-foreground bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">
+              <span className="opacity-70 mr-1">{pagination.pageSize}</span> 
+              Per Page
+            </div>
+            {pagination.totalCount !== undefined && (
+              <div className="text-[10px] font-bold text-muted-foreground">
+                TOTAL: <span className="text-foreground">{pagination.totalCount}</span> NODES
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground bg-background/50 px-3 py-1.5 rounded-xl border border-border/50">
+              <span className="text-emerald-500 font-black">
+                {String(pagination.pageIndex + 1).padStart(2, '0')}
+              </span>
+              <span className="opacity-30">/</span>
+              <span className="font-bold">
+                {String(pagination.pageCount).padStart(2, '0')}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
+                disabled={loading || pagination.pageIndex === 0}
+                className="h-10 w-10 border border-border/50 hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-500 transition-all rounded-xl disabled:opacity-20"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
+                disabled={loading || pagination.pageIndex >= pagination.pageCount - 1}
+                className="h-10 w-10 border border-border/50 hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-500 transition-all rounded-xl disabled:opacity-20"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

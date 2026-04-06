@@ -1,3 +1,4 @@
+import * as React from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { NetworkMap } from "@/components/dashboard/network-map";
@@ -39,7 +40,7 @@ export default async function TopologyPage() {
           <StatsPanel />
         </div>
 
-        {/* Right Panel */}
+        {/* Right Panel - Restored for operational features like Trace Route */}
         <AssetPanel />
       </div>
     </div>

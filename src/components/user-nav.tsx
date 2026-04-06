@@ -14,12 +14,20 @@ import {
 import { Dot } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import * as React from "react";
 
 export function UserNav() {
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
-  const [isMono, setIsMono] = useState(() => {
+  
+  // Modern way to handle hydration/mounting safely by Next.js Standards
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  const [isMono, setIsMono] = React.useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme-mono") === "true";
     }
@@ -28,13 +36,14 @@ export function UserNav() {
   const user = session?.user;
 
   // Sync Mono mode class with state
-  useEffect(() => {
+  React.useEffect(() => {
+    if (!mounted) return;
     if (isMono) {
       document.documentElement.classList.add("mono");
     } else {
       document.documentElement.classList.remove("mono");
     }
-  }, [isMono]);
+  }, [isMono, mounted]);
 
   const toggleMono = () => {
     const newState = !isMono;
@@ -62,6 +71,8 @@ export function UserNav() {
       window.location.href = "/login";
     }
   };
+
+  if (!mounted) return <div className="h-8 w-8 rounded-full bg-zinc-900/50 animate-pulse border border-white/5" />;
 
   return (
     <DropdownMenu>

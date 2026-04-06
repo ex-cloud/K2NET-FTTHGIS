@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { SmartDataTable } from "@/components/dashboard/smart-data-table";
 import { useOdcData } from "@/hooks/use-odc-data";
 import { ODC } from "@/types/network";
+import { useSelectionStore } from "@/store/selection-store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Plus, MapPin } from "lucide-react";
@@ -25,7 +26,8 @@ import { useSession } from "next-auth/react";
 export default function OdcListPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const { data, loading, pagination, setPagination, setSearch, refresh } =
+  const { setSelectedAsset } = useSelectionStore();
+  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
     useOdcData();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -211,11 +213,14 @@ export default function OdcListPage() {
           data={data}
           onSearchChange={setSearch}
           onRefresh={refresh}
+          onExport={exportToCsv}
+          onRowClick={(odc) => setSelectedAsset({ ...odc, id: String(odc.id), type: "ODC" })}
           loading={loading}
           pagination={{
             pageIndex: pagination.pageIndex,
             pageSize: pagination.pageSize,
             pageCount: pagination.pageCount,
+            totalCount: pagination.totalCount,
             onPageChange: (index) =>
               setPagination((prev) => ({ ...prev, pageIndex: index })),
           }}
