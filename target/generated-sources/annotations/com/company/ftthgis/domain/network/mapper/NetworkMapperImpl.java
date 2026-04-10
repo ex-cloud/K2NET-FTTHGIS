@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-07T18:01:33+0700",
+    date = "2026-04-10T13:35:01+0700",
     comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.45.0.v20260224-0835, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
@@ -37,6 +37,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDCDto.setCode( odc.getCode() );
         oDCDto.setGeom( odc.getGeom() );
         oDCDto.setId( odc.getId() );
+        oDCDto.setLastNote( odc.getLastNote() );
         oDCDto.setName( odc.getName() );
         oDCDto.setStatus( odc.getStatus() );
         oDCDto.setUsedCapacity( odc.getUsedCapacity() );
@@ -60,6 +61,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDPDto.setCode( odp.getCode() );
         oDPDto.setGeom( odp.getGeom() );
         oDPDto.setId( odp.getId() );
+        oDPDto.setLastNote( odp.getLastNote() );
         oDPDto.setOsmid( odp.getOsmid() );
         oDPDto.setStatus( odp.getStatus() );
         oDPDto.setTotalPort( odp.getTotalPort() );
@@ -82,6 +84,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         oLTDto.setGeom( olt.getGeom() );
         oLTDto.setId( olt.getId() );
         oLTDto.setIpAddress( olt.getIpAddress() );
+        oLTDto.setLastNote( olt.getLastNote() );
         oLTDto.setName( olt.getName() );
         oLTDto.setSnmpCommunity( olt.getSnmpCommunity() );
         oLTDto.setStatus( olt.getStatus() );

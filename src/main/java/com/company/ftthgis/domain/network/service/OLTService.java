@@ -19,11 +19,43 @@ public class OLTService {
 
     private final OLTRepository oltRepository;
     private final NetworkMapper networkMapper;
+    private final StatusPropagationService statusPropagationService;
 
     @Transactional(readOnly = true)
-    public Page<OLTDto> getOlts(String search, Pageable pageable) {
-        log.info("Fetching OLT list with search: {}", search);
-        return oltRepository.findAllWithSearch(search, pageable)
+    public Page<OLTDto> getOlts(String search, String status, String name, String code, Pageable pageable) {
+        log.info("Fetching OLT list with search: {}, status: {}, name: {}, code: {}", search, status, name, code);
+        
+        org.springframework.data.jpa.domain.Specification<OLT> spec = (root, query, cb) -> {
+            var predicates = cb.conjunction();
+            
+            if (org.springframework.util.StringUtils.hasText(search)) {
+                String likePattern = "%" + search.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("code")), likePattern),
+                        cb.like(cb.lower(root.get("name")), likePattern),
+                        cb.like(cb.lower(root.get("ipAddress")), likePattern)
+                ));
+            }
+            
+            if (org.springframework.util.StringUtils.hasText(status)) {
+                String likePattern = "%" + status.toUpperCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.upper(root.get("status")), likePattern));
+            }
+            
+            if (org.springframework.util.StringUtils.hasText(code)) {
+                String likePattern = "%" + code.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("code")), likePattern));
+            }
+
+            if (org.springframework.util.StringUtils.hasText(name)) {
+                String likePattern = "%" + name.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("name")), likePattern));
+            }
+            
+            return predicates;
+        };
+
+        return oltRepository.findAll(spec, pageable)
                 .map(networkMapper::toOLTDto);
     }
 
@@ -49,8 +81,17 @@ public class OLTService {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("OLT not found with id: " + id));
 
+        String oldStatus = olt.getStatus();
+        String newStatus = dto.getStatus();
+
         updateEntityFromDto(olt, dto);
-        return networkMapper.toOLTDto(oltRepository.save(olt));
+        olt = oltRepository.save(olt);
+
+        if (newStatus != null && !newStatus.equals(oldStatus)) {
+            statusPropagationService.handleOltStatusChange(olt.getCode(), newStatus, dto.getLastNote());
+        }
+
+        return networkMapper.toOLTDto(olt);
     }
 
     @Transactional
@@ -70,6 +111,9 @@ public class OLTService {
         olt.setStatus(dto.getStatus());
         if (dto.getGeom() != null) {
             olt.setGeom(dto.getGeom());
+        }
+        if (org.springframework.util.StringUtils.hasText(dto.getLastNote())) {
+            olt.setLastNote(dto.getLastNote());
         }
     }
 }

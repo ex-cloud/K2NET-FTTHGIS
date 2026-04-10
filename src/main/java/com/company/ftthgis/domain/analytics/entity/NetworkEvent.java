@@ -37,6 +37,9 @@ public class NetworkEvent {
     @Column(name = "event_type", nullable = false)
     private String eventType;
 
+    @Column(name = "reason")
+    private String reason;
+
     @Column(nullable = false)
     private LocalDateTime timestamp;
 }

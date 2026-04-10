@@ -21,8 +21,11 @@ public class OLTManagementController {
     @GetMapping
     public ResponseEntity<Page<OLTDto>> getAll(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String code,
             Pageable pageable) {
-        return ResponseEntity.ok(oltService.getOlts(search, pageable));
+        return ResponseEntity.ok(oltService.getOlts(search, status, name, code, pageable));
     }
 
     @GetMapping("/{code}")

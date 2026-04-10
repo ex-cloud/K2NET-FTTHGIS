@@ -40,23 +40,31 @@ public class StatusPropagationService {
     private static final long TIME_WINDOW_MS = 300000; // 5 Minutes
 
     @Transactional
-    public void handleOltStatusChange(String oltCode, String status) {
-        log.info("🌊 [ROOT CAUSE] OLT {} changed to {}", oltCode, status);
+    public void handleOltStatusChange(String oltCode, String status, String reason) {
+        log.info("🌊 [ROOT CAUSE] OLT {} changed to {} with reason: {}", oltCode, status, reason);
 
         oltRepository.findByCode(oltCode).ifPresent((OLT olt) -> {
             olt.setStatus(status);
+            olt.setLastNote(reason);
             oltRepository.save(olt);
             statusCacheService.setStatus(oltCode, status);
 
             mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, oltCode);
 
             // Log Event
-            logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE");
+            logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE", reason);
 
             List<ODC> childOdcs = odcRepository.findByOlt(olt);
             for (ODC odc : childOdcs) {
-                propagateToOdc(odc, status, true);
+                propagateToOdc(odc, status, true, "Propagated from OLT: " + reason);
             }
+        });
+    }
+
+    @Transactional
+    public void handleOdcStatusChange(String odcCode, String status, String reason) {
+        odcRepository.findByCode(odcCode).ifPresent(odc -> {
+            propagateToOdc(odc, status, false, reason);
         });
     }
 
@@ -74,25 +82,26 @@ public class StatusPropagationService {
             }
 
             mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, targetOdcCode);
-            propagateToOdc(odc, status, true);
+            propagateToOdc(odc, status, true, "Manual Cable Failure Simulation");
         });
     }
 
     @Transactional
-    public void handleOdpStatusChange(String odpCode, String status) {
+    public void handleOdpStatusChange(String odpCode, String status, String reason) {
         odpRepository.findByCode(odpCode).ifPresent(odp -> {
             odp.setStatus(status);
+            odp.setLastNote(reason);
             odpRepository.save(odp);
             statusCacheService.setStatus(odpCode, status);
 
             // Log Event
-            logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE");
+            logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE", reason);
 
             // Update associated DIST cable
             updateCableStatus("DIST-" + odpCode, status);
 
             // Propagate to Customers!
-            propagateToCustomers(odp, status);
+            propagateToCustomers(odp, status, reason);
 
             if ("DOWN".equals(status) || "FIBERCUT".equals(status)) {
                 ODC parent = odp.getOdc();
@@ -116,7 +125,7 @@ public class StatusPropagationService {
                     // Root cause is likely the connection to ODC or ODC itself
                     if (parent != null && !"FIBERCUT".equals(parent.getStatus())) {
                         log.warn("Escalating area failure to ODC as FIBERCUT: {}", parent.getCode());
-                        propagateToOdc(parent, "FIBERCUT", false);
+                        propagateToOdc(parent, "FIBERCUT", false, "System Escalation: 5+ ODPs Down in area " + areaKey);
                     }
 
                     mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", "DOWN",
@@ -133,26 +142,28 @@ public class StatusPropagationService {
         });
     }
 
-    public void handleCustomerStatusChange(String customerCode, String status) {
-        log.info("👤 [CUSTOMER EVENT] {} is {}", customerCode, status);
-        statusCacheService.setStatus(customerCode, status);
-
-        // Update DROP cable
-        updateCableStatus("DROP-" + customerCode, status);
-
-        mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, customerCode);
+    public void handleCustomerStatusChange(String customerCode, String status, String reason) {
+        log.info("👤 [CUSTOMER EVENT] {} is {} due to: {}", customerCode, status, reason);
+        customerRepository.findByCode(customerCode).ifPresent(c -> {
+            c.setStatus(status);
+            c.setLastNote(reason);
+            customerRepository.save(c);
+            statusCacheService.setStatus(customerCode, status);
+            // Update DROP cable
+            updateCableStatus("DROP-" + customerCode, status);
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, customerCode);
+            logEvent(customerCode, "CUSTOMER", "UNKNOWN", status, "STATUS_CHANGE", reason);
+        });
     }
 
-    private void propagateToOdc(ODC odc, String status, boolean isSilent) {
+    private void propagateToOdc(ODC odc, String status, boolean isSilent, String reason) {
         odc.setStatus(status);
+        odc.setLastNote(reason);
         odcRepository.save(odc);
         statusCacheService.setStatus(odc.getCode(), status);
 
-        // Log Event if it's a direct update (not silent propagation to avoid double
-        // logging if needed,
-        // but for Scatter Plot we WANT to see ODC down even if caused by OLT)
-        // ...actually let's log everything for OLT/ODC/ODP.
-        logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE");
+        // Log Event
+        logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE", reason);
 
         // Update FEEDER cable status
         updateCableStatus("FEEDER-" + odc.getCode(), status);
@@ -165,12 +176,13 @@ public class StatusPropagationService {
 
         List<ODP> childOdps = odpRepository.findByOdc(odc);
         for (ODP odp : childOdps) {
-            propagateToOdp(odp, status);
+            propagateToOdp(odp, status, reason);
         }
     }
 
-    private void propagateToOdp(ODP odp, String status) {
+    private void propagateToOdp(ODP odp, String status, String reason) {
         odp.setStatus(status);
+        odp.setLastNote(reason);
         odpRepository.save(odp);
         statusCacheService.setStatus(odp.getCode(), status);
 
@@ -180,13 +192,14 @@ public class StatusPropagationService {
         mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, odp.getCode());
 
         // Propagate to Customers
-        propagateToCustomers(odp, status);
+        propagateToCustomers(odp, status, reason);
     }
 
-    private void propagateToCustomers(ODP odp, String status) {
+    private void propagateToCustomers(ODP odp, String status, String reason) {
         List<Customer> customers = customerRepository.findByOdp(odp);
         for (Customer c : customers) {
             c.setStatus(status);
+            c.setLastNote(reason);
             customerRepository.save(c);
             statusCacheService.setStatus(c.getCode(), status);
 
@@ -210,49 +223,67 @@ public class StatusPropagationService {
 
     /**
      * Industry Standard Diagnostics: Simulated Optical Signal Analysis
+     * Aligned with Frontend DiagnosticReport interface
      */
     public Map<String, Object> calculateDiagnostics(String type, String code) {
         Map<String, Object> result = new HashMap<>();
         String status = statusCacheService.getStatus(code);
 
-        if (status == null)
-            status = "UP"; // Fallback
+        if (status == null) status = "UP";
 
+        // Logic for DOWN / FIBERCUT state
         if ("DOWN".equals(status) || "FIBERCUT".equals(status)) {
-            result.put("signal", -40.0);
-            result.put("health", "CRITICAL");
-            result.put("message", "Loss of Signal (LOS) detected. Physical link disconnected.");
+            result.put("overallHealth", 0);
+            result.put("status", "CRITICAL");
+            result.put("notes", "Loss of Signal (LOS) detected. Physical link disconnected. Emergency response required.");
             return result;
         }
 
-        double baseSignal = -18.0; // Ideal ODP signal
-        if ("ODC".equalsIgnoreCase(type))
-            baseSignal = -9.0;
-        if ("OLT".equalsIgnoreCase(type))
-            baseSignal = -3.0;
+        // Logic for Healthy state
+        double baseSignal = -18.0; 
+        if ("ODC".equalsIgnoreCase(type)) baseSignal = -9.0;
+        if ("OLT".equalsIgnoreCase(type)) baseSignal = -3.0;
+        if ("CUSTOMER".equalsIgnoreCase(type)) baseSignal = -22.0;
 
-        // Add some random "Jitter" for realism
-        double jitter = (Math.random() * 2.0) - 1.0;
+        // Add random "Real-world" variance
+        double jitter = (Math.random() * 4.0) - 2.0;
         double finalSignal = baseSignal + jitter;
+        
+        // Calculate health percentage based on signal (Ideal -15 to -25 for ODP)
+        int health = 100;
+        if (finalSignal < -25) health = 85 - (int)Math.abs(finalSignal + 25);
+        if (finalSignal < -30) health = 40;
+        
+        // Ensure health is between 0-100
+        health = Math.max(0, Math.min(100, health));
 
+        result.put("overallHealth", health);
+        result.put("status", health > 80 ? "OPTIMAL" : (health > 40 ? "DEGRADED" : "CRITICAL"));
+        
+        // Dynamic technical notes
+        String notes = "Signal crystal clear. Optical power within spectral limits.";
+        if (health < 90) notes = "Slight attenuation detected in local segment. Minimal impact on throughput.";
+        if (health < 60) notes = "High attenuation! Check patch-cord cleanliness and connector alignment.";
+        if ("CUSTOMER".equalsIgnoreCase(type) && health > 90) notes = "End-to-end signal parity achieved. Service quality is exceptional.";
+        
+        result.put("notes", notes);
         result.put("signal", Math.round(finalSignal * 100.0) / 100.0);
         result.put("unit", "dBm");
-        result.put("health", finalSignal < -25 ? "FAIR" : "OPTIMAL");
         result.put("timestamp", System.currentTimeMillis());
-        result.put("message", "Signal within operational parameters.");
 
         return result;
     }
 
-    private void logEvent(String assetCode, String assetType, String oldStatus, String newStatus, String eventType) {
+    private void logEvent(String assetCode, String assetType, String oldStatus, String newStatus, String eventType,
+            String reason) {
         try {
             NetworkEvent event = NetworkEvent.builder()
                     .assetCode(assetCode)
                     .assetType(assetType)
-                    .oldStatus(oldStatus) // We might not have the old status readily available without extra query, so
-                                          // 'UNKNOWN' is partial fix
+                    .oldStatus(oldStatus) // We might not have the old status readily available without extra query
                     .newStatus(newStatus)
                     .eventType(eventType)
+                    .reason(reason)
                     .timestamp(java.time.LocalDateTime.now())
                     .build();
             networkEventRepository.save(event);

@@ -21,15 +21,46 @@ public class ODPService {
 
     private final ODPRepository odpRepository;
     private final ODCRepository odcRepository;
+    private final StatusPropagationService statusPropagationService;
 
     @Transactional(readOnly = true)
-    public Page<ODPDto> getOdps(String search, Pageable pageable) {
+    public Page<ODPDto> getOdps(String search, String status, String name, String code, String odcCode, Pageable pageable) {
         Specification<ODP> spec = (root, query, cb) -> {
-            if (!StringUtils.hasText(search))
-                return null;
-            String likePattern = "%" + search.toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("code")), likePattern));
+            var predicates = cb.conjunction();
+            
+            if (StringUtils.hasText(search)) {
+                String likePattern = "%" + search.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("code")), likePattern),
+                        cb.like(cb.lower(root.get("status")), likePattern)
+                ));
+            }
+            
+            if (StringUtils.hasText(status)) {
+                String likePattern = "%" + status.toUpperCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.upper(root.get("status")), likePattern));
+            }
+            
+            if (StringUtils.hasText(code)) {
+                String likePattern = "%" + code.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("code")), likePattern));
+            }
+
+            if (StringUtils.hasText(odcCode)) {
+                String likePattern = "%" + odcCode.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("odc").get("code")), likePattern),
+                        cb.like(cb.lower(root.get("odc").get("name")), likePattern)
+                ));
+            }
+
+            if (StringUtils.hasText(name)) {
+                String likePattern = "%" + name.toLowerCase() + "%";
+                // Assuming ODP might have a name field or use code as name for now
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("code")), likePattern));
+            }
+            
+            return predicates;
         };
 
         return odpRepository.findAll(spec, pageable).map(this::toDto);
@@ -57,8 +88,16 @@ public class ODPService {
         ODP odp = odpRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODP not found with ID: " + id));
 
+        String oldStatus = odp.getStatus();
+        String newStatus = dto.getStatus();
+
         updateEntityFromDto(odp, dto);
         odp = odpRepository.save(odp);
+
+        if (newStatus != null && !newStatus.equals(oldStatus)) {
+            statusPropagationService.handleOdpStatusChange(odp.getCode(), newStatus, dto.getLastNote());
+        }
+
         return toDto(odp);
     }
 
@@ -79,12 +118,12 @@ public class ODPService {
         dto.setUsedPort(odp.getUsedPort());
         dto.setStatus(odp.getStatus());
         dto.setGeom(odp.getGeom());
-
         if (odp.getOdc() != null) {
             dto.setOdcId(odp.getOdc().getId());
             dto.setOdcName(odp.getOdc().getName());
             dto.setOdcCode(odp.getOdc().getCode());
         }
+        dto.setLastNote(odp.getLastNote());
         return dto;
     }
 
@@ -107,6 +146,10 @@ public class ODPService {
             odp.setOdc(odc);
         } else {
             odp.setOdc(null);
+        }
+
+        if (StringUtils.hasText(dto.getLastNote())) {
+            odp.setLastNote(dto.getLastNote());
         }
     }
 }

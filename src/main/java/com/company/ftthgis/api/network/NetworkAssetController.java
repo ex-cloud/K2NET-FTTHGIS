@@ -48,7 +48,7 @@ public class NetworkAssetController {
         log.info("🎮 Manual simulation triggered for {}: {}", targetCode, status);
 
         if ("OLT".equalsIgnoreCase(targetType)) {
-            statusPropagationService.handleOltStatusChange(targetCode, status);
+            statusPropagationService.handleOltStatusChange(targetCode, status, "Manual Simulation Triggered");
         } else if ("ODC".equalsIgnoreCase(targetType)) {
             // For ODC, if status is FIBERCUT, use the proper FIBERCUT handler
             if ("FIBERCUT".equalsIgnoreCase(status)) {
@@ -60,12 +60,12 @@ public class NetworkAssetController {
             // For ODP FIBERCUT simulation, we need special handling
             if ("FIBERCUT".equalsIgnoreCase(status)) {
                 // Mark as FIBERCUT and propagate
-                statusPropagationService.handleOdpStatusChange(targetCode, "FIBERCUT");
+                statusPropagationService.handleOdpStatusChange(targetCode, "FIBERCUT", "Manual FIBERCUT Simulation");
             } else {
-                statusPropagationService.handleOdpStatusChange(targetCode, status);
+                statusPropagationService.handleOdpStatusChange(targetCode, status, "Manual Status Simulation: " + status);
             }
         } else if ("CUSTOMER".equalsIgnoreCase(targetType)) {
-            statusPropagationService.handleCustomerStatusChange(targetCode, status);
+            statusPropagationService.handleCustomerStatusChange(targetCode, status, "Manual Customer Status Simulation");
         }
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Simulation triggered for " + targetCode));

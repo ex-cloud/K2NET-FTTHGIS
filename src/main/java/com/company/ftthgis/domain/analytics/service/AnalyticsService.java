@@ -1,7 +1,9 @@
 package com.company.ftthgis.domain.analytics.service;
 
 import com.company.ftthgis.domain.analytics.dto.DashboardStatsDTO;
+import com.company.ftthgis.domain.analytics.dto.IssueDetailDTO;
 import com.company.ftthgis.domain.analytics.dto.SnapshotDTO;
+import org.springframework.data.domain.PageRequest;
 import com.company.ftthgis.domain.analytics.entity.DashboardSnapshot;
 import com.company.ftthgis.domain.analytics.repository.AnalyticsRepository;
 import com.company.ftthgis.domain.analytics.repository.DashboardSnapshotRepository;
@@ -50,6 +52,16 @@ public class AnalyticsService {
                 .networkUptime(Math.round(uptime * 100.0) / 100.0)
                 .customerReach(totalCustomers)
                 .maintenanceProgress(85.0)
+                .issues(analyticsRepository.findTop10ProblematicNodes(PageRequest.of(0, 10)).stream()
+                        .map(n -> IssueDetailDTO.builder()
+                                .code(n.getCode())
+                                .type(n.getNodeType())
+                                .status(n.getStatus())
+                                .lastNote(n.getLastNote())
+                                .lng(n.getGeom().getX())
+                                .lat(n.getGeom().getY())
+                                .build())
+                        .collect(Collectors.toList()))
                 .build();
     }
 

@@ -21,16 +21,42 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final ODPRepository odpRepository;
+    private final StatusPropagationService statusPropagationService;
 
     @Transactional(readOnly = true)
-    public Page<CustomerDto> getCustomers(String search, Pageable pageable) {
+    public Page<CustomerDto> getCustomers(String search, String status, String name, String code, String odpCode, Pageable pageable) {
         Specification<Customer> spec = (root, query, cb) -> {
-            if (!StringUtils.hasText(search))
-                return null;
-            String likePattern = "%" + search.toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("code")), likePattern),
-                    cb.like(cb.lower(root.get("name")), likePattern));
+            var predicates = cb.conjunction();
+            
+            if (StringUtils.hasText(search)) {
+                String likePattern = "%" + search.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("code")), likePattern),
+                        cb.like(cb.lower(root.get("name")), likePattern)
+                ));
+            }
+            
+            if (StringUtils.hasText(status)) {
+                String likePattern = "%" + status.toUpperCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.upper(root.get("status")), likePattern));
+            }
+            
+            if (StringUtils.hasText(code)) {
+                String likePattern = "%" + code.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("code")), likePattern));
+            }
+
+            if (StringUtils.hasText(odpCode)) {
+                String likePattern = "%" + odpCode.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("odp").get("code")), likePattern));
+            }
+
+            if (StringUtils.hasText(name)) {
+                String likePattern = "%" + name.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("name")), likePattern));
+            }
+            
+            return predicates;
         };
 
         return customerRepository.findAll(spec, pageable).map(this::toDto);
@@ -58,15 +84,25 @@ public class CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + id));
 
+        String oldStatus = customer.getStatus();
+        String newStatus = dto.getStatus();
+
         updateEntityFromDto(customer, dto);
         customer = customerRepository.save(customer);
+
+        if (newStatus != null && !newStatus.equals(oldStatus)) {
+            statusPropagationService.handleCustomerStatusChange(customer.getCode(), newStatus, dto.getLastNote());
+        }
+
         return toDto(customer);
     }
 
-    public void deleteCustomer(Long id) {
+    public String deleteCustomer(Long id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        String code = customer.getCode();
         customerRepository.delete(customer);
+        return code;
     }
 
     private CustomerDto toDto(Customer customer) {
@@ -78,11 +114,11 @@ public class CustomerService {
         dto.setAddress(customer.getAddress());
         dto.setStatus(customer.getStatus());
         dto.setGeom(customer.getGeom());
-
         if (customer.getOdp() != null) {
             dto.setOdpId(customer.getOdp().getId());
             dto.setOdpCode(customer.getOdp().getCode());
         }
+        dto.setLastNote(customer.getLastNote());
         return dto;
     }
 
@@ -105,6 +141,10 @@ public class CustomerService {
             customer.setOdp(odp);
         } else {
             customer.setOdp(null);
+        }
+
+        if (StringUtils.hasText(dto.getLastNote())) {
+            customer.setLastNote(dto.getLastNote());
         }
     }
 }

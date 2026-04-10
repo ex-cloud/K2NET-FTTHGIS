@@ -39,6 +39,9 @@ public abstract class NetworkNode extends BaseEntity {
     @Column(name = "last_maintenance")
     private java.time.LocalDateTime lastMaintenance;
 
+    @Column(name = "last_note")
+    private String lastNote;
+
     @Column(name = "node_type", insertable = false, updatable = false)
     private String nodeType;
 }

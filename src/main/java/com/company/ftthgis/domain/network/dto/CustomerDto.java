@@ -22,4 +22,5 @@ public class CustomerDto {
     // Parent ODP Relation
     private Long odpId;
     private String odpCode;
+    private String lastNote;
 }

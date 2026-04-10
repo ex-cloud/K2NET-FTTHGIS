@@ -59,7 +59,7 @@ public class RedisSubscriberConfig {
                 log.info("🔔 Processing status change for {}: {}", deviceCode, status);
 
                 // Use the service to handle database updates and propagation
-                statusPropagationService.handleOltStatusChange(deviceCode, status);
+                statusPropagationService.handleOltStatusChange(deviceCode, status, "System SNMP Poller Update");
 
             } catch (Exception e) {
                 log.error("❌ Failed to process network event: {}", e.getMessage(), e);

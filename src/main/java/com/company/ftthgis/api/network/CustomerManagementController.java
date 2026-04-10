@@ -1,6 +1,8 @@
 package com.company.ftthgis.api.network;
 
 import com.company.ftthgis.domain.network.dto.CustomerDto;
+import com.company.ftthgis.domain.network.entity.AssetDeletionLog;
+import com.company.ftthgis.domain.network.repository.AssetDeletionLogRepository;
 import com.company.ftthgis.domain.network.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,12 +16,17 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerManagementController {
 
     private final CustomerService customerService;
+    private final AssetDeletionLogRepository deletionLogRepository;
 
     @GetMapping
     public ResponseEntity<Page<CustomerDto>> getAll(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String odpCode,
             Pageable pageable) {
-        return ResponseEntity.ok(customerService.getCustomers(search, pageable));
+        return ResponseEntity.ok(customerService.getCustomers(search, status, name, code, odpCode, pageable));
     }
 
     @GetMapping("/{code}")
@@ -38,8 +45,16 @@ public class CustomerManagementController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        customerService.deleteCustomer(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id,
+                                       @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
+        String deletedCode = customerService.deleteCustomer(id);
+
+        AssetDeletionLog log = new AssetDeletionLog();
+        log.setAssetCode(deletedCode);
+        log.setAssetType("CUSTOMER");
+        log.setReason(reason);
+        deletionLogRepository.save(log);
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -24,4 +24,5 @@ public class ODPDto {
     private Long odcId;
     private String odcName;
     private String odcCode;
+    private String lastNote;
 }

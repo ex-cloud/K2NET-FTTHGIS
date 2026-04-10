@@ -21,8 +21,12 @@ public class ODPManagementController {
     @GetMapping
     public ResponseEntity<Page<ODPDto>> getAll(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String odcCode,
             Pageable pageable) {
-        return ResponseEntity.ok(odpService.getOdps(search, pageable));
+        return ResponseEntity.ok(odpService.getOdps(search, status, name, code, odcCode, pageable));
     }
 
     @GetMapping("/{code}")

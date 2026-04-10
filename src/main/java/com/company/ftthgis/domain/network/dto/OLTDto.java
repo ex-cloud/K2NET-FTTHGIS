@@ -19,4 +19,5 @@ public class OLTDto {
     private String snmpCommunity;
     private String status;
     private Point geom;
+    private String lastNote;
 }

@@ -21,16 +21,45 @@ public class ODCService {
 
     private final ODCRepository odcRepository;
     private final OLTRepository oltRepository;
+    private final StatusPropagationService statusPropagationService;
 
     @Transactional(readOnly = true)
-    public Page<ODCDto> getOdcs(String search, Pageable pageable) {
-        Specification<ODC> spec = (root, query, cb) -> {
-            if (!StringUtils.hasText(search))
-                return null;
-            String likePattern = "%" + search.toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("code")), likePattern),
-                    cb.like(cb.lower(root.get("name")), likePattern));
+    public Page<ODCDto> getOdcs(String search, String status, String name, String code, String oltCode, Pageable pageable) {
+         Specification<ODC> spec = (root, query, cb) -> {
+            var predicates = cb.conjunction();
+            
+            if (StringUtils.hasText(search)) {
+                String likePattern = "%" + search.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("code")), likePattern),
+                        cb.like(cb.lower(root.get("name")), likePattern)
+                ));
+            }
+            
+            if (StringUtils.hasText(status)) {
+                String likePattern = "%" + status.toUpperCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.upper(root.get("status")), likePattern));
+            }
+            
+            if (StringUtils.hasText(code)) {
+                String likePattern = "%" + code.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("code")), likePattern));
+            }
+
+            if (StringUtils.hasText(oltCode)) {
+                String likePattern = "%" + oltCode.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.or(
+                        cb.like(cb.lower(root.get("olt").get("code")), likePattern),
+                        cb.like(cb.lower(root.get("olt").get("name")), likePattern)
+                ));
+            }
+
+            if (StringUtils.hasText(name)) {
+                String likePattern = "%" + name.toLowerCase() + "%";
+                predicates = cb.and(predicates, cb.like(cb.lower(root.get("name")), likePattern));
+            }
+            
+            return predicates;
         };
 
         return odcRepository.findAll(spec, pageable).map(this::toDto);
@@ -58,8 +87,17 @@ public class ODCService {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found with ID: " + id));
 
+        String oldStatus = odc.getStatus();
+        String newStatus = dto.getStatus();
+
         updateEntityFromDto(odc, dto);
         odc = odcRepository.save(odc);
+
+        // If status changed, trigger propagation and audit
+        if (newStatus != null && !newStatus.equals(oldStatus)) {
+            statusPropagationService.handleOdcStatusChange(odc.getCode(), newStatus, dto.getLastNote());
+        }
+
         return toDto(odc);
     }
 
@@ -81,12 +119,12 @@ public class ODCService {
         dto.setUsedCapacity(odc.getUsedCapacity());
         dto.setStatus(odc.getStatus());
         dto.setGeom(odc.getGeom());
-
         if (odc.getOlt() != null) {
             dto.setOltId(odc.getOlt().getId());
             dto.setOltName(odc.getOlt().getName());
             dto.setOltCode(odc.getOlt().getCode());
         }
+        dto.setLastNote(odc.getLastNote());
         return dto;
     }
 
@@ -109,6 +147,10 @@ public class ODCService {
             odc.setOlt(olt);
         } else {
             odc.setOlt(null);
+        }
+
+        if (StringUtils.hasText(dto.getLastNote())) {
+            odc.setLastNote(dto.getLastNote());
         }
     }
 }
