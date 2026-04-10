@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter, useParams } from "next/navigation";
 import { OdpDialog } from "@/components/dashboard/odp-dialogs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
@@ -42,7 +43,7 @@ export default function OdpListPage() {
   const projectId = params?.projectId as string;
   
   const { setSelectedAsset } = useSelectionStore();
-  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
+  const { data, loading, pagination, setPagination, setSearch, setSorting, setFilters, exportToCsv, refresh } =
     useOdpData();
  
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -122,7 +123,7 @@ export default function OdpListPage() {
         accessorKey: "code",
         header: "Code",
         cell: ({ row }) => (
-          <span className="font-bold text-emerald-500">
+          <span className="font-bold text-emerald-500 truncate block max-w-[200px]" title={row.getValue("code")}>
             {row.getValue("code")}
           </span>
         ),
@@ -166,6 +167,18 @@ export default function OdpListPage() {
             </div>
           );
         },
+      },
+      {
+        accessorKey: "lastNote",
+        header: "Catatan Terakhir",
+        cell: ({ row }) => (
+          <div 
+            className="max-w-[180px] truncate text-xs text-zinc-400 italic" 
+            title={row.getValue("lastNote")}
+          >
+            {row.getValue("lastNote") || "-"}
+          </div>
+        ),
       },
       {
         accessorKey: "status",
@@ -256,6 +269,8 @@ export default function OdpListPage() {
           columns={columns}
           data={data}
           onSearchChange={setSearch}
+          onSortingChange={setSorting}
+          onColumnFiltersChange={setFilters}
           onRefresh={refresh}
           onExport={exportToCsv}
           onRowClick={(odp) => setSelectedAsset({ ...odp, id: String(odp.id), type: "ODP" })}
@@ -298,12 +313,12 @@ export default function OdpListPage() {
               <Label htmlFor="row-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Reason for Removal
               </Label>
-              <textarea
+              <Textarea
                 id="row-reason"
                 placeholder="Why is this asset being removed?"
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
-                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none"
+                className="bg-zinc-900/50 border-white/10 rounded-xl min-h-[80px] text-sm text-zinc-200 placeholder:text-zinc-600 focus:ring-red-500 resize-none"
               />
             </div>
           </div>

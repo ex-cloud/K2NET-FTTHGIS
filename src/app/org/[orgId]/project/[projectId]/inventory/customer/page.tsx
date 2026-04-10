@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter, useParams } from "next/navigation";
 import { CustomerDialog } from "@/components/dashboard/customer-dialogs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
@@ -42,7 +43,7 @@ export default function CustomerListPage() {
   const projectId = params?.projectId as string;
   
   const { setSelectedAsset } = useSelectionStore();
-  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
+  const { data, loading, pagination, setPagination, setSearch, setSorting, setFilters, exportToCsv, refresh } =
     useCustomerData();
  
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -123,7 +124,7 @@ export default function CustomerListPage() {
         accessorKey: "code",
         header: "CUST ID",
         cell: ({ row }) => (
-          <span className="font-bold text-emerald-500">
+          <span className="font-bold text-emerald-500 truncate block max-w-[150px]" title={row.getValue("code")}>
             {row.getValue("code")}
           </span>
         ),
@@ -156,6 +157,18 @@ export default function CustomerListPage() {
           <span className="font-mono text-xs text-blue-400">
             {row.original.odpCode || "-"}
           </span>
+        ),
+      },
+      {
+        accessorKey: "lastNote",
+        header: "Catatan Terakhir",
+        cell: ({ row }) => (
+          <div 
+            className="max-w-[180px] truncate text-xs text-zinc-400 italic" 
+            title={row.getValue("lastNote")}
+          >
+            {row.getValue("lastNote") || "-"}
+          </div>
         ),
       },
       {
@@ -258,6 +271,8 @@ export default function CustomerListPage() {
           columns={columns}
           data={data}
           onSearchChange={setSearch}
+          onSortingChange={setSorting}
+          onColumnFiltersChange={setFilters}
           onRefresh={refresh}
           onExport={exportToCsv}
           onRowClick={(cust) => setSelectedAsset({ ...cust, id: String(cust.id), type: "CUSTOMER" })}
@@ -300,12 +315,12 @@ export default function CustomerListPage() {
               <Label htmlFor="cust-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Reason for Termination
               </Label>
-              <textarea
+              <Textarea
                 id="cust-reason"
                 placeholder="Specify reason (e.g., Unsubscription, Double record)..."
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
-                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none font-medium"
+                className="bg-zinc-900/50 border-white/10 rounded-xl min-h-[80px] text-sm text-zinc-200 placeholder:text-zinc-600 focus:ring-red-500 resize-none font-medium"
               />
             </div>
           </div>

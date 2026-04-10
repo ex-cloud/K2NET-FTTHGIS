@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter, useParams } from "next/navigation";
 import { OltDialog } from "@/components/dashboard/olt-dialogs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,7 @@ export default function OltListPage() {
   const projectId = params?.projectId as string;
   
   const { setSelectedAsset } = useSelectionStore();
-  const { data, loading, pagination, setPagination, setSearch, exportToCsv, refresh } =
+  const { data, loading, pagination, setPagination, setSearch, setSorting, setFilters, exportToCsv, refresh } =
     useOltData();
  
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -112,7 +113,7 @@ export default function OltListPage() {
         accessorKey: "code",
         header: "Code",
         cell: ({ row }) => (
-          <span className="font-bold text-emerald-500">
+          <span className="font-bold text-emerald-500 truncate block max-w-[200px]" title={row.getValue("code")}>
             {row.getValue("code")}
           </span>
         ),
@@ -128,6 +129,18 @@ export default function OltListPage() {
           <span className="text-muted-foreground font-mono">
             {row.getValue("ipAddress") || "-"}
           </span>
+        ),
+      },
+      {
+        accessorKey: "lastNote",
+        header: "Catatan Terakhir",
+        cell: ({ row }) => (
+          <div 
+            className="max-w-[180px] truncate text-xs text-zinc-400 italic" 
+            title={row.getValue("lastNote")}
+          >
+            {row.getValue("lastNote") || "-"}
+          </div>
         ),
       },
       {
@@ -256,6 +269,8 @@ export default function OltListPage() {
           data={data}
           loading={loading}
           onSearchChange={setSearch}
+          onSortingChange={setSorting}
+          onColumnFiltersChange={setFilters}
           onRefresh={refresh}
           onExport={exportToCsv}
           onRowClick={(olt) => setSelectedAsset({ ...olt, id: String(olt.id), type: "OLT" })}
@@ -297,12 +312,12 @@ export default function OltListPage() {
               <Label htmlFor="olt-reason" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                 Reason for Removal
               </Label>
-              <textarea
+              <Textarea
                 id="olt-reason"
                 placeholder="Why is this core device being removed?"
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
-                className="w-full min-h-[80px] bg-zinc-900/50 border border-white/10 rounded-xl p-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all resize-none font-medium"
+                className="bg-zinc-900/50 border-white/10 rounded-xl min-h-[80px] text-sm text-zinc-200 placeholder:text-zinc-600 focus:ring-red-500 resize-none font-medium"
               />
             </div>
           </div>

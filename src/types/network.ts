@@ -4,6 +4,7 @@ export interface NetworkNode {
   name: string;
   status: string;
   nodeType: string;
+  lastNote?: string;
   lat?: number;
   lng?: number;
   geom?: {

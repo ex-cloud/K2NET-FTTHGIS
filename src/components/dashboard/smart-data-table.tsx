@@ -40,6 +40,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface SmartDataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -49,6 +50,8 @@ interface SmartDataTableProps<TData, TValue> {
   onRefresh?: () => void;
   onExport?: () => void;
   onRowClick?: (data: TData) => void;
+  onSortingChange?: (sorting: SortingState) => void;
+  onColumnFiltersChange?: (filters: ColumnFiltersState) => void;
   pagination?: {
     pageIndex: number;
     pageSize: number;
@@ -66,12 +69,23 @@ export function SmartDataTable<TData, TValue>({
   onRefresh,
   onExport,
   onRowClick,
+  onSortingChange,
+  onColumnFiltersChange,
   pagination,
 }: SmartDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
+  
+  // Track sorting and filtering changes and notify parent if provided
+  React.useEffect(() => {
+    onSortingChange?.(sorting);
+  }, [sorting, onSortingChange]);
+
+  React.useEffect(() => {
+    onColumnFiltersChange?.(columnFilters);
+  }, [columnFilters, onColumnFiltersChange]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -122,6 +136,8 @@ export function SmartDataTable<TData, TValue>({
       rowSelection,
     },
     manualPagination: !!pagination,
+    manualSorting: !!onSortingChange,
+    manualFiltering: !!onColumnFiltersChange,
     pageCount: pagination?.pageCount,
   });
 
@@ -216,9 +232,15 @@ export function SmartDataTable<TData, TValue>({
             <Button
               variant="outline"
               size="icon"
-              onClick={onRefresh}
+              onClick={() => {
+                onRefresh();
+                toast.info("Syncing with registry...", {
+                  description: "Fetching latest asset states from backend",
+                  duration: 2000,
+                });
+              }}
               disabled={loading}
-              className="h-10 w-10 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 rounded-xl transition-all shadow-sm"
+              className="h-10 w-10 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 rounded-xl transition-all shadow-sm relative z-20"
             >
               <RefreshCcw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -241,14 +263,47 @@ export function SmartDataTable<TData, TValue>({
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className="h-12 text-[10px] uppercase tracking-widest font-black text-muted-foreground/70 py-0 px-6 select-none"
+                      className="h-14 text-[10px] uppercase tracking-widest font-black text-muted-foreground/70 py-2 px-6 select-none border-b border-border/50"
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                      <div className="flex flex-col gap-2">
+                        {header.isPlaceholder ? null : (
+                          <div 
+                            className={`flex items-center gap-2 ${header.column.getCanSort() ? "cursor-pointer hover:text-emerald-500 transition-colors" : ""}`}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                            {header.column.getCanSort() && (
+                              <div className="w-3">
+                                {header.column.getIsSorted() === "asc" ? (
+                                  <ChevronLeft className="w-3 h-3 rotate-90 text-emerald-500" />
+                                ) : header.column.getIsSorted() === "desc" ? (
+                                  <ChevronLeft className="w-3 h-3 -rotate-90 text-emerald-500" />
+                                ) : (
+                                  <div className="w-3 h-3 opacity-20 group-hover:opacity-100">
+                                    <RefreshCcw className="w-3 h-3" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {header.column.getCanFilter() && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              placeholder={`Filter...`}
+                              value={(header.column.getFilterValue() as string) ?? ""}
+                              onChange={(event) =>
+                                header.column.setFilterValue(event.target.value)
+                              }
+                              className="h-7 text-[9px] bg-background/30 border-border/20 focus:border-emerald-500/30 rounded-lg placeholder:opacity-50 font-medium"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>

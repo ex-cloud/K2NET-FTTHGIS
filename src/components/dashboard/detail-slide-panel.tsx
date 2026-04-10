@@ -11,7 +11,7 @@ import {
   Settings,
   ArrowUpRight,
   Trash2,
-  ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -272,7 +272,7 @@ export function DetailSlidePanel() {
             onClick={handleClose}
             className="rounded-full hover:bg-white/5 text-zinc-400 group transition-all"
           >
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5" />
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5" />
           </Button>
         </div>
 

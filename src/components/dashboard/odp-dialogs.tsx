@@ -23,7 +23,8 @@ import { ODC, ODP, PageResponse } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OdpDialogProps {
   open: boolean;
@@ -74,6 +75,7 @@ export function OdpDialog({
     totalPort: "16",
     usedPort: "0",
     odcId: "",
+    lastNote: "",
   });
 
   React.useEffect(() => {
@@ -87,6 +89,7 @@ export function OdpDialog({
         totalPort: odp.totalPort?.toString() || "16",
         usedPort: odp.usedPort?.toString() || "0",
         odcId: odp.odcId?.toString() || "",
+        lastNote: odp.lastNote || "",
       });
     } else {
       setFormData({
@@ -98,6 +101,7 @@ export function OdpDialog({
         totalPort: "16",
         usedPort: "0",
         odcId: "",
+        lastNote: "",
       });
     }
   }, [odp, open]);
@@ -314,6 +318,37 @@ export function OdpDialog({
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="lastNote"
+                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+              >
+                Catatan Terakhir / Alasan
+              </Label>
+              {formData.status !== "ACTIVE" && formData.status !== "PLANNING" && (
+                <span className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Reason Required
+                </span>
+              )}
+            </div>
+            <Textarea
+              id="lastNote"
+              placeholder={
+                formData.status === "ACTIVE"
+                  ? "Optional technical notes..."
+                  : "Explain why this ODP is " + formData.status.toLowerCase() + "..."
+              }
+              value={formData.lastNote}
+              onChange={(e) =>
+                setFormData({ ...formData, lastNote: e.target.value })
+              }
+              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
+              required={formData.status !== "ACTIVE" && formData.status !== "PLANNING"}
+            />
           </div>
 
           <DialogFooter className="pt-4 gap-2">

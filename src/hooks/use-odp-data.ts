@@ -5,6 +5,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { ODP, PageResponse } from "@/types/network";
+import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
 import { useDebounce } from "./use-debounce";
 
 export function useOdpData() {
@@ -20,12 +21,15 @@ export function useOdpData() {
     totalCount: 0,
   });
   const [search, setSearch] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [filters, setFilters] = useState<ColumnFiltersState>([]);
   const debouncedSearch = useDebounce(search, 400);
+  const debouncedFilters = useDebounce(filters, 400);
 
-  // Reset to page 0 when search changes
+  // Reset to page 0 when search or filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [debouncedSearch]);
+  }, [debouncedSearch, debouncedFilters]);
 
   const fetchData = useCallback(
     async (silent = false) => {
@@ -39,6 +43,22 @@ export function useOdpData() {
           search: debouncedSearch,
           _t: Date.now().toString(), // Cache busting
         });
+
+        // Add sorting params (Spring Data format: sort=field,direction)
+        if (sorting.length > 0) {
+          sorting.forEach((sort) => {
+            urlParams.append("sort", `${sort.id},${sort.desc ? "desc" : "asc"}`);
+          });
+        }
+
+        // Add column filters (e.g., status=ACTIVE)
+        if (debouncedFilters.length > 0) {
+          debouncedFilters.forEach((filter) => {
+            if (filter.value !== undefined && filter.value !== "") {
+              urlParams.append(filter.id, filter.value as string);
+            }
+          });
+        }
 
         const headers: HeadersInit = {
           Authorization: `Bearer ${session.accessToken}`,
@@ -63,7 +83,7 @@ export function useOdpData() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken, pagination.pageIndex, pagination.pageSize, debouncedSearch, projectId],
+    [session?.accessToken, pagination.pageIndex, pagination.pageSize, debouncedSearch, sorting, debouncedFilters, projectId],
   );
 
   useEffect(() => {
@@ -164,6 +184,8 @@ export function useOdpData() {
     pagination,
     setPagination,
     setSearch,
+    setSorting,
+    setFilters,
     exportToCsv,
     refresh: () => fetchData(true),
   };

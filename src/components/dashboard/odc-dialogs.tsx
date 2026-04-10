@@ -23,7 +23,8 @@ import { ODC, OLT, PageResponse } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OdcDialogProps {
   open: boolean;
@@ -73,6 +74,7 @@ export function OdcDialog({
     lat: "-6.9175",
     lng: "107.6191",
     oltId: "",
+    lastNote: "",
   });
 
   React.useEffect(() => {
@@ -85,6 +87,7 @@ export function OdcDialog({
         lat: odc.geom?.coordinates?.[1]?.toString() || "-6.9175",
         lng: odc.geom?.coordinates?.[0]?.toString() || "107.6191",
         oltId: odc.oltId?.toString() || "",
+        lastNote: odc.lastNote || "",
       });
     } else {
       setFormData({
@@ -95,6 +98,7 @@ export function OdcDialog({
         lat: "-6.9175",
         lng: "107.6191",
         oltId: "",
+        lastNote: "",
       });
     }
   }, [odc, open]);
@@ -251,6 +255,40 @@ export function OdcDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="lastNote"
+                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+              >
+                Catatan Terakhir / Alasan
+              </Label>
+              {formData.status !== "ACTIVE" && formData.status !== "PLANNING" && (
+                <span className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Reason Required
+                </span>
+              )}
+            </div>
+            <Textarea
+              id="lastNote"
+              placeholder={
+                formData.status === "ACTIVE"
+                  ? "Optional technical notes..."
+                  : "Explain why this asset is " + formData.status.toLowerCase() + "..."
+              }
+              value={formData.lastNote}
+              onChange={(e) =>
+                setFormData({ ...formData, lastNote: e.target.value })
+              }
+              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
+              required={formData.status !== "ACTIVE" && formData.status !== "PLANNING"}
+            />
+            <p className="text-[10px] text-zinc-500 italic">
+              This note will be visible in the Network Intelligence Advisor.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -16,9 +16,17 @@ import {
   AlertCircle,
   ArrowUpRight,
   Network,
+  Map as MapIcon,
+  ArrowRight,
+  Search,
+  Edit3,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { useMapStore } from "@/store/map-store";
+import { useSelectionStore } from "@/store/selection-store";
+import { Button } from "@/components/ui/button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,6 +39,16 @@ interface ProjectStats {
   networkUptime: number;
   customerReach: number;
   maintenanceProgress: number;
+  issues?: IssueDetail[];
+}
+
+interface IssueDetail {
+  code: string;
+  type: string;
+  status: string;
+  lastNote: string;
+  lng: number;
+  lat: number;
 }
 
 interface MetricBoxProps {
@@ -106,44 +124,158 @@ function MetricBox({
 
 // ─── Advisor Card Component ───────────────────────────────────────────────────
 
-function AdvisorCard({ issueCount }: { issueCount: number }) {
+function AdvisorCard({
+  issues = [],
+  projectId,
+}: {
+  issues?: IssueDetail[];
+  projectId: string;
+}) {
+  const router = useRouter();
+  const { setMapCenter } = useMapStore();
+  const { setSelectedAsset } = useSelectionStore();
+
+  const handleFlyToMap = (issue: IssueDetail) => {
+    // 1. Set global map state to jump focus
+    setMapCenter({
+      lng: issue.lng,
+      lat: issue.lat,
+      zoom: 18,
+    });
+
+    // 2. Select the asset to trigger pulse/highlight
+    setSelectedAsset({
+      id: "fly-" + issue.code,
+      type: issue.type,
+      code: issue.code,
+      lng: issue.lng,
+      lat: issue.lat,
+      status: issue.status,
+    });
+
+    // 3. Navigate to map route
+    router.push(`/project/${projectId}/map`);
+  };
+
+  const handleFlyToTable = (issue: IssueDetail) => {
+    const tablePath = issue.type.toLowerCase();
+    // Navigate to specific inventory table with search param
+    router.push(`/project/${projectId}/inventory/${tablePath}?search=${issue.code}`);
+  };
+
   return (
-    <div className="border border-border rounded-xl bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <h3 className="text-sm font-semibold text-foreground">Advisor</h3>
-        <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors border border-border px-2.5 py-1 rounded-md hover:bg-accent">
-          <BarChart3 className="w-3.5 h-3.5" />
-          Ask Assistant
+    <div className="border border-border rounded-xl bg-card overflow-hidden h-full flex flex-col">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-emerald-500" />
+          <h3 className="text-sm font-semibold text-foreground italic uppercase tracking-tight">
+            Network Intelligence Advisor
+          </h3>
+        </div>
+        <button className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors border border-border px-2.5 py-1 rounded-md hover:bg-accent uppercase tracking-widest">
+          <BarChart3 className="w-3 h-3" />
+          Insight Analysis
         </button>
       </div>
-      <div className="px-5 py-4">
-        {issueCount === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-60" />
+      <div className="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
+        {!issues || issues.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-emerald-500 opacity-80" />
+            </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Advisor found no issues
+              <p className="text-sm font-bold text-foreground">
+                All Systems Operational
               </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                No security or performance errors found
+              <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                No critical infrastructure anomalies detected at this moment.
               </p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: issueCount }).map((_, i) => (
+          <div className="p-4 grid gap-3">
+            {issues.map((issue, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 p-3 bg-rose-500/5 border border-rose-500/20 rounded-lg"
+                className="group relative flex flex-col gap-3 p-4 bg-background border border-border rounded-xl hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-500/5 transition-all duration-300"
               >
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-                <span className="text-xs text-foreground">
-                  Issue detected – review your configuration
-                </span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`mt-1 w-2 h-2 rounded-full shrink-0 animate-pulse ${
+                        issue.status === "BROKEN" || issue.status === "FIBERCUT"
+                          ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"
+                          : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                      }`}
+                    />
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-foreground tracking-tight">
+                          {issue.code}
+                        </span>
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border uppercase">
+                          {issue.type}
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                        {issue.lastNote || "Maintenance required - investigation pending."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-full border ${
+                        issue.status === "BROKEN" || issue.status === "FIBERCUT"
+                          ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                      }`}
+                    >
+                      {issue.status}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground/60 font-mono">
+                      Just now
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[10px] gap-1.5 px-3 bg-muted/20 hover:bg-rose-500 hover:text-white border-border hover:border-rose-500 transition-all group-hover:bg-muted/40"
+                    onClick={() => handleFlyToMap(issue)}
+                  >
+                    <MapIcon className="w-3 h-3" />
+                    Fly to Topology
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[10px] gap-1.5 px-3 bg-muted/20 hover:bg-emerald-500 hover:text-white border-border hover:border-emerald-500 transition-all group-hover:bg-muted/40"
+                    onClick={() => handleFlyToTable(issue)}
+                  >
+                    <Database className="w-3 h-3" />
+                    Inspect Details
+                  </Button>
+                  <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight className="w-3 h-3 text-muted-foreground animate-bounce-x" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
+      </div>
+      <div className="px-5 py-3 border-t border-border bg-muted/10 flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+          AI-Powered Diagnostics
+        </span>
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-1 rounded-full bg-emerald-500" />
+          <span className="text-[9px] font-bold text-emerald-500 uppercase">
+            Live Monitoring
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -474,7 +606,7 @@ export function ProjectOverview() {
       {/* --- Advisor + DB Info Row --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdvisorCard issueCount={stats?.activeAlerts || 0} />
+          <AdvisorCard issues={stats?.issues} projectId={projectId} />
         </div>
         <div>
           <DatabaseInfoCard projectId={projectId} />

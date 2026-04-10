@@ -23,7 +23,8 @@ import { OLT } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OltDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ export function OltDialog({
     status: "UP",
     lat: "-6.9175",
     lng: "107.6191",
+    lastNote: "",
   });
 
   React.useEffect(() => {
@@ -62,6 +64,7 @@ export function OltDialog({
         status: olt.status || "UP",
         lat: olt.geom?.coordinates?.[1]?.toString() || "-6.9175",
         lng: olt.geom?.coordinates?.[0]?.toString() || "107.6191",
+        lastNote: olt.lastNote || "",
       });
     } else {
       setFormData({
@@ -72,6 +75,7 @@ export function OltDialog({
         status: "UP",
         lat: "-6.9175",
         lng: "107.6191",
+        lastNote: "",
       });
     }
   }, [olt, open]);
@@ -278,6 +282,37 @@ export function OltDialog({
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="lastNote"
+                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+              >
+                Catatan Terakhir / Alasan
+              </Label>
+              {formData.status !== "UP" && (
+                <span className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Reason Required
+                </span>
+              )}
+            </div>
+            <Textarea
+              id="lastNote"
+              placeholder={
+                formData.status === "UP"
+                  ? "Optional technical notes..."
+                  : "Explain why this OLT is " + formData.status.toLowerCase() + "..."
+              }
+              value={formData.lastNote}
+              onChange={(e) =>
+                setFormData({ ...formData, lastNote: e.target.value })
+              }
+              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
+              required={formData.status !== "UP"}
+            />
           </div>
 
           <DialogFooter className="pt-4 gap-2">

@@ -27,15 +27,25 @@ export function UserNav() {
     () => false
   );
 
-  const [isMono, setIsMono] = React.useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme-mono") === "true";
-    }
-    return false;
-  });
+  const [isMono, setIsMono] = React.useState(false);
   const user = session?.user;
 
-  // Sync Mono mode class with state
+  // Modern way to handle hydration/mounting safely and sync state
+  React.useEffect(() => {
+    if (!mounted) return;
+    
+    // Initial sync from localStorage
+    const savedMono = localStorage.getItem("theme-mono") === "true";
+    setIsMono(savedMono);
+
+    if (savedMono) {
+      document.documentElement.classList.add("mono");
+    } else {
+      document.documentElement.classList.remove("mono");
+    }
+  }, [mounted]);
+
+  // Sync subsequent changes
   React.useEffect(() => {
     if (!mounted) return;
     if (isMono) {
