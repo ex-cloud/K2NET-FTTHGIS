@@ -239,31 +239,27 @@ export default function OltListPage() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 pt-24 pb-8 px-8 space-y-8 overflow-y-auto relative">
-      <div className="flex items-end justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500/80 mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Core Infrastructure Layer
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white drop-shadow-sm">
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex flex-row items-center justify-between px-8 py-4 border-b border-border bg-card/30">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
             OLT Management
-          </h1>
-          <p className="text-sm text-zinc-400 max-w-lg leading-relaxed">
-            Manage your Optical Line Terminals, IP configurations, and track
-            real-time health across the backbone network.
+          </h2>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
+            {data.length} Nodes Found
           </p>
         </div>
-        <Button
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 px-6 shadow-lg shadow-emerald-900/20 active:scale-95 transition-all"
-          onClick={handleCreate}
-        >
-          <Plus className="w-5 h-5 mr-3" />
-          Add Core Device
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleCreate}
+            className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 shadow-sm"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Core Device
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-zinc-900/30 rounded-2xl p-1 border border-white/5">
+      <div className="flex-1 overflow-auto p-8 pt-6">
         <SmartDataTable
           columns={columns}
           data={data}

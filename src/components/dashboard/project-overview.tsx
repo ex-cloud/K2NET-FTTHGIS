@@ -130,6 +130,7 @@ function AdvisorCard({
 }: {
   issues?: IssueDetail[];
   projectId: string;
+  orgId: string;
 }) {
   const router = useRouter();
   const { setMapCenter } = useMapStore();
@@ -154,13 +155,13 @@ function AdvisorCard({
     });
 
     // 3. Navigate to map route
-    router.push(`/project/${projectId}/map`);
+    router.push(`/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${issue.code}`);
   };
 
   const handleFlyToTable = (issue: IssueDetail) => {
     const tablePath = issue.type.toLowerCase();
     // Navigate to specific inventory table with search param
-    router.push(`/project/${projectId}/inventory/${tablePath}?search=${issue.code}`);
+    router.push(`/org/${orgId}/project/${projectId}/inventory/${tablePath}?search=${issue.code}`);
   };
 
   return (
@@ -394,6 +395,7 @@ export function ProjectOverview() {
   const { data: session } = useSession();
   const params = useParams();
   const projectId = params?.projectId as string;
+  const orgId = params?.orgId as string;
 
   const [stats, setStats] = React.useState<ProjectStats | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -606,7 +608,7 @@ export function ProjectOverview() {
       {/* --- Advisor + DB Info Row --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdvisorCard issues={stats?.issues} projectId={projectId} />
+          <AdvisorCard issues={stats?.issues} projectId={projectId} orgId={orgId} />
         </div>
         <div>
           <DatabaseInfoCard projectId={projectId} />

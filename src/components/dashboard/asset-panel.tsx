@@ -169,7 +169,7 @@ export function AssetPanel() {
         </Button>
       </div>
 
-      <Card className="pointer-events-auto w-80 bg-background/80 backdrop-blur border-border/50 shadow-2xl p-6 rounded-3xl overflow-hidden relative min-h-[450px]">
+      <Card className="pointer-events-auto w-80 bg-zinc-950/80 backdrop-blur-3xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-6 rounded-3xl overflow-hidden relative min-h-[450px] text-zinc-100">
         {/* Loading Overlay */}
         {(loading || diagnosing) && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm z-50">
@@ -186,10 +186,10 @@ export function AssetPanel() {
           <>
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-[10px] font-bold text-muted-foreground mb-1 tracking-widest">
+                <h3 className="text-[10px] font-bold text-zinc-500 mb-1 tracking-widest">
                   {details.type} INFRASTRUCTURE
                 </h3>
-                <h1 className="text-2xl font-black font-mono tracking-tighter text-foreground leading-none">
+                <h1 className="text-2xl font-black font-mono tracking-tighter text-white leading-none">
                   {details.code}
                 </h1>
                 <div className="flex flex-wrap gap-1 mt-2">
@@ -223,7 +223,7 @@ export function AssetPanel() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedAsset(null)}
-                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted"
+                className="h-8 w-8 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -234,12 +234,12 @@ export function AssetPanel() {
               {Object.entries(details.attributes || {}).map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex justify-between items-center border-b border-border/20 pb-1.5"
+                  className="flex justify-between items-center border-b border-white/5 pb-1.5"
                 >
-                  <span className="text-[10px] text-muted-foreground font-bold tracking-wide">
+                  <span className="text-[10px] text-zinc-500 font-bold tracking-wide">
                     {key}
                   </span>
-                  <span className="text-xs font-mono font-medium">
+                  <span className="text-xs font-mono font-medium text-zinc-300">
                     {String(value)}
                   </span>
                 </div>
@@ -248,46 +248,47 @@ export function AssetPanel() {
 
             {/* Live Diagnostics Section */}
             {diagResult && (
-              <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 mb-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 mb-2">
-                  <Activity className="w-3 h-3" /> LIVE SIGNAL ANALYSIS
+              <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 mb-6 animate-in fade-in zoom-in-95 duration-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 mb-2">
+                  <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL ANALYSIS
                 </div>
                 <div className="flex justify-between items-end mb-2">
-                  <span className="text-3xl font-black font-mono tracking-tighter">
+                  <span className="text-3xl font-black font-mono tracking-tighter text-white">
                     {diagResult.signal}
                   </span>
-                  <span className="text-[10px] font-bold mb-1 ml-1 text-muted-foreground">
+                  <span className="text-[10px] font-bold mb-1 ml-1 text-emerald-500/70">
                     dBm
                   </span>
                   <span
-                    className={`ml-auto px-2 py-0.5 rounded text-[8px] font-black ${diagResult.health === "OPTIMAL" ? "bg-emerald-500" : "bg-amber-500"} text-white uppercase`}
+                    className={`ml-auto px-2 py-0.5 rounded text-[8px] font-black shadow-lg ${diagResult.health === "OPTIMAL" ? "bg-emerald-500 shadow-emerald-500/50" : "bg-amber-500 shadow-amber-500/50"} text-white uppercase`}
                   >
                     {diagResult.health}
                   </span>
                 </div>
-                <p className="text-[9px] font-medium leading-tight text-muted-foreground italic normal-case">
+                <p className="text-[9px] font-medium leading-tight text-emerald-300/70 italic normal-case">
                   &quot;{diagResult.message}&quot;
                 </p>
               </div>
             )}
 
             {!diagResult && (
-              <div className="p-4 bg-muted/40 rounded-2xl border border-border/50 mb-6 font-mono">
-                <div className="text-[9px] text-muted-foreground mb-2">
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 mb-6 font-mono relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[100%] animate-[shimmer_2s_infinite]" />
+                <div className="text-[9px] text-zinc-500 mb-2">
                   STATIC HEALTH SCORE
                 </div>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px]">OPTIMAL</span>
-                  <span className="text-[10px] text-emerald-500">98.2%</span>
+                  <span className="text-[10px] text-zinc-400">OPTIMAL</span>
+                  <span className="text-[10px] text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">98.2%</span>
                 </div>
-                <div className="w-full h-1 bg-muted-foreground/10 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[98%]" />
+                <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full w-[98%] shadow-[0_0_10px_rgba(16,185,129,1)]" />
                 </div>
               </div>
             )}
 
             <Button
-              className="w-full bg-foreground text-background hover:bg-foreground/90 rounded-2xl h-12 font-black tracking-wide"
+              className="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl h-12 font-black tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all"
               onClick={handleRunDiagnostics}
               disabled={loading || diagnosing}
             >

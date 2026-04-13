@@ -34,6 +34,15 @@ interface MapState {
   traceSourceNode: { id: string; code: string } | null;
   tracedPath: FeatureCollection<LineString> | null;
 
+  // Layer Visibility
+  layerVisibility: {
+    OLT: boolean;
+    ODC: boolean;
+    ODP: boolean;
+    CUSTOMER: boolean;
+    CABLE: boolean;
+  };
+
   setMapCenter: (center: MapCenter) => void;
   setMapStyle: (style: MapStyleMode) => void;
   updateStatusOverride: (code: string, status: string) => void;
@@ -48,6 +57,8 @@ interface MapState {
   startTraceMode: (sourceNode: { id: string; code: string }) => void;
   setTracedPath: (path: FeatureCollection<LineString> | null) => void;
   clearTrace: () => void;
+
+  setLayerVisibility: (layer: keyof MapState['layerVisibility'], visible: boolean) => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -70,6 +81,15 @@ export const useMapStore = create<MapState>((set) => ({
   traceSourceNode: null,
   tracedPath: null,
 
+  // Layer Visibility defaults
+  layerVisibility: {
+    OLT: true,
+    ODC: true,
+    ODP: true,
+    CUSTOMER: true,
+    CABLE: true,
+  },
+
   setMapCenter: (center) => set({ mapCenter: center }),
   setMapStyle: (style) => set({ mapStyle: style }),
   updateStatusOverride: (code, status) =>
@@ -90,4 +110,9 @@ export const useMapStore = create<MapState>((set) => ({
     set({ tracedPath: path, traceMode: "idle" }),
   clearTrace: () =>
     set({ tracedPath: null, traceMode: "idle", traceSourceNode: null }),
+
+  setLayerVisibility: (layer, visible) =>
+    set((state) => ({
+      layerVisibility: { ...state.layerVisibility, [layer]: visible },
+    })),
 }));

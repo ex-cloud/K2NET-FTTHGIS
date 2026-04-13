@@ -9,6 +9,7 @@ import Map, {
   Layer,
   ScaleControl,
   MapRef,
+  Marker,
 } from "react-map-gl/maplibre";
 import type {
   CircleLayerSpecification,
@@ -41,6 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMapNotifications } from "@/hooks/use-map-notifications";
 import { MapDrawControl } from "@/components/map/map-draw-control";
+import { MapFilterControl } from "@/components/dashboard/map-filter-control";
 import { AssetFormSidebar } from "@/components/dashboard/asset-form-sidebar";
 import type MapboxDraw from "@mapbox/mapbox-gl-draw";
 import type { DrawAssetType } from "@/store/map-store";
@@ -102,6 +104,8 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     tracedPath,
     setTracedPath,
     clearTrace,
+    // Layer Visibility
+    layerVisibility,
   } = useMapStore();
 
   // Trace Path hook
@@ -477,7 +481,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       layout: {
         "line-cap": "round",
         "line-join": "round",
-        visibility: isTopologyMode ? "visible" : "none",
+        visibility: isTopologyMode && layerVisibility.CABLE ? "visible" : "none",
       },
       paint: {
         "line-width": [
@@ -515,7 +519,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "line-dasharray": [4, 2], // Garis putus-putus seperti mode lain
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.CABLE],
   );
 
   // --- STANDARD MODE: Cable Layer (Base & Satellite) ---
@@ -528,7 +532,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       layout: {
         "line-cap": "round",
         "line-join": "round",
-        visibility: isTopologyMode ? "none" : "visible",
+        visibility: !isTopologyMode && layerVisibility.CABLE ? "visible" : "none",
       },
       paint: {
         "line-width": [
@@ -568,7 +572,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "line-dasharray": [4, 2],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.CABLE],
   );
 
   // --- OLT LAYERS (POP/Backbone) ---
@@ -580,6 +584,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       "source-layer": "nodes",
       filter: ["==", ["get", "node_type"], "OLT"],
       minzoom: 12.5,
+      layout: {
+        visibility: layerVisibility.OLT ? "visible" : "none",
+      },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 15, 14],
         "circle-color": [
@@ -617,7 +624,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         ],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.OLT],
   );
 
   const oltLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -629,6 +636,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       filter: ["==", ["get", "node_type"], "OLT"],
       minzoom: 12.5,
       layout: {
+        visibility: layerVisibility.OLT ? "visible" : "none",
         "text-field": isTopologyMode
           ? ["concat", "BACKBONE / ", ["coalesce", ["get", "code"], "OLT"]]
           : ["coalesce", ["get", "code"], "OLT"],
@@ -644,7 +652,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "text-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.OLT],
   );
 
   // --- ODC LAYERS (Distribution) ---
@@ -656,6 +664,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       "source-layer": "nodes",
       filter: ["==", ["get", "node_type"], "ODC"],
       minzoom: 14,
+      layout: {
+        visibility: layerVisibility.ODC ? "visible" : "none",
+      },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 12],
         "circle-color": [
@@ -697,7 +708,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         ],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.ODC],
   );
 
   const odcLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -709,6 +720,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       filter: ["==", ["get", "node_type"], "ODC"],
       minzoom: 15,
       layout: {
+        visibility: layerVisibility.ODC ? "visible" : "none",
         "text-field": ["coalesce", ["get", "code"], "ODC"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 15, 9, 18, 12],
         "text-offset": [0, 1.5],
@@ -734,6 +746,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       "source-layer": "nodes",
       filter: ["==", ["get", "node_type"], "ODP"],
       minzoom: 16,
+      layout: {
+        visibility: layerVisibility.ODP ? "visible" : "none",
+      },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 4, 19, 10],
         "circle-color": [
@@ -787,6 +802,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       filter: ["==", ["get", "node_type"], "ODP"],
       minzoom: 17,
       layout: {
+        visibility: layerVisibility.ODP ? "visible" : "none",
         "text-field": ["coalesce", ["get", "code"], "ODP"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 17, 9, 20, 12],
         "text-offset": [0, 1.5],
@@ -813,7 +829,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       filter: ["==", ["get", "node_type"], "CUSTOMER"],
       minzoom: 17,
       layout: {
-        visibility: isTopologyMode ? "none" : "visible",
+        visibility: !isTopologyMode && layerVisibility.CUSTOMER ? "visible" : "none",
       },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 17, 2, 20, 6],
@@ -1067,14 +1083,31 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           </Source>
         )}
 
-        {/* Search Target Highlight (Static Bold Blue) */}
-        {searchTargetData && (
-          <Source id="search-source" type="geojson" data={searchTargetData}>
-            <Layer {...searchHighlightLayer} beforeId="standard-cables" />
-          </Source>
+        {/* Search Target Highlight (Ripple/Ping Effect via Marker) */}
+        {selectedAsset?.lng && selectedAsset?.lat && (
+          <Marker longitude={selectedAsset.lng} latitude={selectedAsset.lat}>
+            <div className="relative flex items-center justify-center pointer-events-none">
+              <div className="absolute w-12 h-12 rounded-full border-2 border-primary animate-ping opacity-75" />
+              <div className="absolute w-6 h-6 rounded-full bg-primary/20 animate-pulse" />
+              <div
+                className="w-3 h-3 rounded-full border-2 border-background z-10"
+                style={{
+                  backgroundColor: ["DOWN", "FIBERCUT", "BROKEN"].includes(
+                    statusOverrides[selectedAsset.code] || selectedAsset.status || "UP"
+                  )
+                    ? "#ef4444"
+                    : ["MAINTENANCE"].includes(
+                          statusOverrides[selectedAsset.code] || selectedAsset.status || "UP"
+                        )
+                      ? "#f59e0b"
+                      : "#3b82f6",
+                }}
+              />
+            </div>
+          </Marker>
         )}
 
-        {/* INFRASTRUCTURE DATA (Selalu di atas satelit/basemap) */}
+        {/* Static highlight for selected line edge */}
         <Source
           id="network-source"
           type="vector"
@@ -1225,6 +1258,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           </Source>
         )}
       </Map>
+
+      {/* Map Filter Settings UI (Floating Top Right) */}
+      <MapFilterControl />
 
       {/* Floating Map Controls (Zoom & Reset) */}
       <div className="absolute bottom-8 right-6 flex flex-col gap-2 z-30 pointer-events-auto">
