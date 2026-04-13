@@ -3,6 +3,7 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\tenant
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\event\MapEventPublisher.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\gis\PostgisConfig.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\mapper\NetworkMapper.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\analytics\dto\IssueDetailDTO.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\user\dto\UserStatsDto.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\config\ClusterRefreshConfig.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\api\network\SplitterPortController.java
