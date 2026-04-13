@@ -185,32 +185,6 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     );
   }, [selectedAsset]);
 
-  // Derived data for search target pulse (Works for any selected asset with coordinates)
-  const searchTargetData = useMemo<FeatureCollection | null>(() => {
-    if (!selectedAsset?.lng || !selectedAsset?.lat) return null;
-    return {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [selectedAsset.lng, selectedAsset.lat],
-          },
-          properties: {
-            id: "search-target",
-            isCoordinate: selectedAsset.type === "COORDINATE",
-            status: selectedAsset.code
-              ? statusOverrides[selectedAsset.code] ||
-                selectedAsset.status ||
-                "UP"
-              : selectedAsset.status || "UP",
-          },
-        },
-      ],
-    };
-  }, [selectedAsset, statusOverrides]);
-
   // Watch mapCenter changes (e.g. from Search) and fly there
   useEffect(() => {
     if (!mapRef.current) return;
@@ -294,7 +268,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         setHoveredFeature({
           code: feature.properties.code || `${type}-${feature.properties.id}`,
           type,
-          status: statusOverrides[feature.properties.code] || feature.properties.status || "UP",
+          status: (feature.properties.code && statusOverrides[feature.properties.code]) || feature.properties.status || "UP",
           x: evt.point.x,
           y: evt.point.y,
         });
@@ -734,7 +708,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.5, 0, 16, 1],
       },
     }),
-    [],
+    [layerVisibility.ODC],
   );
 
   // --- ODP LAYERS (Access) ---
@@ -790,7 +764,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         ],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.ODP],
   );
 
   const odpLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -816,7 +790,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "text-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
       },
     }),
-    [],
+    [layerVisibility.ODP],
   );
 
   // --- CUSTOMER LAYER (Standard only) ---
@@ -859,7 +833,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "circle-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
       },
     }),
-    [isTopologyMode],
+    [isTopologyMode, layerVisibility.CUSTOMER],
   );
 
   // --- HIGHLIGHT LAYERS ---
@@ -887,39 +861,6 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     [selectedAsset],
   );
 
-  const searchHighlightLayer = useMemo<CircleLayerSpecification>(
-    () => ({
-      id: "search-highlight",
-      type: "circle",
-      source: "search-source",
-      paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 10, 20, 45],
-        "circle-color": [
-          "match",
-          ["get", "status"],
-          ["DOWN", "FIBERCUT", "BROKEN"],
-          "rgba(239, 68, 68, 0.75)", // Red if down
-          "MAINTENANCE",
-          "rgba(245, 158, 11, 0.75)", // Amber if maintenance
-          "rgba(58, 166, 255, 0.75)", // Default Blue (Active)
-        ],
-        "circle-blur": 0.5,
-        "circle-opacity": 0.5,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": [
-          "match",
-          ["get", "status"],
-          ["DOWN", "FIBERCUT", "BROKEN"],
-          "#ef4444",
-          "MAINTENANCE",
-          "#f59e0b",
-          "#2563eb",
-        ],
-        "circle-stroke-opacity": 0.5,
-      },
-    }),
-    [],
-  );
 
   const highlightEdgeLayer = useMemo<LineLayerSpecification>(
     () => ({
@@ -1093,11 +1034,11 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
                 className="w-3 h-3 rounded-full border-2 border-background z-10"
                 style={{
                   backgroundColor: ["DOWN", "FIBERCUT", "BROKEN"].includes(
-                    statusOverrides[selectedAsset.code] || selectedAsset.status || "UP"
+                    statusOverrides[selectedAsset.code || ""] || selectedAsset.status || "UP"
                   )
                     ? "#ef4444"
                     : ["MAINTENANCE"].includes(
-                          statusOverrides[selectedAsset.code] || selectedAsset.status || "UP"
+                          statusOverrides[selectedAsset.code || ""] || selectedAsset.status || "UP"
                         )
                       ? "#f59e0b"
                       : "#3b82f6",

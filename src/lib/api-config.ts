@@ -11,10 +11,14 @@ export const getBackendBaseUrl = () => {
   if (typeof window !== "undefined") {
     const { hostname, protocol } = window.location;
 
-    // Jika kita mengakses lewat IP atau hostname selain localhost,
-    // arahkan API ke host yang sama tapi port 9090
+    // Use absolute current origin for API calls if possible to avoid CORS preflight mismatch
     if (hostname !== "localhost" && hostname !== "127.0.0.1") {
       return `${protocol}//${hostname}:9090/api/v1`;
+    }
+    
+    // Fallback to localhost if we are on local
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `http://localhost:9090/api/v1`;
     }
   }
 

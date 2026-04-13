@@ -8,8 +8,19 @@ import {
   BookOpen,
   Command,
   Users,
-  Settings2
+  Settings2,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const SearchPanel = dynamic(() => import("@/components/dashboard/search-panel").then(mod => mod.SearchPanel), {
+  ssr: false,
+  loading: () => <div className="h-10 bg-muted/20 animate-pulse rounded-lg" />
+});
+
+const StatsPanel = dynamic(() => import("@/components/dashboard/stats-panel").then(mod => mod.StatsPanel), {
+  ssr: false,
+  loading: () => <div className="h-40 bg-muted/20 animate-pulse rounded-lg mt-4" />
+});
 
 type MenuSection = {
   title: string;
@@ -97,9 +108,16 @@ export function ProjectSidebar() {
     return null;
   }
 
+  const isTopologyView = pathname?.includes("/infrastructure/topology");
+
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-sidebar h-full hidden md:flex flex-col custom-scrollbar overflow-y-auto pt-6">
       <div className="px-5 mb-4">
+        {isTopologyView && (
+          <div className="mb-4">
+            <SearchPanel placeholder="Search areas or coordinates..." />
+          </div>
+        )}
         <h3 className="text-sm font-semibold text-sidebar-foreground">{sectionTitle}</h3>
       </div>
       <div className="flex-1 px-3 space-y-1">
@@ -119,7 +137,15 @@ export function ProjectSidebar() {
             </Link>
           );
         })}
+
+        {/* Network Statistics injected below the navigation in Topology View */}
+        {isTopologyView && (
+          <div className="mt-6 px-1">
+            <StatsPanel />
+          </div>
+        )}
       </div>
     </aside>
   );
 }
+

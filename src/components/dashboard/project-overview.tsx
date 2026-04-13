@@ -13,13 +13,10 @@ import {
   BarChart3,
   Plus,
   Server,
-  AlertCircle,
   ArrowUpRight,
   Network,
   Map as MapIcon,
   ArrowRight,
-  Search,
-  Edit3,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -127,6 +124,7 @@ function MetricBox({
 function AdvisorCard({
   issues = [],
   projectId,
+  orgId,
 }: {
   issues?: IssueDetail[];
   projectId: string;
@@ -155,13 +153,17 @@ function AdvisorCard({
     });
 
     // 3. Navigate to map route
-    router.push(`/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${issue.code}`);
+    router.push(
+      `/org/${orgId}/project/${projectId}/infrastructure/topology?flyTo=${issue.code}`,
+    );
   };
 
   const handleFlyToTable = (issue: IssueDetail) => {
     const tablePath = issue.type.toLowerCase();
     // Navigate to specific inventory table with search param
-    router.push(`/org/${orgId}/project/${projectId}/inventory/${tablePath}?search=${issue.code}`);
+    router.push(
+      `/org/${orgId}/project/${projectId}/inventory/${tablePath}?search=${issue.code}`,
+    );
   };
 
   return (
@@ -219,7 +221,8 @@ function AdvisorCard({
                         </span>
                       </div>
                       <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
-                        {issue.lastNote || "Maintenance required - investigation pending."}
+                        {issue.lastNote ||
+                          "Maintenance required - investigation pending."}
                       </p>
                     </div>
                   </div>
@@ -570,45 +573,48 @@ export function ProjectOverview() {
       </div>
 
       {/* --- Network Stats Section --- */}
-      {stats &&
-        (stats.totalNodes > 0 || stats.totalUsers > 0) && (
-          <div>
-            <h2 className="text-base font-semibold text-foreground mb-4">
-              Network Infrastructure
-            </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricBox
-                icon={Activity}
-                label="Total Nodes"
-                value={stats.totalNodes}
-                color="emerald"
-              />
-              <MetricBox
-                icon={Activity}
-                label="Active Nodes"
-                value={stats.activeNodes}
-                color="blue"
-              />
-              <MetricBox
-                icon={Database}
-                label="Network Length"
-                value={`${stats.totalNetworkLengthKm.toFixed(2)} km`}
-                color="violet"
-              />
-              <MetricBox
-                icon={Database}
-                label="Customer Reach"
-                value={stats.customerReach}
-                color="amber"
-              />
-            </div>
+      {stats && (stats.totalNodes > 0 || stats.totalUsers > 0) && (
+        <div>
+          <h2 className="text-base font-semibold text-foreground mb-4">
+            Network Infrastructure
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricBox
+              icon={Activity}
+              label="Total Nodes"
+              value={stats.totalNodes}
+              color="emerald"
+            />
+            <MetricBox
+              icon={Activity}
+              label="Active Nodes"
+              value={stats.activeNodes}
+              color="blue"
+            />
+            <MetricBox
+              icon={Database}
+              label="Network Length"
+              value={`${stats.totalNetworkLengthKm.toFixed(2)} km`}
+              color="violet"
+            />
+            <MetricBox
+              icon={Database}
+              label="Customer Reach"
+              value={stats.customerReach}
+              color="amber"
+            />
           </div>
-        )}
+        </div>
+      )}
 
       {/* --- Advisor + DB Info Row --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <AdvisorCard issues={stats?.issues} projectId={projectId} orgId={orgId} />
+          <AdvisorCard
+            issues={stats?.issues}
+            projectId={projectId}
+            orgId={orgId}
+          />
         </div>
         <div>
           <DatabaseInfoCard projectId={projectId} />

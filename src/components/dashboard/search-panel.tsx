@@ -56,14 +56,25 @@ export function SearchPanel({
         const baseUrl = getBackendBaseUrl();
         const res = await fetch(`${baseUrl}/network/assets/search?q=${query}`, {
           headers: {
-            Authorization: `Bearer ${session?.accessToken}`,
+            ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
           },
         });
-        const data = await res.json();
+        if (!res.ok) {
+          console.warn(`Search API returned ${res.status}`);
+          setResults([]);
+          return;
+        }
+        const text = await res.text();
+        if (!text) {
+          setResults([]);
+          return;
+        }
+        const data = JSON.parse(text);
         setResults(data);
         setShowResults(true);
       } catch (err) {
         console.error("Search failed", err);
+        setResults([]);
       } finally {
         setLoading(false);
       }

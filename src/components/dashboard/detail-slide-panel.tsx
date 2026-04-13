@@ -80,7 +80,8 @@ export function DetailSlidePanel() {
   const isMapView =
     pathname?.includes("/infrastructure/topology") ||
     pathname?.includes("/dashboard/map");
-  const isOpen = !!selectedAsset && !isMapView;
+  const isOverviewView = pathname?.endsWith(`/project/${projectId}`) || pathname?.endsWith(`/project/${projectId}/`);
+  const isOpen = !!selectedAsset && !isMapView && !isOverviewView;
 
   const fetchDetails = React.useCallback(async () => {
     if (!selectedAsset) return;
