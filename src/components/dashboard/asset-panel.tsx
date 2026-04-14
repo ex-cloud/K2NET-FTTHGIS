@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Cloud, ZapOff, PlayCircle, Loader2, Activity, Cable } from "lucide-react";
+import { X, PlayCircle, Loader2, Activity, Cable } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSelectionStore } from "@/store/selection-store";
@@ -121,26 +121,7 @@ export function AssetPanel() {
   };
 
   if (!selectedAsset) {
-    return (
-      <div className="flex flex-col items-end gap-4 pointer-events-none absolute bottom-6 right-6 z-10">
-        <div className="pointer-events-auto flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="rounded-full h-8 text-xs font-medium bg-background/60 backdrop-blur hover:bg-background/80"
-          >
-            <Cloud className="w-3 h-3 mr-2" /> Weather
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full h-8 text-xs font-medium bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
-          >
-            <ZapOff className="w-3 h-3 mr-2" /> Power
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const activeStatus = (
@@ -150,25 +131,7 @@ export function AssetPanel() {
   ).toUpperCase();
 
   return (
-    <div className="flex flex-col items-end gap-4 pointer-events-none absolute bottom-6 right-6 z-10 uppercase">
-      {/* Action Bar */}
-      <div className="pointer-events-auto flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="rounded-full h-8 text-xs font-medium bg-background/60 backdrop-blur hover:bg-background/80"
-        >
-          <Cloud className="w-3 h-3 mr-2" /> Weather
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full h-8 text-xs font-medium bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
-        >
-          <ZapOff className="w-3 h-3 mr-2" /> Power Grid
-        </Button>
-      </div>
-
+    <div className="flex flex-col items-end gap-4 pointer-events-none absolute bottom-20 right-6 z-10 uppercase">
       <Card className="pointer-events-auto w-80 bg-zinc-950/80 backdrop-blur-3xl border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] p-6 rounded-3xl overflow-hidden relative min-h-[450px] text-zinc-100">
         {/* Loading Overlay */}
         {(loading || diagnosing) && (
@@ -250,7 +213,8 @@ export function AssetPanel() {
             {diagResult && (
               <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 mb-6 animate-in fade-in zoom-in-95 duration-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                 <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 mb-2">
-                  <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL ANALYSIS
+                  <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL
+                  ANALYSIS
                 </div>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-3xl font-black font-mono tracking-tighter text-white">
@@ -279,7 +243,9 @@ export function AssetPanel() {
                 </div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px] text-zinc-400">OPTIMAL</span>
-                  <span className="text-[10px] text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">98.2%</span>
+                  <span className="text-[10px] text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">
+                    98.2%
+                  </span>
                 </div>
                 <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
                   <div className="bg-emerald-500 h-full w-[98%] shadow-[0_0_10px_rgba(16,185,129,1)]" />
@@ -310,7 +276,9 @@ export function AssetPanel() {
                 disabled={traceMode === "selecting-target"}
               >
                 <Cable className="w-4 h-4 mr-2" />
-                {traceMode === "selecting-target" ? "SELECT TARGET ON MAP..." : "TRACE FIBER ROUTE"}
+                {traceMode === "selecting-target"
+                  ? "SELECT TARGET ON MAP..."
+                  : "TRACE FIBER ROUTE"}
               </Button>
             )}
           </>

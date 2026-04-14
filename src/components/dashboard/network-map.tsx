@@ -1204,7 +1204,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       <MapFilterControl />
 
       {/* Floating Map Controls (Zoom & Reset) */}
-      <div className="absolute bottom-8 right-6 flex flex-col gap-2 z-30 pointer-events-auto">
+      <div className="absolute bottom-24 right-6 flex flex-col gap-2 z-30 pointer-events-auto">
         <Button
           variant="secondary"
           size="icon"

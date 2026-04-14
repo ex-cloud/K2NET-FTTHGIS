@@ -2,7 +2,15 @@
 
 import React from "react";
 import { useMapStore } from "@/store/map-store";
-import { Layers, Zap, Hexagon, Component, Cable, Users, ChevronDown } from "lucide-react";
+import {
+  Layers,
+  Zap,
+  Hexagon,
+  Component,
+  Cable,
+  Users,
+  ChevronDown,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,11 +23,36 @@ export function MapFilterControl() {
   const { layerVisibility, setLayerVisibility } = useMapStore();
 
   const filters = [
-    { id: "OLT", label: "Backbone (OLT)", icon: Zap, color: "text-emerald-500" },
-    { id: "ODC", label: "Distribution (ODC)", icon: Hexagon, color: "text-blue-500" },
-    { id: "ODP", label: "Access Node (ODP)", icon: Component, color: "text-cyan-500" },
-    { id: "CUSTOMER", label: "Customer Premises", icon: Users, color: "text-purple-500" },
-    { id: "CABLE", label: "Fiber Cables", icon: Cable, color: "text-slate-400" },
+    {
+      id: "OLT",
+      label: "Backbone (OLT)",
+      icon: Zap,
+      color: "text-emerald-500",
+    },
+    {
+      id: "ODC",
+      label: "Distribution (ODC)",
+      icon: Hexagon,
+      color: "text-blue-500",
+    },
+    {
+      id: "ODP",
+      label: "Access Node (ODP)",
+      icon: Component,
+      color: "text-cyan-500",
+    },
+    {
+      id: "CUSTOMER",
+      label: "Customer Premises",
+      icon: Users,
+      color: "text-purple-500",
+    },
+    {
+      id: "CABLE",
+      label: "Fiber Cables",
+      icon: Cable,
+      color: "text-slate-400",
+    },
   ] as const;
 
   return (
@@ -37,16 +70,22 @@ export function MapFilterControl() {
             <div className="p-4 pt-2 border-t border-border/10 space-y-4">
               {filters.map((filter) => {
                 const Icon = filter.icon;
-                const isVisible = layerVisibility[filter.id as keyof typeof layerVisibility];
+                const isVisible =
+                  layerVisibility[filter.id as keyof typeof layerVisibility];
 
                 return (
-                  <div key={filter.id} className="flex items-center justify-between">
+                  <div
+                    key={filter.id}
+                    className="flex items-center justify-between"
+                  >
                     <Label
                       htmlFor={`filter-${filter.id}`}
-                      className="flex items-center gap-2.5 text-[11px] w-full font-bold cursor-pointer hover:text-foreground transition-colors uppercase tracking-wider text-muted-foreground"
+                      className="flex items-center gap-2.5 text-[10px] w-full font-bold cursor-pointer hover:text-foreground transition-colors uppercase tracking-wider text-muted-foreground"
                     >
-                      <span className={`flex items-center justify-center w-6 h-6 rounded-md bg-muted/30 ${filter.color}`}>
-                         <Icon className="w-3.5 h-3.5" />
+                      <span
+                        className={`flex items-center justify-center w-6 h-6 rounded-md bg-muted/30 ${filter.color}`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
                       </span>
                       {filter.label}
                     </Label>
@@ -54,7 +93,10 @@ export function MapFilterControl() {
                       id={`filter-${filter.id}`}
                       checked={isVisible}
                       onCheckedChange={(checked: boolean) =>
-                        setLayerVisibility(filter.id as keyof typeof layerVisibility, checked)
+                        setLayerVisibility(
+                          filter.id as keyof typeof layerVisibility,
+                          checked,
+                        )
                       }
                       className="scale-75 origin-right"
                     />
