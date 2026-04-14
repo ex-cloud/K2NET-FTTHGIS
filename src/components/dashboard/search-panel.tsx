@@ -56,7 +56,9 @@ export function SearchPanel({
         const baseUrl = getBackendBaseUrl();
         const res = await fetch(`${baseUrl}/network/assets/search?q=${query}`, {
           headers: {
-            ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
+            ...(session?.accessToken
+              ? { Authorization: `Bearer ${session.accessToken}` }
+              : {}),
           },
         });
         if (!res.ok) {
@@ -99,7 +101,7 @@ export function SearchPanel({
 
   return (
     <div
-      className="relative max-w-md w-full bg-background/50 backdrop-blur rounded-lg border border-border/40 pointer-events-auto"
+      className="relative z-50 w-[320px] bg-background/80 backdrop-blur-xl rounded-xl border border-border/40 shadow-xl pointer-events-auto transition-all"
       ref={containerRef}
     >
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />

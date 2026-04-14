@@ -2,9 +2,14 @@
 
 import React from "react";
 import { useMapStore } from "@/store/map-store";
-import { Layers, Zap, Hexagon, Component, Cable, Users } from "lucide-react";
+import { Layers, Zap, Hexagon, Component, Cable, Users, ChevronDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export function MapFilterControl() {
   const { layerVisibility, setLayerVisibility } = useMapStore();
@@ -18,40 +23,47 @@ export function MapFilterControl() {
   ] as const;
 
   return (
-    <div className="absolute top-4 right-16 z-30 pointer-events-auto">
-      <div className="bg-zinc-950/90 backdrop-blur-md border border-white/10 shadow-2xl rounded-2xl p-4 w-60 animate-in fade-in slide-in-from-top-4">
-        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/10">
-          <Layers className="w-4 h-4 text-zinc-400" />
-          <span className="text-xs font-black uppercase tracking-widest text-zinc-300">
-            Layer Filters
-          </span>
-        </div>
-        <div className="space-y-3">
-          {filters.map((filter) => {
-            const Icon = filter.icon;
-            const isVisible = layerVisibility[filter.id as keyof typeof layerVisibility];
+    <div className="absolute top-[80px] right-4 z-30 pointer-events-auto w-[320px]">
+      <div className="bg-background/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-4">
+        <Collapsible defaultOpen={true}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full p-3 font-semibold text-[10px] uppercase tracking-wider text-muted-foreground hover:bg-muted/50 transition-colors group">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              <span>Layer Filters</span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="p-4 pt-2 border-t border-border/10 space-y-4">
+              {filters.map((filter) => {
+                const Icon = filter.icon;
+                const isVisible = layerVisibility[filter.id as keyof typeof layerVisibility];
 
-            return (
-              <div key={filter.id} className="flex items-center justify-between">
-                <Label
-                  htmlFor={`filter-${filter.id}`}
-                  className="flex items-center gap-2 text-[10px] w-full font-bold cursor-pointer hover:text-white transition-colors uppercase tracking-wider text-zinc-400"
-                >
-                  <Icon className={`w-3.5 h-3.5 ${filter.color}`} />
-                  {filter.label}
-                </Label>
-                <Switch
-                  id={`filter-${filter.id}`}
-                  checked={isVisible}
-                  onCheckedChange={(checked: boolean) =>
-                    setLayerVisibility(filter.id as keyof typeof layerVisibility, checked)
-                  }
-                  className="scale-75 origin-right"
-                />
-              </div>
-            );
-          })}
-        </div>
+                return (
+                  <div key={filter.id} className="flex items-center justify-between">
+                    <Label
+                      htmlFor={`filter-${filter.id}`}
+                      className="flex items-center gap-2.5 text-[11px] w-full font-bold cursor-pointer hover:text-foreground transition-colors uppercase tracking-wider text-muted-foreground"
+                    >
+                      <span className={`flex items-center justify-center w-6 h-6 rounded-md bg-muted/30 ${filter.color}`}>
+                         <Icon className="w-3.5 h-3.5" />
+                      </span>
+                      {filter.label}
+                    </Label>
+                    <Switch
+                      id={`filter-${filter.id}`}
+                      checked={isVisible}
+                      onCheckedChange={(checked: boolean) =>
+                        setLayerVisibility(filter.id as keyof typeof layerVisibility, checked)
+                      }
+                      className="scale-75 origin-right"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );
