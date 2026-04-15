@@ -162,6 +162,11 @@ public class NetworkAssetController {
                     dto.setStatus(finalStatus);
                     if (labels.isEmpty())
                         labels.add(finalStatus);
+                    // Populate coordinates
+                    if (o.getGeom() != null) {
+                        dto.setLng(o.getGeom().getX());
+                        dto.setLat(o.getGeom().getY());
+                    }
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Capacity", o.getCapacity());
                     attrs.put("Used", o.getUsedCapacity());
@@ -177,6 +182,11 @@ public class NetworkAssetController {
                     dto.setStatus(finalStatus);
                     if (labels.isEmpty())
                         labels.add(finalStatus);
+                    // Populate coordinates
+                    if (o.getGeom() != null) {
+                        dto.setLng(o.getGeom().getX());
+                        dto.setLat(o.getGeom().getY());
+                    }
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Total Ports", o.getTotalPort());
                     attrs.put("Used Ports", o.getUsedPort());
@@ -195,6 +205,11 @@ public class NetworkAssetController {
                     dto.setStatus(finalStatus);
                     if (labels.isEmpty())
                         labels.add(finalStatus);
+                    // Populate coordinates
+                    if (o.getGeom() != null) {
+                        dto.setLng(o.getGeom().getX());
+                        dto.setLat(o.getGeom().getY());
+                    }
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("IP Address", o.getIpAddress());
                     if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
@@ -208,6 +223,11 @@ public class NetworkAssetController {
                     dto.setStatus(finalStatus);
                     if (labels.isEmpty())
                         labels.add(finalStatus);
+                    // Populate coordinates
+                    if (o.getGeom() != null) {
+                        dto.setLng(o.getGeom().getX());
+                        dto.setLat(o.getGeom().getY());
+                    }
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Address", o.getAddress());
                     if (o.getOdp() != null) {

@@ -20,4 +20,6 @@ public class AssetDetailDto {
     private java.util.List<String> labels;
     private Map<String, Object> attributes;
     private String lastMaintenance;
+    private Double lat;
+    private Double lng;
 }
