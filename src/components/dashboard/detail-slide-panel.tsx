@@ -42,6 +42,8 @@ interface AssetDetails {
   status: string;
   labels?: string[];
   attributes: Record<string, string | number | boolean | null>;
+  lat?: number;
+  lng?: number;
   relatedAssets?: Array<{
     id: string;
     code: string;
@@ -180,28 +182,45 @@ export function DetailSlidePanel() {
   const handleModify = () => {
     if (!details || !selectedAsset) return;
     
-    // Flatten attributes for consistency with edit dialogs
-    const flattenedAsset: Record<string, unknown> = { ...(details as unknown as Record<string, unknown>) };
+    // Build a fully-populated asset object that matches what edit dialogs expect.
+    // The edit dialogs (OdpDialog, OdcDialog, etc.) expect a flat object matching
+    // the TypeScript interfaces (ODP, ODC, OLT, Customer) from types/network.ts.
+    const flattenedAsset: Record<string, unknown> = {
+      id: details.id,
+      code: details.code,
+      name: details.attributes?.["Name"] ?? details.code,
+      status: details.status,
+      type: selectedAsset.type.toUpperCase(),
+      // Coordinates come from top-level DTO fields (populated by backend)
+      lat: details.lat,
+      lng: details.lng,
+    };
+
     if (details.attributes) {
       Object.entries(details.attributes).forEach(([key, value]) => {
-        // Map common fields from Label -> lowercase field name
-        const normalizedKey = key.toLowerCase().replace(/ /g, '');
-        flattenedAsset[normalizedKey] = value;
-        
-        // Special mappings
+        // Map display-label keys to the field names that edit dialogs expect
         if (key === "Capacity") flattenedAsset.capacity = value;
         if (key === "Used") flattenedAsset.usedCapacity = value;
-        if (key === "Parent ODC") flattenedAsset.odcCode = value;
-        if (key === "Parent OLT") flattenedAsset.oltCode = value;
         if (key === "Total Ports") flattenedAsset.totalPort = value;
         if (key === "Used Ports") flattenedAsset.usedPort = value;
+        if (key === "IP Address") flattenedAsset.ipAddress = value;
+        if (key === "Address") flattenedAsset.address = value;
+        if (key === "Last Note") flattenedAsset.lastNote = value;
+        // Parent IDs — convert to string for Radix Select compatibility
+        if (key === "odcId") flattenedAsset.odcId = value != null ? String(value) : "";
+        if (key === "oltId") flattenedAsset.oltId = value != null ? String(value) : "";
+        if (key === "odpId") flattenedAsset.odpId = value != null ? String(value) : "";
+        // Parent codes for display
+        if (key === "Parent ODC") flattenedAsset.odcCode = value;
+        if (key === "Parent OLT") flattenedAsset.oltCode = value;
+        if (key === "Connected ODP") flattenedAsset.odpCode = value;
       });
     }
 
     // Ensure type is uppercase for consistency with inventory pages
     window.dispatchEvent(
       new CustomEvent("trigger-asset-edit", {
-        detail: { asset: { ...flattenedAsset, type: selectedAsset.type.toUpperCase() } },
+        detail: { asset: flattenedAsset },
       }),
     );
   };
@@ -274,7 +293,7 @@ export function DetailSlidePanel() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 p-0 shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col z-[100] [&>button]:hidden"
+        className="w-full sm:max-w-md bg-zinc-950/95 backdrop-blur-3xl border-l border-white/10 p-0 shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col z-100 [&>button]:hidden"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Asset Details - {details?.code}</SheetTitle>
@@ -316,7 +335,7 @@ export function DetailSlidePanel() {
             <>
               {/* Premium Header */}
               <div className="relative p-8 pt-16 overflow-hidden border-b border-white/5">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-transparent opacity-40" />
+                <div className="absolute inset-0 bg-linear-to-br from-emerald-500/20 via-transparent to-transparent opacity-40" />
 
                 <div className="relative space-y-6">
                   <div className="flex items-center justify-between gap-4">
@@ -414,7 +433,7 @@ export function DetailSlidePanel() {
                             <span className="text-xs font-black text-zinc-600 uppercase tracking-tighter group-hover:text-zinc-400 transition-colors">
                               {key}
                             </span>
-                            <div className="h-[1px] flex-1 mx-6 bg-gradient-to-r from-white/5 via-white/10 to-white/5 group-hover:via-emerald-500/20 transition-all" />
+                            <div className="h-px flex-1 mx-6 bg-linear-to-r from-white/5 via-white/10 to-white/5 group-hover:via-emerald-500/20 transition-all" />
                             <span className="text-xs font-mono font-bold text-zinc-200 group-hover:text-white transition-colors">
                               {String(value)}
                             </span>
@@ -456,7 +475,7 @@ export function DetailSlidePanel() {
                 onOpenChange={setIsDeleteDialogOpen}
               >
                 <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-red-500/10 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-linear-to-b from-red-500/10 via-transparent to-transparent pointer-events-none" />
                   <DialogHeader className="relative">
                     <DialogTitle className="text-2xl font-black tracking-tighter flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
@@ -516,7 +535,7 @@ export function DetailSlidePanel() {
                 onOpenChange={setIsDiagnosticOpen}
               >
                 <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[450px] overflow-hidden p-0 rounded-3xl">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-blue-500/5 pointer-events-none" />
+                  <div className="absolute inset-0 bg-linear-to-tr from-emerald-500/10 via-transparent to-blue-500/5 pointer-events-none" />
 
                   <div className="p-8 space-y-8 relative">
                     <div className="flex items-center justify-between">

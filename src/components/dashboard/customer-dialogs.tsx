@@ -84,8 +84,8 @@ export function CustomerDialog({
         name: customer.name || "",
         address: customer.address || "",
         status: customer.status || "ACTIVE",
-        lat: customer.geom?.coordinates?.[1]?.toString() || "-6.9175",
-        lng: customer.geom?.coordinates?.[0]?.toString() || "107.6191",
+        lat: (customer.lat ?? customer.geom?.coordinates?.[1])?.toString() || "-6.9175",
+        lng: (customer.lng ?? customer.geom?.coordinates?.[0])?.toString() || "107.6191",
         odpId: customer.odpId?.toString() || "",
         lastNote: customer.lastNote || "",
       });

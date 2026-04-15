@@ -80,9 +80,10 @@ export function OdpDialog({
 
   React.useEffect(() => {
     if (odp) {
-      // Robust coordinate extraction
-      const lng = odp.geom?.coordinates?.[0] ?? odp.lng ?? "";
-      const lat = odp.geom?.coordinates?.[1] ?? odp.lat ?? "";
+      // Prioritize lat/lng fields (full Double precision) over geom.coordinates
+      // because Jackson JTS serializer (n52) truncates coordinate precision.
+      const lng = odp.lng ?? odp.geom?.coordinates?.[0] ?? "";
+      const lat = odp.lat ?? odp.geom?.coordinates?.[1] ?? "";
 
       setFormData({
         code: odp.code || "",

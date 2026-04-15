@@ -80,9 +80,10 @@ export function OdcDialog({
   React.useEffect(() => {
     if (odc) {
       console.log("DEBUG: ODC data received for form:", odc);
-      // Robust coordinate extraction
-      const lng = odc.geom?.coordinates?.[0] ?? odc.lng ?? "";
-      const lat = odc.geom?.coordinates?.[1] ?? odc.lat ?? "";
+      // Prioritize lat/lng fields (full Double precision) over geom.coordinates
+      // because Jackson JTS serializer (n52) truncates coordinate precision.
+      const lng = odc.lng ?? odc.geom?.coordinates?.[0] ?? "";
+      const lat = odc.lat ?? odc.geom?.coordinates?.[1] ?? "";
       
       setFormData({
         code: odc.code || "",

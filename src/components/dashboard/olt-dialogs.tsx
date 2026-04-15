@@ -62,8 +62,8 @@ export function OltDialog({
         ipAddress: olt.ipAddress || "",
         snmpCommunity: olt.snmpCommunity || "public",
         status: olt.status || "UP",
-        lat: olt.geom?.coordinates?.[1]?.toString() || "-6.9175",
-        lng: olt.geom?.coordinates?.[0]?.toString() || "107.6191",
+        lat: (olt.lat ?? olt.geom?.coordinates?.[1])?.toString() || "-6.9175",
+        lng: (olt.lng ?? olt.geom?.coordinates?.[0])?.toString() || "107.6191",
         lastNote: olt.lastNote || "",
       });
     } else {
