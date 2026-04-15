@@ -71,8 +71,8 @@ export function CustomerDialog({
     name: "",
     address: "",
     status: "ACTIVE",
-    lat: "-6.9175",
-    lng: "107.6191",
+    lat: "",
+    lng: "",
     odpId: "",
     lastNote: "",
   });
@@ -286,7 +286,7 @@ export function CustomerDialog({
               </Label>
               <Input
                 id="lat"
-                placeholder="-6.9175"
+                placeholder="Coordinate"
                 value={formData.lat}
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })

@@ -70,8 +70,8 @@ export function OdpDialog({
     code: "",
     name: "",
     status: "PLANNING",
-    lat: "-6.9175",
-    lng: "107.6191",
+    lat: "",
+    lng: "",
     totalPort: "16",
     usedPort: "0",
     odcId: "",
@@ -80,12 +80,16 @@ export function OdpDialog({
 
   React.useEffect(() => {
     if (odp) {
+      // Robust coordinate extraction
+      const lng = odp.geom?.coordinates?.[0] ?? odp.lng ?? "";
+      const lat = odp.geom?.coordinates?.[1] ?? odp.lat ?? "";
+
       setFormData({
         code: odp.code || "",
         name: odp.name || "",
         status: odp.status || "PLANNING",
-        lat: odp.geom?.coordinates?.[1]?.toString() || "-6.9175",
-        lng: odp.geom?.coordinates?.[0]?.toString() || "107.6191",
+        lat: lat.toString(),
+        lng: lng.toString(),
         totalPort: odp.totalPort?.toString() || "16",
         usedPort: odp.usedPort?.toString() || "0",
         odcId: odp.odcId?.toString() || "",
@@ -96,8 +100,8 @@ export function OdpDialog({
         code: "",
         name: "",
         status: "PLANNING",
-        lat: "-6.9175",
-        lng: "107.6191",
+        lat: "",
+        lng: "",
         totalPort: "16",
         usedPort: "0",
         odcId: "",
@@ -291,7 +295,7 @@ export function OdpDialog({
               </Label>
               <Input
                 id="lat"
-                placeholder="-6.9175"
+                placeholder="Enter latitude"
                 value={formData.lat}
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })
@@ -309,7 +313,7 @@ export function OdpDialog({
               </Label>
               <Input
                 id="lng"
-                placeholder="107.6191"
+                placeholder="Enter longitude"
                 value={formData.lng}
                 onChange={(e) =>
                   setFormData({ ...formData, lng: e.target.value })

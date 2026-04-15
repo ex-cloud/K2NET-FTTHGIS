@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X, Save, Trash2, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import { X, Save, Trash2, CheckCircle2, XCircle, Loader2, AlertTriangle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,12 +20,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useMapStore } from "@/store/map-store";
+import { useMapStore, type DrawAssetType } from "@/store/map-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { Session } from "next-auth";
 import { toast } from "sonner";
-import type { Point, LineString } from "geojson";
+import type { Point, LineString, Feature } from "geojson";
 
 export function AssetFormSidebar() {
   const { data: session } = useSession();
@@ -39,9 +39,11 @@ export function AssetFormSidebar() {
     code: "",
     name: "",
     status: "PLANNED",
-    lng: 0,
-    lat: 0
+    lng: "",
+    lat: ""
   });
+  const [originalStatus, setOriginalStatus] = React.useState<string>("");
+  const [lastNote, setLastNote] = React.useState<string>("");
 
   const [codeStatus, setCodeStatus] = React.useState<'checking' | 'available' | 'exists' | null>(null);
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
@@ -88,6 +90,29 @@ export function AssetFormSidebar() {
     return () => clearTimeout(timeoutId);
   }, [formData.code, isFormOpen, editingAsset, session]);
 
+  // Global listener for editing from other components (like DetailSlidePanel)
+  React.useEffect(() => {
+    const handleRemoteEdit = (e: Event) => {
+      const customEvent = e as CustomEvent<{ asset: { 
+        id: string; 
+        type: DrawAssetType; 
+        code: string; 
+        lat?: number; 
+        lng?: number; 
+        status?: string;
+        properties: Record<string, unknown>;
+      } }>;
+      const asset = customEvent.detail.asset;
+      if (asset) {
+        setEditingAsset(asset);
+        setIsFormOpen(true);
+      }
+    };
+
+    window.addEventListener('trigger-asset-edit', handleRemoteEdit);
+    return () => window.removeEventListener('trigger-asset-edit', handleRemoteEdit);
+  }, [setEditingAsset, setIsFormOpen]);
+
   // Effect to reset/pre-fill form
   React.useEffect(() => {
     if (isFormOpen) {
@@ -99,17 +124,30 @@ export function AssetFormSidebar() {
         
         if (editingAsset) {
           // Pre-fill with existing asset data
-          // Read coordinates from drawnFeature.geometry (MVT properties are flat, no nested geom)
-          let coords: [number, number] = [0, 0];
-          if (drawnFeature && drawnFeature.geometry?.type === "Point") {
-            coords = (drawnFeature.geometry as Point).coordinates as [number, number];
+          // 1. Try top-level lat/lng (from our new DTO)
+          // 2. Try properties.lat/lng (MVT fallback)
+          // 3. Try drawnFeature geometry (Map fallback)
+          
+          const props = editingAsset.properties;
+          let lat = editingAsset.lat || (props['lat'] as number) || (props['latitude'] as number);
+          let lng = editingAsset.lng || (props['lng'] as number) || (props['longitude'] as number);
+          
+          // If still null, try drawnFeature geometry
+          if (!lat && !lng && drawnFeature && drawnFeature.geometry?.type === "Point") {
+            const coords = (drawnFeature.geometry as Point).coordinates;
+            lng = coords[0];
+            lat = coords[1];
           }
+          
+          const initialStatus = (editingAsset.properties?.status as string) || editingAsset.status || "UP";
+          setOriginalStatus(initialStatus);
+          setLastNote("");
           setFormData({
-            code: editingAsset.code,
-            name: (editingAsset.properties?.name as string) || (editingAsset.properties?.code as string) || "",
-            status: (editingAsset.properties?.status as string) || "UP",
-            lng: coords[0] || 0,
-            lat: coords[1] || 0
+            code: editingAsset.code || "",
+            name: (editingAsset.properties?.name as string) || (editingAsset.properties?.code as string) || editingAsset.name || "",
+            status: initialStatus,
+            lng: lng ? Number(lng) : "",
+            lat: lat ? Number(lat) : ""
           });
         } else if (drawnFeature) {
           // New drawing
@@ -117,12 +155,14 @@ export function AssetFormSidebar() {
             ? (drawnFeature.geometry as Point).coordinates 
             : [0, 0];
             
+          setOriginalStatus("");
+          setLastNote("");
           setFormData({
             code: `NEW-${drawingAssetType}-${Math.floor(Math.random() * 1000)}`,
             name: `New ${drawingAssetType}`,
             status: "PLANNED",
-            lng: coords[0] || 0,
-            lat: coords[1] || 0
+            lng: coords[0] || "",
+            lat: coords[1] || ""
           });
         }
       }
@@ -131,27 +171,41 @@ export function AssetFormSidebar() {
     }
   }, [isFormOpen, editingAsset, drawnFeature, drawingAssetType]);
 
-  if (!isFormOpen || !drawnFeature) return null;
+  if (!isFormOpen) return null;
 
   const handleCoordChange = (field: 'lng' | 'lat', value: string) => {
     const num = parseFloat(value);
-    setFormData(prev => ({ ...prev, [field]: value })); // keep as string for input
+    setFormData((prev: Record<string, string | number>) => ({ ...prev, [field]: value })); // keep as string for input
     
     // Also update drawnFeature so if we "Save", it has the new geom
-    if (!isNaN(num) && drawnFeature.geometry.type === "Point") {
+    if (!isNaN(num) && drawnFeature?.geometry?.type === "Point") {
       const newGeom = JSON.parse(JSON.stringify(drawnFeature.geometry));
-      if (field === 'lng') newGeom.coordinates[0] = num;
-      if (field === 'lat') newGeom.coordinates[1] = num;
+      if (newGeom.coordinates) {
+        if (field === 'lng') newGeom.coordinates[0] = num;
+        if (field === 'lat') newGeom.coordinates[1] = num;
+      }
       
       setDrawnFeature({
         ...drawnFeature,
-        geometry: newGeom
-      });
+        type: "Feature",
+        geometry: newGeom,
+        properties: drawnFeature.properties || {}
+      } as Feature);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate: if status changed, lastNote is mandatory
+    const statusChanged = editingAsset && originalStatus && formData.status !== originalStatus;
+    if (statusChanged && !lastNote.trim()) {
+      toast.error("Catatan wajib diisi", {
+        description: "Perubahan status memerlukan catatan/alasan dari teknisi.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -166,7 +220,21 @@ export function AssetFormSidebar() {
       if (!endpoint) throw new Error("Unknown asset type");
 
       // Use either the current geometry or fallback to formData if Point
-      let geom = drawnFeature.geometry as Point | LineString;
+      let geom: Point | LineString;
+      
+      if (drawnFeature?.geometry) {
+        geom = drawnFeature.geometry as Point | LineString;
+      } else if (editingAsset?.properties?.geom) {
+        // Fallback to geometry from properties if available
+        geom = editingAsset.properties.geom as unknown as Point | LineString;
+      } else {
+        // Construct from lat/lng if missing
+        geom = {
+          type: "Point",
+          coordinates: [parseFloat(formData.lng.toString()), parseFloat(formData.lat.toString())]
+        };
+      }
+
       if (geom.type === "Point") {
         geom = {
           type: "Point",
@@ -186,13 +254,15 @@ export function AssetFormSidebar() {
         usedCapacity?: number;
         fiberCount?: number;
         lengthMeters?: number;
+        lastNote?: string;
       }
 
       const payload: AssetPayload = {
         code: formData.code as string,
         name: formData.name as string,
         status: formData.status as string,
-        geom: geom
+        geom: geom,
+        ...(lastNote.trim() ? { lastNote: lastNote.trim() } : {})
       };
 
       if (editingAsset) {
@@ -369,7 +439,7 @@ export function AssetFormSidebar() {
             />
           </div>
 
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label>Status</Label>
             <Select 
               value={formData.status as string} 
@@ -387,9 +457,30 @@ export function AssetFormSidebar() {
             </Select>
           </div>
 
+          {/* Mandatory Audit Note on Status Change */}
+          {editingAsset && originalStatus && formData.status !== originalStatus && (
+            <div className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2 text-amber-500">
+                <FileText className="w-4 h-4" />
+                <Label className="text-amber-500 font-semibold text-xs">
+                  Catatan Perubahan Status <span className="text-red-500">*</span>
+                </Label>
+              </div>
+              <p className="text-[10px] text-muted-foreground -mt-1">
+                Status berubah dari <strong className="text-foreground">{originalStatus}</strong> ke <strong className="text-foreground">{formData.status as string}</strong>. Wajib sertakan alasan.
+              </p>
+              <textarea
+                className="flex min-h-[70px] w-full rounded-md border border-amber-500/30 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 resize-none"
+                placeholder="Contoh: Maintenance rutin / Fiber putus di tiang 12 / Upgrade ODP baru"
+                value={lastNote}
+                onChange={(e) => setLastNote(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="p-3 bg-muted/50 rounded-md border border-border">
             <h4 className="text-xs font-semibold mb-2">Spatial Data</h4>
-            {drawnFeature.geometry.type === "Point" ? (
+            {drawnFeature?.geometry?.type === "Point" || (formData.lat && formData.lng) ? (
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[10px] uppercase text-muted-foreground">Longitude</Label>
@@ -414,7 +505,7 @@ export function AssetFormSidebar() {
               </div>
             ) : (
               <div className="text-[10px] text-muted-foreground font-mono">
-                LineString with {(drawnFeature.geometry as LineString).coordinates?.length || 0} points
+                LineString with {(drawnFeature?.geometry as LineString)?.coordinates?.length || 0} points
               </div>
             )}
           </div>

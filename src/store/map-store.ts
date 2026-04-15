@@ -26,7 +26,11 @@ interface MapState {
     id: string;
     type: DrawAssetType;
     code: string;
-    properties: Record<string, string | number | boolean | null | undefined>;
+    status?: string;
+    name?: string;
+    lat?: number;
+    lng?: number;
+    properties: Record<string, unknown>;
   } | null;
 
   // Trace Path state
@@ -50,7 +54,7 @@ interface MapState {
   setDrawingAssetType: (type: DrawAssetType) => void;
   setDrawnFeature: (feature: Feature | null) => void;
   setIsFormOpen: (isOpen: boolean) => void;
-  setEditingAsset: (asset: { id: string; type: DrawAssetType; code: string; properties: Record<string, string | number | boolean | null | undefined> } | null) => void;
+  setEditingAsset: (asset: { id: string; type: DrawAssetType; code: string; status?: string; name?: string; lat?: number; lng?: number; properties: Record<string, unknown> } | null) => void;
   triggerTileRefresh: () => void;
 
   // Trace Path actions

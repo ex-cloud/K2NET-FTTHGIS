@@ -71,21 +71,26 @@ export function OdcDialog({
     name: "",
     capacity: "144",
     status: "PLANNING",
-    lat: "-6.9175",
-    lng: "107.6191",
+    lat: "",
+    lng: "",
     oltId: "",
     lastNote: "",
   });
 
   React.useEffect(() => {
     if (odc) {
+      console.log("DEBUG: ODC data received for form:", odc);
+      // Robust coordinate extraction
+      const lng = odc.geom?.coordinates?.[0] ?? odc.lng ?? "";
+      const lat = odc.geom?.coordinates?.[1] ?? odc.lat ?? "";
+      
       setFormData({
         code: odc.code || "",
         name: odc.name || "",
         capacity: odc.capacity?.toString() || "144",
         status: odc.status || "PLANNING",
-        lat: odc.geom?.coordinates?.[1]?.toString() || "-6.9175",
-        lng: odc.geom?.coordinates?.[0]?.toString() || "107.6191",
+        lat: lat?.toString() || "",
+        lng: lng?.toString() || "",
         oltId: odc.oltId?.toString() || "",
         lastNote: odc.lastNote || "",
       });
@@ -95,8 +100,8 @@ export function OdcDialog({
         name: "",
         capacity: "144",
         status: "PLANNING",
-        lat: "-6.9175",
-        lng: "107.6191",
+        lat: "",
+        lng: "",
         oltId: "",
         lastNote: "",
       });
@@ -321,7 +326,7 @@ export function OdcDialog({
               </Label>
               <Input
                 id="lat"
-                placeholder="-6.9175"
+                placeholder="Enter latitude"
                 value={formData.lat}
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })
@@ -339,7 +344,7 @@ export function OdcDialog({
               </Label>
               <Input
                 id="lng"
-                placeholder="107.6191"
+                placeholder="Enter longitude"
                 value={formData.lng}
                 onChange={(e) =>
                   setFormData({ ...formData, lng: e.target.value })

@@ -49,8 +49,8 @@ export function OltDialog({
     ipAddress: "",
     snmpCommunity: "public",
     status: "UP",
-    lat: "-6.9175",
-    lng: "107.6191",
+    lat: "",
+    lng: "",
     lastNote: "",
   });
 
@@ -255,7 +255,7 @@ export function OltDialog({
               </Label>
               <Input
                 id="lat"
-                placeholder="-6.9175"
+                placeholder="Coordinate"
                 value={formData.lat}
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })

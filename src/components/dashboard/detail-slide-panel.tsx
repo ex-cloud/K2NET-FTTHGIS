@@ -178,11 +178,30 @@ export function DetailSlidePanel() {
   const openDeleteDialog = () => setIsDeleteDialogOpen(true);
 
   const handleModify = () => {
-    if (!details) return;
-    // Dispatch event to page for editing
+    if (!details || !selectedAsset) return;
+    
+    // Flatten attributes for consistency with edit dialogs
+    const flattenedAsset: Record<string, unknown> = { ...(details as unknown as Record<string, unknown>) };
+    if (details.attributes) {
+      Object.entries(details.attributes).forEach(([key, value]) => {
+        // Map common fields from Label -> lowercase field name
+        const normalizedKey = key.toLowerCase().replace(/ /g, '');
+        flattenedAsset[normalizedKey] = value;
+        
+        // Special mappings
+        if (key === "Capacity") flattenedAsset.capacity = value;
+        if (key === "Used") flattenedAsset.usedCapacity = value;
+        if (key === "Parent ODC") flattenedAsset.odcCode = value;
+        if (key === "Parent OLT") flattenedAsset.oltCode = value;
+        if (key === "Total Ports") flattenedAsset.totalPort = value;
+        if (key === "Used Ports") flattenedAsset.usedPort = value;
+      });
+    }
+
+    // Ensure type is uppercase for consistency with inventory pages
     window.dispatchEvent(
       new CustomEvent("trigger-asset-edit", {
-        detail: { asset: { ...details } },
+        detail: { asset: { ...flattenedAsset, type: selectedAsset.type.toUpperCase() } },
       }),
     );
   };
