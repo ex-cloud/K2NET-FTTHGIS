@@ -125,6 +125,10 @@ public class ODCService {
             dto.setOltCode(odc.getOlt().getCode());
         }
         dto.setLastNote(odc.getLastNote());
+        if (odc.getGeom() != null) {
+            dto.setLng(odc.getGeom().getX());
+            dto.setLat(odc.getGeom().getY());
+        }
         return dto;
     }
 

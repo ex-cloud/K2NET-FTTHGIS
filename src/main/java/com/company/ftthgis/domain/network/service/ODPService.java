@@ -124,6 +124,10 @@ public class ODPService {
             dto.setOdcCode(odp.getOdc().getCode());
         }
         dto.setLastNote(odp.getLastNote());
+        if (odp.getGeom() != null) {
+            dto.setLng(odp.getGeom().getX());
+            dto.setLat(odp.getGeom().getY());
+        }
         return dto;
     }
 

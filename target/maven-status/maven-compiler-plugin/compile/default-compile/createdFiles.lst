@@ -26,6 +26,7 @@ com\company\ftthgis\domain\network\dto\RouteRequestDto.class
 com\company\ftthgis\api\network\dto\NetworkStatsDto.class
 com\company\ftthgis\domain\network\service\StatusCacheService.class
 com\company\ftthgis\api\network\SpliceController.class
+com\company\ftthgis\api\network\dto\AuditHistoryDto.class
 com\company\ftthgis\api\network\NetworkAssetController.class
 com\company\ftthgis\api\user\dto\UserStatsDto$UserStatsDtoBuilder.class
 com\company\ftthgis\config\tenant\TenantFilter.class
@@ -37,12 +38,14 @@ com\company\ftthgis\api\network\MapNotificationController.class
 com\company\ftthgis\domain\network\service\ODCService.class
 com\company\ftthgis\config\ClusterRefreshConfig.class
 com\company\ftthgis\config\RedisSubscriberConfig.class
+com\company\ftthgis\domain\network\service\AuditHistoryService.class
 com\company\ftthgis\service\UserSyncService.class
 com\company\ftthgis\domain\analytics\controller\AnalyticsController.class
 com\company\ftthgis\domain\network\dto\OLTDto.class
 com\company\ftthgis\domain\network\entity\FiberSplice.class
 com\company\ftthgis\config\LargeScalePerformanceSeeder.class
 com\company\ftthgis\domain\network\repository\FiberCoreRepository.class
+com\company\ftthgis\api\network\dto\AuditHistoryDto$AuditHistoryDtoBuilder.class
 com\company\ftthgis\domain\network\entity\OLT.class
 com\company\ftthgis\domain\analytics\dto\IssueDetailDTO.class
 com\company\ftthgis\domain\analytics\entity\NetworkEvent$NetworkEventBuilder.class

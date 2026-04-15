@@ -25,4 +25,6 @@ public class ODCDto {
     private String oltName;
     private String oltCode;
     private String lastNote;
+    private Double lat;
+    private Double lng;
 }

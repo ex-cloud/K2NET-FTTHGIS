@@ -17,4 +17,5 @@ public class FiberCableDto {
     private Integer fiberCount;
     private String status;
     private Double lengthMeters;
+    private String lastNote;
 }

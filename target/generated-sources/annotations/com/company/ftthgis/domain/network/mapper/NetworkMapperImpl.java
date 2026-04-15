@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-13T11:54:33+0700",
+    date = "2026-04-15T12:26:40+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
@@ -108,6 +108,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         fiberCableDto.setFiberCount( cable.getFiberCount() );
         fiberCableDto.setStatus( cable.getStatus() );
         fiberCableDto.setLengthMeters( cable.getLengthMeters() );
+        fiberCableDto.setLastNote( cable.getLastNote() );
 
         return fiberCableDto;
     }
@@ -126,6 +127,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         fiberCable.setFiberCount( dto.getFiberCount() );
         fiberCable.setStatus( dto.getStatus() );
         fiberCable.setLengthMeters( dto.getLengthMeters() );
+        fiberCable.setLastNote( dto.getLastNote() );
 
         return fiberCable;
     }

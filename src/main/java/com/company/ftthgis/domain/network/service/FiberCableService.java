@@ -68,5 +68,9 @@ public class FiberCableService {
         if (dto.getGeom() != null) {
             cable.setGeometry(dto.getGeom());
         }
+
+        if (dto.getLastNote() != null && !dto.getLastNote().isBlank()) {
+            cable.setLastNote(dto.getLastNote());
+        }
     }
 }

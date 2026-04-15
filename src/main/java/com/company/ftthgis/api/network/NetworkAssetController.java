@@ -2,12 +2,19 @@ package com.company.ftthgis.api.network;
 
 import java.util.Optional;
 import com.company.ftthgis.api.network.dto.AssetDetailDto;
+import com.company.ftthgis.api.network.dto.AuditHistoryDto;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
 import com.company.ftthgis.domain.network.entity.OLT;
-import com.company.ftthgis.domain.network.repository.*;
+import com.company.ftthgis.domain.network.repository.OLTRepository;
+import com.company.ftthgis.domain.network.repository.ODCRepository;
+import com.company.ftthgis.domain.network.repository.ODPRepository;
+import com.company.ftthgis.domain.network.repository.CustomerRepository;
+import com.company.ftthgis.domain.network.repository.FiberCableRepository;
+import com.company.ftthgis.domain.network.repository.NetworkNodeRepository;
+import com.company.ftthgis.domain.network.service.AuditHistoryService;
 import com.company.ftthgis.domain.network.service.StatusCacheService;
 import com.company.ftthgis.domain.network.service.StatusPropagationService;
 import lombok.AllArgsConstructor;
@@ -38,6 +45,7 @@ public class NetworkAssetController {
     private final StatusCacheService statusCacheService;
     private final StatusPropagationService statusPropagationService;
     private final NetworkNodeRepository networkNodeRepository;
+    private final AuditHistoryService auditHistoryService;
 
     @PostMapping("/simulate-failure")
     public ResponseEntity<Map<String, Object>> simulateFailure(
@@ -157,6 +165,8 @@ public class NetworkAssetController {
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Capacity", o.getCapacity());
                     attrs.put("Used", o.getUsedCapacity());
+                    if (o.getOlt() != null) attrs.put("oltId", o.getOlt().getId());
+                    if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
                     dto.setAttributes(attrs);
                 });
             } else if ("ODP".equalsIgnoreCase(type)) {
@@ -170,8 +180,11 @@ public class NetworkAssetController {
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Total Ports", o.getTotalPort());
                     attrs.put("Used Ports", o.getUsedPort());
-                    if (o.getOdc() != null)
+                    if (o.getOdc() != null) {
                         attrs.put("Parent ODC", o.getOdc().getCode());
+                        attrs.put("odcId", o.getOdc().getId());
+                    }
+                    if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
                     dto.setAttributes(attrs);
                 });
             } else if ("OLT".equalsIgnoreCase(type)) {
@@ -184,6 +197,7 @@ public class NetworkAssetController {
                         labels.add(finalStatus);
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("IP Address", o.getIpAddress());
+                    if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
                     dto.setAttributes(attrs);
                 });
             } else if ("CUSTOMER".equalsIgnoreCase(type)) {
@@ -196,8 +210,11 @@ public class NetworkAssetController {
                         labels.add(finalStatus);
                     Map<String, Object> attrs = new HashMap<>();
                     attrs.put("Address", o.getAddress());
-                    if (o.getOdp() != null)
+                    if (o.getOdp() != null) {
                         attrs.put("Connected ODP", o.getOdp().getCode());
+                        attrs.put("odpId", o.getOdp().getId());
+                    }
+                    if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
                     dto.setAttributes(attrs);
                 });
             } else if ("CABLE".equalsIgnoreCase(type)) {
@@ -211,6 +228,7 @@ public class NetworkAssetController {
                     attrs.put("Fiber Count", o.getFiberCount());
                     attrs.put("Length (m)",
                             o.getLengthMeters() != null ? String.format("%.2f", o.getLengthMeters()) : "0");
+                    if (o.getLastNote() != null) attrs.put("Last Note", o.getLastNote());
                     dto.setAttributes(attrs);
                 });
             }
@@ -263,6 +281,26 @@ public class NetworkAssetController {
                 Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
         
         return ResponseEntity.ok(results);
+    }
+
+    /**
+     * Get audit history for an asset by type and code.
+     * Uses Hibernate Envers to retrieve all historical revisions.
+     */
+    @GetMapping("/{type}/{code}/history")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<AuditHistoryDto>> getAssetHistory(
+            @PathVariable String type,
+            @PathVariable String code) {
+
+        log.info("📜 Fetching audit history for {} : {}", type, code);
+        try {
+            List<AuditHistoryDto> history = auditHistoryService.getHistory(type, code);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            log.error("Error fetching history for {} - {}: {}", type, code, e.getMessage(), e);
+            return ResponseEntity.ok(List.of()); // Return empty list on error instead of 500
+        }
     }
 
     @GetMapping("/search")
