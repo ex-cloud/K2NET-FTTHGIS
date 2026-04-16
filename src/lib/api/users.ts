@@ -1,5 +1,6 @@
 import { PaginatedResponse, User } from "@/types/user";
 import { getBackendBaseUrl } from "../api-config";
+import { httpClient } from "../httpClient";
 
 const BACKEND_URL = getBackendBaseUrl();
 
@@ -22,18 +23,12 @@ export async function getUsers(
   if (role && role !== "all") params.append("role", role);
   if (status && status !== "all") params.append("status", status);
 
-  const res = await fetch(`${BACKEND_URL}/users?${params.toString()}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    cache: "no-store", // Ensure fresh data
+  const res = await httpClient(`${BACKEND_URL}/users?${params.toString()}`, {
+    token,
+    cache: "no-store",
   });
 
   if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error("Unauthorized");
-    }
     throw new Error("Failed to fetch users");
   }
 
@@ -45,12 +40,9 @@ export async function updateUser(
   data: { role?: string; status?: string },
   token: string,
 ): Promise<User> {
-  const res = await fetch(`${BACKEND_URL}/users/${id}`, {
+  const res = await httpClient(`${BACKEND_URL}/users/${id}`, {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    token,
     body: JSON.stringify(data),
   });
 
@@ -71,11 +63,8 @@ export async function getUserStats(token: string): Promise<{
     throw new Error("No access token provided");
   }
 
-  const res = await fetch(`${BACKEND_URL}/users/stats`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+  const res = await httpClient(`${BACKEND_URL}/users/stats`, {
+    token,
     cache: "no-store",
   });
 

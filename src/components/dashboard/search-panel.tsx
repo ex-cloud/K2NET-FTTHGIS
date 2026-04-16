@@ -2,11 +2,13 @@
 
 import { Search, Loader2, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 
 interface SearchResult {
   id: string;
@@ -30,6 +32,8 @@ export function SearchPanel({
   const { setSelectedAsset } = useSelectionStore();
   const { setMapCenter } = useMapStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const params = useParams();
+  const projectId = params?.projectId as string;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,12 +58,9 @@ export function SearchPanel({
       setLoading(true);
       try {
         const baseUrl = getBackendBaseUrl();
-        const res = await fetch(`${baseUrl}/network/assets/search?q=${query}`, {
-          headers: {
-            ...(session?.accessToken
-              ? { Authorization: `Bearer ${session.accessToken}` }
-              : {}),
-          },
+        const res = await httpClient(`${baseUrl}/network/assets/search?q=${query}`, {
+          token: session?.accessToken,
+          projectId,
         });
         if (!res.ok) {
           console.warn(`Search API returned ${res.status}`);
@@ -83,21 +84,21 @@ export function SearchPanel({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, session?.accessToken]);
+  }, [query, session?.accessToken, projectId]);
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = useCallback((asset: SearchResult) => {
     setSelectedAsset({
-      id: result.id,
-      type: result.type,
-      code: result.code,
-      lng: result.lng,
-      lat: result.lat,
-      status: result.status,
+      id: asset.id,
+      type: asset.type,
+      code: asset.code,
+      lng: asset.lng,
+      lat: asset.lat,
+      status: asset.status,
     });
-    setMapCenter({ lng: result.lng, lat: result.lat, zoom: 18 }); // Zoom in close to the asset
+    setMapCenter({ lng: asset.lng, lat: asset.lat, zoom: 18 });
     setShowResults(false);
     setQuery("");
-  };
+  }, [setMapCenter, setSelectedAsset]);
 
   return (
     <div

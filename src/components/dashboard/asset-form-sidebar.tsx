@@ -23,6 +23,7 @@ import {
 import { useMapStore, type DrawAssetType } from "@/store/map-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import { Session } from "next-auth";
 import { toast } from "sonner";
 import type { Point, LineString, Feature } from "geojson";
@@ -69,11 +70,8 @@ export function AssetFormSidebar() {
     
     const timeoutId = setTimeout(async () => {
       try {
-        const token = (session as Session)?.accessToken;
-        const res = await fetch(`${getBackendBaseUrl()}/network/assets/check-code?code=${encodeURIComponent(code)}`, {
-          headers: {
-            "Authorization": token ? `Bearer ${token}` : ""
-          }
+        const res = await httpClient(`${getBackendBaseUrl()}/network/assets/check-code?code=${encodeURIComponent(code)}`, {
+          token: session?.accessToken
         });
         if (res.ok) {
           const data = await res.json();
@@ -305,12 +303,9 @@ export function AssetFormSidebar() {
 
       console.log(`Sending ${method} to ${url} with token: ${token ? 'YES' : 'NO'}`);
 
-      const res = await fetch(url, {
+      const res = await httpClient(url, {
         method: method,
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
-        },
+        token: session?.accessToken,
         body: JSON.stringify(payload)
       });
 
@@ -355,13 +350,9 @@ export function AssetFormSidebar() {
       if (editingAsset.type === "OLT") endpoint = "/network/olts";
       if (editingAsset.type === "CABLE") endpoint = "/network/cables";
 
-      const token = (session as Session)?.accessToken;
-
-      const res = await fetch(`${getBackendBaseUrl()}${endpoint}/${editingAsset.id}?reason=${encodeURIComponent(deleteReason.trim())}`, {
+      const res = await httpClient(`${getBackendBaseUrl()}${endpoint}/${editingAsset.id}?reason=${encodeURIComponent(deleteReason.trim())}`, {
         method: "DELETE",
-        headers: { 
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
+        token: session?.accessToken
       });
 
       if (!res.ok) {
@@ -397,7 +388,7 @@ export function AssetFormSidebar() {
   const assetType = editingAsset ? editingAsset.type : drawingAssetType;
 
   return (
-    <div className="absolute right-4 top-24 bottom-4 w-80 bg-background border rounded-xl shadow-2xl z-[60] flex flex-col transform transition-transform duration-300 overflow-hidden">
+    <div className="absolute right-4 top-24 bottom-4 w-80 bg-background border rounded-xl shadow-2xl z-60 flex flex-col transform transition-transform duration-300 overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b">
         <div>
           <h3 className="font-semibold text-lg leading-none tracking-tight">

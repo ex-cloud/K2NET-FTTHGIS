@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
 import { OLT, PageResponse } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
@@ -60,15 +61,10 @@ export function useOltData() {
           });
         }
 
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-        
-        if (projectId) {
-          headers["X-Project-ID"] = projectId;
-        }
-
-        const res = await fetch(`${baseUrl}/network/olts?${urlParams}`, { headers });
+        const res = await httpClient(`${baseUrl}/network/olts?${urlParams}`, {
+          token: session.accessToken,
+          projectId,
+        });
         if (!res.ok) throw new Error("Failed to fetch OLTs");
         const result: PageResponse<OLT> = await res.json();
         setData(result.content);
@@ -136,10 +132,10 @@ export function useOltData() {
     if (!session?.accessToken) return;
     try {
       const baseUrl = getBackendBaseUrl();
-      const headers: HeadersInit = { Authorization: `Bearer ${session.accessToken}` };
-      if (projectId) headers["X-Project-ID"] = projectId;
-
-      const res = await fetch(`${baseUrl}/network/olts?size=1000&search=${search}`, { headers });
+      const res = await httpClient(`${baseUrl}/network/olts?size=1000&search=${search}`, { 
+        token: session.accessToken,
+        projectId
+      });
       if (!res.ok) throw new Error("Export failed");
       const result: PageResponse<OLT> = await res.json();
       

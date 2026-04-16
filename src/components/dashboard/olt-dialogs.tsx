@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/select";
 import { OLT } from "@/types/network";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +41,8 @@ export function OltDialog({
   olt,
   onSuccess,
 }: OltDialogProps) {
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const { data: session } = useSession();
   const [loading, setLoading] = React.useState(false);
   const isEdit = !!olt;
@@ -101,13 +105,11 @@ export function OltDialog({
         },
       };
 
-      const res = await fetch(url, {
+      const res = await httpClient(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+        token: session.accessToken,
         body: JSON.stringify(payload),
+        projectId,
       });
 
       if (!res.ok) {

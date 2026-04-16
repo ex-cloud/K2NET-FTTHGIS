@@ -21,6 +21,7 @@ import {
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
 import { Button } from "@/components/ui/button";
@@ -403,6 +404,11 @@ export function ProjectOverview() {
   const [stats, setStats] = React.useState<ProjectStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [timeFilter, setTimeFilter] = React.useState("Last 60 minutes");
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const timeOptions = [
     "Last 5 minutes",
@@ -417,13 +423,9 @@ export function ProjectOverview() {
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
-      const headers: HeadersInit = {
-        Authorization: `Bearer ${session.accessToken}`,
-      };
-      if (projectId) headers["X-Project-ID"] = projectId;
-
-      const res = await fetch(`${baseUrl}/analytics/summary`, {
-        headers,
+      const res = await httpClient(`${baseUrl}/analytics/summary`, {
+        token: session.accessToken,
+        projectId,
       });
       if (!res.ok) throw new Error("Failed to fetch stats");
       const data = await res.json();
@@ -467,7 +469,7 @@ export function ProjectOverview() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-              {typeof window !== "undefined"
+              {mounted
                 ? window.location.origin
                 : "https://api.ftthgis.local"}
               /project/{projectId}

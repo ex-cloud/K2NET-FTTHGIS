@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import { useSession } from "next-auth/react";
 import type { Feature, FeatureCollection, LineString } from "geojson";
 
@@ -38,12 +39,10 @@ export function useTracePath() {
 
       try {
         const baseUrl = getBackendBaseUrl();
-        const res = await fetch(
+        const res = await httpClient(
           `${baseUrl}/network/trace-path?startNodeId=${startNodeId}&endNodeId=${endNodeId}`,
           {
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-            },
+            token: session.accessToken,
           }
         );
 

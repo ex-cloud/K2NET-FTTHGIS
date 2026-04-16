@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import type { FeatureCollection, Point } from "geojson";
 
 export interface MapClusterNode {
@@ -24,11 +25,10 @@ export function useMapClusters() {
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
-      const res = await fetch(`${baseUrl}/network/assets/all-nodes`, {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+      const res = await httpClient(`${baseUrl}/network/assets/all-nodes`, {
+        token: session.accessToken,
       });
+
       if (!res.ok) throw new Error("Failed to fetch cluster nodes");
       const nodes: MapClusterNode[] = await res.json();
       

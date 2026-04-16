@@ -7,6 +7,9 @@ import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
 import { useEffect, useState, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
 import {
   Collapsible,
@@ -40,6 +43,7 @@ interface AuditHistoryEntry {
 }
 
 export function AssetPanel() {
+  const { data: session } = useSession();
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
   const { statusOverrides, startTraceMode, traceMode } = useMapStore();
   const [details, setDetails] = useState<AssetDetails | null>(null);
@@ -47,6 +51,8 @@ export function AssetPanel() {
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagResult, setDiagResult] = useState<DiagnosticResult | null>(null);
   const [auditHistory, setAuditHistory] = useState<AuditHistoryEntry[]>([]);
+  const params = useParams();
+  const projectId = params?.projectId as string;
 
   const fetchAssetDetails = useCallback(async () => {
     if (!selectedAsset) {
@@ -79,12 +85,17 @@ export function AssetPanel() {
       const baseUrl = getBackendBaseUrl();
       // Try Code lookup first (more reliable after reseeding)
       const codeUrl = `${baseUrl}/network/assets/by-code/${selectedAsset.type}/${selectedAsset.code}`;
-      let response = await fetch(codeUrl);
-
-      // Fallback to ID lookup if Code fails
-      if (!response.ok && selectedAsset.id) {
-        const idUrl = `${baseUrl}/network/assets/${selectedAsset.type}/${selectedAsset.id}`;
-        response = await fetch(idUrl);
+      const idUrl = `${baseUrl}/network/assets/${selectedAsset.type}/${selectedAsset.id}`;
+      
+      let response = await httpClient(codeUrl, {
+        token: session?.accessToken,
+        projectId,
+      });
+      if (!response.ok) {
+        response = await httpClient(idUrl, {
+          token: session?.accessToken,
+          projectId,
+        });
       }
 
       if (!response.ok) throw new Error("Asset not found");
@@ -105,7 +116,7 @@ export function AssetPanel() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, session?.accessToken, projectId]);
 
   const tileRefreshKey = useMapStore((state) => state.tileRefreshKey);
 
@@ -121,9 +132,9 @@ export function AssetPanel() {
     }
     const fetchHistory = async () => {
       try {
-        const baseUrl = getBackendBaseUrl();
-        const response = await fetch(
-          `${baseUrl}/network/assets/${details.type}/${details.code}/history`
+        const response = await httpClient(
+          `${getBackendBaseUrl()}/network/assets/${details.type}/${details.id}/audit-history`,
+          { token: session?.accessToken, projectId }
         );
         if (response.ok) {
           const data = await response.json();
@@ -134,16 +145,19 @@ export function AssetPanel() {
       }
     };
     fetchHistory();
-  }, [details]);
+  }, [details, session?.accessToken, projectId]);
 
   const handleRunDiagnostics = async () => {
     if (!details) return;
     setDiagnosing(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      const response = await fetch(
-        `${baseUrl}/network/assets/${details.type}/${details.code}/diagnostics`,
-        { method: "POST" },
+      const response = await httpClient(
+        `${getBackendBaseUrl()}/network/assets/${details.type.toLowerCase()}/${details.code}/diagnostics`,
+        { 
+          method: "POST",
+          token: session?.accessToken,
+          projectId,
+        },
       );
       if (!response.ok) throw new Error("Diagnostics failed");
       const data = await response.json();
@@ -278,7 +292,7 @@ export function AssetPanel() {
 
             {!diagResult && (
               <div className="p-4 bg-muted/30 rounded-xl border border-border/40 mb-6 font-mono relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/20 to-transparent -translate-x-[100%] animate-[shimmer_2s_infinite]" />
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-muted/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                 <div className="text-[9px] text-muted-foreground mb-2">
                   STATIC HEALTH SCORE
                 </div>
@@ -341,7 +355,7 @@ export function AssetPanel() {
                       No operational history recorded yet.
                     </div>
                   ) : (
-                    auditHistory.map((entry, idx) => {
+                    auditHistory.map((entry: AuditHistoryEntry, idx: number) => {
                       const isLatest = idx === 0;
                       const statusColor = ["DOWN", "FIBERCUT", "BROKEN"].includes(entry.status?.toUpperCase() || "")
                         ? "text-red-500 bg-red-500"

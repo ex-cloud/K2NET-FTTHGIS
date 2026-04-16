@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
 import { ODC, PageResponse } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
@@ -60,15 +61,10 @@ export function useOdcData() {
           });
         }
 
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-        
-        if (projectId) {
-          headers["X-Project-ID"] = projectId;
-        }
-
-        const res = await fetch(`${baseUrl}/network/odcs?${urlParams}`, { headers });
+        const res = await httpClient(`${baseUrl}/network/odcs?${urlParams}`, {
+          token: session.accessToken,
+          projectId,
+        });
         if (!res.ok) throw new Error("Failed to fetch ODCs");
         const result: PageResponse<ODC> = await res.json();
         setData(result.content);
@@ -136,10 +132,10 @@ export function useOdcData() {
     if (!session?.accessToken) return;
     try {
       const baseUrl = getBackendBaseUrl();
-      const headers: HeadersInit = { Authorization: `Bearer ${session.accessToken}` };
-      if (projectId) headers["X-Project-ID"] = projectId;
-
-      const res = await fetch(`${baseUrl}/network/odcs?size=1000&search=${search}`, { headers });
+      const res = await httpClient(`${baseUrl}/network/odcs?size=1000&search=${search}`, { 
+        token: session.accessToken,
+        projectId
+      });
       if (!res.ok) throw new Error("Export failed");
       const result: PageResponse<ODC> = await res.json();
       

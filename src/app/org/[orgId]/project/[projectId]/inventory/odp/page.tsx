@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import {
   Dialog,
   DialogContent,
@@ -89,11 +90,9 @@ export default function OdpListPage() {
       const url = new URL(`${baseUrl}/network/odps/${odpToDelete.id}`);
       url.searchParams.append("reason", deleteReason);
 
-      const res = await fetch(url.toString(), {
+      const res = await httpClient(url.toString(), {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+        token: session.accessToken,
       });
 
       if (!res.ok) throw new Error("Failed to delete ODP");

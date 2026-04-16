@@ -14,6 +14,8 @@ import {
 import { useEffect, useState, ReactNode } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+import { httpClient } from "@/lib/httpClient";
 
 interface Stats {
   totalNodes: number;
@@ -60,6 +62,8 @@ function StatCard({ title, icon, children, defaultOpen = true }: { title: string
 
 export function StatsPanel() {
   const { data: session } = useSession();
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,10 +74,9 @@ export function StatsPanel() {
 
       try {
         const baseUrl = getBackendBaseUrl();
-        const res = await fetch(`${baseUrl}/network/analytics/stats`, {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
+        const res = await httpClient(`${baseUrl}/network/analytics/stats`, {
+          token: session.accessToken,
+          projectId,
         });
         if (!res.ok) throw new Error("Failed to fetch statistics");
         const data = await res.json();
@@ -86,6 +89,7 @@ export function StatsPanel() {
         setLoading(false);
       }
     }
+
     fetchStats();
 
     const handleNetworkBatchUpdate = () => {
@@ -99,7 +103,7 @@ export function StatsPanel() {
         "network-batch-update",
         handleNetworkBatchUpdate,
       );
-  }, [session?.accessToken]);
+  }, [session?.accessToken, projectId]);
 
   if (loading || error || !stats) {
     return null;

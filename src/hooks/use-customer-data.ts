@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
 import { Customer, PageResponse } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
@@ -60,15 +61,10 @@ export function useCustomerData() {
           });
         }
 
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-        
-        if (projectId) {
-          headers["X-Project-ID"] = projectId;
-        }
-
-        const res = await fetch(`${baseUrl}/network/customers?${urlParams}`, { headers });
+        const res = await httpClient(`${baseUrl}/network/customers?${urlParams}`, {
+          token: session.accessToken,
+          projectId,
+        });
         if (!res.ok) throw new Error("Failed to fetch Customers");
         const result: PageResponse<Customer> = await res.json();
         setData(result.content);
@@ -136,10 +132,10 @@ export function useCustomerData() {
     if (!session?.accessToken) return;
     try {
       const baseUrl = getBackendBaseUrl();
-      const headers: HeadersInit = { Authorization: `Bearer ${session.accessToken}` };
-      if (projectId) headers["X-Project-ID"] = projectId;
-
-      const res = await fetch(`${baseUrl}/network/customers?size=1000&search=${search}`, { headers });
+      const res = await httpClient(`${baseUrl}/network/customers?size=1000&search=${search}`, { 
+        token: session.accessToken,
+        projectId
+      });
       if (!res.ok) throw new Error("Export failed");
       const result: PageResponse<Customer> = await res.json();
       

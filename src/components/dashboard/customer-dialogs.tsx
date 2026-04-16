@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/select";
 import { Customer, ODP, PageResponse } from "@/types/network";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +41,8 @@ export function CustomerDialog({
   customer,
   onSuccess,
 }: CustomerDialogProps) {
+  const params = useParams();
+  const projectId = params?.projectId as string;
   const { data: session } = useSession();
   const [loading, setLoading] = React.useState(false);
   const isEdit = !!customer;
@@ -51,8 +55,9 @@ export function CustomerDialog({
       const fetchOdps = async () => {
         try {
           const baseUrl = getBackendBaseUrl();
-          const res = await fetch(`${baseUrl}/network/odps?size=100`, {
-            headers: { Authorization: `Bearer ${session.accessToken}` },
+          const res = await httpClient(`${baseUrl}/network/odps?size=100`, {
+            token: session.accessToken,
+            projectId,
           });
           if (res.ok) {
             const data: PageResponse<ODP> = await res.json();
@@ -64,7 +69,7 @@ export function CustomerDialog({
       };
       fetchOdps();
     }
-  }, [open, session]);
+  }, [open, session, projectId]);
 
   const [formData, setFormData] = React.useState({
     code: "",
@@ -125,13 +130,11 @@ export function CustomerDialog({
         },
       };
 
-      const res = await fetch(url, {
+      const res = await httpClient(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+        token: session.accessToken,
         body: JSON.stringify(payload),
+        projectId,
       });
 
       if (!res.ok) {

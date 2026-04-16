@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 
 export default function OltListPage() {
   const router = useRouter();
@@ -78,11 +79,9 @@ export default function OltListPage() {
 
     try {
       const baseUrl = getBackendBaseUrl();
-      const res = await fetch(`${baseUrl}/network/olts/${oltToDelete.id}`, {
+      const res = await httpClient(`${baseUrl}/network/olts/${oltToDelete.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+        token: session.accessToken,
       });
 
       if (!res.ok) throw new Error("Failed to delete OLT");

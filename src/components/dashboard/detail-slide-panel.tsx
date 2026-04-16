@@ -24,6 +24,7 @@ import {
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { usePathname, useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import {
   Dialog,
   DialogContent,
@@ -90,8 +91,9 @@ export function DetailSlidePanel() {
     setLoading(true);
     try {
       const baseUrl = getBackendBaseUrl();
-      const res = await fetch(
+      const res = await httpClient(
         `${baseUrl}/network/assets/by-code/${selectedAsset.type}/${selectedAsset.code}`,
+        { token: session?.accessToken, projectId }
       );
       if (!res.ok) throw new Error("Failed to fetch asset details");
       const data = await res.json();
@@ -113,7 +115,7 @@ export function DetailSlidePanel() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, session?.accessToken, projectId]);
 
   React.useEffect(() => {
     if (isOpen) fetchDetails();
@@ -152,11 +154,10 @@ export function DetailSlidePanel() {
       const url = new URL(`${baseUrl}${endpoint}`);
       url.searchParams.append("reason", deleteReason);
 
-      const res = await fetch(url.toString(), {
+      const res = await httpClient(url.toString(), {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
+        token: session.accessToken,
+        projectId,
       });
 
       if (!res.ok) throw new Error("Failed to delete record from registry");
@@ -244,10 +245,12 @@ export function DetailSlidePanel() {
     setIsPolling(true);
     try {
       const baseUrl = getBackendBaseUrl();
-      const res = await fetch(
+      const res = await httpClient(
         `${baseUrl}/network/assets/${details.type.toLowerCase()}/${details.code}/diagnostics`,
         {
           method: "POST",
+          token: session?.accessToken,
+          projectId,
         },
       );
 

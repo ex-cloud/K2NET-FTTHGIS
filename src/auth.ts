@@ -137,7 +137,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // 3. Access token has expired, try to update it
-      console.log("Access Token expired, refreshing...");
+      // console.debug("Access Token expired, refreshing...");
       return refreshAccessToken(token);
     },
     async session({ session, token }) {

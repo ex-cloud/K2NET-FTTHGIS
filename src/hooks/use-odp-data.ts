@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
 import { ODP, PageResponse } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
@@ -60,15 +61,10 @@ export function useOdpData() {
           });
         }
 
-        const headers: HeadersInit = {
-          Authorization: `Bearer ${session.accessToken}`,
-        };
-        
-        if (projectId) {
-          headers["X-Project-ID"] = projectId;
-        }
-
-        const res = await fetch(`${baseUrl}/network/odps?${urlParams}`, { headers });
+        const res = await httpClient(`${baseUrl}/network/odps?${urlParams}`, {
+          token: session.accessToken,
+          projectId,
+        });
         if (!res.ok) throw new Error("Failed to fetch ODPs");
         const result: PageResponse<ODP> = await res.json();
         setData(result.content);
@@ -136,13 +132,11 @@ export function useOdpData() {
     if (!session?.accessToken) return;
     try {
       const baseUrl = getBackendBaseUrl();
-      const headers: HeadersInit = {
-        Authorization: `Bearer ${session.accessToken}`,
-      };
-      if (projectId) headers["X-Project-ID"] = projectId;
-
       // Fetch all for export (or large enough size)
-      const res = await fetch(`${baseUrl}/network/odps?size=1000&search=${search}`, { headers });
+      const res = await httpClient(`${baseUrl}/network/odps?size=1000&search=${search}`, { 
+        token: session.accessToken,
+        projectId
+      });
       if (!res.ok) throw new Error("Export failed");
       const result: PageResponse<ODP> = await res.json();
       

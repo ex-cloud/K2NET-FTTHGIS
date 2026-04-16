@@ -33,7 +33,9 @@ import type {
 } from "recharts/types/component/DefaultTooltipContent";
 
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -200,6 +202,8 @@ function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export function ExecutiveDashboard() {
   const { data: session } = useSession();
+  const params = useParams();
+  const projectId = params?.projectId as string;
 
   // Core state
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -273,10 +277,11 @@ export function ExecutiveDashboard() {
       try {
         if (!silent) setLoading(true);
         const baseUrl = getBackendBaseUrl();
-        const res = await fetch(
+        const res = await httpClient(
           `${baseUrl}/analytics/summary?t=${Date.now()}`,
           {
-            headers: { Authorization: `Bearer ${session.accessToken}` },
+            token: session.accessToken,
+            projectId,
           },
         );
         if (res.ok) {
@@ -289,7 +294,7 @@ export function ExecutiveDashboard() {
         if (!silent) setLoading(false);
       }
     },
-    [session?.accessToken],
+    [session?.accessToken, projectId],
   );
 
   const fetchHistory = useCallback(
@@ -312,9 +317,9 @@ export function ExecutiveDashboard() {
         const toISO = toLocalISO(now);
         const fromISO = toLocalISO(from);
 
-        const res = await fetch(
+        const res = await httpClient(
           `${baseUrl}/analytics/history?from=${fromISO}&to=${toISO}`,
-          { headers: { Authorization: `Bearer ${session.accessToken}` } },
+          { token: session.accessToken, projectId },
         );
 
         if (res.ok) {
@@ -344,9 +349,9 @@ export function ExecutiveDashboard() {
 
           // 2. Fetch Events (Parallel or after)
           // 2. Fetch Events (Parallel or after)
-          const eventsRes = await fetch(
+          const eventsRes = await httpClient(
             `${baseUrl}/analytics/events?from=${fromISO}&to=${toISO}`,
-            { headers: { Authorization: `Bearer ${session.accessToken}` } },
+            { token: session.accessToken },
           );
 
           if (eventsRes.ok) {
@@ -418,7 +423,7 @@ export function ExecutiveDashboard() {
         setHistoryLoading(false);
       }
     },
-    [session?.accessToken, setHistoryData, setZoomState, setEventData],
+    [session?.accessToken, projectId, setHistoryData, setZoomState, setEventData],
   );
 
   const fetchHistoryByDateRange = useCallback(
@@ -430,9 +435,9 @@ export function ExecutiveDashboard() {
         const fromISO = `${fromDate}T00:00:00`;
         const toISO = `${toDate}T23:59:59`; // Already local time format from input
 
-        const res = await fetch(
+        const res = await httpClient(
           `${baseUrl}/analytics/history?from=${fromISO}&to=${toISO}`,
-          { headers: { Authorization: `Bearer ${session.accessToken}` } },
+          { token: session.accessToken, projectId },
         );
 
         if (res.ok) {
@@ -461,9 +466,9 @@ export function ExecutiveDashboard() {
           setZoomState({ left: 0, right: Math.max(0, points.length - 1) });
 
           // Also fetch events for this custom range!
-          const eventsRes = await fetch(
+          const eventsRes = await httpClient(
             `${baseUrl}/analytics/events?from=${fromISO}&to=${toISO}`,
-            { headers: { Authorization: `Bearer ${session.accessToken}` } },
+            { token: session.accessToken, projectId },
           );
 
           if (eventsRes.ok) {
@@ -525,7 +530,7 @@ export function ExecutiveDashboard() {
         setShowCalendar(false);
       }
     },
-    [session?.accessToken, setHistoryData, setZoomState, setEventData],
+    [session?.accessToken, projectId, setHistoryData, setZoomState, setEventData],
   );
 
   // ─── Effects ──────────────────────────────────────────────────────────

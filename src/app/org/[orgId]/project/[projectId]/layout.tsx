@@ -1,15 +1,13 @@
 import { ProjectSidebar } from "@/components/project-sidebar";
 import { RealTimeNotificationClient } from "@/components/real-time-notification-client";
-import { SessionProvider } from "next-auth/react";
 import { DetailSlidePanel } from "@/components/dashboard/detail-slide-panel";
-
 export default function ProjectLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
+    <>
       <RealTimeNotificationClient />
       <DetailSlidePanel />
       
@@ -25,6 +23,6 @@ export default function ProjectLayout({
           </main>
         </div>
       </div>
-    </SessionProvider>
+    </>
   );
 }

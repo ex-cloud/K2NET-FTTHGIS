@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Activity, Database, Server, Wifi } from "lucide-react";
 import { getBackendBaseUrl, getMartinBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 import {
   Tooltip,
   TooltipContent,
@@ -19,19 +20,24 @@ interface HealthState {
 }
 
 export function HealthBadge() {
+  const [isMounted, setIsMounted] = React.useState(false);
   const [health, setHealth] = React.useState<HealthState>({
     backend: "checking",
     martin: "checking",
     lastChecked: null,
   });
 
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const checkHealth = React.useCallback(async () => {
     // 1. Check Backend (Spring Boot)
     let backendStatus: ServiceStatus = "down";
     try {
-      // mode 'no-cors' works well to just check network reachability
-      // even if we get an opaque response back, it means the server is reachable
-      await fetch(getBackendBaseUrl(), { mode: "no-cors", cache: "no-cache" });
+      // Use the actuator health endpoint
+      const backendHost = getBackendBaseUrl().replace("/api/v1", "");
+      await httpClient(`${backendHost}/actuator/health`, { mode: "cors", cache: "no-cache" });
       backendStatus = "up";
     } catch {
       backendStatus = "down";
@@ -40,7 +46,7 @@ export function HealthBadge() {
     // 2. Check Martin (PostGIS Tile Server)
     let martinStatus: ServiceStatus = "down";
     try {
-      await fetch(`${getMartinBaseUrl()}/catalog`, { mode: "no-cors", cache: "no-cache" });
+      await httpClient(`${getMartinBaseUrl()}/catalog`, { mode: "no-cors", cache: "no-cache" });
       martinStatus = "up";
     } catch {
       martinStatus = "down";
@@ -97,6 +103,8 @@ export function HealthBadge() {
     if (status === "down") return <span className="h-2 w-2 rounded-full bg-destructive" />;
     return <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />;
   };
+
+  if (!isMounted) return null; // Avoid hydration mismatch
 
   return (
     <TooltipProvider delayDuration={100}>
