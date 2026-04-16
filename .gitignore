@@ -1,0 +1,42 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/resources/architecture/*.png
+!**/src/main/resources/architecture/*.webp
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/resources/architecture/*.png
+!**/src/main/resources/architecture/*.webp
+
+### VS Code ###
+.vscode/
+
+### Operating System ###
+desktop.ini
+thumbs.db
+.DS_Store
+
+### FTTH Project Specific ###
+*.log
+bootlog.txt
+startup_debug.log

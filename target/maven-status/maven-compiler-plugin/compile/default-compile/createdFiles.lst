@@ -129,6 +129,7 @@ com\company\ftthgis\api\user\dto\UserDto.class
 com\company\ftthgis\config\security\SecurityConfig$KeycloakRoleConverter.class
 com\company\ftthgis\domain\network\repository\projection\FiberCableProjection.class
 com\company\ftthgis\domain\network\mapper\NetworkMapperImpl.class
+com\company\ftthgis\domain\network\repository\projection\AssetMapProjection.class
 com\company\ftthgis\api\user\dto\UserStatsDto.class
 com\company\ftthgis\domain\network\entity\NetworkNode.class
 com\company\ftthgis\domain\network\service\DataReconciliationService.class

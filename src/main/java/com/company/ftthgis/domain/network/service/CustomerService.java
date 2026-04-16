@@ -119,6 +119,10 @@ public class CustomerService {
             dto.setOdpCode(customer.getOdp().getCode());
         }
         dto.setLastNote(customer.getLastNote());
+        if (customer.getGeom() != null) {
+            dto.setLng(customer.getGeom().getX());
+            dto.setLat(customer.getGeom().getY());
+        }
         return dto;
     }
 

@@ -16,4 +16,6 @@ public interface ODCRepository extends JpaRepository<ODC, Long>, JpaSpecificatio
     Optional<ODC> findByCode(String code);
 
     List<ODC> findByOlt(OLT olt);
+
+    List<ODC> findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(String code, String name);
 }

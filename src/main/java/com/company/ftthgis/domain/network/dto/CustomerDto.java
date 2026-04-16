@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -16,11 +17,16 @@ public class CustomerDto {
     private String code;
     private String name;
     private String address;
+    
+    @JsonIgnore
     private Point geom;
+    
     private String status;
 
     // Parent ODP Relation
     private Long odpId;
     private String odpCode;
     private String lastNote;
+    private Double lat;
+    private Double lng;
 }

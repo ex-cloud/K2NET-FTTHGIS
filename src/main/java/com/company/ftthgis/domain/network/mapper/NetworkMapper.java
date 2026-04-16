@@ -30,6 +30,8 @@ public interface NetworkMapper {
     ODPDto toODPDto(ODP odp);
 
     @Mapping(target = "nodeType", constant = "OLT")
+    @Mapping(target = "lng", expression = "java(olt.getGeom() != null ? olt.getGeom().getX() : null)")
+    @Mapping(target = "lat", expression = "java(olt.getGeom() != null ? olt.getGeom().getY() : null)")
     OLTDto toOLTDto(OLT olt);
 
     @Mapping(target = "geom", source = "geometry")

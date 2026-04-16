@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,11 @@ public class OLTDto {
     private String ipAddress;
     private String snmpCommunity;
     private String status;
+    
+    @JsonIgnore
     private Point geom;
+    
     private String lastNote;
+    private Double lat;
+    private Double lng;
 }

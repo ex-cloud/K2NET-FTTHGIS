@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import org.locationtech.jts.geom.LineString;
 public class FiberCableDto {
     private Long id;
     private String code;
+    
+    @JsonIgnore
     private LineString geom;
     private Integer fiberCount;
     private String status;

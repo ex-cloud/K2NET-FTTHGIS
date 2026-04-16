@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-15T12:26:40+0700",
+    date = "2026-04-16T11:32:12+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
@@ -90,6 +90,8 @@ public class NetworkMapperImpl implements NetworkMapper {
         oLTDto.setLastNote( olt.getLastNote() );
 
         oLTDto.setNodeType( "OLT" );
+        oLTDto.setLng( olt.getGeom() != null ? olt.getGeom().getX() : null );
+        oLTDto.setLat( olt.getGeom() != null ? olt.getGeom().getY() : null );
 
         return oLTDto;
     }

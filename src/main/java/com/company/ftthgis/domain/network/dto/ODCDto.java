@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.network.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,8 @@ public class ODCDto {
     private String nodeType;
     private String code;
     private String name;
+    
+    @JsonIgnore
     private Point geom;
     private Integer capacity;
     private Integer usedCapacity;

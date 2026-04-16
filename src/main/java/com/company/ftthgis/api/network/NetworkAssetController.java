@@ -281,24 +281,18 @@ public class NetworkAssetController {
     @GetMapping("/all-nodes")
     @Transactional(readOnly = true)
     public ResponseEntity<List<AssetSearchResult>> getAllNodes() {
-        log.info("📍 Fetching all nodes for map clustering...");
-        List<AssetSearchResult> results = new ArrayList<>();
+        log.info("📍 Fetching all nodes for map clustering using optimized projection...");
         
-        oltRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT", 
-                o.getGeom().getX(), o.getGeom().getY(), 
-                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
-        
-        odcRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC", 
-                o.getGeom().getX(), o.getGeom().getY(), 
-                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
-        
-        odpRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP", 
-                o.getGeom().getX(), o.getGeom().getY(), 
-                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
-        
-        customerRepository.findAll().forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER", 
-                o.getGeom().getX(), o.getGeom().getY(), 
-                Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+        List<AssetSearchResult> results = networkNodeRepository.findAllForMap().stream()
+                .map(p -> new AssetSearchResult(
+                        p.getId().toString(),
+                        p.getCode(),
+                        p.getNodeType(),
+                        p.getLng(),
+                        p.getLat(),
+                        Optional.ofNullable(statusCacheService.getStatus(p.getCode())).orElse(p.getStatus())
+                ))
+                .toList();
         
         return ResponseEntity.ok(results);
     }
@@ -324,30 +318,29 @@ public class NetworkAssetController {
     }
 
     @GetMapping("/search")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<AssetSearchResult>> search(@RequestParam String q) {
+        log.info("🔍 Searching assets for query: {}", q);
         List<AssetSearchResult> results = new ArrayList<>();
-        String query = q.toLowerCase();
-
-        odcRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(query)
-                        || (o.getName() != null && o.getName().toLowerCase().contains(query)))
-                .limit(5)
-                .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC",
+        
+        // Search across all types with limit-optimized queries
+        odcRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+                results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 
-        odpRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(query))
-                .limit(5)
-                .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP",
+        odpRepository.findTop5ByCodeContainingIgnoreCase(q).forEach(o -> 
+                results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 
-        oltRepository.findAll().stream()
-                .filter(o -> o.getCode().toLowerCase().contains(query)
-                        || (o.getName() != null && o.getName().toLowerCase().contains(query)))
-                .limit(5)
-                .forEach(o -> results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT",
+        oltRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+                results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT",
+                        o.getGeom().getX(), o.getGeom().getY(),
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+
+        customerRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+                results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
 

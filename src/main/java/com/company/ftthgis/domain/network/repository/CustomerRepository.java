@@ -17,4 +17,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     boolean existsByCode(String code);
 
     List<Customer> findByOdp(ODP odp);
+
+    List<Customer> findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(String code, String name);
 }

@@ -11,6 +11,7 @@ D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\networ
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\FiberSpliceRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\tenant\entity\TenantAwareEntity.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\NetworkNode.java
+D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\projection\AssetMapProjection.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\repository\AssetCategoryRepository.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\service\CustomerService.java
 D:\Backup\xampp\project5\backend\src\main\java\com\company\ftthgis\domain\network\entity\FiberSplice.java
