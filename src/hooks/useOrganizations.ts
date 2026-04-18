@@ -21,7 +21,7 @@ export function useOrganizations() {
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 5; // Meningkatkan jumlah retry untuk sinkronisasi DB yang berat
 
-  const fetchOrganizations = useCallback(async (isRetry = false) => {
+  const fetchOrganizations = useCallback(async () => {
     // Only proceed if authenticated and we have a token
     if (status !== 'authenticated' || !session?.accessToken) {
       return;
@@ -132,7 +132,7 @@ export function useOrganizations() {
       }
 
       if (session?.accessToken) {
-        fetchOrganizations(retryCount > 0);
+        fetchOrganizations();
       } else {
         setLoading(true);
       }
@@ -153,7 +153,7 @@ export function useOrganizations() {
             const s = await res.json();
             if (s && s.accessToken) {
               clearInterval(handshake);
-              fetchOrganizations(true);
+              fetchOrganizations();
             }
           } catch (e) {
             console.error("[useOrganizations] Handshake error:", e);
