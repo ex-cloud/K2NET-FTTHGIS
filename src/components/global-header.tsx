@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +13,8 @@ import { HealthBadge } from "./health-badge";
 import { GlobalSearch } from "./dashboard/global-search";
 
 export function GlobalHeader() {
+  const params = useParams();
+
   return (
     <header className="flex h-12 w-full items-center justify-between border-b border-border bg-background px-4 z-50 py-2">
       <div className="flex items-center gap-x-2">
@@ -34,7 +37,7 @@ export function GlobalHeader() {
         >
           Feedback
         </Button>
-        <GlobalSearch />
+        {params.projectId && <GlobalSearch />}
 
         <div className="flex items-center gap-1">
           <Button
@@ -55,7 +58,7 @@ export function GlobalHeader() {
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
-          <HealthBadge />
+          {params.projectId && <HealthBadge />}
           <Separator orientation="vertical" className="mx-1 h-4 bg-border" />
           <UserNav />
         </div>
