@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Activity, Database, Server, Wifi } from "lucide-react";
+import { Activity, Database, Server, Wifi, Cpu } from "lucide-react";
 import { getBackendBaseUrl, getMartinBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
 import {
@@ -16,6 +16,7 @@ type ServiceStatus = "checking" | "up" | "down";
 interface HealthState {
   backend: ServiceStatus;
   martin: ServiceStatus;
+  poller: ServiceStatus;
   lastChecked: Date | null;
 }
 
@@ -24,6 +25,7 @@ export function HealthBadge() {
   const [health, setHealth] = React.useState<HealthState>({
     backend: "checking",
     martin: "checking",
+    poller: "checking",
     lastChecked: null,
   });
 
@@ -52,9 +54,19 @@ export function HealthBadge() {
       martinStatus = "down";
     }
 
+    // 3. Check Poller (Go)
+    let pollerStatus: ServiceStatus = "down";
+    try {
+      const res = await fetch("http://localhost:9091/healthz", { cache: "no-cache" });
+      pollerStatus = res.ok ? "up" : "down";
+    } catch {
+      pollerStatus = "down";
+    }
+
     setHealth({
       backend: backendStatus,
       martin: martinStatus,
+      poller: pollerStatus,
       lastChecked: new Date(),
     });
   }, []);
@@ -67,9 +79,9 @@ export function HealthBadge() {
   }, [checkHealth]);
 
   // Determine overall status
-  const isOptimal = health.backend === "up" && health.martin === "up";
-  const isChecking = health.backend === "checking" || health.martin === "checking";
-  const isDown = health.backend === "down" && health.martin === "down";
+  const isOptimal = health.backend === "up" && health.martin === "up" && health.poller === "up";
+  const isChecking = health.backend === "checking" || health.martin === "checking" || health.poller === "checking";
+  const isDown = health.backend === "down" && health.martin === "down" && health.poller === "down";
 
   let Icon = Wifi;
   let colorClass = "text-emerald-500";
@@ -153,6 +165,18 @@ export function HealthBadge() {
                   {health.martin === "up" ? "OK" : health.martin === "checking" ? "..." : "ERR"}
                 </span>
                 {getStatusIcon(health.martin)}
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-2 py-1.5 rounded-sm hover:bg-accent/50">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium">Network Poller (Go)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {health.poller === "up" ? "OK" : health.poller === "checking" ? "..." : "ERR"}
+                </span>
+                {getStatusIcon(health.poller)}
               </div>
             </div>
           </div>

@@ -36,12 +36,39 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
     });
 
     if (response.status === 401) {
-      console.warn(`[HTTP Client] 401 Unauthorized detected at ${url}. Redirecting to login...`);
-      signOut({ callbackUrl: "/login" });
+      // Get the last login time to detect transient sync issues right after login
+      const lastLoginStr = typeof window !== 'undefined' ? localStorage.getItem('last_login_time') : null;
+      const lastLogin = lastLoginStr ? parseInt(lastLoginStr, 10) : Date.now();
+      const now = Date.now();
+      const isTransient = (now - lastLogin) < 30000; 
+
+      if (isTransient) {
+        let retryAttempt = 0;
+        const maxSilentRetries = 3;
+        
+        while (retryAttempt < maxSilentRetries) {
+          retryAttempt++;
+          const waitTime = retryAttempt * 2000;
+          
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          
+          const retryResponse = await fetch(url, { ...rest, headers: requestHeaders });
+          if (retryResponse.ok) {
+            return retryResponse;
+          }
+          
+          if (retryResponse.status !== 401) break;
+        }
+      } else {
+        signOut({ callbackUrl: "/login" });
+      }
       
-      // Return the response so the caller can still see the status if needed,
-      // but the app will redirect shortly.
       return response;
+    }
+
+    // Record login time on first successful authorized request if not exists
+    if (response.ok && token && typeof window !== 'undefined' && !localStorage.getItem('last_login_time')) {
+      localStorage.setItem('last_login_time', Date.now().toString());
     }
 
     return response;

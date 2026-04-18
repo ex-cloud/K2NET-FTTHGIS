@@ -1,17 +1,18 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, Download } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Bell, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PollerHealthBadge } from "./poller-health-badge";
+import { GlobalSearch } from "./global-search";
 
 export function TopHeader() {
   return (
     <header className="absolute top-0 left-0 right-0 h-16 flex shrink-0 items-center justify-between px-6 border-b border-zinc-200/40 dark:border-zinc-800/30 bg-white/20 dark:bg-zinc-950/20 backdrop-blur-2xl z-30 transition-all duration-500">
       {/* Floating Sidebar Trigger precisely on the border line */}
-      <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 z-[100] pointer-events-auto">
+      <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 z-100 pointer-events-auto">
         <SidebarTrigger className="bg-white/90 dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white shadow-xl rounded-full size-8 flex items-center justify-center hover:scale-110 transition-all active:scale-95" />
       </div>
 
@@ -30,13 +31,7 @@ export function TopHeader() {
       </div>
 
       <div className="flex-1 max-w-xl px-12">
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
-          <Input
-            placeholder="Search data points..."
-            className="w-full bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-600 h-9 rounded-lg"
-          />
-        </div>
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-3">
@@ -49,6 +44,7 @@ export function TopHeader() {
           <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-rose-500 rounded-full border border-white dark:border-zinc-950"></span>
         </Button>
 
+        <PollerHealthBadge />
         <ModeToggle />
 
         <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />

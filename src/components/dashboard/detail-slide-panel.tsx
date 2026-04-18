@@ -12,7 +12,11 @@ import {
   ArrowUpRight,
   Trash2,
   ArrowRight,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
+import { useAssetEdit } from "@/hooks/use-asset-edit";
+import { DrawAssetType } from "@/store/map-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -70,6 +74,8 @@ export function DetailSlidePanel() {
   const [isDiagnosticOpen, setIsDiagnosticOpen] = React.useState(false);
   const [diagnosticResult, setDiagnosticResult] =
     React.useState<DiagnosticReport | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const { openEdit } = useAssetEdit();
 
   const pathname = usePathname();
   const router = useRouter();
@@ -89,29 +95,20 @@ export function DetailSlidePanel() {
   const fetchDetails = React.useCallback(async () => {
     if (!selectedAsset) return;
     setLoading(true);
+    setError(null);
     try {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(
         `${baseUrl}/network/assets/by-code/${selectedAsset.type}/${selectedAsset.code}`,
         { token: session?.accessToken, projectId }
       );
-      if (!res.ok) throw new Error("Failed to fetch asset details");
+      if (!res.ok) throw new Error("Gagal mengambil detail aset dari server");
       const data = await res.json();
       setDetails(data);
     } catch (err) {
       console.error(err);
-      // Fallback for demo/missing data
-      setDetails({
-        id: selectedAsset.id || "0",
-        code: selectedAsset.code || "UNKNOWN",
-        type: selectedAsset.type,
-        status: selectedAsset.status || "UNKNOWN",
-        attributes: {
-          "Source Control": "Local GIS Data",
-          "Last Synced": new Date().toISOString().split("T")[0],
-          Validation: "Active",
-        },
-      });
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan koneksi");
+      setDetails(null);
     } finally {
       setLoading(false);
     }
@@ -219,11 +216,16 @@ export function DetailSlidePanel() {
     }
 
     // Ensure type is uppercase for consistency with inventory pages
-    window.dispatchEvent(
-      new CustomEvent("trigger-asset-edit", {
-        detail: { asset: flattenedAsset },
-      }),
-    );
+    openEdit({
+      id: flattenedAsset.id as string,
+      type: flattenedAsset.type as DrawAssetType,
+      code: flattenedAsset.code as string,
+      lat: flattenedAsset.lat as number,
+      lng: flattenedAsset.lng as number,
+      status: flattenedAsset.status as string,
+      name: flattenedAsset.name as string,
+      properties: flattenedAsset,
+    });
   };
 
   const handleViewOnMap = () => {
@@ -332,6 +334,29 @@ export function DetailSlidePanel() {
                 Synchronizing Core Assets
               </span>
             </div>
+          </div>
+        ) : error ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(239,68,68,0.3)]">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
+              </div>
+              <div className="absolute inset-0 bg-red-500/5 blur-3xl animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black tracking-tight text-white uppercase">Signal Interrupted</h3>
+              <p className="text-sm text-zinc-500 font-medium max-w-[240px]">
+                {error}. Pastikan backend di port 9090 sudah berjalan.
+              </p>
+            </div>
+            <Button 
+              onClick={fetchDetails} 
+              variant="outline" 
+              className="rounded-xl border-white/10 hover:bg-white/5 text-white gap-2 h-11 px-8 shadow-xl active:scale-95 transition-all font-bold"
+            >
+              <RefreshCw className="w-4 h-4" />
+              RE-ESTABLISH LINK
+            </Button>
           </div>
         ) : (
           details && (

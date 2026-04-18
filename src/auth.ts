@@ -131,14 +131,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       // 2. Return previous token if the access token has not expired yet
-      // buffer time 10s
-      if (Date.now() < (token.expiresAt as number) * 1000 - 10000) {
+      // buffer time 15s (increased from 10s)
+      const isExpired = Date.now() > (token.expiresAt as number) * 1000 - 15000;
+      if (!isExpired) {
         return token;
       }
 
       // 3. Access token has expired, try to update it
-      // console.debug("Access Token expired, refreshing...");
-      return refreshAccessToken(token);
+      const refreshedToken = await refreshAccessToken(token);
+      
+      // SAFETY: If refresh fails, keep the old token for one more cycle 
+      // instead of returning an error that triggers immediate signout
+      if (refreshedToken.error === "RefreshAccessTokenError") {
+        return token; 
+      }
+
+      return refreshedToken;
     },
     async session({ session, token }) {
       if (token.accessToken) {

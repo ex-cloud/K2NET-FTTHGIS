@@ -64,18 +64,6 @@ export default function OdcListPage() {
     setIsDialogOpen(true);
   }, []);
 
-  React.useEffect(() => {
-    const onEditRequest = (e: Event) => {
-      const customEvent = e as CustomEvent<{ asset: ODC & { type: string } }>;
-      const asset = customEvent.detail.asset;
-      if (asset && asset.type === "ODC") {
-        handleEdit(asset);
-      }
-    };
-    window.addEventListener("trigger-asset-edit", onEditRequest);
-    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
-  }, [handleEdit]);
-
   const handleDelete = async () => {
     if (!odcToDelete || !session?.accessToken) return;
     

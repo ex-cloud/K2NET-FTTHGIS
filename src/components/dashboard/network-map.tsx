@@ -11,6 +11,10 @@ import Map, {
   MapRef,
   Marker,
 } from "react-map-gl/maplibre";
+import { useSearchParams, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
 import type {
   CircleLayerSpecification,
   LineLayerSpecification,
@@ -82,6 +86,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useMapNotifications(); // Initialize Real-time SSE Connection
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const focusCode = searchParams.get("focus");
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
   const {
     mapCenter,
@@ -111,8 +118,12 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   // Trace Path hook
   const { fetchTracePath, loading: traceLoading } = useTracePath();
 
+  const params = useParams();
+  const orgSlug = params?.orgId as string;
+  const projectId = params?.projectId as string;
+
   // Clustering data
-  const { geoJSON: clusterGeoJSON } = useMapClusters();
+  const { geoJSON: clusterGeoJSON } = useMapClusters(orgSlug, projectId);
 
   // Hover tooltip state
   const [hoveredFeature, setHoveredFeature] = useState<HoveredFeature | null>(null);
@@ -206,6 +217,50 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       });
     }
   }, [mapCenter]);
+
+  // Handle URL Focus Parameter
+  useEffect(() => {
+    if (!focusCode || !session?.accessToken || !mounted) return;
+
+    const handleFocus = async () => {
+      try {
+        const baseUrl = getBackendBaseUrl();
+        // Get asset detail by its code for focusing
+        const res = await httpClient(`${baseUrl}/network/assets/search?q=${focusCode}`, {
+          token: session.accessToken,
+        });
+
+        if (res.ok) {
+          const results = await res.json();
+          // Take the exact match or first result
+          const asset = results.find((r: { code: string }) => r.code === focusCode) || results[0];
+          
+          if (asset) {
+            // Set as selected to open side panel
+            setSelectedAsset({
+              id: asset.id,
+              type: asset.type,
+              code: asset.code,
+              lng: asset.lng,
+              lat: asset.lat,
+              status: asset.status,
+            });
+
+            // Fly to location
+            setMapCenter({
+                lng: asset.lng,
+                lat: asset.lat,
+                zoom: 18, // Zoom in close for focus
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to focus on asset from URL", err);
+      }
+    };
+
+    handleFocus();
+  }, [focusCode, session?.accessToken, mounted, setSelectedAsset, setMapCenter]);
 
   // Compute base map style based on mode
   const currentMapStyle = useMemo(() => {
@@ -1235,7 +1290,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
       {/* Editor Toolbar */}
       {allowEditing && (
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-background/90 backdrop-blur-md p-2 rounded-full border shadow-xl transition-all duration-300 pointer-events-auto">
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-100 flex items-center gap-1 bg-background/90 backdrop-blur-md p-2 rounded-full border shadow-xl transition-all duration-300 pointer-events-auto">
           <Button
             variant={!isEditMode ? "default" : "ghost"}
             size="sm"
@@ -1308,7 +1363,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
       {/* Trace Mode Banner */}
       {traceMode === "selecting-target" && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-100 animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3 bg-cyan-500/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl shadow-cyan-500/30">
             <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
             <span className="text-sm font-bold tracking-wide">
@@ -1326,7 +1381,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
       {/* Traced Route Clear Button */}
       {tracedPath && traceMode === "idle" && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-300">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-100 animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3 bg-cyan-500/90 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-2xl shadow-cyan-500/30">
             <Cable className="w-4 h-4" />
             <span className="text-sm font-bold">Route traced successfully</span>

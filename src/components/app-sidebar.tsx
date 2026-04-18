@@ -25,11 +25,13 @@ import {
 } from "@/components/ui/sidebar";
 import { useSession } from "next-auth/react";
 import { useSidebarMode } from "./sidebar-mode-context";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const { sidebarMode, setOpen: setContextOpen } = useSidebarMode();
+  const { organizations } = useOrganizations();
 
   // Route sniffing
   const isInsideProject = pathname?.includes("/project/");
@@ -39,7 +41,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const orgId = match ? match[1] : "default";
   const projectId = match && match[2] ? match[2] : "";
 
-  // Auto-collapse logic removed to give full control to the 3-mode switcher.
+  // Get current organization from API data
+  const currentOrg = organizations.find((o) => o.slug === orgId);
+  const orgDisplayName = currentOrg?.name || orgId || "Organization";
 
   // Dynamic Navigation Models
   const orgNavMain = [
@@ -133,7 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <div className="ml-3 flex flex-col gap-0.5 leading-none transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0 overflow-hidden">
             <span className="font-bold text-sm tracking-tight truncate">
-              ex-cloud&apos;s Org
+              {orgDisplayName}
             </span>
             <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-500/70 truncate">
               Free Plan

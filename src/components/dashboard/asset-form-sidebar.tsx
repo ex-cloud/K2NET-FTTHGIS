@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useMapStore, type DrawAssetType } from "@/store/map-store";
+import { useMapStore } from "@/store/map-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { httpClient } from "@/lib/httpClient";
@@ -87,29 +87,6 @@ export function AssetFormSidebar() {
 
     return () => clearTimeout(timeoutId);
   }, [formData.code, isFormOpen, editingAsset, session]);
-
-  // Global listener for editing from other components (like DetailSlidePanel)
-  React.useEffect(() => {
-    const handleRemoteEdit = (e: Event) => {
-      const customEvent = e as CustomEvent<{ asset: { 
-        id: string; 
-        type: DrawAssetType; 
-        code: string; 
-        lat?: number; 
-        lng?: number; 
-        status?: string;
-        properties: Record<string, unknown>;
-      } }>;
-      const asset = customEvent.detail.asset;
-      if (asset) {
-        setEditingAsset(asset);
-        setIsFormOpen(true);
-      }
-    };
-
-    window.addEventListener('trigger-asset-edit', handleRemoteEdit);
-    return () => window.removeEventListener('trigger-asset-edit', handleRemoteEdit);
-  }, [setEditingAsset, setIsFormOpen]);
 
   // Effect to reset/pre-fill form
   React.useEffect(() => {

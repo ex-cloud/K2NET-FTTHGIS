@@ -62,18 +62,6 @@ export default function OltListPage() {
     setIsDialogOpen(true);
   }, []);
 
-  React.useEffect(() => {
-    const onEditRequest = (e: Event) => {
-      const customEvent = e as CustomEvent<{ asset: OLT & { type: string } }>;
-      const asset = customEvent.detail.asset;
-      if (asset && asset.type === "OLT") {
-        handleEdit(asset);
-      }
-    };
-    window.addEventListener("trigger-asset-edit", onEditRequest);
-    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
-  }, [handleEdit]);
-
   const handleDelete = async () => {
     if (!oltToDelete || !session?.accessToken) return;
 

@@ -64,18 +64,6 @@ export default function OdpListPage() {
     setIsDialogOpen(true);
   }, []);
 
-  React.useEffect(() => {
-    const onEditRequest = (e: Event) => {
-      const customEvent = e as CustomEvent<{ asset: ODP & { type: string } }>;
-      const asset = customEvent.detail.asset;
-      if (asset && asset.type === "ODP") {
-        handleEdit(asset);
-      }
-    };
-    window.addEventListener("trigger-asset-edit", onEditRequest);
-    return () => window.removeEventListener("trigger-asset-edit", onEditRequest);
-  }, [handleEdit]);
-
   const handleDelete = async () => {
     if (!odpToDelete || !session?.accessToken) return;
     

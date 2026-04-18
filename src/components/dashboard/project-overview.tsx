@@ -423,9 +423,8 @@ export function ProjectOverview() {
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/analytics/summary`, {
+      const res = await httpClient(`${baseUrl}/analytics/summary?projectId=${projectId}`, {
         token: session.accessToken,
-        projectId,
       });
       if (!res.ok) throw new Error("Failed to fetch stats");
       const data = await res.json();

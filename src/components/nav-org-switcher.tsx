@@ -15,14 +15,14 @@ import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-const organizations = [
-  { id: "default", name: "ex-cloud's Org", plan: "FREE" },
-  { id: "k2net", name: "k2net", plan: "FREE" },
-];
+import { useOrganizations } from "@/hooks/useOrganizations";
+import { OrganizationWizard } from "./tenant/organization-wizard";
 
 export function NavOrgSwitcher() {
+  const { organizations, refresh } = useOrganizations();
   const pathname = usePathname();
   const [search, setSearch] = React.useState("");
+  const [wizardOpen, setWizardOpen] = React.useState(false);
 
   // Filter out empty strings to handle leading/trailing slashes correctly
   const segments = pathname?.split("/").filter(Boolean) || [];
@@ -30,26 +30,29 @@ export function NavOrgSwitcher() {
   // segments[0] = "org", segments[1] = [orgId]
   const orgId = segments[1];
 
-  const currentOrg =
-    organizations.find((o) => o.id === orgId) || organizations[0];
+  const currentOrg = organizations.find((o) => o.slug === orgId);
 
   const filteredOrgs = organizations.filter((o) =>
     o.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  // Display name: use found org, or show the slug as fallback while loading
+  const displayName = currentOrg?.name || orgId || "Select Organization";
+  const displaySlug = currentOrg?.slug || orgId || "";
+
   return (
     <div className="flex items-center justify-center">
       <div className="flex items-center justify-center gap-1.5 px-2 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
         <Link
-          href={`/org/${currentOrg.id}`}
+          href={displaySlug ? `/org/${displaySlug}` : "/org"}
           className="flex items-center gap-1.5"
         >
           <Boxes className="size-3 flex items-center justify-center" />
           <span className="truncate max-w-[120px] group-hover:text-foreground transition-colors">
-            {currentOrg.name}
+            {displayName}
           </span>
           <span className="text-[10px] bg-muted px-1.5 rounded text-muted-foreground font-bold uppercase tracking-tight group-hover:text-foreground transition-colors">
-            {currentOrg.plan}
+            {currentOrg?.plan || 'FREE'}
           </span>
         </Link>
       </div>
@@ -105,7 +108,7 @@ export function NavOrgSwitcher() {
                   className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer group"
                   asChild
                 >
-                  <Link href={`/org/${org.id}`}>
+                  <Link href={`/org/${org.slug}`}>
                     <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/50">
                       <span className="font-bold text-xs group-hover:text-emerald-500">
                         {org.name.charAt(0).toUpperCase()}
@@ -114,10 +117,10 @@ export function NavOrgSwitcher() {
                     <div className="flex flex-col flex-1">
                       <span className="text-xs font-medium">{org.name}</span>
                       <span className="text-[10px] text-zinc-500 uppercase">
-                        {org.plan} Plan
+                        {org.plan || 'FREE'} Plan
                       </span>
                     </div>
-                    {org.id === orgId && (
+                    {org.slug === orgId && (
                       <Check className="size-3.5 text-emerald-500" />
                     )}
                   </Link>
@@ -131,7 +134,10 @@ export function NavOrgSwitcher() {
           </div>
           <DropdownMenuSeparator className="bg-border mx-0 mt-0" />
           <div className="p-1">
-            <DropdownMenuItem className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md">
+            <DropdownMenuItem 
+              onClick={() => setWizardOpen(true)}
+              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md"
+            >
               <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
                 <Plus className="size-3.5" />
               </div>
@@ -142,6 +148,12 @@ export function NavOrgSwitcher() {
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <OrganizationWizard 
+        open={wizardOpen} 
+        onOpenChange={setWizardOpen} 
+        onSuccess={refresh} 
+      />
     </div>
   );
 }

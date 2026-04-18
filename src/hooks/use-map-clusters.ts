@@ -15,7 +15,7 @@ export interface MapClusterNode {
   status: string;
 }
 
-export function useMapClusters() {
+export function useMapClusters(orgSlug?: string, projectId?: string) {
   const { data: session } = useSession();
   const [geoJSON, setGeoJSON] = useState<FeatureCollection<Point> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,13 @@ export function useMapClusters() {
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/network/assets/all-nodes`, {
+      const params = new URLSearchParams();
+      if (orgSlug) params.append("orgSlug", orgSlug);
+      if (projectId) params.append("projectId", projectId);
+      
+      const url = `${baseUrl}/network/assets/all-nodes${params.toString() ? '?' + params.toString() : ''}`;
+      
+      const res = await httpClient(url, {
         token: session.accessToken,
       });
 
@@ -56,7 +62,7 @@ export function useMapClusters() {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [session?.accessToken, orgSlug]);
 
   useEffect(() => {
     fetchAllNodes();

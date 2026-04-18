@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, HelpCircle, MessageSquare } from "lucide-react";
+import { HelpCircle, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { UserNav } from "./user-nav";
 import { HealthBadge } from "./health-badge";
+import { GlobalSearch } from "./dashboard/global-search";
 
 export function GlobalHeader() {
   return (
@@ -33,21 +34,7 @@ export function GlobalHeader() {
         >
           Feedback
         </Button>
-        <div className="relative hidden lg:block">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-3.5 w-3.5 text-muted-foreground/70" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="flex h-8 w-60 items-center rounded-md border border-border bg-muted/40 pl-9 pr-2 text-xs text-muted-foreground hover:border-accent-foreground/20 transition-colors focus:outline-hidden focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                alert(`Searching for: ${e.currentTarget.value}`);
-              }
-            }}
-          />
-        </div>
+        <GlobalSearch />
 
         <div className="flex items-center gap-1">
           <Button
