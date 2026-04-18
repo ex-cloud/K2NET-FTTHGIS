@@ -24,6 +24,9 @@ public class NetworkEvent {
     @Column(name = "asset_code", nullable = false)
     private String assetCode;
 
+    @Column(name = "project_id", nullable = false)
+    private String projectId;
+
     @Column(name = "asset_type", nullable = false)
     private String assetType; // OLT, ODC, ODP, CUSTOMER
 

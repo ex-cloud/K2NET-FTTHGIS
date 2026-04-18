@@ -280,17 +280,25 @@ public class NetworkAssetController {
 
     @GetMapping("/all-nodes")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<AssetSearchResult>> getAllNodes() {
-        log.info("📍 Fetching all nodes for map clustering using optimized projection...");
+    public ResponseEntity<List<AssetSearchResult>> getAllNodes(
+            @RequestParam(required = false) String orgSlug,
+            @RequestParam(required = false) String projectId) {
+        log.info("📍 Fetching all nodes for map clustering (Org: {}, Project: {})...", orgSlug, projectId);
         
-        List<AssetSearchResult> results = networkNodeRepository.findAllForMap().stream()
+        if (orgSlug == null || orgSlug.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<AssetSearchResult> results = networkNodeRepository.findAllByOrgSlugAndProjectId(orgSlug, projectId).stream()
                 .map(p -> new AssetSearchResult(
                         p.getId().toString(),
                         p.getCode(),
                         p.getNodeType(),
                         p.getLng(),
                         p.getLat(),
-                        Optional.ofNullable(statusCacheService.getStatus(p.getCode())).orElse(p.getStatus())
+                        Optional.ofNullable(statusCacheService.getStatus(p.getCode())).orElse(p.getStatus()),
+                        null,
+                        null
                 ))
                 .toList();
         
@@ -319,30 +327,52 @@ public class NetworkAssetController {
 
     @GetMapping("/search")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<AssetSearchResult>> search(@RequestParam String q) {
-        log.info("🔍 Searching assets for query: {}", q);
+    public ResponseEntity<List<AssetSearchResult>> search(
+            @RequestParam String q,
+            @RequestParam(required = false) String orgId) {
+        log.info("🔍 Searching assets for query: {} (Org: {})", q, orgId);
         List<AssetSearchResult> results = new ArrayList<>();
         
         // Search across all types with limit-optimized queries
-        odcRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+        odcRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> {
+            if (orgId == null || (o.getProject() != null && (o.getProject().getOrganization().getId().toString().equals(orgId) || o.getProject().getOrganization().getSlug().equals(orgId)))) {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC",
                         o.getGeom().getX(), o.getGeom().getY(),
-                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
+                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getName() : null));
+            }
+        });
 
-        odpRepository.findTop5ByCodeContainingIgnoreCase(q).forEach(o -> 
+        odpRepository.findTop5ByCodeContainingIgnoreCase(q).forEach(o -> {
+            if (orgId == null || (o.getProject() != null && (o.getProject().getOrganization().getId().toString().equals(orgId) || o.getProject().getOrganization().getSlug().equals(orgId)))) {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP",
                         o.getGeom().getX(), o.getGeom().getY(),
-                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
+                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getName() : null));
+            }
+        });
 
-        oltRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+        oltRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> {
+            if (orgId == null || (o.getProject() != null && (o.getProject().getOrganization().getId().toString().equals(orgId) || o.getProject().getOrganization().getSlug().equals(orgId)))) {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT",
                         o.getGeom().getX(), o.getGeom().getY(),
-                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
+                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getName() : null));
+            }
+        });
 
-        customerRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> 
+        customerRepository.findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(q, q).forEach(o -> {
+            if (orgId == null || (o.getProject() != null && (o.getProject().getOrganization().getId().toString().equals(orgId) || o.getProject().getOrganization().getSlug().equals(orgId)))) {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER",
                         o.getGeom().getX(), o.getGeom().getY(),
-                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()))));
+                        Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
+                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getName() : null));
+            }
+        });
 
         return ResponseEntity.ok(results);
     }
@@ -357,5 +387,7 @@ public class NetworkAssetController {
         private double lng;
         private double lat;
         private String status;
+        private String projectId;
+        private String projectName;
     }
 }

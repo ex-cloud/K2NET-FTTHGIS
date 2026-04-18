@@ -23,18 +23,25 @@ public class ClusterRefreshConfig {
     public void refreshClusteredView() {
         log.info("--- [SCHEDULE] Refreshing clustered materialized view ---");
         try {
-            // Check if view exists first to avoid errors during initial startup
-            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_clustered_nodes");
-            log.info("--- [SCHEDULE] Clustered view refreshed successfully ---");
+            // Check if view and unique index exist to support CONCURRENTLY
+            Integer indexCount = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE tablename = 'mv_clustered_nodes'", Integer.class);
+            
+            if (indexCount != null && indexCount > 0) {
+                jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_clustered_nodes");
+                log.info("--- [SCHEDULE] Clustered view refreshed CONCURRENTLY ---");
+            } else {
+                log.info("--- [SCHEDULE] Unique index missing, using non-concurrent refresh ---");
+                jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_clustered_nodes");
+                log.info("--- [SCHEDULE] Clustered view refreshed (standard) ---");
+            }
         } catch (Exception e) {
-            log.warn("--- [SCHEDULE] Could not refresh clustered view (not created yet or no concurrent index): {} ---",
-                    e.getMessage());
-            // Fallback to simple refresh if concurrent fails (e.g. if index is missing)
+            log.warn("--- [SCHEDULE] Could not refresh clustered view: {} ---", e.getMessage());
+            // Last fallback
             try {
                 jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_clustered_nodes");
-                log.info("--- [SCHEDULE] Clustered view refreshed (fallback mode) ---");
             } catch (Exception ex) {
-                log.error("--- [SCHEDULE] Critical: Failed to refresh clustered view: {} ---", ex.getMessage());
+                log.error("--- [SCHEDULE] Critical failure: {}", ex.getMessage());
             }
         }
     }

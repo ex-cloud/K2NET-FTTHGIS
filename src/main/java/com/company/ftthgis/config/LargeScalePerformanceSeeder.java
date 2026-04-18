@@ -1,5 +1,7 @@
 package com.company.ftthgis.config;
 
+import com.company.ftthgis.domain.tenant.entity.Project;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import com.company.ftthgis.domain.network.entity.*;
 import com.company.ftthgis.domain.network.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
     private final ODPRepository odpRepository;
     private final CustomerRepository customerRepository;
     private final FiberCableRepository fiberCableRepository;
+    private final ProjectRepository projectRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -49,8 +52,11 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
         double baseLon = 107.6100;
         double baseLat = -6.9400;
 
+        Project project = projectRepository.findById("ftth-gis-1").orElse(null);
+
         // 1. Create OLT (1 unit)
         OLT olt = new OLT();
+        olt.setProject(project);
         olt.setCode("OLT-PERF-TEST");
         olt.setName("OLT Performance Cluster");
         olt.setGeom(geometryFactory.createPoint(new Coordinate(baseLon, baseLat)));
@@ -77,9 +83,10 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
             odc.setStatus(random.nextDouble() < 0.1 ? "DOWN" : "UP"); // 10% chance of failure
             odc.setSignalDb(-3.0);
             odc.setOlt(olt); // ESTABLISH RELATIONSHIP
+            odc.setProject(project);
             odcs.add(odcRepository.save(odc));
 
-            createCable(oltCoord, odcCoord, "FEEDER-PERF-" + i, odc.getStatus());
+            createCable(oltCoord, odcCoord, "FEEDER-PERF-" + i, odc.getStatus(), project);
         }
 
         log.info("Generating 500 ODPs...");
@@ -107,9 +114,10 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
                 }
                 odp.setStatus(status);
                 odp.setSignalDb(-14.0);
+                odp.setProject(project);
                 odps.add(odpRepository.save(odp));
 
-                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), status);
+                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), status, project);
             }
         }
 
@@ -133,12 +141,13 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
                 String status = odp.getStatus().equals("ACTIVE") ? "ACTIVE" : "DOWN";
                 cust.setStatus(status);
                 cust.setSignalDb(status.equals("ACTIVE") ? -19.0 : -45.0);
+                cust.setProject(project);
                 customerRepository.save(cust);
 
                 // Every 2nd customer, create a cable (optimization for seeding speed in
                 // performance test)
                 if (k % 2 == 0) {
-                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), status);
+                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), status, project);
                 }
             }
         }
@@ -157,8 +166,9 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
         jdbcTemplate.execute("TRUNCATE TABLE network_nodes CASCADE");
     }
 
-    private void createCable(Coordinate start, Coordinate end, String code, String status) {
+    private void createCable(Coordinate start, Coordinate end, String code, String status, Project project) {
         FiberCable cable = new FiberCable();
+        cable.setProject(project);
         cable.setCode(code);
         cable.setStatus(status);
         cable.setFiberCount(code.startsWith("FEEDER") ? 48 : (code.startsWith("DIST") ? 12 : 2));

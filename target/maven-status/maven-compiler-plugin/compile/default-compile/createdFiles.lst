@@ -1,14 +1,18 @@
 com\company\ftthgis\domain\user\entity\Permission.class
 com\company\ftthgis\domain\network\dto\SplitterPortDto.class
 com\company\ftthgis\api\network\CustomerManagementController.class
+com\company\ftthgis\api\tenant\ProjectController.class
 com\company\ftthgis\domain\analytics\entity\DashboardSnapshot$DashboardSnapshotBuilder.class
 com\company\ftthgis\domain\network\service\CustomerService.class
 com\company\ftthgis\domain\tenant\entity\Organization$OrganizationBuilder.class
+com\company\ftthgis\domain\tenant\repository\OrganizationRepository.class
 com\company\ftthgis\config\UserSeeder.class
 META-INF\spring-configuration-metadata.json
 com\company\ftthgis\domain\user\repository\PermissionRepository.class
 com\company\ftthgis\domain\network\service\FiberCoreService$CoreSummary.class
+com\company\ftthgis\api\tenant\OrganizationController.class
 com\company\ftthgis\domain\network\entity\SplitterPort.class
+com\company\ftthgis\service\OrganizationService.class
 com\company\ftthgis\domain\network\service\SplitterPortService$PortSummary.class
 com\company\ftthgis\domain\network\dto\FiberSpliceDto.class
 com\company\ftthgis\api\network\dto\AssetDetailDto.class
@@ -45,6 +49,7 @@ com\company\ftthgis\domain\network\dto\OLTDto.class
 com\company\ftthgis\domain\network\entity\FiberSplice.class
 com\company\ftthgis\config\LargeScalePerformanceSeeder.class
 com\company\ftthgis\domain\network\repository\FiberCoreRepository.class
+com\company\ftthgis\domain\tenant\repository\ProjectRepository.class
 com\company\ftthgis\api\network\dto\AuditHistoryDto$AuditHistoryDtoBuilder.class
 com\company\ftthgis\domain\network\entity\OLT.class
 com\company\ftthgis\domain\analytics\dto\IssueDetailDTO.class

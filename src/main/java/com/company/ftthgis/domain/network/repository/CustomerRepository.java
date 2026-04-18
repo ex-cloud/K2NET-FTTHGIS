@@ -19,4 +19,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     List<Customer> findByOdp(ODP odp);
 
     List<Customer> findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(String code, String name);
+
+    long countByProjectId(String projectId);
 }

@@ -9,6 +9,8 @@ import com.company.ftthgis.domain.analytics.repository.AnalyticsRepository;
 import com.company.ftthgis.domain.analytics.repository.DashboardSnapshotRepository;
 import com.company.ftthgis.domain.network.repository.CustomerRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
+import com.company.ftthgis.domain.tenant.entity.Project;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,20 +30,29 @@ public class AnalyticsService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final DashboardSnapshotRepository snapshotRepository;
+    private final ProjectRepository projectRepository;
 
-    public DashboardStatsDTO getDashboardStats() {
-        long totalNodes = analyticsRepository.countTotalNodes();
-        long activeNodes = analyticsRepository.countActiveNodes();
-        long downNodes = analyticsRepository.countDownNodes();
-        double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm();
-        long totalUsers = userRepository.count();
-        long totalCustomers = customerRepository.count();
+    public DashboardStatsDTO getDashboardStats(String projectId) {
+        if (projectId == null || projectId.isEmpty()) {
+            return getGlobalDashboardStats();
+        }
+
+        long totalNodes = analyticsRepository.countTotalNodes(projectId);
+        long activeNodes = analyticsRepository.countActiveNodes(projectId);
+        long downNodes = analyticsRepository.countDownNodes(projectId);
+        double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+        
+        // Use repo method for project-specific customer count
+        long totalCustomers = customerRepository.countByProjectId(projectId);
+        // Users are currently global in the system auth, but we could filter by project assignment if needed.
+        // For now, keep totalUsers as is or filter if Project has user relations.
+        long totalUsers = userRepository.count(); 
 
         double uptime = totalNodes > 0 ? ((double) activeNodes / totalNodes) * 100 : 100.0;
 
         log.info(
-                "[Analytics] Dashboard Stats Generated: totalNodes={}, activeNodes={}, downNodes={}, uptime={}, users={}",
-                totalNodes, activeNodes, downNodes, uptime, totalUsers);
+                "[Analytics] Project Dashboard Stats Generated for {}: totalNodes={}, activeNodes={}, downNodes={}, uptime={}",
+                projectId, totalNodes, activeNodes, downNodes, uptime);
 
         return DashboardStatsDTO.builder()
                 .totalNodes(totalNodes)
@@ -52,7 +63,7 @@ public class AnalyticsService {
                 .networkUptime(Math.round(uptime * 100.0) / 100.0)
                 .customerReach(totalCustomers)
                 .maintenanceProgress(85.0)
-                .issues(analyticsRepository.findTop10ProblematicNodes(PageRequest.of(0, 10)).stream()
+                .issues(analyticsRepository.findTop10ProblematicNodes(projectId, PageRequest.of(0, 10)).stream()
                         .map(n -> IssueDetailDTO.builder()
                                 .code(n.getCode())
                                 .type(n.getNodeType())
@@ -65,6 +76,14 @@ public class AnalyticsService {
                 .build();
     }
 
+    private DashboardStatsDTO getGlobalDashboardStats() {
+        // Fallback or Admin view
+        return DashboardStatsDTO.builder()
+                .totalNodes(0)
+                .activeNodes(0)
+                .build();
+    }
+
     // ─── Snapshot History ─────────────────────────────────────────────────
 
     /**
@@ -73,26 +92,37 @@ public class AnalyticsService {
     @Scheduled(fixedRate = 300_000) // every 5 minutes
     @Transactional
     public void recordSnapshot() {
-        long totalNodes = analyticsRepository.countTotalNodes();
-        long activeNodes = analyticsRepository.countActiveNodes();
-        long downNodes = analyticsRepository.countDownNodes();
-        double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm();
-        long totalCustomers = customerRepository.count();
+        List<Project> projects = projectRepository.findAll();
+        LocalDateTime now = LocalDateTime.now();
 
-        double uptime = totalNodes > 0 ? ((double) activeNodes / totalNodes) * 100 : 100.0;
+        for (Project project : projects) {
+            String projectId = project.getId();
+            try {
+                long totalNodes = analyticsRepository.countTotalNodes(projectId);
+                long activeNodes = analyticsRepository.countActiveNodes(projectId);
+                long downNodes = analyticsRepository.countDownNodes(projectId);
+                double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+                long totalCustomers = customerRepository.countByProjectId(projectId);
 
-        DashboardSnapshot snapshot = DashboardSnapshot.builder()
-                .recordedAt(LocalDateTime.now())
-                .totalNodes(totalNodes)
-                .activeNodes(activeNodes)
-                .downNodes(downNodes)
-                .networkUptime(Math.round(uptime * 100.0) / 100.0)
-                .customerReach(totalCustomers)
-                .totalNetworkLengthKm(Math.round(totalLengthKm * 100.0) / 100.0)
-                .build();
+                double uptime = totalNodes > 0 ? ((double) activeNodes / totalNodes) * 100 : 100.0;
 
-        snapshotRepository.save(snapshot);
-        log.debug("[Analytics] Dashboard snapshot recorded at {}", snapshot.getRecordedAt());
+                DashboardSnapshot snapshot = DashboardSnapshot.builder()
+                        .projectId(projectId)
+                        .recordedAt(now)
+                        .totalNodes(totalNodes)
+                        .activeNodes(activeNodes)
+                        .downNodes(downNodes)
+                        .networkUptime(Math.round(uptime * 100.0) / 100.0)
+                        .customerReach(totalCustomers)
+                        .totalNetworkLengthKm(Math.round(totalLengthKm * 100.0) / 100.0)
+                        .build();
+
+                snapshotRepository.save(snapshot);
+            } catch (Exception e) {
+                log.error("[Analytics] Failed to record snapshot for project {}: {}", projectId, e.getMessage());
+            }
+        }
+        log.debug("[Analytics] Dashboard snapshots recorded for {} projects at {}", projects.size(), now);
     }
 
     /**
@@ -111,8 +141,11 @@ public class AnalyticsService {
     /**
      * Retrieves snapshots within a date range for the frontend history chart.
      */
-    public List<SnapshotDTO> getSnapshotHistory(LocalDateTime from, LocalDateTime to) {
-        List<DashboardSnapshot> snapshots = snapshotRepository.findByRecordedAtBetweenOrderByRecordedAtAsc(from, to);
+    public List<SnapshotDTO> getSnapshotHistory(LocalDateTime from, LocalDateTime to, String projectId) {
+        if (projectId == null || projectId.isEmpty()) {
+            return List.of();
+        }
+        List<DashboardSnapshot> snapshots = snapshotRepository.findByRecordedAtBetweenAndProjectIdOrderByRecordedAtAsc(from, to, projectId);
 
         return snapshots.stream()
                 .map(s -> SnapshotDTO.builder()

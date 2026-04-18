@@ -13,8 +13,8 @@ public interface DashboardSnapshotRepository extends JpaRepository<DashboardSnap
     /**
      * Find all snapshots within a date range, ordered chronologically.
      */
-    List<DashboardSnapshot> findByRecordedAtBetweenOrderByRecordedAtAsc(
-            LocalDateTime from, LocalDateTime to);
+    List<DashboardSnapshot> findByRecordedAtBetweenAndProjectIdOrderByRecordedAtAsc(
+            LocalDateTime from, LocalDateTime to, String projectId);
 
     /**
      * Delete old snapshots beyond retention period (e.g. > 90 days).

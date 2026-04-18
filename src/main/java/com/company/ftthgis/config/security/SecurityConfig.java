@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
                         .requestMatchers("/api/v1/network/analytics/**").permitAll()
                         .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
+                        .requestMatchers("/api/v1/organizations/**").permitAll() // Multi-tenant org + project endpoints
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/error").permitAll()

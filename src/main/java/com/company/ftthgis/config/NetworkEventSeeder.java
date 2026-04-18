@@ -44,36 +44,36 @@ public class NetworkEventSeeder implements CommandLineRunner {
         // Terjadi 45 menit yang lalu, 8 ODP tiba-tiba DOWN/FIBERCUT
         LocalDateTime massOutageTime = now.minusMinutes(45);
         for (int i = 1; i <= 8; i++) {
-            events.add(createEvent("ODP-ST-0" + i, "ODP", "UP", "FIBERCUT", massOutageTime));
+            events.add(createEvent("ODP-ST-0" + i, "ODP", "UP", "FIBERCUT", massOutageTime, "ftth-gis-1"));
         }
 
         // --- SCENARIO 2: GRADUAL RECOVERY ---
         // Aset dari Scenario 1 mulai pulih satu per satu
         for (int i = 1; i <= 5; i++) {
-            events.add(createEvent("ODP-ST-0" + i, "ODP", "FIBERCUT", "UP", massOutageTime.plusMinutes(10 * i)));
+            events.add(createEvent("ODP-ST-0" + i, "ODP", "FIBERCUT", "UP", massOutageTime.plusMinutes(10 * i), "ftth-gis-1"));
         }
 
         // --- SCENARIO 3: FLAPPING ASSET (Mati Nyala) ---
         // Satu OLT yang bermasalah, mati nyala beberapa kali dalam 1 jam terakhir
         String flappingOlt = "OLT-CENTRAL-01";
         LocalDateTime flapTime = now.minusMinutes(60);
-        events.add(createEvent(flappingOlt, "OLT", "UP", "DOWN", flapTime));
-        events.add(createEvent(flappingOlt, "OLT", "DOWN", "UP", flapTime.plusMinutes(5)));
-        events.add(createEvent(flappingOlt, "OLT", "UP", "DOWN", flapTime.plusMinutes(15)));
-        events.add(createEvent(flappingOlt, "OLT", "DOWN", "MAINTENANCE", flapTime.plusMinutes(20)));
-        events.add(createEvent(flappingOlt, "OLT", "MAINTENANCE", "UP", flapTime.plusMinutes(40)));
+        events.add(createEvent(flappingOlt, "OLT", "UP", "DOWN", flapTime, "ftth-gis-1"));
+        events.add(createEvent(flappingOlt, "OLT", "DOWN", "UP", flapTime.plusMinutes(5), "ftth-gis-1"));
+        events.add(createEvent(flappingOlt, "OLT", "UP", "DOWN", flapTime.plusMinutes(15), "ftth-gis-1"));
+        events.add(createEvent(flappingOlt, "OLT", "DOWN", "MAINTENANCE", flapTime.plusMinutes(20), "ftth-gis-1"));
+        events.add(createEvent(flappingOlt, "OLT", "MAINTENANCE", "UP", flapTime.plusMinutes(40), "ftth-gis-1"));
 
         // --- SCENARIO 4: POCKET LOSS / INTERMITTENT ---
         // Beberapa Customer yang statusnya berubah-ubah
         LocalDateTime customerIssueTime = now.minusMinutes(30);
-        events.add(createEvent("CUST-1001", "CUSTOMER", "UP", "DOWN", customerIssueTime));
-        events.add(createEvent("CUST-1001", "CUSTOMER", "DOWN", "UP", customerIssueTime.plusMinutes(2)));
-        events.add(createEvent("CUST-2005", "CUSTOMER", "UP", "DOWN", customerIssueTime.plusMinutes(5)));
+        events.add(createEvent("CUST-1001", "CUSTOMER", "UP", "DOWN", customerIssueTime, "ftth-gis-1"));
+        events.add(createEvent("CUST-1001", "CUSTOMER", "DOWN", "UP", customerIssueTime.plusMinutes(2), "ftth-gis-1"));
+        events.add(createEvent("CUST-2005", "CUSTOMER", "UP", "DOWN", customerIssueTime.plusMinutes(5), "ftth-gis-1"));
 
         // --- SCENARIO 5: RANDOM BACKGROUND EVENTS ---
         for (int i = 0; i < 10; i++) {
             LocalDateTime randomTime = now.minusMinutes(random.nextInt(1440));
-            events.add(createEvent("NODE-RND-" + (100 + i), "ODC", "UP", "DOWN", randomTime));
+            events.add(createEvent("NODE-RND-" + (100 + i), "ODC", "UP", "DOWN", randomTime, "ftth-gis-1"));
         }
 
         networkEventRepository.saveAll(events);
@@ -132,6 +132,7 @@ public class NetworkEventSeeder implements CommandLineRunner {
             double uptime = (double) active / totalNodes * 100.0;
 
             snapshots.add(DashboardSnapshot.builder()
+                    .projectId("ftth-gis-1")
                     .recordedAt(startTime)
                     .totalNodes(totalNodes)
                     .activeNodes(active)
@@ -148,7 +149,7 @@ public class NetworkEventSeeder implements CommandLineRunner {
         log.info("--- [SNAPSHOT SEEDER] Generated {} snapshots ---", snapshots.size());
     }
 
-    private NetworkEvent createEvent(String code, String type, String oldStatus, String newStatus, LocalDateTime time) {
+    private NetworkEvent createEvent(String code, String type, String oldStatus, String newStatus, LocalDateTime time, String projectId) {
         return NetworkEvent.builder()
                 .assetCode(code)
                 .assetType(type)
@@ -156,6 +157,7 @@ public class NetworkEventSeeder implements CommandLineRunner {
                 .newStatus(newStatus)
                 .eventType("STATUS_CHANGE")
                 .timestamp(time)
+                .projectId(projectId)
                 .build();
     }
 }

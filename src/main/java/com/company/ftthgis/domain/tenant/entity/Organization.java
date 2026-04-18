@@ -19,4 +19,13 @@ public class Organization {
 
     @Column(nullable = false, unique = true)
     private String slug;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column
+    private String address;
+
+    @Column
+    private String website;
 }

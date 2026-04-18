@@ -24,8 +24,8 @@ public class AnalyticsController {
 
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
-    public ResponseEntity<DashboardStatsDTO> getDashboardStats() {
-        return ResponseEntity.ok(analyticsService.getDashboardStats());
+    public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) String projectId) {
+        return ResponseEntity.ok(analyticsService.getDashboardStats(projectId));
     }
 
     /**
@@ -37,8 +37,9 @@ public class AnalyticsController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
     public ResponseEntity<List<SnapshotDTO>> getSnapshotHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
-        return ResponseEntity.ok(analyticsService.getSnapshotHistory(from, to));
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String projectId) {
+        return ResponseEntity.ok(analyticsService.getSnapshotHistory(from, to, projectId));
     }
 
     /**
@@ -48,7 +49,11 @@ public class AnalyticsController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
     public ResponseEntity<List<NetworkEvent>> getEventHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String projectId) {
+        if (projectId != null && !projectId.isEmpty()) {
+            return ResponseEntity.ok(networkEventRepository.findByTimestampBetweenAndProjectIdOrderByTimestampAsc(from, to, projectId));
+        }
         return ResponseEntity.ok(networkEventRepository.findByTimestampBetweenOrderByTimestampAsc(from, to));
     }
 }

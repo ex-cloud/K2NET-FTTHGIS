@@ -28,6 +28,9 @@ public class DashboardSnapshot {
     @Column(nullable = false)
     private LocalDateTime recordedAt;
 
+    @Column(name = "project_id", nullable = false)
+    private String projectId;
+
     private long totalNodes;
     private long activeNodes;
     private long downNodes;
