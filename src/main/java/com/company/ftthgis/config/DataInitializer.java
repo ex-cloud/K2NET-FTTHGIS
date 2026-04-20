@@ -2,8 +2,6 @@ package com.company.ftthgis.config;
 
 import com.company.ftthgis.domain.network.entity.*;
 import com.company.ftthgis.domain.network.repository.*;
-import com.company.ftthgis.domain.tenant.entity.Project;
-import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.*;
@@ -29,7 +27,6 @@ public class DataInitializer implements CommandLineRunner {
     private final ODPRepository odpRepository;
     private final CustomerRepository customerRepository;
     private final FiberCableRepository fiberCableRepository;
-    private final ProjectRepository projectRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -58,20 +55,11 @@ public class DataInitializer implements CommandLineRunner {
         cleanDatabase();
 
         try {
-            // Fetch default project (Bandung) for seeded data
-            Project bandungProject = projectRepository.findById("ftth-gis-1").orElse(null);
-            if (bandungProject == null) {
-                log.warn("Target Project 'ftth-gis-1' not found. Seeding without project context.");
-            } else {
-                log.info("Target Project found: {}. All seeded assets will be assigned to this project.", bandungProject.getName());
-            }
-
-            seedBandungNetworkHierarchy(bandungProject);
-            seedOfficeNetworkHierarchy(bandungProject);
+            seedBandungNetworkHierarchy();
+            seedOfficeNetworkHierarchy();
             log.info("--- [CLUSTER] Clustered view ready for dynamic updates ---");
         } catch (Exception e) {
             log.warn("Seeding or refresh encountered issues: {}", e.getMessage());
-            e.printStackTrace();
         }
 
         performSchemaAudit();
@@ -96,7 +84,7 @@ public class DataInitializer implements CommandLineRunner {
         jdbcTemplate.execute("TRUNCATE TABLE network_nodes CASCADE");
     }
 
-    private void seedBandungNetworkHierarchy(Project project) {
+    private void seedBandungNetworkHierarchy() {
         log.info("--- [SEED] Building Bandung Office Hierarchy (OLT -> ODC -> ODP -> Customer) ---");
 
         // 1. OLT Utama (Bandung Center)
@@ -104,7 +92,6 @@ public class DataInitializer implements CommandLineRunner {
         double centerLat = -6.9175;
         Coordinate oltCoord = new Coordinate(centerLon, centerLat);
         OLT olt = new OLT();
-        olt.setProject(project);
         olt.setCode("OLT-BANDUNG-01");
         olt.setName("OLT Bandung Pusat (DB)");
         olt.setGeom(geometryFactory.createPoint(oltCoord));
@@ -121,7 +108,6 @@ public class DataInitializer implements CommandLineRunner {
         for (int i = 0; i < odcNames.length; i++) {
             Coordinate odcCoord = new Coordinate(centerLon + odcOffsets[i][0], centerLat + odcOffsets[i][1]);
             ODC odc = new ODC();
-            odc.setProject(project);
             odc.setCode(odcNames[i] + "-01");
             odc.setName(odcNames[i].replace("ODC-", "") + " Cabinet");
             odc.setGeom(geometryFactory.createPoint(odcCoord));
@@ -132,7 +118,7 @@ public class DataInitializer implements CommandLineRunner {
             odc.setOlt(olt);
             odc = odcRepository.save(odc);
 
-            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), "ACTIVE", project);
+            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), "ACTIVE");
 
             // 3. ODPs per ODC (Radius ~200m around ODC)
             for (int j = 1; j <= 3; j++) {
@@ -140,7 +126,6 @@ public class DataInitializer implements CommandLineRunner {
                 Coordinate odpCoord = new Coordinate(odcCoord.x + Math.cos(a) * 0.0015,
                         odcCoord.y + Math.sin(a) * 0.0015);
                 ODP odp = new ODP();
-                odp.setProject(project);
                 odp.setCode("ODP-" + odc.getCode() + "-" + j);
                 odp.setOdc(odc);
                 odp.setGeom(geometryFactory.createPoint(odpCoord));
@@ -153,7 +138,7 @@ public class DataInitializer implements CommandLineRunner {
                 odp.setSignalDb(-14.5); // Splitter loss
                 odp = odpRepository.save(odp);
 
-                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), isBroken ? "MAINTENANCE" : "ACTIVE", project);
+                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), isBroken ? "MAINTENANCE" : "ACTIVE");
 
                 // 4. Customers per ODP (Radius ~50m)
                 for (int k = 1; k <= 5; k++) {
@@ -161,7 +146,6 @@ public class DataInitializer implements CommandLineRunner {
                     Coordinate custCoord = new Coordinate(odpCoord.x + Math.cos(ca) * 0.0004,
                             odpCoord.y + Math.sin(ca) * 0.0004);
                     Customer cust = new Customer();
-                    cust.setProject(project);
                     cust.setCode("CUST-" + odp.getCode() + "-" + k);
                     cust.setName("Pelanggan " + cust.getCode());
                     cust.setGeom(geometryFactory.createPoint(custCoord));
@@ -176,7 +160,7 @@ public class DataInitializer implements CommandLineRunner {
 
                     customerRepository.save(cust);
 
-                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), isBroken ? "DOWN" : "ACTIVE", project);
+                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), isBroken ? "DOWN" : "ACTIVE");
                 }
 
                 odp.setUsedPort(5);
@@ -188,7 +172,7 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void seedOfficeNetworkHierarchy(Project project) {
+    private void seedOfficeNetworkHierarchy() {
         log.info("--- [SEED] Building OFFICE Network Hierarchy ---");
 
         // User's office coordinates
@@ -198,7 +182,6 @@ public class DataInitializer implements CommandLineRunner {
 
         // 1. OLT Utama di Kantor (Rename to match Poller default: OLT-TEST-01)
         OLT olt = new OLT();
-        olt.setProject(project);
         olt.setCode("OLT-TEST-01");
         olt.setName("OLT Office Headlines (Test)");
         olt.setGeom(geometryFactory.createPoint(oltCoord));
@@ -218,7 +201,6 @@ public class DataInitializer implements CommandLineRunner {
             boolean isOdcDown = "DOWN".equals(odcStatuses[i]);
             Coordinate odcCoord = new Coordinate(officeLon + odcOffsets[i][0], officeLat + odcOffsets[i][1]);
             ODC odc = new ODC();
-            odc.setProject(project);
             odc.setCode(odcNames[i] + "-01");
             odc.setName(odcNames[i].replace("ODC-", "") + " Cabinet");
             odc.setGeom(geometryFactory.createPoint(odcCoord));
@@ -229,7 +211,7 @@ public class DataInitializer implements CommandLineRunner {
             odc.setOlt(olt); // LINK TO PARENT OLT
             odc = odcRepository.save(odc);
 
-            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), isOdcDown ? "DOWN" : "UP", project);
+            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), isOdcDown ? "DOWN" : "UP");
 
             // 3. ODPs per ODC (Increasing to 10 for Massive Outage testing)
             for (int j = 1; j <= 10; j++) {
@@ -237,7 +219,6 @@ public class DataInitializer implements CommandLineRunner {
                 Coordinate odpCoord = new Coordinate(odcCoord.x + Math.cos(a) * 0.0012,
                         odcCoord.y + Math.sin(a) * 0.0012);
                 ODP odp = new ODP();
-                odp.setProject(project);
                 odp.setCode("ODP-" + odc.getCode() + "-" + j);
                 odp.setOdc(odc);
                 odp.setGeom(geometryFactory.createPoint(odpCoord));
@@ -254,7 +235,7 @@ public class DataInitializer implements CommandLineRunner {
                 odp.setSignalDb(isOdpAffected ? -38.0 : -13.5);
                 odp = odpRepository.save(odp);
 
-                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), odpStatus, project);
+                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), odpStatus);
 
                 // 4. Customers per ODP - Status propagates from ODP
                 for (int k = 1; k <= 5; k++) {
@@ -262,7 +243,6 @@ public class DataInitializer implements CommandLineRunner {
                     Coordinate custCoord = new Coordinate(odpCoord.x + Math.cos(ca) * 0.0003,
                             odpCoord.y + Math.sin(ca) * 0.0003);
                     Customer cust = new Customer();
-                    cust.setProject(project);
                     cust.setCode("CUST-" + odp.getCode() + "-" + k);
                     cust.setName("Pelanggan " + cust.getCode());
                     cust.setGeom(geometryFactory.createPoint(custCoord));
@@ -277,7 +257,7 @@ public class DataInitializer implements CommandLineRunner {
                     cust.setSignalDb(redaman);
                     customerRepository.save(cust);
 
-                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), custStatus, project);
+                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), custStatus);
                 }
 
                 odp.setUsedPort(5);
@@ -294,9 +274,8 @@ public class DataInitializer implements CommandLineRunner {
         log.info("    - 45 Customers (25 ACTIVE, 20 DOWN)");
     }
 
-    private void createCable(Coordinate start, Coordinate end, String code, String status, Project project) {
+    private void createCable(Coordinate start, Coordinate end, String code, String status) {
         FiberCable cable = new FiberCable();
-        cable.setProject(project);
         cable.setCode(code);
         cable.setStatus(status);
         cable.setFiberCount(code.startsWith("FEEDER") ? 48 : (code.startsWith("DIST") ? 12 : 2));
