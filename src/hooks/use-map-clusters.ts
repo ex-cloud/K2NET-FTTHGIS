@@ -33,6 +33,7 @@ export function useMapClusters(orgSlug?: string, projectId?: string) {
       
       const res = await httpClient(url, {
         token: session.accessToken,
+        projectId,
       });
 
       if (!res.ok) throw new Error("Failed to fetch cluster nodes");
@@ -62,7 +63,7 @@ export function useMapClusters(orgSlug?: string, projectId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken, orgSlug]);
+  }, [session?.accessToken, orgSlug, projectId]);
 
   useEffect(() => {
     fetchAllNodes();

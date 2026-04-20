@@ -64,6 +64,7 @@ export function GlobalSearch() {
 
         const res = await httpClient(url.toString(), {
           token: session?.accessToken,
+          projectId: currentProjectId,
         });
 
         if (res.ok) {
@@ -79,7 +80,7 @@ export function GlobalSearch() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, orgId, session?.accessToken]);
+  }, [query, orgId, session?.accessToken, currentProjectId]);
 
   const handleSelect = useCallback((asset: SearchResult) => {
     setShowResults(false);

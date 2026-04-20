@@ -307,9 +307,9 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
   const mvtTileUrl = useMemo(() => {
     const baseUrl = getMartinBaseUrl();
-    // Add timestamp and refresh key to force tile reload when needed
-    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?t=${tileTimestamp}&r=${tileRefreshKey}`;
-  }, [tileTimestamp, tileRefreshKey]);
+    // Add project_id, timestamp and refresh key to force tile reload when needed
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?project_id=${projectId || ""}&t=${tileTimestamp}&r=${tileRefreshKey}`;
+  }, [tileTimestamp, tileRefreshKey, projectId]);
 
   // Mouse hover handler for tooltip (no API calls, reads from MVT properties)
   const onMouseMove = useCallback(
