@@ -1,11 +1,63 @@
 {
-  "groups": [],
+  "groups": [
+    {
+      "name": "app",
+      "type": "com.company.ftthgis.config.AppProperties",
+      "sourceType": "com.company.ftthgis.config.AppProperties"
+    },
+    {
+      "name": "app.security",
+      "type": "com.company.ftthgis.config.AppProperties$Security",
+      "sourceType": "com.company.ftthgis.config.AppProperties",
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security getSecurity() "
+    },
+    {
+      "name": "app.security.cors",
+      "type": "com.company.ftthgis.config.AppProperties$Security$Cors",
+      "sourceType": "com.company.ftthgis.config.AppProperties$Security",
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security.Cors getCors() "
+    },
+    {
+      "name": "keycloak",
+      "type": "com.company.ftthgis.config.KeycloakProperties",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    }
+  ],
   "properties": [
     {
-      "name": "app.seeder.enabled",
-      "type": "java.lang.Boolean",
-      "description": "Enable\/disable the DataInitializer seeder. When true, all network data is purged and re-seeded on startup.",
-      "defaultValue": false
+      "name": "app.security.cors.allowed-headers",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.AppProperties$Security$Cors"
+    },
+    {
+      "name": "app.security.cors.allowed-methods",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.AppProperties$Security$Cors"
+    },
+    {
+      "name": "app.security.cors.allowed-origins",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.AppProperties$Security$Cors"
+    },
+    {
+      "name": "keycloak.client-id",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
+      "name": "keycloak.client-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
+      "name": "keycloak.realm",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
+      "name": "keycloak.server-url",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
     }
   ],
   "hints": []

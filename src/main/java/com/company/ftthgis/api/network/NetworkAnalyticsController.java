@@ -1,9 +1,7 @@
 package com.company.ftthgis.api.network;
 
 import com.company.ftthgis.api.network.dto.NetworkStatsDto;
-import com.company.ftthgis.domain.network.repository.CustomerRepository;
 import com.company.ftthgis.domain.network.repository.ODCRepository;
-import com.company.ftthgis.domain.network.repository.ODPRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +20,6 @@ import java.util.stream.Collectors;
 public class NetworkAnalyticsController {
 
         private final ODCRepository odcRepository;
-        private final ODPRepository odpRepository;
-        private final CustomerRepository customerRepository;
         private final JdbcTemplate jdbcTemplate;
 
         @GetMapping("/stats")
@@ -31,17 +27,30 @@ public class NetworkAnalyticsController {
                 log.info("Requesting real-time network statistics...");
 
                 try {
-                        long odcCount = odcRepository.count();
-                        long odpCount = odpRepository.count();
-                        long customerCount = customerRepository.count();
+                        String tenantId = com.company.ftthgis.config.tenant.TenantContext.getTenantId();
+                        boolean hasTenant = tenantId != null && !tenantId.isEmpty();
+                        String projectFilterStr = hasTenant ? " WHERE project_id = ?" : "";
+                        String projectFilterAndStr = hasTenant ? " AND project_id = ?" : "";
+                        Object[] args = hasTenant ? new Object[] { tenantId } : new Object[] {};
+
+                        Long odcCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODC'" + projectFilterAndStr, Long.class, args);
+                        Long odpCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODP'" + projectFilterAndStr, Long.class, args);
+                        Long customerCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'CUSTOMER'" + projectFilterAndStr, Long.class, args);
+
+                        long odcCount = odcCountObj != null ? odcCountObj : 0L;
+                        long odpCount = odpCountObj != null ? odpCountObj : 0L;
+                        long customerCount = customerCountObj != null ? customerCountObj : 0L;
 
                         // Calculate total cable length in KM from PostGIS
                         Double totalLengthMeters = jdbcTemplate.queryForObject(
-                                        "SELECT SUM(length_meters) FROM network_edges", Double.class);
+                                        "SELECT SUM(length_meters) FROM network_edges" + projectFilterStr, Double.class,
+                                        args);
                         double lengthKm = totalLengthMeters != null ? totalLengthMeters / 1000.0 : 0.0;
 
                         // 1. Capacity Monitoring (Top 3 ODCs by usage percentage)
                         List<NetworkStatsDto.CapacityItem> capacities = odcRepository.findAll().stream()
+                                        .filter(o -> !hasTenant || (o.getProject() != null
+                                                        && java.util.Objects.equals(tenantId, o.getProject().getId())))
                                         .map(o -> {
                                                 double p = o.getCapacity() > 0
                                                                 ? (double) o.getUsedCapacity() / o.getCapacity() * 100
@@ -57,10 +66,13 @@ public class NetworkAnalyticsController {
                                         .collect(Collectors.toList());
 
                         // 2. Active Maintenance Monitoring (Nodes with status non-ACTIVE)
+                        String mainQuery = "SELECT n.id, n.node_type, n.status, n.code " +
+                                        "FROM network_nodes n " +
+                                        "WHERE n.status IN ('BROKEN', 'MAINTENANCE', 'UNDER_REPAIR')"
+                                        + projectFilterAndStr + " LIMIT 5";
+
                         List<NetworkStatsDto.MaintenanceItem> maintenances = jdbcTemplate.query(
-                                        "SELECT n.id, n.node_type, n.status, n.code " +
-                                                        "FROM network_nodes n " +
-                                                        "WHERE n.status IN ('BROKEN', 'MAINTENANCE', 'UNDER_REPAIR') LIMIT 5",
+                                        mainQuery,
                                         (rs, rowNum) -> NetworkStatsDto.MaintenanceItem.builder()
                                                         .id(rs.getString("id"))
                                                         .code(rs.getString("code") != null ? rs.getString("code")
@@ -73,7 +85,8 @@ public class NetworkAnalyticsController {
                                                         .severity(rs.getString("status").equalsIgnoreCase("BROKEN")
                                                                         ? "critical"
                                                                         : "warning")
-                                                        .build());
+                                                        .build(),
+                                        args);
 
                         NetworkStatsDto stats = NetworkStatsDto.builder()
                                         .totalOdc(odcCount)
@@ -81,7 +94,7 @@ public class NetworkAnalyticsController {
                                         .totalNodes(odcCount + odpCount + customerCount)
                                         .totalCableLengthKm(lengthKm)
                                         .totalUsers(customerCount) // Showing customers as users for network stats
-                                        .growthPercentage(2.5) // Demo placeholder
+                                        .growthPercentage(0.0) 
                                         .activeMaintenanceCount(maintenances.size())
                                         .topCapacities(capacities)
                                         .activeMaintenances(maintenances)

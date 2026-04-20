@@ -14,7 +14,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create # Force fresh schema for testing new DTO fields
+      ddl-auto: update # Prevent data loss on restart
     properties:
       "[hibernate.format_sql]": true
 
@@ -43,7 +43,7 @@ keycloak:
 # as it is not part of the internal Spring Boot schema.
 app:
   seeder:
-    enabled: true  # Set to true to re-seed demo data (WARNING: purges all existing data)
+    enabled: false  # Disable auto-purge of existing data
   security:
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
