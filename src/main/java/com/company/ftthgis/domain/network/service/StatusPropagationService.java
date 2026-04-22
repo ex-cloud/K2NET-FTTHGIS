@@ -1,6 +1,7 @@
 package com.company.ftthgis.domain.network.service;
 
 import com.company.ftthgis.api.network.MapNotificationController;
+import com.company.ftthgis.config.tenant.TenantContext;
 import com.company.ftthgis.domain.analytics.entity.NetworkEvent;
 import com.company.ftthgis.domain.analytics.repository.NetworkEventRepository;
 import com.company.ftthgis.domain.network.entity.Customer;
@@ -52,7 +53,7 @@ public class StatusPropagationService {
             mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, oltCode);
 
             // Log Event
-            logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE", reason);
+            logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE", reason, olt.getProject() != null ? olt.getProject().getId() : null);
 
             List<ODC> childOdcs = odcRepository.findByOlt(olt);
             for (ODC odc : childOdcs) {
@@ -95,7 +96,7 @@ public class StatusPropagationService {
             statusCacheService.setStatus(odpCode, status);
 
             // Log Event
-            logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE", reason);
+            logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE", reason, odp.getProject() != null ? odp.getProject().getId() : null);
 
             // Update associated DIST cable
             updateCableStatus("DIST-" + odpCode, status);
@@ -152,7 +153,7 @@ public class StatusPropagationService {
             // Update DROP cable
             updateCableStatus("DROP-" + customerCode, status);
             mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, customerCode);
-            logEvent(customerCode, "CUSTOMER", "UNKNOWN", status, "STATUS_CHANGE", reason);
+            logEvent(customerCode, "CUSTOMER", "UNKNOWN", status, "STATUS_CHANGE", reason, c.getProject() != null ? c.getProject().getId() : null);
         });
     }
 
@@ -163,7 +164,7 @@ public class StatusPropagationService {
         statusCacheService.setStatus(odc.getCode(), status);
 
         // Log Event
-        logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE", reason);
+        logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE", reason, odc.getProject() != null ? odc.getProject().getId() : null);
 
         // Update FEEDER cable status
         updateCableStatus("FEEDER-" + odc.getCode(), status);
@@ -275,18 +276,25 @@ public class StatusPropagationService {
     }
 
     private void logEvent(String assetCode, String assetType, String oldStatus, String newStatus, String eventType,
-            String reason) {
+            String reason, String entityProjectId) {
         try {
+            // Fallback Logic: Try Context -> Try Entity -> Try default
+            String finalProjectId = TenantContext.getTenantId();
+            if (finalProjectId == null) finalProjectId = entityProjectId;
+            if (finalProjectId == null) finalProjectId = "ftth-gis-1";
+
             NetworkEvent event = NetworkEvent.builder()
                     .assetCode(assetCode)
+                    .projectId(finalProjectId)
                     .assetType(assetType)
-                    .oldStatus(oldStatus) // We might not have the old status readily available without extra query
+                    .oldStatus(oldStatus != null ? oldStatus : "UNKNOWN")
                     .newStatus(newStatus)
                     .eventType(eventType)
                     .reason(reason)
                     .timestamp(java.time.LocalDateTime.now())
                     .build();
             networkEventRepository.save(event);
+            log.debug("✅ Successfully logged network event for {} (Project: {})", assetCode, finalProjectId);
         } catch (Exception e) {
             log.error("Failed to log network event for {}", assetCode, e);
         }

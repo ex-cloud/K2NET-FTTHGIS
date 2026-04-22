@@ -1,5 +1,6 @@
 package com.company.ftthgis.domain.common;
 
+import com.company.ftthgis.domain.tenant.config.TenantEntityListener;
 import com.company.ftthgis.domain.tenant.entity.Project;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -21,7 +22,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
+@EntityListeners({AuditingEntityListener.class, TenantEntityListener.class})
 @Getter
 @Setter
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "projectId", type = String.class)})

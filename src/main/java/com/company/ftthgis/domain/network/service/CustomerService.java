@@ -1,5 +1,9 @@
 package com.company.ftthgis.domain.network.service;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+
 import com.company.ftthgis.domain.network.dto.CustomerDto;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.ODP;
@@ -137,7 +141,14 @@ public class CustomerService {
             customer.setStatus("ACTIVE");
         }
 
-        customer.setGeom(dto.getGeom());
+        if (dto.getLng() != null && dto.getLat() != null) {
+            GeometryFactory geometryFactory = new GeometryFactory();
+            Point point = geometryFactory.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+            point.setSRID(4326);
+            customer.setGeom(point);
+        } else if (dto.getGeom() != null) {
+            customer.setGeom(dto.getGeom());
+        }
 
         if (dto.getOdpId() != null) {
             ODP odp = odpRepository.findById(dto.getOdpId())

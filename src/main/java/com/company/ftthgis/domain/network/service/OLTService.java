@@ -1,5 +1,9 @@
 package com.company.ftthgis.domain.network.service;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+
 import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.OLT;
 import com.company.ftthgis.domain.network.mapper.NetworkMapper;
@@ -109,7 +113,12 @@ public class OLTService {
         olt.setIpAddress(dto.getIpAddress());
         olt.setSnmpCommunity(dto.getSnmpCommunity());
         olt.setStatus(dto.getStatus());
-        if (dto.getGeom() != null) {
+        if (dto.getLng() != null && dto.getLat() != null) {
+            GeometryFactory geometryFactory = new GeometryFactory();
+            Point point = geometryFactory.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+            point.setSRID(4326);
+            olt.setGeom(point);
+        } else if (dto.getGeom() != null) {
             olt.setGeom(dto.getGeom());
         }
         if (org.springframework.util.StringUtils.hasText(dto.getLastNote())) {

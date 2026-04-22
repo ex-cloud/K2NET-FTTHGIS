@@ -1,5 +1,9 @@
 package com.company.ftthgis.domain.network.service;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+
 import com.company.ftthgis.domain.network.dto.ODPDto;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
@@ -142,7 +146,14 @@ public class ODPService {
             odp.setStatus("PLANNING");
         }
 
-        odp.setGeom(dto.getGeom());
+        if (dto.getLng() != null && dto.getLat() != null) {
+            GeometryFactory geometryFactory = new GeometryFactory();
+            Point point = geometryFactory.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+            point.setSRID(4326);
+            odp.setGeom(point);
+        } else if (dto.getGeom() != null) {
+            odp.setGeom(dto.getGeom());
+        }
 
         if (dto.getOdcId() != null) {
             ODC odc = odcRepository.findById(dto.getOdcId())

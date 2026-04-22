@@ -20,4 +20,6 @@ public interface NetworkEventRepository extends JpaRepository<NetworkEvent, Long
     List<NetworkEvent> findTop50ByOrderByTimestampDesc();
 
     List<NetworkEvent> findTop50ByProjectIdOrderByTimestampDesc(String projectId);
+
+    List<NetworkEvent> findTop20ByAssetCodeOrderByTimestampDesc(String assetCode);
 }

@@ -1,5 +1,6 @@
 com\company\ftthgis\domain\user\entity\Permission.class
 com\company\ftthgis\domain\network\dto\SplitterPortDto.class
+com\company\ftthgis\api\tenant\MaintenanceController.class
 com\company\ftthgis\api\network\CustomerManagementController.class
 com\company\ftthgis\api\tenant\ProjectController.class
 com\company\ftthgis\domain\analytics\entity\DashboardSnapshot$DashboardSnapshotBuilder.class
@@ -22,6 +23,7 @@ com\company\ftthgis\domain\network\repository\AssetCategoryRepository.class
 com\company\ftthgis\domain\analytics\service\AnalyticsService.class
 com\company\ftthgis\domain\network\repository\AssetRepository.class
 com\company\ftthgis\domain\tenant\entity\Project$ProjectBuilder.class
+com\company\ftthgis\domain\tenant\service\DataMigrationService.class
 com\company\ftthgis\api\network\dto\NetworkStatsDto$MaintenanceItem.class
 com\company\ftthgis\domain\network\dto\AssetDto.class
 com\company\ftthgis\domain\common\audit\AuditRevisionEntity$AuditRevisionListener.class
@@ -76,6 +78,7 @@ com\company\ftthgis\domain\network\entity\FiberCable.class
 com\company\ftthgis\FtthGisApplication.class
 com\company\ftthgis\domain\network\dto\ODCDto.class
 com\company\ftthgis\domain\network\event\MapEventPublisher$MapUpdateEvent$MapUpdateEventBuilder.class
+com\company\ftthgis\domain\tenant\config\TenantEntityListener.class
 com\company\ftthgis\domain\network\repository\AssetDeletionLogRepository.class
 com\company\ftthgis\domain\tenant\entity\Organization.class
 com\company\ftthgis\api\network\dto\AssetDetailDto$AssetDetailDtoBuilder.class
