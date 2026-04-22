@@ -25,6 +25,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { AuditTimeline } from "./audit-timeline";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { usePathname, useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -57,6 +64,15 @@ interface AssetDetails {
   }>;
 }
 
+interface AuditHistory {
+  revisionNumber: number;
+  revisionTimestamp: string;
+  revisionType: "ADD" | "MOD" | "DEL";
+  status: string;
+  lastNote: string;
+  modifiedBy: string;
+}
+
 interface DiagnosticReport {
   overallHealth: number;
   status: string;
@@ -75,6 +91,9 @@ export function DetailSlidePanel() {
   const [diagnosticResult, setDiagnosticResult] =
     React.useState<DiagnosticReport | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [history, setHistory] = React.useState<AuditHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("details");
   const { openEdit } = useAssetEdit();
 
   const pathname = usePathname();
@@ -114,14 +133,39 @@ export function DetailSlidePanel() {
     }
   }, [selectedAsset, session?.accessToken, projectId]);
 
+  const fetchHistory = React.useCallback(async () => {
+    if (!selectedAsset) return;
+    setHistoryLoading(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(
+        `${baseUrl}/network/assets/${selectedAsset.type}/${selectedAsset.code}/history`,
+        { token: session?.accessToken, projectId }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch audit history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [selectedAsset, session?.accessToken, projectId]);
+
   React.useEffect(() => {
-    if (isOpen) fetchDetails();
-  }, [isOpen, fetchDetails]);
+    if (isOpen) {
+      fetchDetails();
+      fetchHistory();
+    }
+  }, [isOpen, fetchDetails, fetchHistory]);
 
   const handleClose = () => {
     setSelectedAsset(null);
     setIsDeleteDialogOpen(false);
     setDeleteReason("");
+    setHistory([]);
+    setActiveTab("details");
   };
 
   const handleDelete = async () => {
@@ -416,86 +460,121 @@ export function DetailSlidePanel() {
                 </div>
               </div>
 
-              {/* Scrollable Content */}
-              <ScrollArea className="flex-1">
-                <div className="p-8 space-y-10 pb-24">
-                  {/* Visual Stats Row */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-emerald-500/20 transition-all shadow-inner">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">
-                          Reliability
-                        </span>
-                      </div>
-                      <div className="text-2xl font-black font-mono text-white tracking-tighter leading-none">
-                        99.8%
-                      </div>
-                    </div>
-                    <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-blue-500/20 transition-all shadow-inner">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-blue-500 transition-colors">
-                          Pulse Check
-                        </span>
-                      </div>
-                      <div className="text-2xl font-black font-mono text-white tracking-tighter leading-none">
-                        2m Ago
-                      </div>
-                    </div>
-                  </div>
+              {/* Scrollable Content dengan Tabs */}
+              <Tabs 
+                value={activeTab} 
+                onValueChange={setActiveTab} 
+                className="flex-1 flex flex-col min-h-0"
+              >
+                <div className="px-8 pt-6">
+                  <TabsList className="w-full bg-white/5 border border-white/10 p-1 h-12 rounded-2xl">
+                    <TabsTrigger 
+                      value="details" 
+                      className="flex-1 rounded-xl data-[state=active]:bg-white data-[state=active]:text-black font-black uppercase text-[10px] tracking-widest transition-all"
+                    >
+                      Technical Specs
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="history" 
+                      className="flex-1 rounded-xl data-[state=active]:bg-white data-[state=active]:text-black font-black uppercase text-[10px] tracking-widest transition-all"
+                    >
+                      Audit Trail
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
-                  {/* Technical Overview Section */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-900/80 w-fit px-3 py-1.5 rounded-lg border border-white/5">
-                      <Layers className="w-3.5 h-3.5 text-emerald-500" />{" "}
-                      Infrastructure Attributes
-                    </div>
-                    <div className="space-y-4">
-                      {Object.entries(details.attributes).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className="flex items-center justify-between group cursor-default"
-                          >
-                            <span className="text-xs font-black text-zinc-600 uppercase tracking-tighter group-hover:text-zinc-400 transition-colors">
-                              {key}
-                            </span>
-                            <div className="h-px flex-1 mx-6 bg-linear-to-r from-white/5 via-white/10 to-white/5 group-hover:via-emerald-500/20 transition-all" />
-                            <span className="text-xs font-mono font-bold text-zinc-200 group-hover:text-white transition-colors">
-                              {String(value)}
+                <ScrollArea className="flex-1">
+                  <TabsContent value="details" className="m-0 focus-visible:ring-0">
+                    <div className="p-8 space-y-10 pb-24">
+                      {/* Visual Stats Row */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-emerald-500/20 transition-all shadow-inner">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">
+                              Reliability
                             </span>
                           </div>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Operations Section */}
-                  <div className="space-y-4 pt-10 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-red-500/50 uppercase tracking-widest">
-                      <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-700" />{" "}
-                      Danger Zone
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={openDeleteDialog}
-                      disabled={isDeleting}
-                      className="w-full flex justify-between h-14 rounded-2xl border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 group transition-all shadow-sm active:scale-[0.98]"
-                    >
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-xs font-black text-red-500 group-hover:text-red-400 uppercase tracking-tight">
-                          Purge Physical Record
-                        </span>
-                        <span className="text-[10px] font-medium text-red-900/60 lowercase italic">
-                          Irreversible Registry Action
-                        </span>
+                          <div className="text-2xl font-black font-mono text-white tracking-tighter leading-none">
+                            99.8%
+                          </div>
+                        </div>
+                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-blue-500/20 transition-all shadow-inner">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-blue-500 transition-colors">
+                              Pulse Check
+                            </span>
+                          </div>
+                          <div className="text-2xl font-black font-mono text-white tracking-tighter leading-none">
+                            2m Ago
+                          </div>
+                        </div>
                       </div>
-                      <Trash2 className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-all" />
-                    </Button>
-                  </div>
-                </div>
-              </ScrollArea>
+
+                      {/* Technical Overview Section */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-900/80 w-fit px-3 py-1.5 rounded-lg border border-white/5">
+                          <Layers className="w-3.5 h-3.5 text-emerald-500" />{" "}
+                          Infrastructure Attributes
+                        </div>
+                        <div className="space-y-4">
+                          {Object.entries(details.attributes).map(
+                            ([key, value]) => (
+                              <div
+                                key={key}
+                                className="flex items-center justify-between group cursor-default"
+                              >
+                                <span className="text-xs font-black text-zinc-600 uppercase tracking-tighter group-hover:text-zinc-400 transition-colors">
+                                  {key}
+                                </span>
+                                <div className="h-px flex-1 mx-6 bg-linear-to-r from-white/5 via-white/10 to-white/5 group-hover:via-emerald-500/20 transition-all" />
+                                <span className="text-xs font-mono font-bold text-zinc-200 group-hover:text-white transition-colors">
+                                  {String(value)}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Operations Section */}
+                      <div className="space-y-4 pt-10 border-t border-white/5">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-red-500/50 uppercase tracking-widest">
+                          <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-700" />{" "}
+                          Danger Zone
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={openDeleteDialog}
+                          disabled={isDeleting}
+                          className="w-full flex justify-between h-14 rounded-2xl border-red-500/10 hover:bg-red-500/10 hover:border-red-500/20 group transition-all shadow-sm active:scale-[0.98]"
+                        >
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-xs font-black text-red-500 group-hover:text-red-400 uppercase tracking-tight">
+                              Purge Physical Record
+                            </span>
+                            <span className="text-[10px] font-medium text-red-900/60 lowercase italic">
+                              Irreversible Registry Action
+                            </span>
+                          </div>
+                          <Trash2 className="w-5 h-5 text-red-500/40 group-hover:text-red-500 transition-all" />
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="history" className="m-0 focus-visible:ring-0">
+                    <div className="p-8 pb-32">
+                      <div className="mb-8 space-y-1">
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Activity Timeline</h3>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">Chronological Asset Revisions</p>
+                      </div>
+                      <AuditTimeline history={history} isLoading={historyLoading} />
+                    </div>
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
 
               {/* Modern Purge Dialog */}
               <Dialog
