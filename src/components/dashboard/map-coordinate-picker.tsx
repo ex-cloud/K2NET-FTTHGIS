@@ -1,0 +1,158 @@
+"use client";
+
+import * as React from "react";
+import Map, { MapRef } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import { Crosshair, MapPin, Check, X } from "lucide-react";
+
+const MAP_STYLES = {
+  light: "https://tiles.openfreemap.org/styles/bright",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+};
+
+interface MapCoordinatePickerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialLat?: string;
+  initialLng?: string;
+  onConfirm: (lat: string, lng: string) => void;
+  title?: string;
+}
+
+export function MapCoordinatePicker({
+  open,
+  onOpenChange,
+  initialLat,
+  initialLng,
+  onConfirm,
+  title = "Select Location from Map"
+}: MapCoordinatePickerProps) {
+  const mapRef = React.useRef<MapRef>(null);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  
+  const [viewState, setViewState] = React.useState({
+    longitude: 107.6191, // Default Bandung
+    latitude: -6.9175,
+    zoom: 15
+  });
+
+  // Sync initial position when opening
+  React.useEffect(() => {
+    if (open) {
+      const lat = parseFloat(initialLat || "-6.9175");
+      const lng = parseFloat(initialLng || "107.6191");
+      
+      setViewState(prev => ({
+        ...prev,
+        latitude: isNaN(lat) ? -6.9175 : lat,
+        longitude: isNaN(lng) ? 107.6191 : lng,
+        zoom: initialLat && initialLng ? 18 : 15
+      }));
+    }
+  }, [open, initialLat, initialLng]);
+
+  // Fix hydration
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleConfirm = () => {
+    // Return high precision coordinates (up to 15 decimal places for enterprise precision)
+    onConfirm(
+      viewState.latitude.toFixed(15),
+      viewState.longitude.toFixed(15)
+    );
+    onOpenChange(false);
+  };
+
+  const currentMapStyle = theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light;
+
+  if (!mounted) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden bg-zinc-950 border-white/5 rounded-3xl gap-0">
+        <DialogHeader className="p-6 bg-zinc-900/50 backdrop-blur-md border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <DialogTitle className="text-white text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
+              <DialogDescription className="text-zinc-500 text-[10px] uppercase font-black tracking-tight mt-1">
+                Drag the map to center the crosshair on the asset location
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="relative h-[500px] w-full">
+          <Map
+            {...viewState}
+            onMove={evt => setViewState(evt.viewState)}
+            mapStyle={currentMapStyle}
+            style={{ width: '100%', height: '100%' }}
+            ref={mapRef}
+          >
+            {/* Center Crosshair Overlay */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="relative">
+                {/* Visual Circle Pulse */}
+                <div className="absolute inset-0 w-12 h-12 -translate-x-6 -translate-y-6 rounded-full border-2 border-blue-500/40 animate-ping" />
+                <div className="absolute inset-0 w-8 h-8 -translate-x-4 -translate-y-4 rounded-full bg-blue-500/10 border border-blue-500/20" />
+                
+                {/* Crosshair Lines */}
+                <div className="absolute h-8 w-[2px] bg-blue-500 -left-px top-[-16px]" />
+                <div className="absolute w-8 h-[2px] bg-blue-500 -top-px -left-4" />
+                
+                <Crosshair className="relative w-6 h-6 text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+              </div>
+            </div>
+
+            {/* Coordinate Badge Overlay */}
+            <div className="absolute bottom-4 left-4 p-3 rounded-2xl bg-zinc-900/80 backdrop-blur-md border border-white/10 shadow-2xl space-y-1">
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-8">Lat</span>
+                    <span className="text-[11px] font-mono text-white font-bold">{viewState.latitude.toFixed(8)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-8">Lng</span>
+                    <span className="text-[11px] font-mono text-white font-bold">{viewState.longitude.toFixed(8)}</span>
+                </div>
+            </div>
+          </Map>
+        </div>
+
+        <DialogFooter className="p-6 bg-zinc-900/50 backdrop-blur-md border-t border-white/5 flex sm:justify-between items-center gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl border border-white/5 hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px]"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cancel
+          </Button>
+          
+          <Button 
+            onClick={handleConfirm}
+            className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/20 px-8"
+          >
+            <Check className="w-4 h-4 mr-2" />
+            Confirm Location
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

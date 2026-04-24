@@ -25,8 +25,9 @@ import { useParams } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { MapCoordinatePicker } from "./map-coordinate-picker";
 
 interface OdpDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ export function OdpDialog({
   const projectId = params?.projectId as string;
   const { data: session } = useSession();
   const [loading, setLoading] = React.useState(false);
+  const [showMapPicker, setShowMapPicker] = React.useState(false);
   const isEdit = !!odp;
 
   const [odcs, setOdcs] = React.useState<ODC[]>([]);
@@ -289,6 +291,20 @@ export function OdpDialog({
             </Select>
           </div>
 
+          <div className="flex items-center justify-between pt-2">
+            <Label className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Geographical Position</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMapPicker(true)}
+              className="h-7 px-3 rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-500 hover:bg-blue-500/10 hover:border-blue-500/40 text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              <MapPin className="w-3 h-3 mr-1.5" />
+              Pick from Map
+            </Button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label
@@ -304,7 +320,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
                 required
               />
             </div>
@@ -322,7 +338,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, lng: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
                 required
               />
             </div>
@@ -359,25 +375,37 @@ export function OdpDialog({
             />
           </div>
 
-          <DialogFooter className="pt-4 gap-2">
+          <DialogFooter className="pt-4 border-t border-white/5">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="bg-transparent border-white/5 text-zinc-400 hover:text-white"
+              className="text-zinc-400 hover:text-white"
             >
-              Discard
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px]"
             >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isEdit ? "Update ODP" : "Create ODP Service"}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isEdit ? "Save Changes" : "Create ODP"}
             </Button>
           </DialogFooter>
         </form>
+
+        <MapCoordinatePicker
+          open={showMapPicker}
+          onOpenChange={setShowMapPicker}
+          initialLat={formData.lat}
+          initialLng={formData.lng}
+          onConfirm={(lat, lng) => {
+            setFormData({ ...formData, lat, lng });
+            toast.info(`Location updated to ${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}`);
+          }}
+          title={isEdit ? `Update Location for ${formData.code}` : "Pick ODP Location"}
+        />
       </DialogContent>
     </Dialog>
   );
