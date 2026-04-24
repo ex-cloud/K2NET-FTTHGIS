@@ -13,11 +13,35 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Crosshair, MapPin, Check, X } from "lucide-react";
+import { Crosshair, MapPin, Check, X, Plus, Minus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { MapLayerMouseEvent, StyleSpecification } from "maplibre-gl";
 
 const MAP_STYLES = {
   light: "https://tiles.openfreemap.org/styles/bright",
   dark: "https://tiles.openfreemap.org/styles/dark",
+};
+
+// ESRI Satellite Style (High Quality, Tokenless)
+const SATELLITE_STYLE = {
+  version: 8,
+  sources: {
+    'satellite': {
+      type: 'raster',
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256,
+      attribution: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    }
+  },
+  layers: [
+    {
+      id: 'satellite',
+      type: 'raster',
+      source: 'satellite',
+      minzoom: 0,
+      maxzoom: 20
+    }
+  ]
 };
 
 interface MapCoordinatePickerProps {
@@ -40,6 +64,7 @@ export function MapCoordinatePicker({
   const mapRef = React.useRef<MapRef>(null);
   const { theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const [isSatellite, setIsSatellite] = React.useState(false);
   
   const [viewState, setViewState] = React.useState({
     longitude: 107.6191, // Default Bandung
@@ -68,7 +93,6 @@ export function MapCoordinatePicker({
   }, []);
 
   const handleConfirm = () => {
-    // Return high precision coordinates (up to 15 decimal places for enterprise precision)
     onConfirm(
       viewState.latitude.toFixed(15),
       viewState.longitude.toFixed(15)
@@ -76,69 +100,132 @@ export function MapCoordinatePicker({
     onOpenChange(false);
   };
 
-  const currentMapStyle = theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light;
+  const handleMapClick = (evt: MapLayerMouseEvent) => {
+    const { lng, lat } = evt.lngLat;
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [lng, lat],
+        duration: 800,
+        essential: true
+      });
+    }
+  };
+
+  const currentMapStyle = isSatellite 
+    ? SATELLITE_STYLE 
+    : (theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light);
 
   if (!mounted) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden bg-zinc-950 border-white/5 rounded-3xl gap-0">
-        <DialogHeader className="p-6 bg-zinc-900/50 backdrop-blur-md border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-blue-500" />
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-zinc-950 border-white/5 rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
+        <DialogHeader className="p-6 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-white text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
+                <DialogDescription className="text-zinc-500 text-[10px] uppercase font-black tracking-tight mt-1">
+                  Click on the map or drag to center the target location
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle className="text-white text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
-              <DialogDescription className="text-zinc-500 text-[10px] uppercase font-black tracking-tight mt-1">
-                Drag the map to center the crosshair on the asset location
-              </DialogDescription>
+
+            {/* Map Style Toggle */}
+            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+                <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setIsSatellite(false)}
+                    className={cn(
+                        "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                        !isSatellite ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"
+                    )}
+                >
+                    Standard
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setIsSatellite(true)}
+                    className={cn(
+                        "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                        isSatellite ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"
+                    )}
+                >
+                    Satellite
+                </Button>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="relative h-[500px] w-full">
+        <div className="relative h-[550px] w-full">
           <Map
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
-            mapStyle={currentMapStyle}
+            onClick={handleMapClick}
+            mapStyle={currentMapStyle as StyleSpecification}
             style={{ width: '100%', height: '100%' }}
             ref={mapRef}
+            cursor="crosshair"
           >
             {/* Center Crosshair Overlay */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <div className="relative">
                 {/* Visual Circle Pulse */}
-                <div className="absolute inset-0 w-12 h-12 -translate-x-6 -translate-y-6 rounded-full border-2 border-blue-500/40 animate-ping" />
-                <div className="absolute inset-0 w-8 h-8 -translate-x-4 -translate-y-4 rounded-full bg-blue-500/10 border border-blue-500/20" />
+                <div className="absolute inset-0 w-16 h-16 -translate-x-8 -translate-y-8 rounded-full border-2 border-blue-500/40 animate-ping" />
+                <div className="absolute inset-0 w-12 h-12 -translate-x-6 -translate-y-6 rounded-full bg-blue-500/10 border border-blue-500/30" />
                 
                 {/* Crosshair Lines */}
-                <div className="absolute h-8 w-[2px] bg-blue-500 -left-px top-[-16px]" />
-                <div className="absolute w-8 h-[2px] bg-blue-500 -top-px -left-4" />
+                <div className="absolute h-10 w-[2px] bg-blue-500 -left-px top-[-20px]" />
+                <div className="absolute w-10 h-[2px] bg-blue-500 -top-px left-[-20px]" />
                 
-                <Crosshair className="relative w-6 h-6 text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                <Crosshair className="relative w-8 h-8 text-white drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
               </div>
             </div>
 
             {/* Coordinate Badge Overlay */}
-            <div className="absolute bottom-4 left-4 p-3 rounded-2xl bg-zinc-900/80 backdrop-blur-md border border-white/10 shadow-2xl space-y-1">
-                <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-8">Lat</span>
-                    <span className="text-[11px] font-mono text-white font-bold">{viewState.latitude.toFixed(8)}</span>
+            <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-zinc-900/90 backdrop-blur-xl border border-white/10 shadow-2xl space-y-2">
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest w-8">Lat</span>
+                    <span className="text-xs font-mono text-blue-400 font-bold">{viewState.latitude.toFixed(10)}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-8">Lng</span>
-                    <span className="text-[11px] font-mono text-white font-bold">{viewState.longitude.toFixed(8)}</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest w-8">Lng</span>
+                    <span className="text-xs font-mono text-blue-400 font-bold">{viewState.longitude.toFixed(10)}</span>
                 </div>
+            </div>
+
+            {/* Quick Zoom Controls */}
+            <div className="absolute right-6 bottom-6 flex flex-col gap-2">
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => mapRef.current?.zoomIn()}
+                    className="w-10 h-10 rounded-xl bg-zinc-900/90 backdrop-blur-xl border-white/10 text-white hover:bg-zinc-800"
+                >
+                    <Plus className="w-5 h-5" />
+                </Button>
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => mapRef.current?.zoomOut()}
+                    className="w-10 h-10 rounded-xl bg-zinc-900/90 backdrop-blur-xl border-white/10 text-white hover:bg-zinc-800"
+                >
+                    <Minus className="w-5 h-5" />
+                </Button>
             </div>
           </Map>
         </div>
 
-        <DialogFooter className="p-6 bg-zinc-900/50 backdrop-blur-md border-t border-white/5 flex sm:justify-between items-center gap-4">
+        <DialogFooter className="p-6 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 flex sm:justify-between items-center gap-4">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="rounded-xl border border-white/5 hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px]"
+            className="h-12 px-6 rounded-2xl border border-white/5 hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px] transition-all"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel
@@ -146,7 +233,7 @@ export function MapCoordinatePicker({
           
           <Button 
             onClick={handleConfirm}
-            className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/20 px-8"
+            className="h-12 px-10 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/25 transition-all active:scale-95"
           >
             <Check className="w-4 h-4 mr-2" />
             Confirm Location
