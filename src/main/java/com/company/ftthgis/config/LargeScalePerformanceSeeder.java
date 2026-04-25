@@ -152,8 +152,10 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
             }
         }
 
-        log.info("--- [POST-SEED] Refreshing Materialized View for Clustering ---");
-        jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_clustered_nodes");
+        log.info("--- [POST-SEED] Clearing and Warm-up Map Features Cache ---");
+        jdbcTemplate.execute("TRUNCATE TABLE map_features_cache");
+        // Note: Trigger on network_nodes will auto-populate map_features_cache 
+        // as the seeder saves nodes, but a final truncate-before ensures a clean state.
 
         log.info("✅ [PERFORMANCE TEST] Seeding Complete!");
         log.info("Total Assets Generated: ~5,551 Nodes and matching cables.");
@@ -161,9 +163,11 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
     }
 
     private void cleanDatabase() {
-        log.info("--- [CLEAN] Purging existing network data ---");
+        log.info("--- [CLEAN] Purging existing network data and cache ---");
+        jdbcTemplate.execute("TRUNCATE TABLE map_features_cache CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE network_edges CASCADE");
         jdbcTemplate.execute("TRUNCATE TABLE network_nodes CASCADE");
+        jdbcTemplate.execute("TRUNCATE TABLE network_event_history CASCADE");
     }
 
     private void createCable(Coordinate start, Coordinate end, String code, String status, Project project) {

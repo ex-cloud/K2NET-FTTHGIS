@@ -90,12 +90,18 @@ public class CustomerService {
 
         String oldStatus = customer.getStatus();
         String newStatus = dto.getStatus();
+        String oldHealth = customer.getHealthStatus();
+        String newHealth = dto.getHealthStatus();
 
         updateEntityFromDto(customer, dto);
         customer = customerRepository.save(customer);
 
         if (newStatus != null && !newStatus.equals(oldStatus)) {
             statusPropagationService.handleCustomerStatusChange(customer.getCode(), newStatus, dto.getLastNote());
+        }
+
+        if (newHealth != null && !newHealth.equals(oldHealth)) {
+            statusPropagationService.handleCustomerHealthStatusChange(customer.getCode(), newHealth, dto.getLastNote());
         }
 
         return toDto(customer);
@@ -117,6 +123,7 @@ public class CustomerService {
         dto.setName(customer.getName());
         dto.setAddress(customer.getAddress());
         dto.setStatus(customer.getStatus());
+        dto.setHealthStatus(customer.getHealthStatus());
         dto.setGeom(customer.getGeom());
         if (customer.getOdp() != null) {
             dto.setOdpId(customer.getOdp().getId());
@@ -139,6 +146,12 @@ public class CustomerService {
             customer.setStatus(dto.getStatus());
         } else if (customer.getId() == null) {
             customer.setStatus("ACTIVE");
+        }
+
+        if (dto.getHealthStatus() != null) {
+            customer.setHealthStatus(dto.getHealthStatus());
+        } else if (customer.getId() == null) {
+            customer.setHealthStatus("UP");
         }
 
         if (dto.getLng() != null && dto.getLat() != null) {

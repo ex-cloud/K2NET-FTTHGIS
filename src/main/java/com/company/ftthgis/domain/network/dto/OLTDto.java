@@ -19,6 +19,7 @@ public class OLTDto {
     private String ipAddress;
     private String snmpCommunity;
     private String status;
+    private String healthStatus;
     
     @JsonIgnore
     private Point geom;
@@ -26,4 +27,5 @@ public class OLTDto {
     private String lastNote;
     private Double lat;
     private Double lng;
+    private String address;
 }

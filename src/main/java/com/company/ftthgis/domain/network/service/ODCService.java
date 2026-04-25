@@ -93,6 +93,8 @@ public class ODCService {
 
         String oldStatus = odc.getStatus();
         String newStatus = dto.getStatus();
+        String oldHealth = odc.getHealthStatus();
+        String newHealth = dto.getHealthStatus();
 
         updateEntityFromDto(odc, dto);
         odc = odcRepository.save(odc);
@@ -100,6 +102,10 @@ public class ODCService {
         // If status changed, trigger propagation and audit
         if (newStatus != null && !newStatus.equals(oldStatus)) {
             statusPropagationService.handleOdcStatusChange(odc.getCode(), newStatus, dto.getLastNote());
+        }
+        
+        if (newHealth != null && !newHealth.equals(oldHealth)) {
+            statusPropagationService.handleOdcHealthStatusChange(odc.getCode(), newHealth, dto.getLastNote());
         }
 
         return toDto(odc);
@@ -122,6 +128,7 @@ public class ODCService {
         dto.setCapacity(odc.getCapacity());
         dto.setUsedCapacity(odc.getUsedCapacity());
         dto.setStatus(odc.getStatus());
+        dto.setHealthStatus(odc.getHealthStatus());
         dto.setGeom(odc.getGeom());
         if (odc.getOlt() != null) {
             dto.setOltId(odc.getOlt().getId());
@@ -129,6 +136,7 @@ public class ODCService {
             dto.setOltCode(odc.getOlt().getCode());
         }
         dto.setLastNote(odc.getLastNote());
+        dto.setAddress(odc.getAddress());
         if (odc.getGeom() != null) {
             dto.setLng(odc.getGeom().getX());
             dto.setLat(odc.getGeom().getY());
@@ -142,9 +150,14 @@ public class ODCService {
         odc.setCapacity(dto.getCapacity());
         if (dto.getStatus() != null) {
             odc.setStatus(dto.getStatus());
-        } else {
-            if (odc.getId() == null)
-                odc.setStatus("PLANNING"); // Default
+        } else if (odc.getId() == null) {
+            odc.setStatus("PLANNING");
+        }
+
+        if (dto.getHealthStatus() != null) {
+            odc.setHealthStatus(dto.getHealthStatus());
+        } else if (odc.getId() == null) {
+            odc.setHealthStatus("UP");
         }
 
         if (dto.getLng() != null && dto.getLat() != null) {
@@ -166,6 +179,9 @@ public class ODCService {
 
         if (StringUtils.hasText(dto.getLastNote())) {
             odc.setLastNote(dto.getLastNote());
+        }
+        if (StringUtils.hasText(dto.getAddress())) {
+            odc.setAddress(dto.getAddress());
         }
     }
 }

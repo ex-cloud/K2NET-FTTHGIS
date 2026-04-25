@@ -23,6 +23,7 @@ public class NetworkAnalyticsController {
         private final JdbcTemplate jdbcTemplate;
 
         @GetMapping("/stats")
+        @org.springframework.cache.annotation.Cacheable(value = "dashboard_stats", key = "'network_analytics_' + (T(com.company.ftthgis.config.tenant.TenantContext).getTenantId() ?: 'global')")
         public ResponseEntity<NetworkStatsDto> getStats() {
                 log.info("Requesting real-time network statistics...");
 

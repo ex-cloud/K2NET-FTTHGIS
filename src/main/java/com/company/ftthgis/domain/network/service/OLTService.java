@@ -87,12 +87,18 @@ public class OLTService {
 
         String oldStatus = olt.getStatus();
         String newStatus = dto.getStatus();
+        String oldHealth = olt.getHealthStatus();
+        String newHealth = dto.getHealthStatus();
 
         updateEntityFromDto(olt, dto);
         olt = oltRepository.save(olt);
 
         if (newStatus != null && !newStatus.equals(oldStatus)) {
             statusPropagationService.handleOltStatusChange(olt.getCode(), newStatus, dto.getLastNote());
+        }
+
+        if (newHealth != null && !newHealth.equals(oldHealth)) {
+            statusPropagationService.handleOltHealthStatusChange(olt.getCode(), newHealth, dto.getLastNote());
         }
 
         return networkMapper.toOLTDto(olt);
@@ -112,7 +118,17 @@ public class OLTService {
         olt.setName(dto.getName());
         olt.setIpAddress(dto.getIpAddress());
         olt.setSnmpCommunity(dto.getSnmpCommunity());
-        olt.setStatus(dto.getStatus());
+        if (dto.getStatus() != null) {
+            olt.setStatus(dto.getStatus());
+        } else if (olt.getId() == null) {
+            olt.setStatus("PLANNING");
+        }
+
+        if (dto.getHealthStatus() != null) {
+            olt.setHealthStatus(dto.getHealthStatus());
+        } else if (olt.getId() == null) {
+            olt.setHealthStatus("UP");
+        }
         if (dto.getLng() != null && dto.getLat() != null) {
             GeometryFactory geometryFactory = new GeometryFactory();
             Point point = geometryFactory.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
@@ -123,6 +139,9 @@ public class OLTService {
         }
         if (org.springframework.util.StringUtils.hasText(dto.getLastNote())) {
             olt.setLastNote(dto.getLastNote());
+        }
+        if (org.springframework.util.StringUtils.hasText(dto.getAddress())) {
+            olt.setAddress(dto.getAddress());
         }
     }
 }

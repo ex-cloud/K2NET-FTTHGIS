@@ -3,6 +3,7 @@ package com.company.ftthgis.api.network;
 import java.util.Optional;
 import com.company.ftthgis.api.network.dto.AssetDetailDto;
 import com.company.ftthgis.api.network.dto.AuditHistoryDto;
+import com.company.ftthgis.api.network.dto.BatchUpdateRequest;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
@@ -78,6 +79,157 @@ public class NetworkAssetController {
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Simulation triggered for " + targetCode));
     }
+
+    /**
+     * Batch update assets (Status, etc)
+     */
+    @PostMapping("/batch-update")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> batchUpdate(@RequestBody BatchUpdateRequest request) {
+        log.info("📦 Batch update triggered for {} {} assets. Status: {}", 
+            request.getIds().size(), request.getType(), request.getStatus());
+        
+        if (request.getIds() == null || request.getIds().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "No IDs provided"));
+        }
+
+        String fullReason = request.getReason();
+        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+            fullReason += " | Note: " + request.getNotes();
+        }
+
+        int successCount = 0;
+        List<String> failedIds = new ArrayList<>();
+
+        for (Long id : request.getIds()) {
+            try {
+                String code = null;
+                // Handle Status Change via Propagation Service
+                if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+                    if ("ODP".equalsIgnoreCase(request.getType())) {
+                        code = odpRepository.findById(id).map(ODP::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOdpStatusChange(code, request.getStatus(), fullReason);
+                    } else if ("ODC".equalsIgnoreCase(request.getType())) {
+                        code = odcRepository.findById(id).map(ODC::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOdcStatusChange(code, request.getStatus(), fullReason);
+                    } else if ("OLT".equalsIgnoreCase(request.getType())) {
+                        code = oltRepository.findById(id).map(OLT::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOltStatusChange(code, request.getStatus(), fullReason);
+                    } else if ("CUSTOMER".equalsIgnoreCase(request.getType())) {
+                        code = customerRepository.findById(id).map(Customer::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleCustomerStatusChange(code, request.getStatus(), fullReason);
+                    }
+                }
+
+                // Handle Health Status Change
+                if (request.getHealthStatus() != null && !request.getHealthStatus().isEmpty()) {
+                    if ("ODP".equalsIgnoreCase(request.getType())) {
+                        code = odpRepository.findById(id).map(ODP::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOdpHealthStatusChange(code, request.getHealthStatus(), fullReason);
+                    } else if ("ODC".equalsIgnoreCase(request.getType())) {
+                        code = odcRepository.findById(id).map(ODC::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOdcHealthStatusChange(code, request.getHealthStatus(), fullReason);
+                    } else if ("OLT".equalsIgnoreCase(request.getType())) {
+                        code = oltRepository.findById(id).map(OLT::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleOltHealthStatusChange(code, request.getHealthStatus(), fullReason);
+                    } else if ("CUSTOMER".equalsIgnoreCase(request.getType())) {
+                        code = customerRepository.findById(id).map(Customer::getCode).orElse(null);
+                        if (code != null) statusPropagationService.handleCustomerHealthStatusChange(code, request.getHealthStatus(), fullReason);
+                    }
+                }
+
+                // Handle Parent Reassignment
+                if (request.getNewParentId() != null) {
+                    if ("ODP".equalsIgnoreCase(request.getType())) {
+                        odpRepository.findById(id).ifPresent(odp -> {
+                            odcRepository.findById(request.getNewParentId()).ifPresent(newOdc -> {
+                                odp.setOdc(newOdc);
+                                odp.setLastNote("Batch Reassigned to ODC: " + newOdc.getCode() + " | " + request.getNotes());
+                                odpRepository.save(odp);
+                            });
+                        });
+                        code = "PARENT_CHANGE"; // Marker for success count
+                    } else if ("ODC".equalsIgnoreCase(request.getType())) {
+                        odcRepository.findById(id).ifPresent(odc -> {
+                            oltRepository.findById(request.getNewParentId()).ifPresent(newOlt -> {
+                                odc.setOlt(newOlt);
+                                odc.setLastNote("Batch Reassigned to OLT: " + newOlt.getCode() + " | " + request.getNotes());
+                                odcRepository.save(odc);
+                            });
+                        });
+                        code = "PARENT_CHANGE";
+                    } else if ("CUSTOMER".equalsIgnoreCase(request.getType())) {
+                        customerRepository.findById(id).ifPresent(cust -> {
+                            odpRepository.findById(request.getNewParentId()).ifPresent(newOdp -> {
+                                cust.setOdp(newOdp);
+                                cust.setLastNote("Batch Reassigned to ODP: " + newOdp.getCode() + " | " + request.getNotes());
+                                customerRepository.save(cust);
+                            });
+                        });
+                        code = "PARENT_CHANGE";
+                    }
+                }
+
+                if (code != null) {
+                    successCount++;
+                } else {
+                    failedIds.add(id.toString());
+                }
+            } catch (Exception e) {
+                log.error("❌ Failed to batch process {} with ID {}: {}", request.getType(), id, e.getMessage());
+                failedIds.add(id.toString());
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("count", successCount);
+        response.put("failed", failedIds);
+        response.put("message", "Successfully updated " + successCount + " assets");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Batch delete assets
+     */
+    @DeleteMapping("/batch-delete")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> batchDelete(
+            @RequestParam String type,
+            @RequestParam String reason,
+            @RequestBody List<Long> ids) {
+        log.info("🗑️ Batch delete triggered for {} {} assets. Reason: {}", ids.size(), type, reason);
+        
+        int successCount = 0;
+        List<String> failedIds = new ArrayList<>();
+
+        for (Long id : ids) {
+            try {
+                if ("ODP".equalsIgnoreCase(type)) {
+                    odpRepository.deleteById(id);
+                } else if ("ODC".equalsIgnoreCase(type)) {
+                    odcRepository.deleteById(id);
+                } else if ("OLT".equalsIgnoreCase(type)) {
+                    oltRepository.deleteById(id);
+                } else if ("CUSTOMER".equalsIgnoreCase(type)) {
+                    customerRepository.deleteById(id);
+                }
+                successCount++;
+            } catch (Exception e) {
+                log.error("❌ Failed to delete {} with ID {}: {}", type, id, e.getMessage());
+                failedIds.add(id.toString());
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "count", successCount,
+            "failed", failedIds,
+            "message", "Successfully deleted " + successCount + " assets"
+        ));
+    }
+
 
     /**
      * Check if an Asset Code is already used globally

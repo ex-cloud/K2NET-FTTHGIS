@@ -33,6 +33,9 @@ public abstract class NetworkNode extends BaseEntity {
 
     private String status;
 
+    @Column(name = "health_status")
+    private String healthStatus;
+
     @Column(name = "signal_db")
     private Double signalDb;
 
@@ -41,6 +44,8 @@ public abstract class NetworkNode extends BaseEntity {
 
     @Column(name = "last_note")
     private String lastNote;
+
+    private String address;
 
     @Column(name = "node_type", insertable = false, updatable = false)
     private String nodeType;

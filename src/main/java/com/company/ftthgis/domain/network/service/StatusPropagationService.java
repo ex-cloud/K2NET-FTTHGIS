@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 import java.util.Map;
@@ -41,8 +42,9 @@ public class StatusPropagationService {
     private static final long TIME_WINDOW_MS = 300000; // 5 Minutes
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void handleOltStatusChange(String oltCode, String status, String reason) {
-        log.info("🌊 [ROOT CAUSE] OLT {} changed to {} with reason: {}", oltCode, status, reason);
+        log.info("🌊 [LIFECYCLE] OLT {} changed to {} with reason: {}", oltCode, status, reason);
 
         oltRepository.findByCode(oltCode).ifPresent((OLT olt) -> {
             olt.setStatus(status);
@@ -63,6 +65,26 @@ public class StatusPropagationService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
+    public void handleOltHealthStatusChange(String oltCode, String health, String reason) {
+        log.warn("🏥 [HEALTH] OLT {} changed to {} with reason: {}", oltCode, health, reason);
+
+        oltRepository.findByCode(oltCode).ifPresent((OLT olt) -> {
+            olt.setHealthStatus(health);
+            olt.setLastNote(reason);
+            oltRepository.save(olt);
+
+            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, oltCode);
+
+            List<ODC> childOdcs = odcRepository.findByOlt(olt);
+            for (ODC odc : childOdcs) {
+                propagateHealthToOdc(odc, health, reason);
+            }
+        });
+    }
+
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void handleOdcStatusChange(String odcCode, String status, String reason) {
         odcRepository.findByCode(odcCode).ifPresent(odc -> {
             propagateToOdc(odc, status, false, reason);
@@ -70,6 +92,15 @@ public class StatusPropagationService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
+    public void handleOdcHealthStatusChange(String odcCode, String health, String reason) {
+        odcRepository.findByCode(odcCode).ifPresent(odc -> {
+            propagateHealthToOdc(odc, health, reason);
+        });
+    }
+
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void simulateCableFailure(String cableCode, String targetOdcCode, String status) {
         log.warn("✂️ [CABLE CUT] Impacting ODC {}", targetOdcCode);
 
@@ -88,6 +119,7 @@ public class StatusPropagationService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void handleOdpStatusChange(String odpCode, String status, String reason) {
         odpRepository.findByCode(odpCode).ifPresent(odp -> {
             odp.setStatus(status);
@@ -143,6 +175,21 @@ public class StatusPropagationService {
         });
     }
 
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
+    public void handleOdpHealthStatusChange(String odpCode, String health, String reason) {
+        odpRepository.findByCode(odpCode).ifPresent(odp -> {
+            odp.setHealthStatus(health);
+            odp.setLastNote(reason);
+            odpRepository.save(odp);
+            
+            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, odpCode);
+            propagateHealthToCustomers(odp, health, reason);
+        });
+    }
+
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void handleCustomerStatusChange(String customerCode, String status, String reason) {
         log.info("👤 [CUSTOMER EVENT] {} is {} due to: {}", customerCode, status, reason);
         customerRepository.findByCode(customerCode).ifPresent(c -> {
@@ -157,7 +204,19 @@ public class StatusPropagationService {
         });
     }
 
-    private void propagateToOdc(ODC odc, String status, boolean isSilent, String reason) {
+    @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
+    public void handleCustomerHealthStatusChange(String customerCode, String health, String reason) {
+        customerRepository.findByCode(customerCode).ifPresent(c -> {
+            c.setHealthStatus(health);
+            c.setLastNote(reason);
+            customerRepository.save(c);
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, customerCode);
+        });
+    }
+
+    @Async
+    protected void propagateToOdc(ODC odc, String status, boolean isSilent, String reason) {
         odc.setStatus(status);
         odc.setLastNote(reason);
         odcRepository.save(odc);
@@ -181,7 +240,8 @@ public class StatusPropagationService {
         }
     }
 
-    private void propagateToOdp(ODP odp, String status, String reason) {
+    @Async
+    protected void propagateToOdp(ODP odp, String status, String reason) {
         odp.setStatus(status);
         odp.setLastNote(reason);
         odpRepository.save(odp);
@@ -196,7 +256,8 @@ public class StatusPropagationService {
         propagateToCustomers(odp, status, reason);
     }
 
-    private void propagateToCustomers(ODP odp, String status, String reason) {
+    @Async
+    protected void propagateToCustomers(ODP odp, String status, String reason) {
         List<Customer> customers = customerRepository.findByOdp(odp);
         for (Customer c : customers) {
             c.setStatus(status);
@@ -209,6 +270,36 @@ public class StatusPropagationService {
 
             log.debug("  👤 Propagated {} status to Customer {}", status, c.getCode());
             mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, c.getCode());
+        }
+    }
+
+    private void propagateHealthToOdc(ODC odc, String health, String reason) {
+        odc.setHealthStatus(health);
+        odc.setLastNote(reason);
+        odcRepository.save(odc);
+        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odc.getCode());
+
+        List<ODP> childOdps = odpRepository.findByOdc(odc);
+        for (ODP odp : childOdps) {
+            propagateHealthToOdp(odp, health, reason);
+        }
+    }
+
+    private void propagateHealthToOdp(ODP odp, String health, String reason) {
+        odp.setHealthStatus(health);
+        odp.setLastNote(reason);
+        odpRepository.save(odp);
+        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odp.getCode());
+        propagateHealthToCustomers(odp, health, reason);
+    }
+
+    private void propagateHealthToCustomers(ODP odp, String health, String reason) {
+        List<Customer> customers = customerRepository.findByOdp(odp);
+        for (Customer c : customers) {
+            c.setHealthStatus(health);
+            c.setLastNote(reason);
+            customerRepository.save(c);
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, c.getCode());
         }
     }
 

@@ -22,6 +22,7 @@ public class CustomerDto {
     private Point geom;
     
     private String status;
+    private String healthStatus;
 
     // Parent ODP Relation
     private Long odpId;

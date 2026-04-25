@@ -22,6 +22,7 @@ public class ODPDto {
     private Integer totalPort;
     private Integer usedPort;
     private String status;
+    private String healthStatus;
 
     // Parent ODC Relation
     private Long odcId;
@@ -30,4 +31,5 @@ public class ODPDto {
     private String lastNote;
     private Double lat;
     private Double lng;
+    private String address;
 }

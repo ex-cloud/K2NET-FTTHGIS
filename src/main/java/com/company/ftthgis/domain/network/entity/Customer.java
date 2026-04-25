@@ -19,6 +19,4 @@ public class Customer extends NetworkNode {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "odp_id")
     private ODP odp;
-
-    private String address;
 }

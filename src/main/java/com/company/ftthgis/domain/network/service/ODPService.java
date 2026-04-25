@@ -121,6 +121,7 @@ public class ODPService {
         dto.setTotalPort(odp.getTotalPort());
         dto.setUsedPort(odp.getUsedPort());
         dto.setStatus(odp.getStatus());
+        dto.setHealthStatus(odp.getHealthStatus());
         dto.setGeom(odp.getGeom());
         if (odp.getOdc() != null) {
             dto.setOdcId(odp.getOdc().getId());
@@ -128,6 +129,7 @@ public class ODPService {
             dto.setOdcCode(odp.getOdc().getCode());
         }
         dto.setLastNote(odp.getLastNote());
+        dto.setAddress(odp.getAddress());
         if (odp.getGeom() != null) {
             dto.setLng(odp.getGeom().getX());
             dto.setLat(odp.getGeom().getY());
@@ -144,6 +146,12 @@ public class ODPService {
             odp.setStatus(dto.getStatus());
         } else if (odp.getId() == null) {
             odp.setStatus("PLANNING");
+        }
+
+        if (dto.getHealthStatus() != null) {
+            odp.setHealthStatus(dto.getHealthStatus());
+        } else if (odp.getId() == null) {
+            odp.setHealthStatus("UP");
         }
 
         if (dto.getLng() != null && dto.getLat() != null) {
@@ -165,6 +173,9 @@ public class ODPService {
 
         if (StringUtils.hasText(dto.getLastNote())) {
             odp.setLastNote(dto.getLastNote());
+        }
+        if (StringUtils.hasText(dto.getAddress())) {
+            odp.setAddress(dto.getAddress());
         }
     }
 }

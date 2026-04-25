@@ -22,6 +22,7 @@ public class ODCDto {
     private Integer capacity;
     private Integer usedCapacity;
     private String status;
+    private String healthStatus;
 
     // Parent OLT Relation
     private Long oltId;
@@ -30,4 +31,5 @@ public class ODCDto {
     private String lastNote;
     private Double lat;
     private Double lng;
+    private String address;
 }

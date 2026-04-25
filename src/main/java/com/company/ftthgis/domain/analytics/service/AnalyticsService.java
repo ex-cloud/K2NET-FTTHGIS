@@ -32,6 +32,7 @@ public class AnalyticsService {
     private final DashboardSnapshotRepository snapshotRepository;
     private final ProjectRepository projectRepository;
 
+    @org.springframework.cache.annotation.Cacheable(value = "dashboard_stats", key = "#projectId ?: 'global'")
     public DashboardStatsDTO getDashboardStats(String projectId) {
         if (projectId == null || projectId.isEmpty()) {
             return getGlobalDashboardStats();
@@ -91,6 +92,7 @@ public class AnalyticsService {
      */
     @Scheduled(fixedRate = 300_000) // every 5 minutes
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "dashboard_stats", allEntries = true)
     public void recordSnapshot() {
         List<Project> projects = projectRepository.findAll();
         LocalDateTime now = LocalDateTime.now();
