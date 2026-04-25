@@ -1,4 +1,5 @@
 "use client";
+"use no memo";
 
 import * as React from "react";
 import {
@@ -32,6 +33,7 @@ import {
   Download,
   Columns
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -59,6 +61,12 @@ interface SmartDataTableProps<TData, TValue> {
     pageCount: number;
     onPageChange: (index: number) => void;
   };
+  bulkActions?: {
+    label: string;
+    icon?: React.ReactNode;
+    onClick: (selectedData: TData[]) => void;
+    variant?: "default" | "outline" | "ghost" | "emerald" | "blue" | "orange" | "destructive";
+  }[];
 }
 
 export function SmartDataTable<TData, TValue>({
@@ -72,6 +80,7 @@ export function SmartDataTable<TData, TValue>({
   onSortingChange,
   onColumnFiltersChange,
   pagination,
+  bulkActions,
 }: SmartDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -121,12 +130,12 @@ export function SmartDataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns: tableColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getCoreRowModel: React.useMemo(() => getCoreRowModel(), []),
+    getPaginationRowModel: React.useMemo(() => getPaginationRowModel(), []),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
+    getSortedRowModel: React.useMemo(() => getSortedRowModel(), []),
     onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
+    getFilteredRowModel: React.useMemo(() => getFilteredRowModel(), []),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
@@ -147,28 +156,55 @@ export function SmartDataTable<TData, TValue>({
       <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/40 p-4 rounded-2xl border border-border/50 backdrop-blur-sm shadow-sm overflow-hidden">
         {/* Bulk Actions Overlay */}
         {table.getSelectedRowModel().rows.length > 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-between bg-emerald-500/90 backdrop-blur-xl px-6 animate-in slide-in-from-top-4 duration-300">
+          <div className="absolute inset-0 z-10 flex items-center justify-between bg-zinc-900/90 backdrop-blur-xl px-6 animate-in slide-in-from-top-4 duration-300 border-b border-emerald-500/20">
             <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                <span className="text-[10px] font-black text-emerald-500">
+                  {table.getSelectedRowModel().rows.length}
+                </span>
+              </div>
               <span className="text-xs font-black text-white uppercase tracking-[0.2em] drop-shadow-sm">
-                ⚡ {table.getSelectedRowModel().rows.length} Assets Targeted
+                Assets Targeted
               </span>
-              <div className="h-4 w-[1px] bg-white/30" />
+              <div className="h-4 w-px bg-white/10" />
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-[10px] uppercase font-black tracking-widest text-white/80 hover:text-white hover:bg-white/10"
+                className="text-[10px] uppercase font-black tracking-widest text-zinc-400 hover:text-white hover:bg-white/5"
                 onClick={() => table.toggleAllPageRowsSelected(false)}
               >
                 Clear GRID
               </Button>
             </div>
-            <div className="flex items-center gap-3">
-              <Button size="sm" className="h-8 bg-white text-emerald-600 hover:bg-white/90 font-black text-[10px] tracking-widest rounded-lg shadow-xl px-4">
-                BATCH DEPLOY
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 border-white/20 text-white hover:bg-white/10 font-black text-[10px] tracking-widest rounded-lg px-4">
-                DROP CACHE
-              </Button>
+            <div className="flex items-center gap-2">
+              {bulkActions?.map((action, idx) => {
+                const isEmerald = action.variant === "emerald";
+                const isBlue = action.variant === "blue";
+                const isOrange = action.variant === "orange";
+                const isDestructive = action.variant === "destructive";
+
+                // Map my custom variants to standard Button variants to satisfy TypeScript
+                const buttonVariant = (isDestructive ? "destructive" : (isEmerald || isBlue || isOrange ? "default" : (action.variant === "ghost" || action.variant === "outline" ? action.variant : "default"))) as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+
+                return (
+                  <Button 
+                    key={idx}
+                    size="sm" 
+                    variant={buttonVariant}
+                    className={cn(
+                      "h-8 font-black text-[9px] tracking-widest rounded-lg px-4 transition-all uppercase",
+                      isEmerald && "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20",
+                      isBlue && "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20",
+                      isOrange && "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20",
+                      !isEmerald && !isBlue && !isOrange && !isDestructive && "border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                    )}
+                    onClick={() => action.onClick(table.getSelectedRowModel().rows.map(r => r.original))}
+                  >
+                    {action.icon && <span className="mr-2">{action.icon}</span>}
+                    {action.label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -345,7 +381,7 @@ export function SmartDataTable<TData, TValue>({
                       }
                       onRowClick?.(row.original);
                     }}
-                    className={`border-border/50 group/row hover:bg-emerald-500/[0.02] transition-colors ${onRowClick ? "cursor-pointer" : "cursor-default"}`}
+                    className={`border-border/50 group/row hover:bg-emerald-500/2 transition-colors ${onRowClick ? "cursor-pointer" : "cursor-default"}`}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-4 px-6 font-medium text-sm">
@@ -387,7 +423,7 @@ export function SmartDataTable<TData, TValue>({
             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] border-r border-border/50 pr-4">
               Inventory State
             </div>
-            <div className="text-xs font-bold text-foreground bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">
+            <div className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">
               <span className="opacity-70 mr-1">{pagination.pageSize}</span> 
               Per Page
             </div>

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Crosshair, MapPin, Check, X, Plus, Minus } from "lucide-react";
+import { Crosshair, MapPin, Check, X, Plus, Minus, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MapLayerMouseEvent, StyleSpecification } from "maplibre-gl";
 
@@ -49,7 +49,7 @@ interface MapCoordinatePickerProps {
   onOpenChange: (open: boolean) => void;
   initialLat?: string;
   initialLng?: string;
-  onConfirm: (lat: string, lng: string) => void;
+  onConfirm: (lat: string, lng: string, address?: string) => void;
   title?: string;
 }
 
@@ -72,6 +72,10 @@ export function MapCoordinatePicker({
     zoom: 15
   });
 
+  const [address, setAddress] = React.useState<string | null>(null);
+  const [isFetchingAddress, setIsFetchingAddress] = React.useState(false);
+  const addressTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   // Sync initial position when opening
   React.useEffect(() => {
     if (open) {
@@ -92,10 +96,52 @@ export function MapCoordinatePicker({
     setMounted(true);
   }, []);
 
+  const fetchAddress = async (lat: number, lng: number) => {
+    setIsFetchingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "User-Agent": "FTTH-GIS-Dashboard/1.0"
+          }
+        }
+      );
+      const data = await response.json();
+      if (data && data.display_name) {
+        setAddress(data.display_name);
+      } else {
+        setAddress("Address not found");
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      setAddress("Error fetching address");
+    } finally {
+      setIsFetchingAddress(false);
+    }
+  };
+
+  // Debounced address fetch on viewState change
+  React.useEffect(() => {
+    if (!open) return;
+
+    if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
+
+    addressTimeoutRef.current = setTimeout(() => {
+      fetchAddress(viewState.latitude, viewState.longitude);
+    }, 800); // Wait for map to settle
+
+    return () => {
+      if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
+    };
+  }, [viewState.latitude, viewState.longitude, open]);
+
   const handleConfirm = () => {
     onConfirm(
       viewState.latitude.toFixed(15),
-      viewState.longitude.toFixed(15)
+      viewState.longitude.toFixed(15),
+      address || undefined
     );
     onOpenChange(false);
   };
@@ -184,6 +230,34 @@ export function MapCoordinatePicker({
                 <div className="absolute w-10 h-[2px] bg-blue-500 -top-px left-[-20px]" />
                 
                 <Crosshair className="relative w-8 h-8 text-white drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
+              </div>
+            </div>
+
+            {/* Address Indicator Overlay */}
+            <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/5 p-4 rounded-2xl shadow-2xl flex items-start gap-4">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
+                  isFetchingAddress ? "bg-blue-500/10" : "bg-blue-500/20 shadow-lg shadow-blue-500/10"
+                )}>
+                  {isFetchingAddress ? (
+                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                  ) : (
+                    <Search className="w-5 h-5 text-blue-500" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1 overflow-hidden">
+                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Target Area Identity</span>
+                  <p className={cn(
+                    "text-xs font-bold text-white truncate w-full transition-opacity duration-300",
+                    isFetchingAddress ? "opacity-50" : "opacity-100"
+                  )}>
+                    {address || "Locating coordinates..."}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1 opacity-50">
+                    <span className="text-[9px] font-mono text-zinc-400">Precision Resolve Active</span>
+                  </div>
+                </div>
               </div>
             </div>
 

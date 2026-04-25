@@ -8,6 +8,7 @@ interface SelectedAsset {
   lat?: number;
   signalDb?: number;
   status?: string;
+  healthStatus?: string;
 }
 
 interface SelectionState {

@@ -1,12 +1,29 @@
+export enum LifecycleStatus {
+  PLAN = "PLAN",
+  DEPLOYING = "DEPLOYING",
+  ACTIVE = "ACTIVE",
+  MAINTENANCE = "MAINTENANCE",
+  RETIRED = "RETIRED"
+}
+
+export enum HealthStatus {
+  UP = "UP",
+  DEGRADED = "DEGRADED",
+  DOWN = "DOWN",
+  BROKEN = "BROKEN"
+}
+
 export interface NetworkNode {
   id: number;
   code: string;
   name: string;
   status: string;
+  healthStatus: string;
   nodeType: string;
   lastNote?: string;
   lat?: number;
   lng?: number;
+  address?: string;
   geom?: {
     type: string;
     coordinates: number[] | number[][];
@@ -35,7 +52,6 @@ export interface ODP extends NetworkNode {
 }
 
 export interface Customer extends NetworkNode {
-  address: string;
   odpId: number;
   odpCode: string;
 }

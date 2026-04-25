@@ -23,6 +23,7 @@ import type {
   FillLayerSpecification,
   StyleSpecification,
   GeoJSONSource,
+  Map as MapLibreInstance,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as turfUtils from "@/lib/turf-utils";
@@ -264,12 +265,38 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
   // Compute base map style based on mode
   const currentMapStyle = useMemo(() => {
+    let style: StyleSpecification | string;
     if (isTopologyMode) {
-      return TOPOLOGY_STYLE;
+      style = TOPOLOGY_STYLE;
+    } else {
+      style = theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light;
     }
-    // For Base and Satellite modes, use the standard map styles
-    return theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light;
+
+    // Inject our custom sprite into the style if it's a string (URL)
+    // MapLibre can take a style object with a sprite property
+    if (typeof style === "string") {
+      return style; // OpenFreeMap handles its own sprites, but we might want to override
+    }
+
+    return style;
   }, [theme, isTopologyMode]);
+
+  // Manual Icon Loader
+  const onMapLoad = useCallback(async (e: { target: MapLibreInstance }) => {
+    const map = e.target;
+    const icons = ["olt", "odc", "odp", "customer", "splitter", "closure", "pole"];
+    
+    for (const icon of icons) {
+      try {
+        if (!map.hasImage(icon)) {
+          const image = await map.loadImage(`/icons/${icon}.svg`);
+          map.addImage(icon, image.data);
+        }
+      } catch (error) {
+        console.error(`Failed to load icon: ${icon}`, error);
+      }
+    }
+  }, []);
 
   // Fix for hydration mismatch (Client-side only mount)
   useEffect(() => {
@@ -323,7 +350,8 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         setHoveredFeature({
           code: feature.properties.code || `${type}-${feature.properties.id}`,
           type,
-          status: (feature.properties.code && statusOverrides[feature.properties.code]) || feature.properties.status || "UP",
+          status: (feature.properties.code && statusOverrides[feature.properties.code]) || feature.properties.status || "PLAN",
+          health_status: feature.properties.health_status || "UP",
           x: evt.point.x,
           y: evt.point.y,
         });
@@ -460,6 +488,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           lat,
           signalDb: feature.properties.signal_db,
           status: feature.properties.status,
+          healthStatus: feature.properties.health_status,
         });
       }
     } else {
@@ -526,14 +555,14 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         ],
         "line-color": [
           "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
+          ["==", ["get", "status"], "PLAN"],
+          "#94a3b8",
           [
             "match",
             ["get", "cable_type"],
@@ -577,14 +606,14 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         ],
         "line-color": [
           "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
+          ["==", ["get", "status"], "PLAN"],
+          "#94a3b8",
           [
             "match",
             ["get", "cable_type"],
@@ -607,7 +636,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   // --- OLT LAYERS (POP/Backbone) ---
   const oltNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "olt-nodes",
+      id: "olt-glow",
       type: "circle",
       source: "network-source",
       "source-layer": "nodes",
@@ -617,43 +646,43 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         visibility: layerVisibility.OLT ? "visible" : "none",
       },
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 6, 15, 14],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 10, 15, 20],
         "circle-color": [
           "case",
-          isTopologyMode,
-          "#0a0a0f",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
+          "#22c55e",
         ],
-        "circle-stroke-width": 2,
-        "circle-stroke-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          isTopologyMode ? "#38bdf8" : "#ffffff",
-        ],
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
-        "circle-stroke-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          12.5,
-          0,
-          13,
-          1,
-        ],
+        "circle-blur": 0.8,
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 0.6],
       },
     }),
-    [isTopologyMode, layerVisibility.OLT],
+    [layerVisibility.OLT],
+  );
+
+  const oltIconLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "olt-icons",
+      type: "symbol",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "OLT"],
+      minzoom: 12.5,
+      layout: {
+        visibility: layerVisibility.OLT ? "visible" : "none",
+        "icon-image": "olt",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 15, 0.8],
+        "icon-allow-overlap": true,
+      },
+      paint: {
+        "icon-opacity": ["interpolate", ["linear"], ["zoom"], 12.5, 0, 13, 1],
+      },
+    }),
+    [layerVisibility.OLT],
   );
 
   const oltLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -687,7 +716,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   // --- ODC LAYERS (Distribution) ---
   const odcNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "odc-nodes",
+      id: "odc-glow",
       type: "circle",
       source: "network-source",
       "source-layer": "nodes",
@@ -697,47 +726,43 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         visibility: layerVisibility.ODC ? "visible" : "none",
       },
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 5, 18, 12],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 8, 18, 16],
         "circle-color": [
           "case",
-          isTopologyMode,
-          "#0a0a0f",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
           "#0ea5e9",
         ],
-        "circle-stroke-width": 2,
-        "circle-stroke-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
-          "#f59e0b",
-          isTopologyMode ? "#38bdf8" : "#ffffff",
-        ],
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15, 1],
-        "circle-stroke-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          14.5,
-          0,
-          15,
-          1,
-        ],
+        "circle-blur": 0.8,
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0, 15, 0.6],
       },
     }),
-    [isTopologyMode, layerVisibility.ODC],
+    [layerVisibility.ODC],
+  );
+
+  const odcIconLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "odc-icons",
+      type: "symbol",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "ODC"],
+      minzoom: 14,
+      layout: {
+        visibility: layerVisibility.ODC ? "visible" : "none",
+        "icon-image": "odc",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.4, 18, 0.7],
+        "icon-allow-overlap": true,
+      },
+      paint: {
+        "icon-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15, 1],
+      },
+    }),
+    [layerVisibility.ODC],
   );
 
   const odcLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -769,7 +794,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   // --- ODP LAYERS (Access) ---
   const odpNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "odp-nodes",
+      id: "odp-glow",
       type: "circle",
       source: "network-source",
       "source-layer": "nodes",
@@ -779,47 +804,43 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         visibility: layerVisibility.ODP ? "visible" : "none",
       },
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 4, 19, 10],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 6, 19, 12],
         "circle-color": [
           "case",
-          isTopologyMode,
-          "#0a0a0f",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
           "#22c55e",
         ],
-        "circle-stroke-width": 2,
-        "circle-stroke-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
-          "#f59e0b",
-          isTopologyMode ? "#38bdf8" : "#ffffff",
-        ],
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 16.5, 0, 17, 1],
-        "circle-stroke-opacity": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          16.5,
-          0,
-          17,
-          1,
-        ],
+        "circle-blur": 0.8,
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 16.5, 0, 17, 0.6],
       },
     }),
-    [isTopologyMode, layerVisibility.ODP],
+    [layerVisibility.ODP],
+  );
+
+  const odpIconLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "odp-icons",
+      type: "symbol",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "ODP"],
+      minzoom: 16,
+      layout: {
+        visibility: layerVisibility.ODP ? "visible" : "none",
+        "icon-image": "odp",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 16, 0.3, 19, 0.6],
+        "icon-allow-overlap": true,
+      },
+      paint: {
+        "icon-opacity": ["interpolate", ["linear"], ["zoom"], 16.5, 0, 17, 1],
+      },
+    }),
+    [layerVisibility.ODP],
   );
 
   const odpLabelLayer = useMemo<SymbolLayerSpecification>(
@@ -851,7 +872,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   // --- CUSTOMER LAYER (Standard only) ---
   const customerNodeLayer = useMemo<CircleLayerSpecification>(
     () => ({
-      id: "customer-nodes",
+      id: "customer-glow",
       type: "circle",
       source: "network-source",
       "source-layer": "nodes",
@@ -861,31 +882,40 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         visibility: !isTopologyMode && layerVisibility.CUSTOMER ? "visible" : "none",
       },
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 17, 2, 20, 6],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 17, 4, 20, 10],
         "circle-color": [
           "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
+          ["in", ["get", "health_status"], ["literal", ["DOWN", "BROKEN"]]],
           "#ef4444",
-          ["==", ["get", "status"], "MAINTENANCE"],
+          ["==", ["get", "health_status"], "DEGRADED"],
           "#f59e0b",
+          ["==", ["get", "status"], "MAINTENANCE"],
+          "#eab308",
           "#10b981",
         ],
-        "circle-stroke-width": 1,
-        "circle-stroke-color": [
-          "case",
-          [
-            "in",
-            ["get", "status"],
-            ["literal", ["DOWN", "FIBERCUT", "BROKEN"]],
-          ],
-          "#ef4444",
-          "#ffffff",
-        ],
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
+        "circle-blur": 0.5,
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 0.4],
+      },
+    }),
+    [isTopologyMode, layerVisibility.CUSTOMER],
+  );
+
+  const customerIconLayer = useMemo<SymbolLayerSpecification>(
+    () => ({
+      id: "customer-icons",
+      type: "symbol",
+      source: "network-source",
+      "source-layer": "nodes",
+      filter: ["==", ["get", "node_type"], "CUSTOMER"],
+      minzoom: 17,
+      layout: {
+        visibility: !isTopologyMode && layerVisibility.CUSTOMER ? "visible" : "none",
+        "icon-image": "customer",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 17, 0.2, 20, 0.5],
+        "icon-allow-overlap": true,
+      },
+      paint: {
+        "icon-opacity": ["interpolate", ["linear"], ["zoom"], 17.5, 0, 18, 1],
       },
     }),
     [isTopologyMode, layerVisibility.CUSTOMER],
@@ -1026,6 +1056,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         initialViewState={INITIAL_VIEW_STATE}
         mapStyle={currentMapStyle}
         style={{ width: "100%", height: "100%" }}
+        onLoad={onMapLoad}
         onMove={onMapMove}
         onMouseMove={onMouseMove}
         onMouseLeave={onMouseLeave}
@@ -1040,10 +1071,10 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         }}
         maxZoom={22}
         interactiveLayerIds={[
-          "olt-nodes",
-          "odc-nodes",
-          "odp-nodes",
-          "customer-nodes",
+          "olt-icons",
+          "odc-icons",
+          "odp-icons",
+          "customer-icons",
           "topology-cables",
           "standard-cables",
           "clusters",
@@ -1116,15 +1147,19 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           <Layer {...topologyCableLayer} />
 
           <Layer {...oltNodeLayer} />
+          <Layer {...oltIconLayer} />
           <Layer {...oltLabelLayer} />
 
           <Layer {...odcNodeLayer} />
+          <Layer {...odcIconLayer} />
           <Layer {...odcLabelLayer} />
 
           <Layer {...odpNodeLayer} />
+          <Layer {...odpIconLayer} />
           <Layer {...odpLabelLayer} />
 
           <Layer {...customerNodeLayer} />
+          <Layer {...customerIconLayer} />
 
           {/* Highlight Layers (Semua Mode) */}
           <Layer {...highlightEdgeLayer} />

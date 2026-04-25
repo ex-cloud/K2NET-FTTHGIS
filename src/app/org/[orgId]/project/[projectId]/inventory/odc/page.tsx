@@ -6,9 +6,9 @@ import { SmartDataTable } from "@/components/dashboard/smart-data-table";
 import { useOdcData } from "@/hooks/use-odc-data";
 import { ODC } from "@/types/network";
 import { useSelectionStore } from "@/store/selection-store";
-import { Badge } from "@/components/ui/badge";
+import { NetworkStatusBadge } from "@/components/dashboard/network-status-badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus, MapPin } from "lucide-react";
+import { MoreHorizontal, Plus, MapPin, Layers, RefreshCw, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter, useParams } from "next/navigation";
-import { OdcDialog } from "@/components/dashboard/odc-dialogs";
+import dynamic from "next/dynamic";
+
+const OdcDialog = dynamic(() => import("@/components/dashboard/odc-dialogs").then(mod => mod.OdcDialog), {
+  ssr: false,
+  loading: () => null
+});
+
+const BatchEditDialog = dynamic(() => import("@/components/dashboard/batch-edit-dialog").then(mod => mod.BatchEditDialog), {
+  ssr: false,
+  loading: () => null
+});
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getBackendBaseUrl } from "@/lib/api-config";
@@ -33,7 +43,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Trash2 } from "lucide-react";
 
 export default function OdcListPage() {
   const router = useRouter();
@@ -53,6 +62,11 @@ export default function OdcListPage() {
   const [deleteReason, setDeleteReason] = React.useState("");
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [odcToDelete, setOdcToDelete] = React.useState<ODC | null>(null);
+
+  // Batch Edit State
+  const [isBatchDialogOpen, setIsBatchDialogOpen] = React.useState(false);
+  const [batchMode, setBatchMode] = React.useState<"STATUS_UPDATE" | "REASSIGN_PARENT">("STATUS_UPDATE");
+  const [batchSelectedIds, setBatchSelectedIds] = React.useState<number[]>([]);
 
   const handleCreate = React.useCallback(() => {
     setSelectedOdc(null);
@@ -102,6 +116,31 @@ export default function OdcListPage() {
     setOdcToDelete(odc);
     setDeleteReason("");
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleBulkDelete = async (selected: ODC[]) => {
+    if (!confirm(`Are you sure you want to permanently delete ${selected.length} ODC records?`)) return;
+    
+    const reason = prompt("Reason for bulk deletion:");
+    if (!reason) return;
+
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/network/assets/batch-delete?type=ODC&reason=${encodeURIComponent(reason)}`, {
+        method: "DELETE",
+        token: session?.accessToken,
+        body: JSON.stringify(selected.map(item => item.id))
+      });
+
+      if (res.ok) {
+        toast.success(`Successfully deleted ${selected.length} ODCs`);
+        refresh();
+      } else {
+        throw new Error("Failed to bulk delete");
+      }
+    } catch {
+      toast.error("Bulk delete failed");
+    }
   };
 
   const columns = React.useMemo<ColumnDef<ODC>[]>(
@@ -174,16 +213,12 @@ export default function OdcListPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => {
-          const status = row.getValue("status") as string;
-          let variant: "default" | "destructive" | "outline" | "secondary" =
-            "default";
-          if (status === "DOWN" || status === "BROKEN") variant = "destructive";
-          if (status === "MAINTENANCE") variant = "secondary";
-          if (status === "PLANNING") variant = "outline";
-
-          return <Badge variant={variant}>{status}</Badge>;
-        },
+        cell: ({ row }) => (
+          <NetworkStatusBadge 
+            status={row.original.status} 
+            healthStatus={row.original.healthStatus} 
+          />
+        ),
       },
       {
         id: "actions",
@@ -274,8 +309,47 @@ export default function OdcListPage() {
             onPageChange: (index) =>
               setPagination((prev) => ({ ...prev, pageIndex: index })),
           }}
+          bulkActions={[
+            {
+              label: "Batch Edit",
+              icon: <Layers className="w-3 h-3" />,
+              variant: "emerald",
+              onClick: (selected) => {
+                setBatchMode("STATUS_UPDATE");
+                setBatchSelectedIds(selected.map(item => item.id));
+                setIsBatchDialogOpen(true);
+              }
+            },
+            {
+              label: "Reassign OLT",
+              icon: <RefreshCw className="w-3 h-3" />,
+              variant: "blue",
+              onClick: (selected) => {
+                setBatchMode("REASSIGN_PARENT");
+                setBatchSelectedIds(selected.map(item => item.id));
+                setIsBatchDialogOpen(true);
+              }
+            },
+            {
+              label: "Delete Selected",
+              icon: <Trash2 className="w-3 h-3" />,
+              variant: "destructive",
+              onClick: (selected) => {
+                handleBulkDelete(selected);
+              }
+            }
+          ]}
         />
       </div>
+
+      <BatchEditDialog
+        open={isBatchDialogOpen}
+        onOpenChange={setIsBatchDialogOpen}
+        selectedIds={batchSelectedIds}
+        assetType="ODC"
+        mode={batchMode}
+        onSuccess={refresh}
+      />
 
       <OdcDialog
         open={isDialogOpen}

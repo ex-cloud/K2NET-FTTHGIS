@@ -76,13 +76,15 @@ export function OdpDialog({
   const [formData, setFormData] = React.useState({
     code: "",
     name: "",
-    status: "PLANNING",
+    status: "PLAN",
+    healthStatus: "UP",
     lat: "",
     lng: "",
     totalPort: "16",
     usedPort: "0",
     odcId: "",
     lastNote: "",
+    address: "",
   });
 
   React.useEffect(() => {
@@ -95,25 +97,29 @@ export function OdpDialog({
       setFormData({
         code: odp.code || "",
         name: odp.name || "",
-        status: odp.status || "PLANNING",
+        status: odp.status || "PLAN",
+        healthStatus: odp.healthStatus || "UP",
         lat: lat.toString(),
         lng: lng.toString(),
         totalPort: odp.totalPort?.toString() || "16",
         usedPort: odp.usedPort?.toString() || "0",
         odcId: odp.odcId?.toString() || "",
         lastNote: odp.lastNote || "",
+        address: odp.address || "",
       });
     } else {
       setFormData({
         code: "",
         name: "",
-        status: "PLANNING",
+        status: "PLAN",
+        healthStatus: "UP",
         lat: "",
         lng: "",
         totalPort: "16",
         usedPort: "0",
         odcId: "",
         lastNote: "",
+        address: "",
       });
     }
   }, [odp, open, projectId]);
@@ -204,9 +210,9 @@ export function OdpDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="status"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+                className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500"
               >
-                Status
+                Lifecycle Status
               </Label>
               <Select
                 value={formData.status}
@@ -214,17 +220,43 @@ export function OdpDialog({
                   setFormData({ ...formData, status: val })
                 }
               >
-                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50">
+                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50 h-11 rounded-xl font-bold text-xs">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-950 border-white/10 text-white">
-                  <SelectItem value="PLANNING">Planning</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  <SelectItem value="FAULTY">Faulty</SelectItem>
+                  <SelectItem value="PLAN">PLAN</SelectItem>
+                  <SelectItem value="DEPLOYING">DEPLOYING</SelectItem>
+                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                  <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                  <SelectItem value="RETIRED">RETIRED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="healthStatus"
+              className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500"
+            >
+              Operational Health Condition
+            </Label>
+            <Select
+              value={formData.healthStatus}
+              onValueChange={(val) =>
+                setFormData({ ...formData, healthStatus: val })
+              }
+            >
+              <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-blue-500/50 h-11 rounded-xl font-bold text-xs">
+                <SelectValue placeholder="Select health" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                <SelectItem value="UP" className="text-emerald-500 font-bold">UP - Normal Signal</SelectItem>
+                <SelectItem value="DEGRADED" className="text-orange-500 font-bold">DEGRADED - Warning</SelectItem>
+                <SelectItem value="DOWN" className="text-red-500 font-bold">DOWN - Offline</SelectItem>
+                <SelectItem value="BROKEN" className="text-red-700 font-black">BROKEN - Damage</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -345,6 +377,24 @@ export function OdpDialog({
           </div>
 
           <div className="space-y-2">
+            <Label
+              htmlFor="address"
+              className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+            >
+              Full Address
+            </Label>
+            <Input
+              id="address"
+              placeholder="Captured address from map..."
+              value={formData.address || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 text-xs italic"
+            />
+          </div>
+
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label
                 htmlFor="lastNote"
@@ -352,7 +402,7 @@ export function OdpDialog({
               >
                 Catatan Terakhir / Alasan
               </Label>
-              {formData.status !== "ACTIVE" && formData.status !== "PLANNING" && (
+              {formData.status !== "ACTIVE" && formData.status !== "PLAN" && (
                 <span className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Reason Required
@@ -371,7 +421,7 @@ export function OdpDialog({
                 setFormData({ ...formData, lastNote: e.target.value })
               }
               className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
-              required={formData.status !== "ACTIVE" && formData.status !== "PLANNING"}
+              required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
           </div>
 
@@ -400,8 +450,8 @@ export function OdpDialog({
           onOpenChange={setShowMapPicker}
           initialLat={formData.lat}
           initialLng={formData.lng}
-          onConfirm={(lat, lng) => {
-            setFormData({ ...formData, lat, lng });
+          onConfirm={(lat, lng, address) => {
+            setFormData({ ...formData, lat, lng, address: address || formData.address });
             toast.info(`Location updated to ${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}`);
           }}
           title={isEdit ? `Update Location for ${formData.code}` : "Pick ODP Location"}

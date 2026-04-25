@@ -6,9 +6,9 @@ import { SmartDataTable } from "@/components/dashboard/smart-data-table";
 import { useOltData } from "@/hooks/use-olt-data";
 import { OLT } from "@/types/network";
 import { useSelectionStore } from "@/store/selection-store";
-import { Badge } from "@/components/ui/badge";
+import { NetworkStatusBadge } from "@/components/dashboard/network-status-badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Plus, MapPin, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, MapPin, Trash2, Layers } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter, useParams } from "next/navigation";
-import { OltDialog } from "@/components/dashboard/olt-dialogs";
+import dynamic from "next/dynamic";
+
+const OltDialog = dynamic(() => import("@/components/dashboard/olt-dialogs").then(mod => mod.OltDialog), {
+  ssr: false,
+  loading: () => null
+});
+
+const BatchEditDialog = dynamic(() => import("@/components/dashboard/batch-edit-dialog").then(mod => mod.BatchEditDialog), {
+  ssr: false,
+  loading: () => null
+});
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -51,6 +61,10 @@ export default function OltListPage() {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteReason, setDeleteReason] = React.useState("");
   const [oltToDelete, setOltToDelete] = React.useState<OLT | null>(null);
+
+  // Batch Edit State
+  const [isBatchDialogOpen, setIsBatchDialogOpen] = React.useState(false);
+  const [batchSelectedIds, setBatchSelectedIds] = React.useState<number[]>([]);
 
   const handleCreate = React.useCallback(() => {
     setSelectedOlt(null);
@@ -94,6 +108,32 @@ export default function OltListPage() {
     [session?.accessToken],
   );
 
+  const handleBulkDelete = async (selected: OLT[]) => {
+    if (!confirm(`Are you sure you want to permanently delete ${selected.length} OLT records?`)) return;
+    
+    const reason = prompt("Reason for bulk deletion:");
+    if (!reason) return;
+
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/network/assets/batch-delete?type=OLT&reason=${encodeURIComponent(reason)}`, {
+        method: "DELETE",
+        token: session?.accessToken,
+        body: JSON.stringify(selected.map(item => item.id))
+      });
+
+      if (res.ok) {
+        toast.success(`Successfully deleted ${selected.length} OLTs`);
+        refresh();
+      } else {
+        throw new Error("Failed to bulk delete");
+      }
+    } catch {
+      toast.error("Bulk delete failed");
+    }
+  };
+
+
   const columns = React.useMemo<ColumnDef<OLT>[]>(
     () => [
       {
@@ -133,21 +173,12 @@ export default function OltListPage() {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => {
-          const status = (row.getValue("status") as string) || "UNKNOWN";
-          return (
-            <Badge
-              variant={status === "UP" ? "outline" : "destructive"}
-              className={
-                status === "UP"
-                  ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/5"
-                  : ""
-              }
-            >
-              {status}
-            </Badge>
-          );
-        },
+        cell: ({ row }) => (
+          <NetworkStatusBadge 
+            status={row.original.status} 
+            healthStatus={row.original.healthStatus} 
+          />
+        ),
       },
       {
         id: "actions",
@@ -265,8 +296,35 @@ export default function OltListPage() {
             onPageChange: (index) =>
               setPagination((prev) => ({ ...prev, pageIndex: index })),
           }}
+          bulkActions={[
+            {
+              label: "Batch Edit",
+              icon: <Layers className="w-3 h-3" />,
+              variant: "emerald",
+              onClick: (selected) => {
+                setBatchSelectedIds(selected.map(item => item.id));
+                setIsBatchDialogOpen(true);
+              }
+            },
+            {
+              label: "Delete Selected",
+              icon: <Trash2 className="w-3 h-3" />,
+              variant: "destructive",
+              onClick: (selected) => {
+                handleBulkDelete(selected);
+              }
+            }
+          ]}
         />
       </div>
+
+      <BatchEditDialog
+        open={isBatchDialogOpen}
+        onOpenChange={setIsBatchDialogOpen}
+        selectedIds={batchSelectedIds}
+        assetType="OLT"
+        onSuccess={refresh}
+      />
 
       <OltDialog
         open={isDialogOpen}

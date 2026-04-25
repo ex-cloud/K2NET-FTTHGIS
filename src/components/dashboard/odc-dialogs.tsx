@@ -25,7 +25,7 @@ import { useParams } from "next/navigation";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, MapPin } from "lucide-react";
+import { Loader2, AlertCircle, MapPin, Settings2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
 
@@ -77,18 +77,17 @@ export function OdcDialog({
     code: "",
     name: "",
     capacity: "144",
-    status: "PLANNING",
+    status: "PLAN",
+    healthStatus: "UP",
     lat: "",
     lng: "",
     oltId: "",
     lastNote: "",
+    address: "",
   });
 
   React.useEffect(() => {
     if (odc) {
-      console.log("DEBUG: ODC data received for form:", odc);
-      // Prioritize lat/lng fields (full Double precision) over geom.coordinates
-      // because Jackson JTS serializer (n52) truncates coordinate precision.
       const lng = odc.lng ?? odc.geom?.coordinates?.[0] ?? "";
       const lat = odc.lat ?? odc.geom?.coordinates?.[1] ?? "";
       
@@ -96,22 +95,26 @@ export function OdcDialog({
         code: odc.code || "",
         name: odc.name || "",
         capacity: odc.capacity?.toString() || "144",
-        status: odc.status || "PLANNING",
+        status: odc.status || "PLAN",
+        healthStatus: odc.healthStatus || "UP",
         lat: lat?.toString() || "",
         lng: lng?.toString() || "",
         oltId: odc.oltId?.toString() || "",
         lastNote: odc.lastNote || "",
+        address: odc.address || "",
       });
     } else {
       setFormData({
         code: "",
         name: "",
         capacity: "144",
-        status: "PLANNING",
+        status: "PLAN",
+        healthStatus: "UP",
         lat: "",
         lng: "",
         oltId: "",
         lastNote: "",
+        address: "",
       });
     }
   }, [odc, open, projectId]);
@@ -168,94 +171,102 @@ export function OdcDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-zinc-950 border-white/10 text-white shadow-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-black">
-            {isEdit ? "Edit Cabinet" : "Add Cabinet"}
-          </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Configure ODC details and assign to an OLT.
-          </DialogDescription>
+      <DialogContent className="max-w-md bg-zinc-950 border-white/10 text-white shadow-2xl rounded-3xl overflow-hidden p-0">
+        <DialogHeader className="p-6 bg-zinc-900/50 border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Settings2 className="w-6 h-6 text-blue-500" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-black uppercase tracking-tight">
+                {isEdit ? "Edit Cabinet" : "New ODC Asset"}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">
+                ODC Configuration & Topology Assignment
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="code"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-              >
-                ODC Code
-              </Label>
-              <Input
-                id="code"
-                placeholder="e.g. ODC-DAGO-01"
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="status"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-              >
-                Status
-              </Label>
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Lifecycle Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, status: val })
-                }
+                onValueChange={(val) => setFormData({ ...formData, status: val })}
               >
-                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50">
+                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50 h-11 rounded-xl font-bold text-xs">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-950 border-white/10 text-white">
-                  <SelectItem value="PLANNING">Planning</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  <SelectItem value="BROKEN">Broken / Down</SelectItem>
+                  <SelectItem value="PLAN">PLAN</SelectItem>
+                  <SelectItem value="DEPLOYING">DEPLOYING</SelectItem>
+                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                  <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                  <SelectItem value="RETIRED">RETIRED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Health Condition</Label>
+              <Select
+                value={formData.healthStatus}
+                onValueChange={(val) => setFormData({ ...formData, healthStatus: val })}
+              >
+                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-blue-500/50 h-11 rounded-xl font-bold text-xs">
+                  <SelectValue placeholder="Select health" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                  <SelectItem value="UP" className="text-emerald-500 font-bold">UP - Healthy</SelectItem>
+                  <SelectItem value="DEGRADED" className="text-orange-500 font-bold">DEGRADED</SelectItem>
+                  <SelectItem value="DOWN" className="text-red-500 font-bold">DOWN</SelectItem>
+                  <SelectItem value="BROKEN" className="text-red-700 font-black">BROKEN</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">ODC Code</Label>
+              <Input
+                placeholder="e.g. ODC-DAGO-01"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Capacity (Core)</Label>
+              <Input
+                type="number"
+                value={formData.capacity}
+                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label
-              htmlFor="name"
-              className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-            >
-              Location Name
-            </Label>
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Location Name</Label>
             <Input
-              id="name"
               placeholder="e.g. Dago Main Cabinet"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
               required
             />
           </div>
 
-          {/* OLT Parent Select */}
           <div className="space-y-2">
-            <Label
-              htmlFor="olt"
-              className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-            >
-              Parent OLT
-            </Label>
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Parent OLT</Label>
             <Select
               value={formData.oltId}
               onValueChange={(val) => setFormData({ ...formData, oltId: val })}
             >
-              <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50">
+              <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-blue-500/50 h-11 rounded-xl font-bold text-xs">
                 <SelectValue placeholder="Select Parent OLT" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-950 border-white/10 text-white max-h-60 overflow-y-auto">
@@ -270,127 +281,71 @@ export function OdcDialog({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label
-                htmlFor="lastNote"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-              >
-                Catatan Terakhir / Alasan
-              </Label>
-              {formData.status !== "ACTIVE" && formData.status !== "PLANNING" && (
-                <span className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Audit Note / Reason</Label>
+              {(formData.status !== "ACTIVE" && formData.status !== "PLAN") && (
+                <span className="text-[8px] font-black text-rose-500 uppercase flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  Reason Required
+                  Required
                 </span>
               )}
             </div>
             <Textarea
-              id="lastNote"
-              placeholder={
-                formData.status === "ACTIVE"
-                  ? "Optional technical notes..."
-                  : "Explain why this asset is " + formData.status.toLowerCase() + "..."
-              }
+              placeholder="Explain the reason for this status change..."
               value={formData.lastNote}
-              onChange={(e) =>
-                setFormData({ ...formData, lastNote: e.target.value })
-              }
-              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
-              required={formData.status !== "ACTIVE" && formData.status !== "PLANNING"}
+              onChange={(e) => setFormData({ ...formData, lastNote: e.target.value })}
+              className="bg-zinc-900 border-white/5 focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none"
+              required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
-            <p className="text-[10px] text-zinc-500 italic">
-              This note will be visible in the Network Intelligence Advisor.
-            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="capacity"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Coordinates</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMapPicker(true)}
+                className="h-7 px-3 rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-500 hover:bg-blue-500/10 text-[9px] font-black uppercase tracking-widest"
               >
-                Capacity (Core)
-              </Label>
-              <Input
-                id="capacity"
-                type="number"
-                value={formData.capacity}
-                onChange={(e) =>
-                  setFormData({ ...formData, capacity: e.target.value })
-                }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
-              />
+                <MapPin className="w-3 h-3 mr-1.5" />
+                Pick Map
+              </Button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <Label className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Geographical Position</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowMapPicker(true)}
-              className="h-7 px-3 rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-500 hover:bg-blue-500/10 hover:border-blue-500/40 text-[9px] font-black uppercase tracking-widest transition-all"
-            >
-              <MapPin className="w-3 h-3 mr-1.5" />
-              Pick from Map
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="lat"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-              >
-                Latitude
-              </Label>
+            <div className="grid grid-cols-2 gap-4">
               <Input
-                id="lat"
-                placeholder="Enter latitude"
+                placeholder="Latitude"
                 value={formData.lat}
-                onChange={(e) =>
-                  setFormData({ ...formData, lat: e.target.value })
-                }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
+                onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+                className="bg-zinc-900 border-white/5 h-10 rounded-xl font-mono text-[10px]"
                 required
               />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="lng"
-                className="text-xs font-bold uppercase tracking-wider text-zinc-500"
-              >
-                Longitude
-              </Label>
               <Input
-                id="lng"
-                placeholder="Enter longitude"
+                placeholder="Longitude"
                 value={formData.lng}
-                onChange={(e) =>
-                  setFormData({ ...formData, lng: e.target.value })
-                }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
+                onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
+                className="bg-zinc-900 border-white/5 h-10 rounded-xl font-mono text-[10px]"
                 required
               />
             </div>
           </div>
 
-          <DialogFooter className="pt-4 border-t border-white/5">
+          <DialogFooter className="pt-6 border-t border-white/5 gap-3">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-zinc-400 hover:text-white"
+              className="text-zinc-500 hover:text-white uppercase text-[10px] font-black tracking-widest"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px]"
+              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-8 uppercase text-[10px] font-black tracking-widest shadow-lg shadow-blue-500/20"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Save Changes" : "Create ODC"}
+              {loading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+              {isEdit ? "Save Changes" : "Create Asset"}
             </Button>
           </DialogFooter>
         </form>
@@ -400,11 +355,11 @@ export function OdcDialog({
           onOpenChange={setShowMapPicker}
           initialLat={formData.lat}
           initialLng={formData.lng}
-          onConfirm={(lat, lng) => {
-            setFormData({ ...formData, lat, lng });
-            toast.info(`Location updated to ${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}`);
+          onConfirm={(lat, lng, address) => {
+            setFormData({ ...formData, lat, lng, address: address || formData.address });
+            toast.info(`Location updated`);
           }}
-          title={isEdit ? `Update Location for ${formData.code}` : "Pick ODC Location"}
+          title={isEdit ? `Update Location` : "Pick ODC Location"}
         />
       </DialogContent>
     </Dialog>

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { Feature, FeatureCollection, LineString } from "geojson";
 
 interface MapCenter {
@@ -65,58 +66,72 @@ interface MapState {
   setLayerVisibility: (layer: keyof MapState['layerVisibility'], visible: boolean) => void;
 }
 
-export const useMapStore = create<MapState>((set) => ({
-  mapCenter: {
-    lng: 107.6191,
-    lat: -6.9175,
-    zoom: 13,
-  },
-  mapStyle: "base",
-  statusOverrides: {},
-  isEditMode: false,
-  drawingAssetType: null,
-  drawnFeature: null,
-  isFormOpen: false,
-  tileRefreshKey: 0,
-  editingAsset: null,
+export const useMapStore = create<MapState>()(
+  persist(
+    (set) => ({
+      mapCenter: {
+        lng: 107.6191,
+        lat: -6.9175,
+        zoom: 13,
+      },
+      mapStyle: "base",
+      statusOverrides: {},
+      isEditMode: false,
+      drawingAssetType: null,
+      drawnFeature: null,
+      isFormOpen: false,
+      tileRefreshKey: 0,
+      editingAsset: null,
 
-  // Trace Path defaults
-  traceMode: "idle",
-  traceSourceNode: null,
-  tracedPath: null,
+      // Trace Path defaults
+      traceMode: "idle",
+      traceSourceNode: null,
+      tracedPath: null,
 
-  // Layer Visibility defaults
-  layerVisibility: {
-    OLT: true,
-    ODC: true,
-    ODP: true,
-    CUSTOMER: true,
-    CABLE: true,
-  },
+      // Layer Visibility defaults
+      layerVisibility: {
+        OLT: true,
+        ODC: true,
+        ODP: true,
+        CUSTOMER: true,
+        CABLE: true,
+      },
 
-  setMapCenter: (center) => set({ mapCenter: center }),
-  setMapStyle: (style) => set({ mapStyle: style }),
-  updateStatusOverride: (code, status) =>
-    set((state) => ({
-      statusOverrides: { ...state.statusOverrides, [code]: status },
-    })),
-  setIsEditMode: (isEdit) => set({ isEditMode: isEdit }),
-  setDrawingAssetType: (type) => set({ drawingAssetType: type }),
-  setDrawnFeature: (feature) => set({ drawnFeature: feature }),
-  setIsFormOpen: (isOpen) => set({ isFormOpen: isOpen }),
-  setEditingAsset: (asset) => set({ editingAsset: asset }),
-  triggerTileRefresh: () => set((state) => ({ tileRefreshKey: state.tileRefreshKey + 1 })),
+      setMapCenter: (center) => set({ mapCenter: center }),
+      setMapStyle: (style) => set({ mapStyle: style }),
+      updateStatusOverride: (code, status) =>
+        set((state) => ({
+          statusOverrides: { ...state.statusOverrides, [code]: status },
+        })),
+      setIsEditMode: (isEdit) => set({ isEditMode: isEdit }),
+      setDrawingAssetType: (type) => set({ drawingAssetType: type }),
+      setDrawnFeature: (feature) => set({ drawnFeature: feature }),
+      setIsFormOpen: (isOpen) => set({ isFormOpen: isOpen }),
+      setEditingAsset: (asset) => set({ editingAsset: asset }),
+      triggerTileRefresh: () => set((state) => ({ tileRefreshKey: state.tileRefreshKey + 1 })),
 
-  // Trace Path actions
-  startTraceMode: (sourceNode) =>
-    set({ traceMode: "selecting-target", traceSourceNode: sourceNode, tracedPath: null }),
-  setTracedPath: (path) =>
-    set({ tracedPath: path, traceMode: "idle" }),
-  clearTrace: () =>
-    set({ tracedPath: null, traceMode: "idle", traceSourceNode: null }),
+      // Trace Path actions
+      startTraceMode: (sourceNode) =>
+        set({ traceMode: "selecting-target", traceSourceNode: sourceNode, tracedPath: null }),
+      setTracedPath: (path) =>
+        set({ tracedPath: path, traceMode: "idle" }),
+      clearTrace: () =>
+        set({ tracedPath: null, traceMode: "idle", traceSourceNode: null }),
 
-  setLayerVisibility: (layer, visible) =>
-    set((state) => ({
-      layerVisibility: { ...state.layerVisibility, [layer]: visible },
-    })),
-}));
+      setLayerVisibility: (layer, visible) =>
+        set((state) => ({
+          layerVisibility: { ...state.layerVisibility, [layer]: visible },
+        })),
+    }),
+    {
+      name: "ftth-map-settings",
+      storage: createJSONStorage(() => localStorage),
+      // Only persist specific keys to avoid weird UI states on reload
+      partialize: (state) => ({
+        mapCenter: state.mapCenter,
+        mapStyle: state.mapStyle,
+        layerVisibility: state.layerVisibility,
+      }),
+    }
+  )
+);
