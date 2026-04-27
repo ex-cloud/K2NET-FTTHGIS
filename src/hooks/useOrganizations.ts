@@ -4,7 +4,7 @@ import { getBackendBaseUrl } from '@/lib/api-config';
 import { useSession } from 'next-auth/react';
 
 export interface Organization {
-  id?: number;
+  id?: string;
   name: string;
   slug: string;
   description?: string;

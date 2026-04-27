@@ -36,7 +36,7 @@ export async function getUsers(
 }
 
 export async function updateUser(
-  id: number,
+  id: string,
   data: { role?: string; status?: string },
   token: string,
 ): Promise<User> {

@@ -14,7 +14,7 @@ export enum HealthStatus {
 }
 
 export interface NetworkNode {
-  id: number;
+  id: string;
   code: string;
   name: string;
   status: string;
@@ -38,7 +38,7 @@ export interface OLT extends NetworkNode {
 export interface ODC extends NetworkNode {
   capacity: number;
   usedCapacity: number;
-  oltId: number;
+  oltId: string;
   oltName: string;
   oltCode: string;
 }
@@ -46,13 +46,13 @@ export interface ODC extends NetworkNode {
 export interface ODP extends NetworkNode {
   totalPort: number;
   usedPort: number;
-  odcId: number;
+  odcId: string;
   odcName: string;
   odcCode: string;
 }
 
 export interface Customer extends NetworkNode {
-  odpId: number;
+  odpId: string;
   odpCode: string;
 }
 
