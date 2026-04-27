@@ -11,13 +11,14 @@ import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
 import com.company.ftthgis.domain.network.entity.OLT;
+import java.util.UUID;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-25T11:23:49+0700",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
+    date = "2026-04-25T17:49:10+0700",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
 )
 @Component
 public class NetworkMapperImpl implements NetworkMapper {
@@ -159,7 +160,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         return assetDto;
     }
 
-    private Long odcOltId(ODC oDC) {
+    private UUID odcOltId(ODC oDC) {
         if ( oDC == null ) {
             return null;
         }
@@ -167,7 +168,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         if ( olt == null ) {
             return null;
         }
-        Long id = olt.getId();
+        UUID id = olt.getId();
         if ( id == null ) {
             return null;
         }
@@ -204,7 +205,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         return code;
     }
 
-    private Long odpOdcId(ODP oDP) {
+    private UUID odpOdcId(ODP oDP) {
         if ( oDP == null ) {
             return null;
         }
@@ -212,7 +213,7 @@ public class NetworkMapperImpl implements NetworkMapper {
         if ( odc == null ) {
             return null;
         }
-        Long id = odc.getId();
+        UUID id = odc.getId();
         if ( id == null ) {
             return null;
         }

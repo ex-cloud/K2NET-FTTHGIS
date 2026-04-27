@@ -7,9 +7,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface OLTRepository extends JpaRepository<OLT, Long>, JpaSpecificationExecutor<OLT> {
+public interface OLTRepository extends JpaRepository<OLT, UUID>, JpaSpecificationExecutor<OLT> {
     Optional<OLT> findByCode(String code);
 
     boolean existsByCode(String code);

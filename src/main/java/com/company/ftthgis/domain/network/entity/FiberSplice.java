@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "fiber_splice")
@@ -14,8 +15,8 @@ import java.time.LocalDateTime;
 public class FiberSplice {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_core_id", nullable = false)
@@ -29,10 +30,10 @@ public class FiberSplice {
     private String spliceType; // FUSION, MECHANICAL, CONNECTOR
 
     @Column(name = "from_port_id")
-    private Long fromPortId;
-
+    private UUID fromPortId;
+    
     @Column(name = "to_port_id")
-    private Long toPortId;
+    private UUID toPortId;
 
     @Column(name = "loss_db")
     private Double lossDb; // Splice attenuation in dB

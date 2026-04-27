@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -14,8 +15,7 @@ import org.hibernate.envers.Audited;
 public class User extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -37,7 +37,4 @@ public class User extends BaseEntity {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    // Keycloak Subject ID (for SSO linking)
-    @Column(unique = true)
-    private String keycloakSubject;
 }

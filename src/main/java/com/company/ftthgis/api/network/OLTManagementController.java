@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network/olts")
@@ -39,12 +40,12 @@ public class OLTManagementController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OLTDto> update(@PathVariable Long id, @RequestBody OLTDto dto) {
+    public ResponseEntity<OLTDto> update(@PathVariable UUID id, @RequestBody OLTDto dto) {
         return ResponseEntity.ok(oltService.updateOlt(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = oltService.deleteOlt(id);
 

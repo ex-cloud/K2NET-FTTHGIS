@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,7 +23,7 @@ public class SplitterPortService {
     private final SplitterPortRepository portRepository;
 
     @Transactional(readOnly = true)
-    public List<SplitterPortDto> getPortsByNodeId(Long nodeId) {
+    public List<SplitterPortDto> getPortsByNodeId(UUID nodeId) {
         return portRepository.findByNodeIdOrderByDirectionAscPortNumberAsc(nodeId)
                 .stream()
                 .map(this::toDto)
@@ -30,13 +31,13 @@ public class SplitterPortService {
     }
 
     @Transactional(readOnly = true)
-    public SplitterPortDto getPortById(Long portId) {
+    public SplitterPortDto getPortById(UUID portId) {
         SplitterPort port = portRepository.findById(portId)
                 .orElseThrow(() -> new EntityNotFoundException("Port not found: " + portId));
         return toDto(port);
     }
 
-    public SplitterPortDto createPort(Long nodeId, SplitterPortDto dto) {
+    public SplitterPortDto createPort(UUID nodeId, SplitterPortDto dto) {
         if (portRepository.existsByNodeIdAndPortNumberAndDirection(nodeId, dto.getPortNumber(), dto.getDirection())) {
             throw new IllegalArgumentException(
                     "Port " + dto.getPortNumber() + " (" + dto.getDirection() + ") already exists on node " + nodeId);
@@ -54,7 +55,7 @@ public class SplitterPortService {
         return toDto(port);
     }
 
-    public SplitterPortDto updatePort(Long portId, SplitterPortDto dto) {
+    public SplitterPortDto updatePort(UUID portId, SplitterPortDto dto) {
         SplitterPort port = portRepository.findById(portId)
                 .orElseThrow(() -> new EntityNotFoundException("Port not found: " + portId));
 
@@ -65,7 +66,7 @@ public class SplitterPortService {
         return toDto(port);
     }
 
-    public String deletePort(Long portId) {
+    public String deletePort(UUID portId) {
         SplitterPort port = portRepository.findById(portId)
                 .orElseThrow(() -> new EntityNotFoundException("Port not found: " + portId));
         String label = "Port " + port.getPortNumber() + " (" + port.getDirection() + ") on Node " + port.getNodeId();
@@ -80,7 +81,7 @@ public class SplitterPortService {
      * @param count number of OUT ports to generate
      * @param withUplink if true, also create 1 IN port (upstream)
      */
-    public List<SplitterPortDto> generatePorts(Long nodeId, String nodeType, int count, boolean withUplink) {
+    public List<SplitterPortDto> generatePorts(UUID nodeId, String nodeType, int count, boolean withUplink) {
         List<SplitterPort> generated = new ArrayList<>();
 
         // Generate upstream IN port (slot connecting to parent)
@@ -123,7 +124,7 @@ public class SplitterPortService {
     }
 
     @Transactional(readOnly = true)
-    public PortSummary getPortSummary(Long nodeId) {
+    public PortSummary getPortSummary(UUID nodeId) {
         int total = portRepository.countByNodeId(nodeId);
         int used = portRepository.countByNodeIdAndStatus(nodeId, "USED");
         int available = portRepository.countByNodeIdAndStatus(nodeId, "AVAILABLE");

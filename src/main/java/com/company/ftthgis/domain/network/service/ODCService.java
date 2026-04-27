@@ -3,6 +3,7 @@ package com.company.ftthgis.domain.network.service;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 import com.company.ftthgis.domain.network.dto.ODCDto;
 import com.company.ftthgis.domain.network.entity.ODC;
@@ -87,7 +88,7 @@ public class ODCService {
         return toDto(odc);
     }
 
-    public ODCDto updateOdc(Long id, ODCDto dto) {
+    public ODCDto updateOdc(UUID id, ODCDto dto) {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found with ID: " + id));
 
@@ -111,7 +112,7 @@ public class ODCService {
         return toDto(odc);
     }
 
-    public String deleteOdc(Long id) {
+    public String deleteOdc(UUID id) {
         ODC odc = odcRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("ODC not found"));
         String code = odc.getCode();

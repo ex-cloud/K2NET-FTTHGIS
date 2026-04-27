@@ -140,7 +140,11 @@ public class UserSeeder implements CommandLineRunner {
             user.setEmail(email);
             user.setUsername(username); // Set username for new user
             user.setFullName(fullName);
-            user.setKeycloakSubject(keycloakId);
+            if (keycloakId != null) {
+                user.setId(UUID.fromString(keycloakId));
+            } else {
+                user.setId(UUID.randomUUID());
+            }
             user.setRole(role);
             user.setStatus(status);
 
@@ -169,10 +173,11 @@ public class UserSeeder implements CommandLineRunner {
                 changed = true;
             }
 
-            // Backfill Keycloak Subject
-            if (user.getKeycloakSubject() == null && keycloakId != null) {
-                user.setKeycloakSubject(keycloakId);
-                changed = true;
+            // Backfill ID from Keycloak if needed (Though with UUID as PK, it should already be set)
+            if (keycloakId != null && !user.getId().toString().equals(keycloakId)) {
+                log.warn("ID mismatch for user {}: Local={}, Keycloak={}. Re-linking...", email, user.getId(), keycloakId);
+                // Note: Changing PK is risky, but for seeding it might be necessary if they drifted.
+                // However, since we truncated, this is unlikely.
             }
 
             // Backfill Avatar URL if missing

@@ -7,11 +7,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSpecificationExecutor<Customer> {
+public interface CustomerRepository extends JpaRepository<Customer, UUID>, JpaSpecificationExecutor<Customer> {
     Optional<Customer> findByCode(String code);
 
     boolean existsByCode(String code);
@@ -20,5 +21,5 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
 
     List<Customer> findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(String code, String name);
 
-    long countByProjectId(String projectId);
+    long countByProjectId(UUID projectId);
 }

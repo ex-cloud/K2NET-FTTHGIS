@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,7 @@ public class FiberSpliceService {
     private final SplitterPortRepository portRepository;
 
     @Transactional(readOnly = true)
-    public List<FiberSpliceDto> getSplicesByNodeId(Long nodeId) {
+    public List<FiberSpliceDto> getSplicesByNodeId(UUID nodeId) {
         return spliceRepository.findByNodeId(nodeId)
                 .stream()
                 .map(this::toDto)
@@ -35,7 +36,7 @@ public class FiberSpliceService {
     }
 
     @Transactional(readOnly = true)
-    public List<FiberSpliceDto> getSplicesByPortId(Long portId) {
+    public List<FiberSpliceDto> getSplicesByPortId(UUID portId) {
         return spliceRepository.findByPortId(portId)
                 .stream()
                 .map(this::toDto)
@@ -95,7 +96,7 @@ public class FiberSpliceService {
     /**
      * Delete a splice and free up the associated cores and ports.
      */
-    public void deleteSplice(Long spliceId) {
+    public void deleteSplice(UUID spliceId) {
         FiberSplice splice = spliceRepository.findById(spliceId)
                 .orElseThrow(() -> new EntityNotFoundException("Splice not found: " + spliceId));
 

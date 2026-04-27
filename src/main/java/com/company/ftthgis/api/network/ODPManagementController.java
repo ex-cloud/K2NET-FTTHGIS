@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network/odps")
@@ -40,12 +41,12 @@ public class ODPManagementController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ODPDto> update(@PathVariable Long id, @RequestBody ODPDto dto) {
+    public ResponseEntity<ODPDto> update(@PathVariable UUID id, @RequestBody ODPDto dto) {
         return ResponseEntity.ok(odpService.updateOdp(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = odpService.deleteOdp(id);
 

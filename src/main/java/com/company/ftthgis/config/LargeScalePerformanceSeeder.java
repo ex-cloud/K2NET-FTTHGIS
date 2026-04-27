@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Seeder khusus untuk pengujian performa skala besar (5.000+ aset).
@@ -48,11 +49,10 @@ public class LargeScalePerformanceSeeder implements CommandLineRunner {
         // Bersihkan data lama agar bersih untuk pengujian
         cleanDatabase();
 
-        // Titik pusat pengujian (Bandung South area)
         double baseLon = 107.6100;
         double baseLat = -6.9400;
 
-        Project project = projectRepository.findById("ftth-gis-1").orElse(null);
+        Project project = projectRepository.findById(UUID.nameUUIDFromBytes("ftth-gis-1".getBytes())).orElse(null);
 
         // 1. Create OLT (1 unit)
         OLT olt = new OLT();

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,7 +61,7 @@ public class NetworkServiceImpl implements NetworkService {
     }
 
     @Override
-    public List<FiberCableMapDto> tracePath(Long startNodeId, Long endNodeId) {
+    public List<FiberCableMapDto> tracePath(UUID startNodeId, UUID endNodeId) {
         List<FiberCableProjection> projections = fiberCableRepository.findShortestPath(startNodeId, endNodeId);
         return mapProjectionsToDtos(projections);
     }

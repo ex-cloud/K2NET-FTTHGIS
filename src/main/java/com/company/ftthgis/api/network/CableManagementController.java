@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network/cables")
@@ -34,12 +35,12 @@ public class CableManagementController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FiberCableDto> update(@PathVariable Long id, @RequestBody FiberCableDto dto) {
+    public ResponseEntity<FiberCableDto> update(@PathVariable UUID id, @RequestBody FiberCableDto dto) {
         return ResponseEntity.ok(fiberCableService.updateCable(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
+    public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = fiberCableService.deleteCable(id);
 

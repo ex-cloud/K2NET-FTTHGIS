@@ -3,9 +3,11 @@ package com.company.ftthgis.api.user.dto;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+import java.util.UUID;
+
 @Data
 public class UserDto {
-    private Long id;
+    private UUID id;
     private String email;
     private String username;
     private String fullName;

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +43,7 @@ public class FiberCableService {
         return networkMapper.toFiberCableDto(cable);
     }
 
-    public FiberCableDto updateCable(Long id, FiberCableDto dto) {
+    public FiberCableDto updateCable(UUID id, FiberCableDto dto) {
         FiberCable cable = fiberCableRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found with ID: " + id));
 
@@ -51,7 +52,7 @@ public class FiberCableService {
         return networkMapper.toFiberCableDto(cable);
     }
 
-    public String deleteCable(Long id) {
+    public String deleteCable(UUID id) {
         FiberCable cable = fiberCableRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found"));
         String code = cable.getCode();

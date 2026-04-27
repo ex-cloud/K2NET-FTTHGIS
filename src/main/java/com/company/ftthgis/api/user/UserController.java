@@ -10,6 +10,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -39,7 +40,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     public UserDto update(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @RequestBody UpdateUserRequest request) {
         return userService.updateUser(id, request.role(), request.status());
     }

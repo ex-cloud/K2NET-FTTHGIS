@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "projects")
 @Data
@@ -12,8 +14,9 @@ import lombok.*;
 @Builder
 public class Project {
     @Id
-    @Column(name = "id", nullable = false, unique = true, length = 36)
-    private String id; // A unique, non-sequential string like UUID or "mlnnxs..."
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false, unique = true)
+    private UUID id;
 
     @Column(nullable = false)
     private String name;

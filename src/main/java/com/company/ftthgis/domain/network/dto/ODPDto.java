@@ -6,13 +6,14 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ODPDto {
-    private Long id;
+    private UUID id;
     private String nodeType;
     private Long osmid;
     private String code;
@@ -25,7 +26,7 @@ public class ODPDto {
     private String healthStatus;
 
     // Parent ODC Relation
-    private Long odcId;
+    private UUID odcId;
     private String odcName;
     private String odcCode;
     private String lastNote;

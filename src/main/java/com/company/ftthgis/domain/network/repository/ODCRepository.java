@@ -8,9 +8,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface ODCRepository extends JpaRepository<ODC, Long>, JpaSpecificationExecutor<ODC> {
+public interface ODCRepository extends JpaRepository<ODC, UUID>, JpaSpecificationExecutor<ODC> {
     boolean existsByCode(String code);
 
     Optional<ODC> findByCode(String code);

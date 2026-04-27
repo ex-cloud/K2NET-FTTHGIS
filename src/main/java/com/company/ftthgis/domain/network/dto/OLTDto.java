@@ -6,13 +6,14 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class OLTDto {
-    private Long id;
+    private UUID id;
     private String nodeType;
     private String code;
     private String name;

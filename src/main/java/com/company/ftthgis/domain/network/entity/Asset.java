@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.envers.Audited;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "assets")
@@ -16,8 +17,8 @@ import java.time.LocalDateTime;
 public class Asset extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "serial_number", unique = true)
     private String serialNumber;

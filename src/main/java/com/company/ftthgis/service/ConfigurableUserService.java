@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class ConfigurableUserService {
     private final UserRepository userRepository;
 
     public UserDto getCurrentUser(String keycloakSubject) {
-        return userRepository.findByKeycloakSubject(keycloakSubject)
+        return userRepository.findById(UUID.fromString(keycloakSubject))
                 .map(this::mapToDto)
                 .orElseThrow(() -> new RuntimeException("User not found in local database: " + keycloakSubject));
     }
@@ -36,7 +37,7 @@ public class ConfigurableUserService {
                 .build();
     }
 
-    public UserDto updateUser(Long id, String roleName, String status) {
+    public UserDto updateUser(UUID id, String roleName, String status) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

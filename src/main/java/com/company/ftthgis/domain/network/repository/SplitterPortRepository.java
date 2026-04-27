@@ -5,19 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface SplitterPortRepository extends JpaRepository<SplitterPort, Long> {
+public interface SplitterPortRepository extends JpaRepository<SplitterPort, UUID> {
 
-    List<SplitterPort> findByNodeIdOrderByDirectionAscPortNumberAsc(Long nodeId);
-
-    List<SplitterPort> findByNodeIdAndDirectionOrderByPortNumberAsc(Long nodeId, String direction);
-
-    int countByNodeIdAndStatus(Long nodeId, String status);
-
-    int countByNodeId(Long nodeId);
-
-    boolean existsByNodeIdAndPortNumberAndDirection(Long nodeId, Integer portNumber, String direction);
-
-    List<SplitterPort> findByNodeIdAndStatus(Long nodeId, String status);
+    List<SplitterPort> findByNodeIdOrderByDirectionAscPortNumberAsc(UUID nodeId);
+    List<SplitterPort> findByNodeIdAndDirectionOrderByPortNumberAsc(UUID nodeId, String direction);
+    int countByNodeIdAndStatus(UUID nodeId, String status);
+    int countByNodeId(UUID nodeId);
+    boolean existsByNodeIdAndPortNumberAndDirection(UUID nodeId, Integer portNumber, String direction);
+    List<SplitterPort> findByNodeIdAndStatus(UUID nodeId, String status);
 }

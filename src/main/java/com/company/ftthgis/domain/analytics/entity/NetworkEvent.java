@@ -4,6 +4,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -18,14 +19,14 @@ import java.time.LocalDateTime;
 public class NetworkEvent {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "asset_code", nullable = false)
     private String assetCode;
 
     @Column(name = "project_id", nullable = false)
-    private String projectId;
+    private UUID projectId;
 
     @Column(name = "asset_type", nullable = false)
     private String assetType; // OLT, ODC, ODP, CUSTOMER

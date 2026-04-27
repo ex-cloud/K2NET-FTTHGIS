@@ -35,20 +35,21 @@ public class DataMigrationService {
     @Transactional
     public String migrateLegacyData(String targetProjectId) {
         log.info("🚀 Aligning data to project: {}", targetProjectId);
+        java.util.UUID uuid = java.util.UUID.nameUUIDFromBytes(targetProjectId.getBytes());
         
         try {
             // 1. Convert any mismatched IDs to the current target
             int allUpdated = jdbcTemplate.update(
                 "UPDATE network_nodes SET project_id = ? WHERE project_id IS NULL OR project_id != ?", 
-                targetProjectId, targetProjectId);
+                uuid, uuid);
             
             jdbcTemplate.update(
                 "UPDATE network_edges SET project_id = ? WHERE project_id IS NULL OR project_id != ?", 
-                targetProjectId, targetProjectId);
+                uuid, uuid);
 
             jdbcTemplate.update(
                 "UPDATE network_event_history SET project_id = ? WHERE project_id IS NULL OR project_id != ?", 
-                targetProjectId, targetProjectId);
+                uuid, uuid);
 
             log.info("✅ Total assets aligned to {}: {} nodes.", targetProjectId, allUpdated);
                 

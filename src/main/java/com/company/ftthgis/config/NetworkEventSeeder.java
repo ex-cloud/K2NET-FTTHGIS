@@ -132,7 +132,7 @@ public class NetworkEventSeeder implements CommandLineRunner {
             double uptime = (double) active / totalNodes * 100.0;
 
             snapshots.add(DashboardSnapshot.builder()
-                    .projectId("ftth-gis-1")
+                    .projectId(java.util.UUID.nameUUIDFromBytes("ftth-gis-1".getBytes()))
                     .recordedAt(startTime)
                     .totalNodes(totalNodes)
                     .activeNodes(active)
@@ -157,7 +157,7 @@ public class NetworkEventSeeder implements CommandLineRunner {
                 .newStatus(newStatus)
                 .eventType("STATUS_CHANGE")
                 .timestamp(time)
-                .projectId(projectId)
+                .projectId(java.util.UUID.nameUUIDFromBytes(projectId.getBytes()))
                 .build();
     }
 }

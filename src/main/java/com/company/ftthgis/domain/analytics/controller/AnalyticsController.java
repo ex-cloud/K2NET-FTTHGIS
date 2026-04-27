@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/analytics")
@@ -24,7 +25,7 @@ public class AnalyticsController {
 
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'MANAGER')")
-    public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) String projectId) {
+    public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) UUID projectId) {
         return ResponseEntity.ok(analyticsService.getDashboardStats(projectId));
     }
 
@@ -38,7 +39,7 @@ public class AnalyticsController {
     public ResponseEntity<List<SnapshotDTO>> getSnapshotHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(required = false) String projectId) {
+            @RequestParam(required = false) UUID projectId) {
         return ResponseEntity.ok(analyticsService.getSnapshotHistory(from, to, projectId));
     }
 
@@ -50,8 +51,8 @@ public class AnalyticsController {
     public ResponseEntity<List<NetworkEvent>> getEventHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(required = false) String projectId) {
-        if (projectId != null && !projectId.isEmpty()) {
+            @RequestParam(required = false) UUID projectId) {
+        if (projectId != null) {
             return ResponseEntity.ok(networkEventRepository.findByTimestampBetweenAndProjectIdOrderByTimestampAsc(from, to, projectId));
         }
         return ResponseEntity.ok(networkEventRepository.findByTimestampBetweenOrderByTimestampAsc(from, to));

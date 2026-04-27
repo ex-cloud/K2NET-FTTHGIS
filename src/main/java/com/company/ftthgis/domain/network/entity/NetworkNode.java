@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 @Entity
 @Table(name = "network_nodes")
@@ -17,8 +18,8 @@ import org.locationtech.jts.geom.Point;
 public abstract class NetworkNode extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(unique = true)
     private Long osmid;

@@ -18,7 +18,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update # Prevent data loss on restart
+      ddl-auto: update # Gunakan update agar data tidak hilang saat restart
     properties:
       "[hibernate.format_sql]": true
 
@@ -47,7 +47,7 @@ keycloak:
 # as it is not part of the internal Spring Boot schema.
 app:
   seeder:
-    enabled: false  # Disable auto-purge of existing data
+    enabled: false # Matikan seeder otomatis karena data awal sudah masuk
   security:
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"

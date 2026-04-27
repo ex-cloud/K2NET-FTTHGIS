@@ -51,7 +51,7 @@ public class NetworkAnalyticsController {
                         // 1. Capacity Monitoring (Top 3 ODCs by usage percentage)
                         List<NetworkStatsDto.CapacityItem> capacities = odcRepository.findAll().stream()
                                         .filter(o -> !hasTenant || (o.getProject() != null
-                                                        && java.util.Objects.equals(tenantId, o.getProject().getId())))
+                                                        && java.util.Objects.equals(tenantId, o.getProject().getId().toString())))
                                         .map(o -> {
                                                 double p = o.getCapacity() > 0
                                                                 ? (double) o.getUsedCapacity() / o.getCapacity() * 100

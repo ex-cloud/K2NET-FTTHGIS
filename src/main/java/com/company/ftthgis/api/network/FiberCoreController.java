@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network/cables/{cableId}/cores")
@@ -16,25 +17,25 @@ public class FiberCoreController {
     private final FiberCoreService coreService;
 
     @GetMapping
-    public ResponseEntity<List<FiberCoreDto>> getCoresByCable(@PathVariable Long cableId) {
+    public ResponseEntity<List<FiberCoreDto>> getCoresByCable(@PathVariable UUID cableId) {
         return ResponseEntity.ok(coreService.getCoresByCableId(cableId));
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<FiberCoreService.CoreSummary> getCoreSummary(@PathVariable Long cableId) {
+    public ResponseEntity<FiberCoreService.CoreSummary> getCoreSummary(@PathVariable UUID cableId) {
         return ResponseEntity.ok(coreService.getCoreSummary(cableId));
     }
 
     @PutMapping("/{coreId}")
     public ResponseEntity<FiberCoreDto> updateCore(
-            @PathVariable Long cableId,
-            @PathVariable Long coreId,
+            @PathVariable UUID cableId,
+            @PathVariable UUID coreId,
             @RequestBody FiberCoreDto dto) {
         return ResponseEntity.ok(coreService.updateCore(coreId, dto));
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<List<FiberCoreDto>> generateCores(@PathVariable Long cableId) {
+    public ResponseEntity<List<FiberCoreDto>> generateCores(@PathVariable UUID cableId) {
         return ResponseEntity.ok(coreService.generateCores(cableId));
     }
 }

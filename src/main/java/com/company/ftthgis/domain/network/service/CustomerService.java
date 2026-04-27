@@ -3,6 +3,7 @@ package com.company.ftthgis.domain.network.service;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 import com.company.ftthgis.domain.network.dto.CustomerDto;
 import com.company.ftthgis.domain.network.entity.Customer;
@@ -84,7 +85,7 @@ public class CustomerService {
         return toDto(customer);
     }
 
-    public CustomerDto updateCustomer(Long id, CustomerDto dto) {
+    public CustomerDto updateCustomer(UUID id, CustomerDto dto) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + id));
 
@@ -107,7 +108,7 @@ public class CustomerService {
         return toDto(customer);
     }
 
-    public String deleteCustomer(Long id) {
+    public String deleteCustomer(UUID id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found"));
         String code = customer.getCode();

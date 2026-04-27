@@ -45,8 +45,8 @@ public class AuditHistoryService {
             NetworkEvent event = events.get(i);
             
             history.add(AuditHistoryDto.builder()
-                    // Use a descending sequence for revision number or just the ID
-                    .revisionNumber(event.getId().intValue())
+                    // Use a descending sequence based on size
+                    .revisionNumber(events.size() - i)
                     .revisionTimestamp(event.getTimestamp())
                     // Map the event type (e.g. STATUS_CHANGE) to revisionType
                     .revisionType("MOD")

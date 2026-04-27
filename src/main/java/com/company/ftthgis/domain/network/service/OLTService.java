@@ -3,6 +3,7 @@ package com.company.ftthgis.domain.network.service;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import java.util.UUID;
 
 import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.OLT;
@@ -81,7 +82,7 @@ public class OLTService {
     }
 
     @Transactional
-    public OLTDto updateOlt(Long id, OLTDto dto) {
+    public OLTDto updateOlt(UUID id, OLTDto dto) {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("OLT not found with id: " + id));
 
@@ -105,7 +106,7 @@ public class OLTService {
     }
 
     @Transactional
-    public String deleteOlt(Long id) {
+    public String deleteOlt(UUID id) {
         OLT olt = oltRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("OLT not found with ID: " + id));
         String code = olt.getCode();

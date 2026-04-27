@@ -7,9 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface FiberCableRepository extends JpaRepository<FiberCable, Long> {
+public interface FiberCableRepository extends JpaRepository<FiberCable, UUID> {
         boolean existsByCode(String code);
 
         java.util.Optional<FiberCable> findByCode(String code);
@@ -32,5 +33,5 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, Long> {
                         ") as r " +
                         "JOIN network_edges c ON r.edge = c.id " +
                         "ORDER BY r.seq", nativeQuery = true)
-        List<FiberCableProjection> findShortestPath(Long startNodeId, Long endNodeId);
+        List<FiberCableProjection> findShortestPath(UUID startNodeId, UUID endNodeId);
 }

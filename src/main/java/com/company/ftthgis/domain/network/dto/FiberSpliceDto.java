@@ -1,14 +1,15 @@
 package com.company.ftthgis.domain.network.dto;
 
 import lombok.Data;
+import java.util.UUID;
 
 @Data
 public class FiberSpliceDto {
-    private Long id;
-    private Long fromCoreId;
-    private Long toCoreId;
-    private Long fromPortId;
-    private Long toPortId;
+    private UUID id;
+    private UUID fromCoreId;
+    private UUID toCoreId;
+    private UUID fromPortId;
+    private UUID toPortId;
     private String spliceType;  // FUSION, MECHANICAL, CONNECTOR
     private Double lossDb;
     private String notes;

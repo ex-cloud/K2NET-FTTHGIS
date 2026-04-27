@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +34,8 @@ public class AnalyticsService {
     private final ProjectRepository projectRepository;
 
     @org.springframework.cache.annotation.Cacheable(value = "dashboard_stats", key = "#projectId ?: 'global'")
-    public DashboardStatsDTO getDashboardStats(String projectId) {
-        if (projectId == null || projectId.isEmpty()) {
+    public DashboardStatsDTO getDashboardStats(UUID projectId) {
+        if (projectId == null) {
             return getGlobalDashboardStats();
         }
 
@@ -98,7 +99,7 @@ public class AnalyticsService {
         LocalDateTime now = LocalDateTime.now();
 
         for (Project project : projects) {
-            String projectId = project.getId();
+            UUID projectId = project.getId();
             try {
                 long totalNodes = analyticsRepository.countTotalNodes(projectId);
                 long activeNodes = analyticsRepository.countActiveNodes(projectId);
@@ -143,8 +144,8 @@ public class AnalyticsService {
     /**
      * Retrieves snapshots within a date range for the frontend history chart.
      */
-    public List<SnapshotDTO> getSnapshotHistory(LocalDateTime from, LocalDateTime to, String projectId) {
-        if (projectId == null || projectId.isEmpty()) {
+    public List<SnapshotDTO> getSnapshotHistory(LocalDateTime from, LocalDateTime to, UUID projectId) {
+        if (projectId == null) {
             return List.of();
         }
         List<DashboardSnapshot> snapshots = snapshotRepository.findByRecordedAtBetweenAndProjectIdOrderByRecordedAtAsc(from, to, projectId);

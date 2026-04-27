@@ -9,9 +9,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface NetworkNodeRepository extends JpaRepository<NetworkNode, Long> {
+public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> {
     Optional<NetworkNode> findByOsmid(Long osmid);
     boolean existsByCode(String code);
 
@@ -23,5 +24,5 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, Long> 
         WHERE o.slug = :orgSlug 
         AND (:projectId IS NULL OR p.id = :projectId)
     """, nativeQuery = true)
-    List<AssetMapProjection> findAllByOrgSlugAndProjectId(@Param("orgSlug") String orgSlug, @Param("projectId") String projectId);
+    List<AssetMapProjection> findAllByOrgSlugAndProjectId(@Param("orgSlug") String orgSlug, @Param("projectId") UUID projectId);
 }

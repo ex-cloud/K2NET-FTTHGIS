@@ -367,12 +367,17 @@ public class StatusPropagationService {
     }
 
     private void logEvent(String assetCode, String assetType, String oldStatus, String newStatus, String eventType,
-            String reason, String entityProjectId) {
+            String reason, java.util.UUID entityProjectId) {
         try {
-            // Fallback Logic: Try Context -> Try Entity -> Try default
-            String finalProjectId = TenantContext.getTenantId();
+            java.util.UUID finalProjectId = null;
+            String tenantIdStr = TenantContext.getTenantId();
+            if (tenantIdStr != null && !tenantIdStr.isEmpty()) {
+                try {
+                    finalProjectId = java.util.UUID.fromString(tenantIdStr);
+                } catch(Exception e){}
+            }
             if (finalProjectId == null) finalProjectId = entityProjectId;
-            if (finalProjectId == null) finalProjectId = "ftth-gis-1";
+            if (finalProjectId == null) finalProjectId = java.util.UUID.nameUUIDFromBytes("ftth-gis-1".getBytes());
 
             NetworkEvent event = NetworkEvent.builder()
                     .assetCode(assetCode)

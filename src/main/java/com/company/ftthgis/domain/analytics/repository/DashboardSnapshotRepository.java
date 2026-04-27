@@ -6,15 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface DashboardSnapshotRepository extends JpaRepository<DashboardSnapshot, Long> {
 
-    /**
-     * Find all snapshots within a date range, ordered chronologically.
-     */
     List<DashboardSnapshot> findByRecordedAtBetweenAndProjectIdOrderByRecordedAtAsc(
-            LocalDateTime from, LocalDateTime to, String projectId);
+            LocalDateTime from, LocalDateTime to, UUID projectId);
 
     /**
      * Delete old snapshots beyond retention period (e.g. > 90 days).

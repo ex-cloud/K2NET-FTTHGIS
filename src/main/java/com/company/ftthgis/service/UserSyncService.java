@@ -13,6 +13,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,15 +44,17 @@ public class UserSyncService {
             if (email == null)
                 continue;
 
-            Optional<User> existingUser = userRepository.findByKeycloakSubject(keycloakId);
+            UUID uuid = UUID.fromString(keycloakId);
+            Optional<User> existingUser = userRepository.findById(uuid);
             if (existingUser.isPresent()) {
                 updateExistingUser(existingUser.get(), email, name, username);
             } else {
                 userRepository.findByEmail(email)
                         .map(user -> {
                             log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                            user.setKeycloakSubject(keycloakId);
-                            return updateExistingUser(user, email, name, username);
+                            userRepository.delete(user);
+                            userRepository.flush();
+                            return createNewUser(keycloakId, email, name, username);
                         })
                         .orElseGet(() -> createNewUser(keycloakId, email, name, username));
             }
@@ -74,15 +77,17 @@ public class UserSyncService {
             return null;
         }
 
-        Optional<User> existingUser = userRepository.findByKeycloakSubject(keycloakId);
+        UUID uuid = UUID.fromString(keycloakId);
+        Optional<User> existingUser = userRepository.findById(uuid);
         if (existingUser.isPresent()) {
             return updateExistingUser(existingUser.get(), email, name, username);
         } else {
             return userRepository.findByEmail(email)
                     .map(user -> {
                         log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
-                        user.setKeycloakSubject(keycloakId);
-                        return updateExistingUser(user, email, name, username);
+                        userRepository.delete(user);
+                        userRepository.flush();
+                        return createNewUser(keycloakId, email, name, username);
                     })
                     .orElseGet(() -> createNewUser(keycloakId, email, name, username));
         }
@@ -122,7 +127,7 @@ public class UserSyncService {
                 .orElseThrow(() -> new RuntimeException("Default 'viewer' role not found in database"));
 
         User user = new User();
-        user.setKeycloakSubject(keycloakId);
+        user.setId(UUID.fromString(keycloakId));
         user.setEmail(email);
         user.setFullName(name != null && !name.isEmpty() ? name : email);
         user.setUsername(username);

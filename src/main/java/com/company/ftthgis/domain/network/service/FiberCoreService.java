@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,14 +33,14 @@ public class FiberCoreService {
     };
 
     @Transactional(readOnly = true)
-    public List<FiberCoreDto> getCoresByCableId(Long cableId) {
+    public List<FiberCoreDto> getCoresByCableId(UUID cableId) {
         return coreRepository.findByCableIdOrderByCoreNumberAsc(cableId)
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    public FiberCoreDto updateCore(Long coreId, FiberCoreDto dto) {
+    public FiberCoreDto updateCore(UUID coreId, FiberCoreDto dto) {
         FiberCore core = coreRepository.findById(coreId)
                 .orElseThrow(() -> new EntityNotFoundException("Core not found: " + coreId));
 
@@ -57,7 +58,7 @@ public class FiberCoreService {
      * Auto-generate fiber cores for a cable based on its fiberCount.
      * Assigns TIA-598 color codes automatically.
      */
-    public List<FiberCoreDto> generateCores(Long cableId) {
+    public List<FiberCoreDto> generateCores(UUID cableId) {
         FiberCable cable = cableRepository.findById(cableId)
                 .orElseThrow(() -> new EntityNotFoundException("Cable not found: " + cableId));
 
@@ -87,7 +88,7 @@ public class FiberCoreService {
     }
 
     @Transactional(readOnly = true)
-    public CoreSummary getCoreSummary(Long cableId) {
+    public CoreSummary getCoreSummary(UUID cableId) {
         int total = coreRepository.countByCableId(cableId);
         int used = coreRepository.countByCableIdAndStatus(cableId, "USED");
         int available = coreRepository.countByCableIdAndStatus(cableId, "AVAILABLE");

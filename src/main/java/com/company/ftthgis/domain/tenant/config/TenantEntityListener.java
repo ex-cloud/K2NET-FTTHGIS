@@ -7,6 +7,8 @@ import jakarta.persistence.PrePersist;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 @Slf4j
 public class TenantEntityListener {
@@ -21,7 +23,7 @@ public class TenantEntityListener {
                 
                 // We create a proxy project object with just the ID to avoid extra DB hit
                 Project project = new Project();
-                project.setId(projectId);
+                project.setId(UUID.fromString(projectId));
                 
                 baseEntity.setProject(project);
             }

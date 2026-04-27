@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "splitter_port", uniqueConstraints = {
@@ -17,11 +18,11 @@ import java.time.LocalDateTime;
 public class SplitterPort {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "node_id", nullable = false)
-    private Long nodeId;
+    private UUID nodeId;
 
     @Column(name = "node_type", nullable = false, length = 10)
     private String nodeType; // "ODC", "ODP", "OLT"

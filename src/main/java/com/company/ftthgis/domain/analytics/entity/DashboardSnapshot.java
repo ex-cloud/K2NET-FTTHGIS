@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
+
 
 /**
  * Stores periodic snapshots of dashboard metrics so the frontend
@@ -29,7 +31,7 @@ public class DashboardSnapshot {
     private LocalDateTime recordedAt;
 
     @Column(name = "project_id", nullable = false)
-    private String projectId;
+    private UUID projectId;
 
     private long totalNodes;
     private long activeNodes;

@@ -6,20 +6,21 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface NetworkEventRepository extends JpaRepository<NetworkEvent, Long> {
+public interface NetworkEventRepository extends JpaRepository<NetworkEvent, UUID> {
 
     // Fetch events within a specific time range (for Chart Scatter Plot)
     List<NetworkEvent> findByTimestampBetweenOrderByTimestampAsc(LocalDateTime from, LocalDateTime to);
 
     List<NetworkEvent> findByTimestampBetweenAndProjectIdOrderByTimestampAsc(
-            LocalDateTime from, LocalDateTime to, String projectId);
+            LocalDateTime from, LocalDateTime to, UUID projectId);
 
     // Fetch latest events for activity log
     List<NetworkEvent> findTop50ByOrderByTimestampDesc();
 
-    List<NetworkEvent> findTop50ByProjectIdOrderByTimestampDesc(String projectId);
+    List<NetworkEvent> findTop50ByProjectIdOrderByTimestampDesc(UUID projectId);
 
     List<NetworkEvent> findTop20ByAssetCodeOrderByTimestampDesc(String assetCode);
 }

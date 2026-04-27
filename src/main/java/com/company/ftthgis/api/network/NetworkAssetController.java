@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 
 @RestController
@@ -101,7 +102,7 @@ public class NetworkAssetController {
         int successCount = 0;
         List<String> failedIds = new ArrayList<>();
 
-        for (Long id : request.getIds()) {
+        for (UUID id : request.getIds()) {
             try {
                 String code = null;
                 // Handle Status Change via Propagation Service
@@ -198,13 +199,13 @@ public class NetworkAssetController {
     public ResponseEntity<Map<String, Object>> batchDelete(
             @RequestParam String type,
             @RequestParam String reason,
-            @RequestBody List<Long> ids) {
+            @RequestBody List<UUID> ids) {
         log.info("🗑️ Batch delete triggered for {} {} assets. Reason: {}", ids.size(), type, reason);
         
         int successCount = 0;
         List<String> failedIds = new ArrayList<>();
 
-        for (Long id : ids) {
+        for (UUID id : ids) {
             try {
                 if ("ODP".equalsIgnoreCase(type)) {
                     odpRepository.deleteById(id);
@@ -255,27 +256,27 @@ public class NetworkAssetController {
 
         log.info("Fetching detail lookup for {} : {}", type, id);
 
-        // If ID is not a number, try to treat it as a code
+        // Handle UUID directly
         try {
-            Long numericId = Long.parseLong(id);
+            UUID uuid = UUID.fromString(id);
             String code = null;
             if ("ODC".equalsIgnoreCase(type)) {
-                code = odcRepository.findById(numericId).map(ODC::getCode).orElse(null);
+                code = odcRepository.findById(uuid).map(ODC::getCode).orElse(null);
             } else if ("ODP".equalsIgnoreCase(type)) {
-                code = odpRepository.findById(numericId).map(ODP::getCode).orElse(null);
+                code = odpRepository.findById(uuid).map(ODP::getCode).orElse(null);
             } else if ("OLT".equalsIgnoreCase(type)) {
-                code = oltRepository.findById(numericId).map(OLT::getCode).orElse(null);
+                code = oltRepository.findById(uuid).map(OLT::getCode).orElse(null);
             } else if ("CUSTOMER".equalsIgnoreCase(type)) {
-                code = customerRepository.findById(numericId).map(Customer::getCode).orElse(null);
+                code = customerRepository.findById(uuid).map(Customer::getCode).orElse(null);
             } else if ("CABLE".equalsIgnoreCase(type)) {
-                code = fiberCableRepository.findById(numericId).map(FiberCable::getCode).orElse(null);
+                code = fiberCableRepository.findById(uuid).map(FiberCable::getCode).orElse(null);
             }
 
             if (code != null) {
                 return getAssetDetailByCode(type, code);
             }
-        } catch (NumberFormatException e) {
-            log.warn("ID {} is not numeric, attempting fallback to code lookup", id);
+        } catch (IllegalArgumentException e) {
+            log.warn("ID {} is not a valid UUID, attempting fallback to code lookup", id);
             return getAssetDetailByCode(type, id);
         }
 
@@ -434,7 +435,7 @@ public class NetworkAssetController {
     @Transactional(readOnly = true)
     public ResponseEntity<List<AssetSearchResult>> getAllNodes(
             @RequestParam(required = false) String orgSlug,
-            @RequestParam(required = false) String projectId) {
+            @RequestParam(required = false) UUID projectId) {
         log.info("📍 Fetching all nodes for map clustering (Org: {}, Project: {})...", orgSlug, projectId);
         
         if (orgSlug == null || orgSlug.isEmpty()) {
@@ -491,7 +492,7 @@ public class NetworkAssetController {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODC",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
-                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getId().toString() : null,
                         o.getProject() != null ? o.getProject().getName() : null));
             }
         });
@@ -501,7 +502,7 @@ public class NetworkAssetController {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "ODP",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
-                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getId().toString() : null,
                         o.getProject() != null ? o.getProject().getName() : null));
             }
         });
@@ -511,7 +512,7 @@ public class NetworkAssetController {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "OLT",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
-                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getId().toString() : null,
                         o.getProject() != null ? o.getProject().getName() : null));
             }
         });
@@ -521,7 +522,7 @@ public class NetworkAssetController {
                 results.add(new AssetSearchResult(o.getId().toString(), o.getCode(), "CUSTOMER",
                         o.getGeom().getX(), o.getGeom().getY(),
                         Optional.ofNullable(statusCacheService.getStatus(o.getCode())).orElse(o.getStatus()),
-                        o.getProject() != null ? o.getProject().getId() : null,
+                        o.getProject() != null ? o.getProject().getId().toString() : null,
                         o.getProject() != null ? o.getProject().getName() : null));
             }
         });

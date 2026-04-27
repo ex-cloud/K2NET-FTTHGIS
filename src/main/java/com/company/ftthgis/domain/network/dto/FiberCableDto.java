@@ -6,13 +6,14 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.LineString;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class FiberCableDto {
-    private Long id;
+    private UUID id;
     private String code;
     
     @JsonIgnore

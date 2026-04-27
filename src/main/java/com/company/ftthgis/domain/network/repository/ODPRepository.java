@@ -7,11 +7,12 @@ import org.springframework.stereotype.Repository;
 import com.company.ftthgis.domain.network.entity.ODC;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 @Repository
-public interface ODPRepository extends JpaRepository<ODP, Long>, JpaSpecificationExecutor<ODP> {
+public interface ODPRepository extends JpaRepository<ODP, UUID>, JpaSpecificationExecutor<ODP> {
     boolean existsByCode(String code);
 
     Optional<ODP> findByCode(String code);

@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network")
@@ -35,8 +36,8 @@ public class NetworkController {
 
     @GetMapping("/trace-path")
     public ResponseEntity<List<FiberCableMapDto>> tracePath(
-            @RequestParam Long startNodeId,
-            @RequestParam Long endNodeId) {
+            @RequestParam UUID startNodeId,
+            @RequestParam UUID endNodeId) {
         return ResponseEntity.ok(networkService.tracePath(startNodeId, endNodeId));
     }
 }

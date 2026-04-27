@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/network/splices")
@@ -17,12 +18,12 @@ public class SpliceController {
 
     @GetMapping
     public ResponseEntity<List<FiberSpliceDto>> getSplicesByNode(
-            @RequestParam Long nodeId) {
+            @RequestParam UUID nodeId) {
         return ResponseEntity.ok(spliceService.getSplicesByNodeId(nodeId));
     }
 
     @GetMapping("/by-port/{portId}")
-    public ResponseEntity<List<FiberSpliceDto>> getSplicesByPort(@PathVariable Long portId) {
+    public ResponseEntity<List<FiberSpliceDto>> getSplicesByPort(@PathVariable UUID portId) {
         return ResponseEntity.ok(spliceService.getSplicesByPortId(portId));
     }
 
@@ -32,7 +33,7 @@ public class SpliceController {
     }
 
     @DeleteMapping("/{spliceId}")
-    public ResponseEntity<Void> deleteSplice(@PathVariable Long spliceId) {
+    public ResponseEntity<Void> deleteSplice(@PathVariable UUID spliceId) {
         spliceService.deleteSplice(spliceId);
         return ResponseEntity.noContent().build();
     }

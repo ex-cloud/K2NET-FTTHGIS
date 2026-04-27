@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "fiber_core")
@@ -13,8 +14,8 @@ import java.time.LocalDateTime;
 public class FiberCore {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cable_id", nullable = false)
@@ -34,10 +35,10 @@ public class FiberCore {
 
     // Basic connectivity info
     @Column(name = "from_node_id")
-    private Long fromNodeId; 
-
+    private UUID fromNodeId; 
+    
     @Column(name = "to_node_id")
-    private Long toNodeId;
+    private UUID toNodeId;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
