@@ -274,6 +274,7 @@ public class DataInitializer implements CommandLineRunner {
                                 n.code
                             FROM bounds, network_nodes n
                             WHERE n.geom && bounds.bbox_geom
+                              AND (query->>'project_id' IS NULL OR n.project_id = (query->>'project_id')::uuid)
                         ) raw_nodes, bounds
                     ),
                     mvt_edges AS (
@@ -282,6 +283,7 @@ public class DataInitializer implements CommandLineRunner {
                                e.id, e.status, e.fiber_count, e.code
                         FROM network_edges e, bounds
                         WHERE e.geom && bounds.bbox_geom
+                          AND (query->>'project_id' IS NULL OR e.project_id = (query->>'project_id')::uuid)
                     )
                     SELECT (SELECT ST_AsMvt(mvt_nodes.*, 'nodes') FROM mvt_nodes) ||
                            (SELECT ST_AsMvt(mvt_edges.*, 'edges') FROM mvt_edges) INTO mvt;
