@@ -6,6 +6,7 @@ import { z } from "zod";
 import { networkApi } from "@/lib/api/network";
 import { odcSchema } from "@/lib/validations/network";
 import { ODC, OLT } from "@/types/network";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useOdcForm(
   odc: ODC | null,
@@ -16,6 +17,7 @@ export function useOdcForm(
   const params = useParams();
   const projectId = ((Array.isArray(params?.projectId) ? params.projectId[0] : params?.projectId) || "") as string;
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
   
   const [loading, setLoading] = React.useState(false);
   const [showMapPicker, setShowMapPicker] = React.useState(false);
@@ -133,6 +135,10 @@ export function useOdcForm(
       toast.success(
         isEdit ? "ODC updated successfully" : "ODC created successfully",
       );
+      
+      // Force instant refresh of stats and inventory cache
+      queryClient.invalidateQueries({ queryKey: ["networkStats"] });
+      
       onSuccess();
       onOpenChange(false);
     } catch (err) {

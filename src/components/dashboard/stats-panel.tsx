@@ -11,32 +11,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useEffect, useState, ReactNode } from "react";
+import { useNetworkStats } from "@/hooks/queries/useNetworkStats";
+
+import { ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { networkApi } from "@/lib/api/network";
-
-interface Stats {
-  totalNodes: number;
-  totalOdc: number;
-  totalOdp: number;
-  totalCableLengthKm: number;
-  totalUsers: number;
-  growthPercentage: number;
-  activeMaintenanceCount: number;
-  topCapacities: {
-    label: string;
-    percentage: number;
-    color: string;
-  }[];
-  activeMaintenances: {
-    id: string;
-    code: string;
-    type: string;
-    description: string;
-    severity: "critical" | "warning" | "info";
-  }[];
-}
 
 function StatCard({ title, icon, children, defaultOpen = true }: { title: string, icon: ReactNode, children: ReactNode, defaultOpen?: boolean }) {
   return (
@@ -63,42 +42,13 @@ export function StatsPanel() {
   const { data: session } = useSession();
   const params = useParams();
   const projectId = params?.projectId as string;
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const { data: stats, isLoading, isError } = useNetworkStats(
+    session?.accessToken as string | undefined, 
+    projectId
+  );
 
-  useEffect(() => {
-    async function fetchStats() {
-      if (!session?.accessToken) return;
-
-      try {
-        const data = await networkApi.getStats(session.accessToken as string, projectId);
-        setStats(data);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch stats", err);
-        setError("Unable to connect to analytics engine");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchStats();
-
-    const handleNetworkBatchUpdate = () => {
-      console.log(`[Stats Sync] Refreshing due to batch update`);
-      fetchStats();
-    };
-
-    window.addEventListener("network-batch-update", handleNetworkBatchUpdate);
-    return () =>
-      window.removeEventListener(
-        "network-batch-update",
-        handleNetworkBatchUpdate,
-      );
-  }, [session?.accessToken, projectId]);
-
-  if (loading || error || !stats) {
+  if (isLoading || isError || !stats) {
     return null;
   }
 

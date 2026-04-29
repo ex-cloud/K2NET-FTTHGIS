@@ -58,19 +58,23 @@ function SessionPulse({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+import { QueryProvider } from "./query-provider";
+
 export function Providers({ children, session }: { children: React.ReactNode, session?: Session | null }) {
   return (
     <SessionProvider session={session} refetchInterval={2} refetchOnWindowFocus={true}>
       <SessionPulse>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthGuard>{children}</AuthGuard>
-          <Toaster />
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthGuard>{children}</AuthGuard>
+            <Toaster />
+          </ThemeProvider>
+        </QueryProvider>
       </SessionPulse>
     </SessionProvider>
   );

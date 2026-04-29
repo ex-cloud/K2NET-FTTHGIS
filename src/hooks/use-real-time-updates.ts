@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { useMapStore } from "@/store/map-store";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface NetworkEvent {
   assetCode: string;
@@ -29,6 +30,7 @@ export function useRealTimeUpdates() {
   const eventBufferRef = useRef<Array<{ assetCode: string; status: string }>>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const queryClient = useQueryClient();
 
   const flushEvents = useCallback(() => {
     if (eventBufferRef.current.length === 0) return;
@@ -36,12 +38,19 @@ export function useRealTimeUpdates() {
     const batch = [...eventBufferRef.current];
     eventBufferRef.current = [];
 
+    // Legacy manual dispatch
     window.dispatchEvent(
       new CustomEvent("network-batch-update", {
         detail: { events: batch },
       }),
     );
-  }, []);
+    
+    // React Query Cache Invalidation
+    console.log("[SSE] Batch update received, invalidating React Query cache");
+    queryClient.invalidateQueries({ queryKey: ["networkStats"] });
+    // Also invalidate nodes cache if we add one later
+    queryClient.invalidateQueries({ queryKey: ["networkNodes"] });
+  }, [queryClient]);
 
   const handleUpdate = useCallback(
     (data: NetworkEvent, severity: "CRITICAL" | "MINOR" | "INFO" | "SILENT") => {
