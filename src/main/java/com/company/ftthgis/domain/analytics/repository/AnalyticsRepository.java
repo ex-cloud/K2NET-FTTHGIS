@@ -19,7 +19,7 @@ public interface AnalyticsRepository extends JpaRepository<NetworkNode, UUID> {
     @Query("SELECT COUNT(n) FROM NetworkNode n WHERE (n.status = 'DOWN' OR n.status = 'BROKEN' OR n.status = 'FIBERCUT' OR n.status = 'MAINTENANCE') AND n.project.id = :projectId")
     long countDownNodes(@Param("projectId") UUID projectId);
 
-    @Query(value = "SELECT COALESCE(SUM(ST_Length(CAST(geom AS geography))) / 1000, 0) FROM network_edges WHERE project_id = :projectId", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(SUM(ST_Length(CAST(geom AS geography))) / 1000, 0) FROM network_edges WHERE project_id = CAST(:projectId AS uuid)", nativeQuery = true)
     double calculateTotalNetworkLengthKm(@Param("projectId") UUID projectId);
 
     @Query("SELECT COUNT(n) FROM NetworkNode n WHERE n.project.id = :projectId")

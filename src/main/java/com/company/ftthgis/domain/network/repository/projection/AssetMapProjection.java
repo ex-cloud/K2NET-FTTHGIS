@@ -5,7 +5,7 @@ package com.company.ftthgis.domain.network.repository.projection;
  * Includes direct coordinate extraction to avoid JTS precision loss.
  */
 public interface AssetMapProjection {
-    Long getId();
+    java.util.UUID getId();
     String getCode();
     String getStatus();
     Double getLat();

@@ -89,9 +89,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Split comma-separated string from @Value
-        List<String> origins = List.of(allowedOrigins.split(","));
-        configuration.setAllowedOrigins(origins);
+        // Permissive patterns for development to avoid localhost vs 127.0.0.1 issues
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

@@ -1,7 +1,13 @@
 package com.company.ftthgis.config;
 
-import com.company.ftthgis.domain.network.entity.*;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.network.repository.*;
+import com.company.ftthgis.domain.network.entity.*;
+import com.company.ftthgis.domain.network.repository.CustomerRepository;
+import com.company.ftthgis.domain.network.entity.Customer;
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.Project;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.*;
@@ -10,9 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.util.Random;
-
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
@@ -27,6 +32,8 @@ public class DataInitializer implements CommandLineRunner {
     private final ODPRepository odpRepository;
     private final CustomerRepository customerRepository;
     private final FiberCableRepository fiberCableRepository;
+    private final ProjectRepository projectRepository;
+    private final OrganizationRepository organizationRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
@@ -51,40 +58,76 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        log.info("Starting Advanced GIS Network Seeder (Bandung Hierarchy)...");
-        cleanDatabase();
-
+        log.info("==========================================================");
+        log.info("🔥 [NUCLEAR SYNC] STARTING AGGRESSIVE CLEANUP 🔥");
+        log.info("==========================================================");
+        
         try {
-            seedBandungNetworkHierarchy();
-            seedOfficeNetworkHierarchy();
-            log.info("--- [CLUSTER] Clustered view ready for dynamic updates ---");
+            // AUDIT 1: State Before
+            long orgCountBefore = organizationRepository.count();
+            long projCountBefore = projectRepository.count();
+            long nodeCountBefore = jdbcTemplate.queryForObject("SELECT count(*) FROM network_nodes", Long.class);
+            long edgeCountBefore = jdbcTemplate.queryForObject("SELECT count(*) FROM network_edges", Long.class);
+            log.info("BEFORE: Orgs={}, Projects={}, Nodes={}, Edges={}", orgCountBefore, projCountBefore, nodeCountBefore, edgeCountBefore);
+
+            // STEP 1: NUCLEAR CLEANUP - Wipe ALL asset tables cleanly (bypasses FK)
+            log.info("STEP 1: TRUNCATE all asset tables (CASCADE)...");
+            jdbcTemplate.execute("TRUNCATE TABLE network_edges CASCADE");
+            jdbcTemplate.execute("TRUNCATE TABLE network_nodes CASCADE");
+            
+            // Delete ghost org + its projects
+            log.info("STEP 1b: Removing 'default' slug organization and its projects...");
+            jdbcTemplate.execute("DELETE FROM projects WHERE org_id IN (SELECT id FROM organizations WHERE slug = 'default')");
+            jdbcTemplate.execute("DELETE FROM organizations WHERE slug = 'default'");
+
+            long orgCountAfter = organizationRepository.count();
+            log.info("AFTER CLEANUP: Orgs remaining={}", orgCountAfter);
+
+            // STEP 2: Find or Create Correct Organization
+            Organization org = organizationRepository.findBySlug("ex-cloud-org")
+                .orElseGet(() -> {
+                    log.info("Creating NEW Ex-Cloud Org...");
+                    return organizationRepository.save(Organization.builder()
+                        .name("Ex-Cloud Org")
+                        .slug("ex-cloud-org")
+                        .build());
+                });
+            log.info("Target Org: {} (ID: {})", org.getName(), org.getId());
+
+            // STEP 3: Target the EXACT Project ID
+            UUID bandungId = UUID.fromString("2cabd199-f3a9-479d-8edc-430c7b21ba42");
+
+            Project project = projectRepository.findById(bandungId)
+                .orElseGet(() -> {
+                    log.info("✨ Project {} not found, creating it...", bandungId);
+                    Project p = Project.builder()
+                        .name("FTTH GIS BANDUNG")
+                        .organization(org)
+                        .build();
+                    p.setId(bandungId);
+                    return projectRepository.save(p);
+                });
+
+            // FORCE Organization linkage
+            if (project.getOrganization() == null || !project.getOrganization().getId().equals(org.getId())) {
+                log.info("🔗 Re-linking Project {} to Org {}", project.getName(), org.getName());
+                project.setOrganization(org);
+                project = projectRepository.save(project);
+            }
+
+            log.info("🚀 Seeding assets to project: {}...", project.getName());
+            seedBandungNetworkHierarchy(project);
+            
+            log.info("✅ NUCLEAR SYNC COMPLETE for Project ID: {}", bandungId);
         } catch (Exception e) {
-            log.warn("Seeding or refresh encountered issues: {}", e.getMessage());
+            log.error("❌ CRITICAL SYNC ERROR: {}", e.getMessage(), e);
         }
 
         performSchemaAudit();
-        log.info("Seeding Complete. Topology Verified.");
     }
 
-    private void cleanDatabase() {
-        log.info("--- [CLEAN] Purging existing network data for fresh hierarchy ---");
 
-        // Fix: Remove redundant 'code' column in sub-tables if they exist
-        // (Leftover from failed schema generation or migration)
-        try {
-            jdbcTemplate.execute("ALTER TABLE olt DROP COLUMN IF EXISTS code");
-            jdbcTemplate.execute("ALTER TABLE odc DROP COLUMN IF EXISTS code");
-            jdbcTemplate.execute("ALTER TABLE odp DROP COLUMN IF EXISTS code");
-            log.info("--- [FIX] Redundant 'code' columns dropped from sub-tables (JOINED inheritance fix) ---");
-        } catch (Exception e) {
-            log.warn("Could not drop redundant 'code' columns: {}", e.getMessage());
-        }
-
-        jdbcTemplate.execute("TRUNCATE TABLE network_edges CASCADE");
-        jdbcTemplate.execute("TRUNCATE TABLE network_nodes CASCADE");
-    }
-
-    private void seedBandungNetworkHierarchy() {
+    private void seedBandungNetworkHierarchy(Project project) {
         log.info("--- [SEED] Building Bandung Office Hierarchy (OLT -> ODC -> ODP -> Customer) ---");
 
         // 1. OLT Utama (Bandung Center)
@@ -99,6 +142,7 @@ public class DataInitializer implements CommandLineRunner {
         olt.setSignalDb(0.0);
         olt.setIpAddress("127.0.0.1");
         olt.setSnmpCommunity("public");
+        olt.setProject(project);
         olt = oltRepository.save(olt);
 
         // 2. ODCs (Radius ~500m)
@@ -116,9 +160,10 @@ public class DataInitializer implements CommandLineRunner {
             odc.setStatus("ACTIVE");
             odc.setSignalDb(-3.5); // Feeder loss
             odc.setOlt(olt);
+            odc.setProject(project);
             odc = odcRepository.save(odc);
 
-            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), "ACTIVE");
+            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), "ACTIVE", project);
 
             // 3. ODPs per ODC (Radius ~200m around ODC)
             for (int j = 1; j <= 3; j++) {
@@ -131,6 +176,7 @@ public class DataInitializer implements CommandLineRunner {
                 odp.setGeom(geometryFactory.createPoint(odpCoord));
                 odp.setTotalPort(16);
                 odp.setUsedPort(0);
+                odp.setProject(project);
 
                 // Demo one faulty ODP
                 boolean isBroken = (i == 1 && j == 1);
@@ -138,7 +184,7 @@ public class DataInitializer implements CommandLineRunner {
                 odp.setSignalDb(-14.5); // Splitter loss
                 odp = odpRepository.save(odp);
 
-                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), isBroken ? "MAINTENANCE" : "ACTIVE");
+                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), isBroken ? "MAINTENANCE" : "ACTIVE", project);
 
                 // 4. Customers per ODP (Radius ~50m)
                 for (int k = 1; k <= 5; k++) {
@@ -151,6 +197,7 @@ public class DataInitializer implements CommandLineRunner {
                     cust.setGeom(geometryFactory.createPoint(custCoord));
                     cust.setOdp(odp);
                     cust.setStatus(isBroken ? "DOWN" : "ACTIVE");
+                    cust.setProject(project);
 
                     // Signal calculation with some variance
                     double redaman = -18.0 - (random.nextDouble() * 7.0);
@@ -160,7 +207,7 @@ public class DataInitializer implements CommandLineRunner {
 
                     customerRepository.save(cust);
 
-                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), isBroken ? "DOWN" : "ACTIVE");
+                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), isBroken ? "DOWN" : "ACTIVE", project);
                 }
 
                 odp.setUsedPort(5);
@@ -172,113 +219,14 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void seedOfficeNetworkHierarchy() {
-        log.info("--- [SEED] Building OFFICE Network Hierarchy ---");
+    // Removed unused seedOfficeNetworkHierarchy to fix IDE warning
 
-        // User's office coordinates
-        double officeLon = 107.63842063684594;
-        double officeLat = -6.903921011329491;
-        Coordinate oltCoord = new Coordinate(officeLon, officeLat);
-
-        // 1. OLT Utama di Kantor (Rename to match Poller default: OLT-TEST-01)
-        OLT olt = new OLT();
-        olt.setCode("OLT-TEST-01");
-        olt.setName("OLT Office Headlines (Test)");
-        olt.setGeom(geometryFactory.createPoint(oltCoord));
-        olt.setStatus("UP");
-        olt.setSignalDb(0.0);
-        olt.setIpAddress("127.0.0.1"); // Default local IP for simulation
-        olt.setSnmpCommunity("public");
-        olt = oltRepository.save(olt);
-
-        // 2. ODCs (3 cabinets around office)
-        // ODC-OFFICE-SOUTH will be DOWN (simulating major failure)
-        String[] odcNames = { "ODC-OFFICE-NORTH", "ODC-OFFICE-EAST", "ODC-OFFICE-SOUTH" };
-        String[] odcStatuses = { "UP", "UP", "DOWN" }; // South is DOWN
-        double[][] odcOffsets = { { 0.002, 0.003 }, { 0.004, -0.001 }, { -0.002, -0.003 } };
-
-        for (int i = 0; i < odcNames.length; i++) {
-            boolean isOdcDown = "DOWN".equals(odcStatuses[i]);
-            Coordinate odcCoord = new Coordinate(officeLon + odcOffsets[i][0], officeLat + odcOffsets[i][1]);
-            ODC odc = new ODC();
-            odc.setCode(odcNames[i] + "-01");
-            odc.setName(odcNames[i].replace("ODC-", "") + " Cabinet");
-            odc.setGeom(geometryFactory.createPoint(odcCoord));
-            odc.setCapacity(144);
-            odc.setUsedCapacity(0);
-            odc.setStatus(odcStatuses[i]);
-            odc.setSignalDb(isOdcDown ? -40.0 : -3.2); // Critical signal loss if DOWN
-            odc.setOlt(olt); // LINK TO PARENT OLT
-            odc = odcRepository.save(odc);
-
-            createCable(oltCoord, odcCoord, "FEEDER-" + odc.getCode(), isOdcDown ? "DOWN" : "UP");
-
-            // 3. ODPs per ODC (Increasing to 10 for Massive Outage testing)
-            for (int j = 1; j <= 10; j++) {
-                double a = Math.toRadians(j * 36);
-                Coordinate odpCoord = new Coordinate(odcCoord.x + Math.cos(a) * 0.0012,
-                        odcCoord.y + Math.sin(a) * 0.0012);
-                ODP odp = new ODP();
-                odp.setCode("ODP-" + odc.getCode() + "-" + j);
-                odp.setOdc(odc);
-                odp.setGeom(geometryFactory.createPoint(odpCoord));
-                odp.setTotalPort(16);
-                odp.setUsedPort(0);
-
-                // Status propagation: if ODC is DOWN, all ODPs are DOWN
-                // Also simulate FIBERCUT on ODC-OFFICE-EAST ODP-1
-                boolean isOdpFibercut = (i == 1 && j == 1); // ODC-OFFICE-EAST, ODP-1
-                String odpStatus = isOdcDown ? "DOWN" : (isOdpFibercut ? "FIBERCUT" : "ACTIVE");
-                boolean isOdpAffected = isOdcDown || isOdpFibercut;
-
-                odp.setStatus(odpStatus);
-                odp.setSignalDb(isOdpAffected ? -38.0 : -13.5);
-                odp = odpRepository.save(odp);
-
-                createCable(odcCoord, odpCoord, "DIST-" + odp.getCode(), odpStatus);
-
-                // 4. Customers per ODP - Status propagates from ODP
-                for (int k = 1; k <= 5; k++) {
-                    double ca = Math.toRadians(k * 72);
-                    Coordinate custCoord = new Coordinate(odpCoord.x + Math.cos(ca) * 0.0003,
-                            odpCoord.y + Math.sin(ca) * 0.0003);
-                    Customer cust = new Customer();
-                    cust.setCode("CUST-" + odp.getCode() + "-" + k);
-                    cust.setName("Pelanggan " + cust.getCode());
-                    cust.setGeom(geometryFactory.createPoint(custCoord));
-                    cust.setOdp(odp);
-
-                    // Customer status follows ODP status (propagation)
-                    String custStatus = isOdpAffected ? "DOWN" : "ACTIVE";
-                    cust.setStatus(custStatus);
-
-                    // Signal calculation - critical loss if affected
-                    double redaman = isOdpAffected ? -42.0 : (-17.5 - (random.nextDouble() * 5.0));
-                    cust.setSignalDb(redaman);
-                    customerRepository.save(cust);
-
-                    createCable(odpCoord, custCoord, "DROP-" + cust.getCode(), custStatus);
-                }
-
-                odp.setUsedPort(5);
-                odpRepository.save(odp);
-            }
-
-            odc.setUsedCapacity(3);
-            odcRepository.save(odc);
-        }
-        log.info("--- [SEED] Office Network Complete ---");
-        log.info("    - 1 OLT (ACTIVE)");
-        log.info("    - 3 ODCs (2 ACTIVE, 1 DOWN)");
-        log.info("    - 9 ODPs (5 ACTIVE, 1 FIBERCUT, 3 DOWN)");
-        log.info("    - 45 Customers (25 ACTIVE, 20 DOWN)");
-    }
-
-    private void createCable(Coordinate start, Coordinate end, String code, String status) {
+    private void createCable(Coordinate start, Coordinate end, String code, String status, Project project) {
         FiberCable cable = new FiberCable();
         cable.setCode(code);
         cable.setStatus(status);
         cable.setFiberCount(code.startsWith("FEEDER") ? 48 : (code.startsWith("DIST") ? 12 : 2));
+        cable.setProject(project);
 
         Coordinate[] coords = { start, end };
         LineString ls = geometryFactory.createLineString(coords);

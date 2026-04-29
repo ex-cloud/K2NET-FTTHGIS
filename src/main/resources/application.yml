@@ -47,7 +47,7 @@ keycloak:
 # as it is not part of the internal Spring Boot schema.
 app:
   seeder:
-    enabled: false # Matikan seeder otomatis karena data awal sudah masuk
+    enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
   security:
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"

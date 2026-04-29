@@ -23,7 +23,8 @@ public class NetworkAnalyticsController {
         private final JdbcTemplate jdbcTemplate;
 
         @GetMapping("/stats")
-        @org.springframework.cache.annotation.Cacheable(value = "dashboard_stats", key = "'network_analytics_' + (T(com.company.ftthgis.config.tenant.TenantContext).getTenantId() ?: 'global')")
+        // @Cacheable disabled: was causing "Cannot serialize" 500 error with Redis
+        // @org.springframework.cache.annotation.Cacheable(value = "dashboard_stats", key = "'network_analytics_' + (T(com.company.ftthgis.config.tenant.TenantContext).getTenantId() ?: 'global')")
         public ResponseEntity<NetworkStatsDto> getStats() {
                 log.info("Requesting real-time network statistics...");
 
@@ -32,7 +33,7 @@ public class NetworkAnalyticsController {
                         boolean hasTenant = tenantId != null && !tenantId.isEmpty();
                         String projectFilterStr = hasTenant ? " WHERE project_id = ?" : "";
                         String projectFilterAndStr = hasTenant ? " AND project_id = ?" : "";
-                        Object[] args = hasTenant ? new Object[] { tenantId } : new Object[] {};
+                        Object[] args = hasTenant ? new Object[] { java.util.UUID.fromString(tenantId) } : new Object[] {};
 
                         Long odcCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODC'" + projectFilterAndStr, Long.class, args);
                         Long odpCountObj = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM network_nodes WHERE node_type = 'ODP'" + projectFilterAndStr, Long.class, args);
