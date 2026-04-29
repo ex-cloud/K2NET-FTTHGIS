@@ -40,9 +40,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { networkApi } from "@/lib/api/network";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
 
 export default function OltListPage() {
   const router = useRouter();
@@ -64,7 +63,7 @@ export default function OltListPage() {
 
   // Batch Edit State
   const [isBatchDialogOpen, setIsBatchDialogOpen] = React.useState(false);
-  const [batchSelectedIds, setBatchSelectedIds] = React.useState<number[]>([]);
+  const [batchSelectedIds, setBatchSelectedIds] = React.useState<string[]>([]);
 
   const handleCreate = React.useCallback(() => {
     setSelectedOlt(null);
@@ -80,13 +79,7 @@ export default function OltListPage() {
     if (!oltToDelete || !session?.accessToken) return;
 
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/network/olts/${oltToDelete.id}`, {
-        method: "DELETE",
-        token: session.accessToken,
-      });
-
-      if (!res.ok) throw new Error("Failed to delete OLT");
+      await networkApi.deleteAsset("OLT", oltToDelete.id, "Administrative Delete", session.accessToken as string, projectId as string);
 
       toast.success(`OLT ${oltToDelete.code} deleted successfully`);
       refresh();
@@ -115,19 +108,9 @@ export default function OltListPage() {
     if (!reason) return;
 
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/network/assets/batch-delete?type=OLT&reason=${encodeURIComponent(reason)}`, {
-        method: "DELETE",
-        token: session?.accessToken,
-        body: JSON.stringify(selected.map(item => item.id))
-      });
-
-      if (res.ok) {
-        toast.success(`Successfully deleted ${selected.length} OLTs`);
-        refresh();
-      } else {
-        throw new Error("Failed to bulk delete");
-      }
+      await networkApi.batchDelete("OLT", selected.map(item => item.id), reason, session?.accessToken as string, projectId as string);
+      toast.success(`Successfully deleted ${selected.length} OLTs`);
+      refresh();
     } catch {
       toast.error("Bulk delete failed");
     }

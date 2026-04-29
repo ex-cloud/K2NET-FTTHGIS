@@ -5,20 +5,10 @@ import { Search, Loader2, MapPin, Building2, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { networkApi, type AssetSearchResult } from "@/lib/api/network";
 import { cn } from "@/lib/utils";
 
-interface SearchResult {
-  id: string;
-  code: string;
-  type: string;
-  lng: number;
-  lat: number;
-  status: string;
-  projectId: string;
-  projectName: string;
-}
+
 
 export function GlobalSearch() {
   const { data: session } = useSession();
@@ -28,7 +18,7 @@ export function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<AssetSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
@@ -56,22 +46,9 @@ export function GlobalSearch() {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const baseUrl = getBackendBaseUrl();
-        // Add orgId to search query to enforce scoping
-        const url = new URL(`${baseUrl}/network/assets/search`);
-        url.searchParams.append("q", query);
-        if (orgId) url.searchParams.append("orgId", orgId);
-
-        const res = await httpClient(url.toString(), {
-          token: session?.accessToken,
-          projectId: currentProjectId,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data);
-          setShowResults(true);
-        }
+        const data = await networkApi.searchAssets(query, orgId, session?.accessToken as string);
+        setResults(data);
+        setShowResults(true);
       } catch (err) {
         console.error("Global Search failed", err);
       } finally {
@@ -82,11 +59,11 @@ export function GlobalSearch() {
     return () => clearTimeout(timer);
   }, [query, orgId, session?.accessToken, currentProjectId]);
 
-  const handleSelect = useCallback((asset: SearchResult) => {
+  const handleSelect = useCallback((asset: AssetSearchResult) => {
     setShowResults(false);
     setQuery("");
 
-    const targetUrl = `/org/${orgId}/project/${asset.projectId}/infrastructure/topology?focus=${asset.code}`;
+    const targetUrl = `/org/${orgId}/project/${asset.projectId ?? currentProjectId}/infrastructure/topology?focus=${asset.code}`;
     
     // If we are already on the target project topology page, we just fly to the asset
     // Otherwise, we navigate
@@ -97,7 +74,7 @@ export function GlobalSearch() {
     } else {
         router.push(targetUrl);
     }
-  }, [orgId, pathname, router]);
+  }, [orgId, currentProjectId, pathname, router]);
 
   return (
     <div className="relative w-full max-w-md group" ref={containerRef}>

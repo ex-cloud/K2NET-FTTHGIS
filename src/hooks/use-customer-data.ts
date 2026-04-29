@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
-import { Customer, PageResponse } from "@/types/network";
+import { Customer } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
 import { useDebounce } from "./use-debounce";
+import { networkApi } from "@/lib/api/network";
 
 export function useCustomerData() {
   const { data: session } = useSession();
@@ -37,36 +36,23 @@ export function useCustomerData() {
       if (!session?.accessToken) return;
       try {
         if (!silent) setLoading(true);
-        const baseUrl = getBackendBaseUrl();
-        const urlParams = new URLSearchParams({
-          page: pagination.pageIndex.toString(),
-          size: pagination.pageSize.toString(),
+
+        const sortParams = sorting.map(sort => `${sort.id},${sort.desc ? "desc" : "asc"}`);
+        const filterParams: Record<string, string> = {};
+        debouncedFilters.forEach(f => {
+          if (f.value !== undefined && f.value !== "") {
+            filterParams[f.id] = f.value as string;
+          }
+        });
+
+        const result = await networkApi.getCustomers({
+          page: pagination.pageIndex,
+          size: pagination.pageSize,
           search: debouncedSearch,
-          _t: Date.now().toString(), // Cache-busting
-        });
+          sort: sortParams,
+          ...filterParams
+        }, session.accessToken as string, projectId as string);
 
-        // Add sorting params
-        if (sorting.length > 0) {
-          sorting.forEach((sort) => {
-            urlParams.append("sort", `${sort.id},${sort.desc ? "desc" : "asc"}`);
-          });
-        }
-
-        // Add column filters
-        if (debouncedFilters.length > 0) {
-          debouncedFilters.forEach((filter) => {
-            if (filter.value !== undefined && filter.value !== "") {
-              urlParams.append(filter.id, filter.value as string);
-            }
-          });
-        }
-
-        const res = await httpClient(`${baseUrl}/network/customers?${urlParams}`, {
-          token: session.accessToken,
-          projectId,
-        });
-        if (!res.ok) throw new Error("Failed to fetch Customers");
-        const result: PageResponse<Customer> = await res.json();
         setData(result.content);
         setPagination((prev) => ({ 
           ...prev, 
@@ -131,15 +117,12 @@ export function useCustomerData() {
   const exportToCsv = useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/network/customers?size=1000&search=${search}`, { 
-        token: session.accessToken,
-        projectId
-      });
-      if (!res.ok) throw new Error("Export failed");
-      const result: PageResponse<Customer> = await res.json();
+      const result = await networkApi.getCustomers({ 
+        size: 1000, 
+        search 
+      }, session.accessToken as string, projectId as string);
       
-      const rows = result.content.map(cust => ({
+      const rows = result.content.map((cust: Customer) => ({
         Code: cust.code,
         Name: cust.name,
         Status: cust.status,
@@ -148,12 +131,12 @@ export function useCustomerData() {
         Latitude: cust.lat,
         Longitude: cust.lng
       }));
-
+ 
       if (rows.length === 0) return;
-
+ 
       const csvContent = [
         Object.keys(rows[0]).join(","),
-        ...rows.map(row => Object.values(row).map(v => `"${v}"`).join(","))
+        ...rows.map((row: any) => Object.values(row).map(v => `"${v}"`).join(","))
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

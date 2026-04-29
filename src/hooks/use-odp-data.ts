@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
 import { useParams } from "next/navigation";
-import { ODP, PageResponse } from "@/types/network";
+import { ODP } from "@/types/network";
 import { SortingState, ColumnFiltersState } from "@tanstack/react-table";
 import { useDebounce } from "./use-debounce";
+import { networkApi } from "@/lib/api/network";
 
 export function useOdpData() {
   const { data: session } = useSession();
@@ -37,36 +36,23 @@ export function useOdpData() {
       if (!session?.accessToken) return;
       try {
         if (!silent) setLoading(true);
-        const baseUrl = getBackendBaseUrl();
-        const urlParams = new URLSearchParams({
-          page: pagination.pageIndex.toString(),
-          size: pagination.pageSize.toString(),
+
+        const sortParams = sorting.map(sort => `${sort.id},${sort.desc ? "desc" : "asc"}`);
+        const filterParams: Record<string, string> = {};
+        debouncedFilters.forEach(f => {
+          if (f.value !== undefined && f.value !== "") {
+            filterParams[f.id] = f.value as string;
+          }
+        });
+
+        const result = await networkApi.getOdps({
+          page: pagination.pageIndex,
+          size: pagination.pageSize,
           search: debouncedSearch,
-          _t: Date.now().toString(), // Cache busting
-        });
+          sort: sortParams,
+          ...filterParams
+        }, session.accessToken as string, projectId as string);
 
-        // Add sorting params (Spring Data format: sort=field,direction)
-        if (sorting.length > 0) {
-          sorting.forEach((sort) => {
-            urlParams.append("sort", `${sort.id},${sort.desc ? "desc" : "asc"}`);
-          });
-        }
-
-        // Add column filters (e.g., status=ACTIVE)
-        if (debouncedFilters.length > 0) {
-          debouncedFilters.forEach((filter) => {
-            if (filter.value !== undefined && filter.value !== "") {
-              urlParams.append(filter.id, filter.value as string);
-            }
-          });
-        }
-
-        const res = await httpClient(`${baseUrl}/network/odps?${urlParams}`, {
-          token: session.accessToken,
-          projectId,
-        });
-        if (!res.ok) throw new Error("Failed to fetch ODPs");
-        const result: PageResponse<ODP> = await res.json();
         setData(result.content);
         setPagination((prev) => ({ 
           ...prev, 
@@ -131,16 +117,12 @@ export function useOdpData() {
   const exportToCsv = useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const baseUrl = getBackendBaseUrl();
-      // Fetch all for export (or large enough size)
-      const res = await httpClient(`${baseUrl}/network/odps?size=1000&search=${search}`, { 
-        token: session.accessToken,
-        projectId
-      });
-      if (!res.ok) throw new Error("Export failed");
-      const result: PageResponse<ODP> = await res.json();
+      const result = await networkApi.getOdps({ 
+        size: 1000, 
+        search 
+      }, session.accessToken as string, projectId as string);
       
-      const rows = result.content.map(odp => ({
+      const rows = result.content.map((odp: ODP) => ({
         Code: odp.code,
         Name: odp.name,
         Status: odp.status,
@@ -150,12 +132,12 @@ export function useOdpData() {
         Latitude: odp.lat,
         Longitude: odp.lng
       }));
-
+ 
       if (rows.length === 0) return;
-
+ 
       const csvContent = [
         Object.keys(rows[0]).join(","),
-        ...rows.map(row => Object.values(row).map(v => `"${v}"`).join(","))
+        ...rows.map((row: any) => Object.values(row).map(v => `"${v}"`).join(","))
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

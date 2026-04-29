@@ -21,18 +21,14 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Loader2, AlertCircle, CheckCircle2, Layers, RefreshCw } from "lucide-react";
-import { httpClient } from "@/lib/httpClient";
-import { toast } from "sonner";
 import { ParentSelectorDialog } from "./parent-selector-dialog";
 import { cn } from "@/lib/utils";
-import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { useBatchEditForm } from "@/hooks/network/useBatchEditForm";
 
 interface BatchEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedIds: number[];
+  selectedIds: string[];
   assetType: string;
   onSuccess: () => void;
   mode?: "STATUS_UPDATE" | "REASSIGN_PARENT";
@@ -46,77 +42,23 @@ export function BatchEditDialog({
   onSuccess,
   mode = "STATUS_UPDATE"
 }: BatchEditDialogProps) {
-  const params = useParams();
-  const projectId = params?.projectId;
-  const { data: session } = useSession();
-  
-  const [loading, setLoading] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    status: "",
-    healthStatus: "",
-    reason: "",
-    notes: "",
-    newParentId: null as number | null,
-    newParentCode: ""
+  const {
+    formData,
+    setFormData,
+    formErrors,
+    loading,
+    isParentSelectorOpen,
+    setIsParentSelectorOpen,
+    isReassignMode,
+    getParentType,
+    handleSubmit
+  } = useBatchEditForm({
+    selectedIds,
+    assetType,
+    onSuccess,
+    onOpenChange,
+    mode
   });
-  const [isParentSelectorOpen, setIsParentSelectorOpen] = React.useState(false);
-
-  const isReassignMode = mode === "REASSIGN_PARENT";
-  
-  const getParentType = () => {
-    if (assetType === "ODP") return "ODC";
-    if (assetType === "ODC") return "OLT";
-    if (assetType === "CUSTOMER") return "ODP";
-    return "ODP"; // Fallback
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isReassignMode && !formData.status && !formData.healthStatus) {
-      toast.error("Please select at least one status to update");
-      return;
-    }
-    
-    if (!formData.reason && !isReassignMode) {
-      toast.error("Please provide a reason for the update");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const response = await httpClient(`${baseUrl}/api/v1/network/assets/batch-update`, {
-        method: "POST",
-        token: session?.accessToken,
-        projectId: projectId as string,
-        body: JSON.stringify({
-          ids: selectedIds,
-          type: assetType,
-          status: isReassignMode ? undefined : (formData.status || undefined),
-          healthStatus: isReassignMode ? undefined : (formData.healthStatus || undefined),
-          reason: isReassignMode ? "Bulk Reassignment" : formData.reason,
-          notes: formData.notes,
-          newParentId: isReassignMode ? formData.newParentId : undefined
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        toast.success(`Successfully processed ${result.count} assets`);
-        onSuccess();
-        onOpenChange(false);
-        setFormData({ status: "", healthStatus: "", reason: "", notes: "", newParentId: null, newParentCode: "" });
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Failed to process assets");
-      }
-    } catch (error: unknown) {
-      console.error("Batch update error:", error);
-      toast.error("An error occurred during batch update");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,10 +83,13 @@ export function BatchEditDialog({
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Lifecycle Status</Label>
                 <Select 
-                  value={formData.status} 
-                  onValueChange={(val) => setFormData({ ...formData, status: val })}
+                   value={formData.status} 
+                   onValueChange={(val) => setFormData({ ...formData, status: val })}
                 >
-                  <SelectTrigger className="h-12 bg-zinc-900 border-white/5 focus:ring-emerald-500/20 rounded-2xl text-[11px] font-bold">
+                  <SelectTrigger className={cn(
+                    "h-12 bg-zinc-900 border-white/5 focus:ring-emerald-500/20 rounded-2xl text-[11px] font-bold",
+                    formErrors.status && "border-red-500/50"
+                  )}>
                     <SelectValue placeholder="No change" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
@@ -155,14 +100,18 @@ export function BatchEditDialog({
                     <SelectItem value="RETIRED" className="focus:bg-zinc-800/50 focus:text-zinc-600 font-bold text-[11px]">RETIRED</SelectItem>
                   </SelectContent>
                 </Select>
+                {formErrors.status && <p className="text-[10px] text-red-500 ml-1">{formErrors.status}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Health Condition</Label>
                 <Select 
-                  value={formData.healthStatus} 
-                  onValueChange={(val) => setFormData({ ...formData, healthStatus: val })}
+                   value={formData.healthStatus} 
+                   onValueChange={(val) => setFormData({ ...formData, healthStatus: val })}
                 >
-                  <SelectTrigger className="h-12 bg-zinc-900 border-white/5 focus:ring-emerald-500/20 rounded-2xl text-[11px] font-bold">
+                  <SelectTrigger className={cn(
+                    "h-12 bg-zinc-900 border-white/5 focus:ring-emerald-500/20 rounded-2xl text-[11px] font-bold",
+                    formErrors.healthStatus && "border-red-500/50"
+                  )}>
                     <SelectValue placeholder="No change" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
@@ -172,6 +121,7 @@ export function BatchEditDialog({
                     <SelectItem value="BROKEN" className="focus:bg-red-900/10 focus:text-red-700 font-bold text-[11px]">BROKEN</SelectItem>
                   </SelectContent>
                 </Select>
+                {formErrors.healthStatus && <p className="text-[10px] text-red-500 ml-1">{formErrors.healthStatus}</p>}
               </div>
             </div>
           ) : (
@@ -179,7 +129,10 @@ export function BatchEditDialog({
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Target Parent {getParentType()}</Label>
               <div 
                 onClick={() => setIsParentSelectorOpen(true)}
-                className="flex items-center justify-between h-12 bg-zinc-900 border border-white/5 hover:border-blue-500/30 px-4 rounded-2xl text-sm font-bold cursor-pointer group transition-all"
+                className={cn(
+                  "flex items-center justify-between h-12 bg-zinc-900 border border-white/5 hover:border-blue-500/30 px-4 rounded-2xl text-sm font-bold cursor-pointer group transition-all",
+                  formErrors.newParentId && "border-red-500/50"
+                )}
               >
                 {formData.newParentCode ? (
                   <div className="flex items-center gap-2">
@@ -191,6 +144,7 @@ export function BatchEditDialog({
                 )}
                 <RefreshCw className="w-4 h-4 text-zinc-500 group-hover:text-blue-500 transition-colors" />
               </div>
+              {formErrors.newParentId && <p className="text-[10px] text-red-500 ml-1">{formErrors.newParentId}</p>}
             </div>
           )}
 
@@ -201,9 +155,12 @@ export function BatchEditDialog({
                 placeholder="e.g., Scheduled Maintenance, Area Outage..."
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className="h-12 bg-zinc-900 border-white/5 focus:border-emerald-500/50 rounded-2xl text-sm font-medium"
-                required
+                className={cn(
+                  "h-12 bg-zinc-900 border-white/5 focus:border-emerald-500/50 rounded-2xl text-sm font-medium",
+                  formErrors.reason && "border-red-500/50"
+                )}
               />
+              {formErrors.reason && <p className="text-[10px] text-red-500 ml-1">{formErrors.reason}</p>}
             </div>
           )}
 
@@ -236,7 +193,7 @@ export function BatchEditDialog({
             </Button>
             <Button
               type="submit"
-              disabled={loading || (isReassignMode && !formData.newParentId)}
+              disabled={loading}
               className={cn(
                 "h-12 px-8 rounded-2xl text-white font-black uppercase tracking-[0.15em] text-[10px] shadow-lg min-w-[140px]",
                 isReassignMode 
@@ -265,7 +222,7 @@ export function BatchEditDialog({
           parentType={getParentType()}
           onSelect={(asset) => setFormData({ 
             ...formData, 
-            newParentId: Number(asset.id),
+            newParentId: asset.id,
             newParentCode: asset.code
           })}
         />

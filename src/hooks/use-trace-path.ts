@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { httpClient } from "@/lib/httpClient";
 import { useSession } from "next-auth/react";
+import { networkApi } from "@/lib/api/network";
 import type { Feature, FeatureCollection, LineString } from "geojson";
 
 interface TraceCable {
@@ -38,19 +37,7 @@ export function useTracePath() {
       setError(null);
 
       try {
-        const baseUrl = getBackendBaseUrl();
-        const res = await httpClient(
-          `${baseUrl}/network/trace-path?startNodeId=${startNodeId}&endNodeId=${endNodeId}`,
-          {
-            token: session.accessToken,
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error(`Trace path failed: ${res.status}`);
-        }
-
-        const cables: TraceCable[] = await res.json();
+        const cables: TraceCable[] = await networkApi.tracePath(startNodeId, endNodeId, session.accessToken as string, "") as any;
 
         if (cables.length === 0) {
           setError("No route found between these nodes");

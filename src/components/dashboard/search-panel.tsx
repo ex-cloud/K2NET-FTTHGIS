@@ -6,9 +6,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi } from "@/lib/api/network";
 
 interface SearchResult {
   id: string;
@@ -57,22 +56,7 @@ export function SearchPanel({
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const baseUrl = getBackendBaseUrl();
-        const res = await httpClient(`${baseUrl}/network/assets/search?q=${query}`, {
-          token: session?.accessToken,
-          projectId,
-        });
-        if (!res.ok) {
-          console.warn(`Search API returned ${res.status}`);
-          setResults([]);
-          return;
-        }
-        const text = await res.text();
-        if (!text) {
-          setResults([]);
-          return;
-        }
-        const data = JSON.parse(text);
+        const data = await networkApi.searchAssets(query, "", session?.accessToken as string);
         setResults(data);
         setShowResults(true);
       } catch (err) {

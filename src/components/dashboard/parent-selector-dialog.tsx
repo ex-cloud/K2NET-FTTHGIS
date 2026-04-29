@@ -10,14 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, Loader2, Check } from "lucide-react";
-import { httpClient } from "@/lib/httpClient";
 import { useSession } from "next-auth/react";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { networkApi } from "@/lib/api/network";
 import { useParams } from "next/navigation";
-import { cn } from "@/lib/utils";
+
 
 interface ParentAsset {
-  id: string | number;
+  id: string;
   code: string;
   name?: string;
   type: string;
@@ -38,7 +37,7 @@ export function ParentSelectorDialog({
 }: ParentSelectorDialogProps) {
   const { data: session } = useSession();
   const params = useParams();
-  const projectId = params?.projectId as string;
+
   
   const [searchQuery, setSearchQuery] = React.useState("");
   const [results, setResults] = React.useState<ParentAsset[]>([]);
@@ -52,19 +51,10 @@ export function ParentSelectorDialog({
     
     setLoading(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      // Using existing search endpoint or all-nodes filtered by type
-      const response = await httpClient(
-        `${baseUrl}/network/assets/search?q=${query}&orgId=${params?.orgId}`,
-        { token: session?.accessToken }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Filter by requested parent type
-        const filtered = data.filter((item: any) => item.type.toUpperCase() === parentType.toUpperCase());
-        setResults(filtered);
-      }
+      const data = await networkApi.searchAssets(query, params?.orgId as string, session?.accessToken as string);
+      // Filter by requested parent type
+      const filtered = data.filter((item: ParentAsset) => item.type.toUpperCase() === parentType.toUpperCase());
+      setResults(filtered);
     } catch (error) {
       console.error("Search error:", error);
     } finally {

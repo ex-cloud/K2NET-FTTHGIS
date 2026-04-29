@@ -31,9 +31,8 @@ const BatchEditDialog = dynamic(() => import("@/components/dashboard/batch-edit-
 });
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { networkApi } from "@/lib/api/network";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +65,7 @@ export default function CustomerListPage() {
   // Batch Edit State
   const [isBatchDialogOpen, setIsBatchDialogOpen] = React.useState(false);
   const [batchMode, setBatchMode] = React.useState<"STATUS_UPDATE" | "REASSIGN_PARENT">("STATUS_UPDATE");
-  const [batchSelectedIds, setBatchSelectedIds] = React.useState<number[]>([]);
+  const [batchSelectedIds, setBatchSelectedIds] = React.useState<string[]>([]);
 
   const handleCreate = React.useCallback(() => {
     setSelectedCustomer(null);
@@ -88,17 +87,7 @@ export default function CustomerListPage() {
 
     setIsDeleting(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      const url = new URL(`${baseUrl}/network/customers/${customerToDelete.id}`);
-      // Add reason even if backend doesn't support it yet for future proofing
-      url.searchParams.append("reason", deleteReason);
-
-      const res = await httpClient(url.toString(), {
-        method: "DELETE",
-        token: session.accessToken,
-      });
-
-      if (!res.ok) throw new Error("Failed to delete customer");
+      await networkApi.deleteAsset("CUSTOMER", customerToDelete.id, deleteReason, session.accessToken as string, projectId as string);
 
       toast.success(`Customer ${customerToDelete.code} record removed`);
       setIsDeleteDialogOpen(false);
@@ -126,19 +115,9 @@ export default function CustomerListPage() {
     if (!reason) return;
 
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/network/assets/batch-delete?type=CUSTOMER&reason=${encodeURIComponent(reason)}`, {
-        method: "DELETE",
-        token: session?.accessToken,
-        body: JSON.stringify(selected.map(item => item.id))
-      });
-
-      if (res.ok) {
-        toast.success(`Successfully deleted ${selected.length} customers`);
-        refresh();
-      } else {
-        throw new Error("Failed to bulk delete");
-      }
+      await networkApi.batchDelete("CUSTOMER", selected.map(item => item.id), reason, session?.accessToken as string, projectId as string);
+      toast.success(`Successfully deleted ${selected.length} customers`);
+      refresh();
     } catch {
       toast.error("Bulk delete failed");
     }

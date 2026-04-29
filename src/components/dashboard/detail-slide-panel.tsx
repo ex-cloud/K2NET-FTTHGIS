@@ -32,10 +32,9 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { AuditTimeline } from "./audit-timeline";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { usePathname, useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi, type AssetHistory, type DiagnosticResult } from "@/lib/api/network";
 import {
   Dialog,
   DialogContent,
@@ -64,20 +63,7 @@ interface AssetDetails {
   }>;
 }
 
-interface AuditHistory {
-  revisionNumber: number;
-  revisionTimestamp: string;
-  revisionType: "ADD" | "MOD" | "DEL";
-  status: string;
-  lastNote: string;
-  modifiedBy: string;
-}
 
-interface DiagnosticReport {
-  overallHealth: number;
-  status: string;
-  notes: string;
-}
 
 export function DetailSlidePanel() {
   const { selectedAsset, setSelectedAsset } = useSelectionStore();
@@ -89,9 +75,9 @@ export function DetailSlidePanel() {
   const [isPolling, setIsPolling] = React.useState(false);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = React.useState(false);
   const [diagnosticResult, setDiagnosticResult] =
-    React.useState<DiagnosticReport | null>(null);
+    React.useState<DiagnosticResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  const [history, setHistory] = React.useState<AuditHistory[]>([]);
+  const [history, setHistory] = React.useState<AssetHistory[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("details");
   const { openEdit } = useAssetEdit();
@@ -116,13 +102,7 @@ export function DetailSlidePanel() {
     setLoading(true);
     setError(null);
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(
-        `${baseUrl}/network/assets/by-code/${selectedAsset.type}/${selectedAsset.code}`,
-        { token: session?.accessToken, projectId }
-      );
-      if (!res.ok) throw new Error("Gagal mengambil detail aset dari server");
-      const data = await res.json();
+      const data = await networkApi.getAssetByCode(selectedAsset.type as string, selectedAsset.code as string, session?.accessToken ?? "");
       setDetails(data);
     } catch (err) {
       console.error(err);
@@ -131,27 +111,20 @@ export function DetailSlidePanel() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAsset, session?.accessToken, projectId]);
+  }, [selectedAsset, session?.accessToken]);
 
   const fetchHistory = React.useCallback(async () => {
     if (!selectedAsset) return;
     setHistoryLoading(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(
-        `${baseUrl}/network/assets/${selectedAsset.type}/${selectedAsset.code}/history`,
-        { token: session?.accessToken, projectId }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data);
-      }
+      const data = await networkApi.getAssetHistory(selectedAsset.type as string, selectedAsset.code as string, session?.accessToken ?? "");
+      setHistory(data);
     } catch (err) {
       console.error("Failed to fetch audit history:", err);
     } finally {
       setHistoryLoading(false);
     }
-  }, [selectedAsset, session?.accessToken, projectId]);
+  }, [selectedAsset, session?.accessToken]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -179,29 +152,7 @@ export function DetailSlidePanel() {
 
     setIsDeleting(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      let endpoint = "";
-      const type = details.type.toLowerCase();
-
-      if (type === "olt") endpoint = `/network/olts/${details.id}`;
-      else if (type === "odc") endpoint = `/network/odcs/${details.id}`;
-      else if (type === "odp") endpoint = `/network/odps/${details.id}`;
-      else if (type === "customer")
-        endpoint = `/network/customers/${details.id}`;
-
-      if (!endpoint)
-        throw new Error("Delete endpoint not defined for this type");
-
-      const url = new URL(`${baseUrl}${endpoint}`);
-      url.searchParams.append("reason", deleteReason);
-
-      const res = await httpClient(url.toString(), {
-        method: "DELETE",
-        token: session.accessToken,
-        projectId,
-      });
-
-      if (!res.ok) throw new Error("Failed to delete record from registry");
+      await networkApi.deleteAsset(details.type, details.id, deleteReason, session.accessToken as string, projectId as string);
 
       toast.success(`${details.type} [${details.code}] purged successfully`);
 
@@ -290,18 +241,7 @@ export function DetailSlidePanel() {
     if (!details) return;
     setIsPolling(true);
     try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(
-        `${baseUrl}/network/assets/${details.type.toLowerCase()}/${details.code}/diagnostics`,
-        {
-          method: "POST",
-          token: session?.accessToken,
-          projectId,
-        },
-      );
-
-      if (!res.ok) throw new Error("Diagnostic engine failed");
-      const result = await res.json();
+      const result = await networkApi.getDiagnostics(details.type, details.code, session?.accessToken as string);
       setDiagnosticResult(result);
       setIsDiagnosticOpen(true);
       toast.success("Diagnostic pulse captured successfully");

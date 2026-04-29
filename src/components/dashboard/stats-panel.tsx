@@ -12,10 +12,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useEffect, useState, ReactNode } from "react";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi } from "@/lib/api/network";
 
 interface Stats {
   totalNodes: number;
@@ -73,13 +72,7 @@ export function StatsPanel() {
       if (!session?.accessToken) return;
 
       try {
-        const baseUrl = getBackendBaseUrl();
-        const res = await httpClient(`${baseUrl}/network/analytics/stats`, {
-          token: session.accessToken,
-          projectId,
-        });
-        if (!res.ok) throw new Error("Failed to fetch statistics");
-        const data = await res.json();
+        const data = await networkApi.getStats(session.accessToken as string, projectId);
         setStats(data);
         setError(null);
       } catch (err) {

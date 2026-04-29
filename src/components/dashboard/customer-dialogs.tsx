@@ -19,15 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Customer, ODP, PageResponse } from "@/types/network";
+import { Customer, ODP } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi } from "@/lib/api/network";
 import { toast } from "sonner";
+import { customerSchema } from "@/lib/validations/network";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin, UserCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
+import { useCustomerForm } from "@/hooks/network/useCustomerForm";
 
 interface CustomerDialogProps {
   open: boolean;
@@ -42,127 +45,18 @@ export function CustomerDialog({
   customer,
   onSuccess,
 }: CustomerDialogProps) {
-  const params = useParams();
-  const projectId = params?.projectId as string;
-  const { data: session } = useSession();
-  const [loading, setLoading] = React.useState(false);
-  const [showMapPicker, setShowMapPicker] = React.useState(false);
-  const isEdit = !!customer;
-
-  const [odps, setOdps] = React.useState<ODP[]>([]);
-
-  // Fetch ODPs for dropdown
-  React.useEffect(() => {
-    if (open && session?.accessToken) {
-      const fetchOdps = async () => {
-        try {
-          const baseUrl = getBackendBaseUrl();
-          const res = await httpClient(`${baseUrl}/network/odps?size=100`, {
-            token: session.accessToken,
-            projectId,
-          });
-          if (res.ok) {
-            const data: PageResponse<ODP> = await res.json();
-            setOdps(data.content);
-          }
-        } catch (e) {
-          console.error("Failed to fetch ODPs", e);
-        }
-      };
-      fetchOdps();
-    }
-  }, [open, session, projectId]);
-
-  const [formData, setFormData] = React.useState({
-    code: "",
-    name: "",
-    address: "",
-    status: "ACTIVE",
-    healthStatus: "UP",
-    lat: "",
-    lng: "",
-    odpId: "",
-    lastNote: "",
-  });
-
-  React.useEffect(() => {
-    if (customer) {
-      setFormData({
-        code: customer.code || "",
-        name: customer.name || "",
-        address: customer.address || "",
-        status: customer.status || "ACTIVE",
-        healthStatus: customer.healthStatus || "UP",
-        lat: (customer.lat ?? customer.geom?.coordinates?.[1])?.toString() || "-6.9175",
-        lng: (customer.lng ?? customer.geom?.coordinates?.[0])?.toString() || "107.6191",
-        odpId: customer.odpId?.toString() || "",
-        lastNote: customer.lastNote || "",
-      });
-    } else {
-      setFormData({
-        code: "",
-        name: "",
-        address: "",
-        status: "ACTIVE",
-        healthStatus: "UP",
-        lat: "-6.9175",
-        lng: "107.6191",
-        odpId: "",
-        lastNote: "",
-      });
-    }
-  }, [customer, open]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!session?.accessToken) return;
-
-    try {
-      setLoading(true);
-      const baseUrl = getBackendBaseUrl();
-      const url = isEdit
-        ? `${baseUrl}/network/customers/${customer.id}`
-        : `${baseUrl}/network/customers`;
-      const method = isEdit ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        odpId: formData.odpId ? parseInt(formData.odpId) : null,
-        nodeType: "CUSTOMER",
-        geom: {
-          type: "Point",
-          coordinates: [parseFloat(formData.lng), parseFloat(formData.lat)],
-        },
-      };
-
-      const res = await httpClient(url, {
-        method,
-        token: session.accessToken,
-        body: JSON.stringify(payload),
-        projectId,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save customer");
-      }
-
-      toast.success(
-        isEdit
-          ? "Customer record updated"
-          : "Customer record created",
-      );
-      onSuccess();
-      onOpenChange(false);
-    } catch (err) {
-      console.error(err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    formErrors,
+    setFormErrors,
+    loading,
+    showMapPicker,
+    setShowMapPicker,
+    isEdit,
+    odps,
+    handleSubmit
+  } = useCustomerForm(customer || null, open, onSuccess, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -224,34 +118,49 @@ export function CustomerDialog({
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Subscriber ID</Label>
               <Input
-                placeholder="e.g. CUST-001"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-indigo-500/50 h-11 rounded-xl font-bold text-xs"
-                required
-              />
-            </div>
+              id="code"
+              placeholder="e.g. CUST-DAGO-001"
+              value={formData.code}
+              onChange={(e) => {
+                setFormData({ ...formData, code: e.target.value });
+                if (formErrors.code) setFormErrors({...formErrors, code: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-cyan-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
+              required
+            />
+            {formErrors.code && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.code}</p>}
+          </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Subscriber Name</Label>
               <Input
-                placeholder="e.g. John Doe"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-indigo-500/50 h-11 rounded-xl font-bold text-xs"
-                required
-              />
-            </div>
+              id="name"
+              placeholder="e.g. John Doe / PT. Example"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (formErrors.name) setFormErrors({...formErrors, name: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-cyan-500/50 h-11 rounded-xl font-bold text-xs", formErrors.name && "border-red-500 focus:ring-red-500")}
+              required
+            />
+            {formErrors.name && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.name}</p>}
+          </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Full Installation Address</Label>
             <Input
-              placeholder="e.g. Dago St. No. 123"
+              id="address"
+              placeholder="Full installation address"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="bg-zinc-900 border-white/5 focus:border-indigo-500/50 h-11 rounded-xl font-bold text-xs"
+              onChange={(e) => {
+                setFormData({ ...formData, address: e.target.value });
+                if (formErrors.address) setFormErrors({...formErrors, address: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-cyan-500/50 h-11 rounded-xl font-bold text-xs", formErrors.address && "border-red-500 focus:ring-red-500")}
               required
             />
+            {formErrors.address && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.address}</p>}
           </div>
 
           <div className="space-y-2">
@@ -284,12 +193,17 @@ export function CustomerDialog({
               )}
             </div>
             <Textarea
-              placeholder="Explain the reason for this account status change..."
+              id="lastNote"
+              placeholder="Explain the reason for this status change..."
               value={formData.lastNote}
-              onChange={(e) => setFormData({ ...formData, lastNote: e.target.value })}
-              className="bg-zinc-900 border-white/5 focus:border-indigo-500/50 min-h-[80px] rounded-xl text-xs resize-none"
-              required={formData.status !== "ACTIVE"}
+              onChange={(e) => {
+                setFormData({ ...formData, lastNote: e.target.value });
+                if (formErrors.lastNote) setFormErrors({...formErrors, lastNote: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-cyan-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
+              required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
+            {formErrors.lastNote && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.lastNote}</p>}
           </div>
 
           <div className="pt-2">

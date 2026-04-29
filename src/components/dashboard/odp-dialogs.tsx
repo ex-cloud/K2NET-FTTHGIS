@@ -19,15 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ODC, ODP, PageResponse } from "@/types/network";
+import { ODC, ODP } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi } from "@/lib/api/network";
 import { toast } from "sonner";
+import { odpSchema } from "@/lib/validations/network";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
+import { useOdpForm } from "@/hooks/network/useOdpForm";
 
 interface OdpDialogProps {
   open: boolean;
@@ -42,138 +45,18 @@ export function OdpDialog({
   odp,
   onSuccess,
 }: OdpDialogProps) {
-  const params = useParams();
-  const projectId = params?.projectId as string;
-  const { data: session } = useSession();
-  const [loading, setLoading] = React.useState(false);
-  const [showMapPicker, setShowMapPicker] = React.useState(false);
-  const isEdit = !!odp;
-
-  const [odcs, setOdcs] = React.useState<ODC[]>([]);
-
-  // Fetch ODCs for dropdown
-  React.useEffect(() => {
-    if (open && session?.accessToken) {
-      const fetchOdcs = async () => {
-        try {
-          const baseUrl = getBackendBaseUrl();
-          const res = await httpClient(`${baseUrl}/network/odcs?size=100`, {
-            token: session.accessToken,
-            projectId,
-          });
-          if (res.ok) {
-            const data: PageResponse<ODC> = await res.json();
-            setOdcs(data.content);
-          }
-        } catch (e) {
-          console.error("Failed to fetch ODCs", e);
-        }
-      };
-      fetchOdcs();
-    }
-  }, [open, session, projectId]);
-
-  const [formData, setFormData] = React.useState({
-    code: "",
-    name: "",
-    status: "PLAN",
-    healthStatus: "UP",
-    lat: "",
-    lng: "",
-    totalPort: "16",
-    usedPort: "0",
-    odcId: "",
-    lastNote: "",
-    address: "",
-  });
-
-  React.useEffect(() => {
-    if (odp) {
-      // Prioritize lat/lng fields (full Double precision) over geom.coordinates
-      // because Jackson JTS serializer (n52) truncates coordinate precision.
-      const lng = odp.lng ?? odp.geom?.coordinates?.[0] ?? "";
-      const lat = odp.lat ?? odp.geom?.coordinates?.[1] ?? "";
-
-      setFormData({
-        code: odp.code || "",
-        name: odp.name || "",
-        status: odp.status || "PLAN",
-        healthStatus: odp.healthStatus || "UP",
-        lat: lat.toString(),
-        lng: lng.toString(),
-        totalPort: odp.totalPort?.toString() || "16",
-        usedPort: odp.usedPort?.toString() || "0",
-        odcId: odp.odcId?.toString() || "",
-        lastNote: odp.lastNote || "",
-        address: odp.address || "",
-      });
-    } else {
-      setFormData({
-        code: "",
-        name: "",
-        status: "PLAN",
-        healthStatus: "UP",
-        lat: "",
-        lng: "",
-        totalPort: "16",
-        usedPort: "0",
-        odcId: "",
-        lastNote: "",
-        address: "",
-      });
-    }
-  }, [odp, open, projectId]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!session?.accessToken) return;
-
-    try {
-      setLoading(true);
-      const baseUrl = getBackendBaseUrl();
-      const url = isEdit
-        ? `${baseUrl}/network/odps/${odp.id}`
-        : `${baseUrl}/network/odps`;
-      const method = isEdit ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        totalPort: parseInt(formData.totalPort),
-        usedPort: parseInt(formData.usedPort),
-        odcId: formData.odcId ? parseInt(formData.odcId) : null,
-        nodeType: "ODP",
-        geom: {
-          type: "Point",
-          coordinates: [parseFloat(formData.lng), parseFloat(formData.lat)],
-        },
-      };
-
-      const res = await httpClient(url, {
-        method,
-        token: session.accessToken,
-        body: JSON.stringify(payload),
-        projectId,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save ODP");
-      }
-
-      toast.success(
-        isEdit ? "ODP updated successfully" : "ODP created successfully",
-      );
-      onSuccess();
-      onOpenChange(false);
-    } catch (err) {
-      console.error(err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    formErrors,
+    setFormErrors,
+    loading,
+    showMapPicker,
+    setShowMapPicker,
+    isEdit,
+    odcs,
+    handleSubmit
+  } = useOdpForm(odp || null, open, onSuccess, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -198,14 +81,16 @@ export function OdpDialog({
               </Label>
               <Input
                 id="code"
-                placeholder="e.g. ODP-BDG-01"
+                placeholder="e.g. ODP-DAGO-01"
                 value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+                  if (formErrors.code) setFormErrors({...formErrors, code: ""});
+                }}
+                className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
                 required
               />
+              {formErrors.code && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.code}</p>}
             </div>
             <div className="space-y-2">
               <Label
@@ -411,18 +296,16 @@ export function OdpDialog({
             </div>
             <Textarea
               id="lastNote"
-              placeholder={
-                formData.status === "ACTIVE"
-                  ? "Optional technical notes..."
-                  : "Explain why this ODP is " + formData.status.toLowerCase() + "..."
-              }
+              placeholder="Explain the reason for this status change..."
               value={formData.lastNote}
-              onChange={(e) =>
-                setFormData({ ...formData, lastNote: e.target.value })
-              }
-              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] resize-none"
+              onChange={(e) => {
+                setFormData({ ...formData, lastNote: e.target.value });
+                if (formErrors.lastNote) setFormErrors({...formErrors, lastNote: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
               required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
+            {formErrors.lastNote && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.lastNote}</p>}
           </div>
 
           <DialogFooter className="pt-4 border-t border-white/5">

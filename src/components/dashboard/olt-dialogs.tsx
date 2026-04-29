@@ -20,14 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OLT } from "@/types/network";
-import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { httpClient } from "@/lib/httpClient";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin, Server } from "lucide-react";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
 import { Textarea } from "@/components/ui/textarea";
+import { useOltForm } from "@/hooks/network/useOltForm";
 
 interface OltDialogProps {
   open: boolean;
@@ -42,103 +40,17 @@ export function OltDialog({
   olt,
   onSuccess,
 }: OltDialogProps) {
-  const params = useParams();
-  const projectId = params?.projectId as string;
-  const { data: session } = useSession();
-  const [loading, setLoading] = React.useState(false);
-  const [showMapPicker, setShowMapPicker] = React.useState(false);
-  const isEdit = !!olt;
-
-  const [formData, setFormData] = React.useState({
-    code: "",
-    name: "",
-    ipAddress: "",
-    snmpCommunity: "public",
-    status: "ACTIVE",
-    healthStatus: "UP",
-    lat: "",
-    lng: "",
-    lastNote: "",
-    address: "",
-  });
-
-  React.useEffect(() => {
-    if (olt) {
-      setFormData({
-        code: olt.code || "",
-        name: olt.name || "",
-        ipAddress: olt.ipAddress || "",
-        snmpCommunity: olt.snmpCommunity || "public",
-        status: olt.status || "ACTIVE",
-        healthStatus: olt.healthStatus || "UP",
-        lat: (olt.lat ?? olt.geom?.coordinates?.[1])?.toString() || "-6.9175",
-        lng: (olt.lng ?? olt.geom?.coordinates?.[0])?.toString() || "107.6191",
-        lastNote: olt.lastNote || "",
-        address: olt.address || "",
-      });
-    } else {
-      setFormData({
-        code: "",
-        name: "",
-        ipAddress: "",
-        snmpCommunity: "public",
-        status: "ACTIVE",
-        healthStatus: "UP",
-        lat: "-6.9175",
-        lng: "107.6191",
-        lastNote: "",
-        address: "",
-      });
-    }
-  }, [olt, open]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!session?.accessToken) return;
-
-    try {
-      setLoading(true);
-      const baseUrl = getBackendBaseUrl();
-      const url = isEdit
-        ? `${baseUrl}/network/olts/${olt.id}`
-        : `${baseUrl}/network/olts`;
-      const method = isEdit ? "PUT" : "POST";
-
-      const payload = {
-        ...formData,
-        nodeType: "OLT",
-        geom: {
-          type: "Point",
-          coordinates: [parseFloat(formData.lng), parseFloat(formData.lat)],
-        },
-      };
-
-      const res = await httpClient(url, {
-        method,
-        token: session.accessToken,
-        body: JSON.stringify(payload),
-        projectId,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save OLT");
-      }
-
-      toast.success(
-        isEdit ? "OLT updated successfully" : "OLT created successfully",
-      );
-      onSuccess();
-      onOpenChange(false);
-    } catch (err) {
-      console.error(err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    formErrors,
+    setFormErrors,
+    loading,
+    showMapPicker,
+    setShowMapPicker,
+    isEdit,
+    handleSubmit
+  } = useOltForm(olt || null, open, onSuccess, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -202,22 +114,32 @@ export function OltDialog({
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Device Code</Label>
               <Input
+                id="code"
                 placeholder="e.g. OLT-BDG-01"
                 value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 h-11 rounded-xl font-bold text-xs"
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+                  if (formErrors.code) setFormErrors({...formErrors, code: ""});
+                }}
+                className={cn("bg-zinc-900 border-white/5 focus:border-emerald-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
                 required
               />
+              {formErrors.code && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.code}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Location Name</Label>
               <Input
-                placeholder="e.g. Central Office"
+                id="name"
+                placeholder="e.g. Dago Main OLT"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 h-11 rounded-xl font-bold text-xs"
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (formErrors.name) setFormErrors({...formErrors, name: ""});
+                }}
+                className={cn("bg-zinc-900 border-white/5 focus:border-emerald-500/50 h-11 rounded-xl font-bold text-xs", formErrors.name && "border-red-500 focus:ring-red-500")}
                 required
               />
+              {formErrors.name && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.name}</p>}
             </div>
           </div>
 
@@ -255,12 +177,17 @@ export function OltDialog({
               )}
             </div>
             <Textarea
+              id="lastNote"
               placeholder="Explain the reason for this status change..."
               value={formData.lastNote}
-              onChange={(e) => setFormData({ ...formData, lastNote: e.target.value })}
-              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] rounded-xl text-xs resize-none"
+              onChange={(e) => {
+                setFormData({ ...formData, lastNote: e.target.value });
+                if (formErrors.lastNote) setFormErrors({...formErrors, lastNote: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-emerald-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
               required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
+            {formErrors.lastNote && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.lastNote}</p>}
           </div>
 
           <div className="pt-2">

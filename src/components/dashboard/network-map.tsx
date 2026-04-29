@@ -13,8 +13,7 @@ import Map, {
 } from "react-map-gl/maplibre";
 import { useSearchParams, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { httpClient } from "@/lib/httpClient";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { networkApi } from "@/lib/api/network";
 import type {
   CircleLayerSpecification,
   LineLayerSpecification,
@@ -225,14 +224,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
     const handleFocus = async () => {
       try {
-        const baseUrl = getBackendBaseUrl();
-        // Get asset detail by its code for focusing
-        const res = await httpClient(`${baseUrl}/network/assets/search?q=${focusCode}`, {
-          token: session.accessToken,
-        });
-
-        if (res.ok) {
-          const results = await res.json();
+        const results = await networkApi.searchAssets(focusCode, "", session.accessToken as string);
           // Take the exact match or first result
           const asset = results.find((r: { code: string }) => r.code === focusCode) || results[0];
           
@@ -254,11 +246,10 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
                 zoom: 18, // Zoom in close for focus
             });
           }
+        } catch (err) {
+          console.error("Failed to focus on asset from URL", err);
         }
-      } catch (err) {
-        console.error("Failed to focus on asset from URL", err);
-      }
-    };
+      };
 
     handleFocus();
   }, [focusCode, session?.accessToken, mounted, setSelectedAsset, setMapCenter]);
@@ -932,7 +923,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "==",
         ["get", "id"],
         selectedAsset?.type !== "CABLE"
-          ? parseInt(selectedAsset?.id || "0")
+          ? (selectedAsset?.id || "")
           : -1,
       ],
       paint: {
@@ -957,7 +948,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         "==",
         ["get", "id"],
         selectedAsset?.type === "CABLE"
-          ? parseInt(selectedAsset?.id || "0")
+          ? (selectedAsset?.id || "")
           : -1,
       ],
       paint: {

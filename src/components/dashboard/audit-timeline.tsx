@@ -13,18 +13,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { type AssetHistory } from "@/lib/api/network";
 
-interface AuditHistory {
-  revisionNumber: number;
-  revisionTimestamp: string;
-  revisionType: "ADD" | "MOD" | "DEL";
-  status: string;
-  lastNote: string;
-  modifiedBy: string;
-}
+
 
 interface AuditTimelineProps {
-  history: AuditHistory[];
+  history: AssetHistory[];
   isLoading: boolean;
 }
 
@@ -58,14 +52,12 @@ export function AuditTimeline({ history, isLoading }: AuditTimelineProps) {
   }
 
   const getRevisionIcon = (type: string) => {
-    switch (type) {
-      case "ADD":
-        return <PlusCircle className="w-4 h-4 text-emerald-500" />;
-      case "MOD":
-        return <Edit3 className="w-4 h-4 text-amber-500" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-    }
+    const t = (type || "").toUpperCase();
+    if (t.includes("ADD") || t.includes("CREATE"))
+      return <PlusCircle className="w-4 h-4 text-emerald-500" />;
+    if (t.includes("MOD") || t.includes("UPDATE"))
+      return <Edit3 className="w-4 h-4 text-amber-500" />;
+    return <AlertCircle className="w-4 h-4 text-red-500" />;
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -83,15 +75,15 @@ export function AuditTimeline({ history, isLoading }: AuditTimelineProps) {
 
       <div className="space-y-10 py-6">
         {history.map((item, index) => (
-          <div key={`${item.revisionNumber}-${index}`} className="relative flex gap-6 group">
+          <div key={`${item.id}-${index}`} className="relative flex gap-6 group">
             {/* Timeline Marker */}
             <div className="relative z-10 flex-none flex items-center justify-center">
               <div className={cn(
                 "w-10 h-10 rounded-2xl border flex items-center justify-center transition-all bg-zinc-950 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,0,0,0.5)]",
-                item.revisionType === "ADD" ? "border-emerald-500/20 shadow-emerald-500/5" : 
-                item.revisionType === "MOD" ? "border-amber-500/20 shadow-amber-500/5" : "border-red-500/20 shadow-red-500/5"
+                (item.action || "").includes("ADD") ? "border-emerald-500/20 shadow-emerald-500/5" : 
+                (item.action || "").includes("MOD") ? "border-amber-500/20 shadow-amber-500/5" : "border-red-500/20 shadow-red-500/5"
               )}>
-                {getRevisionIcon(item.revisionType)}
+                {getRevisionIcon(item.action)}
               </div>
             </div>
 
@@ -100,21 +92,21 @@ export function AuditTimeline({ history, isLoading }: AuditTimelineProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-white">
-                    {item.revisionType === "ADD" ? "Asset Registered" : "Asset Modified"}
+                    {item.action || "Revision Action"}
                   </span>
-                  <Badge variant="outline" className={cn("text-[9px] font-black px-2 py-0 h-4 border shadow-sm", getStatusBadgeColor(item.status))}>
-                    {item.status}
+                  <Badge variant="outline" className={cn("text-[9px] font-black px-2 py-0 h-4 border shadow-sm", getStatusBadgeColor(item.action))}>
+                    {item.action}
                   </Badge>
                 </div>
                 <span className="text-[10px] font-mono text-zinc-600 font-bold">
-                  REV#{item.revisionNumber}
+                  #{item.id.substring(0, 8)}
                 </span>
               </div>
 
               <div className="p-4 rounded-2xl bg-zinc-900/40 border border-white/5 backdrop-blur-sm group-hover:border-white/10 transition-all shadow-inner">
-                {item.lastNote ? (
+                {item.notes || item.reason ? (
                   <p className="text-xs text-zinc-300 font-medium leading-relaxed italic pr-4">
-                    &quot;{item.lastNote}&quot;
+                    &quot;{item.notes || item.reason}&quot;
                   </p>
                 ) : (
                   <p className="text-[10px] text-zinc-600 italic font-medium">No specific notes provided for this revision</p>
@@ -126,14 +118,14 @@ export function AuditTimeline({ history, isLoading }: AuditTimelineProps) {
                       <User className="w-3 h-3 text-zinc-500" />
                     </div>
                     <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider">
-                      {item.modifiedBy || "System Admin"}
+                      {item.causer || "System Admin"}
                     </span>
                   </div>
                   
                   <div className="flex items-center gap-1.5 text-zinc-500">
                     <Clock className="w-3 h-3" />
                     <span className="text-[9px] font-bold">
-                      {item.revisionTimestamp ? format(new Date(item.revisionTimestamp), "MMM d, HH:mm") : "N/A"}
+                      {item.createdAt ? format(new Date(item.createdAt), "MMM d, HH:mm") : "N/A"}
                     </span>
                   </div>
                 </div>

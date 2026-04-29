@@ -19,12 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ODC, OLT, PageResponse } from "@/types/network";
+import { ODC, OLT } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { httpClient } from "@/lib/httpClient";
+import { networkApi } from "@/lib/api/network";
 import { toast } from "sonner";
+import { odcSchema } from "@/lib/validations/network";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin, Settings2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
@@ -56,15 +58,8 @@ export function OdcDialog({
     if (open && session?.accessToken) {
       const fetchOlts = async () => {
         try {
-          const baseUrl = getBackendBaseUrl();
-          const res = await httpClient(`${baseUrl}/network/olts?size=100`, {
-            token: session.accessToken,
-            projectId,
-          });
-          if (res.ok) {
-            const data: PageResponse<OLT> = await res.json();
-            setOlts(data.content);
-          }
+          const data = await networkApi.getOlts({ size: 100 }, session.accessToken as string, projectId as string);
+          setOlts(data.content);
         } catch (e) {
           console.error("Failed to fetch OLTs", e);
         }
@@ -116,8 +111,11 @@ export function OdcDialog({
         lastNote: "",
         address: "",
       });
+      setFormErrors({});
     }
   }, [odc, open, projectId]);
+
+  const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,16 +123,31 @@ export function OdcDialog({
 
     try {
       setLoading(true);
-      const baseUrl = getBackendBaseUrl();
-      const url = isEdit
-        ? `${baseUrl}/network/odcs/${odc.id}`
-        : `${baseUrl}/network/odcs`;
-      const method = isEdit ? "PUT" : "POST";
+      // Validation with Zod
+      setFormErrors({});
+      try {
+        const validationData = {
+          ...formData,
+          parentId: formData.oltId || null,
+        };
+        odcSchema.parse(validationData);
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          const errors: Record<string, string> = {};
+          err.issues.forEach((issue) => {
+            if (issue.path[0]) errors[issue.path[0] as string] = issue.message;
+          });
+          setFormErrors(errors);
+          toast.error("Validasi gagal", { description: "Periksa kembali inputan Anda." });
+          return;
+        }
+        throw err;
+      }
 
       const payload = {
         ...formData,
         capacity: parseInt(formData.capacity),
-        oltId: formData.oltId ? parseInt(formData.oltId) : null,
+        oltId: formData.oltId || null,
         nodeType: "ODC",
         geom: {
           type: "Point",
@@ -142,16 +155,10 @@ export function OdcDialog({
         },
       };
 
-      const res = await httpClient(url, {
-        method,
-        token: session.accessToken,
-        body: JSON.stringify(payload),
-        projectId,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save ODC");
+      if (isEdit) {
+        await networkApi.updateAsset("ODC", odc.id, payload, session.accessToken as string, projectId as string);
+      } else {
+        await networkApi.createAsset("ODC", payload, session.accessToken as string, projectId as string);
       }
 
       toast.success(
@@ -230,34 +237,46 @@ export function OdcDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">ODC Code</Label>
-              <Input
+               <Input
                 placeholder="e.g. ODC-DAGO-01"
                 value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
+                onChange={(e) => {
+                  setFormData({ ...formData, code: e.target.value });
+                  if (formErrors.code) setFormErrors({...formErrors, code: ""});
+                }}
+                className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
                 required
               />
+              {formErrors.code && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.code}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Capacity (Core)</Label>
-              <Input
+               <Input
                 type="number"
                 value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
+                onChange={(e) => {
+                  setFormData({ ...formData, capacity: e.target.value });
+                  if (formErrors.capacity) setFormErrors({...formErrors, capacity: ""});
+                }}
+                className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.capacity && "border-red-500 focus:ring-red-500")}
               />
+              {formErrors.capacity && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.capacity}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Location Name</Label>
-            <Input
+             <Input
               placeholder="e.g. Dago Main Cabinet"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs"
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (formErrors.name) setFormErrors({...formErrors, name: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.name && "border-red-500 focus:ring-red-500")}
               required
             />
+            {formErrors.name && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.name}</p>}
           </div>
 
           <div className="space-y-2">
@@ -292,10 +311,14 @@ export function OdcDialog({
             <Textarea
               placeholder="Explain the reason for this status change..."
               value={formData.lastNote}
-              onChange={(e) => setFormData({ ...formData, lastNote: e.target.value })}
-              className="bg-zinc-900 border-white/5 focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none"
+              onChange={(e) => {
+                setFormData({ ...formData, lastNote: e.target.value });
+                if (formErrors.lastNote) setFormErrors({...formErrors, lastNote: ""});
+              }}
+              className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
               required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
+            {formErrors.lastNote && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.lastNote}</p>}
           </div>
 
           <div className="pt-2">
