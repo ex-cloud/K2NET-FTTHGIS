@@ -574,7 +574,7 @@ export function ProjectOverview() {
       </div>
 
       {/* --- Network Stats Section --- */}
-      {stats && (stats.totalNodes > 0 || stats.totalUsers > 0) && (
+      {stats && (
         <div>
           <h2 className="text-base font-semibold text-foreground mb-4">
             Network Infrastructure
@@ -601,7 +601,7 @@ export function ProjectOverview() {
             <MetricBox
               icon={Database}
               label="Customer Reach"
-              value={stats.customerReach}
+              value={stats.customerReach || stats.totalUsers || 0}
               color="amber"
             />
           </div>

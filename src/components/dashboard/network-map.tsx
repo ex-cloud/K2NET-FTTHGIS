@@ -20,7 +20,6 @@ import type {
   HeatmapLayerSpecification,
   FillLayerSpecification,
   StyleSpecification,
-  Map as MapLibreInstance,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as turfUtils from "@/lib/turf-utils";
@@ -270,20 +269,39 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   }, [theme, isTopologyMode]);
 
   // Manual Icon Loader
-  const onMapLoad = useCallback(async (e: { target: MapLibreInstance }) => {
-    const map = e.target;
-    const icons = ["olt", "odc", "odp", "customer", "splitter", "closure", "pole"];
+  // --- ICON LOADING ENGINE ---
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap();
     
-    for (const icon of icons) {
-      try {
-        if (!map.hasImage(icon)) {
-          const image = await map.loadImage(`/icons/${icon}.svg`);
-          map.addImage(icon, image.data);
+    // The most reliable way to load images in MapLibre is listening to styleimagemissing
+    const handleMissingImage = async (e: { id: string }) => {
+      const id = e.id;
+      // Predefined icons we expect
+      const validIcons = ["olt", "odc", "odp", "customer", "splitter", "closure", "pole"];
+      
+      if (validIcons.includes(id)) {
+        try {
+          const image = await map.loadImage(`/icons/${id}.svg`);
+          if (image && !map.hasImage(id)) {
+            map.addImage(id, image.data);
+          }
+        } catch (error) {
+          console.error(`Failed to load icon: ${id}`, error);
         }
-      } catch (error) {
-        console.error(`Failed to load icon: ${icon}`, error);
       }
-    }
+    };
+
+    map.on('styleimagemissing', handleMissingImage);
+
+    return () => {
+      map.off('styleimagemissing', handleMissingImage);
+    };
+  }, [currentMapStyle, mounted]);
+
+  const onMapLoad = useCallback(async () => {
+    // Initial load handled by useEffect above for better style-switch recovery
+    console.log("Map engine loaded successfully");
   }, []);
 
   // Fix for hydration mismatch (Client-side only mount)
@@ -335,9 +353,10 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
   const mvtTileUrl = useMemo(() => {
     const baseUrl = getMartinBaseUrl();
+    const safeProjectId = (projectId && projectId !== "" && projectId !== "undefined") ? projectId : "";
     // Add project_id, org_slug, timestamp and refresh key to force tile reload when needed
     // The backend uses these for multi-tenant isolation
-    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?project_id=${projectId || ""}&org_slug=${orgSlug || ""}&t=${tileTimestamp}&r=${tileRefreshKey}`;
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?project_id=${safeProjectId}&org_slug=${orgSlug || ""}&t=${tileTimestamp}&r=${tileRefreshKey}`;
   }, [tileTimestamp, tileRefreshKey, projectId, orgSlug]);
 
   // Mouse hover handler for tooltip (no API calls, reads from MVT properties)
@@ -813,7 +832,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       layout: {
         visibility: layerVisibility.ODP ? "visible" : "none",
         "icon-image": "odp",
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 16, 0.3, 19, 0.6],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 16, 0.5, 19, 1.0],
         "icon-allow-overlap": true,
       },
       paint: {

@@ -72,6 +72,7 @@ export function ProjectSidebar() {
         { title: "ODP List", url: `${baseUrl}/inventory/odp` },
         { title: "Cable Management", url: `${baseUrl}/inventory/cables` }, // Doesn't exist physically yet but in UI
         { title: "Customer Database", url: `${baseUrl}/inventory/customer` },
+        { title: "BOQ Generator", url: `${baseUrl}/inventory/boq` }, // Phase 6
       ],
     };
   } else if (pathname?.includes("/core")) {
@@ -102,7 +103,8 @@ export function ProjectSidebar() {
       icon: Settings2,
       items: [
         { title: "General", url: `${baseUrl}/settings` },
-        { title: "Team", url: `${baseUrl}/settings/team` },
+        { title: "Project Members", url: `${baseUrl}/settings/team` },
+        { title: "GIS Data Import", url: `${baseUrl}/settings/import` }, // Phase 5
       ],
     };
   } else {
