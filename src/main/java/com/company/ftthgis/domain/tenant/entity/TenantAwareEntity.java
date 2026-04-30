@@ -11,7 +11,7 @@ import org.hibernate.annotations.ParamDef;
 @Getter
 @Setter
 @FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "projectId", type = String.class)})
-@Filter(name = "tenantFilter", condition = "project_id = :projectId")
+@Filter(name = "tenantFilter", condition = "project_id = CAST(:projectId AS uuid)")
 public abstract class TenantAwareEntity {
     
     @ManyToOne(fetch = FetchType.LAZY)

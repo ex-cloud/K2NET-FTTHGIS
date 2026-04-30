@@ -255,7 +255,10 @@ public class DataInitializer implements CommandLineRunner {
                 RETURNS bytea AS $$
                 DECLARE
                     mvt bytea;
+                    p_id uuid;
                 BEGIN
+                    p_id := NULLIF(query->>'project_id', '')::uuid;
+
                     WITH bounds AS (
                         SELECT ST_TileEnvelope(z, x, y) AS tile_geom,
                                ST_Transform(ST_TileEnvelope(z, x, y), 4326) AS bbox_geom
@@ -265,16 +268,18 @@ public class DataInitializer implements CommandLineRunner {
                                raw_nodes.id, raw_nodes.node_type, raw_nodes.status, raw_nodes.signal_db, raw_nodes.point_count, raw_nodes.code
                         FROM (
                             SELECT
-                                n.geom,
-                                n.id,
-                                n.node_type,
-                                n.status,
-                                n.signal_db,
-                                1 as point_count,
-                                n.code
-                            FROM bounds, network_nodes n
-                            WHERE n.geom && bounds.bbox_geom
-                              AND (query->>'project_id' IS NULL OR n.project_id = (query->>'project_id')::uuid)
+                                CASE WHEN z < 10 THEN c.geom ELSE n.geom END as geom,
+                                CASE WHEN z < 10 THEN c.id ELSE n.id END as id,
+                                CASE WHEN z < 10 THEN c.node_type ELSE n.node_type END as node_type,
+                                CASE WHEN z < 10 THEN c.aggregated_status ELSE n.status END as status,
+                                CASE WHEN z < 10 THEN c.avg_signal_db ELSE n.signal_db END as signal_db,
+                                CASE WHEN z < 10 THEN c.point_count ELSE 1 END as point_count,
+                                CASE WHEN z >= 10 THEN n.code ELSE NULL END as code
+                            FROM bounds
+                            LEFT JOIN mv_clustered_nodes c ON z < 10 AND c.geom && bounds.bbox_geom
+                            LEFT JOIN network_nodes n ON z >= 10 AND n.geom && bounds.bbox_geom
+                            WHERE (z < 10 AND c.id IS NOT NULL) OR (z >= 10 AND n.id IS NOT NULL)
+                              AND (p_id IS NULL OR (z < 10 AND c.project_id = p_id) OR (z >= 10 AND n.project_id = p_id))
                         ) raw_nodes, bounds
                     ),
                     mvt_edges AS (
@@ -283,7 +288,7 @@ public class DataInitializer implements CommandLineRunner {
                                e.id, e.status, e.fiber_count, e.code
                         FROM network_edges e, bounds
                         WHERE e.geom && bounds.bbox_geom
-                          AND (query->>'project_id' IS NULL OR e.project_id = (query->>'project_id')::uuid)
+                          AND (p_id IS NULL OR e.project_id = p_id)
                     )
                     SELECT (SELECT ST_AsMvt(mvt_nodes.*, 'nodes') FROM mvt_nodes) ||
                            (SELECT ST_AsMvt(mvt_edges.*, 'edges') FROM mvt_edges) INTO mvt;
@@ -313,8 +318,28 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createClusteredView() {
-        // Disabled for direct real-time rendering flexibility
-        log.info("--- [CLUSTER] Clustering view skipped for maximum real-time accuracy ---");
+        log.info("--- [CLUSTER] Creating mv_clustered_nodes materialized view ---");
+        String sql = """
+            CREATE MATERIALIZED VIEW IF NOT EXISTS mv_clustered_nodes AS
+            SELECT 
+                gen_random_uuid() as id,
+                project_id,
+                'CLUSTER' as node_type,
+                ST_Centroid(ST_Collect(geom)) as geom,
+                count(*) as point_count,
+                'ACTIVE' as aggregated_status,
+                avg(signal_db) as avg_signal_db
+            FROM network_nodes
+            GROUP BY project_id, ST_SnapToGrid(geom, 0.005);
+            
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_clustered_id ON mv_clustered_nodes (id);
+            CREATE INDEX IF NOT EXISTS idx_mv_clustered_geom ON mv_clustered_nodes USING GIST (geom);
+        """;
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (Exception e) {
+            log.error("--- [CLUSTER] FAILED to create clustered view: {} ---", e.getMessage());
+        }
     }
 
     private void performSchemaAudit() {

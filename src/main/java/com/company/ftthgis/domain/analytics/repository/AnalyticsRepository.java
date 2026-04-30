@@ -13,16 +13,16 @@ import java.util.UUID;
 @Repository
 public interface AnalyticsRepository extends JpaRepository<NetworkNode, UUID> {
 
-    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE (n.status = 'UP' OR n.status = 'ACTIVE') AND n.project.id = :projectId")
+    @Query(value = "SELECT COUNT(n.id) FROM network_nodes n WHERE (n.status = 'UP' OR n.status = 'ACTIVE') AND n.project_id = CAST(:projectId AS uuid)", nativeQuery = true)
     long countActiveNodes(@Param("projectId") UUID projectId);
 
-    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE (n.status = 'DOWN' OR n.status = 'BROKEN' OR n.status = 'FIBERCUT' OR n.status = 'MAINTENANCE') AND n.project.id = :projectId")
+    @Query(value = "SELECT COUNT(n.id) FROM network_nodes n WHERE (n.status = 'DOWN' OR n.status = 'BROKEN' OR n.status = 'FIBERCUT' OR n.status = 'MAINTENANCE') AND n.project_id = CAST(:projectId AS uuid)", nativeQuery = true)
     long countDownNodes(@Param("projectId") UUID projectId);
 
     @Query(value = "SELECT COALESCE(SUM(ST_Length(CAST(geom AS geography))) / 1000, 0) FROM network_edges WHERE project_id = CAST(:projectId AS uuid)", nativeQuery = true)
     double calculateTotalNetworkLengthKm(@Param("projectId") UUID projectId);
 
-    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE n.project.id = :projectId")
+    @Query(value = "SELECT COUNT(*) FROM network_nodes WHERE project_id = CAST(:projectId AS uuid)", nativeQuery = true)
     long countTotalNodes(@Param("projectId") UUID projectId);
 
     @Query("SELECT n FROM NetworkNode n WHERE n.project.id = :projectId AND n.status NOT IN ('ACTIVE', 'UP', 'PLANNING') ORDER BY n.updatedAt DESC, n.id DESC")
