@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
+import { useTracePath } from "@/hooks/use-trace-path";
 import { useEffect, useState, useCallback } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
@@ -51,6 +52,8 @@ export function AssetPanel() {
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagResult, setDiagResult] = useState<DiagnosticResult | null>(null);
   const [auditHistory, setAuditHistory] = useState<AuditHistoryEntry[]>([]);
+  const { fetchTraceUpstream, loading: traceLoading } = useTracePath();
+  const setTracedPath = useMapStore((state) => state.setTracedPath);
   const params = useParams();
   const projectId = params?.projectId as string;
 
@@ -268,8 +271,7 @@ export function AssetPanel() {
             {diagResult && (
               <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30 mb-6 animate-in fade-in zoom-in-95 duration-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                 <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 mb-2">
-                  <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL
-                  ANALYSIS
+                  <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL ANALYSIS
                 </div>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-3xl font-black font-mono tracking-tighter text-foreground">
@@ -334,7 +336,38 @@ export function AssetPanel() {
                   <Cable className="w-4 h-4 mr-2" />
                   {traceMode === "selecting-target"
                     ? "SELECT TARGET ON MAP..."
-                    : "TRACE FIBER ROUTE"}
+                    : "MANUAL TRACE ROUTE"}
+                </Button>
+              )}
+
+              {/* Auto Trace Upstream Button */}
+              {details && ["ODC", "ODP"].includes(details.type) && (
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl h-10 font-bold tracking-wide border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                  onClick={async () => {
+                    const path = await fetchTraceUpstream(details.id);
+                    if (path) {
+                      setTracedPath(path);
+                      toast.success("Route Traced", {
+                        description: "Path found automatically back to OLT source.",
+                      });
+                    } else {
+                      toast.error("Trace Failed", {
+                        description: "Could not find an upstream path to OLT. Check parent relationships.",
+                      });
+                    }
+                  }}
+                  disabled={traceLoading}
+                >
+                  {traceLoading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> TRACING...</>
+                  ) : (
+                    <>
+                      <Activity className="w-4 h-4 mr-2" />
+                      AUTO TRACE TO OLT
+                    </>
+                  )}
                 </Button>
               )}
             </div>

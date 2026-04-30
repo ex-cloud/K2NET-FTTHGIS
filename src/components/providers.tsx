@@ -59,6 +59,7 @@ function SessionPulse({ children }: { children: React.ReactNode }) {
 }
 
 import { QueryProvider } from "./query-provider";
+import { ErrorBoundary } from "./error-boundary";
 
 export function Providers({ children, session }: { children: React.ReactNode, session?: Session | null }) {
   return (
@@ -71,7 +72,9 @@ export function Providers({ children, session }: { children: React.ReactNode, se
             enableSystem
             disableTransitionOnChange
           >
-            <AuthGuard>{children}</AuthGuard>
+            <ErrorBoundary>
+              <AuthGuard>{children}</AuthGuard>
+            </ErrorBoundary>
             <Toaster />
           </ThemeProvider>
         </QueryProvider>

@@ -11,6 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useNetworkStats } from "@/hooks/queries/useNetworkStats";
 
 import { ReactNode } from "react";
@@ -38,6 +39,37 @@ function StatCard({ title, icon, children, defaultOpen = true }: { title: string
   );
 }
 
+function StatsPanelSkeleton() {
+  return (
+    <div className="absolute top-[80px] left-4 flex flex-col gap-4 w-[280px] z-10">
+      <StatCard title="Network Statistics" icon={<TrendingUp className="w-3.5 h-3.5" />}>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-background/50 backdrop-blur-sm p-3 rounded-lg border border-border/40 flex flex-col justify-center h-[58px]">
+              <Skeleton className="h-2 w-12 mb-2 bg-white/5" />
+              <Skeleton className="h-4 w-16 bg-white/10" />
+            </div>
+          ))}
+        </div>
+      </StatCard>
+
+      <StatCard title="Capacity Monitoring" icon={<Users className="w-3.5 h-3.5" />}>
+        <div className="flex flex-col gap-3 mt-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-background/50 backdrop-blur-sm p-2.5 rounded-lg border border-border/40">
+              <div className="flex justify-between mb-2">
+                <Skeleton className="h-2 w-20 bg-white/5" />
+                <Skeleton className="h-2 w-8 bg-white/10" />
+              </div>
+              <Skeleton className="h-1.5 w-full rounded-full bg-white/5" />
+            </div>
+          ))}
+        </div>
+      </StatCard>
+    </div>
+  );
+}
+
 export function StatsPanel() {
   const { data: session } = useSession();
   const params = useParams();
@@ -48,8 +80,20 @@ export function StatsPanel() {
     projectId
   );
 
-  if (isLoading || isError || !stats) {
-    return null;
+  if (isLoading) {
+    return <StatsPanelSkeleton />;
+  }
+
+  if (isError || !stats) {
+    return (
+      <div className="absolute top-[80px] left-4 w-[280px] z-10">
+        <div className="bg-destructive/10 backdrop-blur-xl border border-destructive/20 p-4 rounded-xl text-center">
+          <AlertTriangle className="w-6 h-6 text-destructive mx-auto mb-2" />
+          <p className="text-[10px] font-bold text-destructive uppercase tracking-wider">Connection Lost</p>
+          <p className="text-[9px] text-muted-foreground mt-1">Unable to sync network metrics.</p>
+        </div>
+      </div>
+    );
   }
 
   const getCapacityColor = (color: string) => {

@@ -12,6 +12,8 @@ import {
   CreditCard,
   Briefcase,
   Hexagon,
+  FileUp,
+  Calculator,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -100,6 +102,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: `/org/${orgId}/project/${projectId}/settings`,
       icon: Settings2,
       isActive: pathname?.includes("/settings"),
+    },
+    {
+      title: "GIS Data Import",
+      url: `/org/${orgId}/project/${projectId}/import`,
+      icon: FileUp,
+      isActive: pathname?.includes("/import"),
+    },
+    {
+      title: "BOQ Generator",
+      url: `/org/${orgId}/project/${projectId}/boq`,
+      icon: Calculator,
+      isActive: pathname?.includes("/boq"),
     },
   ];
 

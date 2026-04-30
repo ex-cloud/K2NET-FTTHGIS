@@ -3,7 +3,6 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { MapTooltip, type HoveredFeature } from "@/components/dashboard/map-tooltip";
 import { useTracePath } from "@/hooks/use-trace-path";
-import { useMapClusters } from "@/hooks/use-map-clusters";
 import Map, {
   Source,
   Layer,
@@ -21,7 +20,6 @@ import type {
   HeatmapLayerSpecification,
   FillLayerSpecification,
   StyleSpecification,
-  GeoJSONSource,
   Map as MapLibreInstance,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -114,6 +112,8 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     // Layer Visibility
     layerVisibility,
   } = useMapStore();
+  
+  const [dashOffset, setDashOffset] = useState(0);
 
   // Trace Path hook
   const { fetchTracePath, loading: traceLoading } = useTracePath();
@@ -121,9 +121,6 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   const params = useParams();
   const orgSlug = params?.orgId as string;
   const projectId = params?.projectId as string;
-
-  // Clustering data
-  const { geoJSON: clusterGeoJSON } = useMapClusters(orgSlug, projectId);
 
   // Hover tooltip state
   const [hoveredFeature, setHoveredFeature] = useState<HoveredFeature | null>(null);
@@ -311,6 +308,19 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     }
   }, [statusOverrides, mounted, triggerTileRefresh]);
 
+  // Ant-trail animation for traced path
+  useEffect(() => {
+    let animationFrame: number;
+    if (tracedPath) {
+      const animate = () => {
+        setDashOffset(prev => (prev + 0.2) % 4);
+        animationFrame = requestAnimationFrame(animate);
+      };
+      animationFrame = requestAnimationFrame(animate);
+    }
+    return () => cancelAnimationFrame(animationFrame);
+  }, [tracedPath]);
+
   // Sync Form Close with Draw Cleanup
   useEffect(() => {
     if (!isFormOpen && drawRef.current) {
@@ -325,9 +335,10 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
   const mvtTileUrl = useMemo(() => {
     const baseUrl = getMartinBaseUrl();
-    // Add project_id, timestamp and refresh key to force tile reload when needed
-    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?project_id=${projectId || ""}&t=${tileTimestamp}&r=${tileRefreshKey}`;
-  }, [tileTimestamp, tileRefreshKey, projectId]);
+    // Add project_id, org_slug, timestamp and refresh key to force tile reload when needed
+    // The backend uses these for multi-tenant isolation
+    return `${baseUrl}/get_mvt_data/{z}/{x}/{y}?project_id=${projectId || ""}&org_slug=${orgSlug || ""}&t=${tileTimestamp}&r=${tileRefreshKey}`;
+  }, [tileTimestamp, tileRefreshKey, projectId, orgSlug]);
 
   // Mouse hover handler for tooltip (no API calls, reads from MVT properties)
   const onMouseMove = useCallback(
@@ -367,29 +378,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     }
   }, [traceMode]);
 
-  const onClusterClick = (event: MapLayerMouseEvent) => {
-    const features = event.features;
-    if (features && features.length > 0) {
-      const feature = features[0];
-      const clusterId = feature.properties?.cluster_id;
-      const map = mapRef.current?.getMap();
-      if (map && clusterId !== undefined) {
-        const source = map.getSource("network-clusters") as GeoJSONSource;
-        if (source && source.getClusterExpansionZoom) {
-          source.getClusterExpansionZoom(clusterId).then((zoom) => {
-            if (zoom !== undefined) {
-              map.easeTo({
-                center: (feature.geometry as { type: "Point"; coordinates: [number, number] }).coordinates,
-                zoom: zoom,
-              });
-            }
-          }).catch(err => {
-            console.error("Cluster expansion error", err);
-          });
-        }
-      }
-    }
-  };
+
 
   const onMapClick = (evt: MapLayerMouseEvent) => {
     // If actively drawing a NEW feature, don't allow selecting existing ones
@@ -632,7 +621,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
       source: "network-source",
       "source-layer": "nodes",
       filter: ["==", ["get", "node_type"], "OLT"],
-      minzoom: 12.5,
+      minzoom: 10,
       layout: {
         visibility: layerVisibility.OLT ? "visible" : "none",
       },
@@ -1052,13 +1041,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         onMouseMove={onMouseMove}
         onMouseLeave={onMouseLeave}
         onClick={(e) => {
-          const firstFeature = e.features?.[0];
-          const clickedLayer = firstFeature?.layer?.id;
-          if (clickedLayer === "clusters") {
-            onClusterClick(e);
-          } else {
-            onMapClick(e);
-          }
+          onMapClick(e);
         }}
         maxZoom={22}
         interactiveLayerIds={[
@@ -1068,7 +1051,6 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
           "customer-icons",
           "topology-cables",
           "standard-cables",
-          "clusters",
         ]}
       >
         {allowEditing && isEditMode && (
@@ -1191,87 +1173,13 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
                 "line-color": "#06b6d4",
                 "line-opacity": 0.9,
                 "line-dasharray": [2, 2],
-              }}
+                "line-dashoffset": dashOffset,
+              } as LineLayerSpecification["paint"]}
             />
           </Source>
         )}
 
-        {/* CLUSTERING SOURCE (only active at zoom < 12.5) */}
-        {clusterGeoJSON && (
-          <Source
-            id="network-clusters"
-            type="geojson"
-            data={clusterGeoJSON}
-            cluster={true}
-            clusterMaxZoom={14}
-            clusterRadius={50}
-          >
-            <Layer
-              id="clusters"
-              type="circle"
-              filter={["has", "point_count"]}
-              paint={{
-                "circle-color": [
-                  "step",
-                  ["get", "point_count"],
-                  "#22c55e",
-                  50,
-                  "#f59e0b",
-                  200,
-                  "#ef4444",
-                ],
-                "circle-radius": [
-                  "step",
-                  ["get", "point_count"],
-                  20,
-                  50,
-                  30,
-                  200,
-                  40,
-                ],
-                "circle-stroke-width": 4,
-                "circle-stroke-color": "white",
-                "circle-opacity": 0.8,
-                "circle-stroke-opacity": 0.5,
-              }}
-            />
-            <Layer
-              id="cluster-count"
-              type="symbol"
-              filter={["has", "point_count"]}
-              layout={{
-                "text-field": "{point_count}",
-                "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-                "text-size": 14,
-              }}
-              paint={{
-                "text-color": "white",
-              }}
-            />
-            <Layer
-              id="unclustered-point"
-              type="circle"
-              filter={["!", ["has", "point_count"]]}
-              maxzoom={12.5}
-              paint={{
-                "circle-color": [
-                  "match",
-                  ["get", "type"],
-                  "OLT",
-                  "#f59e0b",
-                  "ODC",
-                  "#3b82f6",
-                  "ODP",
-                  "#06b6d4",
-                  "#22c55e",
-                ],
-                "circle-radius": 6,
-                "circle-stroke-width": 1,
-                "circle-stroke-color": "#fff",
-              }}
-            />
-          </Source>
-        )}
+
 
         {/* HEATMAP OVERLAY */}
         {heatmapData && (

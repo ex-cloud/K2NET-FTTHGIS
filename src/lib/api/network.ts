@@ -25,6 +25,16 @@ export interface AssetSearchResult {
   projectName?: string;
 }
 
+export interface FiberCable {
+  id: string;
+  code: string;
+  status: string;
+  geometry: {
+    type: "LineString";
+    coordinates: number[][];
+  };
+}
+
 export interface AssetHistory {
   id: string;
   assetCode: string;
@@ -170,9 +180,15 @@ export const networkApi = {
     return res.json();
   },
 
-  async tracePath(startNodeId: string, endNodeId: string, token: string, projectId: string): Promise<unknown[]> {
+  async tracePath(startNodeId: string, endNodeId: string, token: string, projectId: string): Promise<FiberCable[]> {
     const res = await httpClient(`${BACKEND_URL}/network/trace-path?startNodeId=${startNodeId}&endNodeId=${endNodeId}`, { token, projectId });
     if (!res.ok) throw new Error("Trace path failed");
+    return res.json();
+  },
+  
+  async traceUpstream(nodeId: string, token: string, projectId: string): Promise<FiberCable[]> {
+    const res = await httpClient(`${BACKEND_URL}/network/trace-upstream?nodeId=${nodeId}`, { token, projectId });
+    if (!res.ok) throw new Error("Upstream trace failed");
     return res.json();
   },
 
