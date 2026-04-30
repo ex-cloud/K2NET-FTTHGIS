@@ -4,6 +4,7 @@ import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.repository.projection.FiberCableProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,5 +34,8 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, UUID> {
                         ") as r " +
                         "JOIN network_edges c ON r.edge = c.id " +
                         "ORDER BY r.seq", nativeQuery = true)
-        List<FiberCableProjection> findShortestPath(UUID startNodeId, UUID endNodeId);
+        List<FiberCableProjection> findShortestPath(@Param("startNodeId") UUID startNodeId, @Param("endNodeId") UUID endNodeId);
+
+        @Query("SELECT SUM(c.lengthMeters) FROM FiberCable c WHERE c.project.id = :projectId")
+        Double sumLengthByProjectId(@Param("projectId") UUID projectId);
 }

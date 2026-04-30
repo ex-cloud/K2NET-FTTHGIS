@@ -14,7 +14,11 @@ import java.util.UUID;
 @Repository
 public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> {
     Optional<NetworkNode> findByOsmid(Long osmid);
+    Optional<NetworkNode> findByCode(String code);
     boolean existsByCode(String code);
+
+    @Query("SELECT COUNT(n) FROM NetworkNode n WHERE n.nodeType = :type AND n.project.id = :projectId")
+    long countByTypeAndProjectId(@org.springframework.data.repository.query.Param("type") String type, @org.springframework.data.repository.query.Param("projectId") UUID projectId);
 
     @Query(value = """
         SELECT n.id, n.code, n.status, n.node_type as nodeType, ST_Y(n.geom) as lat, ST_X(n.geom) as lng 

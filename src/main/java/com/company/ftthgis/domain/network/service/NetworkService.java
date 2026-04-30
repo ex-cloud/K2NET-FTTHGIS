@@ -15,6 +15,8 @@ public interface NetworkService {
      */
     List<FiberCableMapDto> tracePath(UUID startNodeId, UUID endNodeId);
 
+    List<FiberCableMapDto> traceUpstream(UUID nodeId);
+
     /**
      * Update asset status across DB, Cache, and notify Map
      */

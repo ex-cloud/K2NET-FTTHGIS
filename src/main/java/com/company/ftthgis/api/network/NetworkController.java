@@ -40,4 +40,9 @@ public class NetworkController {
             @RequestParam UUID endNodeId) {
         return ResponseEntity.ok(networkService.tracePath(startNodeId, endNodeId));
     }
+    @GetMapping("/trace-upstream")
+    public ResponseEntity<List<FiberCableMapDto>> traceUpstream(
+            @RequestParam UUID nodeId) {
+        return ResponseEntity.ok(networkService.traceUpstream(nodeId));
+    }
 }

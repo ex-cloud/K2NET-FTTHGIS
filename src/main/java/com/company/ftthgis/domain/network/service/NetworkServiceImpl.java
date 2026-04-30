@@ -66,6 +66,41 @@ public class NetworkServiceImpl implements NetworkService {
         return mapProjectionsToDtos(projections);
     }
 
+    @Override
+    public List<FiberCableMapDto> traceUpstream(UUID nodeId) {
+        // Try to find the root OLT by traversing parents
+        UUID rootOltId = findRootOltId(nodeId);
+        if (rootOltId != null) {
+            return tracePath(nodeId, rootOltId);
+        }
+        return List.of();
+    }
+
+    private UUID findRootOltId(UUID nodeId) {
+        // 1. Check if it's already an OLT
+        if (oltRepository.existsById(nodeId)) return nodeId;
+
+        // 2. Check if ODP
+        var odpOpt = odpRepository.findById(nodeId);
+        if (odpOpt.isPresent()) {
+            ODP odp = odpOpt.get();
+            if (odp.getOdc() != null) {
+                return findRootOltId(odp.getOdc().getId());
+            }
+        }
+
+        // 3. Check if ODC
+        var odcOpt = odcRepository.findById(nodeId);
+        if (odcOpt.isPresent()) {
+            ODC odc = odcOpt.get();
+            if (odc.getOlt() != null) {
+                return odc.getOlt().getId();
+            }
+        }
+
+        return null;
+    }
+
     private List<FiberCableMapDto> mapProjectionsToDtos(List<FiberCableProjection> projections) {
         return projections.stream().map(p -> {
             try {
