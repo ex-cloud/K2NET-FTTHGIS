@@ -58,4 +58,15 @@ public class OrganizationController {
             @RequestParam(required = false) String status) {
         return org.springframework.http.ResponseEntity.ok(userService.findAllByOrganization(orgId, search, role, status, pageable));
     }
+
+    @PutMapping("/{slug}")
+    public ResponseEntity<Organization> update(@PathVariable String slug, @RequestBody Organization org) {
+        return ResponseEntity.ok(organizationService.updateOrganization(slug, org));
+    }
+
+    @DeleteMapping("/{slug}")
+    public ResponseEntity<Void> delete(@PathVariable String slug) {
+        organizationService.deleteOrganization(slug);
+        return ResponseEntity.ok().build();
+    }
 }

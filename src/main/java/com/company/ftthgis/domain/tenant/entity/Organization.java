@@ -37,4 +37,11 @@ public class Organization {
 
     @Column
     private String website;
+
+    @Column
+    private String logoUrl;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Project> projects;
 }
