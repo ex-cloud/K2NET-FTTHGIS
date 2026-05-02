@@ -1,5 +1,9 @@
 package com.company.ftthgis.domain.network.mapper;
 
+/**
+ * Build Trigger Comment - v2
+ */
+
 import com.company.ftthgis.domain.network.dto.AssetDto;
 import com.company.ftthgis.domain.network.dto.FiberCableDto;
 import com.company.ftthgis.domain.network.dto.ODCDto;

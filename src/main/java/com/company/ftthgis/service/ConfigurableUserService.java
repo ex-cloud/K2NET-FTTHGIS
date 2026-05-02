@@ -220,7 +220,11 @@ public class ConfigurableUserService {
     }
 
     private UserDto mapToDto(User user) {
-        List<UserDto.ProjectRoleDto> projectRoles = user.getProjectMembers().stream()
+        List<UserDto.ProjectRoleDto> projectRoles = new ArrayList<>();
+        
+        if (user.getProjectMembers() != null) {
+            projectRoles = user.getProjectMembers().stream()
+                .filter(pm -> pm.getProject() != null && pm.getRole() != null)
                 .map(pm -> UserDto.ProjectRoleDto.builder()
                         .projectId(pm.getProject().getId())
                         .projectName(pm.getProject().getName())
@@ -228,6 +232,7 @@ public class ConfigurableUserService {
                         .roleDisplayName(pm.getRole().getDisplayName())
                         .build())
                 .collect(Collectors.toList());
+        }
 
         return UserDto.builder()
                 .id(user.getId())
@@ -236,8 +241,8 @@ public class ConfigurableUserService {
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
                 .status(user.getStatus())
-                .roleName(user.getRole().getName())
-                .roleDisplayName(user.getRole().getDisplayName())
+                .roleName(user.getRole() != null ? user.getRole().getName() : "USER")
+                .roleDisplayName(user.getRole() != null ? user.getRole().getDisplayName() : "User")
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)

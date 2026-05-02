@@ -21,6 +21,15 @@ public class Project {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
+    private String code;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column
+    private String region;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", nullable = false)

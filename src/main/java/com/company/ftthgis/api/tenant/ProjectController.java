@@ -1,6 +1,8 @@
 package com.company.ftthgis.api.tenant;
 
+import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectRepository projectRepository;
+    private final OrganizationRepository organizationRepository;
 
     @GetMapping
     public ResponseEntity<List<Project>> getProjectsByOrg(@PathVariable String orgSlug) {
@@ -26,6 +29,16 @@ public class ProjectController {
     public ResponseEntity<Project> getProjectById(@PathVariable String orgSlug, @PathVariable UUID projectId) {
         return projectRepository.findById(projectId)
                 .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createProject(@PathVariable String orgSlug, @RequestBody Project project) {
+        return organizationRepository.findBySlug(orgSlug)
+                .map((Organization org) -> {
+                    project.setOrganization(org);
+                    return ResponseEntity.ok(projectRepository.save(project));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 }

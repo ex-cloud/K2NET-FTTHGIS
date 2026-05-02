@@ -1,5 +1,7 @@
 package com.company.ftthgis.config;
 
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import com.company.ftthgis.domain.user.entity.Permission;
 import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.entity.User;
@@ -25,27 +27,27 @@ public class UserSeeder implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final UserSyncService userSyncService;
 
     // Permission Definitions
-    private static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
-            "super_admin", List.of(
-                    "dashboard.view", "nodes.view", "nodes.create", "nodes.edit", "nodes.delete",
-                    "tickets.view", "tickets.create", "tickets.assign", "tickets.update",
-                    "heatmap.view", "users.view", "users.manage", "settings.manage", "audit.view"),
-            "admin", List.of(
-                    "dashboard.view", "nodes.view", "nodes.create", "nodes.edit",
-                    "tickets.view", "tickets.create", "tickets.assign", "tickets.update",
-                    "heatmap.view", "users.view", "audit.view"),
-            "supervisor", List.of(
-                    "dashboard.view", "nodes.view",
-                    "tickets.view", "tickets.create", "tickets.assign", "tickets.update",
-                    "heatmap.view"),
-            "technician", List.of(
-                    "nodes.view", "tickets.view", "tickets.update"),
-            "viewer", List.of(
-                    "dashboard.view", "nodes.view"));
+    // Permission Definitions based on Organization Roles Guide
+    private static final Map<String, List<String>> ROLE_PERMISSIONS = new LinkedHashMap<>() {{
+        put("super_admin", List.of("*.*")); // Full Access
+        put("admin", List.of(
+            "inventory.*", "billing.*", "team.*", "network.*", "report.*", "customer.*", "ticket.*", "survey.*", "audit.*"
+        ));
+        put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));
+        put("noc", List.of("network.view", "network.monitor", "inventory.view", "dashboard.view"));
+        put("technician", List.of("inventory.view", "inventory.edit", "map.view", "map.edit", "task.update", "ticket.update"));
+        put("warehouse", List.of("inventory.view", "inventory.manage", "dashboard.view"));
+        put("helpdesk", List.of("customer.view", "ticket.create", "ticket.view", "dashboard.view"));
+        put("surveyor", List.of("survey.create", "coverage.view", "map.view"));
+        put("auditor", List.of("audit.view", "approval.manage", "report.view", "dashboard.view"));
+        put("vendor", List.of("task.update", "inventory.view", "map.view"));
+        put("viewer", List.of("dashboard.view", "map.view", "report.view"));
+    }};
 
     @Override
     public void run(String... args) throws Exception {
@@ -81,39 +83,44 @@ public class UserSeeder implements CommandLineRunner {
     private void seedRoles() {
         for (Map.Entry<String, List<String>> entry : ROLE_PERMISSIONS.entrySet()) {
             String roleName = entry.getKey();
-            if (!roleRepository.existsByName(roleName)) {
-                Role role = new Role();
+            Role role = roleRepository.findByName(roleName).orElse(new Role());
+            
+            if (role.getId() == null) {
                 role.setName(roleName);
                 role.setDisplayName(roleName.replace("_", " ").toUpperCase());
                 role.setDescription("System Role: " + roleName);
-
-                Set<Permission> permissions = new HashSet<>();
-                for (String permCode : entry.getValue()) {
-                    permissionRepository.findByCode(permCode).ifPresent(permissions::add);
-                }
-                role.setPermissions(permissions);
-                roleRepository.save(role);
-                log.info("Created Role: {} with {} permissions", roleName, permissions.size());
+                log.info("Creating Role: {}", roleName);
+            } else {
+                log.info("Updating Role permissions: {}", roleName);
             }
+
+            Set<Permission> permissions = new HashSet<>();
+            for (String permCode : entry.getValue()) {
+                permissionRepository.findByCode(permCode).ifPresent(permissions::add);
+            }
+            role.setPermissions(permissions);
+            roleRepository.save(role);
         }
     }
 
     private void seedUsers() {
         String defaultPassword = "Password@123";
-        createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin",
-                defaultPassword, "ACTIVE");
-        createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE");
-        createUserIfNotExists("supervisor@example.com", "xsupervisor", "Supervisor User", "supervisor", defaultPassword,
-                "ACTIVE");
-        createUserIfNotExists("technician@example.com", "xtechnician", "Technician User", "technician", defaultPassword,
-                "ACTIVE");
-        createUserIfNotExists("viewer@example.com", "xviewer", "Viewer User", "viewer", defaultPassword, "ACTIVE");
-        createUserIfNotExists("inactive@example.com", "xinactive", "Inactive User", "viewer", defaultPassword,
-                "INACTIVE");
+        // Find our default organization
+        Organization defaultOrg = organizationRepository.findBySlug("ex-cloud-org").orElse(null);
+        
+        createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin", defaultPassword, "ACTIVE", null); // Platform level
+        createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("noc@example.com", "xnoc", "NOC Operator", "noc", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("finance@example.com", "xfinance", "Finance Manager", "finance", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("surveyor@example.com", "xsurveyor", "Field Surveyor", "surveyor", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("warehouse@example.com", "xwarehouse", "Warehouse Staff", "warehouse", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("technician@example.com", "xtechnician", "Technician User", "technician", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("viewer@example.com", "xviewer", "Viewer User", "viewer", defaultPassword, "ACTIVE", defaultOrg);
+        createUserIfNotExists("inactive@example.com", "xinactive", "Inactive User", "viewer", defaultPassword, "INACTIVE", defaultOrg);
     }
 
     private void createUserIfNotExists(String email, String username, String fullName, String roleName, String password,
-            String status) {
+            String status, Organization organization) {
         String keycloakId = null;
         try {
             keycloakId = keycloakAdminService.createUser(email, username, password, fullName.split(" ")[0],
@@ -147,6 +154,7 @@ public class UserSeeder implements CommandLineRunner {
             }
             user.setRole(role);
             user.setStatus(status);
+            user.setOrganization(organization);
 
             String seed = email.split("@")[0];
             user.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
@@ -165,6 +173,13 @@ public class UserSeeder implements CommandLineRunner {
                 changed = true;
             }
 
+            // Update organization locally if different
+            if ((organization != null && user.getOrganization() == null) || 
+                (organization != null && user.getOrganization() != null && !organization.getId().equals(user.getOrganization().getId()))) {
+                user.setOrganization(organization);
+                changed = true;
+            }
+            
             // Update role locally if different
             if (!user.getRole().getName().equals(roleName)) {
                 Role newRole = roleRepository.findByName(roleName)
