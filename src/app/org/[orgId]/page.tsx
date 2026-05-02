@@ -15,6 +15,8 @@ interface ProjectItem {
   name: string;
 }
 
+import { ProjectCreateWizard } from "@/components/project/project-create-wizard";
+
 export default function OrgDashboardPage({
   params,
 }: {
@@ -24,6 +26,7 @@ export default function OrgDashboardPage({
   const { data: session } = useSession();
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     if (!session?.accessToken) return;
@@ -50,6 +53,11 @@ export default function OrgDashboardPage({
 
   return (
     <div className="flex-1 flex flex-col bg-background h-full overflow-y-auto">
+      <ProjectCreateWizard 
+        open={isWizardOpen} 
+        onOpenChange={setIsWizardOpen} 
+        onSuccess={fetchProjects}
+      />
       <div className="w-full max-w-6xl mx-auto py-8 px-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">
@@ -72,12 +80,13 @@ export default function OrgDashboardPage({
                 <List className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <Link href={`/org/${orgId}/new`}>
-              <Button className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-medium h-8 px-3 text-xs">
-                <Plus className="h-3.5 w-3.5" />
-                New project
-              </Button>
-            </Link>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-medium h-8 px-3 text-xs"
+              onClick={() => setIsWizardOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New project
+            </Button>
           </div>
         </div>
 

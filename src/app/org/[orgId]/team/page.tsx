@@ -6,9 +6,16 @@ import { useSession } from "next-auth/react";
 import axios from "axios";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
-import { Users, Plus, Search, Shield, Building2, Briefcase, Mail } from "lucide-react";
+import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeamInviteWizard } from "@/components/team/team-invite-wizard";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface UserData {
   id: string;
@@ -35,6 +42,12 @@ export default function OrganizationTeamPage() {
   
   const [members, setMembers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const fetchMembers = React.useCallback(async () => {
     if (!session?.accessToken || !orgId) return;
@@ -43,17 +56,29 @@ export default function OrganizationTeamPage() {
     try {
       const baseUrl = getBackendBaseUrl();
       const res = await axios.get(`${baseUrl}/organizations/${orgId}/users`, {
+        params: {
+          page: page,
+          size: pageSize,
+          sort: 'createdAt,desc'
+        },
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
-      // Handle Spring Data Page structure
-      setMembers(res.data?.content || res.data || []);
+      
+      // Spring Data Page object handling
+      if (res.data.content) {
+        setMembers(res.data.content);
+        setTotalPages(res.data.totalPages);
+        setTotalElements(res.data.totalElements);
+      } else {
+        setMembers(res.data || []);
+      }
     } catch (e) {
       console.error(e);
       toast.error("Failed to load organization members");
     } finally {
       setIsLoading(false);
     }
-  }, [session?.accessToken, orgId]);
+  }, [session?.accessToken, orgId, page, pageSize]);
 
   useEffect(() => {
     fetchMembers();
@@ -61,7 +86,7 @@ export default function OrganizationTeamPage() {
 
   return (
     <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar">
-      <div className="flex flex-col gap-6 px-6 py-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col gap-6 px-6 pt-6 pb-20 max-w-7xl mx-auto w-full">
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -87,10 +112,10 @@ export default function OrganizationTeamPage() {
         </div>
 
         <TeamInviteWizard 
-          isOpen={isWizardOpen} 
-          onClose={() => {
-            setIsWizardOpen(false);
-            fetchMembers(); // Refresh the list after an invite
+          open={isWizardOpen} 
+          onOpenChange={(open) => {
+            setIsWizardOpen(open);
+            if (!open) fetchMembers(); // Refresh when closed
           }} 
         />
 
@@ -101,14 +126,16 @@ export default function OrganizationTeamPage() {
               <Users className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Members</h3>
             </div>
-            <p className="text-2xl font-bold text-foreground">{members.length}</p>
+            <p className="text-2xl font-bold text-foreground">{totalElements || members.length}</p>
           </div>
           <div className="p-4 border border-border rounded-xl bg-card">
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Divisions</h3>
             </div>
-            <p className="text-2xl font-bold text-foreground">1</p>
+            <p className="text-2xl font-bold text-foreground">
+              {[...new Set(members.map(m => m.roleName))].length}
+            </p>
           </div>
           <div className="p-4 border border-border rounded-xl bg-card">
             <div className="flex items-center gap-2 mb-2">
@@ -218,6 +245,62 @@ export default function OrganizationTeamPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/20">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Team State</span>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(val) => {
+                    setPageSize(parseInt(val));
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-[100px] text-[10px] bg-background border-border">
+                    <SelectValue placeholder="10 Per Page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 Per Page</SelectItem>
+                    <SelectItem value="10">10 Per Page</SelectItem>
+                    <SelectItem value="20">20 Per Page</SelectItem>
+                    <SelectItem value="50">50 Per Page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="h-4 w-px bg-border/50" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Total: <span className="text-foreground">{totalElements} Members</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mr-2">
+                {page + 1} / {totalPages || 1}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 border-border bg-background"
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7 border-border bg-background"
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
