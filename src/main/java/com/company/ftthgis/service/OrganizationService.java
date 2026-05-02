@@ -22,6 +22,7 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
     public List<Organization> getAllOrganizations() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -73,9 +74,17 @@ public class OrganizationService {
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found with slug: " + slug));
         
+        // Handle Logo Cleanup
+        String oldLogoUrl = org.getLogoUrl();
+        String newLogoUrl = updatedOrg.getLogoUrl();
+        
+        if (oldLogoUrl != null && !oldLogoUrl.isEmpty() && !oldLogoUrl.equals(newLogoUrl)) {
+            log.info("🗑️ Detected logo change for {}. Deleting old file: {}", slug, oldLogoUrl);
+            fileStorageService.deleteFile(oldLogoUrl);
+        }
+
         org.setName(updatedOrg.getName());
-        org.setLogoUrl(updatedOrg.getLogoUrl());
-        // Typically slug shouldn't change easily, so we only update name for now
+        org.setLogoUrl(newLogoUrl);
         
         log.info("🔄 Updating organization: {} (Slug: {})", org.getName(), slug);
         return organizationRepository.save(org);
