@@ -2,17 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { 
-  Building2, 
-  Globe, 
-  ShieldAlert, 
-  Check, 
-  Copy, 
-  ExternalLink,
-  Info,
-  Loader2,
-  Upload
-} from "lucide-react";
+import { Building2, Globe, ShieldAlert, Check, Copy, ExternalLink, Info, Loader2, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -20,22 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations } from "@/hooks/useOrganizations";
 
 interface Project {
@@ -61,10 +40,9 @@ interface User {
 export default function GeneralSettingsPage() {
   const { orgId } = useParams();
   const router = useRouter();
-  useOrganizations(); // Still call it if we need any side effects or just to keep it warm
+  const queryClient = useQueryClient();
   const { data: session } = useSession();
   const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -73,6 +51,8 @@ export default function GeneralSettingsPage() {
   const [copied, setCopied] = React.useState(false);
   const [name, setName] = React.useState("");
   const [logoUrl, setLogoUrl] = React.useState("");
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
   const [userData, setUserData] = React.useState<User | null>(null);
   
   // Delete Modal States
@@ -81,8 +61,19 @@ export default function GeneralSettingsPage() {
   const [checkedProjects, setCheckedProjects] = React.useState<Record<string, boolean>>({});
   const [deleteReason, setDeleteReason] = React.useState("");
 
+  const { organizations, loading: orgsLoading } = useOrganizations();
+  const currentOrg = organizations.find(o => o.slug === orgId);
+
   React.useEffect(() => {
-    const fetchData = async () => {
+    if (currentOrg) {
+      setOrgData(currentOrg);
+      setName(currentOrg.name);
+      setLogoUrl(currentOrg.logoUrl || "");
+    }
+  }, [currentOrg]);
+
+  React.useEffect(() => {
+    const fetchAdditionalData = async () => {
       if (!session?.accessToken) return;
       
       try {
@@ -90,18 +81,10 @@ export default function GeneralSettingsPage() {
           "Authorization": `Bearer ${session.accessToken}`
         };
 
-        const [orgRes, projectsRes, userRes] = await Promise.all([
-          fetch(`/api/v1/organizations/${orgId}`, { headers }),
+        const [projectsRes, userRes] = await Promise.all([
           fetch(`/api/v1/organizations/${orgId}/projects`, { headers }),
           fetch(`/api/v1/users/me`, { headers })
         ]);
-
-        if (orgRes.ok) {
-          const data = await orgRes.json();
-          setOrgData(data);
-          setName(data.name);
-          setLogoUrl(data.logoUrl || "");
-        }
 
         if (projectsRes.ok) {
           const projectData = await projectsRes.json();
@@ -111,39 +94,54 @@ export default function GeneralSettingsPage() {
         if (userRes.ok) {
           const data = await userRes.json();
           setUserData(data);
-          console.log("👤 USER DEBUG DATA:", data);
         }
       } catch (error) {
-        console.error("Failed to fetch organization data", error);
-        toast.error("Failed to load settings data");
+        console.error("Failed to fetch additional data", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchAdditionalData();
   }, [orgId, session?.accessToken]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: { name: string, logoUrl: string }) => {
+      const res = await fetch(`/api/v1/organizations/${orgId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.accessToken}`
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error || "Failed to update organization");
+      }
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      setOrgData(updated);
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      toast.success("Organization updated successfully");
+      router.refresh();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    }
+  });
 
   const isAdmin = React.useMemo(() => {
     if (!userData) return false;
-    
     const role = userData.roleName?.toLowerCase() || "";
     const username = userData.username?.toLowerCase() || "";
-    
-    const authorized = 
-      role.includes("admin") || 
-      role.includes("super") || 
-      role.includes("owner") || 
-      username.includes("admin");
-      
-    console.log("🛡️ ACCESS GRANTED:", authorized, "Reason:", { role, username });
-    return authorized;
+    return role.includes("admin") || role.includes("super") || role.includes("owner") || username.includes("admin");
   }, [userData]);
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Basic validation
     if (!file.type.startsWith('image/')) {
       toast.error("Please upload an image file");
       return;
@@ -154,34 +152,30 @@ export default function GeneralSettingsPage() {
       return;
     }
 
+    // Create a local preview
+    const previewUrl = URL.createObjectURL(file);
+    setLogoFile(file);
+    setLogoPreview(previewUrl);
+    setLogoUrl(""); // Clear the URL to indicate a new file is pending
+  };
+
+  const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    setUploading(true);
-    try {
-      const res = await fetch('/api/v1/files/upload', {
-        method: 'POST',
-        headers: {
-          "Authorization": `Bearer ${session?.accessToken}`
-        },
-        body: formData
-      });
+    const res = await fetch('/api/v1/files/upload', {
+      method: 'POST',
+      headers: {
+        "Authorization": `Bearer ${session?.accessToken}`
+      },
+      body: formData
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9090";
-        const finalUrl = data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
-        setLogoUrl(finalUrl);
-        toast.success("Logo uploaded successfully");
-      } else {
-        toast.error("Failed to upload logo");
-      }
-    } catch (error) {
-      console.error("Upload error", error);
-      toast.error("Error uploading logo");
-    } finally {
-      setUploading(false);
-    }
+    if (!res.ok) throw new Error("Failed to upload logo");
+    
+    const data = await res.json();
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9090";
+    return data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
   };
 
   const handleSave = async () => {
@@ -190,36 +184,26 @@ export default function GeneralSettingsPage() {
       return;
     }
 
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/v1/organizations/${orgId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.accessToken}`
-        },
-        body: JSON.stringify({ name, logoUrl }),
-      });
+    let finalLogoUrl = logoUrl;
 
-      if (res.ok) {
-        const updated = await res.json();
-        setOrgData(updated);
-        
-        // Dispatch global event to sync all useOrganizations hook instances (like in header)
-        window.dispatchEvent(new CustomEvent('refresh-organizations'));
-        
-        toast.success("Organization updated successfully");
-        router.refresh();
-      } else {
-        const error = await res.text();
-        toast.error(error || "Failed to update organization");
+    // If there's a new file selected, upload it first
+    if (logoFile) {
+      setUploading(true);
+      try {
+        finalLogoUrl = await uploadFile(logoFile);
+        setLogoUrl(finalLogoUrl);
+        setLogoFile(null);
+        setLogoPreview(null);
+      } catch {
+        toast.error("Failed to upload logo");
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
       }
-    } catch (error) {
-      console.error("Failed to update organization", error);
-      toast.error("Network error while updating organization");
-    } finally {
-      setSaving(false);
     }
+
+    updateMutation.mutate({ name, logoUrl: finalLogoUrl });
   };
 
   const handleDelete = async () => {
@@ -264,14 +248,14 @@ export default function GeneralSettingsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return (
+  if (loading || orgsLoading) return (
     <div className="p-8 space-y-6">
       <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded" />
       <div className="h-64 w-full bg-zinc-900 animate-pulse rounded-xl" />
     </div>
   );
 
-  const hasChanges = name !== orgData?.name || logoUrl !== (orgData?.logoUrl || "");
+  const hasChanges = name !== orgData?.name || logoUrl !== (orgData?.logoUrl || "") || !!logoFile;
 
   return (
     <div className="p-8 pb-24 max-w-4xl mx-auto space-y-10">
@@ -286,7 +270,7 @@ export default function GeneralSettingsPage() {
           <Button 
             variant="outline" 
             className="border-zinc-800 text-zinc-400 hover:text-zinc-100"
-            disabled={!hasChanges || saving}
+            disabled={!hasChanges || updateMutation.isPending}
             onClick={() => {
               setName(orgData?.name || "");
               setLogoUrl(orgData?.logoUrl || "");
@@ -296,10 +280,10 @@ export default function GeneralSettingsPage() {
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={!hasChanges || saving || !isAdmin}
+            disabled={!hasChanges || updateMutation.isPending || uploading}
             className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)] min-w-[120px]"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+            {(updateMutation.isPending || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -322,13 +306,15 @@ export default function GeneralSettingsPage() {
               ref={fileInputRef} 
               className="hidden" 
               accept="image/*"
-              onChange={handleLogoUpload}
+              onChange={handleLogoSelect}
             />
             <Avatar 
               className="h-24 w-24 border-2 border-zinc-800 ring-4 ring-zinc-900 shadow-2xl cursor-pointer hover:border-emerald-500/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
-              <AvatarImage src={logoUrl} />
+              {(logoPreview || (logoUrl && logoUrl.trim() !== "")) ? (
+                <AvatarImage src={logoPreview || logoUrl} />
+              ) : null}
               <AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold uppercase">
                 {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : name?.substring(0, 2)}
               </AvatarFallback>
@@ -353,7 +339,7 @@ export default function GeneralSettingsPage() {
                 <Input 
                   id="logoUrl" 
                   value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogoUrl(e.target.value)}
                   className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
                   placeholder="https://example.com/logo.png"
                 />
@@ -367,6 +353,22 @@ export default function GeneralSettingsPage() {
                   <Upload className="w-3.5 h-3.5" />
                   Upload
                 </Button>
+                {logoUrl && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
+                    onClick={() => {
+                      setLogoUrl("");
+                      setLogoFile(null);
+                      setLogoPreview(null);
+                    }}
+                    disabled={uploading}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Remove
+                  </Button>
+                )}
               </div>
             </div>
             <p className="text-xs text-zinc-600">
@@ -395,7 +397,7 @@ export default function GeneralSettingsPage() {
             <Input 
               id="orgName" 
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200"
               placeholder="Enter organization name"
             />
@@ -500,7 +502,7 @@ export default function GeneralSettingsPage() {
                                 <Checkbox 
                                   id={`project-${project.id}`}
                                   checked={!!checkedProjects[project.id]}
-                                  onCheckedChange={(checked) => {
+                                  onCheckedChange={(checked: boolean) => {
                                     setCheckedProjects(prev => ({
                                       ...prev,
                                       [project.id]: !!checked
@@ -549,7 +551,7 @@ export default function GeneralSettingsPage() {
                       </p>
                       <Input 
                         value={deleteConfirmSlug}
-                        onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmSlug(e.target.value)}
                         placeholder="Enter the string above"
                         className="bg-zinc-900 border-zinc-800 text-white h-11 focus:border-red-500/50 focus:ring-red-500/10"
                       />

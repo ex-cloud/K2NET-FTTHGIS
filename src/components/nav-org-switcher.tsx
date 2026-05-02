@@ -49,7 +49,9 @@ export function NavOrgSwitcher() {
           className="flex items-center gap-1.5"
         >
           <Avatar className="size-5 rounded border border-border">
-            <AvatarImage src={currentOrg?.logoUrl || ""} />
+            {currentOrg?.logoUrl && currentOrg.logoUrl.trim() !== "" ? (
+              <AvatarImage src={currentOrg.logoUrl} />
+            ) : null}
             <AvatarFallback className="bg-emerald-600/20 text-emerald-500 text-[10px] font-bold uppercase rounded leading-none">
               {displayName.substring(0, 1)}
             </AvatarFallback>
@@ -116,7 +118,9 @@ export function NavOrgSwitcher() {
                 >
                   <Link href={`/org/${org.slug}`}>
                     <Avatar className="size-7 rounded border border-border bg-muted/50">
-                      <AvatarImage src={org.logoUrl || ""} />
+                      {org.logoUrl && org.logoUrl.trim() !== "" ? (
+                        <AvatarImage src={org.logoUrl} />
+                      ) : null}
                       <AvatarFallback className="bg-zinc-900 text-zinc-500 text-xs font-bold uppercase rounded">
                         {org.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
