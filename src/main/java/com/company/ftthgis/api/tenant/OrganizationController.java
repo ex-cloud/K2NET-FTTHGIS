@@ -14,6 +14,7 @@ import java.util.List;
 public class OrganizationController {
 
     private final OrganizationService organizationService;
+    private final com.company.ftthgis.service.ConfigurableUserService userService;
 
     @GetMapping
     public ResponseEntity<List<Organization>> getAll() {
@@ -39,5 +40,22 @@ public class OrganizationController {
     @GetMapping("/check-slug/{slug}")
     public ResponseEntity<Boolean> checkSlug(@PathVariable String slug) {
         return ResponseEntity.ok(organizationService.isSlugAvailable(slug));
+    }
+
+    @PostMapping("/{orgId}/users/invite")
+    public org.springframework.http.ResponseEntity<com.company.ftthgis.api.user.dto.UserDto> inviteUser(
+            @PathVariable String orgId,
+            @RequestBody com.company.ftthgis.api.user.dto.UserInviteRequest request) {
+        return org.springframework.http.ResponseEntity.ok(userService.inviteUser(orgId, request));
+    }
+
+    @GetMapping("/{orgId}/users")
+    public org.springframework.http.ResponseEntity<org.springframework.data.domain.Page<com.company.ftthgis.api.user.dto.UserDto>> getUsersByOrganization(
+            @PathVariable String orgId,
+            @org.springframework.data.web.PageableDefault(size = 10, sort = "createdAt") org.springframework.data.domain.Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status) {
+        return org.springframework.http.ResponseEntity.ok(userService.findAllByOrganization(orgId, search, role, status, pageable));
     }
 }

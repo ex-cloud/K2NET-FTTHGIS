@@ -90,6 +90,46 @@ public class KeycloakAdminService {
         return null;
     }
 
+    public String inviteUser(String email, String username, String firstName, String lastName, String defaultPassword) {
+        UsersResource usersResource = keycloak.realm(realm).users();
+
+        // Check if user already exists
+        List<UserRepresentation> existing = usersResource.search(email, true);
+        if (!existing.isEmpty()) {
+            throw new RuntimeException("User with email " + email + " already exists in Keycloak");
+        }
+
+        UserRepresentation user = new UserRepresentation();
+        user.setEnabled(true);
+        user.setUsername(username != null && !username.isEmpty() ? username : email);
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmailVerified(true);
+        user.setRequiredActions(Collections.singletonList("UPDATE_PASSWORD")); // Force password update
+
+        // Set Password
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(defaultPassword);
+        credential.setTemporary(true); // Must change
+        user.setCredentials(Collections.singletonList(credential));
+
+        try (Response response = usersResource.create(user)) {
+            if (response.getStatus() == 201) {
+                String userId = CreatedResponseUtil.getCreatedId(response);
+                log.info("Invited user {} in Keycloak with ID: {}", email, userId);
+                return userId;
+            } else {
+                log.error("Failed to create user {} in Keycloak. Status: {}", email, response.getStatus());
+                throw new RuntimeException("Failed to create user in Keycloak. HTTP Status: " + response.getStatus());
+            }
+        } catch (Exception e) {
+            log.error("Error creating user in Keycloak: {}", e.getMessage(), e);
+            throw new RuntimeException("Keycloak Error: " + e.getMessage());
+        }
+    }
+
     public void updateUserRole(String email, String newRoleName) {
         UsersResource usersResource = keycloak.realm(realm).users();
         List<UserRepresentation> users = usersResource.search(email, true);

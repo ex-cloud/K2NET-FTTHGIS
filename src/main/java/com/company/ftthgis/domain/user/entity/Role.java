@@ -2,6 +2,7 @@ package com.company.ftthgis.domain.user.entity;
 
 import com.company.ftthgis.domain.common.BaseEntity;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
@@ -31,6 +32,7 @@ public class Role extends BaseEntity {
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private Set<Permission> permissions = new HashSet<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "role")
     private Set<User> users = new HashSet<>();
 }
