@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/**").permitAll() // Multi-tenant org + project endpoints
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
