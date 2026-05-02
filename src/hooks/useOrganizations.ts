@@ -11,6 +11,7 @@ export interface Organization {
   address?: string;
   website?: string;
   plan?: string;
+  logoUrl?: string;
 }
 
 export function useOrganizations() {
@@ -137,7 +138,8 @@ export function useOrganizations() {
         setLoading(true);
       }
     }
-  }, [status, session?.accessToken, fetchOrganizations, retryCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, session?.accessToken]);
 
   // DIRECT SESSION HANDSHAKE: Paksa ambil sesi dari API jika status klien tertahan di unauthenticated
   useEffect(() => {
@@ -164,6 +166,17 @@ export function useOrganizations() {
       }
     }
   }, [status, fetchOrganizations]);
+
+  // GLOBAL REFRESH LISTENER: Allow other components to trigger a refresh via CustomEvent
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      console.log("📢 [useOrganizations] Global refresh triggered");
+      fetchOrganizations();
+    };
+
+    window.addEventListener('refresh-organizations', handleGlobalRefresh);
+    return () => window.removeEventListener('refresh-organizations', handleGlobalRefresh);
+  }, [fetchOrganizations]);
 
   return {
     organizations,

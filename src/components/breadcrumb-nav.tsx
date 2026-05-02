@@ -5,35 +5,24 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { usePathname } from "next/navigation";
-import { Hexagon, Package, Plug2, Slash } from "lucide-react";
+import { Plug2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useOrganizations } from "@/hooks/useOrganizations";
-import { useProjectDetails } from "@/hooks/useProjectDetails";
 
 export function BreadcrumbNav() {
   const pathname = usePathname();
   const parts = pathname?.split("/") || [];
-  const { organizations } = useOrganizations();
 
   const isLanding = pathname === "/org";
-  const orgId = parts[2] || "default";
   const projectId = parts[4];
-  const { project, loading: projectLoading } = useProjectDetails(orgId, projectId);
-
-  // Get the organization name dynamically
-  const currentOrg = organizations.find((o) => o.slug === orgId);
-  const orgDisplayName = currentOrg?.name || orgId || "Organization";
 
   if (isLanding) {
     return (
       <Breadcrumb className="flex items-center">
-        <BreadcrumbList className="flex items-center gap-2">
+        <BreadcrumbList className="flex items-center gap-1">
           <BreadcrumbItem>
-            <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+            <div className="flex items-center gap-1 text-sm font-medium text-foreground">
               <span className="text-muted-foreground/50">/</span>
               Organizations
             </div>
@@ -44,40 +33,12 @@ export function BreadcrumbNav() {
   }
 
   return (
-    <div className="flex items-center flex-1 justify-between w-full pr-4">
+    <div className="flex items-center flex-1 justify-between w-full pr-1">
       <Breadcrumb className="flex items-center">
-        <BreadcrumbList className="flex items-center gap-2 sm:gap-3">
-          
-          {/* Org Section */}
-          <BreadcrumbItem>
-            <Link href={`/org/${orgId}`} className="flex items-center gap-1.5 hover:bg-accent/50 p-1 px-2 rounded-md cursor-pointer transition-colors -ml-2">
-              <Hexagon className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-semibold tracking-tight text-foreground">{orgDisplayName}</span>
-              <span className="text-[9px] font-bold text-muted-foreground uppercase border border-border px-1.5 py-0.5 rounded-full ml-1">
-                FREE
-              </span>
-            </Link>
-          </BreadcrumbItem>
-
-          {/* Project Section */}
+        <BreadcrumbList className="flex items-center gap-1">
           {projectId && (
             <>
-              <BreadcrumbSeparator>
-                <Slash className="w-3.5 h-3.5 text-muted-foreground/30 -rotate-12" />
-              </BreadcrumbSeparator>
-              <BreadcrumbItem>
-                <Link href={`/org/${orgId}/project/${projectId}`} className="flex items-center gap-1.5 hover:bg-accent/50 p-1 px-2 rounded-md cursor-pointer transition-colors">
-                  <Package className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold tracking-tight text-foreground">
-                    {projectLoading ? "..." : project?.name || "Project"}
-                  </span>
-                </Link>
-              </BreadcrumbItem>
-
               {/* Branch Section */}
-              <BreadcrumbSeparator>
-                <Slash className="w-3.5 h-3.5 text-muted-foreground/30 -rotate-12" />
-              </BreadcrumbSeparator>
               <BreadcrumbItem>
                 <div className="flex items-center gap-1.5 p-1 px-2 rounded-md cursor-pointer transition-colors">
                   <span className="text-sm font-semibold tracking-tight text-foreground">main</span>

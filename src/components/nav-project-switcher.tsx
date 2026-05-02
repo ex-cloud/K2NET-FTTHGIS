@@ -1,7 +1,7 @@
 "use client";
-
+ 
 import * as React from "react";
-import { Plus, Check, ChevronsUpDown, Box, Search, X } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Box, Search, X, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,47 +11,50 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-
-const projects = [
-  { id: "ftth-gis-1", name: "FTTH GIS BANDUNG", status: "Active" },
-  { id: "ftth-gis-2", name: "FTTH GIS JABAR", status: "Active" },
-];
+import { useProjects } from "@/hooks/useProjects";
 
 export function NavProjectSwitcher() {
   const pathname = usePathname();
+  const params = useParams();
   const [search, setSearch] = React.useState("");
 
-  // Filter out empty strings to handle leading/trailing slashes correctly
-  const segments = pathname?.split("/").filter(Boolean) || [];
+  const orgId = params.orgId as string;
+  const projectId = params.projectId as string;
 
-  // segments[0] = "org", segments[1] = [orgId], segments[2] = "project", segments[3] = [projectId]
-  const projectId = segments[3];
-  const orgId = segments[1];
+  const { projects, loading } = useProjects(orgId);
 
-  const currentProject =
-    projects.find((p) => p.id === projectId) || projects[0];
+  const currentProject = projects.find((p) => String(p.id) === String(projectId));
 
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  // If we are not in a project context, don't render or show "Select Project"
+  if (!projectId && !pathname.includes("/project/")) return null;
+
+  const displayName = loading 
+    ? "Loading project..." 
+    : (currentProject?.name || projectId || "Select Project");
+
   return (
     <div className="flex items-center justify-center">
-      <div className="flex items-center justify-center gap-1.5 px-2 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
+      <div className="flex items-center justify-center gap-1.5 px-0.5 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
         <Link
-          href={`/org/${orgId}/project/${currentProject.id}`}
+          href={`/org/${orgId}/project/${projectId}`}
           className="flex items-center gap-1.5"
         >
           <Box className="size-3 flex items-center justify-center" />
           <span className="truncate max-w-[120px] group-hover:text-foreground transition-colors">
-            {currentProject.name}
+            {displayName}
           </span>
-          <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded-full text-emerald-500 font-bold uppercase tracking-tight">
-            {currentProject.status}
-          </span>
+          {currentProject?.status && (
+            <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded-full text-emerald-500 font-bold uppercase tracking-tight">
+              {currentProject.status}
+            </span>
+          )}
         </Link>
       </div>
       <DropdownMenu onOpenChange={(open) => !open && setSearch("")}>
@@ -99,7 +102,11 @@ export function NavProjectSwitcher() {
               Projects
             </DropdownMenuLabel>
 
-            {filteredProjects.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredProjects.length > 0 ? (
               filteredProjects.map((project) => (
                 <DropdownMenuItem
                   key={project.id}
@@ -117,7 +124,7 @@ export function NavProjectSwitcher() {
                         {project.name}
                       </span>
                       <span className="text-[9px] text-emerald-500 uppercase">
-                        {project.status}
+                        {project.status || 'Active'}
                       </span>
                     </div>
                     {project.id === projectId && (
@@ -134,13 +141,18 @@ export function NavProjectSwitcher() {
           </div>
           <DropdownMenuSeparator className="bg-border mx-0 mt-0" />
           <div className="p-1">
-            <DropdownMenuItem className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md">
-              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
-                <Plus className="size-3.5" />
-              </div>
-              <div className="font-medium text-xs text-muted-foreground">
-                New Project
-              </div>
+            <DropdownMenuItem 
+              asChild
+              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
+            >
+              <Link href={`/org/${orgId}`} className="flex items-center gap-2 w-full">
+                <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                  <Plus className="size-3.5" />
+                </div>
+                <div className="font-medium text-xs">
+                  New Project
+                </div>
+              </Link>
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>

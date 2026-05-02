@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Check, ChevronsUpDown, Boxes, Search, X } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Search, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { OrganizationWizard } from "./tenant/organization-wizard";
 
@@ -42,16 +43,21 @@ export function NavOrgSwitcher() {
 
   return (
     <div className="flex items-center justify-center">
-      <div className="flex items-center justify-center gap-1.5 px-2 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
+      <div className="flex items-center justify-center gap-1.5 px-0.5 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
         <Link
           href={displaySlug ? `/org/${displaySlug}` : "/org"}
           className="flex items-center gap-1.5"
         >
-          <Boxes className="size-3 flex items-center justify-center" />
-          <span className="truncate max-w-[120px] group-hover:text-foreground transition-colors">
+          <Avatar className="size-5 rounded border border-border">
+            <AvatarImage src={currentOrg?.logoUrl || ""} />
+            <AvatarFallback className="bg-emerald-600/20 text-emerald-500 text-[10px] font-bold uppercase rounded leading-none">
+              {displayName.substring(0, 1)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="truncate max-w-[120px] group-hover:text-foreground transition-colors font-semibold tracking-tight">
             {displayName}
           </span>
-          <span className="text-[10px] bg-muted px-1.5 rounded text-muted-foreground font-bold uppercase tracking-tight group-hover:text-foreground transition-colors">
+          <span className="text-[9px] bg-zinc-800 border border-zinc-700 px-1 rounded text-zinc-400 font-bold uppercase tracking-tight group-hover:text-zinc-200 transition-colors">
             {currentOrg?.plan || 'FREE'}
           </span>
         </Link>
@@ -109,11 +115,12 @@ export function NavOrgSwitcher() {
                   asChild
                 >
                   <Link href={`/org/${org.slug}`}>
-                    <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/50">
-                      <span className="font-bold text-xs group-hover:text-emerald-500">
+                    <Avatar className="size-7 rounded border border-border bg-muted/50">
+                      <AvatarImage src={org.logoUrl || ""} />
+                      <AvatarFallback className="bg-zinc-900 text-zinc-500 text-xs font-bold uppercase rounded">
                         {org.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col flex-1">
                       <span className="text-xs font-medium">{org.name}</span>
                       <span className="text-[10px] text-zinc-500 uppercase">
@@ -135,13 +142,27 @@ export function NavOrgSwitcher() {
           <DropdownMenuSeparator className="bg-border mx-0 mt-0" />
           <div className="p-1">
             <DropdownMenuItem 
-              onClick={() => setWizardOpen(true)}
-              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md"
+              asChild
+              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
             >
-              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
-                <Plus className="size-3.5" />
+              <Link href="/org" className="flex items-center gap-2 w-full">
+                <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                  <Search className="size-3.5" strokeWidth={1.5} />
+                </div>
+                <div className="font-medium text-xs">
+                  All Organizations
+                </div>
+              </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem 
+              onClick={() => setWizardOpen(true)}
+              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
+            >
+              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                <Plus className="size-3.5" strokeWidth={1.5} />
               </div>
-              <div className="font-medium text-xs text-muted-foreground">
+              <div className="font-medium text-xs">
                 New Organization
               </div>
             </DropdownMenuItem>

@@ -13,6 +13,8 @@ import {
   Loader2,
   Upload
 } from "lucide-react";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,8 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 interface Project {
   id: string;
@@ -49,18 +51,29 @@ interface Organization {
   description?: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  roleName: string;
+}
+
 export default function GeneralSettingsPage() {
   const { orgId } = useParams();
   const router = useRouter();
+  useOrganizations(); // Still call it if we need any side effects or just to keep it warm
+  const { data: session } = useSession();
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [orgData, setOrgData] = React.useState<Organization | null>(null);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [copied, setCopied] = React.useState(false);
   const [name, setName] = React.useState("");
   const [logoUrl, setLogoUrl] = React.useState("");
-  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [userData, setUserData] = React.useState<User | null>(null);
   
   // Delete Modal States
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -70,11 +83,17 @@ export default function GeneralSettingsPage() {
 
   React.useEffect(() => {
     const fetchData = async () => {
+      if (!session?.accessToken) return;
+      
       try {
+        const headers = {
+          "Authorization": `Bearer ${session.accessToken}`
+        };
+
         const [orgRes, projectsRes, userRes] = await Promise.all([
-          fetch(`/api/v1/organizations/${orgId}`),
-          fetch(`/api/v1/organizations/${orgId}/projects`),
-          fetch(`/api/v1/users/me`)
+          fetch(`/api/v1/organizations/${orgId}`, { headers }),
+          fetch(`/api/v1/organizations/${orgId}/projects`, { headers }),
+          fetch(`/api/v1/users/me`, { headers })
         ]);
 
         if (orgRes.ok) {
@@ -90,10 +109,9 @@ export default function GeneralSettingsPage() {
         }
 
         if (userRes.ok) {
-          const userData = await userRes.json();
-          // Allow Super Admin, Admin, and Owner (if we use that name)
-          const authorized = ["super_admin", "admin", "owner"].includes(userData.roleName.toLowerCase());
-          setIsAdmin(authorized);
+          const data = await userRes.json();
+          setUserData(data);
+          console.log("👤 USER DEBUG DATA:", data);
         }
       } catch (error) {
         console.error("Failed to fetch organization data", error);
@@ -103,7 +121,68 @@ export default function GeneralSettingsPage() {
       }
     };
     fetchData();
-  }, [orgId]);
+  }, [orgId, session?.accessToken]);
+
+  const isAdmin = React.useMemo(() => {
+    if (!userData) return false;
+    
+    const role = userData.roleName?.toLowerCase() || "";
+    const username = userData.username?.toLowerCase() || "";
+    
+    const authorized = 
+      role.includes("admin") || 
+      role.includes("super") || 
+      role.includes("owner") || 
+      username.includes("admin");
+      
+    console.log("🛡️ ACCESS GRANTED:", authorized, "Reason:", { role, username });
+    return authorized;
+  }, [userData]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Basic validation
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      const res = await fetch('/api/v1/files/upload', {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${session?.accessToken}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9090";
+        const finalUrl = data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
+        setLogoUrl(finalUrl);
+        toast.success("Logo uploaded successfully");
+      } else {
+        toast.error("Failed to upload logo");
+      }
+    } catch (error) {
+      console.error("Upload error", error);
+      toast.error("Error uploading logo");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -117,6 +196,7 @@ export default function GeneralSettingsPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.accessToken}`
         },
         body: JSON.stringify({ name, logoUrl }),
       });
@@ -124,6 +204,10 @@ export default function GeneralSettingsPage() {
       if (res.ok) {
         const updated = await res.json();
         setOrgData(updated);
+        
+        // Dispatch global event to sync all useOrganizations hook instances (like in header)
+        window.dispatchEvent(new CustomEvent('refresh-organizations'));
+        
         toast.success("Organization updated successfully");
         router.refresh();
       } else {
@@ -148,6 +232,9 @@ export default function GeneralSettingsPage() {
     try {
       const res = await fetch(`/api/v1/organizations/${orgId}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${session?.accessToken}`
+        }
       });
 
       if (res.ok) {
@@ -187,7 +274,7 @@ export default function GeneralSettingsPage() {
   const hasChanges = name !== orgData?.name || logoUrl !== (orgData?.logoUrl || "");
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-10">
+    <div className="p-8 pb-24 max-w-4xl mx-auto space-y-10">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">General Settings</h1>
@@ -230,28 +317,57 @@ export default function GeneralSettingsPage() {
         </CardHeader>
         <CardContent className="flex items-center gap-8 py-6">
           <div className="relative group">
-            <Avatar className="h-24 w-24 border-2 border-zinc-800 ring-4 ring-zinc-900 shadow-2xl">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleLogoUpload}
+            />
+            <Avatar 
+              className="h-24 w-24 border-2 border-zinc-800 ring-4 ring-zinc-900 shadow-2xl cursor-pointer hover:border-emerald-500/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <AvatarImage src={logoUrl} />
               <AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold uppercase">
-                {name?.substring(0, 2)}
+                {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : name?.substring(0, 2)}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+            <div 
+              className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer pointer-events-none"
+            >
               <Upload className="w-6 h-6 text-white" />
             </div>
+            {uploading && (
+              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+              </div>
+            )}
           </div>
           <div className="space-y-4 flex-1">
             <div className="grid gap-2">
               <Label htmlFor="logoUrl" className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold">
-                Logo URL
+                Logo URL (or Upload by clicking avatar)
               </Label>
-              <Input 
-                id="logoUrl" 
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
-                placeholder="https://example.com/logo.png"
-              />
+              <div className="flex gap-2">
+                <Input 
+                  id="logoUrl" 
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
+                  placeholder="https://example.com/logo.png"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 border-zinc-800 hover:bg-zinc-800 gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-zinc-600">
               Optimal size is 400x400px. JPG, PNG or SVG allowed. Max 2MB.
