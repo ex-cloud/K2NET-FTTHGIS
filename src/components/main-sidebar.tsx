@@ -67,22 +67,26 @@ export function MainSidebar() {
     {
       title: "Integrations",
       icon: Plug,
-      href: null,
+      href: `/org/${orgId}/integrations`,
+      isActive: pathname?.includes("/integrations"),
     },
     {
       title: "Usage",
       icon: BarChart3,
-      href: null,
+      href: `/org/${orgId}/usage`,
+      isActive: pathname?.includes("/usage"),
     },
     {
       title: "Billing",
       icon: CreditCard,
-      href: null,
+      href: `/org/${orgId}/billing`,
+      isActive: pathname?.includes("/billing"),
     },
     {
       title: "Settings",
       icon: Settings,
-      href: null,
+      href: `/org/${orgId}/settings`,
+      isActive: pathname?.includes("/settings") && !isInsideProject,
     },
   ];
 
