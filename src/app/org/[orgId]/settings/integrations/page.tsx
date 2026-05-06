@@ -10,7 +10,9 @@ import {
   MessageSquare, 
   Zap, 
   Info, 
-  Loader2
+  Loader2,
+  AlertCircle,
+  Check
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 interface Config {
   id: string;
@@ -30,22 +33,77 @@ interface Config {
   description: string;
 }
 
+interface IntegrationField {
+  key: string;
+  label: string;
+  placeholder?: string;
+  type: string;
+  required?: boolean;
+}
+
 export default function IntegrationsPage() {
   const { orgId } = useParams();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [testingLdap, setTestingLdap] = React.useState(false);
+  const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
+  const [touchedFields, setTouchedFields] = React.useState<Record<string, boolean>>({});
+
+  const markTouched = (field: string) => setTouchedFields(prev => ({ ...prev, [field]: true }));
+
+  // Format validators
+  const isValidLdapUrl = (url: string) => !url.trim() || /^ldaps?:\/\/.+/i.test(url.trim());
+  const isValidDn = (dn: string) => !dn.trim() || dn.includes('=');
+
+  const hasFieldError = (field: string, value: string, validator?: (v: string) => boolean) => {
+    if (!touchedFields[field]) return false;
+    if (!value.trim()) return true;
+    if (validator && !validator(value)) return true;
+    return false;
+  };
+
+  // Get the validator for a specific LDAP field
+  const getFieldValidator = (key: string) => {
+    if (key === 'ldap_url') return isValidLdapUrl;
+    if (key.endsWith('_dn')) return isValidDn;
+    return undefined;
+  };
+
+  // Get format error message for a specific field
+  const getFormatError = (key: string, value: string) => {
+    if (key === 'ldap_url' && value.trim() && !isValidLdapUrl(value)) return 'URL must start with ldap:// or ldaps://';
+    if (key.endsWith('_dn') && value.trim() && !isValidDn(value)) return 'Invalid DN format (must contain \'=\')';
+    return null;
+  };
+
+  // Helper: check if all required LDAP fields are filled & valid (reads from DOM)
+  const isLdapRequiredFieldsValid = () => {
+    const requiredKeys = ['ldap_url', 'ldap_bind_dn', 'ldap_bind_password', 'ldap_user_dn'];
+    for (const key of requiredKeys) {
+      const el = document.querySelector<HTMLInputElement>(`input[name="${key}"]`);
+      const val = el?.value || getConfigValue(key);
+      if (!val.trim()) return false;
+      const validator = getFieldValidator(key);
+      if (validator && !validator(val)) return false;
+    }
+    return true;
+  };
 
   const handleTestLdap = async () => {
     setTestingLdap(true);
     try {
+      const getInputValue = (key: string) => {
+        const input = document.querySelector(`input[name="${key}"]`) as HTMLInputElement;
+        return input ? input.value : getConfigValue(key);
+      };
+
       const payload = {
-        ldap_url: getConfigValue("ldap_url"),
-        ldap_bind_dn: getConfigValue("ldap_bind_dn"),
-        ldap_bind_password: getConfigValue("ldap_bind_password"),
-        ldap_user_dn: getConfigValue("ldap_user_dn"),
-        ldap_user_filter: getConfigValue("ldap_user_filter")
+        ldap_url: getInputValue("ldap_url"),
+        ldap_bind_dn: getInputValue("ldap_bind_dn"),
+        ldap_bind_password: getInputValue("ldap_bind_password"),
+        ldap_user_dn: getInputValue("ldap_user_dn"),
+        ldap_user_filter: getInputValue("ldap_user_filter")
       };
       
       const res = await fetch(`/api/v1/organizations/${orgId}/configs/test-ldap`, {
@@ -59,12 +117,15 @@ export default function IntegrationsPage() {
       
       const data = await res.json();
       if (data.success) {
+        setLdapTestPassed(true);
         toast.success(data.message || "LDAP Connection Successful");
       } else {
+        setLdapTestPassed(false);
         toast.error(data.message || "LDAP Connection Failed");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to test LDAP connection");
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to test LDAP connection");
     } finally {
       setTestingLdap(false);
     }
@@ -110,7 +171,15 @@ export default function IntegrationsPage() {
   const getConfigValue = (key: string) => 
     configs?.find(c => c.configKey.toLowerCase() === key.toLowerCase())?.configValue || "";
 
-  const integrations = [
+  const integrations: Array<{
+    id: string;
+    name: string;
+    description: string;
+    icon: React.ElementType;
+    category: string;
+    fields: IntegrationField[];
+    status: string;
+  }> = [
     {
       id: "snmp-poller",
       name: "SNMP Poller",
@@ -118,8 +187,8 @@ export default function IntegrationsPage() {
       icon: Zap,
       category: "Network",
       fields: [
-        { key: "snmp_poller_url", label: "Poller URL", placeholder: "https://poller.yourdomain.com", type: "text" },
-        { key: "snmp_community", label: "Read Community", placeholder: "public", type: "password" }
+        { key: "snmp_poller_url", label: "Poller URL", placeholder: "https://poller.yourdomain.com", type: "text", required: false },
+        { key: "snmp_community", label: "Read Community", placeholder: "public", type: "password", required: false }
       ],
       status: getConfigValue("snmp_poller_url") ? "Connected" : "Disconnected"
     },
@@ -130,8 +199,8 @@ export default function IntegrationsPage() {
       icon: ShieldCheck,
       category: "Security",
       fields: [
-        { key: "keycloak_realm", label: "Realm Name", placeholder: "my-tenant-realm", type: "text" },
-        { key: "keycloak_client_id", label: "Client ID", placeholder: "gis-app", type: "text" }
+        { key: "keycloak_realm", label: "Realm Name", placeholder: "my-tenant-realm", type: "text", required: false },
+        { key: "keycloak_client_id", label: "Client ID", placeholder: "gis-app", type: "text", required: false }
       ],
       status: getConfigValue("keycloak_realm") ? "Active" : "Not Configured"
     },
@@ -142,7 +211,7 @@ export default function IntegrationsPage() {
       icon: MessageSquare,
       category: "Notifications",
       fields: [
-        { key: "slack_webhook", label: "Webhook URL", placeholder: "https://hooks.slack.com/services/...", type: "text" }
+        { key: "slack_webhook", label: "Webhook URL", placeholder: "https://hooks.slack.com/services/...", type: "text", required: false }
       ],
       status: "Coming Soon"
     },
@@ -153,12 +222,12 @@ export default function IntegrationsPage() {
       icon: ShieldCheck,
       category: "Security",
       fields: [
-        { key: "ldap_enabled", label: "Enabled Integration", type: "switch" },
-        { key: "ldap_url", label: "LDAP URL", placeholder: "ldap://your-server:389", type: "text" },
-        { key: "ldap_bind_dn", label: "Bind DN", placeholder: "cn=admin,dc=example,dc=com", type: "text" },
-        { key: "ldap_bind_password", label: "Bind Password", placeholder: "••••••••", type: "password" },
-        { key: "ldap_user_dn", label: "User DN", placeholder: "ou=users,dc=example,dc=com", type: "text" },
-        { key: "ldap_user_filter", label: "User Filter", placeholder: "(objectClass=person)", type: "text" }
+        { key: "ldap_enabled", label: "Enabled Integration", type: "switch", required: false },
+        { key: "ldap_url", label: "LDAP URL", placeholder: "ldap://your-server:389", type: "text", required: true },
+        { key: "ldap_bind_dn", label: "Bind DN", placeholder: "cn=admin,dc=example,dc=com", type: "text", required: true },
+        { key: "ldap_bind_password", label: "Bind Password", placeholder: "••••••••", type: "password", required: true },
+        { key: "ldap_user_dn", label: "User DN", placeholder: "ou=users,dc=example,dc=com", type: "text", required: true },
+        { key: "ldap_user_filter", label: "User Filter", placeholder: "(objectClass=person)", type: "text", required: false }
       ],
       status: getConfigValue("ldap_enabled") === "true" ? "Active" : "Not Configured"
     }
@@ -242,14 +311,33 @@ export default function IntegrationsPage() {
                     />
                   </div>
                 ) : (
-                  <div key={field.key} className="space-y-2">
-                    <Label className="text-zinc-400 text-[10px] uppercase tracking-wider">{field.label}</Label>
+                  <div key={field.key} className="space-y-1.5">
+                    <Label className="text-zinc-400 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                      {field.label}
+                      {integration.id === 'ldap' && field.required && getConfigValue('ldap_enabled') === 'true' && (
+                        <span className="text-red-400">*</span>
+                      )}
+                    </Label>
                     <Input 
                       type={field.type}
+                      name={field.key}
                       defaultValue={getConfigValue(field.key)}
                       placeholder={field.placeholder}
-                      className="bg-zinc-950 border-zinc-900 focus:border-emerald-500/30 text-sm h-9"
+                      disabled={integration.id === 'ldap' && getConfigValue('ldap_enabled') !== 'true'}
+                      className={cn(
+                        "text-sm h-9",
+                        integration.id === 'ldap' && getConfigValue('ldap_enabled') !== 'true'
+                          ? "bg-zinc-950/50 border-zinc-900/50 text-zinc-600 cursor-not-allowed"
+                          : "bg-zinc-950 focus:border-emerald-500/30",
+                        integration.id === 'ldap' && hasFieldError(field.key, document.querySelector<HTMLInputElement>(`input[name="${field.key}"]`)?.value || getConfigValue(field.key), getFieldValidator(field.key))
+                          ? "border-red-500/50"
+                          : "border-zinc-900"
+                      )}
                       onBlur={(e) => {
+                        if (integration.id === 'ldap') {
+                          markTouched(field.key);
+                          setLdapTestPassed(false);
+                        }
                         if (e.target.value !== getConfigValue(field.key)) {
                           updateMutation.mutate({
                             configKey: field.key,
@@ -259,22 +347,38 @@ export default function IntegrationsPage() {
                         }
                       }}
                     />
+                    {integration.id === 'ldap' && touchedFields[field.key] && getFormatError(field.key, document.querySelector<HTMLInputElement>(`input[name="${field.key}"]`)?.value || getConfigValue(field.key)) && (
+                      <p className="text-[9px] text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {getFormatError(field.key, document.querySelector<HTMLInputElement>(`input[name="${field.key}"]`)?.value || getConfigValue(field.key))}
+                      </p>
+                    )}
                   </div>
                 )
               ))}
             </CardContent>
             <CardFooter className="pt-4 border-t border-zinc-900">
               {integration.id === "ldap" ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10 gap-2"
-                  onClick={handleTestLdap}
-                  disabled={testingLdap}
-                >
-                  {testingLdap ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                  {testingLdap ? "Testing Connection..." : "Test Connection"}
-                </Button>
+                <div className="w-full space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className={cn(
+                      "w-full gap-2 transition-all",
+                      ldapTestPassed
+                        ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15"
+                        : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"
+                    )}
+                    onClick={handleTestLdap}
+                    disabled={testingLdap || getConfigValue('ldap_enabled') !== 'true' || !isLdapRequiredFieldsValid()}
+                  >
+                    {testingLdap ? <Loader2 className="w-4 h-4 animate-spin" /> : ldapTestPassed ? <Check className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                    {testingLdap ? "Testing Connection..." : ldapTestPassed ? "Connection Verified ✓" : "Test Connection"}
+                  </Button>
+                  {getConfigValue('ldap_enabled') !== 'true' && (
+                    <p className="text-[10px] text-zinc-600 text-center">Enable LDAP integration to test connectivity</p>
+                  )}
+                </div>
               ) : (
                 <Button 
                   variant="ghost" 

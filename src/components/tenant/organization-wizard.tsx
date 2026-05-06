@@ -41,6 +41,8 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const [step, setStep] = React.useState(1);
   const { createOrganization, checkSlugAvailable } = useOrganizations();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [testingLdap, setTestingLdap] = React.useState(false);
+  const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
   const [slugError, setSlugError] = React.useState<string | null>(null);
 
   const [formData, setFormData] = React.useState({
@@ -65,6 +67,37 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     setFormData(prev => ({ ...prev, name, slug: prev.slug === "" || prev.slug === slug.slice(0, -1) ? slug : prev.slug }));
   };
 
+  // Track which LDAP fields the user has interacted with
+  const [touchedFields, setTouchedFields] = React.useState<Record<string, boolean>>({});
+
+  const markTouched = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+  };
+
+  // Format validators
+  const isValidLdapUrl = (url: string) => !url.trim() || /^ldaps?:\/\/.+/i.test(url.trim());
+  const isValidDn = (dn: string) => !dn.trim() || dn.includes('=');
+
+  // Helper: check if all LDAP fields are filled
+  const isLdapFormComplete = formData.ldapUrl.trim() !== "" && formData.ldapBaseDn.trim() !== "" && formData.ldapBindDn.trim() !== "" && formData.ldapBindPassword.trim() !== "";
+
+  // Helper: check if all formats are valid
+  const isLdapFormatValid = isValidLdapUrl(formData.ldapUrl) && isValidDn(formData.ldapBaseDn) && isValidDn(formData.ldapBindDn);
+
+  // Helper: determine if a specific field should show error
+  const hasFieldError = (field: string, value: string, validator?: (v: string) => boolean) => {
+    if (!touchedFields[field]) return false;
+    if (!value.trim()) return true; // empty after touch
+    if (validator && !validator(value)) return true; // format error
+    return false;
+  };
+
+  // Helper: update LDAP field and reset test status
+  const updateLdapField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setLdapTestPassed(false); // Any change invalidates previous test
+  };
+
   const nextStep = async () => {
     if (step === 1) {
       if (!formData.name || !formData.slug) return;
@@ -75,6 +108,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         return;
       }
       setSlugError(null);
+    }
+    if (step === 3 && formData.ldapEnabled && !ldapTestPassed) {
+      toast.error("Please test your LDAP connection first before continuing.");
+      return;
     }
     setStep(prev => prev + 1);
   };
@@ -101,6 +138,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         name: "", slug: "", description: "", website: "", address: "", plan: "FREE",
         ldapEnabled: false, ldapUrl: "", ldapBaseDn: "", ldapBindDn: "", ldapBindPassword: ""
       });
+      setLdapTestPassed(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
       console.error("Failed to create organization:", err);
@@ -110,6 +148,40 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTestLdap = async () => {
+    setTestingLdap(true);
+    try {
+      const payload = {
+        ldap_url: formData.ldapUrl,
+        ldap_bind_dn: formData.ldapBindDn,
+        ldap_bind_password: formData.ldapBindPassword,
+      };
+      
+      const res = await fetch(`/api/v1/organizations/${formData.slug || 'temp'}/configs/test-ldap`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // The fetch will automatically include the session cookie for auth
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setLdapTestPassed(true);
+        toast.success(data.message || "LDAP Connection Successful");
+      } else {
+        setLdapTestPassed(false);
+        toast.error(data.message || "LDAP Connection Failed");
+      }
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to test LDAP connection");
+    } finally {
+      setTestingLdap(false);
     }
   };
 
@@ -278,53 +350,90 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 duration-300">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
-                      <Server className="size-3" /> LDAP Server URL
+                      <Server className="size-3" /> LDAP Server URL <span className="text-red-400">*</span>
                     </label>
                     <Input 
                       value={formData.ldapUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ldapUrl: e.target.value }))}
+                      onChange={(e) => updateLdapField('ldapUrl', e.target.value)}
+                      onBlur={() => markTouched('ldapUrl')}
                       placeholder="ldap://your-server:389" 
-                      className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                      className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapUrl', formData.ldapUrl, isValidLdapUrl) ? "border-red-500/50" : "border-[#2a2a2a]")}
                     />
+                    {touchedFields['ldapUrl'] && formData.ldapUrl.trim() && !isValidLdapUrl(formData.ldapUrl) && (
+                      <p className="text-[9px] text-red-400">URL must start with ldap:// or ldaps://</p>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
-                        <Users className="size-3" /> Base DN
+                        <Users className="size-3" /> Base DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
                         value={formData.ldapBaseDn}
-                        onChange={(e) => setFormData(prev => ({ ...prev, ldapBaseDn: e.target.value }))}
-                        placeholder="ou=users,dc=com" 
-                        className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                        onChange={(e) => updateLdapField('ldapBaseDn', e.target.value)}
+                        onBlur={() => markTouched('ldapBaseDn')}
+                        placeholder="dc=example,dc=com" 
+                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBaseDn', formData.ldapBaseDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
                       />
+                      {touchedFields['ldapBaseDn'] && formData.ldapBaseDn.trim() && !isValidDn(formData.ldapBaseDn) && (
+                        <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
-                        <Key className="size-3" /> Bind DN
+                        <Key className="size-3" /> Bind DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
                         value={formData.ldapBindDn}
-                        onChange={(e) => setFormData(prev => ({ ...prev, ldapBindDn: e.target.value }))}
+                        onChange={(e) => updateLdapField('ldapBindDn', e.target.value)}
+                        onBlur={() => markTouched('ldapBindDn')}
                         placeholder="cn=admin,dc=com" 
-                        className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBindDn', formData.ldapBindDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
                       />
+                      {touchedFields['ldapBindDn'] && formData.ldapBindDn.trim() && !isValidDn(formData.ldapBindDn) && (
+                        <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
-                      <Lock className="size-3" /> Bind Password
+                      <Lock className="size-3" /> Bind Password <span className="text-red-400">*</span>
                     </label>
                     <Input 
                       type="password"
                       value={formData.ldapBindPassword}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ldapBindPassword: e.target.value }))}
+                      onChange={(e) => updateLdapField('ldapBindPassword', e.target.value)}
+                      onBlur={() => markTouched('ldapBindPassword')}
                       placeholder="••••••••" 
-                      className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                      className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBindPassword', formData.ldapBindPassword) ? "border-red-500/50" : "border-[#2a2a2a]")}
                     />
                   </div>
+
+                  {/* Test Connection Button */}
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full mt-2 gap-2 h-9 text-xs font-semibold transition-all",
+                      ldapTestPassed 
+                        ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15" 
+                        : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"
+                    )}
+                    onClick={handleTestLdap}
+                    disabled={testingLdap || !isLdapFormComplete || !isLdapFormatValid}
+                  >
+                    {testingLdap ? <Loader2 className="size-4 animate-spin" /> : ldapTestPassed ? <Check className="size-4" /> : <Zap className="size-4" />}
+                    {testingLdap ? "Testing Connection..." : ldapTestPassed ? "Connection Verified ✓" : "Test Connection"}
+                  </Button>
+
+                  {/* Validation Status */}
+                  {!ldapTestPassed && isLdapFormComplete && isLdapFormatValid && (
+                    <p className="text-[10px] text-amber-500/80 flex items-center gap-1">
+                      <AlertCircle className="size-3" /> You must test and verify the connection before continuing.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -397,8 +506,16 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             {step < 4 ? (
               <Button 
                 onClick={nextStep}
-                disabled={!formData.name || !formData.slug}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
+                disabled={
+                  !formData.name || !formData.slug ||
+                  (step === 3 && formData.ldapEnabled && !ldapTestPassed)
+                }
+                className={cn(
+                  "text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10",
+                  (step === 3 && formData.ldapEnabled && !ldapTestPassed)
+                    ? "bg-zinc-700 hover:bg-zinc-600 cursor-not-allowed"
+                    : "bg-emerald-600 hover:bg-emerald-500"
+                )}
               >
                 Continue <ChevronRight className="size-4 ml-1" />
               </Button>
