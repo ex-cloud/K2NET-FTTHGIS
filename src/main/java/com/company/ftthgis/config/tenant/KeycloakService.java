@@ -9,6 +9,7 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -23,6 +24,18 @@ import java.util.Optional;
 public class KeycloakService {
 
     private final Keycloak keycloak;
+
+    @Value("${keycloak.server-url}")
+    private String serverUrl;
+
+    @Value("${keycloak.realm}")
+    private String realm;
+
+    @Value("${keycloak.client-id}")
+    private String clientId;
+
+    @Value("${keycloak.client-secret}")
+    private String clientSecret;
 
     /**
      * Ensures a realm exists for a tenant.
@@ -83,7 +96,7 @@ public class KeycloakService {
             client.setPublicClient(true);
             client.setDirectAccessGrantsEnabled(true);
             client.setStandardFlowEnabled(true);
-            client.setRedirectUris(List.of("*"));
+            client.setRedirectUris(List.of("http://localhost:3000/*", "http://127.0.0.1:3000/*", "http://192.168.40.11:3000/*"));
             client.setWebOrigins(List.of("*"));
             
             realmResource.clients().create(client);
@@ -125,10 +138,13 @@ public class KeycloakService {
         configMap.putSingle("usernameLDAPAttribute", "uid");
         configMap.putSingle("rdnLDAPAttribute", "uid");
         configMap.putSingle("uuidLDAPAttribute", "entryUUID");
-        configMap.putSingle("userObjectClasses", "inetOrgPerson, organizationalPerson, person");
+        configMap.putSingle("userObjectClasses", "inetOrgPerson");
         configMap.putSingle("editMode", "READ_ONLY");
         configMap.putSingle("syncRegistrations", "false");
         configMap.putSingle("importEnabled", "true");
+        configMap.putSingle("searchScope", "1"); // One Level search
+        configMap.putSingle("useTruststoreSpi", "ldapsOnly");
+        configMap.putSingle("connectionTimeout", "5000");
         
         if (config.getUserFilter() != null && !config.getUserFilter().isEmpty()) {
             configMap.putSingle("customUserSearchFilter", config.getUserFilter());
@@ -190,4 +206,27 @@ public class KeycloakService {
         }
     }
 
+    /**
+     * Verifies if the given password is correct for the specified username in a specific realm.
+     */
+    public boolean verifyUserPassword(String username, String password, String userRealm) {
+        try {
+            try (org.keycloak.admin.client.Keycloak userKeycloak = org.keycloak.admin.client.KeycloakBuilder.builder()
+                    .serverUrl(serverUrl)
+                    .realm(userRealm) 
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
+                    .username(username)
+                    .password(password)
+                    .grantType(org.keycloak.OAuth2Constants.PASSWORD)
+                    .build()) {
+                
+                userKeycloak.tokenManager().getAccessToken();
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("Password verification failed for user {} in realm {}: {}", username, userRealm, e.getMessage());
+            return false;
+        }
+    }
 }

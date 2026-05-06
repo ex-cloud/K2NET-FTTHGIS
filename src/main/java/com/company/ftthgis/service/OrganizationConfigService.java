@@ -26,13 +26,31 @@ public class OrganizationConfigService {
     public List<OrganizationConfig> getConfigsForOrganization(String slug) {
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));
-        return configRepository.findByOrganization(org);
+        List<OrganizationConfig> configs = configRepository.findByOrganization(org);
+        
+        // Mask sensitive data before returning to frontend
+        configs.forEach(c -> {
+            if ("ldap_bind_password".equalsIgnoreCase(c.getConfigKey()) && c.getConfigValue() != null && !c.getConfigValue().isEmpty()) {
+                c.setConfigValue("********");
+            }
+        });
+        
+        return configs;
     }
 
     public Optional<OrganizationConfig> getConfig(String slug, String key) {
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));
-        return configRepository.findByOrganizationAndConfigKeyIgnoreCase(org, key);
+        Optional<OrganizationConfig> config = configRepository.findByOrganizationAndConfigKeyIgnoreCase(org, key);
+        
+        // Mask sensitive data
+        config.ifPresent(c -> {
+            if ("ldap_bind_password".equalsIgnoreCase(c.getConfigKey()) && c.getConfigValue() != null && !c.getConfigValue().isEmpty()) {
+                c.setConfigValue("********");
+            }
+        });
+        
+        return config;
     }
 
     @Transactional
@@ -75,22 +93,16 @@ public class OrganizationConfigService {
     }
 
     public void syncLdapWithKeycloak(String slug) {
-        List<OrganizationConfig> configs = getConfigsForOrganization(slug);
-        
-        boolean enabled = configs.stream()
-                .filter(c -> "ldap_enabled".equalsIgnoreCase(c.getConfigKey()))
-                .map(c -> "true".equalsIgnoreCase(c.getConfigValue()))
-                .findFirst()
-                .orElse(false);
+        boolean enabled = "true".equalsIgnoreCase(getRawConfigValue(slug, "ldap_enabled"));
 
         if (!enabled) return;
 
         var ldapConfig = com.company.ftthgis.config.tenant.LdapConfig.builder()
-                .url(getConfigValue(configs, "ldap_url"))
-                .bindDn(getConfigValue(configs, "ldap_bind_dn"))
-                .bindPassword(decryptIfNeeded("ldap_bind_password", getConfigValue(configs, "ldap_bind_password")))
-                .userDn(getConfigValue(configs, "ldap_user_dn"))
-                .userFilter(getConfigValue(configs, "ldap_user_filter"))
+                .url(getRawConfigValue(slug, "ldap_url"))
+                .bindDn(getRawConfigValue(slug, "ldap_bind_dn"))
+                .bindPassword(decryptIfNeeded("ldap_bind_password", getRawConfigValue(slug, "ldap_bind_password")))
+                .userDn(getRawConfigValue(slug, "ldap_user_dn"))
+                .userFilter(getRawConfigValue(slug, "ldap_user_filter"))
                 .build();
 
         keycloakService.configureLdap(slug, ldapConfig);
@@ -102,17 +114,17 @@ public class OrganizationConfigService {
                 return encryptionUtils.decrypt(value);
             } catch (Exception e) {
                 log.error("Failed to decrypt {}: {}", key, e.getMessage());
-                return value; // Fallback to raw if decryption fails (might be old data)
+                return value; 
             }
         }
         return value;
     }
 
-    private String getConfigValue(List<OrganizationConfig> configs, String key) {
-        return configs.stream()
-                .filter(c -> key.equalsIgnoreCase(c.getConfigKey()))
+    private String getRawConfigValue(String slug, String key) {
+        Organization org = organizationRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));
+        return configRepository.findByOrganizationAndConfigKeyIgnoreCase(org, key)
                 .map(OrganizationConfig::getConfigValue)
-                .findFirst()
                 .orElse("");
     }
 
@@ -121,8 +133,7 @@ public class OrganizationConfigService {
         
         // If frontend sends the masked password, fetch the real one from DB and decrypt it
         if (bindPassword == null || bindPassword.equals("********") || bindPassword.isEmpty()) {
-            List<OrganizationConfig> configs = getConfigsForOrganization(slug);
-            bindPassword = decryptIfNeeded("ldap_bind_password", getConfigValue(configs, "ldap_bind_password"));
+            bindPassword = decryptIfNeeded("ldap_bind_password", getRawConfigValue(slug, "ldap_bind_password"));
         }
 
         var ldapConfig = com.company.ftthgis.config.tenant.LdapConfig.builder()
