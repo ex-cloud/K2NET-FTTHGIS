@@ -55,7 +55,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     // LDAP Configuration
     ldapEnabled: false,
     ldapUrl: "",
-    ldapBaseDn: "",
+    ldap_user_dn: "",
     ldapBindDn: "",
     ldapBindPassword: ""
   });
@@ -79,10 +79,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const isValidDn = (dn: string) => !dn.trim() || dn.includes('=');
 
   // Helper: check if all LDAP fields are filled
-  const isLdapFormComplete = formData.ldapUrl.trim() !== "" && formData.ldapBaseDn.trim() !== "" && formData.ldapBindDn.trim() !== "" && formData.ldapBindPassword.trim() !== "";
+  const isLdapFormComplete = formData.ldapUrl.trim() !== "" && formData.ldap_user_dn.trim() !== "" && formData.ldapBindDn.trim() !== "" && formData.ldapBindPassword.trim() !== "";
 
   // Helper: check if all formats are valid
-  const isLdapFormatValid = isValidLdapUrl(formData.ldapUrl) && isValidDn(formData.ldapBaseDn) && isValidDn(formData.ldapBindDn);
+  const isLdapFormatValid = isValidLdapUrl(formData.ldapUrl) && isValidDn(formData.ldap_user_dn) && isValidDn(formData.ldapBindDn);
 
   // Helper: determine if a specific field should show error
   const hasFieldError = (field: string, value: string, validator?: (v: string) => boolean) => {
@@ -136,7 +136,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
       setStep(1);
       setFormData({ 
         name: "", slug: "", description: "", website: "", address: "", plan: "FREE",
-        ldapEnabled: false, ldapUrl: "", ldapBaseDn: "", ldapBindDn: "", ldapBindPassword: ""
+        ldapEnabled: false, ldapUrl: "", ldap_user_dn: "", ldapBindDn: "", ldapBindPassword: ""
       });
       setLdapTestPassed(false);
     } catch (err) {
@@ -370,13 +370,13 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                         <Users className="size-3" /> Base DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
-                        value={formData.ldapBaseDn}
-                        onChange={(e) => updateLdapField('ldapBaseDn', e.target.value)}
-                        onBlur={() => markTouched('ldapBaseDn')}
+                        value={formData.ldap_user_dn}
+                        onChange={(e) => updateLdapField('ldap_user_dn', e.target.value)}
+                        onBlur={() => markTouched('ldap_user_dn')}
                         placeholder="dc=example,dc=com" 
-                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBaseDn', formData.ldapBaseDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldap_user_dn', formData.ldap_user_dn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
                       />
-                      {touchedFields['ldapBaseDn'] && formData.ldapBaseDn.trim() && !isValidDn(formData.ldapBaseDn) && (
+                      {touchedFields['ldap_user_dn'] && formData.ldap_user_dn.trim() && !isValidDn(formData.ldap_user_dn) && (
                         <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
                       )}
                     </div>

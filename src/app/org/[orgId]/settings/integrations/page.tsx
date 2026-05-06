@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { SecurityChallengeModal } from "@/components/auth/security-challenge-modal";
 
 interface Config {
   id: string;
@@ -49,6 +50,12 @@ export default function IntegrationsPage() {
   const [testingLdap, setTestingLdap] = React.useState(false);
   const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
   const [touchedFields, setTouchedFields] = React.useState<Record<string, boolean>>({});
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = React.useState(false);
+  const [pendingChange, setPendingChange] = React.useState<{
+    configKey: string;
+    configValue: string;
+    description: string;
+  } | null>(null);
 
   const markTouched = (field: string) => setTouchedFields(prev => ({ ...prev, [field]: true }));
 
@@ -268,7 +275,7 @@ export default function IntegrationsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6" key={configs?.length}>
         {filteredIntegrations.map((integration) => (
           <Card key={integration.id} className="bg-[#0c0c0c] border-zinc-800/50 hover:border-emerald-500/30 transition-all flex flex-col group">
             <CardHeader className="space-y-4">
@@ -302,11 +309,12 @@ export default function IntegrationsPage() {
                     <Switch 
                       checked={getConfigValue(field.key) === "true"}
                       onCheckedChange={(checked) => {
-                        updateMutation.mutate({
+                        setPendingChange({
                           configKey: field.key,
                           configValue: checked ? "true" : "false",
                           description: `Toggle ${integration.name}`
                         });
+                        setIsSecurityModalOpen(true);
                       }}
                     />
                   </div>
@@ -334,16 +342,28 @@ export default function IntegrationsPage() {
                           : "border-zinc-900"
                       )}
                       onBlur={(e) => {
+                        const val = e.target.value;
                         if (integration.id === 'ldap') {
                           markTouched(field.key);
                           setLdapTestPassed(false);
-                        }
-                        if (e.target.value !== getConfigValue(field.key)) {
-                          updateMutation.mutate({
-                            configKey: field.key,
-                            configValue: e.target.value,
-                            description: `Setting for ${integration.name}`
-                          });
+                          
+                          if (val !== getConfigValue(field.key)) {
+                            setPendingChange({
+                              configKey: field.key,
+                              configValue: val,
+                              description: `Update ${field.label}`
+                            });
+                            setIsSecurityModalOpen(true);
+                          }
+                        } else {
+                          if (val !== getConfigValue(field.key)) {
+                            setPendingChange({
+                              configKey: field.key,
+                              configValue: val,
+                              description: `Update ${field.label}`
+                            });
+                            setIsSecurityModalOpen(true);
+                          }
                         }
                       }}
                     />
@@ -408,6 +428,17 @@ export default function IntegrationsPage() {
           </div>
         </CardContent>
       </Card>
+      <SecurityChallengeModal 
+        open={isSecurityModalOpen}
+        onOpenChange={setIsSecurityModalOpen}
+        onSuccess={() => {
+          if (pendingChange) {
+            updateMutation.mutate(pendingChange);
+            setPendingChange(null);
+          }
+        }}
+        description="Password verification required to update integration settings."
+      />
     </div>
   );
 }
