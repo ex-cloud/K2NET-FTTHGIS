@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-02T19:19:12+0700",
+    date = "2026-05-06T09:16:49+0700",
     comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
@@ -128,17 +128,17 @@ public class NetworkMapperImpl implements NetworkMapper {
             return null;
         }
 
-        FiberCable fiberCable = new FiberCable();
+        FiberCable.FiberCableBuilder<?, ?> fiberCable = FiberCable.builder();
 
-        fiberCable.setGeometry( dto.getGeom() );
-        fiberCable.setCode( dto.getCode() );
-        fiberCable.setFiberCount( dto.getFiberCount() );
-        fiberCable.setId( dto.getId() );
-        fiberCable.setLastNote( dto.getLastNote() );
-        fiberCable.setLengthMeters( dto.getLengthMeters() );
-        fiberCable.setStatus( dto.getStatus() );
+        fiberCable.geometry( dto.getGeom() );
+        fiberCable.code( dto.getCode() );
+        fiberCable.fiberCount( dto.getFiberCount() );
+        fiberCable.id( dto.getId() );
+        fiberCable.lastNote( dto.getLastNote() );
+        fiberCable.lengthMeters( dto.getLengthMeters() );
+        fiberCable.status( dto.getStatus() );
 
-        return fiberCable;
+        return fiberCable.build();
     }
 
     @Override

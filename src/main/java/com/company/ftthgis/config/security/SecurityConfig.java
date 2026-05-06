@@ -15,6 +15,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerAuthenticationManagerResolver;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,7 +38,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-            JwtAuthenticationConverter jwtAuthenticationConverter,
+            JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
             RateLimitingFilter rateLimitingFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
@@ -53,20 +55,39 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/analytics/**").permitAll()
                         .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
                         .requestMatchers("/api/v1/organizations/**").permitAll() // Multi-tenant org + project endpoints
+                        .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery for frontend
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+                        .authenticationManagerResolver(authenticationManagerResolver));
 
         return http.build();
     }
 
+    @org.springframework.beans.factory.annotation.Value("${keycloak.server-url}")
+    private String keycloakServerUrl;
+
+    @Bean
+    public JwtIssuerAuthenticationManagerResolver authenticationManagerResolver(
+            JwtAuthenticationConverter jwtAuthenticationConverter) {
+        return new JwtIssuerAuthenticationManagerResolver(issuer -> {
+            if (issuer.startsWith(keycloakServerUrl + "/realms/")) {
+                var provider = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider(
+                    org.springframework.security.oauth2.jwt.JwtDecoders.fromIssuerLocation(issuer)
+                );
+                provider.setJwtAuthenticationConverter(jwtAuthenticationConverter);
+                return provider::authenticate;
+            }
+            throw new RuntimeException("Unknown issuer: " + issuer);
+        });
+    }
+
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter(
-            com.company.ftthgis.service.UserSyncService userSyncService) {
+            @Lazy com.company.ftthgis.service.UserSyncService userSyncService) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
         // Custom converter that combines Role extraction + User Sync

@@ -2,11 +2,8 @@ package com.company.ftthgis.domain.network.service;
 
 import com.company.ftthgis.domain.network.dto.FiberCableMapDto;
 import com.company.ftthgis.domain.network.dto.ODCDto;
-import com.company.ftthgis.domain.network.entity.Customer;
-import com.company.ftthgis.domain.network.entity.FiberCable;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
-import com.company.ftthgis.domain.network.entity.OLT;
 import com.company.ftthgis.domain.network.event.MapEventPublisher;
 import com.company.ftthgis.domain.network.repository.CustomerRepository;
 import com.company.ftthgis.domain.network.repository.FiberCableRepository;
@@ -139,38 +136,59 @@ public class NetworkServiceImpl implements NetworkService {
     @Override
     @Transactional
     public void updateAssetStatus(String code, String type, String status) {
+        UUID projectId = null;
+
         // 1. Update DB (Persistent)
         if ("ODP".equalsIgnoreCase(type)) {
-            odpRepository.findByCode(code).ifPresent((ODP asset) -> {
+            var assetOpt = odpRepository.findByCode(code);
+            if (assetOpt.isPresent()) {
+                var asset = assetOpt.get();
                 asset.setStatus(status);
                 odpRepository.save(asset);
-            });
+                projectId = asset.getProject() != null ? asset.getProject().getId() : null;
+            }
         } else if ("ODC".equalsIgnoreCase(type)) {
-            odcRepository.findByCode(code).ifPresent((ODC asset) -> {
+            var assetOpt = odcRepository.findByCode(code);
+            if (assetOpt.isPresent()) {
+                var asset = assetOpt.get();
                 asset.setStatus(status);
                 odcRepository.save(asset);
-            });
+                projectId = asset.getProject() != null ? asset.getProject().getId() : null;
+            }
         } else if ("OLT".equalsIgnoreCase(type)) {
-            oltRepository.findByCode(code).ifPresent((OLT asset) -> {
+            var assetOpt = oltRepository.findByCode(code);
+            if (assetOpt.isPresent()) {
+                var asset = assetOpt.get();
                 asset.setStatus(status);
                 oltRepository.save(asset);
-            });
+                projectId = asset.getProject() != null ? asset.getProject().getId() : null;
+            }
         } else if ("CABLE".equalsIgnoreCase(type)) {
-            fiberCableRepository.findByCode(code).ifPresent((FiberCable asset) -> {
+            var assetOpt = fiberCableRepository.findByCode(code);
+            if (assetOpt.isPresent()) {
+                var asset = assetOpt.get();
                 asset.setStatus(status);
                 fiberCableRepository.save(asset);
-            });
+                projectId = asset.getProject() != null ? asset.getProject().getId() : null;
+            }
         } else if ("CUSTOMER".equalsIgnoreCase(type)) {
-            customerRepository.findByCode(code).ifPresent((Customer asset) -> {
+            var assetOpt = customerRepository.findByCode(code);
+            if (assetOpt.isPresent()) {
+                var asset = assetOpt.get();
                 asset.setStatus(status);
                 customerRepository.save(asset);
-            });
+                projectId = asset.getProject() != null ? asset.getProject().getId() : null;
+            }
         }
 
         // 2. Update Cache (Fast Path)
         statusCacheService.setStatus(code, status);
 
         // 3. Notify Map (Real-time Broadcast)
-        mapEventPublisher.publishStatusChange(code, status, type);
+        if (projectId != null) {
+            mapEventPublisher.publishStatusChange(code, status, type, projectId);
+        } else {
+            log.warn("Could not determine projectId for asset {} of type {}. Event not published.", code, type);
+        }
     }
 }

@@ -1,9 +1,9 @@
 package com.company.ftthgis.domain.user.entity;
 
-import com.company.ftthgis.domain.common.BaseEntity;
+import com.company.ftthgis.domain.tenant.entity.OrganizationAwareEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import java.util.UUID;
 
@@ -11,8 +11,12 @@ import java.util.UUID;
 @Table(name = "users")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Audited
-public class User extends BaseEntity {
+@EqualsAndHashCode(callSuper = true)
+public class User extends OrganizationAwareEntity {
 
     @Id
     private UUID id;
@@ -23,13 +27,12 @@ public class User extends BaseEntity {
     @Column(unique = true)
     private String username;
 
-    // Password removed for security (managed by Keycloak)
-
     private String fullName;
 
     @Column(length = 1000)
     private String avatarUrl;
 
+    @Builder.Default
     @Column(nullable = false)
     private String status = "ACTIVE"; // ACTIVE, INACTIVE, SUSPENDED
 
@@ -37,11 +40,7 @@ public class User extends BaseEntity {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "org_id")
-    @org.hibernate.envers.Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
-    private com.company.ftthgis.domain.tenant.entity.Organization organization;
-
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.Set<com.company.ftthgis.domain.tenant.entity.ProjectMember> projectMembers = new java.util.HashSet<>();
 

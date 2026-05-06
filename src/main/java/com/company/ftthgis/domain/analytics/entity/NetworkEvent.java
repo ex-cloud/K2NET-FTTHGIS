@@ -13,8 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Table(name = "network_event_history", indexes = {
-        @Index(name = "idx_event_timestamp", columnList = "timestamp"),
-        @Index(name = "idx_event_asset_code", columnList = "asset_code")
+        @Index(name = "idx_net_event_timestamp", columnList = "timestamp"),
+        @Index(name = "idx_net_event_asset_code", columnList = "asset_code")
 })
 public class NetworkEvent {
 

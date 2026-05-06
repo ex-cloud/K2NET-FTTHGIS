@@ -1,10 +1,10 @@
 package com.company.ftthgis.domain.user.entity;
 
-import com.company.ftthgis.domain.common.BaseEntity;
+import com.company.ftthgis.domain.common.AuditableEntity;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 
 import java.util.HashSet;
@@ -14,8 +14,11 @@ import java.util.Set;
 @Table(name = "roles")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Audited
-public class Role extends BaseEntity {
+public class Role extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,9 +33,11 @@ public class Role extends BaseEntity {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
+    @Builder.Default
     private Set<Permission> permissions = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "role")
+    @Builder.Default
     private Set<User> users = new HashSet<>();
 }

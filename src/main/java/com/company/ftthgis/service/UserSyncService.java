@@ -4,6 +4,8 @@ import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -22,6 +24,7 @@ public class UserSyncService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final OrganizationRepository organizationRepository;
     private final KeycloakAdminService keycloakAdminService;
 
     /**
@@ -30,8 +33,17 @@ public class UserSyncService {
      */
     @Transactional
     public void syncAllUsersFromKeycloak() {
-        log.info("Starting Full User Synchronization from Keycloak...");
-        List<UserRepresentation> keycloakUsers = keycloakAdminService.listAllUsers();
+        syncAllUsersFromRealm(null); // Uses default
+    }
+
+    @Transactional
+    public void syncAllUsersFromRealm(String targetRealm) {
+        log.info("Starting Full User Synchronization from Keycloak Realm: {}...", 
+            targetRealm != null ? targetRealm : "DEFAULT");
+        
+        List<UserRepresentation> keycloakUsers = targetRealm != null ? 
+            keycloakAdminService.listAllUsersInRealm(targetRealm) : 
+            keycloakAdminService.listAllUsers();
 
         for (UserRepresentation kUser : keycloakUsers) {
             String email = kUser.getEmail();
@@ -44,19 +56,23 @@ public class UserSyncService {
             if (email == null)
                 continue;
 
+            // Resolve organization for this realm
+            Organization org = targetRealm != null ? 
+                organizationRepository.findBySlug(targetRealm).orElse(null) : null;
+
             UUID uuid = UUID.fromString(keycloakId);
             Optional<User> existingUser = userRepository.findById(uuid);
             if (existingUser.isPresent()) {
-                updateExistingUser(existingUser.get(), email, name, username);
+                updateExistingUser(existingUser.get(), email, name, username, org);
             } else {
                 userRepository.findByEmail(email)
                         .map(user -> {
                             log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
                             userRepository.delete(user);
                             userRepository.flush();
-                            return createNewUser(keycloakId, email, name, username);
+                            return createNewUser(keycloakId, email, name, username, org);
                         })
-                        .orElseGet(() -> createNewUser(keycloakId, email, name, username));
+                        .orElseGet(() -> createNewUser(keycloakId, email, name, username, org));
             }
         }
         log.info("Full User Synchronization Complete. Synced {} users.", keycloakUsers.size());
@@ -71,30 +87,51 @@ public class UserSyncService {
         String email = jwt.getClaimAsString("email");
         String name = jwt.getClaimAsString("name");
         String username = jwt.getClaimAsString("preferred_username");
+        String issuer = jwt.getClaimAsString("iss");
 
         if (email == null) {
             log.warn("JWT Token for {} does not contain email claim. Skipping sync.", keycloakId);
             return null;
         }
 
+        // Extract organization from realm name in issuer URL
+        String realmName = "master";
+        if (issuer != null && issuer.contains("/realms/")) {
+            realmName = issuer.substring(issuer.lastIndexOf("/") + 1);
+        }
+        
+        final String finalRealm = realmName;
+        Organization org = organizationRepository.findBySlug(realmName)
+                .orElseGet(() -> {
+                    log.warn("Organization with slug '{}' not found for issuer '{}'. Using system organization if available.", finalRealm, issuer);
+                    return organizationRepository.findBySlug("system").orElse(null);
+                });
+
         UUID uuid = UUID.fromString(keycloakId);
         Optional<User> existingUser = userRepository.findById(uuid);
         if (existingUser.isPresent()) {
-            return updateExistingUser(existingUser.get(), email, name, username);
+            return updateExistingUser(existingUser.get(), email, name, username, org);
         } else {
             return userRepository.findByEmail(email)
                     .map(user -> {
                         log.info("Linking existing local user {} to Keycloak ID {}", email, keycloakId);
                         userRepository.delete(user);
                         userRepository.flush();
-                        return createNewUser(keycloakId, email, name, username);
+                        return createNewUser(keycloakId, email, name, username, org);
                     })
-                    .orElseGet(() -> createNewUser(keycloakId, email, name, username));
+                    .orElseGet(() -> createNewUser(keycloakId, email, name, username, org));
         }
     }
 
-    private User updateExistingUser(User user, String email, String name, String username) {
+    private User updateExistingUser(User user, String email, String name, String username, Organization org) {
         boolean changed = false;
+        
+        // Update organization if changed (though it rarely should)
+        if (org != null && (user.getOrganization() == null || !user.getOrganization().getId().equals(org.getId()))) {
+            user.setOrganization(org);
+            changed = true;
+        }
+
         if (name != null && !name.isEmpty() && (user.getFullName() == null || !user.getFullName().equals(name))) {
             user.setFullName(name);
             changed = true;
@@ -120,8 +157,9 @@ public class UserSyncService {
         return user;
     }
 
-    private User createNewUser(String keycloakId, String email, String name, String username) {
-        log.info("Provisioning new local user profile for {} (Keycloak ID: {})", email, keycloakId);
+    private User createNewUser(String keycloakId, String email, String name, String username, Organization org) {
+        log.info("Provisioning new local user profile for {} (Keycloak ID: {}) in Org: {}", 
+            email, keycloakId, org != null ? org.getSlug() : "NONE");
 
         Role viewerRole = roleRepository.findByName("viewer")
                 .orElseThrow(() -> new RuntimeException("Default 'viewer' role not found in database"));
@@ -132,6 +170,7 @@ public class UserSyncService {
         user.setFullName(name != null && !name.isEmpty() ? name : email);
         user.setUsername(username);
         user.setRole(viewerRole);
+        user.setOrganization(org); // Set the organization
         user.setStatus("ACTIVE");
 
         String seed = email.split("@")[0];

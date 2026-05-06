@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.api.tenant.dto.OrganizationCreateRequest;
 import com.company.ftthgis.service.OrganizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,15 @@ public class OrganizationController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Organization org) {
+    public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
-            return ResponseEntity.ok(organizationService.createOrganization(org));
+            Organization saved = organizationService.createOrganization(request);
+            // Return simplified map to avoid Hibernate Proxy serialization issues
+            return ResponseEntity.ok(java.util.Map.of(
+                "id", saved.getId().toString(),
+                "name", saved.getName(),
+                "slug", saved.getSlug()
+            ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

@@ -24,11 +24,16 @@ public class KeycloakAdminService {
     private final Keycloak keycloak;
 
     @Value("${keycloak.realm}")
-    private String realm;
+    private String defaultRealm;
 
     public String createUser(String email, String username, String password, String firstName, String lastName,
             String roleName) {
-        UsersResource usersResource = keycloak.realm(realm).users();
+        return createUserInRealm(defaultRealm, email, username, password, firstName, lastName, roleName);
+    }
+
+    public String createUserInRealm(String targetRealm, String email, String username, String password, String firstName, String lastName,
+            String roleName) {
+        UsersResource usersResource = keycloak.realm(targetRealm).users();
 
         // Check if user already exists
         List<UserRepresentation> existing = usersResource.search(email, true);
@@ -91,7 +96,11 @@ public class KeycloakAdminService {
     }
 
     public String inviteUser(String email, String username, String firstName, String lastName, String defaultPassword) {
-        UsersResource usersResource = keycloak.realm(realm).users();
+        return inviteUserInRealm(defaultRealm, email, username, firstName, lastName, defaultPassword);
+    }
+
+    public String inviteUserInRealm(String targetRealm, String email, String username, String firstName, String lastName, String defaultPassword) {
+        UsersResource usersResource = keycloak.realm(targetRealm).users();
 
         // Check if user already exists
         List<UserRepresentation> existing = usersResource.search(email, true);
@@ -131,7 +140,11 @@ public class KeycloakAdminService {
     }
 
     public void updateUserRole(String email, String newRoleName) {
-        UsersResource usersResource = keycloak.realm(realm).users();
+        updateUserRoleInRealm(defaultRealm, email, newRoleName);
+    }
+
+    public void updateUserRoleInRealm(String targetRealm, String email, String newRoleName) {
+        UsersResource usersResource = keycloak.realm(targetRealm).users();
         List<UserRepresentation> users = usersResource.search(email, true);
 
         if (users.isEmpty()) {
@@ -145,25 +158,21 @@ public class KeycloakAdminService {
         try {
             // 1. Ensure the role exists in the Realm
             try {
-                keycloak.realm(realm).roles().get(newRoleName).toRepresentation();
+                keycloak.realm(targetRealm).roles().get(newRoleName).toRepresentation();
             } catch (Exception e) {
-                log.info("Role {} does not exist in Keycloak Realm. Creating it...", newRoleName);
+                log.info("Role {} does not exist in Keycloak Realm {}. Creating it...", newRoleName, targetRealm);
                 RoleRepresentation roleRep = new RoleRepresentation();
                 roleRep.setName(newRoleName);
                 roleRep.setDescription("Auto-created by FTTH GIS Backend");
-                keycloak.realm(realm).roles().create(roleRep);
+                keycloak.realm(targetRealm).roles().create(roleRep);
             }
 
             // 2. Fetch all current roles of the user to avoid duplicate assignment or clean
             // up
             List<RoleRepresentation> currentRoles = userResource.roles().realmLevel().listAll();
 
-            // Optional: If you want 'strict' role sync (user only has the latest role):
-            // if (!currentRoles.isEmpty()) {
-            // userResource.roles().realmLevel().remove(currentRoles); }
-
             // 3. Assign the new role if not already present
-            RoleRepresentation targetRole = keycloak.realm(realm).roles().get(newRoleName).toRepresentation();
+            RoleRepresentation targetRole = keycloak.realm(targetRealm).roles().get(newRoleName).toRepresentation();
             boolean alreadyHasRole = currentRoles.stream().anyMatch(r -> r.getName().equals(newRoleName));
 
             if (!alreadyHasRole) {
@@ -179,8 +188,12 @@ public class KeycloakAdminService {
     }
 
     public List<UserRepresentation> listAllUsers() {
+        return listAllUsersInRealm(defaultRealm);
+    }
+
+    public List<UserRepresentation> listAllUsersInRealm(String targetRealm) {
         try {
-            return keycloak.realm(realm).users().list();
+            return keycloak.realm(targetRealm).users().list();
         } catch (Exception e) {
             log.error("Failed to fetch all users from Keycloak: {}", e.getMessage());
             return Collections.emptyList();

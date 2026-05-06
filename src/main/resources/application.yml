@@ -37,10 +37,10 @@ spring:
 # Keycloak Admin Configuration
 keycloak:
   server-url: http://localhost:8081
-  realm: ftth-realm
-  # Service Account for Backend to manage users
-  client-id: ftth-gis-backend
-  client-secret: sA5ras1iCWdAabeHQVQMRsnNfoGhZb2R
+  realm: master
+  # Service Account for Backend to manage everything (from master realm)
+  client-id: ftth-gis-admin
+  client-secret: CbIH3jwRJ6VnLFj2xUly0b5Dz8vzOUHu
 
 # Custom Config for App Security
 # Note: 'app' is a custom property. The IDE warning 'Unknown property' is safe to ignore

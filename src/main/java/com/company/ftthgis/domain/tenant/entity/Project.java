@@ -3,16 +3,19 @@ package com.company.ftthgis.domain.tenant.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "projects")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Project {
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class Project extends OrganizationAwareEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, unique = true)
@@ -29,11 +32,6 @@ public class Project {
 
     @Column
     private String region;
-
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "org_id", nullable = false)
-    private Organization organization;
 
     @JsonIgnore
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -52,7 +52,7 @@ public class StatusPropagationService {
             oltRepository.save(olt);
             statusCacheService.setStatus(oltCode, status);
 
-            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, oltCode);
+            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, oltCode, olt.getProject() != null ? olt.getProject().getId() : null);
 
             // Log Event
             logEvent(oltCode, "OLT", "UNKNOWN", status, "STATUS_CHANGE", reason, olt.getProject() != null ? olt.getProject().getId() : null);
@@ -74,7 +74,7 @@ public class StatusPropagationService {
             olt.setLastNote(reason);
             oltRepository.save(olt);
 
-            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, oltCode);
+            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, oltCode, olt.getProject() != null ? olt.getProject().getId() : null);
 
             List<ODC> childOdcs = odcRepository.findByOlt(olt);
             for (ODC odc : childOdcs) {
@@ -107,13 +107,13 @@ public class StatusPropagationService {
         odcRepository.findByCode(targetOdcCode).ifPresent(odc -> {
             // Update the actual cable record first if code is provided
             if (cableCode != null && !cableCode.isEmpty()) {
-                updateCableStatus(cableCode, status);
+                updateCableStatus(cableCode, status, odc.getProject() != null ? odc.getProject().getId() : null);
             } else {
                 // Fallback: try to find the feeder cable for this ODC
-                updateCableStatus("FEEDER-" + targetOdcCode, status);
+                updateCableStatus("FEEDER-" + targetOdcCode, status, odc.getProject() != null ? odc.getProject().getId() : null);
             }
 
-            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, targetOdcCode);
+            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, targetOdcCode, odc.getProject() != null ? odc.getProject().getId() : null);
             propagateToOdc(odc, status, true, "Manual Cable Failure Simulation");
         });
     }
@@ -131,7 +131,7 @@ public class StatusPropagationService {
             logEvent(odpCode, "ODP", "UNKNOWN", status, "STATUS_CHANGE", reason, odp.getProject() != null ? odp.getProject().getId() : null);
 
             // Update associated DIST cable
-            updateCableStatus("DIST-" + odpCode, status);
+            updateCableStatus("DIST-" + odpCode, status, odp.getProject() != null ? odp.getProject().getId() : null);
 
             // Propagate to Customers!
             propagateToCustomers(odp, status, reason);
@@ -162,15 +162,15 @@ public class StatusPropagationService {
                     }
 
                     mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", "DOWN",
-                            "AREA-" + areaKey + "-MASSIVE-OUTAGE");
+                            "AREA-" + areaKey + "-MASSIVE-OUTAGE", parent != null && parent.getProject() != null ? parent.getProject().getId() : null);
 
                     areaAlertCount.get(areaKey).set(0);
                 } else {
-                    mapNotificationController.broadcastMapUpdate("MINOR_STATUS_CHANGE", status, odpCode);
+                    mapNotificationController.broadcastMapUpdate("MINOR_STATUS_CHANGE", status, odpCode, odp.getProject() != null ? odp.getProject().getId() : null);
                 }
             } else {
                 // Recovery is always sent as minor
-                mapNotificationController.broadcastMapUpdate("MINOR_STATUS_CHANGE", status, odpCode);
+                mapNotificationController.broadcastMapUpdate("MINOR_STATUS_CHANGE", status, odpCode, odp.getProject() != null ? odp.getProject().getId() : null);
             }
         });
     }
@@ -183,7 +183,7 @@ public class StatusPropagationService {
             odp.setLastNote(reason);
             odpRepository.save(odp);
             
-            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, odpCode);
+            mapNotificationController.broadcastMapUpdate("HEALTH_CHANGE", health, odpCode, odp.getProject() != null ? odp.getProject().getId() : null);
             propagateHealthToCustomers(odp, health, reason);
         });
     }
@@ -198,8 +198,8 @@ public class StatusPropagationService {
             customerRepository.save(c);
             statusCacheService.setStatus(customerCode, status);
             // Update DROP cable
-            updateCableStatus("DROP-" + customerCode, status);
-            mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, customerCode);
+            updateCableStatus("DROP-" + customerCode, status, c.getProject() != null ? c.getProject().getId() : null);
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, customerCode, c.getProject() != null ? c.getProject().getId() : null);
             logEvent(customerCode, "CUSTOMER", "UNKNOWN", status, "STATUS_CHANGE", reason, c.getProject() != null ? c.getProject().getId() : null);
         });
     }
@@ -211,7 +211,7 @@ public class StatusPropagationService {
             c.setHealthStatus(health);
             c.setLastNote(reason);
             customerRepository.save(c);
-            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, customerCode);
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, customerCode, c.getProject() != null ? c.getProject().getId() : null);
         });
     }
 
@@ -226,12 +226,12 @@ public class StatusPropagationService {
         logEvent(odc.getCode(), "ODC", "UNKNOWN", status, "STATUS_CHANGE", reason, odc.getProject() != null ? odc.getProject().getId() : null);
 
         // Update FEEDER cable status
-        updateCableStatus("FEEDER-" + odc.getCode(), status);
+        updateCableStatus("FEEDER-" + odc.getCode(), status, odc.getProject() != null ? odc.getProject().getId() : null);
 
         if (!isSilent) {
-            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, odc.getCode());
+            mapNotificationController.broadcastMapUpdate("STATUS_CHANGE", status, odc.getCode(), odc.getProject() != null ? odc.getProject().getId() : null);
         } else {
-            mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, odc.getCode());
+            mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, odc.getCode(), odc.getProject() != null ? odc.getProject().getId() : null);
         }
 
         List<ODP> childOdps = odpRepository.findByOdc(odc);
@@ -248,9 +248,9 @@ public class StatusPropagationService {
         statusCacheService.setStatus(odp.getCode(), status);
 
         // Update DIST cable
-        updateCableStatus("DIST-" + odp.getCode(), status);
+        updateCableStatus("DIST-" + odp.getCode(), status, odp.getProject() != null ? odp.getProject().getId() : null);
 
-        mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, odp.getCode());
+        mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, odp.getCode(), odp.getProject() != null ? odp.getProject().getId() : null);
 
         // Propagate to Customers
         propagateToCustomers(odp, status, reason);
@@ -266,10 +266,10 @@ public class StatusPropagationService {
             statusCacheService.setStatus(c.getCode(), status);
 
             // Update DROP cable
-            updateCableStatus("DROP-" + c.getCode(), status);
+            updateCableStatus("DROP-" + c.getCode(), status, c.getProject() != null ? c.getProject().getId() : null);
 
             log.debug("  👤 Propagated {} status to Customer {}", status, c.getCode());
-            mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, c.getCode());
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_STATUS_CHANGE", status, c.getCode(), c.getProject() != null ? c.getProject().getId() : null);
         }
     }
 
@@ -277,7 +277,7 @@ public class StatusPropagationService {
         odc.setHealthStatus(health);
         odc.setLastNote(reason);
         odcRepository.save(odc);
-        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odc.getCode());
+        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odc.getCode(), odc.getProject() != null ? odc.getProject().getId() : null);
 
         List<ODP> childOdps = odpRepository.findByOdc(odc);
         for (ODP odp : childOdps) {
@@ -289,7 +289,7 @@ public class StatusPropagationService {
         odp.setHealthStatus(health);
         odp.setLastNote(reason);
         odpRepository.save(odp);
-        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odp.getCode());
+        mapNotificationController.broadcastMapUpdate("SILENT_HEALTH_CHANGE", health, odp.getCode(), odp.getProject() != null ? odp.getProject().getId() : null);
         propagateHealthToCustomers(odp, health, reason);
     }
 
@@ -299,17 +299,17 @@ public class StatusPropagationService {
             c.setHealthStatus(health);
             c.setLastNote(reason);
             customerRepository.save(c);
-            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, c.getCode());
+            mapNotificationController.broadcastMapUpdate("CUSTOMER_HEALTH_CHANGE", health, c.getCode(), c.getProject() != null ? c.getProject().getId() : null);
         }
     }
 
-    private void updateCableStatus(String cableCode, String status) {
+    private void updateCableStatus(String cableCode, String status, java.util.UUID projectId) {
         fiberCableRepository.findByCode(cableCode).ifPresent(cable -> {
             cable.setStatus(status);
             fiberCableRepository.save(cable);
             statusCacheService.setStatus(cableCode, status);
             // Broadcast so UI knows the cable status changed
-            mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, cableCode);
+            mapNotificationController.broadcastMapUpdate("SILENT_STATUS_CHANGE", status, cableCode, projectId);
         });
     }
 

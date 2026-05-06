@@ -50,17 +50,22 @@ public class UserSeeder implements CommandLineRunner {
     }};
 
     @Override
-    public void run(String... args) throws Exception {
-        log.info("--- [USER SEEDER] Starting User, Role & Permission Seeding ---");
+    public void run(String... args) {
+        try {
+            log.info("--- [USER SEEDER] Starting User, Role & Permission Seeding ---");
 
-        seedPermissions();
-        seedRoles();
-        seedUsers();
+            seedPermissions();
+            seedRoles();
+            seedUsers();
 
-        // Universal Sync: Pull anyone else from Keycloak (like 'excloud')
-        userSyncService.syncAllUsersFromKeycloak();
+            // Universal Sync: Pull anyone else from Keycloak (like 'excloud')
+            userSyncService.syncAllUsersFromKeycloak();
 
-        log.info("--- [USER SEEDER] Seeding Complete ---");
+            log.info("--- [USER SEEDER] Seeding Complete ---");
+        } catch (Exception e) {
+            log.error("--- [USER SEEDER] FAILED to complete seeding: {} ---", e.getMessage(), e);
+            // Don't rethrow to avoid killing the application
+        }
     }
 
     private void seedPermissions() {

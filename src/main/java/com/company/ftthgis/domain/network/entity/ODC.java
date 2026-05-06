@@ -1,8 +1,8 @@
 package com.company.ftthgis.domain.network.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 
 @Entity
@@ -11,6 +11,9 @@ import org.hibernate.envers.Audited;
 @DiscriminatorValue("ODC")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Audited
 public class ODC extends NetworkNode {
 

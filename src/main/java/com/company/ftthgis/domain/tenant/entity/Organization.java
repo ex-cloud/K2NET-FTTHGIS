@@ -6,18 +6,25 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
-import lombok.Data;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 import java.util.UUID;
 
 @Entity
 @Table(name = "organizations")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
+@EqualsAndHashCode
 public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -41,7 +48,32 @@ public class Organization {
     @Column
     private String logoUrl;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "plan_id")
+    private SubscriptionPlan subscriptionPlan;
+
+    @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
+    private java.util.List<OrganizationConfig> configs;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Project> projects;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("settings")
+    public java.util.Map<String, String> getSettingsMap() {
+        if (configs == null) return new java.util.HashMap<>();
+        java.util.Map<String, String> map = new java.util.HashMap<>();
+        for (OrganizationConfig config : configs) {
+            if (config.getConfigKey() == null) continue;
+            
+            String key = config.getConfigKey().toLowerCase();
+            // SECURITY: Never expose passwords to the frontend
+            if (key.contains("password")) {
+                map.put(key, "********");
+            } else {
+                map.put(key, config.getConfigValue());
+            }
+        }
+        return map;
+    }
 }

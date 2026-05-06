@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
     List<Project> findByOrganizationId(UUID orgId);
     List<Project> findByOrganizationSlug(String slug);
+    long countByOrganizationId(UUID orgId);
 }

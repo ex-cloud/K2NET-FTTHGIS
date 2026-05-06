@@ -2,8 +2,8 @@ package com.company.ftthgis.domain.network.entity;
 
 import com.company.ftthgis.domain.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import org.locationtech.jts.geom.LineString;
 import java.util.UUID;
@@ -12,6 +12,9 @@ import java.util.UUID;
 @Table(name = "network_edges")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Audited
 public class FiberCable extends BaseEntity {
 

@@ -2,8 +2,8 @@ package com.company.ftthgis.domain.network.entity;
 
 import com.company.ftthgis.domain.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import java.util.UUID;
 
@@ -11,6 +11,9 @@ import java.util.UUID;
 @Table(name = "asset_categories")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 @Audited
 public class AssetCategory extends BaseEntity {
 

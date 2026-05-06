@@ -21,15 +21,16 @@ public class MapEventPublisher {
      * @param status    The new status (ACTIVE, DOWN, etc.)
      * @param type      The type of asset (ODP, ODC, CABLE, etc.)
      */
-    public void publishStatusChange(String assetCode, String status, String type) {
+    public void publishStatusChange(String assetCode, String status, String type, java.util.UUID projectId) {
         MapUpdateEvent event = MapUpdateEvent.builder()
                 .assetCode(assetCode)
                 .status(status)
                 .assetType(type)
+                .projectId(projectId)
                 .timestamp(System.currentTimeMillis())
                 .build();
 
-        log.info("Publishing map update event for {}: {}", assetCode, status);
+        log.info("Publishing map update event for {} in project {}: {}", assetCode, projectId, status);
         eventPublisher.publishEvent(event);
     }
 
@@ -39,6 +40,7 @@ public class MapEventPublisher {
         private String assetCode;
         private String status;
         private String assetType;
+        private java.util.UUID projectId;
         private long timestamp;
     }
 }

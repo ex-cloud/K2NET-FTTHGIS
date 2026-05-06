@@ -5,6 +5,7 @@ import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 
 import java.util.UUID;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Audited
 public class ProjectMember extends BaseEntity {
 
@@ -27,11 +28,6 @@ public class ProjectMember extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
-    private Project project;
 
     @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
     @ManyToOne(fetch = FetchType.EAGER)
