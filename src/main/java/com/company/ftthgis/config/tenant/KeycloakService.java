@@ -5,7 +5,6 @@ import java.util.List;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentRepresentation;
@@ -150,39 +149,45 @@ public class KeycloakService {
      * Tests LDAP connection by creating a temporary component.
      */
     public boolean testLdapConnection(String realmName, LdapConfig config) {
-        String tempId = "temp-ldap-test-" + System.currentTimeMillis();
         try {
-            log.info("Testing LDAP connection for realm: {} using temp component", realmName);
+            log.info("Testing LDAP connection for realm: {} at URL: {}", realmName, config.getUrl());
 
-            ComponentRepresentation component = new ComponentRepresentation();
-            component.setName(tempId);
-            component.setProviderId("ldap");
-            component.setProviderType("org.keycloak.storage.UserStorageProvider");
-            component.setParentId(realmName);
-
-            MultivaluedHashMap<String, String> configMap = new MultivaluedHashMap<>();
-            configMap.putSingle("enabled", "true");
-            configMap.putSingle("connectionUrl", config.getUrl());
-            configMap.putSingle("bindDn", config.getBindDn());
-            configMap.putSingle("bindCredential", config.getBindPassword());
-            configMap.putSingle("connectionTimeout", "3000");
-
-            component.setConfig(configMap);
-
-            // Create temporary component
-            Response response = keycloak.realm(realmName).components().add(component);
+            org.keycloak.representations.idm.TestLdapConnectionRepresentation testRep = 
+                new org.keycloak.representations.idm.TestLdapConnectionRepresentation();
             
-            if (response.getStatus() == 201) {
-                String createdId = CreatedResponseUtil.getCreatedId(response);
-                keycloak.realm(realmName).components().component(createdId).remove();
-                return true;
-            } else {
-                log.error("Failed to create temp LDAP component. Status: {}", response.getStatus());
-                return false;
+            // "testConnection" checks basic connectivity
+            // "testAuthentication" checks connectivity + bind credentials
+            testRep.setAction("testAuthentication"); 
+            testRep.setConnectionUrl(config.getUrl());
+            testRep.setBindDn(config.getBindDn());
+            testRep.setBindCredential(config.getBindPassword());
+            testRep.setUseTruststoreSpi("ldapsOnly");
+            testRep.setConnectionTimeout("5000"); // 5 seconds timeout
+            testRep.setAuthType("simple");
+            testRep.setStartTls("");
+
+            // We use the "master" realm to perform the connection test.
+            // This is crucial because during the New Organization Wizard (Step 3),
+            // the target realm doesn't exist yet, but we still need to validate credentials.
+            try (Response response = keycloak.realm("master").testLDAPConnection(testRep)) {
+                if (response.getStatus() == 204 || response.getStatus() == 200) {
+                    log.info("✅ LDAP Test Successful for URL: {}", config.getUrl());
+                    return true;
+                } else {
+                    String errorBody = response.readEntity(String.class);
+                    log.error("❌ LDAP Test Failed for realm: {}. Status: {}. Error Detail: {}", realmName, response.getStatus(), errorBody);
+                    return false;
+                }
             }
+
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            String errorResponse = e.getResponse().readEntity(String.class);
+            log.error("LDAP Test WebApplicationException for realm '{}': Status {}, Response: {}", realmName, e.getResponse().getStatus(), errorResponse);
+            return false;
         } catch (Exception e) {
             log.error("LDAP Test Failed for realm '{}': {}", realmName, e.getMessage());
             return false;
         }
     }
+
 }

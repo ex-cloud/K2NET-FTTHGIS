@@ -117,10 +117,18 @@ public class OrganizationConfigService {
     }
 
     public boolean testLdapConnection(String slug, Map<String, String> ldapParams) {
+        String bindPassword = ldapParams.get("ldap_bind_password");
+        
+        // If frontend sends the masked password, fetch the real one from DB and decrypt it
+        if (bindPassword == null || bindPassword.equals("********") || bindPassword.isEmpty()) {
+            List<OrganizationConfig> configs = getConfigsForOrganization(slug);
+            bindPassword = decryptIfNeeded("ldap_bind_password", getConfigValue(configs, "ldap_bind_password"));
+        }
+
         var ldapConfig = com.company.ftthgis.config.tenant.LdapConfig.builder()
                 .url(ldapParams.get("ldap_url"))
                 .bindDn(ldapParams.get("ldap_bind_dn"))
-                .bindPassword(ldapParams.get("ldap_bind_password"))
+                .bindPassword(bindPassword)
                 .userDn(ldapParams.get("ldap_user_dn"))
                 .userFilter(ldapParams.get("ldap_user_filter"))
                 .build();

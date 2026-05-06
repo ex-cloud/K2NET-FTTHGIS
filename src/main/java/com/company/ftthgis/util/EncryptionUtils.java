@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class EncryptionUtils {
 
-    @Value("${app.security.encryption-key:ftth-gis-secret-key-32-chars-!!}")
+    @Value("${app.security.encryption-key:ftth-gis-secret-key-32-chars-!!!}")
     private String secretKey;
 
     public String encrypt(String strToEncrypt) {
