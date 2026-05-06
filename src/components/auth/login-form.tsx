@@ -1,9 +1,9 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useActionState } from "react";
-import { Loader2, LogIn, AlertCircle } from "lucide-react";
+import { Loader2, LogIn, AlertCircle, Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,16 +30,24 @@ export function LoginForm() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
+      org: "",
       username: "",
       password: "",
     },
   });
 
-  // Constructed reset URL based on Keycloak OIDC
-  const issuer =
-    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER ||
-    "http://localhost:8081/realms/ftth-realm";
-  const resetPasswordUrl = `${issuer}/protocol/openid-connect/auth?client_id=ftth-gis-frontend&response_type=code&scope=openid&kc_action=PASSWORD_RESET`;
+  // Use useWatch for better performance and to satisfy React Compiler
+  const orgValue = useWatch({
+    control: form.control,
+    name: "org",
+    defaultValue: "",
+  });
+  
+  // Constructed dynamic reset URL based on current organization
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "http://localhost:8081";
+  const currentRealm = orgValue && orgValue !== "system" ? orgValue : "ftth-realm";
+  
+  const resetPasswordUrl = `${baseUrl}/realms/${currentRealm}/protocol/openid-connect/auth?client_id=ftth-gis-frontend&response_type=code&scope=openid&kc_action=PASSWORD_RESET`;
 
   return (
     <Form {...form}>
@@ -51,6 +59,30 @@ export function LoginForm() {
             <span>{state.error}</span>
           </div>
         )}
+
+        {/* Organization Slug Field */}
+        <FormField
+          control={form.control}
+          name="org"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-foreground/80 flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Organization ID (Slug)
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="text"
+                  placeholder="e.g. telkom, biznet, system"
+                  disabled={isPending}
+                  className="h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Username/Email Field */}
         <FormField
@@ -123,7 +155,7 @@ export function LoginForm() {
         <Button
           type="submit"
           disabled={isPending}
-          className="w-full h-11 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-lg hover:shadow-primary/25"
+          className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 shadow-lg hover:shadow-primary/25"
         >
           {isPending ? (
             <>

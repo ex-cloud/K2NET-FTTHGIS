@@ -31,15 +31,40 @@ export default {
     Credentials({
       async authorize(credentials) {
         const parsedCredentials = z
-          .object({ username: z.string(), password: z.string().min(1) })
+          .object({ 
+            username: z.string(), 
+            password: z.string().min(1),
+            org: z.string().optional() 
+          })
           .safeParse(credentials);
 
         if (parsedCredentials.success) {
-          const { username, password } = parsedCredentials.data;
+          const { username, password, org } = parsedCredentials.data;
+          const orgSlug = org || "ftth-realm"; // Fallback to default if not provided
 
           try {
+            const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:9090";
+            
+            // 1. Discover the Issuer for this organization
+            let issuerUrl = process.env.AUTH_KEYCLOAK_ISSUER;
+            
+            if (org && org !== "system") {
+                const discoveryRes = await fetch(`${backendUrl}/api/v1/auth/discovery/${orgSlug}`);
+                if (discoveryRes.ok) {
+                    const discoveryData = await discoveryRes.json();
+                    issuerUrl = discoveryData.issuerUrl;
+                    console.log(`🌐 Discovered issuer for ${orgSlug}: ${issuerUrl}`);
+                }
+            }
+
+            if (!issuerUrl) {
+                console.error("❌ Could not resolve issuer for organization:", orgSlug);
+                return null;
+            }
+
+            // 2. Authenticate against the discovered Keycloak realm
             const tokenResponse = await fetch(
-              `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/token`,
+              `${issuerUrl}/protocol/openid-connect/token`,
               {
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded",

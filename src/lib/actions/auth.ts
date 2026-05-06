@@ -16,6 +16,7 @@ export async function authenticate(
     await signIn("credentials", {
       username: formData.get("username"),
       password: formData.get("password"),
+      org: formData.get("org"),
       redirectTo: "/org",
     });
     return { success: true };

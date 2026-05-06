@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const MAX_RETRY_DELAY = 30000; // Max 30s between retries
 const INITIAL_RETRY_DELAY = 2000; // Start at 2s
 
-export function useMapNotifications() {
+export function useMapNotifications(projectId?: string) {
   const { updateStatusOverride } = useMapStore();
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -20,13 +20,15 @@ export function useMapNotifications() {
   }, [updateStatusOverride]);
 
   useEffect(() => {
+    if (!projectId) return;
+
     let isMounted = true;
 
     function connect() {
       if (!isMounted) return;
 
       const baseUrl = getBackendBaseUrl();
-      const sseUrl = `${baseUrl}/network/notifications/map-updates`;
+      const sseUrl = `${baseUrl}/network/notifications/map-updates/${projectId}`;
 
       const eventSource = new EventSource(sseUrl);
       eventSourceRef.current = eventSource;
@@ -94,5 +96,5 @@ export function useMapNotifications() {
         clearTimeout(retryTimeoutRef.current);
       }
     };
-  }, []); // Empty deps — refs handle updates
+  }, [projectId]); // Re-connect if projectId changes
 }

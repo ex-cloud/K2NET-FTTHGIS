@@ -15,19 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 
 interface Project {
   id: string;
   name: string;
   region: string;
-}
-
-interface Organization {
-  name: string;
-  slug: string;
-  logoUrl?: string;
-  description?: string;
 }
 
 interface User {
@@ -54,6 +47,13 @@ export default function GeneralSettingsPage() {
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
   const [userData, setUserData] = React.useState<User | null>(null);
+  const [slug, setSlug] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [address, setAddress] = React.useState("");
+  const [website, setWebsite] = React.useState("");
+  
+  // Slug Confirmation States
+  const [slugConfirmOpen, setSlugConfirmOpen] = React.useState(false);
   
   // Delete Modal States
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -68,7 +68,11 @@ export default function GeneralSettingsPage() {
     if (currentOrg) {
       setOrgData(currentOrg);
       setName(currentOrg.name);
+      setSlug(currentOrg.slug);
       setLogoUrl(currentOrg.logoUrl || "");
+      setDescription(currentOrg.description || "");
+      setAddress(currentOrg.address || "");
+      setWebsite(currentOrg.website || "");
     }
   }, [currentOrg]);
 
@@ -105,7 +109,7 @@ export default function GeneralSettingsPage() {
   }, [orgId, session?.accessToken]);
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { name: string, logoUrl: string }) => {
+    mutationFn: async (payload: Partial<Organization>) => {
       const res = await fetch(`/api/v1/organizations/${orgId}`, {
         method: "PUT",
         headers: {
@@ -120,11 +124,17 @@ export default function GeneralSettingsPage() {
       }
       return res.json();
     },
-    onSuccess: (updated) => {
+    onSuccess: (updated: Organization) => {
       setOrgData(updated);
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
       toast.success("Organization updated successfully");
-      router.refresh();
+      
+      // If slug changed, redirect to the new URL
+      if (updated.slug !== orgId) {
+        router.push(`/org/${updated.slug}/settings`);
+      } else {
+        router.refresh();
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -184,6 +194,17 @@ export default function GeneralSettingsPage() {
       return;
     }
 
+    if (!slug.trim()) {
+      toast.error("Organization slug cannot be empty");
+      return;
+    }
+
+    // If slug changed, show confirmation dialog
+    if (slug !== orgData?.slug && !slugConfirmOpen) {
+      setSlugConfirmOpen(true);
+      return;
+    }
+
     let finalLogoUrl = logoUrl;
 
     // If there's a new file selected, upload it first
@@ -203,7 +224,15 @@ export default function GeneralSettingsPage() {
       }
     }
 
-    updateMutation.mutate({ name, logoUrl: finalLogoUrl });
+    updateMutation.mutate({ 
+      name, 
+      slug,
+      logoUrl: finalLogoUrl,
+      description,
+      address,
+      website
+    });
+    setSlugConfirmOpen(false);
   };
 
   const handleDelete = async () => {
@@ -255,7 +284,14 @@ export default function GeneralSettingsPage() {
     </div>
   );
 
-  const hasChanges = name !== orgData?.name || logoUrl !== (orgData?.logoUrl || "") || !!logoFile;
+  const hasChanges = 
+    name !== orgData?.name || 
+    slug !== orgData?.slug ||
+    description !== (orgData?.description || "") ||
+    address !== (orgData?.address || "") ||
+    website !== (orgData?.website || "") ||
+    logoUrl !== (orgData?.logoUrl || "") || 
+    !!logoFile;
 
   return (
     <div className="p-8 pb-24 max-w-4xl mx-auto space-y-10">
@@ -273,7 +309,13 @@ export default function GeneralSettingsPage() {
             disabled={!hasChanges || updateMutation.isPending}
             onClick={() => {
               setName(orgData?.name || "");
+              setSlug(orgData?.slug || "");
+              setDescription(orgData?.description || "");
+              setAddress(orgData?.address || "");
+              setWebsite(orgData?.website || "");
               setLogoUrl(orgData?.logoUrl || "");
+              setLogoPreview(null);
+              setLogoFile(null);
             }}
           >
             Cancel
@@ -396,7 +438,7 @@ export default function GeneralSettingsPage() {
             </Label>
             <Input 
               id="orgName" 
-              value={name}
+              value={name} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200"
               placeholder="Enter organization name"
@@ -411,28 +453,110 @@ export default function GeneralSettingsPage() {
               <div className="relative flex-1">
                 <Input 
                   id="orgSlug" 
-                  value={orgData?.slug || ""} 
-                  readOnly
-                  className="bg-zinc-950 border-zinc-800 text-zinc-500 pr-10 font-mono text-sm"
+                  value={slug} 
+                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200 font-mono text-sm"
+                  placeholder="organization-slug"
                 />
                 <button 
                   onClick={copyToClipboard}
+                  type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-emerald-500 transition-colors"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
-              <Button variant="outline" size="icon" className="border-zinc-800 hover:bg-zinc-800">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="border-zinc-800 hover:bg-zinc-800"
+                onClick={() => window.open(`/org/${orgId}`, '_blank')}
+              >
                 <ExternalLink className="w-4 h-4 text-zinc-400" />
               </Button>
             </div>
             <p className="text-[11px] text-zinc-600 mt-1 flex items-center gap-1.5">
               <Info className="w-3 h-3" />
-              Slugs are used in your organization&apos;s unique URL. Contact support to change it.
+              Slugs are used in your unique URL. Changing this will break all existing links to this organization.
             </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="orgDesc" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
+              Description
+            </Label>
+            <textarea 
+              id="orgDesc" 
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200 ring-offset-background placeholder:text-zinc-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="Tell us about your organization..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="orgWebsite" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
+                Website
+              </Label>
+              <Input 
+                id="orgWebsite" 
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                placeholder="https://company.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="orgAddress" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
+                Address
+              </Label>
+              <Input 
+                id="orgAddress" 
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                placeholder="123 Street, City, Country"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Slug Confirmation Dialog */}
+      <Dialog open={slugConfirmOpen} onOpenChange={setSlugConfirmOpen}>
+        <DialogContent className="bg-[#0f0f0f] border-zinc-800 sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-amber-500 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5" />
+              Critical URL Change
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-zinc-300 leading-relaxed">
+              Changing your organization slug from <span className="font-mono text-white font-bold bg-zinc-800 px-1 rounded">{orgData?.slug}</span> to <span className="font-mono text-emerald-400 font-bold bg-zinc-800 px-1 rounded">{slug}</span> will:
+            </p>
+            <ul className="text-xs text-zinc-500 space-y-2 list-disc list-inside">
+              <li>Change your dashboard URL instantly.</li>
+              <li>Break any bookmarked links.</li>
+              <li>Disconnect external integrations using this slug.</li>
+            </ul>
+            <p className="text-sm font-medium text-zinc-200">Are you absolutely sure you want to proceed?</p>
+          </div>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="ghost" onClick={() => {
+              setSlugConfirmOpen(false);
+              setSlug(orgData?.slug || "");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="bg-amber-600 hover:bg-amber-500 text-white">
+              Yes, Change URL
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Data Privacy */}
       <Card className="bg-[#0c0c0c] border-zinc-800/50">

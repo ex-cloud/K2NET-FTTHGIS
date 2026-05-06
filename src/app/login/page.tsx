@@ -7,7 +7,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
+      <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
 
       {/* Animated Network Pattern */}
       <div className="absolute inset-0 opacity-20">
@@ -30,7 +30,7 @@ export default function LoginPage() {
         <div className="backdrop-blur-xl bg-card/80 border border-border/50 rounded-2xl shadow-2xl p-8">
           {/* Logo & Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-cyan-500 shadow-lg shadow-primary/25 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-cyan-500 shadow-lg shadow-primary/25 mb-4">
               <Network className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">

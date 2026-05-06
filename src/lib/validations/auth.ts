@@ -6,6 +6,7 @@ export const loginSchema = z.object({
     .string()
     .min(1, { message: "Password wajib diisi" })
     .min(6, { message: "Password minimal 6 karakter" }),
+  org: z.string().optional(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

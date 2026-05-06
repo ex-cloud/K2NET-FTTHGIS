@@ -13,6 +13,9 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Blocks,
+  CreditCard,
+  BarChart3,
 } from "lucide-react";
 import {
   Collapsible,
@@ -40,6 +43,14 @@ export function OrgSettingsSidebar() {
       title: "Configuration",
       items: [
         { title: "General", url: `${baseUrl}`, icon: Settings2 },
+        { title: "Integrations", url: `${baseUrl}/integrations`, icon: Blocks },
+        { title: "Usage Stats", url: `${baseUrl}/usage`, icon: BarChart3 },
+        { title: "Billing & Plans", url: `${baseUrl}/billing`, icon: CreditCard },
+      ],
+    },
+    {
+      title: "Security",
+      items: [
         { title: "Security", url: `${baseUrl}/security`, icon: ShieldCheck },
         { title: "SSO", url: `${baseUrl}/sso`, icon: Fingerprint },
       ],

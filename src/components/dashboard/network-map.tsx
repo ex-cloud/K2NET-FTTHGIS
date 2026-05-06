@@ -82,7 +82,11 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
   const mapRef = useRef<MapRef>(null);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useMapNotifications(); // Initialize Real-time SSE Connection
+  const params = useParams();
+  const orgSlug = params?.orgId as string;
+  const projectId = params?.projectId as string;
+  
+  useMapNotifications(projectId); // Initialize Real-time SSE Connection
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const focusCode = searchParams.get("focus");
@@ -116,10 +120,6 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
 
   // Trace Path hook
   const { fetchTracePath, loading: traceLoading } = useTracePath();
-
-  const params = useParams();
-  const orgSlug = params?.orgId as string;
-  const projectId = params?.projectId as string;
 
   // Hover tooltip state
   const [hoveredFeature, setHoveredFeature] = useState<HoveredFeature | null>(null);

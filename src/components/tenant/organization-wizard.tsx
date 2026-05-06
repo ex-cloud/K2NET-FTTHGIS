@@ -10,7 +10,12 @@ import {
   ShieldCheck, 
   Zap,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Server,
+  Key,
+  Users,
+  Lock,
+  Network
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface WizardProps {
   open: boolean;
@@ -43,7 +49,13 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     description: "",
     website: "",
     address: "",
-    plan: "FREE"
+    plan: "FREE",
+    // LDAP Configuration
+    ldapEnabled: false,
+    ldapUrl: "",
+    ldapBaseDn: "",
+    ldapBindDn: "",
+    ldapBindPassword: ""
   });
 
   // Auto-generate slug from name if not edited manual
@@ -71,17 +83,33 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    const result = await createOrganization(formData);
-    setIsSubmitting(false);
-    
-    if (result.success) {
+    try {
+      await createOrganization(formData);
+      
+      // If we got here without throwing, it's successful
+      // result is the saved organization object
+      toast.success("Organization deployed successfully!", {
+        description: `${formData.name} is now ready to use.`,
+      });
+      
       onSuccess();
       onOpenChange(false);
+      
       // Reset wizard
       setStep(1);
-      setFormData({ name: "", slug: "", description: "", website: "", address: "", plan: "FREE" });
-    } else {
-      setSlugError(result.error || "Gagal membuat organisasi.");
+      setFormData({ 
+        name: "", slug: "", description: "", website: "", address: "", plan: "FREE",
+        ldapEnabled: false, ldapUrl: "", ldapBaseDn: "", ldapBindDn: "", ldapBindPassword: ""
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
+      console.error("Failed to create organization:", err);
+      setSlugError(errorMessage);
+      toast.error("Deployment failed", {
+        description: errorMessage || "Please check your configuration and try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -93,7 +121,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         <div className="absolute top-0 left-0 w-full h-[2px] bg-[#1f1f1f]">
           <div 
             className="h-full bg-emerald-500 transition-all duration-500 ease-in-out" 
-            style={{ width: `${(step / 3) * 100}%` }}
+            style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
 
@@ -102,17 +130,19 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             <div className="size-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-sm">
               {step}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 3</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 4</span>
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight">
             {step === 1 && "Start your journey"}
             {step === 2 && "Configure settings"}
-            {step === 3 && "Review & Deploy"}
+            {step === 3 && "LDAP Integration"}
+            {step === 4 && "Review & Deploy"}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm">
             {step === 1 && "Give your organization a solid identity."}
             {step === 2 && "Set up how your organization operates."}
-            {step === 3 && "Quick double check before we go live."}
+            {step === 3 && "Connect your existing identity provider."}
+            {step === 4 && "Quick double check before we go live."}
           </DialogDescription>
         </DialogHeader>
 
@@ -216,10 +246,95 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           )}
 
           {step === 3 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div 
+                onClick={() => setFormData(prev => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
+                className={cn(
+                  "p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between",
+                  formData.ldapEnabled ? "bg-emerald-500/10 border-emerald-500" : "bg-muted/10 border-[#1f1f1f]"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "size-10 rounded-full flex items-center justify-center",
+                    formData.ldapEnabled ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-800 text-zinc-500"
+                  )}>
+                    <Network className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Enable LDAP User Sync</p>
+                    <p className="text-[10px] text-zinc-500">Sync your enterprise users automatically.</p>
+                  </div>
+                </div>
+                <div className={cn(
+                  "size-5 rounded-full border-2 flex items-center justify-center",
+                  formData.ldapEnabled ? "border-emerald-500 bg-emerald-500" : "border-zinc-700"
+                )}>
+                  {formData.ldapEnabled && <Check className="size-3 text-white" />}
+                </div>
+              </div>
+
+              {formData.ldapEnabled && (
+                <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                      <Server className="size-3" /> LDAP Server URL
+                    </label>
+                    <Input 
+                      value={formData.ldapUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, ldapUrl: e.target.value }))}
+                      placeholder="ldap://your-server:389" 
+                      className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                        <Users className="size-3" /> Base DN
+                      </label>
+                      <Input 
+                        value={formData.ldapBaseDn}
+                        onChange={(e) => setFormData(prev => ({ ...prev, ldapBaseDn: e.target.value }))}
+                        placeholder="ou=users,dc=com" 
+                        className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                        <Key className="size-3" /> Bind DN
+                      </label>
+                      <Input 
+                        value={formData.ldapBindDn}
+                        onChange={(e) => setFormData(prev => ({ ...prev, ldapBindDn: e.target.value }))}
+                        placeholder="cn=admin,dc=com" 
+                        className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                      <Lock className="size-3" /> Bind Password
+                    </label>
+                    <Input 
+                      type="password"
+                      value={formData.ldapBindPassword}
+                      onChange={(e) => setFormData(prev => ({ ...prev, ldapBindPassword: e.target.value }))}
+                      placeholder="••••••••" 
+                      className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
             <div className="space-y-4 animate-in zoom-in-95 duration-300">
               <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-3">
                 <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
-                  <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Profile Identity</span>
+                  <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Review Configuration</span>
                   <Check className="size-3 text-emerald-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-y-3 text-xs">
@@ -231,7 +346,16 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     <p className="text-zinc-500 mb-0.5">Slug</p>
                     <p className="font-medium font-mono text-emerald-400">/{formData.slug}</p>
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <p className="text-zinc-500 mb-0.5">LDAP Status</p>
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                      formData.ldapEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500"
+                    )}>
+                      {formData.ldapEnabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  <div>
                     <p className="text-zinc-500 mb-0.5">Plan</p>
                     <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase">
                       {formData.plan} PLAN
@@ -242,7 +366,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-zinc-300">
                 <ShieldCheck className="size-5 text-emerald-500 shrink-0" />
-                <p>By clicking deploy, your organization infrastructure will be provisioned instantly.</p>
+                <p>Infrastructure deployment will start immediately after confirmation.</p>
               </div>
             </div>
           )}
@@ -270,7 +394,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               Cancel
             </Button>
             
-            {step < 3 ? (
+            {step < 4 ? (
               <Button 
                 onClick={nextStep}
                 disabled={!formData.name || !formData.slug}

@@ -12,6 +12,12 @@ export interface Organization {
   website?: string;
   plan?: string;
   logoUrl?: string;
+  // LDAP Configuration
+  ldapEnabled?: boolean;
+  ldapUrl?: string;
+  ldapBaseDn?: string;
+  ldapBindDn?: string;
+  ldapBindPassword?: string;
 }
 
 export function useOrganizations() {
