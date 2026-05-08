@@ -46,7 +46,6 @@ export function useRealTimeUpdates() {
     );
     
     // React Query Cache Invalidation
-    console.log("[SSE] Batch update received, invalidating React Query cache");
     queryClient.invalidateQueries({ queryKey: ["networkStats"] });
     // Also invalidate nodes cache if we add one later
     queryClient.invalidateQueries({ queryKey: ["networkNodes"] });
@@ -137,13 +136,11 @@ export function useRealTimeUpdates() {
     const connect = () => {
       if (eventSource) eventSource.close();
       
-      console.log(`Connecting to Real-time Stream (Attempt ${reconnectCount + 1}):`, sseUrl);
       setConnectionStatus("connecting");
       
       eventSource = new EventSource(sseUrl);
 
       eventSource.onopen = () => {
-        console.log("✅ SSE Connected");
         setConnectionStatus("connected");
         setReconnectCount(0);
       };
@@ -154,7 +151,6 @@ export function useRealTimeUpdates() {
       eventSource.addEventListener("SILENT_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "SILENT"));
 
       eventSource.onerror = () => {
-        console.warn("❌ SSE Connection lost");
         setConnectionStatus("error");
         eventSource?.close();
         
