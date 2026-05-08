@@ -42,8 +42,9 @@ public class RateLimitingFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        // Hanya batasi endpoint API
-        if (httpRequest.getRequestURI().startsWith("/api/")) {
+        // Hanya batasi endpoint API, tapi KECUALIKAN SSE (Server-Sent Events) agar tidak kena 429
+        String uri = httpRequest.getRequestURI();
+        if (uri.startsWith("/api/") && !uri.endsWith("/map-updates")) {
             String clientIp = getClientIP(httpRequest);
             Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createNewBucket());
 

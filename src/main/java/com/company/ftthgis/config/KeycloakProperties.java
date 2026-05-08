@@ -14,4 +14,7 @@ public class KeycloakProperties {
     private String realm;
     private String clientId;
     private String clientSecret;
+    private String username;
+    private String password;
+    private String grantType = "client_credentials";
 }

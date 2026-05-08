@@ -39,8 +39,11 @@ keycloak:
   server-url: http://localhost:8081
   realm: master
   # Service Account for Backend to manage everything (from master realm)
-  client-id: ftth-gis-admin
-  client-secret: CbIH3jwRJ6VnLFj2xUly0b5Dz8vzOUHu
+  client-id: admin-cli
+  # client-secret: CbIH3jwRJ6VnLFj2xUly0b5Dz8vzOUHu
+  grant-type: password
+  username: excloud
+  password: 123456
 
 # Custom Config for App Security
 # Note: 'app' is a custom property. The IDE warning 'Unknown property' is safe to ignore
@@ -49,6 +52,9 @@ app:
   seeder:
     enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
   security:
+    keycloak:
+      provision-client-id: ${AUTH_KEYCLOAK_ID:ftth-gis-frontend}
+      provision-client-secret: ${AUTH_KEYCLOAK_SECRET:DtQ5wZE9uCsenEM2eIRu0wFv7ioLhAmd}
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
       allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"

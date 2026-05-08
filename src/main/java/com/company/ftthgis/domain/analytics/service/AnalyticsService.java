@@ -42,7 +42,8 @@ public class AnalyticsService {
         long totalNodes = analyticsRepository.countTotalNodes(projectId);
         long activeNodes = analyticsRepository.countActiveNodes(projectId);
         long downNodes = analyticsRepository.countDownNodes(projectId);
-        double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+        Double totalLengthKmRaw = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+        double totalLengthKm = totalLengthKmRaw != null ? totalLengthKmRaw : 0.0;
         
         // Use repo method for project-specific customer count
         long totalCustomers = customerRepository.countByProjectId(projectId);
@@ -71,8 +72,8 @@ public class AnalyticsService {
                                 .type(n.getNodeType())
                                 .status(n.getStatus())
                                 .lastNote(n.getLastNote())
-                                .lng(n.getGeom().getX())
-                                .lat(n.getGeom().getY())
+                                .lng(n.getGeom() != null ? n.getGeom().getX() : 0.0)
+                                .lat(n.getGeom() != null ? n.getGeom().getY() : 0.0)
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
@@ -104,7 +105,8 @@ public class AnalyticsService {
                 long totalNodes = analyticsRepository.countTotalNodes(projectId);
                 long activeNodes = analyticsRepository.countActiveNodes(projectId);
                 long downNodes = analyticsRepository.countDownNodes(projectId);
-                double totalLengthKm = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+                Double totalLengthKmRaw = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
+                double totalLengthKm = totalLengthKmRaw != null ? totalLengthKmRaw : 0.0;
                 long totalCustomers = customerRepository.countByProjectId(projectId);
 
                 double uptime = totalNodes > 0 ? ((double) activeNodes / totalNodes) * 100 : 100.0;

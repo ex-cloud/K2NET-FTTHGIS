@@ -24,4 +24,8 @@ public class OrganizationCreateRequest {
     private String ldapBaseDn;
     private String ldapBindDn;
     private String ldapBindPassword;
+
+    // Admin Account Provisioning
+    private String adminEmail;
+    private String adminUsername;
 }

@@ -1,6 +1,7 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.user.dto.UserDto;
+import lombok.extern.slf4j.Slf4j;
 import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.entity.Role;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 public class ConfigurableUserService {
 
     private final RoleRepository roleRepository;
@@ -74,17 +76,27 @@ public class ConfigurableUserService {
 
         // 2. Get Global Role
         Role globalRole = roleRepository.findById(request.getGlobalRoleId())
-                .orElseThrow(() -> new RuntimeException("Global Role not found"));
+                .orElseThrow(() -> {
+                    log.error("❌ Global Role ID {} not found in database", request.getGlobalRoleId());
+                    return new RuntimeException("Global Role not found: " + request.getGlobalRoleId());
+                });
 
-        // 3. Create User in Keycloak with default password
+        // 3. Create User in Keycloak with default password in the ORGANIZATION'S REALM
         String defaultPassword = "Password123!"; 
-        String keycloakIdStr = keycloakAdminService.inviteUser(
+        log.info("🔑 Creating user in Keycloak realm: {}", organization.getSlug());
+        String keycloakIdStr = keycloakAdminService.inviteUserInRealm(
+                organization.getSlug(),
                 request.getEmail(),
                 request.getEmail(),
                 request.getFullName(),
                 "",
                 defaultPassword
         );
+
+        if (keycloakIdStr == null) {
+            log.error("❌ Keycloak invitation failed for {}", request.getEmail());
+            throw new RuntimeException("Keycloak invitation failed");
+        }
         
         UUID keycloakId = UUID.fromString(keycloakIdStr);
 
@@ -99,6 +111,11 @@ public class ConfigurableUserService {
         user.setStatus("ACTIVE"); 
         
         user = userRepository.save(user);
+        log.info("✅ Successfully invited and saved local user record for: {}", request.getEmail());
+
+        // Sync role to Keycloak specifically in the user's organization realm
+        log.info("🛡️ Syncing role '{}' to Keycloak for {}", globalRole.getName(), request.getEmail());
+        keycloakAdminService.updateUserRoleInRealm(organization.getSlug(), request.getEmail(), globalRole.getName());
 
         // 5. Create Project Role Assignments
         if (request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
@@ -118,6 +135,7 @@ public class ConfigurableUserService {
                 member.setUser(user);
                 member.setProject(project);
                 member.setRole(projectRole);
+                member.setOrganization(organization); // 🔥 Fix: Set organization to avoid null constraint error
                 projectMemberRepository.save(member);
             }
         }
@@ -142,8 +160,8 @@ public class ConfigurableUserService {
             Role role = roleRepository.findByName(roleName)
                     .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
             user.setRole(role);
-            // Sync to Keycloak
-            keycloakAdminService.updateUserRole(user.getEmail(), roleName);
+            // Sync to Keycloak - specifically in the user's organization realm
+            keycloakAdminService.updateUserRoleInRealm(user.getOrganization().getSlug(), user.getEmail(), roleName);
         }
 
         if (status != null && !status.isEmpty()) {

@@ -8,9 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.company.ftthgis.config.KeycloakProperties;
 
 import java.util.Optional;
 
@@ -24,54 +23,46 @@ import java.util.Optional;
 public class KeycloakService {
 
     private final Keycloak keycloak;
+    private final KeycloakProperties properties;
 
-    @Value("${keycloak.server-url}")
-    private String serverUrl;
+    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
+    private String provisionClientId;
 
-    @Value("${keycloak.realm}")
-    private String realm;
-
-    @Value("${keycloak.client-id}")
-    private String clientId;
-
-    @Value("${keycloak.client-secret}")
-    private String clientSecret;
+    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:DtQ5wZE9uCsenEM2eIRu0wFv7ioLhAmd}")
+    private String provisionClientSecret;
 
     /**
      * Ensures a realm exists for a tenant.
      * Uses the singleton Keycloak admin client.
      */
     public void ensureRealmExists(String realmName) {
+        log.info("🛡️ Ensuring Keycloak Realm exists: {}", realmName);
         try {
-            // Check if realm exists
-            try {
-                keycloak.realm(realmName).toRepresentation();
-                log.info("Realm '{}' already exists", realmName);
-                return;
-            } catch (Exception e) {
-                // Not found or error, proceed to create
-                log.debug("Realm '{}' not found, preparing to create...", realmName);
-            }
-
-            RealmRepresentation realm = new RealmRepresentation();
+            // 1. Try to create the realm directly
+            org.keycloak.representations.idm.RealmRepresentation realm = new org.keycloak.representations.idm.RealmRepresentation();
             realm.setRealm(realmName);
             realm.setEnabled(true);
             realm.setDisplayName("Organization: " + realmName);
 
-            // In some versions, this returns void. We just call it and verify after.
-            keycloak.realms().create(realm);
-            
-            // Verification step
             try {
-                keycloak.realm(realmName).toRepresentation();
-                log.info("✅ SUCCESS: Created new Keycloak realm: {}", realmName);
-                provisionDefaultClient(realmName);
-            } catch (Exception e) {
-                log.error("❌ ERROR: Realm '{}' was not found after creation attempt. Check Keycloak permissions.", realmName);
+                keycloak.realms().create(realm);
+                log.info("✅ SUCCESS: Created realm '{}'", realmName);
+            } catch (jakarta.ws.rs.WebApplicationException ex) {
+                if (ex.getResponse().getStatus() == 409) {
+                    log.info("✅ INFO: Realm '{}' already exists. Synchronizing config...", realmName);
+                } else {
+                    log.error("❌ ERROR: Failed to create realm '{}': {}", realmName, ex.getMessage());
+                    // Don't throw, try to continue to client provisioning
+                }
             }
+
+            // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend)
+            // This is the most important step for login success
+            provisionDefaultClient(realmName);
+
         } catch (Exception e) {
-            log.error("❌ CRITICAL: Failed to create Keycloak realm '{}'. Error: {}", realmName, e.getMessage());
-            throw new RuntimeException("Failed to ensure Keycloak realm: " + realmName, e);
+            log.error("❌ CRITICAL: Unexpected error in ensureRealmExists for '{}': {}", realmName, e.getMessage());
+            // We still don't throw to allow the rest of the org creation to finish if possible
         }
     }
 
@@ -81,28 +72,37 @@ public class KeycloakService {
     private void provisionDefaultClient(String realmName) {
         try {
             var realmResource = keycloak.realm(realmName);
-            
-            // Check if client already exists
-            List<ClientRepresentation> existing = realmResource.clients().findByClientId("ftth-gis-frontend");
-            if (!existing.isEmpty()) {
-                log.info("Client 'ftth-gis-frontend' already exists in realm '{}'", realmName);
-                return;
-            }
 
-            ClientRepresentation client = new ClientRepresentation();
-            client.setClientId("ftth-gis-frontend");
+            // Check if client already exists
+            List<ClientRepresentation> existing = realmResource.clients().findByClientId(provisionClientId);
+
+            // 1. Prepare Client Representation
+            ClientRepresentation client = existing.isEmpty() ? new ClientRepresentation() : existing.get(0);
+            
+            log.info("🔑 SYNCING Client ID: {} with Secret: {} in Realm: {}", provisionClientId, provisionClientSecret, realmName);
+
+            client.setClientId(provisionClientId);
             client.setName("FTTH GIS Frontend");
             client.setEnabled(true);
-            client.setPublicClient(true);
+            client.setPublicClient(false); // Confidential client
+            client.setSecret(provisionClientSecret); // FORCE SYNC with config/env
+            client.setClientAuthenticatorType("client-secret");
             client.setDirectAccessGrantsEnabled(true);
             client.setStandardFlowEnabled(true);
-            client.setRedirectUris(List.of("http://localhost:3000/*", "http://127.0.0.1:3000/*", "http://192.168.40.11:3000/*"));
+            client.setServiceAccountsEnabled(false);
+            client.setRedirectUris(
+                    List.of("http://localhost:3000/*", "http://127.0.0.1:3000/*", "http://192.168.40.11:3000/*"));
             client.setWebOrigins(List.of("*"));
-            
-            realmResource.clients().create(client);
-            log.info("✅ SUCCESS: Provisioned 'ftth-gis-frontend' client in realm: {}", realmName);
+
+            if (existing.isEmpty()) {
+                realmResource.clients().create(client);
+                log.info("✅ SUCCESS: Created '{}' client in realm: {}", provisionClientId, realmName);
+            } else {
+                realmResource.clients().get(client.getId()).update(client);
+                log.info("🔄 SUCCESS: Synchronized/Updated '{}' client secret in realm: {}", provisionClientId, realmName);
+            }
         } catch (Exception e) {
-            log.warn("⚠️ WARNING: Failed to provision default client in realm '{}': {}", realmName, e.getMessage());
+            log.error("❌ ERROR: Failed to sync client in realm '{}': {}", realmName, e.getMessage());
         }
     }
 
@@ -145,7 +145,7 @@ public class KeycloakService {
         configMap.putSingle("searchScope", "1"); // One Level search
         configMap.putSingle("useTruststoreSpi", "ldapsOnly");
         configMap.putSingle("connectionTimeout", "5000");
-        
+
         if (config.getUserFilter() != null && !config.getUserFilter().isEmpty()) {
             configMap.putSingle("customUserSearchFilter", config.getUserFilter());
         }
@@ -168,12 +168,11 @@ public class KeycloakService {
         try {
             log.info("Testing LDAP connection for realm: {} at URL: {}", realmName, config.getUrl());
 
-            org.keycloak.representations.idm.TestLdapConnectionRepresentation testRep = 
-                new org.keycloak.representations.idm.TestLdapConnectionRepresentation();
-            
+            org.keycloak.representations.idm.TestLdapConnectionRepresentation testRep = new org.keycloak.representations.idm.TestLdapConnectionRepresentation();
+
             // "testConnection" checks basic connectivity
             // "testAuthentication" checks connectivity + bind credentials
-            testRep.setAction("testAuthentication"); 
+            testRep.setAction("testAuthentication");
             testRep.setConnectionUrl(config.getUrl());
             testRep.setBindDn(config.getBindDn());
             testRep.setBindCredential(config.getBindPassword());
@@ -184,21 +183,24 @@ public class KeycloakService {
 
             // We use the "master" realm to perform the connection test.
             // This is crucial because during the New Organization Wizard (Step 3),
-            // the target realm doesn't exist yet, but we still need to validate credentials.
+            // the target realm doesn't exist yet, but we still need to validate
+            // credentials.
             try (Response response = keycloak.realm("master").testLDAPConnection(testRep)) {
                 if (response.getStatus() == 204 || response.getStatus() == 200) {
                     log.info("✅ LDAP Test Successful for URL: {}", config.getUrl());
                     return true;
                 } else {
                     String errorBody = response.readEntity(String.class);
-                    log.error("❌ LDAP Test Failed for realm: {}. Status: {}. Error Detail: {}", realmName, response.getStatus(), errorBody);
+                    log.error("❌ LDAP Test Failed for realm: {}. Status: {}. Error Detail: {}", realmName,
+                            response.getStatus(), errorBody);
                     return false;
                 }
             }
 
         } catch (jakarta.ws.rs.WebApplicationException e) {
             String errorResponse = e.getResponse().readEntity(String.class);
-            log.error("LDAP Test WebApplicationException for realm '{}': Status {}, Response: {}", realmName, e.getResponse().getStatus(), errorResponse);
+            log.error("LDAP Test WebApplicationException for realm '{}': Status {}, Response: {}", realmName,
+                    e.getResponse().getStatus(), errorResponse);
             return false;
         } catch (Exception e) {
             log.error("LDAP Test Failed for realm '{}': {}", realmName, e.getMessage());
@@ -207,26 +209,129 @@ public class KeycloakService {
     }
 
     /**
-     * Verifies if the given password is correct for the specified username in a specific realm.
+     * Creates an owner user in a specific realm and sets their password.
+     * Returns the Keycloak User ID.
+     */
+    public String createOwnerUser(String realmName, String username, String email, String password, String roleName) {
+        try {
+            ensureRealmExists(realmName);
+            var realmResource = keycloak.realm(realmName);
+
+            log.info("👤 Step 2.1: Searching for user '{}' in realm '{}'", username, realmName);
+            List<org.keycloak.representations.idm.UserRepresentation> existing = realmResource.users().search(username,
+                    true);
+            if (!existing.isEmpty()) {
+                log.info("User '{}' already exists in realm '{}'", username, realmName);
+                return existing.get(0).getId();
+            }
+
+            org.keycloak.representations.idm.UserRepresentation user = new org.keycloak.representations.idm.UserRepresentation();
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setFirstName("Organization");
+            user.setLastName("Owner");
+            user.setEnabled(true);
+            user.setEmailVerified(true);
+
+            log.info("👤 Step 2.2: Attempting to create user '{}'", username);
+            Response response = realmResource.users().create(user);
+            if (response.getStatus() != 201) {
+                String errorMsg = response.readEntity(String.class);
+                log.error("❌ Failed to create owner user '{}' in realm '{}'. Status: {}. Error: {}",
+                        username, realmName, response.getStatus(), errorMsg);
+                throw new RuntimeException("Keycloak user creation failed: " + response.getStatus());
+            }
+
+            String userId = org.keycloak.admin.client.CreatedResponseUtil.getCreatedId(response);
+            log.info("✅ Created owner user '{}' with ID: {}", username, userId);
+
+            // Set password
+            log.info("👤 Step 2.3: Setting password for user '{}'", username);
+            org.keycloak.representations.idm.CredentialRepresentation cred = new org.keycloak.representations.idm.CredentialRepresentation();
+            cred.setType(org.keycloak.representations.idm.CredentialRepresentation.PASSWORD);
+            cred.setValue(password);
+            cred.setTemporary(false);
+
+            realmResource.users().get(userId).resetPassword(cred);
+            log.info("✅ Password set for owner user: {}", username);
+
+            // Assign Dynamic Role from DB
+            log.info("👤 Step 2.4: Assigning role '{}' to user '{}'", roleName, username);
+            
+            // Ensure role exists in Keycloak
+            try {
+                realmResource.roles().get(roleName).toRepresentation();
+            } catch (Exception e) {
+                log.info("🛡️ Role '{}' not found in Keycloak. Creating it now...", roleName);
+                org.keycloak.representations.idm.RoleRepresentation newRole = new org.keycloak.representations.idm.RoleRepresentation();
+                newRole.setName(roleName);
+                realmResource.roles().create(newRole);
+            }
+
+            org.keycloak.representations.idm.RoleRepresentation targetRole = realmResource.roles().get(roleName).toRepresentation();
+            realmResource.users().get(userId).roles().realmLevel().add(List.of(targetRole));
+            log.info("✅ Role '{}' assigned to user: {}", roleName, username);
+
+            return userId;
+
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            String errorResponse = e.getResponse().readEntity(String.class);
+            log.error("❌ Keycloak WebApplicationException in realm '{}': Status {}, Response: {}",
+                    realmName, e.getResponse().getStatus(), errorResponse);
+            throw new RuntimeException("Provisioning failed at Keycloak API: HTTP " + e.getResponse().getStatus());
+        } catch (Exception e) {
+            log.error("❌ CRITICAL: Failed to create owner user in realm '{}': {}", realmName, e.getMessage());
+            throw new RuntimeException("Provisioning failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verifies if the given password is correct for the specified username in a
+     * specific realm.
      */
     public boolean verifyUserPassword(String username, String password, String userRealm) {
         try {
             try (org.keycloak.admin.client.Keycloak userKeycloak = org.keycloak.admin.client.KeycloakBuilder.builder()
-                    .serverUrl(serverUrl)
-                    .realm(userRealm) 
-                    .clientId(clientId)
-                    .clientSecret(clientSecret)
+                    .serverUrl(properties.getServerUrl())
+                    .realm(userRealm)
+                    .clientId(properties.getClientId())
+                    .clientSecret(properties.getClientSecret())
                     .username(username)
                     .password(password)
                     .grantType(org.keycloak.OAuth2Constants.PASSWORD)
                     .build()) {
-                
+
                 userKeycloak.tokenManager().getAccessToken();
                 return true;
             }
         } catch (Exception e) {
             log.warn("Password verification failed for user {} in realm {}: {}", username, userRealm, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Deletes a realm from Keycloak. Use with caution!
+     */
+    public void deleteRealm(String realmName) {
+        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+            log.warn("🛡️ Security Alert: Attempted to delete protected realm: {}", realmName);
+            return;
+        }
+
+        try {
+            keycloak.realm(realmName).remove();
+            log.info("🗑️ SUCCESS: Realm '{}' deleted from Keycloak.", realmName);
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            if (e.getResponse().getStatus() == 404) {
+                log.info("ℹ️ Realm '{}' already deleted or not found in Keycloak.", realmName);
+            } else {
+                log.error("❌ Failed to delete realm '{}': {}", realmName, e.getMessage());
+                throw e;
+            }
+        } catch (Exception e) {
+            log.error("❌ Unexpected error deleting realm '{}': {}", realmName, e.getMessage());
+            throw new RuntimeException("Failed to delete realm: " + realmName, e);
         }
     }
 }

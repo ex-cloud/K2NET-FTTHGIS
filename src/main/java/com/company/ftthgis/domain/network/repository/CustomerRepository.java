@@ -22,4 +22,6 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID>, JpaSp
     List<Customer> findTop5ByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(String code, String name);
 
     long countByProjectId(UUID projectId);
+    
+    void deleteByOrganizationId(UUID organizationId);
 }

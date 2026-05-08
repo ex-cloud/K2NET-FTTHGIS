@@ -39,12 +39,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
-            RateLimitingFilter rateLimitingFilter) throws Exception {
+            RateLimitingFilter rateLimitingFilter,
+            com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(organizationStatusFilter, org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
@@ -54,8 +56,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
                         .requestMatchers("/api/v1/network/analytics/**").permitAll()
                         .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
-                        .requestMatchers("/api/v1/organizations/**").permitAll() // Multi-tenant org + project endpoints
-                        .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery for frontend
+                        .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
+                        .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/uploads/**").permitAll()

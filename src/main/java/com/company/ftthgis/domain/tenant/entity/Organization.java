@@ -59,6 +59,22 @@ public class Organization {
     @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Project> projects;
 
+    // Status Management
+    @Column(nullable = false)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @lombok.Builder.Default
+    private OrganizationStatus status = OrganizationStatus.ACTIVE;
+
+    @Column(name = "trial_expires_at")
+    private java.time.LocalDateTime trialExpiresAt;
+
+    public enum OrganizationStatus {
+        ACTIVE,
+        SUSPENDED,
+        TRIAL_EXPIRED,
+        DELETED
+    }
+
     @com.fasterxml.jackson.annotation.JsonProperty("settings")
     public java.util.Map<String, String> getSettingsMap() {
         if (configs == null) return new java.util.HashMap<>();

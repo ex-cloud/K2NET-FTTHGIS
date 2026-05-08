@@ -29,4 +29,6 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> 
         AND (:projectId IS NULL OR p.id = :projectId)
     """, nativeQuery = true)
     List<AssetMapProjection> findAllByOrgSlugAndProjectId(@Param("orgSlug") String orgSlug, @Param("projectId") UUID projectId);
+
+    void deleteByOrganizationId(UUID organizationId);
 }

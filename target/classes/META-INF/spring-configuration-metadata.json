@@ -56,12 +56,28 @@
       "sourceType": "com.company.ftthgis.config.KeycloakProperties"
     },
     {
+      "name": "keycloak.grant-type",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties",
+      "defaultValue": "client_credentials"
+    },
+    {
+      "name": "keycloak.password",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
       "name": "keycloak.realm",
       "type": "java.lang.String",
       "sourceType": "com.company.ftthgis.config.KeycloakProperties"
     },
     {
       "name": "keycloak.server-url",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
+      "name": "keycloak.username",
       "type": "java.lang.String",
       "sourceType": "com.company.ftthgis.config.KeycloakProperties"
     }

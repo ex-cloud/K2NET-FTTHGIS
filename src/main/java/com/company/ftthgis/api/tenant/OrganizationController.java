@@ -32,12 +32,15 @@ public class OrganizationController {
     @PostMapping
     public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
-            Organization saved = organizationService.createOrganization(request);
-            // Return simplified map to avoid Hibernate Proxy serialization issues
+            java.util.Map<String, Object> result = organizationService.createOrganization(request);
+            Organization saved = (Organization) result.get("organization");
+            String adminPassword = (String) result.get("adminPassword");
+            
             return ResponseEntity.ok(java.util.Map.of(
                 "id", saved.getId().toString(),
                 "name", saved.getName(),
-                "slug", saved.getSlug()
+                "slug", saved.getSlug(),
+                "adminPassword", adminPassword
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

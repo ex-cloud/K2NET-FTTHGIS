@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, UUID> {
     Optional<Asset> findBySerialNumber(String serialNumber);
+    
+    void deleteByOrganizationId(UUID organizationId);
 }

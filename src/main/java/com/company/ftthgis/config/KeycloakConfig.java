@@ -6,8 +6,6 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static org.keycloak.OAuth2Constants.CLIENT_CREDENTIALS;
-
 @Configuration
 @RequiredArgsConstructor
 public class KeycloakConfig {
@@ -16,12 +14,21 @@ public class KeycloakConfig {
 
     @Bean
     public Keycloak keycloak() {
-        return KeycloakBuilder.builder()
+        KeycloakBuilder builder = KeycloakBuilder.builder()
                 .serverUrl(properties.getServerUrl())
                 .realm(properties.getRealm())
-                .grantType(CLIENT_CREDENTIALS)
-                .clientId(properties.getClientId())
-                .clientSecret(properties.getClientSecret())
-                .build();
+                .grantType(properties.getGrantType())
+                .clientId(properties.getClientId());
+
+        if (properties.getClientSecret() != null) {
+            builder.clientSecret(properties.getClientSecret());
+        }
+
+        if ("password".equalsIgnoreCase(properties.getGrantType())) {
+            builder.username(properties.getUsername())
+                   .password(properties.getPassword());
+        }
+
+        return builder.build();
     }
 }

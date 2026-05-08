@@ -36,6 +36,15 @@ public class ProjectService {
         }
 
         project.setOrganization(org);
+        
+        // 🔥 Fix: Ensure all members also have the organization set
+        if (project.getMembers() != null) {
+            project.getMembers().forEach(member -> {
+                member.setOrganization(org);
+                member.setProject(project); // Ensure back-reference is set for JPA
+            });
+        }
+
         log.info("🚀 Creating new project: {} for organization: {}", project.getName(), org.getName());
         return projectRepository.save(project);
     }
