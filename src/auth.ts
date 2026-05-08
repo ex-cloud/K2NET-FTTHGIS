@@ -1,6 +1,6 @@
-import NextAuth from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import authConfig from "./auth.config";
-import { JWT } from "next-auth/jwt";
+import { JWT as NextAuthJWT } from "next-auth/jwt";
 
 interface KeycloakIdTokenPayload {
   email?: string;
@@ -11,15 +11,38 @@ interface KeycloakIdTokenPayload {
   sub?: string;
   picture?: string;
   avatar_url?: string;
+  iss?: string;
 }
 
-type ExtendedUser = import("next-auth").User & {
-  username?: string | null;
-  preferred_username?: string;
-  avatar_url?: string | null;
-};
+declare module "next-auth" {
+  interface User {
+    username?: string | null;
+    preferred_username?: string;
+    avatar_url?: string | null;
+    roles?: string[];
+  }
 
-async function refreshAccessToken(token: JWT) {
+  interface Session extends DefaultSession {
+    accessToken?: string;
+    idToken?: string;
+    issuer?: string;
+    error?: "RefreshAccessTokenError";
+    user: User & DefaultSession["user"];
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string;
+    refreshToken?: string;
+    idToken?: string;
+    issuer?: string;
+    expiresAt?: number;
+    user?: import("next-auth").User;
+  }
+}
+
+async function refreshAccessToken(token: NextAuthJWT) {
   try {
     // Dynamic Issuer: Use the issuer stored in the token if available, otherwise fallback to env
     const issuer = (token.issuer as string) || process.env.AUTH_KEYCLOAK_ISSUER;
@@ -97,7 +120,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             console.error("Failed to decode ID Token", e);
           }
 
-          const exUser = user as ExtendedUser;
+          // Extract roles from Access Token
+          let roles: string[] = [];
+          try {
+            const accessToken = userWithTokens.tokens.access_token;
+            const payload = JSON.parse(
+              Buffer.from(accessToken.split(".")[1], "base64").toString(),
+            );
+            roles = payload.realm_access?.roles || [];
+          } catch (e) {
+            console.error("Failed to decode Access Token roles in Credentials flow", e);
+          }
+
+          const exUser = user as import("next-auth").User;
           const enrichedUser = {
             id: user.id || token.sub,
             email: profile.email || exUser.email || token.email,
@@ -111,6 +146,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               profile.preferred_username ||
               exUser.username ||
               exUser.preferred_username,
+            roles: roles,
           };
 
           logInfo(`🔑 Login via Credentials. Issuer extracted from ID token: ${profile.iss}`);
@@ -130,7 +166,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // Handle OAuth provider (Keycloak redirect flow - account exists)
         if (account) {
-          const exUser = user as ExtendedUser;
+          const exUser = user as import("next-auth").User;
           
           // Extract issuer from ID token for OAuth flow too
           let issuer = process.env.AUTH_KEYCLOAK_ISSUER;
@@ -145,10 +181,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
           }
 
+          // Extract roles from Access Token (Keycloak stores them in realm_access.roles)
+          let roles: string[] = [];
+          if (account.access_token) {
+            try {
+              const payload = JSON.parse(
+                Buffer.from(account.access_token.split(".")[1], "base64").toString(),
+              );
+              roles = payload.realm_access?.roles || [];
+            } catch (e) {
+              console.error("Failed to decode Access Token roles", e);
+            }
+          }
+
           token.user = {
             ...user,
             avatar_url: exUser.avatar_url || exUser.image,
             username: exUser.preferred_username || exUser.username,
+            roles: roles,
           };
           return {
             ...token,
@@ -189,9 +239,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.error) {
         session.error = token.error as "RefreshAccessTokenError";
       }
+      if (token.issuer) {
+        session.issuer = token.issuer as string;
+      }
       if (session.user && token.user) {
         // Safe transfer of enriched fields from JWT to Session
-        const tokenUser = token.user as ExtendedUser;
+        const tokenUser = token.user as import("next-auth").User;
         session.user = {
           ...session.user,
           id: tokenUser.id || session.user.id,
@@ -199,6 +252,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: tokenUser.name || session.user.name,
           username: tokenUser.username || session.user.username,
           avatar_url: tokenUser.avatar_url || session.user.avatar_url,
+          roles: tokenUser.roles || [],
         };
       }
       return session;

@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/api/auth", "/"];
+  const publicRoutes = ["/login", "/system/login", "/api/auth", "/"];
   const isPublicRoute = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith("/api/auth"),
   );
@@ -19,7 +19,20 @@ export async function proxy(request: NextRequest) {
 
   const isLoggedIn = !!token;
 
-  // Protected routes
+  // 1. System Admin Area Logic
+  const isSystemRoute = pathname.startsWith("/system");
+  const isSystemLogin = pathname === "/system/login";
+
+  if (isSystemRoute) {
+    if (isSystemLogin) {
+      if (isLoggedIn) return NextResponse.redirect(new URL("/system/organizations", request.url));
+      return NextResponse.next();
+    }
+    if (!isLoggedIn) return NextResponse.redirect(new URL("/system/login", request.url));
+    return NextResponse.next();
+  }
+
+  // 2. Tenant/User Area Logic
   const protectedRoutes = ["/dashboard", "/org"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
@@ -32,7 +45,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If logged in and trying to access login page, redirect to /org
+  // If logged in and trying to access tenant login page, redirect to /org
   if (isLoggedIn && pathname === "/login") {
     return NextResponse.redirect(new URL("/org", request.url));
   }

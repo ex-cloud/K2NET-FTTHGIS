@@ -7,18 +7,33 @@ export default {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard =
-        nextUrl.pathname.startsWith("/dashboard") ||
-        nextUrl.pathname.startsWith("/org");
-      if (isOnDashboard) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
-      } else if (isLoggedIn) {
-        // Redirect logged-in users away from login page or root
-        if (nextUrl.pathname === "/login" || nextUrl.pathname === "/") {
-          return Response.redirect(new URL("/org", nextUrl));
+      const { pathname } = nextUrl;
+
+      // 1. System Admin Area Protection
+      const isSystemPath = pathname.startsWith("/system");
+      const isSystemLogin = pathname === "/system/login";
+
+      if (isSystemPath) {
+        if (isSystemLogin) {
+          if (isLoggedIn) return Response.redirect(new URL("/system/organizations", nextUrl));
+          return true;
         }
+        if (!isLoggedIn) return Response.redirect(new URL("/system/login", nextUrl));
+        return true;
       }
+
+      // 2. Tenant/User Area Protection
+      const isTenantPath = pathname.startsWith("/org") || pathname.startsWith("/dashboard");
+      if (isTenantPath) {
+        if (isLoggedIn) return true;
+        return false; // Default redirect to /login
+      }
+
+      // 3. Redirect logged-in users away from landing/login pages
+      if (isLoggedIn && (pathname === "/login" || pathname === "/")) {
+        return Response.redirect(new URL("/org", nextUrl));
+      }
+
       return true;
     },
   },

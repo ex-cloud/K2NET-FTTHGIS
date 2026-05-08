@@ -8,34 +8,29 @@ import Link from "next/link";
 import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "next-auth/react";
-
-interface CustomSessionUser {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  roles?: string[];
-}
+import { cn } from "@/lib/utils";
 
 export default function OrgsPage() {
   const { data: session } = useSession();
   const { organizations, loading, error, refresh } = useOrganizations();
   const [wizardOpen, setWizardOpen] = React.useState(false);
 
-  // Auto-redirect Superadmins from ftth-realm to the Admin Console
-  React.useEffect(() => {
-    const issuer = (session as { issuer?: string } | null)?.issuer || "";
-    if (issuer.includes("ftth-realm") || issuer.includes("/system")) {
-      window.location.href = "/system/organizations";
-    }
-  }, [session]);
-
-  // Check if user can create more organizations
-  const user = session?.user as CustomSessionUser | undefined;
+  // Determine if the user is a SuperAdmin (from the system realm)
+  const user = session?.user as { roles?: string[] } | undefined;
   const userRoles = user?.roles || [];
-  const isSuperAdmin = userRoles.includes("super_admin") || userRoles.includes("ROLE_SUPER_ADMIN");
+  const issuer = (session as { issuer?: string } | null)?.issuer || "";
+  
+  const isSuperAdmin = 
+    issuer.includes("ftth-realm") || 
+    issuer.includes("/system") || 
+    userRoles.includes("super_admin") || 
+    userRoles.includes("ROLE_SUPER_ADMIN");
   
   const hasFreePlan = organizations.some(org => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
   const canCreateMore = isSuperAdmin || !hasFreePlan || organizations.length === 0;
+
+  // Banner visibility logic
+  const showLimitBanner = !isSuperAdmin && !canCreateMore;
 
   return (
     <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
@@ -50,19 +45,20 @@ export default function OrgsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {!canCreateMore && (
+            {showLimitBanner && (
               <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-1 rounded border border-amber-500/20">
                 Free Plan Limit: 1 Organization
               </span>
             )}
             <Button 
               onClick={() => setWizardOpen(true)}
-              disabled={!canCreateMore}
-              className={`${
-                canCreateMore 
+              disabled={!canCreateMore && !isSuperAdmin}
+              className={cn(
+                (canCreateMore || isSuperAdmin)
                   ? "bg-emerald-600 hover:bg-emerald-500" 
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              } text-white gap-2 font-medium h-9 px-4 text-xs transition-colors`}
+                  : "bg-muted text-muted-foreground cursor-not-allowed",
+                "text-white gap-2 font-medium h-9 px-4 text-xs transition-colors"
+              )}
             >
               <Plus className="h-4 w-4" />
               New organization

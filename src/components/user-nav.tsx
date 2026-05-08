@@ -64,21 +64,29 @@ export function UserNav() {
   };
 
   const handleLogout = async () => {
-    const issuer = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER;
-    const idToken = session?.idToken;
+    const isSystem = window.location.pathname.startsWith("/system");
+    const issuer = (session as { issuer?: string } | null)?.issuer || process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER;
+    const idToken = (session as { idToken?: string } | null)?.idToken;
 
-    // 1. Sign out locally
+    // 1. Clear ALL browser storage for a truly clean slate
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+
+    // 2. Sign out locally from NextAuth
     await signOut({ redirect: false });
 
-    // 2. Redirect to Keycloak to clear provider session if we have the token hint
+    // 3. Redirect to Keycloak for federated logout if possible
     if (issuer && idToken) {
+      const postLogoutRedirect = window.location.origin + (isSystem ? "/system/login" : "/login");
       const keycloakLogoutUrl = `${issuer}/protocol/openid-connect/logout?post_logout_redirect_uri=${encodeURIComponent(
-        window.location.origin,
+        postLogoutRedirect,
       )}&id_token_hint=${idToken}`;
       window.location.href = keycloakLogoutUrl;
     } else {
-      // Fallback: just go to login if no token for federated logout
-      window.location.href = "/login";
+      // Fallback: just go to appropriate login page
+      window.location.href = isSystem ? "/system/login" : "/login";
     }
   };
 
