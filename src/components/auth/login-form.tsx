@@ -2,8 +2,9 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useActionState } from "react";
+import { useActionState, Suspense } from "react";
 import { Loader2, LogIn, AlertCircle, Building2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,10 @@ import {
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { authenticate, type LoginState } from "@/lib/actions/auth";
 
-export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
+function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
+
   const [state, formAction, isPending] = useActionState<
     LoginState | undefined,
     FormData
@@ -36,14 +40,12 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
     },
   });
 
-  // Use useWatch for better performance and to satisfy React Compiler
   const orgValue = useWatch({
     control: form.control,
     name: "org",
     defaultValue: "",
   });
   
-  // Constructed dynamic reset URL based on current organization
   const baseUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "http://localhost:8081";
   const currentRealm = orgValue && orgValue !== "system" ? orgValue : "ftth-realm";
   
@@ -52,7 +54,8 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <Form {...form}>
       <form action={formAction} className="space-y-6">
-        {/* Error Alert */}
+        <input type="hidden" name="callbackUrl" value={callbackUrl || ""} />
+        
         {state?.error && (
           <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-500">
             <AlertCircle className="h-4 w-4" />
@@ -60,7 +63,6 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         )}
 
-        {/* Organization Slug Field - Hidden if isAdmin */}
         {!isAdmin && (
           <FormField
             control={form.control}
@@ -86,7 +88,6 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
           />
         )}
 
-        {/* Username/Email Field */}
         <FormField
           control={form.control}
           name="username"
@@ -110,7 +111,6 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
           )}
         />
 
-        {/* Password Field */}
         <div className="space-y-2">
           <FormField
             control={form.control}
@@ -142,7 +142,6 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
           />
         </div>
 
-        {/* Remember Me */}
         <div className="flex items-center space-x-2">
           <Checkbox id="remember" disabled={isPending} />
           <label
@@ -153,7 +152,6 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
           </label>
         </div>
 
-        {/* Submit Button */}
         <Button
           type="submit"
           disabled={isPending}
@@ -173,5 +171,13 @@ export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
         </Button>
       </form>
     </Form>
+  );
+}
+
+export function LoginForm(props: { isAdmin?: boolean }) {
+  return (
+    <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>
+      <LoginFormInner {...props} />
+    </Suspense>
   );
 }

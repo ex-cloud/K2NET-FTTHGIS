@@ -14,7 +14,8 @@ export async function authenticate(
 ): Promise<LoginState> {
   try {
     const org = formData.get("org")?.toString() || "system";
-    const redirectTo = (org === "system") ? "/system/organizations" : `/org/${org}`;
+    const callbackUrl = formData.get("callbackUrl")?.toString();
+    const redirectTo = callbackUrl || ((org === "system") ? "/system/organizations" : `/org/${org}`);
 
     await signIn("credentials", {
       username: formData.get("username"),

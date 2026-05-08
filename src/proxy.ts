@@ -28,7 +28,11 @@ export async function proxy(request: NextRequest) {
       if (isLoggedIn) return NextResponse.redirect(new URL("/system/organizations", request.url));
       return NextResponse.next();
     }
-    if (!isLoggedIn) return NextResponse.redirect(new URL("/system/login", request.url));
+    if (!isLoggedIn) {
+      const loginUrl = new URL("/system/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
     return NextResponse.next();
   }
 
