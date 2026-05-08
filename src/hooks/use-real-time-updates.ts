@@ -17,10 +17,9 @@ type ConnectionStatus = "connecting" | "connected" | "error" | "disconnected";
  * Global hook to listen for real-time network events.
  * Implements industry-standard "Alert Suppression" and "Event Categorization".
  */
-export function useRealTimeUpdates() {
+export function useRealTimeUpdates(projectId?: string) {
   const { updateStatusOverride } = useMapStore();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
-  const [reconnectCount, setReconnectCount] = useState(0);
 
   // Refs for logic
   const lastNotificationRef = useRef<Record<string, number>>({});
@@ -131,37 +130,57 @@ export function useRealTimeUpdates() {
   useEffect(() => {
     let eventSource: EventSource | null = null;
     const baseUrl = getBackendBaseUrl();
-    const sseUrl = `${baseUrl}/network/notifications/map-updates`;
+    const currentReconnectCount = { val: 0 };
 
     const connect = () => {
-      if (eventSource) eventSource.close();
+      if (!projectId) {
+        setConnectionStatus("disconnected");
+        return;
+      }
+
+      const sseUrl = `${baseUrl}/network/notifications/map-updates/${projectId}`;
+
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
       
       setConnectionStatus("connecting");
       
-      eventSource = new EventSource(sseUrl);
+      try {
+        eventSource = new EventSource(sseUrl);
 
-      eventSource.onopen = () => {
-        setConnectionStatus("connected");
-        setReconnectCount(0);
-      };
+        eventSource.onopen = () => {
+          setConnectionStatus("connected");
+          currentReconnectCount.val = 0;
+        };
 
-      eventSource.addEventListener("STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "CRITICAL"));
-      eventSource.addEventListener("MINOR_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "MINOR"));
-      eventSource.addEventListener("CUSTOMER_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "INFO"));
-      eventSource.addEventListener("SILENT_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "SILENT"));
+        eventSource.addEventListener("STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "CRITICAL"));
+        eventSource.addEventListener("MINOR_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "MINOR"));
+        eventSource.addEventListener("CUSTOMER_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "INFO"));
+        eventSource.addEventListener("SILENT_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "SILENT"));
 
-      eventSource.onerror = () => {
+        eventSource.onerror = () => {
+          setConnectionStatus("error");
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          
+          // Exponential backoff (max 30s)
+          const delay = Math.min(1000 * Math.pow(2, currentReconnectCount.val), 30000);
+          currentReconnectCount.val += 1;
+          
+          console.warn(`[SSE] Connection error. Retrying in ${delay}ms... (Attempt ${currentReconnectCount.val})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, delay);
+        };
+      } catch (err) {
+        console.error("[SSE] Failed to create EventSource:", err);
         setConnectionStatus("error");
-        eventSource?.close();
-        
-        // Exponential backoff (max 30s)
-        const delay = Math.min(1000 * Math.pow(2, reconnectCount), 30000);
-        setReconnectCount(prev => prev + 1);
-        
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, delay);
-      };
+      }
     };
 
     connect();
@@ -172,7 +191,7 @@ export function useRealTimeUpdates() {
       if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
       if (massiveOutageTimerRef.current) clearTimeout(massiveOutageTimerRef.current);
     };
-  }, [handleUpdate, reconnectCount]);
+  }, [handleUpdate, projectId]);
 
   return { connectionStatus };
 }

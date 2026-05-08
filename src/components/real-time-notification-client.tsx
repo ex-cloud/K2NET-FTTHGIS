@@ -1,12 +1,16 @@
 "use client";
 
 import { useRealTimeUpdates } from "@/hooks/use-real-time-updates";
+import { useParams } from "next/navigation";
 
 /**
  * Empty client component that just initializes the real-time hook.
  * Inclusion in a layout ensures persistence across page navigations.
  */
 export function RealTimeNotificationClient() {
-  useRealTimeUpdates();
+  const params = useParams();
+  const projectId = params?.projectId as string | undefined;
+  
+  useRealTimeUpdates(projectId);
   return null;
 }
