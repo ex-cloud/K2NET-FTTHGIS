@@ -30,6 +30,7 @@ export interface Organization {
   adminUsername?: string;
   status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL_EXPIRED' | 'DELETED';
   trialExpiresAt?: string;
+  createdAt?: string;
 }
 
 export function useOrganizations() {

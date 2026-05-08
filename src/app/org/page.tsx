@@ -21,6 +21,14 @@ export default function OrgsPage() {
   const { organizations, loading, error, refresh } = useOrganizations();
   const [wizardOpen, setWizardOpen] = React.useState(false);
 
+  // Auto-redirect Superadmins from ftth-realm to the Admin Console
+  React.useEffect(() => {
+    const issuer = (session as { issuer?: string } | null)?.issuer || "";
+    if (issuer.includes("ftth-realm") || issuer.includes("/system")) {
+      window.location.href = "/system/organizations";
+    }
+  }, [session]);
+
   // Check if user can create more organizations
   const user = session?.user as CustomSessionUser | undefined;
   const userRoles = user?.roles || [];

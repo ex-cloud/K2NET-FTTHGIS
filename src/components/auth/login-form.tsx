@@ -21,7 +21,7 @@ import {
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { authenticate, type LoginState } from "@/lib/actions/auth";
 
-export function LoginForm() {
+export function LoginForm({ isAdmin = false }: { isAdmin?: boolean }) {
   const [state, formAction, isPending] = useActionState<
     LoginState | undefined,
     FormData
@@ -30,7 +30,7 @@ export function LoginForm() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      org: "",
+      org: isAdmin ? "system" : "",
       username: "",
       password: "",
     },
@@ -60,29 +60,31 @@ export function LoginForm() {
           </div>
         )}
 
-        {/* Organization Slug Field */}
-        <FormField
-          control={form.control}
-          name="org"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-foreground/80 flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Organization ID (Slug)
-              </FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  placeholder="e.g. telkom, biznet, system"
-                  disabled={isPending}
-                  className="h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Organization Slug Field - Hidden if isAdmin */}
+        {!isAdmin && (
+          <FormField
+            control={form.control}
+            name="org"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-foreground/80 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Organization ID (Slug)
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="text"
+                    placeholder="e.g. telkom, biznet, system"
+                    disabled={isPending}
+                    className="h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Username/Email Field */}
         <FormField
