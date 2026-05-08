@@ -4,6 +4,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 interface UIState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  organizationSuspended: boolean;
+  setOrganizationSuspended: (suspended: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -11,6 +13,8 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       sidebarOpen: true,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      organizationSuspended: false,
+      setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
     }),
     {
       name: "ftth-ui-settings",

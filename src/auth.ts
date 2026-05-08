@@ -21,8 +21,13 @@ type ExtendedUser = import("next-auth").User & {
 
 async function refreshAccessToken(token: JWT) {
   try {
+    // Dynamic Issuer: Use the issuer stored in the token if available, otherwise fallback to env
+    const issuer = (token.issuer as string) || process.env.AUTH_KEYCLOAK_ISSUER;
+    
+    logInfo(`Refreshing token for user ${token.email} using issuer: ${issuer}`);
+
     const response = await fetch(
-      `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/token`,
+      `${issuer}/protocol/openid-connect/token`,
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -37,14 +42,17 @@ async function refreshAccessToken(token: JWT) {
 
     const tokens = await response.json();
 
-    if (!response.ok) throw tokens;
+    if (!response.ok) {
+      console.error("Keycloak Refresh Error Response:", tokens);
+      throw tokens;
+    }
 
     return {
       ...token,
       accessToken: tokens.access_token,
       expiresAt: Math.floor(Date.now() / 1000 + tokens.expires_in),
-      refreshToken: tokens.refresh_token ?? token.refreshToken, // Fallback to old refresh token if new one not sent
-      idToken: tokens.id_token ?? token.idToken, // Update ID token if new one is sent
+      refreshToken: tokens.refresh_token ?? token.refreshToken,
+      idToken: tokens.id_token ?? token.idToken,
     };
   } catch (error) {
     console.error("Error refreshing Access Token", error);
@@ -53,6 +61,11 @@ async function refreshAccessToken(token: JWT) {
       error: "RefreshAccessTokenError" as const,
     };
   }
+}
+
+// Helper for logging since we are in a server context
+function logInfo(msg: string) {
+  console.log(`[Auth.ts] ${new Date().toISOString()}: ${msg}`);
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -73,10 +86,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (userWithTokens.tokens) {
           // Enrich profile from ID Token
-          let profile: KeycloakIdTokenPayload = {};
+          let profile: KeycloakIdTokenPayload & { iss?: string } = {};
           try {
             const idToken = userWithTokens.tokens.id_token;
-            const payload: KeycloakIdTokenPayload = JSON.parse(
+            const payload = JSON.parse(
               Buffer.from(idToken.split(".")[1], "base64").toString(),
             );
             profile = payload;
@@ -100,11 +113,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               exUser.preferred_username,
           };
 
+          logInfo(`🔑 Login via Credentials. Issuer extracted from ID token: ${profile.iss}`);
+
           return {
             ...token,
             accessToken: userWithTokens.tokens.access_token,
             refreshToken: userWithTokens.tokens.refresh_token,
             idToken: userWithTokens.tokens.id_token,
+            issuer: profile.iss, // Store issuer for dynamic refresh!
             expiresAt: Math.floor(
               Date.now() / 1000 + userWithTokens.tokens.expires_in,
             ),
@@ -115,6 +131,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Handle OAuth provider (Keycloak redirect flow - account exists)
         if (account) {
           const exUser = user as ExtendedUser;
+          
+          // Extract issuer from ID token for OAuth flow too
+          let issuer = process.env.AUTH_KEYCLOAK_ISSUER;
+          if (account.id_token) {
+            try {
+               const payload = JSON.parse(
+                 Buffer.from(account.id_token.split(".")[1], "base64").toString(),
+               );
+               issuer = payload.iss;
+            } catch (e) {
+               console.error("Failed to decode ID Token in OAuth flow", e);
+            }
+          }
+
           token.user = {
             ...user,
             avatar_url: exUser.avatar_url || exUser.image,
@@ -125,6 +155,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             accessToken: account.access_token,
             refreshToken: account.refresh_token,
             idToken: account.id_token,
+            issuer: issuer, // Store issuer for dynamic refresh!
             expiresAt: account.expires_at,
           };
         }

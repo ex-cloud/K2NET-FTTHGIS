@@ -35,6 +35,21 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
       headers: requestHeaders,
     });
 
+    if (response.status === 403) {
+      // Try to parse the error to see if it's a suspension
+      const clone = response.clone();
+      try {
+        const errorData = await clone.json();
+        if (errorData.error === "ORGANIZATION_SUSPENDED") {
+          const { useUIStore } = await import("@/store/ui-store");
+          useUIStore.getState().setOrganizationSuspended(true);
+        }
+      } catch {
+        // Not JSON or other error, ignore
+      }
+      return response;
+    }
+
     if (response.status === 401) {
       // Get the last login time to detect transient sync issues right after login
       const lastLoginStr = typeof window !== 'undefined' ? localStorage.getItem('last_login_time') : null;

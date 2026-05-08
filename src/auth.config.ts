@@ -49,11 +49,24 @@ export default {
             let issuerUrl = process.env.AUTH_KEYCLOAK_ISSUER;
             
             if (org && org !== "system") {
-                const discoveryRes = await fetch(`${backendUrl}/api/v1/auth/discovery/${orgSlug}`);
-                if (discoveryRes.ok) {
-                    const discoveryData = await discoveryRes.json();
-                    issuerUrl = discoveryData.issuerUrl;
-                    console.log(`🌐 Discovered issuer for ${orgSlug}: ${issuerUrl}`);
+                try {
+                    console.log(`🌐 Discovering issuer for org: ${orgSlug} via ${backendUrl}`);
+                    const discoveryRes = await fetch(`${backendUrl}/api/v1/auth/discovery/${orgSlug}`, {
+                        next: { revalidate: 3600 } // Cache discovery for 1 hour
+                    });
+                    
+                    if (discoveryRes.ok) {
+                        const discoveryData = await discoveryRes.json();
+                        if (discoveryData && discoveryData.issuerUrl) {
+                            issuerUrl = discoveryData.issuerUrl;
+                            console.log(`✅ Discovered issuer for ${orgSlug}: ${issuerUrl}`);
+                        }
+                    } else {
+                        console.warn(`⚠️ Discovery failed for ${orgSlug}, status: ${discoveryRes.status}`);
+                    }
+                } catch (discoveryError) {
+                    console.error(`❌ Discovery fetch error for ${orgSlug}:`, discoveryError);
+                    // Keep fallback issuerUrl if fetch fails
                 }
             }
 
@@ -81,7 +94,11 @@ export default {
               },
             );
 
-            if (!tokenResponse.ok) return null;
+            if (!tokenResponse.ok) {
+                const errorBody = await tokenResponse.text();
+                console.error(`❌ Keycloak Auth Failed for ${username} in ${orgSlug}. Status: ${tokenResponse.status}, Body: ${errorBody}`);
+                return null;
+            }
 
             const tokens = await tokenResponse.json();
 

@@ -13,11 +13,14 @@ export async function authenticate(
   formData: FormData,
 ): Promise<LoginState> {
   try {
+    const org = formData.get("org")?.toString() || "system";
+    const redirectTo = (org === "system") ? "/org" : `/org/${org}`;
+
     await signIn("credentials", {
       username: formData.get("username"),
       password: formData.get("password"),
-      org: formData.get("org"),
-      redirectTo: "/org",
+      org: org,
+      redirectTo: redirectTo,
     });
     return { success: true };
   } catch (error) {

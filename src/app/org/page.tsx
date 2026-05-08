@@ -1,31 +1,65 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Search, LayoutGrid } from "lucide-react";
+import { Plus, Search, LayoutGrid, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useSession } from "next-auth/react";
+
+interface CustomSessionUser {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  roles?: string[];
+}
 
 export default function OrgsPage() {
-  const { organizations, loading, refresh } = useOrganizations();
+  const { data: session } = useSession();
+  const { organizations, loading, error, refresh } = useOrganizations();
   const [wizardOpen, setWizardOpen] = React.useState(false);
+
+  // Check if user can create more organizations
+  const user = session?.user as CustomSessionUser | undefined;
+  const userRoles = user?.roles || [];
+  const isSuperAdmin = userRoles.includes("super_admin") || userRoles.includes("ROLE_SUPER_ADMIN");
+  
+  const hasFreePlan = organizations.some(org => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
+  const canCreateMore = isSuperAdmin || !hasFreePlan || organizations.length === 0;
 
   return (
     <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-12">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-normal text-foreground tracking-tight">
-            Your Organizations
-          </h1>
-          <Button 
-            onClick={() => setWizardOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-medium h-9 px-4 text-xs transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            New organization
-          </Button>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-normal text-foreground tracking-tight">
+              Your Organizations
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Select or create an organization to manage your network assets.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {!canCreateMore && (
+              <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-1 rounded border border-amber-500/20">
+                Free Plan Limit: 1 Organization
+              </span>
+            )}
+            <Button 
+              onClick={() => setWizardOpen(true)}
+              disabled={!canCreateMore}
+              className={`${
+                canCreateMore 
+                  ? "bg-emerald-600 hover:bg-emerald-500" 
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
+              } text-white gap-2 font-medium h-9 px-4 text-xs transition-colors`}
+            >
+              <Plus className="h-4 w-4" />
+              New organization
+            </Button>
+          </div>
         </div>
 
         <OrganizationWizard 
@@ -45,6 +79,22 @@ export default function OrgsPage() {
             </div>
           </div>
 
+          {/* Error banner */}
+          {error && (
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 text-amber-400 text-sm">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Failed to load organizations. Please try refreshing the page or logging in again.</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => refresh()}
+                className="ml-auto text-amber-400 hover:text-amber-300 text-xs"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {loading ? (
               // Loading Skeletons
@@ -60,19 +110,51 @@ export default function OrgsPage() {
             ) : (
               organizations.map((org) => (
                 <Link key={org.slug} href={`/org/${org.slug}`}>
-                  <div className="group flex items-center gap-4 p-5 rounded-lg border border-border bg-muted/30 hover:border-border/80 hover:bg-accent transition-all cursor-pointer h-24">
+                  <div className={`group flex items-center gap-4 p-5 rounded-lg border bg-muted/30 hover:bg-accent transition-all cursor-pointer h-24 ${
+                    org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
+                      ? 'border-amber-500/30 hover:border-amber-500/50'
+                      : 'border-border hover:border-border/80'
+                  }`}>
                     <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
                       <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
-                        <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground group-hover:text-emerald-500 transition-colors" />
+                        <LayoutGrid className={`h-3.5 w-3.5 transition-colors ${
+                          org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
+                            ? 'text-amber-500'
+                            : 'text-muted-foreground group-hover:text-emerald-500'
+                        }`} />
                       </div>
                     </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium text-foreground group-hover:text-emerald-500 transition-colors">
-                        {org.name}
-                      </span>
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium transition-colors ${
+                          org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
+                            ? 'text-zinc-400'
+                            : 'text-foreground group-hover:text-emerald-500'
+                        }`}>
+                          {org.name}
+                        </span>
+                        {/* Status badges */}
+                        {(org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED') && (
+                          <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Suspended
+                          </span>
+                        )}
+                        {org.status === 'ACTIVE' && org.subscriptionPlan?.name?.toUpperCase() === "FREE" && (
+                          <span className="text-[9px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase tracking-wider">
+                            Free
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span>Free Plan</span>
-                        {org.description && (
+                        <span>{org.subscriptionPlan?.name || "Standard"} Plan</span>
+                        {org.status === 'SUSPENDED' && (
+                          <>
+                            <span className="h-1 w-1 rounded-full bg-amber-500/50" />
+                            <span className="text-amber-500/70">Trial expired</span>
+                          </>
+                        )}
+                        {org.description && org.status !== 'SUSPENDED' && (
                           <>
                             <span className="h-1 w-1 rounded-full bg-border" />
                             <span className="truncate max-w-[150px]">{org.description}</span>

@@ -44,6 +44,8 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const [testingLdap, setTestingLdap] = React.useState(false);
   const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
   const [slugError, setSlugError] = React.useState<string | null>(null);
+  const [deployedData, setDeployedData] = React.useState<{ slug: string, adminPassword?: string, adminUsername?: string } | null>(null);
+  const [copied, setCopied] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
     name: "",
@@ -55,9 +57,12 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     // LDAP Configuration
     ldapEnabled: false,
     ldapUrl: "",
-    ldap_user_dn: "",
+    ldapBaseDn: "",
     ldapBindDn: "",
-    ldapBindPassword: ""
+    ldapBindPassword: "",
+    // Admin Account Provisioning
+    adminEmail: "",
+    adminUsername: ""
   });
 
   // Auto-generate slug from name if not edited manual
@@ -79,10 +84,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const isValidDn = (dn: string) => !dn.trim() || dn.includes('=');
 
   // Helper: check if all LDAP fields are filled
-  const isLdapFormComplete = formData.ldapUrl.trim() !== "" && formData.ldap_user_dn.trim() !== "" && formData.ldapBindDn.trim() !== "" && formData.ldapBindPassword.trim() !== "";
+  const isLdapFormComplete = formData.ldapUrl.trim() !== "" && formData.ldapBaseDn.trim() !== "" && formData.ldapBindDn.trim() !== "" && formData.ldapBindPassword.trim() !== "";
 
   // Helper: check if all formats are valid
-  const isLdapFormatValid = isValidLdapUrl(formData.ldapUrl) && isValidDn(formData.ldap_user_dn) && isValidDn(formData.ldapBindDn);
+  const isLdapFormatValid = isValidLdapUrl(formData.ldapUrl) && isValidDn(formData.ldapBaseDn) && isValidDn(formData.ldapBindDn);
 
   // Helper: determine if a specific field should show error
   const hasFieldError = (field: string, value: string, validator?: (v: string) => boolean) => {
@@ -121,24 +126,23 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await createOrganization(formData);
+      const result = await createOrganization(formData);
       
-      // If we got here without throwing, it's successful
-      // result is the saved organization object
+      // Store result to show in success screen
+      setDeployedData({
+        slug: result.slug,
+        adminPassword: result.adminPassword,
+        adminUsername: formData.adminUsername || formData.adminEmail
+      });
+
       toast.success("Organization deployed successfully!", {
         description: `${formData.name} is now ready to use.`,
       });
       
-      onSuccess();
-      onOpenChange(false);
+      // Move to success view (we'll treat step 5 as success)
+      setStep(5);
       
-      // Reset wizard
-      setStep(1);
-      setFormData({ 
-        name: "", slug: "", description: "", website: "", address: "", plan: "FREE",
-        ldapEnabled: false, ldapUrl: "", ldap_user_dn: "", ldapBindDn: "", ldapBindPassword: ""
-      });
-      setLdapTestPassed(false);
+      onSuccess();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
       console.error("Failed to create organization:", err);
@@ -149,6 +153,28 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Password copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const closeWizard = () => {
+    onOpenChange(false);
+    // Reset wizard after a short delay to avoid flickering
+    setTimeout(() => {
+      setStep(1);
+      setDeployedData(null);
+      setFormData({ 
+        name: "", slug: "", description: "", website: "", address: "", plan: "FREE",
+        ldapEnabled: false, ldapUrl: "", ldapBaseDn: "", ldapBindDn: "", ldapBindPassword: "",
+        adminEmail: "", adminUsername: ""
+      });
+      setLdapTestPassed(false);
+    }, 300);
   };
 
   const handleTestLdap = async () => {
@@ -209,12 +235,14 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             {step === 2 && "Configure settings"}
             {step === 3 && "LDAP Integration"}
             {step === 4 && "Review & Deploy"}
+            {step === 5 && "Deployment Success!"}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm">
             {step === 1 && "Give your organization a solid identity."}
             {step === 2 && "Set up how your organization operates."}
             {step === 3 && "Connect your existing identity provider."}
             {step === 4 && "Quick double check before we go live."}
+            {step === 5 && "Your infrastructure is ready. Save your credentials!"}
           </DialogDescription>
         </DialogHeader>
 
@@ -247,6 +275,28 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 </div>
                 {slugError && <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1"><AlertCircle className="size-3" /> {slugError}</p>}
                 <p className="text-[10px] text-zinc-500">Slug must be unique and used in your dashboard URL.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Admin Email <span className="text-red-500">*</span></label>
+                  <Input 
+                    type="email"
+                    value={formData.adminEmail}
+                    onChange={(e) => setFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
+                    placeholder="boss@company.com" 
+                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Admin Username</label>
+                  <Input 
+                    value={formData.adminUsername}
+                    onChange={(e) => setFormData(prev => ({ ...prev, adminUsername: e.target.value }))}
+                    placeholder="Leave blank for email" 
+                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -370,13 +420,13 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                         <Users className="size-3" /> Base DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
-                        value={formData.ldap_user_dn}
-                        onChange={(e) => updateLdapField('ldap_user_dn', e.target.value)}
-                        onBlur={() => markTouched('ldap_user_dn')}
+                        value={formData.ldapBaseDn}
+                        onChange={(e) => updateLdapField('ldapBaseDn', e.target.value)}
+                        onBlur={() => markTouched('ldapBaseDn')}
                         placeholder="dc=example,dc=com" 
-                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldap_user_dn', formData.ldap_user_dn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBaseDn', formData.ldapBaseDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
                       />
-                      {touchedFields['ldap_user_dn'] && formData.ldap_user_dn.trim() && !isValidDn(formData.ldap_user_dn) && (
+                      {touchedFields['ldapBaseDn'] && formData.ldapBaseDn.trim() && !isValidDn(formData.ldapBaseDn) && (
                         <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
                       )}
                     </div>
@@ -470,6 +520,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       {formData.plan} PLAN
                     </span>
                   </div>
+                  <div>
+                    <p className="text-zinc-500 mb-0.5">Admin Account</p>
+                    <p className="font-medium text-emerald-400">{formData.adminEmail}</p>
+                  </div>
                 </div>
               </div>
 
@@ -479,10 +533,53 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               </div>
             </div>
           )}
+
+          {step === 5 && deployedData && (
+            <div className="space-y-6 animate-in zoom-in-95 duration-500 py-4">
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="size-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+                  <Check className="size-8 text-emerald-500" />
+                </div>
+                <h3 className="text-lg font-bold text-white">System Online</h3>
+                <p className="text-zinc-500 text-sm">Infrastructure for <span className="text-emerald-400">/{deployedData.slug}</span> has been provisioned.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Admin Username</p>
+                    <p className="text-sm font-mono text-zinc-200">{deployedData.adminUsername}</p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Initial Password</p>
+                    <div className="flex items-center justify-between bg-[#080808] border border-[#1f1f1f] rounded-lg p-3">
+                      <code className="text-emerald-400 font-mono text-sm">{deployedData.adminPassword}</code>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 size-8 p-0 text-zinc-400 hover:text-emerald-400"
+                        onClick={() => copyToClipboard(deployedData.adminPassword || "")}
+                      >
+                        {copied ? <Check className="size-4" /> : <Key className="size-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg flex gap-3">
+                  <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-zinc-400">
+                    <strong className="text-amber-500">Security Warning:</strong> This password will only be shown once. Please save it securely. You can change it later in the dashboard settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-6 bg-[#111111] border-t border-[#1f1f1f] flex items-center justify-between">
-          {step > 1 ? (
+          {step > 1 && step < 5 ? (
             <Button 
               variant="ghost" 
               onClick={prevStep}
@@ -495,43 +592,54 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           )}
 
           <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              onClick={() => onOpenChange(false)}
-              className="text-zinc-500 hover:text-zinc-100"
-            >
-              Cancel
-            </Button>
-            
-            {step < 4 ? (
-              <Button 
-                onClick={nextStep}
-                disabled={
-                  !formData.name || !formData.slug ||
-                  (step === 3 && formData.ldapEnabled && !ldapTestPassed)
-                }
-                className={cn(
-                  "text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10",
-                  (step === 3 && formData.ldapEnabled && !ldapTestPassed)
-                    ? "bg-zinc-700 hover:bg-zinc-600 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-500"
+            {step < 5 ? (
+              <>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => onOpenChange(false)}
+                  className="text-zinc-500 hover:text-zinc-100"
+                >
+                  Cancel
+                </Button>
+                
+                {step < 4 ? (
+                  <Button 
+                    onClick={nextStep}
+                    disabled={
+                      !formData.name || !formData.slug || !formData.adminEmail ||
+                      (step === 3 && formData.ldapEnabled && !ldapTestPassed)
+                    }
+                    className={cn(
+                      "text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10",
+                      (step === 3 && formData.ldapEnabled && !ldapTestPassed)
+                        ? "bg-zinc-700 hover:bg-zinc-600 cursor-not-allowed"
+                        : "bg-emerald-600 hover:bg-emerald-500"
+                    )}
+                  >
+                    Continue <ChevronRight className="size-4 ml-1" />
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="size-4 mr-2 animate-spin" /> Provisioning...
+                      </>
+                    ) : (
+                      "Deploy Now"
+                    )}
+                  </Button>
                 )}
-              >
-                Continue <ChevronRight className="size-4 ml-1" />
-              </Button>
+              </>
             ) : (
               <Button 
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
+                onClick={closeWizard}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[150px] h-9 shadow-lg shadow-emerald-900/10"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="size-4 mr-2 animate-spin" /> Provisioning...
-                  </>
-                ) : (
-                  "Deploy Now"
-                )}
+                Go to Dashboard <ChevronRight className="size-4 ml-1" />
               </Button>
             )}
           </div>
