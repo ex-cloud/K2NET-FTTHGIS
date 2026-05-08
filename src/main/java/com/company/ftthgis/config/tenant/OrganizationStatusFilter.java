@@ -62,12 +62,13 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                                              path.contains("/api/v1/billing") ||
                                              path.contains("/api/v1/auth/logout");
 
-                        // Allow read-only access to core entities so the UI doesn't crash
+                        // Allow read-only access to core entities and notifications so the UI doesn't crash or spam reconnects
                         if ("GET".equalsIgnoreCase(method)) {
                             if (path.startsWith("/api/v1/organizations/" + slug + "/projects") ||
                                 path.startsWith("/api/v1/organizations/" + slug + "/users") ||
                                 path.startsWith("/api/v1/organizations/" + slug + "/roles") ||
-                                path.startsWith("/api/v1/organizations/" + slug + "/divisions")) {
+                                path.startsWith("/api/v1/organizations/" + slug + "/divisions") ||
+                                path.contains("/api/v1/network/notifications")) {
                                 isSafePath = true;
                             }
                         }
