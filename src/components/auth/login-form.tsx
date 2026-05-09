@@ -22,7 +22,7 @@ import {
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { authenticate, type LoginState } from "@/lib/actions/auth";
 
-function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
+function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, prefilledOrg?: string }) {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
@@ -31,10 +31,12 @@ function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
     FormData
   >(authenticate, undefined);
 
+  const detectedSubdomain = prefilledOrg || null;
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      org: isAdmin ? "system" : "",
+      org: isAdmin ? "system" : prefilledOrg || "",
       username: "",
       password: "",
     },
@@ -63,7 +65,7 @@ function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
         )}
 
-        {!isAdmin && (
+        {!isAdmin && !detectedSubdomain && (
           <FormField
             control={form.control}
             name="org"
@@ -87,6 +89,10 @@ function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
             )}
           />
         )}
+        
+        {/* Hidden inputs to ensure 'org' is submitted in FormData when the visual field is hidden */}
+        {isAdmin && <input type="hidden" name="org" value="system" />}
+        {!isAdmin && detectedSubdomain && <input type="hidden" name="org" value={detectedSubdomain} />}
 
         <FormField
           control={form.control}
@@ -174,7 +180,7 @@ function LoginFormInner({ isAdmin = false }: { isAdmin?: boolean }) {
   );
 }
 
-export function LoginForm(props: { isAdmin?: boolean }) {
+export function LoginForm(props: { isAdmin?: boolean, prefilledOrg?: string }) {
   return (
     <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>
       <LoginFormInner {...props} />

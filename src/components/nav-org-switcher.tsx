@@ -60,7 +60,7 @@ export function NavOrgSwitcher() {
             {displayName}
           </span>
           <span className="text-[9px] bg-zinc-800 border border-zinc-700 px-1 rounded text-zinc-400 font-bold uppercase tracking-tight group-hover:text-zinc-200 transition-colors">
-            {currentOrg?.plan || 'FREE'}
+            {currentOrg?.subscriptionPlan?.name || 'FREE'}
           </span>
         </Link>
       </div>
@@ -128,7 +128,7 @@ export function NavOrgSwitcher() {
                     <div className="flex flex-col flex-1">
                       <span className="text-xs font-medium">{org.name}</span>
                       <span className="text-[10px] text-zinc-500 uppercase">
-                        {org.plan || 'FREE'} Plan
+                        {org.subscriptionPlan?.name || 'FREE'} Plan
                       </span>
                     </div>
                     {org.slug === orgId && (

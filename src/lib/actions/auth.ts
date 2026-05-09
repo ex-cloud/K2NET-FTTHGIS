@@ -15,7 +15,7 @@ export async function authenticate(
   try {
     const org = formData.get("org")?.toString() || "system";
     const callbackUrl = formData.get("callbackUrl")?.toString();
-    const redirectTo = callbackUrl || ((org === "system") ? "/system/organizations" : `/org/${org}`);
+    const redirectTo = callbackUrl || ((org === "system") ? "/system/organizations" : `/dashboard`);
 
     await signIn("credentials", {
       username: formData.get("username"),

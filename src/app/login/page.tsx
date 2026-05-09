@@ -1,9 +1,22 @@
-"use client";
-
+import { headers } from "next/headers";
 import { LoginForm } from "@/components/auth/login-form";
 import { Network } from "lucide-react";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const headersList = await headers();
+  const hostname = headersList.get("host") || "";
+  
+  const isProduction = process.env.NODE_ENV === "production" && process.env.VERCEL === "1";
+  const rootDomain = isProduction ? "ftthgis.com" : "localhost:3000";
+  
+  let detectedSubdomain = null;
+  if (hostname.includes(rootDomain)) {
+    const extracted = hostname.replace(`.${rootDomain}`, "");
+    if (extracted !== hostname && extracted !== "www" && extracted !== "system") {
+      detectedSubdomain = extracted;
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background Gradient */}
@@ -42,7 +55,7 @@ export default function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <LoginForm />
+          <LoginForm prefilledOrg={detectedSubdomain || undefined} />
 
           {/* Footer */}
           <div className="mt-8 text-center">

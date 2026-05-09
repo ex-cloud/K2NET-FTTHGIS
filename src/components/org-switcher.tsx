@@ -54,7 +54,7 @@ export function OrgSwitcher() {
             <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-3 py-2">
               Organizations
             </DropdownMenuLabel>
-            {organizations.map((org, index) => (
+            {organizations.map((org) => (
               <DropdownMenuItem key={org.id} asChild className="gap-2 p-3 hover:bg-accent focus:bg-accent cursor-pointer">
                 <Link href={`/org/${org.slug}`}>
                   <div className={`flex size-7 items-center justify-center rounded-md border border-border ${org.slug === orgId ? 'bg-emerald-600 text-white' : 'bg-muted/50'}`}>
@@ -63,7 +63,7 @@ export function OrgSwitcher() {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium">{org.name}</span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-tight">
-                      {org.plan || 'Free'} Plan
+                      {org.subscriptionPlan?.name || 'Free'} Plan
                     </span>
                   </div>
                 </Link>

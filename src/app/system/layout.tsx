@@ -9,7 +9,8 @@ import { usePathname } from "next/navigation";
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { open, setOpen } = useSidebarMode();
-  const isLoginPage = pathname === "/system/login";
+  // Due to subdomain rewrite, pathname might be just '/login' on the client side
+  const isLoginPage = pathname === "/system/login" || pathname === "/login";
 
   if (isLoginPage) return <>{children}</>;
 
