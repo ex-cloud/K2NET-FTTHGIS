@@ -3,7 +3,6 @@ package com.company.ftthgis.domain.analytics.service;
 import com.company.ftthgis.domain.analytics.dto.DashboardStatsDTO;
 import com.company.ftthgis.domain.analytics.dto.IssueDetailDTO;
 import com.company.ftthgis.domain.analytics.dto.SnapshotDTO;
-import org.springframework.data.domain.PageRequest;
 import com.company.ftthgis.domain.analytics.entity.DashboardSnapshot;
 import com.company.ftthgis.domain.analytics.repository.AnalyticsRepository;
 import com.company.ftthgis.domain.analytics.repository.DashboardSnapshotRepository;
@@ -39,9 +38,14 @@ public class AnalyticsService {
             return getGlobalDashboardStats();
         }
 
-        long totalNodes = analyticsRepository.countTotalNodes(projectId);
-        long activeNodes = analyticsRepository.countActiveNodes(projectId);
-        long downNodes = analyticsRepository.countDownNodes(projectId);
+        Long totalNodesRaw = analyticsRepository.countTotalNodes(projectId);
+        long totalNodes = totalNodesRaw != null ? totalNodesRaw : 0L;
+        
+        Long activeNodesRaw = analyticsRepository.countActiveNodes(projectId);
+        long activeNodes = activeNodesRaw != null ? activeNodesRaw : 0L;
+        
+        Long downNodesRaw = analyticsRepository.countDownNodes(projectId);
+        long downNodes = downNodesRaw != null ? downNodesRaw : 0L;
         Double totalLengthKmRaw = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
         double totalLengthKm = totalLengthKmRaw != null ? totalLengthKmRaw : 0.0;
         
@@ -57,6 +61,10 @@ public class AnalyticsService {
                 "[Analytics] Project Dashboard Stats Generated for {}: totalNodes={}, activeNodes={}, downNodes={}, uptime={}",
                 projectId, totalNodes, activeNodes, downNodes, uptime);
 
+        // Using raw object array mapping because NetworkNode is an abstract class 
+        // and cannot be directly instantiated from a native query result set.
+        List<Object[]> rawIssues = analyticsRepository.findTop10ProblematicNodes(projectId);
+        
         return DashboardStatsDTO.builder()
                 .totalNodes(totalNodes)
                 .activeNodes(activeNodes)
@@ -66,14 +74,14 @@ public class AnalyticsService {
                 .networkUptime(Math.round(uptime * 100.0) / 100.0)
                 .customerReach(totalCustomers)
                 .maintenanceProgress(85.0)
-                .issues(analyticsRepository.findTop10ProblematicNodes(projectId, PageRequest.of(0, 10)).stream()
-                        .map(n -> IssueDetailDTO.builder()
-                                .code(n.getCode())
-                                .type(n.getNodeType())
-                                .status(n.getStatus())
-                                .lastNote(n.getLastNote())
-                                .lng(n.getGeom() != null ? n.getGeom().getX() : 0.0)
-                                .lat(n.getGeom() != null ? n.getGeom().getY() : 0.0)
+                .issues(rawIssues.stream()
+                        .map(row -> IssueDetailDTO.builder()
+                                .code((String) row[0]) // index 0: code
+                                .type((String) row[1]) // index 1: node_type
+                                .status((String) row[2]) // index 2: status
+                                .lastNote((String) row[3]) // index 3: last_note
+                                .lng(0.0) 
+                                .lat(0.0)
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
@@ -102,9 +110,14 @@ public class AnalyticsService {
         for (Project project : projects) {
             UUID projectId = project.getId();
             try {
-                long totalNodes = analyticsRepository.countTotalNodes(projectId);
-                long activeNodes = analyticsRepository.countActiveNodes(projectId);
-                long downNodes = analyticsRepository.countDownNodes(projectId);
+                Long totalNodesRaw = analyticsRepository.countTotalNodes(projectId);
+                long totalNodes = totalNodesRaw != null ? totalNodesRaw : 0L;
+                
+                Long activeNodesRaw = analyticsRepository.countActiveNodes(projectId);
+                long activeNodes = activeNodesRaw != null ? activeNodesRaw : 0L;
+                
+                Long downNodesRaw = analyticsRepository.countDownNodes(projectId);
+                long downNodes = downNodesRaw != null ? downNodesRaw : 0L;
                 Double totalLengthKmRaw = analyticsRepository.calculateTotalNetworkLengthKm(projectId);
                 double totalLengthKm = totalLengthKmRaw != null ? totalLengthKmRaw : 0.0;
                 long totalCustomers = customerRepository.countByProjectId(projectId);

@@ -15,7 +15,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @RestController
 @RequestMapping("/api/v1/network/notifications")
-@CrossOrigin(origins = "*")
 @Slf4j
 public class MapNotificationController {
 

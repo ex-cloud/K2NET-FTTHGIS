@@ -68,7 +68,9 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                                 path.startsWith("/api/v1/organizations/" + slug + "/users") ||
                                 path.startsWith("/api/v1/organizations/" + slug + "/roles") ||
                                 path.startsWith("/api/v1/organizations/" + slug + "/divisions") ||
-                                path.contains("/api/v1/network/notifications")) {
+                                path.startsWith("/api/v1/projects") ||
+                                path.startsWith("/api/v1/analytics") ||
+                                path.startsWith("/api/v1/network")) {
                                 isSafePath = true;
                             }
                         }
