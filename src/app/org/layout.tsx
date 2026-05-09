@@ -13,9 +13,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { setOrganizationSuspended } = useUIStore();
   const params = useParams();
 
-  // Reset suspension state when organization changes
+  // Reset suspension state when returning to the organization list
   useEffect(() => {
-    setOrganizationSuspended(false);
+    if (!params?.orgId) {
+      setOrganizationSuspended(false);
+    }
   }, [params?.orgId, setOrganizationSuspended]);
 
   return (

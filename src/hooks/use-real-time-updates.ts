@@ -132,6 +132,7 @@ export function useRealTimeUpdates(projectId?: string) {
     const baseUrl = getBackendBaseUrl();
     const currentReconnectCount = { val: 0 };
 
+    const maxReconnects = 5;
     const connect = () => {
       if (!projectId) {
         setConnectionStatus("disconnected");
@@ -160,22 +161,28 @@ export function useRealTimeUpdates(projectId?: string) {
         eventSource.addEventListener("CUSTOMER_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "INFO"));
         eventSource.addEventListener("SILENT_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "SILENT"));
 
-        eventSource.onerror = () => {
-          setConnectionStatus("error");
+        eventSource.onerror = (err) => {
+          console.error("[SSE] Connection error:", err);
           if (eventSource) {
             eventSource.close();
             eventSource = null;
           }
           
-          // Exponential backoff (max 30s)
-          const delay = Math.min(1000 * Math.pow(2, currentReconnectCount.val), 30000);
-          currentReconnectCount.val += 1;
-          
-          console.warn(`[SSE] Connection error. Retrying in ${delay}ms... (Attempt ${currentReconnectCount.val})`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, delay);
+          setConnectionStatus("error");
+
+          // If we've failed immediately multiple times, it's likely a 403 or server down
+          if (currentReconnectCount.val < maxReconnects) {
+            const delay = Math.min(1000 * Math.pow(2, currentReconnectCount.val), 30000);
+            console.warn(`[SSE] Retrying in ${delay}ms... (Attempt ${currentReconnectCount.val + 1})`);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              currentReconnectCount.val += 1;
+              connect();
+            }, delay);
+          } else {
+            console.error("[SSE] Max reconnect attempts reached (Suspended or Server Down). Stopping.");
+            setConnectionStatus("disconnected");
+          }
         };
       } catch (err) {
         console.error("[SSE] Failed to create EventSource:", err);
