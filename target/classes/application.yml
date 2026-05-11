@@ -51,6 +51,7 @@ keycloak:
 app:
   seeder:
     enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
+  frontend-url: ${FRONTEND_URL:localhost:3000}
   security:
     keycloak:
       provision-client-id: ${AUTH_KEYCLOAK_ID:ftth-gis-frontend}

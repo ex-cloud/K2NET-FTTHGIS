@@ -11,6 +11,7 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.springframework.stereotype.Service;
 import com.company.ftthgis.config.KeycloakProperties;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 /**
@@ -30,6 +31,9 @@ public class KeycloakService {
 
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:DtQ5wZE9uCsenEM2eIRu0wFv7ioLhAmd}")
     private String provisionClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:localhost:3000}")
+    private String frontendUrl;
 
     /**
      * Ensures a realm exists for a tenant.
@@ -90,16 +94,47 @@ public class KeycloakService {
             client.setDirectAccessGrantsEnabled(true);
             client.setStandardFlowEnabled(true);
             client.setServiceAccountsEnabled(false);
-            client.setRedirectUris(
-                    List.of("http://localhost:3000/*", "http://127.0.0.1:3000/*", "http://192.168.40.11:3000/*"));
+            
+            // DYNAMIC REDIRECT URIS (Option B: Automated Provisioning)
+            // Logic: http[s]://[realm].[frontend-url]/*
+            // We use http for localhost, and https for production (detection by protocol in frontendUrl)
+            String protocol = frontendUrl.contains("://") ? "" : "http://";
+            String baseUrl = protocol + frontendUrl;
+            
+            String tenantUrl;
+            List<String> redirects = new ArrayList<>();
+            redirects.add(baseUrl + "/*");
+            
+            if ("ftth-realm".equals(realmName) || "master".equals(realmName)) {
+                // For system realm, we also allow the 'system' subdomain
+                if (baseUrl.contains("://")) {
+                    String[] parts = baseUrl.split("://");
+                    tenantUrl = parts[0] + "://system." + parts[1];
+                } else {
+                    tenantUrl = "http://system." + frontendUrl;
+                }
+                redirects.add(tenantUrl + "/*");
+            } else {
+                // Construct tenant subdomain: http://k2net.localhost:3000
+                if (baseUrl.contains("://")) {
+                    String[] parts = baseUrl.split("://");
+                    tenantUrl = parts[0] + "://" + realmName + "." + parts[1];
+                } else {
+                    tenantUrl = "http://" + realmName + "." + frontendUrl;
+                }
+                redirects.add(tenantUrl + "/*");
+            }
+
+            client.setRedirectUris(redirects);
+            
             client.setWebOrigins(List.of("*"));
 
             if (existing.isEmpty()) {
                 realmResource.clients().create(client);
-                log.info("✅ SUCCESS: Created '{}' client in realm: {}", provisionClientId, realmName);
+                log.info("✅ SUCCESS: Created '{}' client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
             } else {
                 realmResource.clients().get(client.getId()).update(client);
-                log.info("🔄 SUCCESS: Synchronized/Updated '{}' client secret in realm: {}", provisionClientId, realmName);
+                log.info("🔄 SUCCESS: Updated '{}' client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
             }
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to sync client in realm '{}': {}", realmName, e.getMessage());
