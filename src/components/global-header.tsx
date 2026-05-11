@@ -12,6 +12,7 @@ import { HealthBadge } from "./health-badge";
 import { GlobalSearch } from "./dashboard/global-search";
 import { NavOrgSwitcher } from "./nav-org-switcher";
 import { NavProjectSwitcher } from "./nav-project-switcher";
+import { GodModeIndicator } from "./god-mode-indicator";
 
 export function GlobalHeader() {
   const params = useParams();
@@ -44,6 +45,8 @@ export function GlobalHeader() {
       </div>
 
       <div className="flex items-center gap-1">
+        <GodModeIndicator />
+
         <Button
           variant="ghost"
           size="sm"

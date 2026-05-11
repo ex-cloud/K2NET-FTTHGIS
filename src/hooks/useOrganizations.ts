@@ -127,12 +127,17 @@ export function useOrganizations() {
     }
   };
 
+  const useOrganizationBySlug = (slug: string | undefined) => {
+    return organizations.find(org => org.slug === slug);
+  };
+
   return {
     organizations,
     loading: isLoading,
     error: error instanceof Error ? error.message : null,
     refresh: refetch,
     createOrganization: createMutation.mutateAsync,
-    checkSlugAvailable
+    checkSlugAvailable,
+    useOrganizationBySlug
   };
 }

@@ -11,9 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dot } from "lucide-react";
+import { Dot, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
+import { getSystemUrl } from "@/lib/domain";
 import * as React from "react";
 
 export function UserNav() {
@@ -136,6 +137,23 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-border" />
+        
+        {/* Impersonation Back Link */}
+        {user?.roles?.includes("super_admin") && !window.location.hostname.startsWith("system.") && (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuItem 
+                className="focus:bg-primary/10 focus:text-primary text-xs font-bold cursor-pointer gap-2"
+                onClick={() => window.location.assign(getSystemUrl())}
+              >
+                <ShieldCheck className="size-3.5" />
+                Back to System Admin
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator className="bg-border" />
+          </>
+        )}
+        
         <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
           Theme
         </DropdownMenuLabel>

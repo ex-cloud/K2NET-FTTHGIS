@@ -33,10 +33,14 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
 
   const detectedSubdomain = prefilledOrg || null;
 
+  // Auto-detect if we are on the system subdomain via window.location
+  const isSystemSubdomain = typeof window !== "undefined" && window.location.hostname.startsWith("system.");
+  const effectiveIsAdmin = isAdmin || isSystemSubdomain;
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      org: isAdmin ? "system" : prefilledOrg || "",
+      org: effectiveIsAdmin ? "system" : prefilledOrg || "",
       username: "",
       password: "",
     },
@@ -65,7 +69,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
           </div>
         )}
 
-        {!isAdmin && !detectedSubdomain && (
+        {!effectiveIsAdmin && !detectedSubdomain && (
           <FormField
             control={form.control}
             name="org"
@@ -91,8 +95,8 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
         )}
         
         {/* Hidden inputs to ensure 'org' is submitted in FormData when the visual field is hidden */}
-        {isAdmin && <input type="hidden" name="org" value="system" />}
-        {!isAdmin && detectedSubdomain && <input type="hidden" name="org" value={detectedSubdomain} />}
+        {effectiveIsAdmin && <input type="hidden" name="org" value="system" />}
+        {!effectiveIsAdmin && detectedSubdomain && <input type="hidden" name="org" value={detectedSubdomain} />}
 
         <FormField
           control={form.control}

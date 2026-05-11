@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Bell, Download } from "lucide-react";
+import { Bell, Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -29,6 +29,46 @@ export function TopHeader() {
           </div>
         </div>
       </div>
+
+      {/* Impersonation Banner */}
+      {typeof window !== "undefined" && !window.location.hostname.startsWith("system.") && (
+        <div className="flex-1 flex justify-center">
+          <div className="flex items-center gap-3 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full group hover:bg-amber-500/20 transition-all cursor-default">
+            <div className="relative">
+              <ShieldCheck className="w-4 h-4 text-amber-500" />
+              <div className="absolute inset-0 bg-amber-500 rounded-full animate-ping opacity-20" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-tighter leading-none">
+                Impersonation Mode
+              </span>
+              <span className="text-[9px] text-amber-600/70 dark:text-amber-500/50 font-medium leading-none mt-0.5">
+                Superadmin Control Active
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Impersonation Banner */}
+      {typeof window !== "undefined" && !window.location.hostname.startsWith("system.") && (
+        <div className="flex-1 flex justify-center">
+          <div className="flex items-center gap-3 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full group hover:bg-amber-500/20 transition-all cursor-default">
+            <div className="relative">
+              <ShieldCheck className="w-4 h-4 text-amber-500" />
+              <div className="absolute inset-0 bg-amber-500 rounded-full animate-ping opacity-20" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-tighter leading-none">
+                Impersonation Mode
+              </span>
+              <span className="text-[9px] text-amber-600/70 dark:text-amber-500/50 font-medium leading-none mt-0.5">
+                Superadmin Control Active
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 max-w-xl px-12">
         <GlobalSearch />

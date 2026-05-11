@@ -127,7 +127,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             const payload = JSON.parse(
               Buffer.from(accessToken.split(".")[1], "base64").toString(),
             );
-            roles = payload.realm_access?.roles || [];
+            // Aggressive Role Extraction (Keycloak can be inconsistent)
+            const realmRoles = payload.realm_access?.roles || [];
+            const resourceRoles = payload.resource_access?.[process.env.AUTH_KEYCLOAK_ID!]?.roles || [];
+            const rootRoles = payload.roles || [];
+            
+            roles = Array.from(new Set([...realmRoles, ...resourceRoles, ...rootRoles]));
           } catch (e) {
             console.error("Failed to decode Access Token roles in Credentials flow", e);
           }
@@ -188,7 +193,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               const payload = JSON.parse(
                 Buffer.from(account.access_token.split(".")[1], "base64").toString(),
               );
-              roles = payload.realm_access?.roles || [];
+              // Aggressive Role Extraction (OAuth Flow)
+              const realmRoles = payload.realm_access?.roles || [];
+              const resourceRoles = payload.resource_access?.[process.env.AUTH_KEYCLOAK_ID!]?.roles || [];
+              const rootRoles = payload.roles || [];
+              
+              roles = Array.from(new Set([...realmRoles, ...resourceRoles, ...rootRoles]));
             } catch (e) {
               console.error("Failed to decode Access Token roles", e);
             }
@@ -230,32 +240,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return refreshedToken;
     },
     async session({ session, token }) {
-      if (token.accessToken) {
-        session.accessToken = token.accessToken as string;
-      }
-      if (token.idToken) {
-        session.idToken = token.idToken as string;
-      }
-      if (token.error) {
-        session.error = token.error as "RefreshAccessTokenError";
-      }
-      if (token.issuer) {
-        session.issuer = token.issuer as string;
-      }
-      if (session.user && token.user) {
-        // Safe transfer of enriched fields from JWT to Session
-        const tokenUser = token.user as import("next-auth").User;
+      if (token.accessToken) session.accessToken = token.accessToken as string;
+      if (token.idToken) session.idToken = token.idToken as string;
+      if (token.error) session.error = token.error as "RefreshAccessTokenError";
+      if (token.issuer) session.issuer = token.issuer as string;
+      
+      if (token.user) {
+        const tokenUser = token.user;
         session.user = {
           ...session.user,
           id: tokenUser.id || session.user.id,
-          email: tokenUser.email || session.user.email,
-          name: tokenUser.name || session.user.name,
-          username: tokenUser.username || session.user.username,
-          avatar_url: tokenUser.avatar_url || session.user.avatar_url,
+          username: tokenUser.username,
           roles: tokenUser.roles || [],
+          avatar_url: tokenUser.avatar_url,
         };
       }
+      
+      // Server-side Debug
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Session Callback] User Roles:`, session.user?.roles);
+      }
+      
       return session;
+    },
+  },
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: process.env.NODE_ENV === "production" ? ".ftthgis.com" : ".lvh.me",
+        secure: process.env.NODE_ENV === "production",
+      },
     },
   },
 });

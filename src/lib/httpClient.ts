@@ -1,4 +1,5 @@
 import { signOut } from "next-auth/react";
+import { useUIStore } from "@/store/ui-store";
 
 export interface HttpClientOptions extends RequestInit {
   token?: string;
@@ -18,6 +19,21 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
 
   if (token) {
     requestHeaders.set("Authorization", `Bearer ${token}`);
+    
+    // Automatic Impersonation Logic for Superadmin
+    // We use the activeTenantId from the UI store which is synchronized by NavOrgSwitcher
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const isSystemSubdomain = hostname.startsWith("system.");
+      
+      // JANGAN kirim X-Tenant-ID jika kita di subdomain system
+      if (!isSystemSubdomain) {
+        const activeTenantId = useUIStore.getState().activeTenantId;
+        if (activeTenantId) {
+          requestHeaders.set("X-Tenant-ID", activeTenantId);
+        }
+      }
+    }
   }
 
   if (projectId) {

@@ -12,12 +12,14 @@ declare module "next-auth" {
       name?: string | null;
       username?: string | null;
       avatar_url?: string | null;
+      roles?: string[];
     } & import("next-auth").DefaultSession["user"];
   }
 
   interface User {
     username?: string | null;
     avatar_url?: string | null;
+    roles?: string[];
     tokens?: {
       access_token: string;
       refresh_token: string;
@@ -40,6 +42,7 @@ declare module "next-auth/jwt" {
       name?: string | null;
       username?: string | null;
       avatar_url?: string | null;
+      roles?: string[];
     };
   }
 }

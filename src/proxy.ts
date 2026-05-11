@@ -1,99 +1,74 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host") || "";
 
-  // 0. Subdomain Detection
+  // 1. Subdomain Detection
   const isProduction = process.env.NODE_ENV === "production" && process.env.VERCEL === "1";
-  const rootDomain = isProduction ? "ftthgis.com" : "localhost:3000";
-
-  let subdomain = null;
+  
+  // Extract root domain from env or fallback
+  let rootDomain = "localhost:3000";
+  if (isProduction) {
+    rootDomain = "ftthgis.com";
+  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    try {
+      rootDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).host;
+    } catch {
+      rootDomain = process.env.NEXT_PUBLIC_APP_URL.replace("http://", "").replace("https://", "");
+    }
+  }
+  
+  let subdomain = "";
   if (hostname.includes(rootDomain)) {
     const extracted = hostname.replace(`.${rootDomain}`, "");
-    if (extracted !== hostname && extracted !== "www") {
-      subdomain = extracted; // 'system' is now captured here as well
+    if (extracted !== hostname && extracted !== "www" && extracted !== rootDomain) {
+      subdomain = extracted;
     }
   }
 
-  // 1. Calculate Effective Pathname
-  // This allows auth checks to run on the 'internal' path even if accessed via a clean subdomain URL.
-  let effectivePathname = pathname;
-  
-  // Direct Redirects for root paths on subdomains
-  if (subdomain === "system" && pathname === "/") {
-    return NextResponse.redirect(new URL("/organizations", request.url));
-  } else if (subdomain && subdomain !== "system" && pathname === "/") {
+  // 2. Direct Redirects for root paths on subdomains
+  if (subdomain === "system") {
+     if (pathname === "/" || pathname === "/system") {
+       return NextResponse.redirect(new URL("/organizations", request.url));
+     }
+  } else if (subdomain && pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // 3. Routing Logic (Rewriting)
+  let effectivePathname = pathname;
+
   if (subdomain === "system") {
-    // Exclude static and api routes from getting prefixed
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system")) {
+    // If the URL already contains /system/ (e.g. from a direct link), we let it be
+    // but we prefer to rewrite clean URLs like /organizations to /system/organizations
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system") && !pathname.startsWith("/login")) {
       effectivePathname = `/system${pathname === "/" ? "" : pathname}`;
+    } else if (pathname === "/login") {
+      effectivePathname = "/system/login";
     }
   } else if (subdomain) {
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/login") && !pathname.startsWith("/_next") && !pathname.startsWith(`/org/${subdomain}`)) {
+    // Rewrite tenant routes to /org/[slug]/...
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/login") && !pathname.startsWith("/org")) {
       effectivePathname = `/org/${subdomain}${pathname === "/" ? "" : pathname}`;
     }
   }
 
-  // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/system/login", "/api/auth"];
-  if (!subdomain) {
-    publicRoutes.push("/"); // Root domain landing page is public
-  }
-
-  const isPublicRoute = publicRoutes.some(
-    (route) => effectivePathname === route || effectivePathname.startsWith("/api/auth"),
-  );
-
-  // Get the token
+  // 4. Security Check (Lightweight)
+  // We do a basic check here to handle /login vs /dashboard redirects early
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
   });
-
   const isLoggedIn = !!token;
 
-  // 2. System Admin Area Logic
-  const isSystemRoute = effectivePathname.startsWith("/system");
-  const isSystemLogin = effectivePathname === "/system/login";
-
-  if (isSystemRoute) {
-    if (isSystemLogin) {
-      if (isLoggedIn) return NextResponse.redirect(new URL(subdomain === "system" ? "/organizations" : "/system/organizations", request.url));
-      // Let it pass (will rewrite later if needed)
-    } else if (!isLoggedIn && !isPublicRoute) {
-      const loginUrl = new URL(subdomain === "system" ? "/login" : "/system/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // If logged in and hitting login page, redirect to home
+  if (isLoggedIn && pathname === "/login") {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 3. Tenant/User Area Logic (Only run if not system)
-  if (!isSystemRoute) {
-    const protectedRoutes = ["/dashboard", "/org"];
-    const isProtectedRoute = !!subdomain || protectedRoutes.some((route) =>
-      effectivePathname.startsWith(route),
-    );
-
-    // If not logged in and trying to access protected route, redirect to login
-    if (!isLoggedIn && isProtectedRoute && !isPublicRoute) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // If logged in and trying to access tenant login page, redirect to home (or /org if no subdomain)
-    if (isLoggedIn && pathname === "/login") {
-      return NextResponse.redirect(new URL(subdomain ? "/" : "/org", request.url));
-    }
-  }
-
-  // 4. Perform the Rewrite if Effective Path changed
+  // 5. Perform the Rewrite
   if (effectivePathname !== pathname) {
     const url = request.nextUrl.clone();
     url.pathname = effectivePathname;
@@ -105,7 +80,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except static files
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

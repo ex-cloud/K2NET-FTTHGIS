@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { UserNav } from "../user-nav";
 import { HealthBadge } from "../health-badge";
 
+import { getBaseUrl } from "@/lib/domain";
+
 export function SystemHeader() {
   const pathname = usePathname();
 
@@ -38,7 +40,7 @@ export function SystemHeader() {
           variant="ghost"
           size="sm"
           className="hidden text-muted-foreground hover:text-foreground md:flex text-[11px] font-medium h-8 px-2 gap-2"
-          onClick={() => window.location.href = "/org"}
+          onClick={() => window.location.assign(getBaseUrl())}
         >
           <ArrowLeftRight className="h-3.5 w-3.5" />
           Switch to Tenant

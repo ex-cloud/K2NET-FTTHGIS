@@ -15,6 +15,7 @@ interface ProjectItem {
   name: string;
 }
 
+import { useOrganizations } from "@/hooks/useOrganizations";
 import { ProjectCreateWizard } from "@/components/project/project-create-wizard";
 
 export default function OrgDashboardPage({
@@ -22,18 +23,22 @@ export default function OrgDashboardPage({
 }: {
   params: Promise<{ orgId: string }>;
 }) {
-  const { orgId } = use(params);
+  const { orgId: slug } = use(params);
   const { data: session } = useSession();
+  const { useOrganizationBySlug, loading: orgsLoading } = useOrganizations();
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
+  const organization = useOrganizationBySlug(slug);
+  const realOrgId = organization?.id || slug;
+
   const fetchProjects = useCallback(async () => {
-    if (!session?.accessToken) return;
+    if (!session?.accessToken || orgsLoading) return;
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/organizations/${orgId}/projects`, {
+      const res = await httpClient(`${baseUrl}/organizations/${slug}/projects`, {
         token: session.accessToken,
       });
       if (res.ok) {
@@ -45,7 +50,7 @@ export default function OrgDashboardPage({
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken, orgId]);
+  }, [session?.accessToken, realOrgId, orgsLoading]);
 
   useEffect(() => {
     fetchProjects();
@@ -133,7 +138,7 @@ export default function OrgDashboardPage({
             </div>
           ) : (
             projects.map((project) => (
-              <Link key={project.id} href={`/org/${orgId}/project/${project.id}`}>
+              <Link key={project.id} href={`/org/${slug}/project/${project.id}`}>
                 <div className="group flex flex-col p-6 rounded-xl border border-border bg-card hover:border-border/80 hover:bg-accent/50 transition-all cursor-pointer h-full border-b-2 border-b-emerald-600/50">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-1">

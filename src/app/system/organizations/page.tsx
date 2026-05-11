@@ -13,6 +13,7 @@ import {
   Plus,
   ArrowRight
 } from "lucide-react";
+import { getTenantUrl } from "@/lib/domain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -136,9 +137,9 @@ export default function AdminOrganizationsPage() {
         <>
           {/* GRID VIEW */}
           {viewMode === "grid" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredOrgs.map((org: Organization) => (
-                <div key={org.id} className="group relative" onClick={() => window.open(`/org/${org.slug}`, '_blank')}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredOrgs.map((org: Organization) => (
+                  <div key={org.id} className="group relative" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
                   <div className={`flex items-center gap-4 p-5 rounded-lg border bg-muted/30 hover:bg-accent transition-all cursor-pointer h-24 ${
                     org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
                       ? 'border-amber-500/30'
@@ -207,7 +208,7 @@ export default function AdminOrganizationsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem onClick={() => window.open(`/org/${org.slug}`, '_blank')}>Access Tenant</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -256,7 +257,7 @@ export default function AdminOrganizationsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => window.open(`/org/${org.slug}`, '_blank')}>
+                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
                             <ArrowRight className="size-4" />
                          </Button>
                       </td>

@@ -14,6 +14,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+  
+  if (process.env.NODE_ENV === "development") {
+    console.log("SERVER LAYOUT SESSION:", JSON.stringify(session?.user?.roles));
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>
