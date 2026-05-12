@@ -7,7 +7,16 @@ export default async function LoginPage() {
   const hostname = headersList.get("host") || "";
   
   const isProduction = process.env.NODE_ENV === "production" && process.env.VERCEL === "1";
-  const rootDomain = isProduction ? "ftthgis.com" : "localhost:3000";
+  let rootDomain = "localhost:3000";
+  if (isProduction) {
+    rootDomain = "ftthgis.com";
+  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    try {
+      rootDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).host;
+    } catch {
+      rootDomain = process.env.NEXT_PUBLIC_APP_URL.replace("http://", "").replace("https://", "");
+    }
+  }
   
   let detectedSubdomain = null;
   if (hostname.includes(rootDomain)) {

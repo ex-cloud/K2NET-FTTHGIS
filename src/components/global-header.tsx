@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,23 +12,34 @@ import { GlobalSearch } from "./dashboard/global-search";
 import { NavOrgSwitcher } from "./nav-org-switcher";
 import { NavProjectSwitcher } from "./nav-project-switcher";
 import { GodModeIndicator } from "./god-mode-indicator";
+import { useSession } from "next-auth/react";
+import { getBaseUrl, getSystemUrl } from "@/lib/domain";
 
 export function GlobalHeader() {
   const params = useParams();
   const pathname = usePathname();
   const isOrgLanding = pathname === "/org";
+  const { data: session } = useSession();
 
   return (
     <header className="flex h-12 w-full items-center justify-between border-b border-border bg-background px-4 z-50 py-2">
       <div className="flex items-center gap-x-1">
-        <Link href="/org" className="flex items-center cursor-pointer mr-1">
+        <div 
+          onClick={() => {
+             // Hard navigation to the global /org page on the root domain
+             const userRoles = (session?.user as { roles?: string[] })?.roles || [];
+             const isSuperadmin = userRoles.includes("super_admin");
+             window.location.assign(isSuperadmin ? getSystemUrl() : getBaseUrl() + "/org");
+          }}
+          className="flex items-center cursor-pointer mr-1"
+        >
           <div className="flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group ">
             <div
               className="h-2 w-2 bg-emerald-500 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(16,185,129,0.5)]"
               style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
             />
           </div>
-        </Link>
+        </div>
         <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/40" />
         
         {!isOrgLanding && (

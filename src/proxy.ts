@@ -60,12 +60,20 @@ export async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
+    cookieName: "next-auth.session-token",
+    secureCookie: process.env.NODE_ENV === "production",
   });
   const isLoggedIn = !!token;
 
-  // If logged in and hitting login page, redirect to home
+  // If logged in and hitting login page, redirect to the appropriate portal
   if (isLoggedIn && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+    if (subdomain === "system") {
+      return NextResponse.redirect(new URL("/organizations", request.url));
+    } else if (subdomain) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/org", request.url));
+    }
   }
 
   // 5. Perform the Rewrite

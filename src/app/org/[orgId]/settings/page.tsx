@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
+import { getBaseUrl } from "@/lib/domain";
 
 interface Project {
   id: string;
@@ -252,7 +253,7 @@ export default function GeneralSettingsPage() {
 
       if (res.ok) {
         toast.success("Organization deleted successfully");
-        router.push("/org");
+        window.location.assign(getBaseUrl() + "/org");
       } else {
         const error = await res.text();
         toast.error(error || "Failed to delete organization");

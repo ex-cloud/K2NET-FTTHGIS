@@ -4,11 +4,11 @@ import * as React from "react";
 import { Plus, Search, LayoutGrid, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { getTenantUrl } from "@/lib/domain";
 
 export default function OrgsPage() {
   const { data: session } = useSession();
@@ -113,7 +113,7 @@ export default function OrgsPage() {
               ))
             ) : (
               organizations.map((org) => (
-                <Link key={org.slug} href={`/org/${org.slug}`}>
+                <a key={org.slug} href={getTenantUrl(org.slug)}>
                   <div className={`group flex items-center gap-4 p-5 rounded-lg border bg-muted/30 hover:bg-accent transition-all cursor-pointer h-24 ${
                     org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
                       ? 'border-amber-500/30 hover:border-amber-500/50'
@@ -167,7 +167,7 @@ export default function OrgsPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               ))
             )}
             
