@@ -9,25 +9,25 @@
       "name": "app.security",
       "type": "com.company.ftthgis.config.AppProperties$Security",
       "sourceType": "com.company.ftthgis.config.AppProperties",
-      "sourceMethod": "getSecurity()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security getSecurity() "
     },
     {
       "name": "app.security.cors",
       "type": "com.company.ftthgis.config.AppProperties$Security$Cors",
       "sourceType": "com.company.ftthgis.config.AppProperties$Security",
-      "sourceMethod": "getCors()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security.Cors getCors() "
     },
     {
       "name": "app.security.keycloak",
       "type": "com.company.ftthgis.config.AppProperties$Security$Keycloak",
       "sourceType": "com.company.ftthgis.config.AppProperties$Security",
-      "sourceMethod": "getKeycloak()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Security.Keycloak getKeycloak() "
     },
     {
       "name": "app.seeder",
       "type": "com.company.ftthgis.config.AppProperties$Seeder",
       "sourceType": "com.company.ftthgis.config.AppProperties",
-      "sourceMethod": "getSeeder()"
+      "sourceMethod": "public com.company.ftthgis.config.AppProperties.Seeder getSeeder() "
     },
     {
       "name": "keycloak",
@@ -69,9 +69,7 @@
     {
       "name": "app.seeder.enabled",
       "type": "java.lang.Boolean",
-      "description": "Enable\/disable the DataInitializer seeder. When true, all network data is purged and re-seeded on startup.",
-      "sourceType": "com.company.ftthgis.config.AppProperties$Seeder",
-      "defaultValue": false
+      "sourceType": "com.company.ftthgis.config.AppProperties$Seeder"
     },
     {
       "name": "keycloak.client-id",
@@ -86,8 +84,7 @@
     {
       "name": "keycloak.grant-type",
       "type": "java.lang.String",
-      "sourceType": "com.company.ftthgis.config.KeycloakProperties",
-      "defaultValue": "client_credentials"
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
     },
     {
       "name": "keycloak.password",

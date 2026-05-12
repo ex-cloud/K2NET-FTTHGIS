@@ -24,7 +24,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -46,7 +45,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(organizationStatusFilter, org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(organizationStatusFilter,
+                        org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
@@ -78,8 +78,7 @@ public class SecurityConfig {
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
             if (issuer.startsWith(keycloakServerUrl + "/realms/")) {
                 var provider = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider(
-                    org.springframework.security.oauth2.jwt.JwtDecoders.fromIssuerLocation(issuer)
-                );
+                        org.springframework.security.oauth2.jwt.JwtDecoders.fromIssuerLocation(issuer));
                 provider.setJwtAuthenticationConverter(jwtAuthenticationConverter);
                 return provider::authenticate;
             }
@@ -89,7 +88,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter(
-            @Lazy com.company.ftthgis.service.UserSyncService userSyncService) {
+            @Lazy com.company.ftthgis.service.UserSyncService userSyncService,
+            com.company.ftthgis.domain.user.repository.RoleRepository roleRepository) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
         // Custom converter that combines Role extraction + User Sync
@@ -102,8 +102,8 @@ public class SecurityConfig {
                 System.err.println("Failed to sync user from JWT: " + e.getMessage());
             }
 
-            // 2. Extract Roles (existing logic)
-            return new KeycloakRoleConverter().convert(jwt);
+            // 2. Extract Roles and dynamic Permissions
+            return new KeycloakRoleConverter(roleRepository).convert(jwt);
         });
 
         return converter;
@@ -129,15 +129,21 @@ public class SecurityConfig {
     }
 
     /**
-     * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak.
+     * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak,
+     * lalu memetakan ke tabel permissions di local Database.
      */
     static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakRoleConverter.class);
+        private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
+
+        public KeycloakRoleConverter(com.company.ftthgis.domain.user.repository.RoleRepository roleRepository) {
+            this.roleRepository = roleRepository;
+        }
 
         @Override
         @SuppressWarnings("unchecked")
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            java.util.Set<String> roles = new java.util.HashSet<>();
+            java.util.Set<String> roleNames = new java.util.HashSet<>();
 
             // Debug: Log complete claims if debug level is enabled
             log.debug("Full JWT Claims for Subject {}: {}", jwt.getSubject(), jwt.getClaims());
@@ -147,7 +153,7 @@ public class SecurityConfig {
             if (realmAccess != null && realmAccess.containsKey("roles")) {
                 Collection<String> realmRoles = (Collection<String>) realmAccess.get("roles");
                 log.debug("Extracted Realm Roles: {}", realmRoles);
-                roles.addAll(realmRoles);
+                roleNames.addAll(realmRoles);
             }
 
             // 2. Extract Client Roles (specifically for our frontend client)
@@ -157,14 +163,30 @@ public class SecurityConfig {
                 if (clientAccess != null && clientAccess.containsKey("roles")) {
                     Collection<String> clientRoles = (Collection<String>) clientAccess.get("roles");
                     log.debug("Extracted Client Roles: {}", clientRoles);
-                    roles.addAll(clientRoles);
+                    roleNames.addAll(clientRoles);
                 }
             }
 
-            Collection<GrantedAuthority> authorities = roles.stream()
-                    .map(roleName -> "ROLE_" + roleName.toUpperCase())
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            Collection<GrantedAuthority> authorities = new java.util.HashSet<>();
+
+            // 3. Map to GrantedAuthorities (Roles + Fine-Grained Permissions)
+            for (String roleName : roleNames) {
+                // Add the role itself as a standard Spring Security ROLE
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase()));
+
+                // Fetch fine-grained permissions dynamically from DB
+                try {
+                    roleRepository.findByName(roleName).ifPresent(role -> {
+                        if (role.getPermissions() != null) {
+                            role.getPermissions().forEach(permission -> {
+                                authorities.add(new SimpleGrantedAuthority(permission.getCode()));
+                            });
+                        }
+                    });
+                } catch (Exception e) {
+                    log.error("Failed to load dynamic permissions for role {}: {}", roleName, e.getMessage());
+                }
+            }
 
             log.info("Final Mapped Authorities for {}: {}", jwt.getSubject(), authorities);
             return authorities;

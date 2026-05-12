@@ -5,6 +5,7 @@ import com.company.ftthgis.api.tenant.dto.OrganizationCreateRequest;
 import com.company.ftthgis.service.OrganizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{slug}")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Organization> getBySlug(@PathVariable String slug) {
         return organizationService.getBySlug(slug)
                 .map(ResponseEntity::ok)
@@ -30,6 +32,7 @@ public class OrganizationController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')") // Only system super admin can create orgs
     public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
             java.util.Map<String, Object> result = organizationService.createOrganization(request);
@@ -53,6 +56,7 @@ public class OrganizationController {
     }
 
     @PostMapping("/{orgId}/users/invite")
+    @PreAuthorize("@tenantSecurity.isOwnerById(#orgId) and hasAuthority('users.invite')")
     public org.springframework.http.ResponseEntity<com.company.ftthgis.api.user.dto.UserDto> inviteUser(
             @PathVariable String orgId,
             @RequestBody com.company.ftthgis.api.user.dto.UserInviteRequest request) {
@@ -60,6 +64,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{orgId}/users")
+    @PreAuthorize("@tenantSecurity.isOwnerById(#orgId) and hasAuthority('users.view')")
     public org.springframework.http.ResponseEntity<org.springframework.data.domain.Page<com.company.ftthgis.api.user.dto.UserDto>> getUsersByOrganization(
             @PathVariable String orgId,
             @org.springframework.data.web.PageableDefault(size = 10, sort = "createdAt") org.springframework.data.domain.Pageable pageable,
@@ -70,11 +75,13 @@ public class OrganizationController {
     }
 
     @PutMapping("/{slug}")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update')")
     public ResponseEntity<Organization> update(@PathVariable String slug, @RequestBody Organization org) {
         return ResponseEntity.ok(organizationService.updateOrganization(slug, org));
     }
 
     @DeleteMapping("/{slug}")
+    @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.delete')")
     public ResponseEntity<Void> delete(@PathVariable String slug) {
         organizationService.deleteOrganization(slug);
         return ResponseEntity.ok().build();

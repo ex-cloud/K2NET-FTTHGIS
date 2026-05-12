@@ -34,6 +34,7 @@ public class OrganizationService {
     private final EncryptionUtils encryptionUtils;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
+    private final com.company.ftthgis.config.security.TenantSecurity tenantSecurity;
     
     // Asset Repositories for Cleanup
     private final com.company.ftthgis.domain.network.repository.AssetRepository assetRepository;
@@ -290,6 +291,12 @@ public class OrganizationService {
 
     @Transactional
     public Organization updateOrganization(String oldSlug, Organization updatedOrg) {
+        // SECONDARY DEFENSE: Ensure caller is authorized even if Controller is bypassed internally
+        if (!tenantSecurity.isOwner(oldSlug)) {
+            log.error("🛡️ SECURITY BREACH ATTEMPT: Unauthorized update to organization '{}'", oldSlug);
+            throw new SecurityException("You do not have permission to modify this organization.");
+        }
+
         Organization org = organizationRepository.findBySlug(oldSlug)
                 .orElseThrow(() -> new RuntimeException("Organization not found with slug: " + oldSlug));
 
@@ -323,6 +330,12 @@ public class OrganizationService {
 
     @Transactional
     public void deleteOrganization(String slug) {
+        // SECONDARY DEFENSE: Prevent unauthorized nuclear deletion
+        if (!tenantSecurity.isOwner(slug)) {
+            log.error("🛡️ CRITICAL SECURITY INCIDENT: Unauthorized deletion attempt for organization '{}'", slug);
+            throw new SecurityException("You do not have permission to delete this organization. Incident logged.");
+        }
+
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found with slug: " + slug));
 
