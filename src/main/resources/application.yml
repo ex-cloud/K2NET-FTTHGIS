@@ -24,6 +24,7 @@ spring:
 
   data:
     redis:
+      enabled: true # Set to false if Redis is not running
       host: 127.0.0.1
       port: 6379
 

@@ -89,7 +89,8 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter(
             @Lazy com.company.ftthgis.service.UserSyncService userSyncService,
-            com.company.ftthgis.domain.user.repository.RoleRepository roleRepository) {
+            com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
+            com.company.ftthgis.domain.user.repository.UserRepository userRepository) {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 
         // Custom converter that combines Role extraction + User Sync
@@ -103,7 +104,7 @@ public class SecurityConfig {
             }
 
             // 2. Extract Roles and dynamic Permissions
-            return new KeycloakRoleConverter(roleRepository).convert(jwt);
+            return new KeycloakRoleConverter(roleRepository, userRepository).convert(jwt);
         });
 
         return converter;
@@ -130,14 +131,18 @@ public class SecurityConfig {
 
     /**
      * Converter untuk mengambil Role dari 'realm_access' di token JWT Keycloak,
-     * lalu memetakan ke tabel permissions di local Database.
+     * lalu memetakan ke tabel permissions di local Database berdasarkan organisasi.
      */
     static class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakRoleConverter.class);
         private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
+        private final com.company.ftthgis.domain.user.repository.UserRepository userRepository;
 
-        public KeycloakRoleConverter(com.company.ftthgis.domain.user.repository.RoleRepository roleRepository) {
+        public KeycloakRoleConverter(
+                com.company.ftthgis.domain.user.repository.RoleRepository roleRepository,
+                com.company.ftthgis.domain.user.repository.UserRepository userRepository) {
             this.roleRepository = roleRepository;
+            this.userRepository = userRepository;
         }
 
         @Override
@@ -169,6 +174,18 @@ public class SecurityConfig {
 
             Collection<GrantedAuthority> authorities = new java.util.HashSet<>();
 
+            // Extract User Organization ID for Tenant-Isolated Roles
+            java.util.UUID orgId = null;
+            try {
+                java.util.UUID userId = java.util.UUID.fromString(jwt.getSubject());
+                var userOpt = userRepository.findById(userId);
+                if (userOpt.isPresent() && userOpt.get().getOrganization() != null) {
+                    orgId = userOpt.get().getOrganization().getId();
+                }
+            } catch (Exception e) {
+                log.warn("Could not extract organization for user {}: {}", jwt.getSubject(), e.getMessage());
+            }
+
             // 3. Map to GrantedAuthorities (Roles + Fine-Grained Permissions)
             for (String roleName : roleNames) {
                 // Add the role itself as a standard Spring Security ROLE
@@ -176,7 +193,24 @@ public class SecurityConfig {
 
                 // Fetch fine-grained permissions dynamically from DB
                 try {
-                    roleRepository.findByName(roleName).ifPresent(role -> {
+                    java.util.Optional<com.company.ftthgis.domain.user.entity.Role> roleOpt = java.util.Optional.empty();
+                    
+                    if (orgId != null) {
+                        // First try finding the tenant-specific role
+                        roleOpt = roleRepository.findByNameAndOrganizationId(roleName, orgId);
+                    }
+                    
+                    // Fallback to system role if not found
+                    if (roleOpt.isEmpty()) {
+                        roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(roleName);
+                    }
+                    
+                    // Final fallback to legacy behavior
+                    if (roleOpt.isEmpty()) {
+                        roleOpt = roleRepository.findByName(roleName);
+                    }
+
+                    roleOpt.ifPresent(role -> {
                         if (role.getPermissions() != null) {
                             role.getPermissions().forEach(permission -> {
                                 authorities.add(new SimpleGrantedAuthority(permission.getCode()));

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.MessageListener;
@@ -16,10 +17,14 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * Redis Pub/Sub configuration for receiving real-time device status updates
  * from Poller.
  * This bridges the Go Poller service with the Spring Boot backend.
+ * 
+ * Set spring.data.redis.enabled=false in application.properties to disable
+ * when Redis is not available.
  */
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisSubscriberConfig {
 
     private final StatusPropagationService statusPropagationService;

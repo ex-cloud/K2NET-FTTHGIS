@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import java.util.UUID;
 
@@ -15,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
+@Audited
 public class Project extends OrganizationAwareEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -35,5 +38,6 @@ public class Project extends OrganizationAwareEntity {
 
     @JsonIgnore
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @NotAudited
     private java.util.Set<ProjectMember> members;
 }

@@ -1,6 +1,7 @@
 package com.company.ftthgis.domain.user.entity;
 
 import com.company.ftthgis.domain.common.AuditableEntity;
+import com.company.ftthgis.domain.tenant.entity.Organization;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
@@ -11,7 +12,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "roles", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"name", "organization_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,12 +27,21 @@ public class Role extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name; // e.g., "super_admin", "admin", "technician"
 
     private String displayName;
 
     private String description;
+
+    @Column(name = "is_system_role", nullable = false)
+    @Builder.Default
+    private boolean isSystemRole = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    @JsonIgnore
+    private Organization organization;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))

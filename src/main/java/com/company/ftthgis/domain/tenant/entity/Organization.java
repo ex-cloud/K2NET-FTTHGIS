@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.envers.Audited;
 import java.util.UUID;
 
 @Entity
@@ -25,6 +26,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode
+@Audited
 public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -53,10 +55,12 @@ public class Organization {
     private SubscriptionPlan subscriptionPlan;
 
     @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = jakarta.persistence.FetchType.EAGER)
+    @org.hibernate.envers.NotAudited
     private java.util.List<OrganizationConfig> configs;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     @jakarta.persistence.OneToMany(mappedBy = "organization", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.envers.NotAudited
     private java.util.List<Project> projects;
 
     // Status Management
