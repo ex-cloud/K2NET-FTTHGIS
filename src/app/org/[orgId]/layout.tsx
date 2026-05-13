@@ -32,11 +32,13 @@ export default function OrganizationContextLayout({
   return (
     <div className="flex h-full w-full overflow-hidden bg-background relative">
       <MainSidebar />
-      <SidebarProvider open={open} onOpenChange={setOpen}>
-        <div className="flex flex-1 overflow-hidden relative">
-          <main className="flex-1 overflow-auto relative p-0">{children}</main>
-        </div>
-      </SidebarProvider>
+      <div className="flex-1 flex min-w-0 overflow-hidden">
+        <SidebarProvider open={open} onOpenChange={setOpen}>
+          <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+            {children}
+          </div>
+        </SidebarProvider>
+      </div>
     </div>
   );
 }

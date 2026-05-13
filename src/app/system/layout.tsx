@@ -17,15 +17,15 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden font-sans">
       <SystemHeader />
-      <div className="flex flex-1 w-full overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden relative">
         <AdminSidebar />
-        <SidebarProvider open={open} onOpenChange={setOpen}>
-          <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
-            <div className="w-full max-w-5xl mx-auto space-y-12">
+        <div className="flex-1 flex min-w-0 overflow-hidden">
+          <SidebarProvider open={open} onOpenChange={setOpen}>
+            <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
               {children}
             </div>
-          </div>
-        </SidebarProvider>
+          </SidebarProvider>
+        </div>
       </div>
     </div>
   );

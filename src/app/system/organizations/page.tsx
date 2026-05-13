@@ -48,7 +48,8 @@ export default function AdminOrganizationsPage() {
   }, [organizations, searchQuery]);
 
   return (
-    <div className="space-y-12 pb-20">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+      <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
       {/* Header section */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -269,6 +270,7 @@ export default function AdminOrganizationsPage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

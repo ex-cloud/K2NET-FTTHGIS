@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { OrgSettingsSidebar } from "@/components/org-settings-sidebar";
+import { SystemSecuritySidebar } from "@/components/system-security-sidebar";
 import { useSidebarMode, type SidebarMode } from "@/components/sidebar-mode-context";
 
-export default function SettingsLayout({
+export default function SecurityLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -25,15 +25,16 @@ export default function SettingsLayout({
         previousModeRef.current = null;
       }
     };
+    // Only run on mount/unmount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="flex flex-1 h-full overflow-hidden w-full min-w-0">
-      {/* Secondary Contextual Sidebar for Settings */}
-      <OrgSettingsSidebar />
+      {/* Secondary Contextual Sidebar for Security */}
+      <SystemSecuritySidebar />
       
-      {/* Main Settings Content Area */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 w-0 overflow-hidden relative">
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 bg-[#080808]">
           {children}
