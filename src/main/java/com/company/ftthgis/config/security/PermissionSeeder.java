@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import java.util.Set;
  * are properly assigned to System Roles.
  */
 @Component
+@ConditionalOnProperty(name = "app.seeder.sync-permissions", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class PermissionSeeder implements CommandLineRunner {
@@ -65,12 +67,16 @@ public class PermissionSeeder implements CommandLineRunner {
             
             // Roles & Users Management
             new PermissionData("roles.view", "View Roles & Permissions", "Security"),
-            new PermissionData("roles.manage", "Manage Roles", "Security"),
+            new PermissionData("roles.update", "Manage Roles", "Security"),
             new PermissionData("users.view", "View Team Users", "Security"),
             new PermissionData("users.manage", "Manage User Status", "Security"),
 
             new PermissionData("orgs.view", "View Organizations", "System"),
-            new PermissionData("orgs.manage", "Manage Organizations", "System")
+            new PermissionData("orgs.manage", "Manage Organizations", "System"),
+            
+            // Tenant Organization Settings
+            new PermissionData("organizations.view", "View Organization Details", "Organization"),
+            new PermissionData("organizations.update", "Update Organization Settings", "Organization")
         );
 
         // 2. Ensure all permissions exist in DB
@@ -92,14 +98,14 @@ public class PermissionSeeder implements CommandLineRunner {
 
         // 3. Sync System Roles
         syncSystemRole("super_admin", allPermissionsInDb, ""); // Super Admin gets everything
-        syncSystemRole("admin", allPermissionsInDb, "projects.", "team.", "network.", "inventory.", "billing.");
+        syncSystemRole("admin", allPermissionsInDb, "projects.", "team.", "network.", "inventory.", "billing.", "Security.", "roles.", "users.", "organizations.");
         syncSystemRole("technician", allPermissionsInDb, "projects.view", "network.", "inventory.view");
         syncSystemRole("viewer", allPermissionsInDb, ".view");
 
         log.info("✅ System Roles synchronized.");
 
         // 4. Propagate to ALL Organization Admins (Dynamic Sync for existing tenants)
-        propagateToAllTenantAdmins(allPermissionsInDb);
+        // propagateToAllTenantAdmins(allPermissionsInDb);
 
         log.info("✅ Total permission synchronization complete.");
     }
@@ -110,6 +116,10 @@ public class PermissionSeeder implements CommandLineRunner {
         });
     }
 
+    /* 
+       DEPRECATED: We no longer eagerly clone permissions for all tenant admins.
+       The new Hybrid RBAC model uses global System Templates with Lazy Cloning (Copy-on-Write).
+       
     private void propagateToAllTenantAdmins(Set<Permission> allPermissions) {
         log.info("🔄 Propagating permissions to all tenant 'admin' roles (Dynamic Sync)...");
         List<Role> allAdminRoles = roleRepository.findByNameAndIsSystemRoleFalse("admin");
@@ -131,6 +141,7 @@ public class PermissionSeeder implements CommandLineRunner {
             }
         }
     }
+    */
 
     private void syncRolePermissions(Role role, Set<Permission> allPermissions, String... prefixes) {
         Set<Permission> targetPermissions = new HashSet<>();

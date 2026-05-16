@@ -36,17 +36,38 @@ public class RolePermissionService {
         boolean isSuperAdmin = hasRole(jwt, "super_admin");
 
         if (isSuperAdmin) {
-            // Superadmin sees system roles
-            return roleRepository.findByIsSystemRoleTrue();
+            // 1. SYSTEM ADMIN VIEW: Only see pure master templates (no duplicates, no tenant roles)
+            return roleRepository.findByIsSystemRoleTrueAndOrganizationIsNull();
         } else {
-            // Tenant Admin sees their organization's roles
+            // 2. TENANT VIEW: See filtered templates (NO super_admin) + their own organization's roles
             UUID userId = UUID.fromString(jwt.getSubject());
             return userRepository.findById(userId)
                     .map(user -> {
-                        if (user.getOrganization() != null) {
-                            return roleRepository.findByOrganizationId(user.getOrganization().getId());
+                        if (user.getOrganization() == null) {
+                            // Fallback for system-realm users who aren't super_admins (rare)
+                            return roleRepository.findByIsSystemRoleTrueAndOrganizationIsNull();
                         }
-                        return List.<Role>of();
+                        
+                        // New isolated query: Templates (excluding super_admin) + Tenant roles
+                        List<Role> allAvailable = roleRepository.findAvailableRolesForTenant(user.getOrganization().getId());
+                        
+                        // Deduplicate: If an org has a custom role with the same name as a system role,
+                        // only keep the custom one (Lazy Cloning / Copy-on-Write).
+                        java.util.Map<String, Role> effectiveRoles = new java.util.HashMap<>();
+                        
+                        // Process System Roles first
+                        allAvailable.stream()
+                            .filter(Role::isSystemRole)
+                            .forEach(r -> effectiveRoles.put(r.getName(), r));
+                            
+                        // Override with Custom Roles (same name)
+                        // EXTRA SAFETY: Ensure no custom role named 'super_admin' is ever shown to tenants
+                        allAvailable.stream()
+                            .filter(r -> !r.isSystemRole())
+                            .filter(r -> !r.getName().equalsIgnoreCase("super_admin"))
+                            .forEach(r -> effectiveRoles.put(r.getName(), r));
+                            
+                        return new java.util.ArrayList<>(effectiveRoles.values());
                     })
                     .orElse(List.of());
         }
@@ -66,32 +87,50 @@ public class RolePermissionService {
         Jwt jwt = (Jwt) auth.getPrincipal();
         boolean isSuperAdmin = hasRole(jwt, "super_admin");
 
-        // Authorization checks
+        // Authorization & Lazy Cloning Logic
         if (!isSuperAdmin) {
-            // If not superadmin, must ensure the role belongs to their organization
             UUID userId = UUID.fromString(jwt.getSubject());
-            var userOpt = userRepository.findById(userId);
+            var user = userRepository.findById(userId)
+                    .orElseThrow(() -> new SecurityException("User not found"));
             
-            if (userOpt.isEmpty() || userOpt.get().getOrganization() == null) {
+            if (user.getOrganization() == null) {
                 throw new SecurityException("User does not belong to any organization");
             }
             
-            UUID userOrgId = userOpt.get().getOrganization().getId();
-            
+            UUID userOrgId = user.getOrganization().getId();
+
+            // Check if it's a System Role. If so, CLONE it instead of editing it.
             if (role.isSystemRole()) {
-                throw new SecurityException("Tenant administrators cannot modify system template roles.");
-            }
-            
-            if (role.getOrganization() == null || !role.getOrganization().getId().equals(userOrgId)) {
-                throw new SecurityException("You do not have permission to modify roles outside your organization.");
+                log.info("🛡️ Lazy Cloning system role '{}' for organization {}", role.getName(), user.getOrganization().getSlug());
+                
+                // Check if a custom role with same name already exists for this org (to avoid duplicates)
+                var existingCustom = roleRepository.findByNameAndOrganizationId(role.getName(), userOrgId);
+                if (existingCustom.isPresent()) {
+                    role = existingCustom.get();
+                } else {
+                    // Create a new Custom Role cloned from template
+                    Role customRole = Role.builder()
+                            .name(role.getName())
+                            .displayName(role.getDisplayName())
+                            .description("Customized from " + role.getName())
+                            .organization(user.getOrganization())
+                            .isSystemRole(false)
+                            .build();
+                    role = roleRepository.save(customRole);
+                }
+            } else {
+                // If it's a Custom Role, verify ownership
+                if (role.getOrganization() == null || !role.getOrganization().getId().equals(userOrgId)) {
+                    throw new SecurityException("You do not have permission to modify roles outside your organization.");
+                }
             }
         }
 
-        // Proceed to update permissions
+        // Proceed to update permissions (either on the existing custom role or the newly cloned one)
         List<Permission> permissions = permissionRepository.findAllById(permissionIds);
         role.setPermissions(new java.util.HashSet<>(permissions));
         
-        log.info("✅ Updated permissions for role {} (ID: {})", role.getName(), roleId);
+        log.info("✅ Finalized permissions for role {} (ID: {})", role.getName(), role.getId());
         return roleRepository.save(role);
     }
 

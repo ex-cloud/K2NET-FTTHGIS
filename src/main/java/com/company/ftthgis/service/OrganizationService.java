@@ -33,7 +33,6 @@ public class OrganizationService {
     private final OrganizationConfigRepository organizationConfigRepository;
     private final EncryptionUtils encryptionUtils;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
     private final com.company.ftthgis.config.security.TenantSecurity tenantSecurity;
     
     // Asset Repositories for Cleanup
@@ -179,15 +178,12 @@ public class OrganizationService {
 
         Organization saved = organizationRepository.saveAndFlush(org);
 
-        // 1.5 Clone System Roles for this Organization
-        cloneSystemRolesForOrganization(saved);
-
         // 2. Save LDAP Configurations if enabled
         if (request.isLdapEnabled()) {
             saveLdapConfig(saved, request);
         }
 
-        // Generate random password outside try block so it's accessible in the return statement
+        // Generate random password
         String tempPassword = "Temp@" + java.util.UUID.randomUUID().toString().substring(0, 8);
 
         // 3. Provision Keycloak (Realm + Client + Owner + LDAP)
@@ -203,10 +199,8 @@ public class OrganizationService {
 
             log.info("👤 Creating Owner User: {} (Email: {})", adminUsername, request.getAdminEmail());
             
-            // Step 2.1: Get the default admin role name from DB
-            String ownerRoleName = roleRepository.findByNameAndIsSystemRoleTrue("admin")
-                    .map(com.company.ftthgis.domain.user.entity.Role::getName)
-                    .orElse("admin"); // Fallback to "admin" if not found
+            // Use standard 'admin' role name for Keycloak (Hybrid RBAC fallback will handle permissions)
+            String ownerRoleName = "admin";
 
             String keycloakId = keycloakService.createOwnerUser(saved.getSlug(), adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
 
@@ -218,9 +212,6 @@ public class OrganizationService {
             localUser.setEmail(request.getAdminEmail());
             localUser.setOrganization(saved);
             localUser.setStatus("ACTIVE");
-            
-            // Assign Owner/Admin Role in Local DB (from the newly cloned roles)
-            roleRepository.findByNameAndOrganizationId("admin", saved.getId()).ifPresent(localUser::setRole);
             
             userRepository.save(localUser);
 
@@ -385,24 +376,5 @@ public class OrganizationService {
             log.error("❌ ERROR during organization deletion for {}: {}", slug, e.getMessage());
             throw new RuntimeException("Failed to perform full organization cleanup: " + e.getMessage(), e);
         }
-    }
-
-    private void cloneSystemRolesForOrganization(Organization organization) {
-        List<com.company.ftthgis.domain.user.entity.Role> systemRoles = roleRepository.findByIsSystemRoleTrue();
-        
-        for (com.company.ftthgis.domain.user.entity.Role systemRole : systemRoles) {
-            com.company.ftthgis.domain.user.entity.Role clonedRole = new com.company.ftthgis.domain.user.entity.Role();
-            clonedRole.setName(systemRole.getName());
-            clonedRole.setDisplayName(systemRole.getDisplayName());
-            clonedRole.setDescription(systemRole.getDescription());
-            clonedRole.setSystemRole(false);
-            clonedRole.setOrganization(organization);
-            
-            // Copy permissions (must be mutable copy)
-            clonedRole.setPermissions(new java.util.HashSet<>(systemRole.getPermissions()));
-            
-            roleRepository.save(clonedRole);
-        }
-        log.info("✅ Cloned {} system roles for organization: {}", systemRoles.size(), organization.getSlug());
     }
 }
