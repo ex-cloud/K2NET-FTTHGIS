@@ -34,14 +34,35 @@ type NavItem = {
 export function MainSidebar() {
   const params = useParams();
   const pathname = usePathname();
-  const orgId = params.orgId || "default";
   const { sidebarMode } = useSidebarMode();
   const [isHovering, setIsHovering] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Subdomain detection
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  
+  // Extract tenant slug from subdomain if applicable
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
+
+  const orgId = params.orgId || tenantSlug || "default";
+  
+  // Link Prefix logic: 
+  // During hydration (not mounted), we MUST match what the server renders.
+  // The server renders path-based links if it doesn't know the subdomain.
+  const isSubdomainMode = mounted && !!tenantSlug;
+  const linkPrefix = isSubdomainMode ? "" : `/org/${orgId}`;
 
   // Route sniffing — detect project context
   const isInsideProject = pathname?.includes("/project/");
-  const match = pathname?.match(/\/org\/([^\/]+)(?:\/project\/([^\/]+))?/);
-  const projectId = match && match[2] ? match[2] : "";
+  const projectId = params.projectId as string || "";
 
   // Determine visual expansion
   const isExpanded =
@@ -55,37 +76,37 @@ export function MainSidebar() {
     {
       title: "Projects",
       icon: LayoutGrid,
-      href: `/org/${orgId}`,
-      isActive: pathname === `/org/${orgId}` || pathname === `/org/${orgId}/`,
+      href: `${linkPrefix}/dashboard`,
+      isActive: pathname === `${linkPrefix}/dashboard` || pathname === `${linkPrefix}/dashboard/` || pathname === "/dashboard",
     },
     {
       title: "Team",
       icon: Users,
-      href: `/org/${orgId}/team`,
+      href: `${linkPrefix}/team`,
       isActive: pathname?.includes("/team"),
     },
     {
       title: "Integrations",
       icon: Plug,
-      href: `/org/${orgId}/integrations`,
+      href: `${linkPrefix}/integrations`,
       isActive: pathname?.includes("/integrations"),
     },
     {
       title: "Usage",
       icon: BarChart3,
-      href: `/org/${orgId}/usage`,
+      href: `${linkPrefix}/usage`,
       isActive: pathname?.includes("/usage"),
     },
     {
       title: "Billing",
       icon: CreditCard,
-      href: `/org/${orgId}/billing`,
+      href: `${linkPrefix}/billing`,
       isActive: pathname?.includes("/billing"),
     },
     {
       title: "Settings",
       icon: Settings,
-      href: `/org/${orgId}/settings`,
+      href: `${linkPrefix}/settings`,
       isActive: pathname?.includes("/settings") && !isInsideProject,
     },
   ];
@@ -95,31 +116,31 @@ export function MainSidebar() {
     {
       title: "Project Overview",
       icon: Home,
-      href: `/org/${orgId}/project/${projectId}`,
-      isActive: pathname === `/org/${orgId}/project/${projectId}` || pathname === `/org/${orgId}/project/${projectId}/`,
+      href: `${linkPrefix}/project/${projectId}`,
+      isActive: pathname?.endsWith(`/project/${projectId}`) || pathname?.endsWith(`/project/${projectId}/`),
     },
     {
       title: "Infrastructure",
       icon: Network,
-      href: `/org/${orgId}/project/${projectId}/infrastructure`,
+      href: `${linkPrefix}/project/${projectId}/infrastructure`,
       isActive: pathname?.includes("/infrastructure"),
     },
     {
       title: "Network Inventory",
       icon: MapIcon,
-      href: `/org/${orgId}/project/${projectId}/inventory`,
+      href: `${linkPrefix}/project/${projectId}/inventory`,
       isActive: pathname?.includes("/inventory"),
     },
     {
       title: "Core Infrastructure",
       icon: Cpu,
-      href: `/org/${orgId}/project/${projectId}/core`,
+      href: `${linkPrefix}/project/${projectId}/core`,
       isActive: pathname?.includes("/core"),
     },
     {
       title: "Settings",
       icon: Settings,
-      href: `/org/${orgId}/project/${projectId}/settings`,
+      href: `${linkPrefix}/project/${projectId}/settings`,
       isActive: pathname?.includes("/settings") && isInsideProject,
     },
   ];

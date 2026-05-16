@@ -12,10 +12,26 @@ import { Button } from "@/components/ui/button";
 
 export function BreadcrumbNav() {
   const pathname = usePathname();
-  const parts = pathname?.split("/") || [];
+  
+  // 1. Detect subdomain context
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
 
-  const isLanding = pathname === "/org";
-  const projectId = parts[4];
+  // 2. Extract IDs based on context
+  const parts = pathname?.split("/").filter(Boolean) || [];
+  let projectId = "";
+  
+  if (tenantSlug) {
+    if (parts[0] === "project") projectId = parts[1];
+  } else {
+    if (parts[0] === "org" && parts[2] === "project") projectId = parts[3];
+  }
+
+  const isLanding = pathname === "/org" || pathname === "/organizations";
 
   if (isLanding) {
     return (

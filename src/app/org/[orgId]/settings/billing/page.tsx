@@ -46,7 +46,7 @@ export default function BillingPage() {
   ];
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 space-y-8 w-full">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">

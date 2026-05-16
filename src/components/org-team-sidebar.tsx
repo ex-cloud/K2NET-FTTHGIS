@@ -28,12 +28,25 @@ type MenuSection = {
 export function OrgTeamSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const parts = pathname?.split("/") || [];
-  const orgId = parts[2];
+  
+  // 1. Detect subdomain context
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
 
   if (!pathname?.includes("/team")) return null;
 
-  const baseUrl = `/org/${orgId}/team`;
+  // 2. Define baseUrl based on context
+  // If on subdomain, we use clean path. If on root domain, we extract orgId from path.
+  let baseUrl = "/team";
+  if (!tenantSlug) {
+    const parts = pathname?.split("/") || [];
+    const orgId = parts[2];
+    baseUrl = `/org/${orgId}/team`;
+  }
 
   const sections: MenuSection[] = [
     {

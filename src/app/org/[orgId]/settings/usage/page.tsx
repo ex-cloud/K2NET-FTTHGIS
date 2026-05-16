@@ -12,6 +12,7 @@ import {
   HardDrive,
   Globe
 } from "lucide-react";
+import { getCurrentOrgSlug } from "@/lib/domain";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,8 @@ interface Stats {
 }
 
 export default function UsagePage() {
-  const { orgId } = useParams();
+  const params = useParams();
+  const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
   const { data: session } = useSession();
 
   const { data: stats, isLoading } = useQuery<Stats>({
@@ -89,7 +91,7 @@ export default function UsagePage() {
   ];
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
           <BarChart3 className="w-6 h-6 text-emerald-500" />

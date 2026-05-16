@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { getBackendBaseUrl } from "@/lib/api-config";
+import { getCurrentOrgSlug } from "@/lib/domain";
 import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export default function OrganizationTeamPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const { data: session } = useSession();
   const params = useParams();
-  const orgId = params.orgId as string;
+  const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
   
   const [members, setMembers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +87,7 @@ export default function OrganizationTeamPage() {
 
   return (
     <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar">
-      <div className="flex flex-col gap-6 px-6 pt-6 pb-20 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col gap-6 px-6 pt-6 pb-20 w-full">
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">

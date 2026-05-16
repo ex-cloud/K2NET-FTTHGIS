@@ -28,14 +28,39 @@ type MenuSection = {
 export function ProjectSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const parts = pathname?.split("/") || [];
-  const orgId = parts[2];
-  const projectId = parts[4];
+
+  // 1. Detect subdomain context
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
+
+  // 2. Extract IDs based on context
+  const parts = pathname?.split("/").filter(Boolean) || [];
+  let orgId = "";
+  let projectId = "";
+
+  if (tenantSlug) {
+    // Clean URL on subdomain: /project/[projectId]/...
+    if (parts[0] === "project") {
+      projectId = parts[1];
+    }
+  } else {
+    // Legacy URL on root domain: /org/[orgId]/project/[projectId]/...
+    if (parts[0] === "org" && parts[2] === "project") {
+      orgId = parts[1];
+      projectId = parts[3];
+    }
+  }
 
   // If we are not inside a project, do not render this sidebar
   if (!projectId) return null;
 
-  const baseUrl = `/org/${orgId}/project/${projectId}`;
+  const baseUrl = tenantSlug 
+    ? `/project/${projectId}` 
+    : `/org/${orgId}/project/${projectId}`;
 
   // Active Module Detection
   // Check exact match for Overview

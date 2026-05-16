@@ -30,11 +30,28 @@ export async function proxy(request: NextRequest) {
 
   // 2. Direct Redirects for root paths on subdomains
   if (subdomain === "system") {
-     if (pathname === "/" || pathname === "/system") {
+     // 1. Enforce clean URLs (no /system prefix in browser)
+     if (pathname.startsWith("/system")) {
+       const cleanPath = pathname.replace("/system", "") || "/";
+       // Special case: if it was just /system, redirect to /organizations (system home)
+       const targetPath = (cleanPath === "/" || cleanPath === "") ? "/organizations" : cleanPath;
+       return NextResponse.redirect(new URL(targetPath, request.url));
+     }
+
+     if (pathname === "/") {
        return NextResponse.redirect(new URL("/organizations", request.url));
      }
-  } else if (subdomain && pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  } else if (subdomain) {
+     // 2. Enforce clean URLs for tenants (no /org/[slug] prefix in browser)
+     if (pathname.startsWith(`/org/${subdomain}`)) {
+       const cleanPath = pathname.replace(`/org/${subdomain}`, "") || "/";
+       const targetPath = (cleanPath === "/" || cleanPath === "") ? "/dashboard" : cleanPath;
+       return NextResponse.redirect(new URL(targetPath, request.url));
+     }
+
+     if (pathname === "/") {
+       return NextResponse.redirect(new URL("/dashboard", request.url));
+     }
   }
 
   // 3. Routing Logic (Rewriting)

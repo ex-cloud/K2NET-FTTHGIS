@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Check, Loader2, Save, LayoutGrid, List } from "lucide-react";
+import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle } from "lucide-react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner"; // Assuming you use sonner for toasts
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type Permission = {
   id: number;
@@ -28,8 +37,12 @@ export function RolesMatrixUI() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
+
+  // States for Custom Confirmation Dialog
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingRoleToSave, setPendingRoleToSave] = useState<Role | null>(null);
+  const [saving, setSaving] = useState<number | null>(null);
 
   // Track modified permissions locally before saving
   const [editedRoles, setEditedRoles] = useState<Record<number, Set<number>>>({});
@@ -48,8 +61,18 @@ export function RolesMatrixUI() {
       
       if (!rolesRes.ok || !permsRes.ok) throw new Error("Failed to fetch data");
 
-      const rolesData = await rolesRes.json();
+      let rolesData = await rolesRes.json();
       const permsData = await permsRes.json();
+      
+      // EXTRA SAFETY: Filter out super_admin for non-system users even if backend accidentally returns it
+      // We check if the current user has the 'super_admin' role in their JWT
+      const extendedSession = session as { roles?: string[] };
+      const userRoles = extendedSession?.roles || [];
+      const isSystemAdmin = userRoles.includes("super_admin");
+      
+      if (!isSystemAdmin) {
+        rolesData = rolesData.filter((r: Role) => r.name.toLowerCase() !== "super_admin");
+      }
       
       setRoles(rolesData);
       setPermissions(permsData);
@@ -67,7 +90,7 @@ export function RolesMatrixUI() {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [session]);
 
   useEffect(() => {
     fetchData();
@@ -173,13 +196,30 @@ export function RolesMatrixUI() {
                 </th>
                 {roles.map(role => (
                   <th key={role.id} className="sticky top-0 z-30 px-2 py-4 font-medium text-center min-w-[110px] border-b border-zinc-800 bg-zinc-950 shadow-[0_2px_3px_rgba(0,0,0,0.3)]">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-zinc-100 uppercase tracking-wider">{role.displayName || role.name}</span>
-                      {role.isSystemRole && (
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/10 text-blue-400">System</span>
-                      )}
+                    <div className="flex flex-col items-center gap-1.5">
+                      <span className="text-[11px] text-zinc-100 uppercase font-bold tracking-widest">{role.displayName || role.name}</span>
+                      <div className="flex gap-1">
+                        {role.isSystemRole ? (
+                          <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">
+                            <Lock className="w-2 h-2" />
+                            Template
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                            <ShieldCheck className="w-2 h-2" />
+                            Custom
+                          </span>
+                        )}
+                      </div>
                       <button
-                        onClick={() => handleSave(role)}
+                        onClick={() => {
+                          if (role.isSystemRole) {
+                            setPendingRoleToSave(role);
+                            setShowConfirmDialog(true);
+                          } else {
+                            handleSave(role);
+                          }
+                        }}
                         disabled={saving === role.id}
                         className="mt-2 flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded text-[10px] transition-colors disabled:opacity-50"
                       >
@@ -236,12 +276,27 @@ export function RolesMatrixUI() {
                 <div>
                   <h3 className="text-lg font-semibold text-zinc-100">{role.displayName || role.name}</h3>
                   <p className="text-sm text-zinc-500 mt-1">{role.description || "No description provided."}</p>
-                  {role.isSystemRole && (
-                    <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 uppercase font-bold tracking-wider">System Template</span>
+                  {role.isSystemRole ? (
+                    <span className="inline-flex items-center gap-1.5 mt-2 text-[9px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase font-bold tracking-widest">
+                      <Lock className="w-2.5 h-2.5" />
+                      Standard Template
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 mt-2 text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase font-bold tracking-widest">
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                      Customized Role
+                    </span>
                   )}
                 </div>
                 <button
-                  onClick={() => handleSave(role)}
+                  onClick={() => {
+                    if (role.isSystemRole) {
+                      setPendingRoleToSave(role);
+                      setShowConfirmDialog(true);
+                    } else {
+                      handleSave(role);
+                    }
+                  }}
                   disabled={saving === role.id}
                   className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-black font-medium rounded-md transition-colors disabled:opacity-50"
                 >
@@ -281,6 +336,45 @@ export function RolesMatrixUI() {
           ))}
         </div>
       )}
+      {/* Premium Confirmation Dialog for Hybrid RBAC Lazy Cloning */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-blue-500/10">
+                <AlertTriangle className="w-6 h-6 text-blue-400" />
+              </div>
+              <DialogTitle className="text-xl font-bold tracking-tight">Standard Template</DialogTitle>
+            </div>
+            <DialogDescription className="text-zinc-400 text-base leading-relaxed">
+              This is a global <span className="text-blue-400 font-semibold uppercase">{pendingRoleToSave?.displayName || pendingRoleToSave?.name}</span> template. 
+              Saving changes will create a <span className="text-emerald-400 font-semibold underline decoration-emerald-500/30 underline-offset-4">customized version</span> specifically for your organization.
+              <br /><br />
+              All existing team members with this role will be migrated to your new custom version automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-3 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDialog(false)}
+              className="border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-100 transition-all"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (pendingRoleToSave) {
+                  handleSave(pendingRoleToSave);
+                  setShowConfirmDialog(false);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all font-semibold"
+            >
+              Continue & Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

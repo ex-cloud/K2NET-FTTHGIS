@@ -20,9 +20,11 @@ import { useOrganizations } from "@/hooks/useOrganizations";
 import { OrganizationWizard } from "./tenant/organization-wizard";
 import { getTenantUrl, getBaseUrl } from "@/lib/domain";
 import { useUIStore } from "@/store/ui-store";
+import { useRouter } from "next/navigation";
 
 export function NavOrgSwitcher() {
   // 1. Basic Hooks & State
+  const router = useRouter();
   const { organizations, refresh } = useOrganizations();
   const { data: session } = useSession();
   const user = session?.user;
@@ -97,7 +99,13 @@ export function NavOrgSwitcher() {
       <div 
         className="flex items-center justify-center gap-1.5 px-0.5 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group"
         onClick={() => {
-          if (displaySlug) window.location.assign(getTenantUrl(displaySlug));
+          if (displaySlug) {
+            if (displaySlug === activeSlug) {
+              router.push("/dashboard");
+            } else {
+              window.location.assign(getTenantUrl(displaySlug));
+            }
+          }
         }}
       >
         <Avatar className="size-5 rounded border border-border">
@@ -165,7 +173,13 @@ export function NavOrgSwitcher() {
                 <DropdownMenuItem
                   key={org.id}
                   className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer group"
-                  onClick={() => window.location.assign(getTenantUrl(org.slug))}
+                  onClick={() => {
+                    if (org.slug === activeSlug) {
+                      router.push("/dashboard");
+                    } else {
+                      window.location.assign(getTenantUrl(org.slug));
+                    }
+                  }}
                 >
                   <Avatar className="size-7 rounded border border-border bg-muted/50">
                     {org.logoUrl && org.logoUrl.trim() !== "" ? (

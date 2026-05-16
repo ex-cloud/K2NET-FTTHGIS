@@ -31,12 +31,24 @@ type MenuSection = {
 export function OrgSettingsSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const parts = pathname?.split("/") || [];
-  const orgId = parts[2];
+
+  // 1. Detect subdomain context
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
 
   if (!pathname?.includes("/settings")) return null;
 
-  const baseUrl = `/org/${orgId}/settings`;
+  // 2. Define baseUrl based on context
+  let baseUrl = "/settings";
+  if (!tenantSlug) {
+    const parts = pathname?.split("/") || [];
+    const orgId = parts[2];
+    baseUrl = `/org/${orgId}/settings`;
+  }
 
   const sections: MenuSection[] = [
     {

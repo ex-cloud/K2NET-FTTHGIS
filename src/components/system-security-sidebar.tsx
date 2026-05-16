@@ -31,35 +31,35 @@ export function SystemSecuritySidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
-  if (!pathname?.includes("/system/security")) return null;
+  if (!pathname?.includes("/system/security") && !pathname?.includes("/security")) return null;
 
   const sections: MenuSection[] = [
     {
       title: "Access Control",
       items: [
-        { title: "Role Templates", url: "/system/security/roles", icon: UserCog },
-        { title: "Permissions", url: "/system/security/permissions", icon: KeyRound },
+        { title: "Role Templates", url: "/security/roles", icon: UserCog },
+        { title: "Permissions", url: "/security/permissions", icon: KeyRound },
       ],
     },
     {
       title: "Identity & Auth",
       items: [
-        { title: "Authentication", url: "/system/security/auth", icon: ShieldCheck },
-        { title: "SSO Providers", url: "/system/security/sso", icon: Fingerprint },
+        { title: "Authentication", url: "/security/auth", icon: ShieldCheck },
+        { title: "SSO Providers", url: "/security/sso", icon: Fingerprint },
       ],
     },
     {
       title: "Monitoring",
       items: [
-        { title: "Audit Logs", url: "/system/security/audit", icon: History },
-        { title: "Security Alerts", url: "/system/security/alerts", icon: ShieldAlert },
+        { title: "Audit Logs", url: "/security/audit", icon: History },
+        { title: "Security Alerts", url: "/security/alerts", icon: ShieldAlert },
       ],
     },
     {
       title: "Policies",
       items: [
-        { title: "Password Policy", url: "/system/security/password-policy", icon: ScrollText },
-        { title: "Compliance", url: "/system/security/compliance", icon: FileText },
+        { title: "Password Policy", url: "/security/password-policy", icon: ScrollText },
+        { title: "Compliance", url: "/security/compliance", icon: FileText },
       ],
     },
   ];
@@ -91,7 +91,7 @@ export function SystemSecuritySidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-0.5 mt-2">
                 {section.items.map((item, idx) => {
-                  const isActive = pathname === item.url;
+                  const isActive = pathname === item.url || pathname === `/system${item.url}`;
                   const Icon = item.icon;
                   return (
                     <Link

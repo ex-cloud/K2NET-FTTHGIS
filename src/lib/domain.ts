@@ -43,3 +43,39 @@ export function getSystemUrl(path: string = "/organizations"): string {
     return `http://system.localhost:3000${path}`;
   }
 }
+
+/**
+ * Detects the current subdomain from the window location and returns it as the organization slug.
+ * This is the reliable way to get the orgId in clean URL scenarios.
+ */
+export function getCurrentOrgSlug(): string | null {
+  if (typeof window === "undefined") return null;
+  
+  const hostname = window.location.hostname;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  
+  try {
+    const url = new URL(appUrl);
+    const rootHost = url.hostname;
+    
+    if (hostname.endsWith(`.${rootHost}`)) {
+      const subdomain = hostname.replace(`.${rootHost}`, "");
+      if (subdomain && subdomain !== "www" && subdomain !== "system") {
+        return subdomain;
+      }
+    }
+    
+    // Fallback for localhost.me or other dev setups
+    if (hostname.includes(".lvh.me") || hostname.includes(".localhost")) {
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomain = parts[0];
+        if (subdomain !== "www" && subdomain !== "system") return subdomain;
+      }
+    }
+  } catch {
+    // Ignore
+  }
+  
+  return null;
+}

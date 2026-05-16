@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import {
@@ -49,10 +50,10 @@ export function NavMain({
                     data-[active=true]:bg-emerald-500/10 data-[active=true]:text-emerald-500 data-[active=true]:font-bold
                   `}
                 >
-                  <a href={item.url} className="flex items-center gap-3">
+                  <Link href={item.url} className="flex items-center gap-3">
                     {item.icon && <item.icon className="size-4 shrink-0" />}
                     <span className="text-sm tracking-tight">{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
@@ -78,9 +79,9 @@ export function NavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <a href={subItem.url}>
+                          <Link href={subItem.url}>
                             <span>{subItem.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Plus, Search, LayoutGrid, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,19 @@ export default function OrgsPage() {
   const { organizations, loading, error, refresh } = useOrganizations();
   const [wizardOpen, setWizardOpen] = React.useState(false);
 
+  // 1. Detect subdomain context for isolation
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
+  const isSystemSubdomain = hostname.startsWith("system.");
+  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
+    ? hostname.split(".")[0] 
+    : null;
+
+  // 2. Filter organizations if we are in a tenant subdomain
+  const filteredOrganizations = tenantSlug 
+    ? organizations.filter(org => org.slug === tenantSlug)
+    : organizations;
+
   // Determine if the user is a SuperAdmin (from the system realm)
   const user = session?.user as { roles?: string[] } | undefined;
   const userRoles = user?.roles || [];
@@ -26,11 +40,11 @@ export default function OrgsPage() {
     userRoles.includes("super_admin") || 
     userRoles.includes("ROLE_SUPER_ADMIN");
   
-  const hasFreePlan = organizations.some(org => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
-  const canCreateMore = isSuperAdmin || !hasFreePlan || organizations.length === 0;
+  const hasFreePlan = filteredOrganizations.some(org => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
+  const canCreateMore = !tenantSlug && (isSuperAdmin || !hasFreePlan || filteredOrganizations.length === 0);
 
   // Banner visibility logic
-  const showLimitBanner = !isSuperAdmin && !canCreateMore;
+  const showLimitBanner = !tenantSlug && !isSuperAdmin && !canCreateMore && filteredOrganizations.length > 0;
 
   return (
     <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
@@ -102,7 +116,7 @@ export default function OrgsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {loading ? (
               // Loading Skeletons
-              [1, 2].map((i) => (
+              [1, 2, 3, 4].map((i) => (
                 <div key={i} className="animate-pulse flex items-center gap-4 p-5 rounded-lg border border-border bg-muted/10 h-24">
                   <div className="h-11 w-11 rounded bg-muted/50" />
                   <div className="space-y-2 flex-1">
@@ -113,7 +127,7 @@ export default function OrgsPage() {
               ))
             ) : (
               organizations.map((org) => (
-                <a key={org.slug} href={getTenantUrl(org.slug)}>
+                <Link key={org.slug} href={getTenantUrl(org.slug)}>
                   <div className={`group flex items-center gap-4 p-5 rounded-lg border bg-muted/30 hover:bg-accent transition-all cursor-pointer h-24 ${
                     org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
                       ? 'border-amber-500/30 hover:border-amber-500/50'
@@ -167,7 +181,7 @@ export default function OrgsPage() {
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))
             )}
             

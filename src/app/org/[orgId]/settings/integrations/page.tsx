@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SecurityChallengeModal } from "@/components/auth/security-challenge-modal";
+import { getCurrentOrgSlug } from "@/lib/domain";
 
 interface Config {
   id: string;
@@ -43,7 +44,8 @@ interface IntegrationField {
 }
 
 export default function IntegrationsPage() {
-  const { orgId } = useParams();
+  const params = useParams();
+  const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -254,7 +256,7 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
           <Blocks className="w-6 h-6 text-emerald-500" />

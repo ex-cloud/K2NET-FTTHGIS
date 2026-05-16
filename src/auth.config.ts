@@ -5,32 +5,39 @@ import { z } from "zod";
 
 export default {
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request: { nextUrl, headers } }) {
       const isLoggedIn = !!auth?.user;
       const { pathname } = nextUrl;
+      const hostname = headers.get("host") || "";
+      const isSystemSubdomain = hostname.startsWith("system.");
 
-      // 1. System Admin Area Protection
-      const isSystemPath = pathname.startsWith("/system");
-      const isSystemLogin = pathname === "/system/login";
-
-      if (isSystemPath) {
-        if (isSystemLogin) {
-          if (isLoggedIn) return Response.redirect(new URL("/system/organizations", nextUrl));
+      // 1. System Admin Area Protection (via Subdomain)
+      if (isSystemSubdomain) {
+        const isLogin = pathname === "/login" || pathname === "/system/login";
+        if (isLogin) {
+          if (isLoggedIn) return Response.redirect(new URL("/organizations", nextUrl));
           return true;
         }
-        if (!isLoggedIn) return Response.redirect(new URL("/system/login", nextUrl));
+        if (!isLoggedIn) return Response.redirect(new URL("/login", nextUrl));
         return true;
       }
 
       // 2. Tenant/User Area Protection
-      const isTenantPath = pathname.startsWith("/org") || pathname.startsWith("/dashboard");
+      // On a tenant subdomain, all paths except login are considered tenant paths
+      // On the root domain, only paths starting with /org or /dashboard are tenant paths
+      const isTenantPath = isSystemSubdomain 
+        ? false 
+        : (hostname.includes(".") ? (pathname !== "/login") : (pathname.startsWith("/org") || pathname.startsWith("/dashboard")));
+
       if (isTenantPath) {
         if (isLoggedIn) return true;
         return false; // Default redirect to /login
       }
 
-      // 3. Redirect logged-in users away from landing/login pages
+      // 3. Redirect logged-in users away from root domain landing/login
       if (isLoggedIn && (pathname === "/login" || pathname === "/")) {
+        // If they are on a tenant subdomain, this wouldn't trigger as isTenantPath matches /dashboard
+        // This is mainly for root domain
         return Response.redirect(new URL("/org", nextUrl));
       }
 

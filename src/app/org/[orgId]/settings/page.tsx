@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
-import { getBaseUrl } from "@/lib/domain";
+import { getBaseUrl, getCurrentOrgSlug } from "@/lib/domain";
 
 interface Project {
   id: string;
@@ -32,7 +32,8 @@ interface User {
 }
 
 export default function GeneralSettingsPage() {
-  const { orgId } = useParams();
+  const params = useParams();
+  const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session } = useSession();
@@ -295,7 +296,7 @@ export default function GeneralSettingsPage() {
     !!logoFile;
 
   return (
-    <div className="p-8 pb-24 max-w-4xl mx-auto space-y-10">
+    <div className="p-8 pb-24 space-y-10 w-full">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">General Settings</h1>
