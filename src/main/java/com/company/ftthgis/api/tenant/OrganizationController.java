@@ -64,7 +64,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{orgId}/users")
-    @PreAuthorize("@tenantSecurity.isOwnerById(#orgId) and hasAuthority('users.view')")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgId) and hasAuthority('users.view')")
     public org.springframework.http.ResponseEntity<org.springframework.data.domain.Page<com.company.ftthgis.api.user.dto.UserDto>> getUsersByOrganization(
             @PathVariable String orgId,
             @org.springframework.data.web.PageableDefault(size = 10, sort = "createdAt") org.springframework.data.domain.Pageable pageable,

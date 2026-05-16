@@ -154,7 +154,34 @@ public class UserSyncService {
             userRepository.save(user);
             log.debug("Updated local user profile for {}", email);
         }
+
+        // AUTO-PROVISION: Ensure the organization has its own roles cloned from system roles
+        // This is crucial for legacy organizations created before the tenant-isolated roles system
+        if (org != null && !"master".equals(org.getSlug()) && !"system".equals(org.getSlug())) {
+            ensureOrganizationRolesExist(org);
+        }
+
         return user;
+    }
+
+    private void ensureOrganizationRolesExist(Organization org) {
+        // Check if organization already has its own roles
+        long roleCount = roleRepository.countByOrganizationId(org.getId());
+        if (roleCount == 0) {
+            log.info("🛠️ AUTO-REPAIR: Organization '{}' has no custom roles. Triggering cloning from system roles...", org.getSlug());
+            List<Role> systemRoles = roleRepository.findByIsSystemRoleTrue();
+            for (Role systemRole : systemRoles) {
+                Role clonedRole = new Role();
+                clonedRole.setName(systemRole.getName());
+                clonedRole.setDisplayName(systemRole.getDisplayName());
+                clonedRole.setDescription(systemRole.getDescription());
+                clonedRole.setSystemRole(false);
+                clonedRole.setOrganization(org);
+                clonedRole.setPermissions(new java.util.HashSet<>(systemRole.getPermissions()));
+                roleRepository.save(clonedRole);
+            }
+            log.info("✅ AUTO-REPAIR: Cloned {} roles for organization: {}", systemRoles.size(), org.getSlug());
+        }
     }
 
     private User createNewUser(String keycloakId, String email, String name, String username, Organization org) {
@@ -176,6 +203,13 @@ public class UserSyncService {
         String seed = email.split("@")[0];
         user.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // AUTO-PROVISION roles if missing
+        if (org != null && !"master".equals(org.getSlug()) && !"system".equals(org.getSlug())) {
+            ensureOrganizationRolesExist(org);
+        }
+
+        return savedUser;
     }
 }

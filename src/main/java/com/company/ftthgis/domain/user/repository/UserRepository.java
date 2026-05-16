@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     long countByStatus(String status);
 
     java.util.List<User> findByOrganizationId(UUID organizationId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u LEFT JOIN FETCH u.organization WHERE u.id = :id")
+    Optional<User> findByIdWithOrganization(@org.springframework.data.repository.query.Param("id") UUID id);
 }

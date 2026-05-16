@@ -15,10 +15,14 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     Optional<Role> findByNameAndOrganizationId(String name, UUID organizationId);
     
     Optional<Role> findByNameAndIsSystemRoleTrue(String name);
+    
+    List<Role> findByNameAndIsSystemRoleFalse(String name);
 
     List<Role> findByIsSystemRoleTrue();
 
     List<Role> findByOrganizationId(UUID organizationId);
+    
+    long countByOrganizationId(UUID organizationId);
 
     boolean existsByName(String name);
 }

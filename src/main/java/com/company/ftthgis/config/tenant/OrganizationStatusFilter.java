@@ -62,17 +62,10 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                                              path.contains("/api/v1/billing") ||
                                              path.contains("/api/v1/auth/logout");
 
-                        // Allow read-only access to core entities and notifications so the UI doesn't crash or spam reconnects
+                        // Allow ALL read-only access (GET) to any endpoint so the UI can display data.
+                        // This fulfills the "Read-Only" requirement for suspended tenants.
                         if ("GET".equalsIgnoreCase(method)) {
-                            if (path.startsWith("/api/v1/organizations/" + slug + "/projects") ||
-                                path.startsWith("/api/v1/organizations/" + slug + "/users") ||
-                                path.startsWith("/api/v1/organizations/" + slug + "/roles") ||
-                                path.startsWith("/api/v1/organizations/" + slug + "/divisions") ||
-                                path.startsWith("/api/v1/projects") ||
-                                path.startsWith("/api/v1/analytics") ||
-                                path.startsWith("/api/v1/network")) {
-                                isSafePath = true;
-                            }
+                            isSafePath = true;
                         }
 
                         // Block all WRITE operations and sensitive data access

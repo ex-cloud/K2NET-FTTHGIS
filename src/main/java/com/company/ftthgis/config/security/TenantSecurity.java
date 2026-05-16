@@ -1,6 +1,7 @@
 package com.company.ftthgis.config.security;
 
 import com.company.ftthgis.domain.user.repository.UserRepository;
+import com.company.ftthgis.domain.tenant.entity.Organization;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,20 +64,25 @@ public class TenantSecurity {
             String subject = jwt.getSubject();
             if (subject == null) return false;
 
-            var userOpt = userRepository.findById(UUID.fromString(subject));
+            var userOpt = userRepository.findByIdWithOrganization(UUID.fromString(subject));
             if (userOpt.isPresent()) {
                 var user = userOpt.get();
-                if (user.getOrganization() != null && user.getOrganization().getSlug().equals(orgSlug)) {
-                    log.debug("🛡️ TenantSecurity: Access granted. User belongs to organization slug: {}", orgSlug);
-                    return true;
+                Organization org = user.getOrganization();
+                
+                if (org != null) {
+                    // Force initialization if it's a proxy to avoid "no Session" error
+                    String userOrgSlug = org.getSlug(); 
+                    if (userOrgSlug.equals(orgSlug)) {
+                        log.debug("🛡️ TenantSecurity: Access granted. User belongs to organization slug: {}", orgSlug);
+                        return true;
+                    }
                 }
-                log.warn("🛡️ TenantSecurity: Access DENIED. User's org '{}' does not match requested '{}'",
-                        user.getOrganization() != null ? user.getOrganization().getSlug() : "NULL", orgSlug);
+                log.warn("🛡️ TenantSecurity: Access DENIED. User's org slug mismatch for user: {}", subject);
             } else {
                 log.warn("🛡️ TenantSecurity: User {} not found in local database.", subject);
             }
         } catch (Exception e) {
-            log.error("🛡️ TenantSecurity: Error verifying tenant ownership: {}", e.getMessage());
+            log.error("🛡️ TenantSecurity: Error verifying tenant ownership: {}", e.getMessage(), e);
         }
 
         return false;
@@ -117,15 +123,16 @@ public class TenantSecurity {
             String subject = jwt.getSubject();
             if (subject == null) return false;
 
-            var userOpt = userRepository.findById(UUID.fromString(subject));
+            var userOpt = userRepository.findByIdWithOrganization(UUID.fromString(subject));
             if (userOpt.isPresent()) {
                 var user = userOpt.get();
-                if (user.getOrganization() != null && user.getOrganization().getId().equals(orgId)) {
+                Organization org = user.getOrganization();
+                if (org != null && org.getId().equals(orgId)) {
                     return true;
                 }
             }
         } catch (Exception e) {
-            log.error("🛡️ TenantSecurity: Error verifying tenant ownership by ID: {}", e.getMessage());
+            log.error("🛡️ TenantSecurity: Error verifying tenant ownership by ID: {}", e.getMessage(), e);
         }
 
         return false;
