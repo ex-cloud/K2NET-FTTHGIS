@@ -16,18 +16,21 @@ export default function OrganizationContextLayout({
   const { open, setOpen } = useSidebarMode();
   const params = useParams();
   const { organizations } = useOrganizations();
-  const { setOrganizationSuspended } = useUIStore();
+  const { setOrganizationSuspended, setActiveTenantId } = useUIStore();
 
   useEffect(() => {
     if (params?.orgId && organizations.length > 0) {
       const currentOrg = organizations.find((org) => org.slug === params.orgId);
-      if (currentOrg && (currentOrg.status === 'SUSPENDED' || currentOrg.status === 'TRIAL_EXPIRED')) {
-        setOrganizationSuspended(true);
-      } else {
-        setOrganizationSuspended(false);
+      if (currentOrg) {
+        // Set tenant ID for API requests
+        setActiveTenantId(currentOrg.id || null);
+        
+        // Handle suspension status
+        const isSuspended = currentOrg.status === 'SUSPENDED' || currentOrg.status === 'TRIAL_EXPIRED';
+        setOrganizationSuspended(isSuspended);
       }
     }
-  }, [params?.orgId, organizations, setOrganizationSuspended]);
+  }, [params?.orgId, organizations, setOrganizationSuspended, setActiveTenantId]);
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-background relative">
