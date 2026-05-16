@@ -31,6 +31,11 @@ type MenuSection = {
 export function OrgSettingsSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 1. Detect subdomain context
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
@@ -43,11 +48,15 @@ export function OrgSettingsSidebar() {
   if (!pathname?.includes("/settings")) return null;
 
   // 2. Define baseUrl based on context
+  // Use path-based URLs during hydration to match server-side rendering
   let baseUrl = "/settings";
-  if (!tenantSlug) {
+  const isSubdomainMode = mounted && !!tenantSlug;
+  
+  if (!isSubdomainMode) {
     const parts = pathname?.split("/") || [];
-    const orgId = parts[2];
-    baseUrl = `/org/${orgId}/settings`;
+    // Handle both /org/[id]/settings and /settings (rewritten)
+    const orgId = parts.includes("org") ? parts[parts.indexOf("org") + 1] : "undefined";
+    baseUrl = orgId !== "undefined" ? `/org/${orgId}/settings` : "/settings";
   }
 
   const sections: MenuSection[] = [
