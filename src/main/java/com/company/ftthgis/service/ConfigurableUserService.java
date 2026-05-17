@@ -157,8 +157,9 @@ public class ConfigurableUserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (roleName != null && !roleName.isEmpty()) {
-            Role role = roleRepository.findByName(roleName)
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+            Role role = roleRepository.findByNameAndOrganizationId(roleName, user.getOrganization().getId())
+                    .orElseGet(() -> roleRepository.findByNameAndIsSystemRoleTrue(roleName)
+                            .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)));
             user.setRole(role);
             // Sync to Keycloak - specifically in the user's organization realm
             keycloakAdminService.updateUserRoleInRealm(user.getOrganization().getSlug(), user.getEmail(), roleName);
