@@ -11,7 +11,7 @@ import { HealthBadge } from "./health-badge";
 import { GlobalSearch } from "./dashboard/global-search";
 import { NavOrgSwitcher } from "./nav-org-switcher";
 import { NavProjectSwitcher } from "./nav-project-switcher";
-import { GodModeIndicator } from "./god-mode-indicator";
+import { GodModeIndicator } from "./system/god-mode-indicator";
 export function GlobalHeader() {
   const router = useRouter();
   const params = useParams();
