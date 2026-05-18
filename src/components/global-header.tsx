@@ -9,8 +9,8 @@ import { BreadcrumbNav } from "./breadcrumb-nav";
 import { UserNav } from "./user-nav";
 import { HealthBadge } from "./health-badge";
 import { GlobalSearch } from "./dashboard/global-search";
-import { NavOrgSwitcher } from "./nav-org-switcher";
-import { NavProjectSwitcher } from "./nav-project-switcher";
+import { NavOrgSwitcher } from "./tenant/nav-org-switcher";
+import { NavProjectSwitcher } from "./tenant/nav-project-switcher";
 import { GodModeIndicator } from "./system/god-mode-indicator";
 export function GlobalHeader() {
   const router = useRouter();

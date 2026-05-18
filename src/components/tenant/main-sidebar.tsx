@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useSidebarMode } from "./sidebar-mode-context";
-import { SidebarControl } from "./sidebar-control";
+import { useSidebarMode } from "../sidebar-mode-context";
+import { SidebarControl } from "../sidebar-control";
 
 type NavItem = {
   title: string;

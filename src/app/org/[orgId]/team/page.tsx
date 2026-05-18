@@ -9,7 +9,7 @@ import { getCurrentOrgSlug } from "@/lib/domain";
 import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TeamInviteWizard } from "@/components/team/team-invite-wizard";
+import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
 import { 
   Select, 
   SelectContent, 

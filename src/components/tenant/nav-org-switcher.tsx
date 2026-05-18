@@ -11,13 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePathname } from "next/navigation";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { OrganizationWizard } from "./tenant/organization-wizard";
+import { OrganizationWizard } from "./organization-wizard";
 import { getTenantUrl, getBaseUrl } from "@/lib/domain";
 import { useUIStore } from "@/store/ui-store";
 import { useRouter } from "next/navigation";

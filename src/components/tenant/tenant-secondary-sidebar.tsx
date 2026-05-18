@@ -4,31 +4,69 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  Users,
+  Settings2,
+  Blocks,
+  BarChart3,
+  CreditCard,
   ShieldCheck,
-  UserPlus,
+  Fingerprint,
+  Share2,
   History,
+  FileText,
+  Users,
+  UserPlus,
+  UserCog,
+  Mail,
+  Network,
+  Map,
+  LayoutGrid,
+  BookOpen,
+  GitCommit,
+  Calculator,
+  Cpu,
+  Server,
+  FileUp,
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
-  UserCog,
-  Mail,
 } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { TENANT_SIDEBAR_NAVIGATION } from "@/config/tenant-sidebar-navigation";
 
-type MenuSection = {
-  title: string;
-  items: { title: string; url: string; icon: React.ElementType }[];
+const iconMap: Record<string, React.ElementType> = {
+  Settings2,
+  Blocks,
+  BarChart3,
+  CreditCard,
+  ShieldCheck,
+  Fingerprint,
+  Share2,
+  History,
+  FileText,
+  Users,
+  UserPlus,
+  UserCog,
+  Mail,
+  Network,
+  Map,
+  LayoutGrid,
+  BookOpen,
+  GitCommit,
+  Calculator,
+  Cpu,
+  Server,
+  FileUp,
 };
 
-export function OrgTeamSidebar() {
+export function TenantSecondarySidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  
+
+
   // 1. Detect subdomain context
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
@@ -37,40 +75,58 @@ export function OrgTeamSidebar() {
     ? hostname.split(".")[0] 
     : null;
 
-  if (!pathname?.includes("/team")) return null;
+  // 2. Extract IDs based on context
+  const parts = pathname?.split("/").filter(Boolean) || [];
+  let orgId = "";
+  let projectId = "";
 
-  // 2. Define baseUrl based on context
-  // If on subdomain, we use clean path. If on root domain, we extract orgId from path.
-  let baseUrl = "/team";
-  if (!tenantSlug) {
-    const parts = pathname?.split("/") || [];
-    const orgId = parts[2];
-    baseUrl = `/org/${orgId}/team`;
+  if (tenantSlug) {
+    // Clean URL on subdomain: /project/[projectId]/...
+    if (parts[0] === "project") {
+      projectId = parts[1];
+    }
+  } else {
+    // Legacy URL on root domain: /org/[orgId]/project/[projectId]/...
+    if (parts[0] === "org") {
+      orgId = parts[1];
+      if (parts[2] === "project") {
+        projectId = parts[3];
+      }
+    }
   }
 
-  const sections: MenuSection[] = [
-    {
-      title: "Team Management",
-      items: [
-        { title: "Members", url: `${baseUrl}`, icon: Users },
-        { title: "Invite Members", url: `${baseUrl}/invite`, icon: UserPlus },
-      ],
-    },
-    {
-      title: "Access Control",
-      items: [
-        { title: "Roles & Permissions", url: `${baseUrl}/roles`, icon: ShieldCheck },
-        { title: "Role Assignments", url: `${baseUrl}/assignments`, icon: UserCog },
-      ],
-    },
-    {
-      title: "Activity",
-      items: [
-        { title: "Activity Log", url: `${baseUrl}/activity`, icon: History },
-        { title: "Pending Invites", url: `${baseUrl}/invites`, icon: Mail },
-      ],
-    },
-  ];
+  // 3. Determine active module & baseUrl
+  let activeModuleKey: string | null = null;
+  let baseUrl = "";
+
+  if (projectId) {
+    baseUrl = tenantSlug ? `/project/${projectId}` : `/org/${orgId}/project/${projectId}`;
+    
+    // Check exact match for Overview
+    const isOverview = pathname === baseUrl || pathname === `${baseUrl}/`;
+    if (isOverview) return null; // HIDDEN on Project Overview (Supabase style)
+
+    if (pathname?.includes("/infrastructure")) activeModuleKey = "project-infrastructure";
+    else if (pathname?.includes("/inventory")) activeModuleKey = "project-inventory";
+    else if (pathname?.includes("/core")) activeModuleKey = "project-core";
+    else if (pathname?.includes("/users")) activeModuleKey = "project-users";
+    else if (pathname?.includes("/settings")) activeModuleKey = "project-settings";
+  } else {
+    // Org level modules
+    if (pathname?.includes("/settings")) {
+      activeModuleKey = "settings";
+      baseUrl = tenantSlug ? "/settings" : `/org/${orgId}/settings`;
+    } else if (pathname?.includes("/team")) {
+      activeModuleKey = "team";
+      baseUrl = tenantSlug ? "/team" : `/org/${orgId}/team`;
+    }
+  }
+
+  if (!activeModuleKey || !TENANT_SIDEBAR_NAVIGATION[activeModuleKey]) {
+    return null;
+  }
+
+  const activeConfig = TENANT_SIDEBAR_NAVIGATION[activeModuleKey];
 
   return (
     <div className="relative h-full flex shrink-0">
@@ -79,19 +135,20 @@ export function OrgTeamSidebar() {
       >
         {/* Title with Toggle */}
         <div className="py-5 border-b border-border/40 shrink-0 flex items-center justify-between px-5 min-w-[240px]">
-          <h3 className="text-sm font-semibold text-zinc-100 tracking-tight">
-            Team Management
+          <h3 className="text-sm font-semibold text-zinc-100 tracking-tight truncate pr-2">
+            {activeConfig.title}
           </h3>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-100 transition-colors shrink-0"
+            title="Collapse sidebar"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 min-w-[240px]">
-          {sections.map((section, sIdx) => (
+          {activeConfig.sections.map((section, sIdx) => (
             <Collapsible key={sIdx} defaultOpen className="w-full">
               <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-300 group">
                 <span>{section.title}</span>
@@ -99,12 +156,13 @@ export function OrgTeamSidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-0.5 mt-2">
                 {section.items.map((item, idx) => {
-                  const isActive = pathname === item.url;
-                  const Icon = item.icon;
+                  const itemUrl = item.url ? `${baseUrl}${item.url}` : baseUrl;
+                  const isActive = pathname === itemUrl || pathname?.startsWith(`${itemUrl}/`);
+                  const Icon = iconMap[item.icon] || Settings2;
                   return (
                     <Link
                       key={idx}
-                      href={item.url}
+                      href={itemUrl}
                       className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
                         isActive
                           ? "bg-emerald-500/10 text-emerald-500 font-medium border border-emerald-500/20"
@@ -127,6 +185,7 @@ export function OrgTeamSidebar() {
         <button
           onClick={() => setIsCollapsed(false)}
           className="absolute top-4 left-3 z-40 p-1.5 rounded-md bg-zinc-900 border border-zinc-800 shadow-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-all duration-300"
+          title="Expand sidebar"
         >
           <PanelLeftOpen className="w-4 h-4" />
         </button>

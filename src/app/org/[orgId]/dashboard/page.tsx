@@ -16,7 +16,7 @@ interface ProjectItem {
 }
 
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { ProjectCreateWizard } from "@/components/project/project-create-wizard";
+import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
 
 export default function OrgDashboardPage({
   params,
@@ -50,7 +50,7 @@ export default function OrgDashboardPage({
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken, realOrgId, orgsLoading]);
+  }, [session?.accessToken, slug, orgsLoading]);
 
   useEffect(() => {
     fetchProjects();

@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useProjects } from "@/hooks/useProjects";
 
 export function NavProjectSwitcher() {

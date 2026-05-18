@@ -1,6 +1,9 @@
 "use client";
 
-import { MainSidebar } from "@/components/main-sidebar";
+import { MainSidebar } from "@/components/tenant/main-sidebar";
+import { TenantSecondarySidebar } from "@/components/tenant/tenant-secondary-sidebar";
+import { RealTimeNotificationClient } from "@/components/real-time-notification-client";
+import { DetailSlidePanel } from "@/components/dashboard/detail-slide-panel";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -37,8 +40,15 @@ export default function OrganizationContextLayout({
       <MainSidebar />
       <div className="flex-1 flex min-w-0 overflow-hidden">
         <SidebarProvider open={open} onOpenChange={setOpen}>
-          <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
-            {children}
+          <RealTimeNotificationClient />
+          <DetailSlidePanel />
+          <div className="flex flex-1 h-full overflow-hidden w-full min-w-0">
+            <TenantSecondarySidebar />
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+              <main className="flex-1 overflow-auto relative z-10 custom-scrollbar bg-[#080808]">
+                {children}
+              </main>
+            </div>
           </div>
         </SidebarProvider>
       </div>
