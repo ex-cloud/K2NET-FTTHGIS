@@ -5,6 +5,7 @@ import { AdminSidebar } from "@/components/system/admin-sidebar";
 import { SidebarModeProvider, useSidebarMode } from "@/components/sidebar-mode-context";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,8 +22,13 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
         <AdminSidebar />
         <div className="flex-1 flex min-w-0 overflow-hidden">
           <SidebarProvider open={open} onOpenChange={setOpen}>
-            <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
-              {children}
+            <div className="flex flex-1 h-full overflow-hidden w-full min-w-0">
+              <SystemSecondarySidebar />
+              <div className="flex-1 flex flex-col min-w-0 w-0 overflow-hidden relative">
+                <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 bg-[#080808]">
+                  {children}
+                </main>
+              </div>
             </div>
           </SidebarProvider>
         </div>

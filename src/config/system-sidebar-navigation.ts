@@ -1,0 +1,76 @@
+export type MenuItem = {
+  title: string;
+  url: string;
+  icon: string;
+};
+
+export type MenuSection = {
+  title: string;
+  items: MenuItem[];
+};
+
+export type SidebarConfig = {
+  [key: string]: {
+    title: string;
+    sections: MenuSection[];
+  };
+};
+
+export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
+  users: {
+    title: "User Registry",
+    sections: [
+      {
+        title: "User Management",
+        items: [
+          { title: "Global Users", url: "/users", icon: "Users" },
+        ],
+      },
+      {
+        title: "Access Control",
+        items: [
+          { title: "Global Roles", url: "/users/roles", icon: "ShieldCheck" },
+        ],
+      },
+      {
+        title: "Activity",
+        items: [
+          { title: "User Sessions", url: "/users/sessions", icon: "History" },
+        ],
+      },
+    ],
+  },
+  security: {
+    title: "Security Settings",
+    sections: [
+      {
+        title: "Access Control",
+        items: [
+          { title: "Role Templates", url: "/security/roles", icon: "UserCog" },
+          { title: "Permissions", url: "/security/permissions", icon: "KeyRound" },
+        ],
+      },
+      {
+        title: "Identity & Auth",
+        items: [
+          { title: "Authentication", url: "/security/auth", icon: "ShieldCheck" },
+          { title: "SSO Providers", url: "/security/sso", icon: "Fingerprint" },
+        ],
+      },
+      {
+        title: "Monitoring",
+        items: [
+          { title: "Audit Logs", url: "/security/audit", icon: "History" },
+          { title: "Security Alerts", url: "/security/alerts", icon: "ShieldAlert" },
+        ],
+      },
+      {
+        title: "Policies",
+        items: [
+          { title: "Password Policy", url: "/security/password-policy", icon: "ScrollText" },
+          { title: "Compliance", url: "/security/compliance", icon: "FileText" },
+        ],
+      },
+    ],
+  },
+};
