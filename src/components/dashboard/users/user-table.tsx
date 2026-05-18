@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  Filter,
-  Download,
   Edit,
   Key,
   ChevronLeft,
   ChevronRight,
+  Building2,
+  UserPlus,
 } from "lucide-react";
 import {
   Table,
@@ -24,13 +24,15 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { UpdateUserDialog } from "./update-user-dialog";
+import { UserSearch } from "./user-search";
 
 interface UserTableProps {
   data: PaginatedResponse<User> | null;
   currentPage: number;
+  isGlobalView?: boolean;
 }
 
-export function UserTable({ data, currentPage }: UserTableProps) {
+export function UserTable({ data, currentPage, isGlobalView = false }: UserTableProps) {
   const users = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
@@ -52,48 +54,47 @@ export function UserTable({ data, currentPage }: UserTableProps) {
 
   return (
     <>
-      <div className="flex-1 flex flex-col bg-background/60 backdrop-blur rounded-2xl border border-border/40 overflow-hidden">
-        {/* Table Header Controls */}
-        <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            User Registry
-          </h3>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <Filter className="w-4 h-4" />
+      <div className="flex flex-col h-full space-y-4">
+        {/* Top Bar controls (Search & Actions) */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="w-full max-w-xs">
+            <UserSearch placeholder="Filter users..." />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" className="h-9 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 hidden sm:flex">
+              Docs
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <Download className="w-4 h-4" />
+            <Button className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add User
             </Button>
           </div>
         </div>
 
-        {/* Table Content */}
+        <div className="flex-1 flex flex-col bg-[#0c0c0c] rounded-md border border-zinc-800/60 overflow-hidden">
+          {/* Table Content */}
         <div className="flex-1 overflow-auto">
           <Table>
-            <TableHeader className="bg-muted/40 sticky top-0">
-              <TableRow className="hover:bg-transparent border-border/40">
-                <TableHead className="w-[300px] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <TableHeader className="bg-zinc-900/40 sticky top-0">
+              <TableRow className="hover:bg-transparent border-zinc-800/60">
+                <TableHead className="w-[300px] h-9 px-4 text-xs font-medium text-zinc-500">
                   User
                 </TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
                   Role
                 </TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {isGlobalView && (
+                  <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
+                    Organization
+                  </TableHead>
+                )}
+                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
                   Status
                 </TableHead>
-                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
                   Created At
                 </TableHead>
-                <TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <TableHead className="h-9 px-4 text-right text-xs font-medium text-zinc-500">
                   Actions
                 </TableHead>
               </TableRow>
@@ -112,30 +113,30 @@ export function UserTable({ data, currentPage }: UserTableProps) {
                 users.map((user) => (
                   <TableRow
                     key={user.id}
-                    className="border-border/40 hover:bg-muted/30 transition-colors group"
+                    className="border-zinc-800/60 hover:bg-zinc-800/30 transition-colors group h-12"
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="px-4 py-2">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 rounded-lg border border-border/40">
+                        <Avatar className="h-7 w-7 rounded-full border border-zinc-700">
                           <AvatarImage
                             src={user.avatarUrl}
-                            alt={user.fullName}
+                            alt={user.fullName || "User"}
                           />
-                          <AvatarFallback className="rounded-lg">
-                            {user.fullName.substring(0, 2).toUpperCase()}
+                          <AvatarFallback className="rounded-full text-[10px]">
+                            {(user.fullName || user.username || user.email || "U").substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <div className="font-semibold text-foreground">
-                            {user.fullName}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-mono">
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-medium text-zinc-200 leading-tight">
+                            {user.fullName || user.username || user.email || "Unknown User"}
+                          </span>
+                          <span className="text-[11px] text-zinc-500 leading-tight">
                             {user.email}
-                          </div>
+                          </span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-2">
                       <Badge
                         variant="outline"
                         className={cn(
@@ -153,37 +154,45 @@ export function UserTable({ data, currentPage }: UserTableProps) {
                         {user.roleDisplayName}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    {isGlobalView && (
+                      <TableCell className="px-4 py-2">
+                        <div className="text-[12px] text-zinc-400 flex items-center gap-2">
+                          <Building2 className="w-3.5 h-3.5 text-zinc-500" />
+                          {user.organizationName || "System"}
+                        </div>
+                      </TableCell>
+                    )}
+                    <TableCell className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-2 h-2 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-500" : "bg-red-500"}`}
                         ></span>
-                        <span className="text-xs text-muted-foreground">
-                          {user.status}
+                        <span className="text-[12px] text-zinc-400 capitalize">
+                          {user.status.toLowerCase()}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-xs font-mono text-muted-foreground uppercase">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                    <TableCell className="px-4 py-2">
+                      <div className="text-[12px] text-zinc-400">
+                        {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-4 py-2 text-right">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
                           onClick={() => handleEdit(user)}
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
                         >
-                          <Key className="w-4 h-4" />
+                          <Key className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -195,8 +204,8 @@ export function UserTable({ data, currentPage }: UserTableProps) {
         </div>
 
         {/* Pagination */}
-        <div className="mt-auto px-6 py-4 border-t border-border/40 flex items-center justify-between bg-muted/20">
-          <span className="text-xs text-muted-foreground font-mono tracking-tight">
+        <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-[#080808]">
+          <span className="text-[12px] text-zinc-500">
             Showing {totalElements === 0 ? 0 : startParam} to {endParam} of{" "}
             {totalElements} results
           </span>
@@ -234,6 +243,7 @@ export function UserTable({ data, currentPage }: UserTableProps) {
           </div>
         </div>
       </div>
+    </div>
 
       <UpdateUserDialog
         open={isEditDialogOpen}

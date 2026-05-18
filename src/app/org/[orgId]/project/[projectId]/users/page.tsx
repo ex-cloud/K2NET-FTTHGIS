@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/auth";
-import { getUsers, getUserStats } from "@/lib/api/users";
+import { getTenantUsers, getTenantUserStats } from "@/lib/api/users";
 
 export default async function UserManagementPage(props: {
+  params: Promise<{ orgId: string; projectId: string }>;
   searchParams: Promise<{
     page?: string;
     q?: string;
@@ -22,6 +23,7 @@ export default async function UserManagementPage(props: {
   }>;
 }) {
   const searchParams = await props.searchParams;
+  const params = await props.params;
   const page = Number(searchParams.page) || 0;
   const search = searchParams.q || "";
 
@@ -34,7 +36,8 @@ export default async function UserManagementPage(props: {
   if (token) {
     try {
       const [users, stats] = await Promise.all([
-        getUsers(
+        getTenantUsers(
+          params.orgId,
           page,
           10,
           search,
@@ -42,7 +45,7 @@ export default async function UserManagementPage(props: {
           searchParams.status,
           token,
         ),
-        getUserStats(token),
+        getTenantUserStats(params.orgId, token),
       ]);
       usersData = users;
       statsData = stats;
@@ -68,7 +71,7 @@ export default async function UserManagementPage(props: {
         {/* Custom Header for User Module */}
         <header className="h-16 px-6 flex items-center justify-between border-b border-border/40 bg-background/50 backdrop-blur shrink-0">
           {/* Module Breadcrumb */}
-          <nav className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground font-bold hidden md:flex">
+          <nav className="hidden md:flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
             <span className="flex items-center gap-2">
               <LayoutDashboard className="w-3 h-3" />
               System

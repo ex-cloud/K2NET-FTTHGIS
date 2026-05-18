@@ -2,10 +2,12 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
+  username?: string;
   avatarUrl?: string; // Optional as it might be null
   status: string;
   roleName: string;
   roleDisplayName: string;
+  organizationName?: string;
   createdAt: string;
   updatedAt: string;
 }

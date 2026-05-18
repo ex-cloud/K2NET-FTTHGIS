@@ -1,6 +1,5 @@
 "use client";
 
-import { Users, Activity, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface UserStatsProps {
@@ -13,54 +12,39 @@ interface UserStatsProps {
 
 export function UserStats({ stats }: UserStatsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
       {/* Total Users */}
-      <Card className="bg-background/60 backdrop-blur border-l-4 border-l-emerald-500 border-y border-r border-border/40 shadow-sm">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 rounded-xl">
-            <Users className="w-6 h-6 text-emerald-500" />
+      <Card className="bg-[#0c0c0c] border border-zinc-800/60 rounded-md shadow-none overflow-hidden">
+        <CardContent className="p-4 flex flex-col justify-center">
+          <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-1.5">
+            Total Users
           </div>
-          <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Total Users
-            </div>
-            <div className="text-2xl font-mono font-bold">
-              {stats?.totalUsers.toLocaleString() || "..."}
-            </div>
+          <div className="text-xl font-medium text-zinc-100">
+            {stats?.totalUsers.toLocaleString() || "0"}
           </div>
         </CardContent>
       </Card>
 
       {/* Active Now */}
-      <Card className="bg-background/60 backdrop-blur border-l-4 border-l-sky-500 border-y border-r border-border/40 shadow-sm">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="p-3 bg-sky-500/10 rounded-xl">
-            <Activity className="w-6 h-6 text-sky-500" />
+      <Card className="bg-[#0c0c0c] border border-zinc-800/60 rounded-md shadow-none overflow-hidden">
+        <CardContent className="p-4 flex flex-col justify-center">
+          <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-1.5">
+            Active Now
           </div>
-          <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Active Now
-            </div>
-            <div className="text-2xl font-mono font-bold">
-              {stats?.activeUsers.toLocaleString() || "..."}
-            </div>
+          <div className="text-xl font-medium text-zinc-100">
+            {stats?.activeUsers.toLocaleString() || "0"}
           </div>
         </CardContent>
       </Card>
 
       {/* Open Requests */}
-      <Card className="bg-background/60 backdrop-blur border-l-4 border-l-amber-500 border-y border-r border-border/40 shadow-sm">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="p-3 bg-amber-500/10 rounded-xl">
-            <AlertTriangle className="w-6 h-6 text-amber-500" />
+      <Card className="bg-[#0c0c0c] border border-zinc-800/60 rounded-md shadow-none overflow-hidden">
+        <CardContent className="p-4 flex flex-col justify-center">
+          <div className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest mb-1.5">
+            Open Requests
           </div>
-          <div>
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Open Requests
-            </div>
-            <div className="text-2xl font-mono font-bold">
-              {stats?.pendingRequests.toString().padStart(2, "0") || "00"}
-            </div>
+          <div className="text-xl font-medium text-zinc-100">
+            {stats?.pendingRequests.toString() || "0"}
           </div>
         </CardContent>
       </Card>

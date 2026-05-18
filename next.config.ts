@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  allowedDevOrigins: ["*"],
+  allowedDevOrigins: ["system.lvh.me", "localhost", "lvh.me"],
   async rewrites() {
     return [
       {
