@@ -32,7 +32,7 @@ public class OrganizationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')") // Only system super admin can create orgs
+    @PreAuthorize("hasRole('super_admin')") // Only system super admin can create orgs
     public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
             java.util.Map<String, Object> result = organizationService.createOrganization(request);

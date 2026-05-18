@@ -20,19 +20,19 @@ public class RolePermissionController {
     // Both Super Admin and Tenant Admin can access this
     // It returns isolated roles based on the JWT context
     @GetMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('roles.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.view')")
     public ResponseEntity<List<Role>> getRoles() {
         return ResponseEntity.ok(rolePermissionService.getRoles());
     }
 
     @GetMapping("/permissions")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('roles.view')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.view')")
     public ResponseEntity<List<Permission>> getPermissions() {
         return ResponseEntity.ok(rolePermissionService.getAllPermissions());
     }
 
     @PutMapping("/{roleId}/permissions")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('roles.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.update')")
     public ResponseEntity<Role> updateRolePermissions(
             @PathVariable Long roleId,
             @RequestBody List<Long> permissionIds) {

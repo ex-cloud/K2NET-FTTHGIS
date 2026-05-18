@@ -262,6 +262,7 @@ public class ConfigurableUserService {
                 .status(user.getStatus())
                 .roleName(user.getRole() != null ? user.getRole().getName() : "USER")
                 .roleDisplayName(user.getRole() != null ? user.getRole().getDisplayName() : "User")
+                .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)

@@ -19,7 +19,7 @@ public class NetworkController {
     private final NetworkService networkService;
 
     @PostMapping("/odc")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('admin')")
     public ResponseEntity<ODCDto> createODC(@RequestBody ODCDto dto) {
         return ResponseEntity.ok(networkService.createODC(dto));
     }

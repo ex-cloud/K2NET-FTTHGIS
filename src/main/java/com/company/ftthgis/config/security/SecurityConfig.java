@@ -59,7 +59,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        .requestMatchers("/actuator/**").hasRole("admin")
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
@@ -188,8 +188,8 @@ public class SecurityConfig {
 
             // 3. Map to GrantedAuthorities (Roles + Fine-Grained Permissions)
             for (String roleName : roleNames) {
-                // Add the role itself as a standard Spring Security ROLE
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase()));
+                // Add the role itself as a standard Spring Security ROLE using exact lowercase
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toLowerCase()));
 
                 // Fetch fine-grained permissions dynamically from DB
                 try {
