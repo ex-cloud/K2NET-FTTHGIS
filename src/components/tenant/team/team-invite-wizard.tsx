@@ -59,6 +59,8 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
     fullName: "",
     email: "",
     globalRole: "",
+    creationMode: "INVITE",
+    customPassword: "",
   });
 
   const [projectRoles, setProjectRoles] = React.useState<Record<string, string>>({});
@@ -89,7 +91,7 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
   }, [open, session?.accessToken, orgId]);
 
   const nextStep = () => {
-    if (step === 1 && (!formData.fullName || !formData.email)) return;
+    if (step === 1 && (!formData.fullName || !formData.email || (formData.creationMode === "DIRECT" && !formData.customPassword))) return;
     if (step === 2 && !formData.globalRole) return;
     setStep(prev => prev + 1);
   };
@@ -105,6 +107,8 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
         fullName: formData.fullName,
         email: formData.email,
         globalRoleId: Number(formData.globalRole),
+        creationMode: formData.creationMode,
+        customPassword: formData.creationMode === "DIRECT" ? formData.customPassword : "",
         projectRoles: Object.entries(projectRoles)
           .filter(([, roleId]) => roleId !== "")
           .map(([projectId, roleId]) => ({
@@ -117,11 +121,11 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
       
-      toast.success("Invitation sent successfully!");
+      toast.success(formData.creationMode === "DIRECT" ? "User created successfully!" : "Invitation sent successfully!");
       onOpenChange(false);
       // Reset
       setStep(1);
-      setFormData({ fullName: "", email: "", globalRole: "" });
+      setFormData({ fullName: "", email: "", globalRole: "", creationMode: "INVITE", customPassword: "" });
       setProjectRoles({});
     } catch (e: unknown) {
       console.error(e);
@@ -155,13 +159,13 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
             <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 4</span>
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight">
-            {step === 1 && "Invite New Member"}
+            {step === 1 && (formData.creationMode === "DIRECT" ? "Create New User Directly" : "Invite New Member")}
             {step === 2 && "Primary Role"}
             {step === 3 && "Project Access"}
-            {step === 4 && "Review & Invite"}
+            {step === 4 && (formData.creationMode === "DIRECT" ? "Review & Create" : "Review & Invite")}
           </DialogTitle>
           <DialogDescription className="text-zinc-500 text-sm">
-            {step === 1 && "Enter the identification details of your team member."}
+            {step === 1 && (formData.creationMode === "DIRECT" ? "Enter the identification details and temporary password." : "Enter the identification details of your team member.")}
             {step === 2 && "Select the main professional role in the organization."}
             {step === 3 && "Optional: Assign specific project-level permissions."}
             {step === 4 && "Quick check of the access levels being granted."}
@@ -178,6 +182,36 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
             <>
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Mode Selection */}
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#141414] border border-[#2a2a2a]">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, creationMode: "INVITE" }))}
+                      className={cn(
+                        "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
+                        formData.creationMode === "INVITE"
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <span>Mode 1: Email Invite</span>
+                      <span className="text-[9px] font-normal opacity-70">Send automated email</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, creationMode: "DIRECT" }))}
+                      className={cn(
+                        "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
+                        formData.creationMode === "DIRECT"
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      )}
+                    >
+                      <span>Mode 2: Direct Creation</span>
+                      <span className="text-[9px] font-normal opacity-70">Custom temporary password</span>
+                    </button>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
                       <User className="size-3" /> Full Name
@@ -192,15 +226,31 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                      <Mail className="size-3" /> Corporate Email
+                      <Mail className="size-3" /> {formData.creationMode === "DIRECT" ? "Email / Username" : "Corporate Email"}
                     </label>
                     <Input 
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="e.g. dodi@example.com" 
+                      placeholder={formData.creationMode === "DIRECT" ? "e.g. dodi@teknisi.local or dodi@example.com" : "e.g. dodi@example.com"} 
                       className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
                     />
                   </div>
+
+                  {formData.creationMode === "DIRECT" && (
+                    <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
+                      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="size-3 text-emerald-50" /> Temporary Password
+                      </label>
+                      <Input 
+                        type="text"
+                        value={formData.customPassword}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customPassword: e.target.value }))}
+                        placeholder="e.g. TeknisiJaya2026!" 
+                        className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10 font-mono"
+                      />
+                      <p className="text-[10px] text-zinc-500">User will be forced to change this password upon first login.</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -266,7 +316,7 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
                 <div className="space-y-4 animate-in zoom-in-95 duration-300">
                   <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-4">
                     <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
-                      <span className="text-[11px] text-emerald-500 font-bold uppercase tracking-widest">Invitation Summary</span>
+                      <span className="text-[11px] text-emerald-500 font-bold uppercase tracking-widest">{formData.creationMode === "DIRECT" ? "Creation Summary" : "Invitation Summary"}</span>
                       <ShieldCheck className="size-4 text-emerald-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-xs">
@@ -287,12 +337,18 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
                         <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Project Access</p>
                         <p className="font-bold text-zinc-200">{Object.keys(projectRoles).filter(k => projectRoles[k] !== "").length} Projects</p>
                       </div>
+                      {formData.creationMode === "DIRECT" && (
+                        <div className="col-span-2 pt-2 border-t border-[#1f1f1f]">
+                          <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Temporary Password</p>
+                          <p className="font-mono font-bold text-amber-400">{formData.customPassword}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-[11px] text-zinc-400">
                     <Mail className="size-4 text-emerald-500 shrink-0" />
-                    <p>An invitation email will be sent to the user with secure login instructions.</p>
+                    <p>{formData.creationMode === "DIRECT" ? "Account will be created instantly. Provide the temporary password directly to the user." : "An invitation email will be sent to the user with secure login instructions."}</p>
                   </div>
                 </div>
               )}
@@ -327,7 +383,7 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
             {step < 4 ? (
               <Button 
                 onClick={nextStep}
-                disabled={isLoading || (step === 1 && (!formData.fullName || !formData.email)) || (step === 2 && !formData.globalRole)}
+                disabled={isLoading || (step === 1 && (!formData.fullName || !formData.email || (formData.creationMode === "DIRECT" && !formData.customPassword))) || (step === 2 && !formData.globalRole)}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 Continue <ChevronRight className="size-4 ml-1" />
@@ -340,10 +396,10 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="size-4 mr-2 animate-spin" /> Sending...
+                    <Loader2 className="size-4 mr-2 animate-spin" /> {formData.creationMode === "DIRECT" ? "Creating..." : "Sending..."}
                   </>
                 ) : (
-                  "Send Invitation"
+                  formData.creationMode === "DIRECT" ? "Create User" : "Send Invitation"
                 )}
               </Button>
             )}
