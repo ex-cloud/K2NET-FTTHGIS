@@ -7,6 +7,8 @@ import com.company.ftthgis.domain.user.entity.User;
 import com.company.ftthgis.domain.user.entity.Role;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.domain.user.repository.RoleRepository;
+import com.company.ftthgis.domain.user.entity.UserAuditLog;
+import com.company.ftthgis.domain.user.repository.UserAuditLogRepository;
 import com.company.ftthgis.api.user.dto.UserInviteRequest;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.Project;
@@ -37,6 +39,7 @@ public class ConfigurableUserService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final OrganizationRepository organizationRepository;
+    private final UserAuditLogRepository userAuditLogRepository;
 
     public ConfigurableUserService(
             RoleRepository roleRepository,
@@ -44,13 +47,15 @@ public class ConfigurableUserService {
             UserRepository userRepository,
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
-            OrganizationRepository organizationRepository) {
+            OrganizationRepository organizationRepository,
+            UserAuditLogRepository userAuditLogRepository) {
         this.roleRepository = roleRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.organizationRepository = organizationRepository;
+        this.userAuditLogRepository = userAuditLogRepository;
     }
 
     public UserDto getCurrentUser(String keycloakSubject) {
@@ -81,9 +86,11 @@ public class ConfigurableUserService {
                     return new RuntimeException("Global Role not found: " + request.getGlobalRoleId());
                 });
 
-        // 3. Create User in Keycloak with default password in the ORGANIZATION'S REALM
-        String defaultPassword = "Password123!"; 
-        log.info("🔑 Creating user in Keycloak realm: {}", organization.getSlug());
+        // 3. Create User in Keycloak with password based on creation mode in the ORGANIZATION'S REALM
+        String defaultPassword = "DIRECT".equalsIgnoreCase(request.getCreationMode()) && request.getCustomPassword() != null && !request.getCustomPassword().isEmpty()
+                ? request.getCustomPassword()
+                : "Password123!"; 
+        log.info("🔑 Creating user in Keycloak realm: {} (Mode: {})", organization.getSlug(), request.getCreationMode());
         String keycloakIdStr = keycloakAdminService.inviteUserInRealm(
                 organization.getSlug(),
                 request.getEmail(),
@@ -152,21 +159,48 @@ public class ConfigurableUserService {
     }
 
     @Transactional
-    public UserDto updateUser(UUID id, String roleName, String status) {
+    public UserDto updateUser(UUID id, String roleName, String status, String reason, String modifiedBySubject) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (roleName != null && !roleName.isEmpty()) {
+        String oldRole = user.getRole() != null ? user.getRole().getName() : null;
+        String oldStatus = user.getStatus();
+
+        if (roleName != null && !roleName.isEmpty() && !roleName.equals(oldRole)) {
             Role role = roleRepository.findByNameAndOrganizationId(roleName, user.getOrganization().getId())
                     .orElseGet(() -> roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)));
             user.setRole(role);
             // Sync to Keycloak - specifically in the user's organization realm
             keycloakAdminService.updateUserRoleInRealm(user.getOrganization().getSlug(), user.getEmail(), roleName);
+
+            UserAuditLog auditLog = UserAuditLog.builder()
+                    .targetUserId(user.getId())
+                    .targetUserEmail(user.getEmail())
+                    .action("UPDATE_ROLE")
+                    .previousValue(oldRole)
+                    .newValue(roleName)
+                    .reason(reason != null && !reason.isEmpty() ? reason : "No reason provided")
+                    .organization(user.getOrganization())
+                    .build();
+            auditLog.setCreatedBy(modifiedBySubject);
+            userAuditLogRepository.save(auditLog);
         }
 
-        if (status != null && !status.isEmpty()) {
+        if (status != null && !status.isEmpty() && !status.equals(oldStatus)) {
             user.setStatus(status);
+
+            UserAuditLog auditLog = UserAuditLog.builder()
+                    .targetUserId(user.getId())
+                    .targetUserEmail(user.getEmail())
+                    .action("UPDATE_STATUS")
+                    .previousValue(oldStatus)
+                    .newValue(status)
+                    .reason(reason != null && !reason.isEmpty() ? reason : "No reason provided")
+                    .organization(user.getOrganization())
+                    .build();
+            auditLog.setCreatedBy(modifiedBySubject);
+            userAuditLogRepository.save(auditLog);
         }
 
         return mapToDto(userRepository.save(user));

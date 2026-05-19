@@ -44,10 +44,11 @@ public class UserController {
     @PutMapping("/{id}")
     public UserDto update(
             @PathVariable UUID id,
-            @RequestBody UpdateUserRequest request) {
-        return userService.updateUser(id, request.role(), request.status());
+            @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return userService.updateUser(id, request.role(), request.status(), request.reason(), jwt.getSubject());
     }
 
-    public record UpdateUserRequest(String role, String status) {
+    public record UpdateUserRequest(String role, String status, String reason) {
     }
 }
