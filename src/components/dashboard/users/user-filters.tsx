@@ -1,8 +1,7 @@
 "use client";
 
-import { RefreshCw, AlertTriangle } from "lucide-react";
+import { RefreshCw, Shield, UserCheck, Building2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -11,12 +10,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 export function UserFilters() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { replace } = useRouter();
+
+  const currentRole = searchParams.get("role") || "all";
+  const currentStatus = searchParams.get("status") || "all";
+  const currentOrg = searchParams.get("org") || "";
+
+  const [orgInput, setOrgInput] = useState(currentOrg);
+
+  useEffect(() => {
+    setOrgInput(currentOrg);
+  }, [currentOrg]);
+
+  const updateParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value && value !== "all") {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.set("page", "0");
+    replace(`${pathname}?${params.toString()}`);
+  };
+
+  const handleOrgSearch = () => {
+    updateParam("org", orgInput);
+  };
+
+  const clearAll = () => {
+    replace(pathname);
+  };
+
+  const roles = [
+    { id: "all", label: "All Roles" },
+    { id: "super_admin", label: "Super Admin" },
+    { id: "admin", label: "Tenant Admin" },
+    { id: "technician", label: "Technician" },
+    { id: "viewer", label: "Viewer" },
+  ];
+
+  const statuses = [
+    { id: "all", label: "All Statuses" },
+    { id: "ACTIVE", label: "Active" },
+    { id: "SUSPENDED", label: "Suspended" },
+  ];
+
   return (
-    <aside className="hidden xl:flex w-80 flex-col border-l border-border/40 bg-background/50 backdrop-blur h-full">
-      <ScrollArea className="h-full">
+    <aside className="hidden xl:flex w-80 flex-col border-l border-border/40 bg-background/50 backdrop-blur shrink-0 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         <div className="p-6 space-y-8">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
@@ -26,132 +75,86 @@ export function UserFilters() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={clearAll}
+              title="Reset filters"
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
 
-          {/* Department */}
+          {/* Organization Filter */}
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Department
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Building2 className="w-3 h-3 text-emerald-500" /> Organization Name / Slug
             </Label>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="dept-eng"
-                  defaultChecked
-                  className="border-white/10 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                />
-                <label
-                  htmlFor="dept-eng"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  Engineering
-                </label>
+            <div className="flex gap-2">
+              <Input
+                value={orgInput}
+                onChange={(e) => setOrgInput(e.target.value)}
+                placeholder="e.g. telkom, indosat..."
+                className="bg-muted/40 border-border/40 text-xs h-9"
+                onKeyDown={(e) => e.key === "Enter" && handleOrgSearch()}
+              />
+              <Button 
+                onClick={handleOrgSearch}
+                size="sm"
+                className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3"
+              >
+                Apply
+              </Button>
+            </div>
+            {currentOrg && (
+              <div className="flex items-center justify-between p-1.5 px-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-[11px] text-emerald-400">
+                <span>Active: <strong>{currentOrg}</strong></span>
+                <X className="w-3.5 h-3.5 cursor-pointer hover:text-white" onClick={() => updateParam("org", "all")} />
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="dept-ops"
-                  className="border-white/10 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                />
-                <label
-                  htmlFor="dept-ops"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            )}
+          </div>
+
+          {/* Global Role */}
+          <div className="space-y-3">
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Shield className="w-3 h-3 text-emerald-500" /> Global Role
+            </Label>
+            <div className="grid grid-cols-1 gap-1.5">
+              {roles.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => updateParam("role", r.id)}
+                  className={cn(
+                    "p-2 text-left rounded text-xs font-medium transition-all flex items-center justify-between border",
+                    currentRole === r.id
+                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold"
+                      : "bg-muted/20 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
                 >
-                  Operations
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="dept-cyber"
-                  className="border-white/10 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                />
-                <label
-                  htmlFor="dept-cyber"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  Cybersecurity
-                </label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="dept-logs"
-                  className="border-white/10 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
-                />
-                <label
-                  htmlFor="dept-logs"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  Logistics
-                </label>
-              </div>
+                  <span>{r.label}</span>
+                  {currentRole === r.id && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Area Group */}
+          {/* Account Status */}
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Area Group
+            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <UserCheck className="w-3 h-3 text-emerald-500" /> Account Status
             </Label>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-full bg-muted/40 border-border/40 text-xs">
-                <SelectValue placeholder="Select Area" />
+            <Select value={currentStatus} onValueChange={(val) => updateParam("status", val)}>
+              <SelectTrigger className="w-full bg-muted/40 border-border/40 text-xs h-9">
+                <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sectors</SelectItem>
-                <SelectItem value="na-hub">North American Hub</SelectItem>
-                <SelectItem value="ea-bb">Euro-Asia Backbone</SelectItem>
-                <SelectItem value="ds-nodes">Deep-Sea Nodes</SelectItem>
+                {statuses.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Security Clearance */}
-          <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Security Clearance
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="p-2 border border-border/40 rounded bg-muted/20 text-[10px] font-bold uppercase text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all">
-                Level 01
-              </button>
-              <button className="p-2 border border-emerald-500 rounded bg-emerald-500/10 text-[10px] font-bold uppercase text-emerald-500">
-                Level 02
-              </button>
-              <button className="p-2 border border-border/40 rounded bg-muted/20 text-[10px] font-bold uppercase text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all">
-                Level 03
-              </button>
-              <button className="p-2 border border-border/40 rounded bg-muted/20 text-[10px] font-bold uppercase text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all">
-                Super User
-              </button>
-            </div>
-          </div>
-
-          {/* Active Alerts */}
-          <div className="bg-background/60 backdrop-blur p-4 rounded-xl border border-dashed border-border/40">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Active Alerts
-              </span>
-              <span className="text-[10px] font-mono text-red-500">
-                2 URGENT
-              </span>
-            </div>
-            <div className="flex items-center gap-3 p-2 bg-red-500/5 border border-red-500/20 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-[10px] text-red-400">
-                Unauthorized access attempt in Sector 7G
-              </span>
-            </div>
-          </div>
         </div>
-      </ScrollArea>
-
-      <div className="p-6 border-t border-border/40 bg-muted/10 mt-auto">
-        <Button className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs font-bold uppercase tracking-widest border border-border/10">
-          Clear All Filters
-        </Button>
       </div>
     </aside>
   );

@@ -21,6 +21,13 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -42,18 +49,21 @@ interface ProjectData {
 interface WizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  organizationId?: string;
 }
 
-export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
+export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardProps) {
   const { data: session } = useSession();
   const params = useParams();
-  const orgId = params.orgId as string;
+  const [selectedOrgId, setSelectedOrgId] = React.useState("");
+  const orgId = organizationId || (params.orgId as string) || selectedOrgId;
   
   const [step, setStep] = React.useState(1);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [globalRoles, setGlobalRoles] = React.useState<GlobalRole[]>([]);
   const [projects, setProjects] = React.useState<ProjectData[]>([]);
+  const [orgList, setOrgList] = React.useState<{ id: string; name: string }[]>([]);
 
   const [formData, setFormData] = React.useState({
     fullName: "",
@@ -65,21 +75,26 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
 
   const [projectRoles, setProjectRoles] = React.useState<Record<string, string>>({});
 
-  // Fetch data when open
+  // Fetch initial data (roles, orgs if global view)
   React.useEffect(() => {
-    if (!open || !session?.accessToken || !orgId) return;
+    if (!open || !session?.accessToken) return;
 
-    const fetchData = async () => {
+    const fetchInitial = async () => {
       setIsLoading(true);
       try {
         const config = { headers: { Authorization: `Bearer ${session.accessToken}` } };
         const baseUrl = getBackendBaseUrl();
-        const [rolesRes, projectsRes] = await Promise.all([
-          axios.get(`${baseUrl}/roles`, config),
-          axios.get(`${baseUrl}/organizations/${orgId}/projects`, config)
-        ]);
+        const rolesRes = await axios.get(`${baseUrl}/roles`, config);
         setGlobalRoles(rolesRes.data || []);
-        setProjects(projectsRes.data.content || projectsRes.data || []);
+
+        const isGlobal = !organizationId && !params.orgId;
+        if (isGlobal) {
+          const orgsRes = await axios.get(`${baseUrl}/organizations`, config);
+          setOrgList(orgsRes.data || []);
+          if (orgsRes.data?.length > 0) {
+            setSelectedOrgId(orgsRes.data[0].id);
+          }
+        }
       } catch (error) {
         console.error(error);
         toast.error("Failed to load setup data.");
@@ -87,7 +102,24 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
         setIsLoading(false);
       }
     };
-    fetchData();
+    fetchInitial();
+  }, [open, session?.accessToken, organizationId, params.orgId]);
+
+  // Fetch projects when orgId changes
+  React.useEffect(() => {
+    if (!open || !session?.accessToken || !orgId) return;
+
+    const fetchProjects = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${session.accessToken}` } };
+        const baseUrl = getBackendBaseUrl();
+        const projectsRes = await axios.get(`${baseUrl}/organizations/${orgId}/projects`, config);
+        setProjects(projectsRes.data.content || projectsRes.data || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchProjects();
   }, [open, session?.accessToken, orgId]);
 
   const nextStep = () => {
@@ -211,6 +243,27 @@ export function TeamInviteWizard({ open, onOpenChange }: WizardProps) {
                       <span className="text-[9px] font-normal opacity-70">Custom temporary password</span>
                     </button>
                   </div>
+
+                  {/* Organization Selection for Global View */}
+                  {(!organizationId && !params.orgId) && (
+                    <div className="space-y-1.5 animate-in fade-in duration-200">
+                      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                        <Briefcase className="size-3" /> Target Organization
+                      </label>
+                      <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+                        <SelectTrigger className="w-full bg-[#141414] border-[#2a2a2a] text-sm h-10">
+                          <SelectValue placeholder="Select Organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {orgList.map((org) => (
+                            <SelectItem key={org.id} value={org.id}>
+                              {org.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">

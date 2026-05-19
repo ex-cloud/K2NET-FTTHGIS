@@ -10,6 +10,7 @@ export async function getUsers(
   search?: string,
   role?: string,
   status?: string,
+  org?: string,
   token?: string,
 ): Promise<PaginatedResponse<User>> {
   if (!token) {
@@ -22,6 +23,7 @@ export async function getUsers(
   if (search) params.append("search", search);
   if (role && role !== "all") params.append("role", role);
   if (status && status !== "all") params.append("status", status);
+  if (org && org !== "all") params.append("org", org);
 
   const res = await httpClient(`${BACKEND_URL}/users?${params.toString()}`, {
     token,

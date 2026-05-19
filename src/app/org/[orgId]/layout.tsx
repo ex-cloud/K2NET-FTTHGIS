@@ -39,7 +39,7 @@ export default function OrganizationContextLayout({
     <div className="flex h-full w-full overflow-hidden bg-background relative">
       <MainSidebar />
       <div className="flex-1 flex min-w-0 overflow-hidden">
-        <SidebarProvider open={open} onOpenChange={setOpen}>
+        <SidebarProvider open={open} onOpenChange={setOpen} className="min-h-0 h-full flex-1 w-full">
           <RealTimeNotificationClient />
           <DetailSlidePanel />
           <div className="flex flex-1 h-full overflow-hidden w-full min-w-0">

@@ -10,6 +10,7 @@ export default async function GlobalUsersPage(props: {
     q?: string;
     role?: string;
     status?: string;
+    org?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -25,7 +26,7 @@ export default async function GlobalUsersPage(props: {
   if (token) {
     try {
       const [users, stats] = await Promise.all([
-        getUsers(page, 10, search, searchParams.role, searchParams.status, token),
+        getUsers(page, 10, search, searchParams.role, searchParams.status, searchParams.org, token),
         getUserStats(token),
       ]);
       usersData = users;
@@ -36,7 +37,7 @@ export default async function GlobalUsersPage(props: {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#0c0c0c] relative">
+    <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-[#0c0c0c] relative">
 
       <div className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-hidden">
         <div className="max-w-[1600px] mx-auto w-full pb-8 h-full flex flex-col space-y-6">

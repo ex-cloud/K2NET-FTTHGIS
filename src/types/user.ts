@@ -8,6 +8,8 @@ export interface User {
   roleName: string;
   roleDisplayName: string;
   organizationName?: string;
+  organizationId?: string;
+  organizationSlug?: string;
   createdAt: string;
   updatedAt: string;
 }

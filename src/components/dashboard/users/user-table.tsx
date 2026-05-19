@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { UpdateUserDialog } from "./update-user-dialog";
 import { UserSearch } from "./user-search";
+import { ResetPasswordDialog } from "./reset-password-dialog";
+import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
 
 interface UserTableProps {
   data: PaginatedResponse<User> | null;
@@ -38,7 +40,10 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
   const totalElements = data?.totalElements || 0;
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isInviteWizardOpen, setIsInviteWizardOpen] = useState(false);
 
   // Calculate pagination range
   const startParam = currentPage * (data?.size || 10) + 1;
@@ -50,6 +55,11 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
   const handleEdit = (user: User) => {
     setSelectedUser(user);
     setIsEditDialogOpen(true);
+  };
+
+  const handleResetPassword = (user: User) => {
+    setSelectedUserForReset(user);
+    setIsResetPasswordDialogOpen(true);
   };
 
   return (
@@ -64,7 +74,10 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
             <Button variant="outline" className="h-9 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 hidden sm:flex">
               Docs
             </Button>
-            <Button className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto">
+            <Button 
+              onClick={() => setIsInviteWizardOpen(true)}
+              className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto"
+            >
               <UserPlus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -158,7 +171,13 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
                       <TableCell className="px-4 py-2">
                         <div className="text-[12px] text-zinc-400 flex items-center gap-2">
                           <Building2 className="w-3.5 h-3.5 text-zinc-500" />
-                          {user.organizationName || "System"}
+                          {user.organizationId ? (
+                            <Link href={`/org/${user.organizationId}`} className="hover:text-emerald-400 hover:underline font-medium transition-colors">
+                              {user.organizationName}
+                            </Link>
+                          ) : (
+                            <span>{user.organizationName || "System"}</span>
+                          )}
                         </div>
                       </TableCell>
                     )}
@@ -191,6 +210,7 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
+                          onClick={() => handleResetPassword(user)}
                         >
                           <Key className="w-3.5 h-3.5" />
                         </Button>
@@ -249,6 +269,17 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         user={selectedUser}
+      />
+      {selectedUserForReset && (
+        <ResetPasswordDialog
+          open={isResetPasswordDialogOpen}
+          onOpenChange={setIsResetPasswordDialogOpen}
+          user={selectedUserForReset}
+        />
+      )}
+      <TeamInviteWizard 
+        open={isInviteWizardOpen} 
+        onOpenChange={setIsInviteWizardOpen} 
       />
     </>
   );

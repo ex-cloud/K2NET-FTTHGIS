@@ -21,8 +21,8 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 overflow-hidden relative">
         <AdminSidebar />
         <div className="flex-1 flex min-w-0 overflow-hidden">
-          <SidebarProvider open={open} onOpenChange={setOpen}>
-            <div className="flex flex-1 h-full overflow-hidden w-full min-w-0">
+          <SidebarProvider open={open} onOpenChange={setOpen} className="min-h-0 h-full flex-1 w-full">
+            <div className="flex flex-1 h-full overflow-hidden w-full min-h-0">
               <SystemSecondarySidebar />
               <div className="flex-1 flex flex-col min-w-0 w-0 overflow-hidden relative">
                 <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 bg-[#080808]">

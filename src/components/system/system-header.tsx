@@ -15,7 +15,7 @@ export function SystemHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="flex h-12 w-full items-center justify-between border-b border-border bg-background px-4 z-50 py-2">
+    <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border bg-background px-4 z-50 py-2">
       <div className="flex items-center gap-x-1">
         <Link href="/system" className="flex items-center cursor-pointer mr-1">
           <div className="flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group">
