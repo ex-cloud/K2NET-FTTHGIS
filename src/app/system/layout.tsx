@@ -7,11 +7,41 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 
+import * as React from "react";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
+
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { open, setOpen } = useSidebarMode();
+  const { settings = [] } = useSystemSettings();
+
   // Due to subdomain rewrite, pathname might be just '/login' on the client side
   const isLoginPage = pathname === "/system/login" || pathname === "/login";
+
+  // Dynamic branding browser tab title & favicon sync
+  React.useEffect(() => {
+    if (isLoginPage) return;
+
+    const appName = settings.find((s) => s.key === "app_name")?.value;
+    const logoUrl = settings.find((s) => s.key === "logo_url")?.value;
+
+    if (appName) {
+      const segments = pathname.split("/").filter(Boolean);
+      const lastSegment = segments[segments.length - 1] || "Overview";
+      const pageTitle = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+      document.title = lastSegment.toLowerCase() === "system" ? appName : `${pageTitle} | ${appName}`;
+    }
+
+    if (logoUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = logoUrl;
+    }
+  }, [settings, pathname, isLoginPage]);
 
   if (isLoginPage) return <>{children}</>;
 

@@ -11,20 +11,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useProjects } from "@/hooks/useProjects";
+import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
 
 export function NavProjectSwitcher() {
   const pathname = usePathname();
   const params = useParams();
+  const router = useRouter();
   const [search, setSearch] = React.useState("");
+  const [wizardOpen, setWizardOpen] = React.useState(false);
 
   const orgId = params.orgId as string;
   const projectId = params.projectId as string;
 
-  const { projects, loading } = useProjects(orgId);
+  const { projects, loading, refresh } = useProjects(orgId);
 
   const currentProject = projects.find((p) => String(p.id) === String(projectId));
 
@@ -140,23 +143,39 @@ export function NavProjectSwitcher() {
             )}
           </div>
           <DropdownMenuSeparator className="bg-border mx-0 mt-0" />
-          <div className="p-1">
+          <div className="p-1 space-y-0.5">
             <DropdownMenuItem 
-              asChild
               className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
+              onClick={() => router.push(`/org/${orgId}`)}
             >
-              <Link href={`/org/${orgId}`} className="flex items-center gap-2 w-full">
-                <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
-                  <Plus className="size-3.5" />
-                </div>
-                <div className="font-medium text-xs">
-                  New Project
-                </div>
-              </Link>
+              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                <Search className="size-3.5" strokeWidth={1.5} />
+              </div>
+              <div className="font-medium text-xs">
+                All Projects
+              </div>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem 
+              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
+              onClick={() => setWizardOpen(true)}
+            >
+              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                <Plus className="size-3.5" strokeWidth={1.5} />
+              </div>
+              <div className="font-medium text-xs">
+                New Project
+              </div>
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ProjectCreateWizard 
+        open={wizardOpen} 
+        onOpenChange={setWizardOpen} 
+        onSuccess={refresh} 
+      />
     </div>
   );
 }

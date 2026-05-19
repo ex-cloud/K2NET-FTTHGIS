@@ -18,7 +18,7 @@ import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { OrganizationWizard } from "./organization-wizard";
-import { getTenantUrl, getBaseUrl } from "@/lib/domain";
+import { getTenantUrl } from "@/lib/domain";
 import { useUIStore } from "@/store/ui-store";
 import { useRouter } from "next/navigation";
 
@@ -44,6 +44,7 @@ export function NavOrgSwitcher() {
   const orgIdFromPath = segments[1];
   const activeSlug = tenantSlug || orgIdFromPath;
   const currentOrg = organizations.find((o) => o.slug === activeSlug);
+  const isFreePlan = currentOrg && (!currentOrg.subscriptionPlan || currentOrg.subscriptionPlan.name?.toUpperCase() === 'FREE');
 
   const filteredOrgs = organizations.filter((o) =>
     o.name.toLowerCase().includes(search.toLowerCase()),
@@ -210,7 +211,7 @@ export function NavOrgSwitcher() {
           <div className="p-1">
             <DropdownMenuItem 
               className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
-              onClick={() => window.location.assign(getBaseUrl() + "/organizations")}
+              onClick={() => router.push("/org")}
             >
               <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
                 <Search className="size-3.5" strokeWidth={1.5} />
@@ -220,17 +221,19 @@ export function NavOrgSwitcher() {
               </div>
             </DropdownMenuItem>
 
-            <DropdownMenuItem 
-              onClick={() => setWizardOpen(true)}
-              className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
-            >
-              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
-                <Plus className="size-3.5" strokeWidth={1.5} />
-              </div>
-              <div className="font-medium text-xs">
-                New Organization
-              </div>
-            </DropdownMenuItem>
+            {!isFreePlan && (
+              <DropdownMenuItem 
+                onClick={() => setWizardOpen(true)}
+                className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
+              >
+                <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
+                  <Plus className="size-3.5" strokeWidth={1.5} />
+                </div>
+                <div className="font-medium text-xs">
+                  New Organization
+                </div>
+              </DropdownMenuItem>
+            )}
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

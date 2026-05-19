@@ -30,6 +30,7 @@ import {
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 interface WizardProps {
   open: boolean;
@@ -39,7 +40,8 @@ interface WizardProps {
 
 export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProps) {
   const [step, setStep] = React.useState(1);
-  const { createOrganization, checkSlugAvailable } = useOrganizations();
+  const { createOrganization, checkSlugAvailable, organizations } = useOrganizations();
+  const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [testingLdap, setTestingLdap] = React.useState(false);
   const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
@@ -210,6 +212,55 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
       setTestingLdap(false);
     }
   };
+
+  const user = session?.user;
+  const userRoles = user?.roles || [];
+  const issuer = (session as { issuer?: string })?.issuer || "";
+  const isSuperAdmin = 
+    issuer.includes("ftth-realm") || 
+    issuer.includes("/system") || 
+    userRoles.includes("super_admin") || 
+    userRoles.includes("ROLE_SUPER_ADMIN");
+
+  const hasFreePlan = organizations.some(org => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
+  const isLimitReached = !isSuperAdmin && hasFreePlan;
+
+  if (isLimitReached) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[450px] bg-[#0c0c0c] border-[#1f1f1f] text-zinc-100 p-6 outline-none">
+          <div className="flex flex-col items-center text-center space-y-4 py-4">
+            <div className="size-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-2">
+              <Zap className="size-6" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Upgrade to Create More</h3>
+            <p className="text-zinc-400 text-sm max-w-sm">
+              Your active tenant is on the <strong className="text-amber-500 font-medium">FREE</strong> plan, which is limited to 1 organization. 
+              Please upgrade your plan to unlock unlimited organizations and premium features.
+            </p>
+            <div className="flex items-center gap-3 w-full pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="flex-1 bg-transparent border-[#2a2a2a] text-zinc-400 hover:text-white hover:bg-zinc-900 cursor-pointer h-9 text-xs"
+              >
+                Close
+              </Button>
+              <Button 
+                onClick={() => {
+                  onOpenChange(false);
+                  window.location.assign("/org");
+                }}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-semibold cursor-pointer h-9 text-xs"
+              >
+                Manage Plan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
