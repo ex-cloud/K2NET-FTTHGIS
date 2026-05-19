@@ -17,8 +17,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-05-19T12:03:41+0700",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.9 (Eclipse Adoptium)"
+    date = "2026-05-19T15:43:13+0700",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
 )
 @Component
 public class NetworkMapperImpl implements NetworkMapper {
@@ -34,16 +34,16 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDCDto.setOltId( odcOltId( odc ) );
         oDCDto.setOltName( odcOltName( odc ) );
         oDCDto.setOltCode( odcOltCode( odc ) );
-        oDCDto.setId( odc.getId() );
-        oDCDto.setCode( odc.getCode() );
-        oDCDto.setName( odc.getName() );
-        oDCDto.setGeom( odc.getGeom() );
-        oDCDto.setCapacity( odc.getCapacity() );
-        oDCDto.setUsedCapacity( odc.getUsedCapacity() );
-        oDCDto.setStatus( odc.getStatus() );
-        oDCDto.setHealthStatus( odc.getHealthStatus() );
-        oDCDto.setLastNote( odc.getLastNote() );
         oDCDto.setAddress( odc.getAddress() );
+        oDCDto.setCapacity( odc.getCapacity() );
+        oDCDto.setCode( odc.getCode() );
+        oDCDto.setGeom( odc.getGeom() );
+        oDCDto.setHealthStatus( odc.getHealthStatus() );
+        oDCDto.setId( odc.getId() );
+        oDCDto.setLastNote( odc.getLastNote() );
+        oDCDto.setName( odc.getName() );
+        oDCDto.setStatus( odc.getStatus() );
+        oDCDto.setUsedCapacity( odc.getUsedCapacity() );
 
         oDCDto.setNodeType( "ODC" );
 
@@ -61,16 +61,16 @@ public class NetworkMapperImpl implements NetworkMapper {
         oDPDto.setOdcId( odpOdcId( odp ) );
         oDPDto.setOdcName( odpOdcName( odp ) );
         oDPDto.setOdcCode( odpOdcCode( odp ) );
-        oDPDto.setId( odp.getId() );
-        oDPDto.setOsmid( odp.getOsmid() );
+        oDPDto.setAddress( odp.getAddress() );
         oDPDto.setCode( odp.getCode() );
         oDPDto.setGeom( odp.getGeom() );
+        oDPDto.setHealthStatus( odp.getHealthStatus() );
+        oDPDto.setId( odp.getId() );
+        oDPDto.setLastNote( odp.getLastNote() );
+        oDPDto.setOsmid( odp.getOsmid() );
+        oDPDto.setStatus( odp.getStatus() );
         oDPDto.setTotalPort( odp.getTotalPort() );
         oDPDto.setUsedPort( odp.getUsedPort() );
-        oDPDto.setStatus( odp.getStatus() );
-        oDPDto.setHealthStatus( odp.getHealthStatus() );
-        oDPDto.setLastNote( odp.getLastNote() );
-        oDPDto.setAddress( odp.getAddress() );
 
         oDPDto.setNodeType( "ODP" );
 
@@ -85,16 +85,16 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         OLTDto oLTDto = new OLTDto();
 
-        oLTDto.setId( olt.getId() );
+        oLTDto.setAddress( olt.getAddress() );
         oLTDto.setCode( olt.getCode() );
-        oLTDto.setName( olt.getName() );
+        oLTDto.setGeom( olt.getGeom() );
+        oLTDto.setHealthStatus( olt.getHealthStatus() );
+        oLTDto.setId( olt.getId() );
         oLTDto.setIpAddress( olt.getIpAddress() );
+        oLTDto.setLastNote( olt.getLastNote() );
+        oLTDto.setName( olt.getName() );
         oLTDto.setSnmpCommunity( olt.getSnmpCommunity() );
         oLTDto.setStatus( olt.getStatus() );
-        oLTDto.setHealthStatus( olt.getHealthStatus() );
-        oLTDto.setGeom( olt.getGeom() );
-        oLTDto.setLastNote( olt.getLastNote() );
-        oLTDto.setAddress( olt.getAddress() );
 
         oLTDto.setNodeType( "OLT" );
         oLTDto.setLng( olt.getGeom() != null ? olt.getGeom().getX() : null );
@@ -112,12 +112,12 @@ public class NetworkMapperImpl implements NetworkMapper {
         FiberCableDto fiberCableDto = new FiberCableDto();
 
         fiberCableDto.setGeom( cable.getGeometry() );
-        fiberCableDto.setId( cable.getId() );
         fiberCableDto.setCode( cable.getCode() );
         fiberCableDto.setFiberCount( cable.getFiberCount() );
-        fiberCableDto.setStatus( cable.getStatus() );
-        fiberCableDto.setLengthMeters( cable.getLengthMeters() );
+        fiberCableDto.setId( cable.getId() );
         fiberCableDto.setLastNote( cable.getLastNote() );
+        fiberCableDto.setLengthMeters( cable.getLengthMeters() );
+        fiberCableDto.setStatus( cable.getStatus() );
 
         return fiberCableDto;
     }
@@ -131,12 +131,12 @@ public class NetworkMapperImpl implements NetworkMapper {
         FiberCable.FiberCableBuilder<?, ?> fiberCable = FiberCable.builder();
 
         fiberCable.geometry( dto.getGeom() );
-        fiberCable.id( dto.getId() );
         fiberCable.code( dto.getCode() );
         fiberCable.fiberCount( dto.getFiberCount() );
-        fiberCable.status( dto.getStatus() );
-        fiberCable.lengthMeters( dto.getLengthMeters() );
+        fiberCable.id( dto.getId() );
         fiberCable.lastNote( dto.getLastNote() );
+        fiberCable.lengthMeters( dto.getLengthMeters() );
+        fiberCable.status( dto.getStatus() );
 
         return fiberCable.build();
     }
@@ -151,11 +151,11 @@ public class NetworkMapperImpl implements NetworkMapper {
 
         assetDto.setCategoryName( assetCategoryName( asset ) );
         assetDto.setId( asset.getId() );
-        assetDto.setSerialNumber( asset.getSerialNumber() );
         assetDto.setName( asset.getName() );
-        assetDto.setStatus( asset.getStatus() );
         assetDto.setPrice( asset.getPrice() );
         assetDto.setPurchaseDate( asset.getPurchaseDate() );
+        assetDto.setSerialNumber( asset.getSerialNumber() );
+        assetDto.setStatus( asset.getStatus() );
 
         return assetDto;
     }
