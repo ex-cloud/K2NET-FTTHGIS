@@ -139,6 +139,21 @@ public class KeycloakAdminService {
         }
     }
 
+    public void resetUserPasswordInRealm(String targetRealm, String userId, String newPassword, boolean temporary) {
+        try {
+            CredentialRepresentation credential = new CredentialRepresentation();
+            credential.setType(CredentialRepresentation.PASSWORD);
+            credential.setValue(newPassword);
+            credential.setTemporary(temporary);
+            
+            keycloak.realm(targetRealm).users().get(userId).resetPassword(credential);
+            log.info("Successfully reset password for user ID {} in realm {} (temporary: {})", userId, targetRealm, temporary);
+        } catch (Exception e) {
+            log.error("Failed to reset password in Keycloak for user {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Failed to reset password in Keycloak: " + e.getMessage());
+        }
+    }
+
     public void updateUserRole(String email, String newRoleName) {
         updateUserRoleInRealm(defaultRealm, email, newRoleName);
     }

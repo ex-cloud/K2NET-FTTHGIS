@@ -41,6 +41,22 @@ public class ConfigurableUserService {
     private final OrganizationRepository organizationRepository;
     private final UserAuditLogRepository userAuditLogRepository;
 
+    /**
+     * Helper to resolve the correct Keycloak Realm based on architectural rules.
+     * System staff (ex-cloud-org or null org) reside in 'ftth-realm'.
+     * Tenant staff reside in their respective organization slug realm.
+     */
+    private String resolveKeycloakRealm(Organization org) {
+        if (org == null) {
+            return "ftth-realm";
+        }
+        String slug = org.getSlug();
+        if ("ex-cloud-org".equals(slug) || "system".equals(slug)) {
+            return "ftth-realm";
+        }
+        return slug;
+    }
+
     public ConfigurableUserService(
             RoleRepository roleRepository,
             KeycloakAdminService keycloakAdminService,
@@ -90,9 +106,10 @@ public class ConfigurableUserService {
         String defaultPassword = "DIRECT".equalsIgnoreCase(request.getCreationMode()) && request.getCustomPassword() != null && !request.getCustomPassword().isEmpty()
                 ? request.getCustomPassword()
                 : "Password123!"; 
-        log.info("🔑 Creating user in Keycloak realm: {} (Mode: {})", organization.getSlug(), request.getCreationMode());
+        String targetRealm = resolveKeycloakRealm(organization);
+        log.info("🔑 Creating user in Keycloak realm: {} (Mode: {})", targetRealm, request.getCreationMode());
         String keycloakIdStr = keycloakAdminService.inviteUserInRealm(
-                organization.getSlug(),
+                targetRealm,
                 request.getEmail(),
                 request.getEmail(),
                 request.getFullName(),
@@ -122,7 +139,7 @@ public class ConfigurableUserService {
 
         // Sync role to Keycloak specifically in the user's organization realm
         log.info("🛡️ Syncing role '{}' to Keycloak for {}", globalRole.getName(), request.getEmail());
-        keycloakAdminService.updateUserRoleInRealm(organization.getSlug(), request.getEmail(), globalRole.getName());
+        keycloakAdminService.updateUserRoleInRealm(targetRealm, request.getEmail(), globalRole.getName());
 
         // 5. Create Project Role Assignments
         if (request.getProjectRoles() != null && !request.getProjectRoles().isEmpty()) {
@@ -171,8 +188,18 @@ public class ConfigurableUserService {
                     .orElseGet(() -> roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                             .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)));
             user.setRole(role);
-            // Sync to Keycloak - specifically in the user's organization realm
-            keycloakAdminService.updateUserRoleInRealm(user.getOrganization().getSlug(), user.getEmail(), roleName);
+            // Sync to Keycloak
+            String targetRealm = resolveKeycloakRealm(user.getOrganization());
+            try {
+                keycloakAdminService.updateUserRoleInRealm(targetRealm, user.getEmail(), roleName);
+            } catch (Exception e) {
+                if (e.getMessage() != null && e.getMessage().contains("404")) {
+                    log.warn("User {} not found in realm {}, falling back to master realm", user.getEmail(), targetRealm);
+                    keycloakAdminService.updateUserRoleInRealm("master", user.getEmail(), roleName);
+                } else {
+                    throw e;
+                }
+            }
 
             UserAuditLog auditLog = UserAuditLog.builder()
                     .targetUserId(user.getId())
@@ -206,7 +233,43 @@ public class ConfigurableUserService {
         return mapToDto(userRepository.save(user));
     }
 
-    public Page<UserDto> findAll(String search, String role, String status, Pageable pageable) {
+    @Transactional
+    public void resetPassword(UUID userId, String newPassword, boolean temporary, String modifiedBySubject) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String realm = resolveKeycloakRealm(user.getOrganization());
+        
+        // Ensure Keycloak ID format (UUID to String)
+        String keycloakId = user.getId().toString();
+        
+        // Reset password in Keycloak with fallback
+        try {
+            keycloakAdminService.resetUserPasswordInRealm(realm, keycloakId, newPassword, temporary);
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("404")) {
+                log.warn("User {} not found in realm {}, falling back to master realm", keycloakId, realm);
+                keycloakAdminService.resetUserPasswordInRealm("master", keycloakId, newPassword, temporary);
+            } else {
+                throw e;
+            }
+        }
+
+        // Audit Logging
+        UserAuditLog auditLog = UserAuditLog.builder()
+                .targetUserId(user.getId())
+                .targetUserEmail(user.getEmail())
+                .action("RESET_PASSWORD")
+                .previousValue("HIDDEN")
+                .newValue(temporary ? "TEMPORARY" : "PERMANENT")
+                .reason("Admin initiated password reset")
+                .organization(user.getOrganization())
+                .build();
+        auditLog.setCreatedBy(modifiedBySubject);
+        userAuditLogRepository.save(auditLog);
+    }
+
+    public Page<UserDto> findAll(String search, String role, String status, String org, Pageable pageable) {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -224,6 +287,14 @@ public class ConfigurableUserService {
 
             if (status != null && !status.isEmpty() && !status.equals("all")) {
                 predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (org != null && !org.isEmpty() && !org.equals("all")) {
+                String likeOrg = "%" + org.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("organization").get("name")), likeOrg),
+                        cb.like(cb.lower(root.get("organization").get("slug")), likeOrg)
+                ));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -297,6 +368,8 @@ public class ConfigurableUserService {
                 .roleName(user.getRole() != null ? user.getRole().getName() : "USER")
                 .roleDisplayName(user.getRole() != null ? user.getRole().getDisplayName() : "User")
                 .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)
+                .organizationId(user.getOrganization() != null ? user.getOrganization().getId() : null)
+                .organizationSlug(user.getOrganization() != null ? user.getOrganization().getSlug() : null)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)

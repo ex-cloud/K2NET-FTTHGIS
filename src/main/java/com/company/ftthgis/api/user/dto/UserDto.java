@@ -22,6 +22,8 @@ public class UserDto {
     private String roleName;
     private String roleDisplayName;
     private String organizationName;
+    private UUID organizationId;
+    private String organizationSlug;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<ProjectRoleDto> projectRoles;
