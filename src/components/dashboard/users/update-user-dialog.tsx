@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/types/user";
 import { useSession } from "next-auth/react";
 import { updateUser } from "@/lib/api/users";
@@ -40,19 +41,23 @@ export function UpdateUserDialog({
   const router = useRouter();
   const [role, setRole] = useState<string>(user?.roleName || "");
   const [status, setStatus] = useState<string>(user?.status || "");
+  const [reason, setReason] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   // Sync state when user changes
   if (user && role === "" && user.roleName !== role) setRole(user.roleName);
   if (user && status === "" && user.status !== status) setStatus(user.status);
 
+  const isValid = reason.trim().length >= 5;
+
   const handleSave = async () => {
-    if (!user || !session?.accessToken) return;
+    if (!user || !session?.accessToken || !isValid) return;
 
     setLoading(true);
     try {
-      await updateUser(user.id, { role, status }, session.accessToken);
+      await updateUser(user.id, { role, status, reason: reason.trim() }, session.accessToken);
       toast.success("User updated successfully");
+      setReason("");
       onOpenChange(false);
       router.refresh();
     } catch (e) {
@@ -119,6 +124,23 @@ export function UpdateUserDialog({
               </Button>
             </div>
           </div>
+
+          {/* Audit Notes / Reason */}
+          <div className="space-y-2">
+            <Label className="flex justify-between">
+              <span>Reason for Change / Audit Notes <span className="text-destructive">*</span></span>
+              <span className="text-[10px] text-muted-foreground">Min. 5 characters</span>
+            </Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Provide a valid business reason for modifying this user's access or status..."
+              className="resize-none h-20"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              This action will be permanently recorded in the system audit logs.
+            </p>
+          </div>
         </div>
 
         <DialogFooter>
@@ -131,7 +153,7 @@ export function UpdateUserDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={loading}
+            disabled={loading || !isValid}
             className="bg-emerald-500 hover:bg-emerald-600"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

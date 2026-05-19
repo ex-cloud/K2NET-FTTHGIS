@@ -37,7 +37,7 @@ export async function getUsers(
 
 export async function updateUser(
   id: string,
-  data: { role?: string; status?: string },
+  data: { role?: string; status?: string; reason?: string },
   token: string,
 ): Promise<User> {
   const res = await httpClient(`${BACKEND_URL}/users/${id}`, {

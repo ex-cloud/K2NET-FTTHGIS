@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
+import { UpdateUserDialog } from "@/components/dashboard/users/update-user-dialog";
 import { 
   Select, 
   SelectContent, 
@@ -37,6 +38,8 @@ interface UserData {
 
 export default function OrganizationTeamPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const { data: session } = useSession();
   const params = useParams();
   const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
@@ -118,6 +121,30 @@ export default function OrganizationTeamPage() {
             setIsWizardOpen(open);
             if (!open) fetchMembers(); // Refresh when closed
           }} 
+        />
+
+        <UpdateUserDialog
+          user={
+            selectedUser
+              ? {
+                  id: selectedUser.id,
+                  email: selectedUser.email,
+                  fullName: selectedUser.fullName,
+                  username: selectedUser.username,
+                  avatarUrl: selectedUser.avatarUrl,
+                  status: selectedUser.status,
+                  roleName: selectedUser.roleName,
+                  roleDisplayName: selectedUser.roleDisplayName,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }
+              : null
+          }
+          open={isUpdateDialogOpen}
+          onOpenChange={(open) => {
+            setIsUpdateDialogOpen(open);
+            if (!open) fetchMembers(); // Refresh when closed
+          }}
         />
 
         {/* Stats Row */}
@@ -238,7 +265,15 @@ export default function OrganizationTeamPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" className="text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => {
+                          setSelectedUser(member);
+                          setIsUpdateDialogOpen(true);
+                        }}
+                      >
                         Edit Access
                       </Button>
                     </td>
