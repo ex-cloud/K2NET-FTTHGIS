@@ -16,7 +16,9 @@ import {
   Monitor,
   Calendar,
   Layers,
-  Network
+  Network,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,20 @@ export default function SystemAuthPage() {
   const [regAllowed, setRegAllowed] = useState(false);
   const [emailVerify, setEmailVerify] = useState(false);
   const [resetAllowed, setResetAllowed] = useState(false);
+
+  // Local state for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Reset page when sessions count changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sessions.length]);
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentSessions = sessions.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sessions.length / itemsPerPage);
 
   // Local state for SSO inputs
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
@@ -335,55 +351,94 @@ export default function SystemAuthPage() {
                 No active SSO sessions found on this server.
               </div>
             ) : (
-              <div className="overflow-x-auto border border-zinc-850 rounded-xl bg-zinc-950/30">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-800/80 bg-zinc-900/40 text-zinc-400 font-medium">
-                      <th className="p-4">User</th>
-                      <th className="p-4">IP Address</th>
-                      <th className="p-4">Login Time</th>
-                      <th className="p-4">Last Access</th>
-                      <th className="p-4">Client Access</th>
-                      <th className="p-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sessions.map((session) => (
-                      <tr key={session.id} className="border-b border-zinc-800/40 hover:bg-zinc-900/10 text-zinc-300">
-                        <td className="p-4 font-medium flex items-center gap-2">
-                          <Monitor className="w-3.5 h-3.5 text-zinc-500" /> {session.username}
-                        </td>
-                        <td className="p-4 font-mono text-zinc-400">{session.ipAddress}</td>
-                        <td className="p-4">
-                          {new Date(session.start).toLocaleString("id-ID", { hour12: false })}
-                        </td>
-                        <td className="p-4">
-                          {new Date(session.lastAccess).toLocaleString("id-ID", { hour12: false })}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex flex-wrap gap-1">
-                            {session.clients.map((client) => (
-                              <span key={client} className="text-[9px] bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded font-mono text-zinc-400">
-                                {client}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleRevokeSession(session.id)}
-                            disabled={isRevokingSession}
-                            className="bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" /> Revoke
-                          </Button>
-                        </td>
+              <>
+                <div className="overflow-x-auto border border-zinc-850 rounded-xl bg-zinc-950/30">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-800/80 bg-zinc-900/40 text-zinc-400 font-medium">
+                        <th className="p-4">User</th>
+                        <th className="p-4">Tenant / Organization</th>
+                        <th className="p-4">IP Address</th>
+                        <th className="p-4">Login Time</th>
+                        <th className="p-4">Last Access</th>
+                        <th className="p-4">Client Access</th>
+                        <th className="p-4 text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {currentSessions.map((session) => (
+                        <tr key={session.id} className="border-b border-zinc-800/40 hover:bg-zinc-900/10 text-zinc-300">
+                          <td className="p-4 font-medium flex items-center gap-2">
+                            <Monitor className="w-3.5 h-3.5 text-zinc-500" /> {session.username}
+                          </td>
+                          <td className="p-4">
+                            <span className="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-300 font-medium font-sans">
+                              {session.tenant || "System/Root"}
+                            </span>
+                          </td>
+                          <td className="p-4 font-mono text-zinc-400">{session.ipAddress}</td>
+                          <td className="p-4">
+                            {new Date(session.start).toLocaleString("id-ID", { hour12: false })}
+                          </td>
+                          <td className="p-4">
+                            {new Date(session.lastAccess).toLocaleString("id-ID", { hour12: false })}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1">
+                              {session.clients.map((client) => (
+                                <span key={client} className="text-[9px] bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded font-mono text-zinc-400">
+                                  {client}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <Button
+                              variant="destructive"
+                              onClick={() => handleRevokeSession(session.id)}
+                              disabled={isRevokingSession}
+                              className="bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" /> Revoke
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {sessions.length > itemsPerPage && (
+                  <div className="flex items-center justify-between mt-4 px-2">
+                    <span className="text-xs text-zinc-400">
+                      Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sessions.length)} of {sessions.length} sessions
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-xs text-zinc-300 px-2 font-medium">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="mt-6 p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 flex items-start gap-3">

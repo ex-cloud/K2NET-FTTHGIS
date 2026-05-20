@@ -16,6 +16,7 @@ export interface ActiveSession {
   start: number;
   lastAccess: number;
   clients: string[];
+  tenant?: string;
 }
 
 export interface SsoProvider {
