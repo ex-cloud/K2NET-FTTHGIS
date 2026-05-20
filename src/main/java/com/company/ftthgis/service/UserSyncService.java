@@ -163,7 +163,7 @@ public class UserSyncService {
         log.info("Provisioning new local user profile for {} (Keycloak ID: {}) in Org: {}", 
             email, keycloakId, org != null ? org.getSlug() : "NONE");
 
-        Role viewerRole = roleRepository.findByName("viewer")
+        Role viewerRole = roleRepository.findByNameAndIsSystemRoleTrue("viewer")
                 .orElseThrow(() -> new RuntimeException("Default 'viewer' role not found in database"));
 
         User user = new User();

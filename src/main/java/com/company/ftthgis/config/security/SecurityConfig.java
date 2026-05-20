@@ -39,12 +39,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
             RateLimitingFilter rateLimitingFilter,
+            IpBlockingFilter ipBlockingFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(ipBlockingFilter, RateLimitingFilter.class)
                 .addFilterAfter(organizationStatusFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth

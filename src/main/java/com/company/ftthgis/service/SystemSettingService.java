@@ -43,6 +43,12 @@ public class SystemSettingService {
         // SECURITY
         defaults.put("allow_self_registration", new String[]{"false", "SECURITY", "Enables or disables global self-registration for new users"});
         defaults.put("enforce_mfa", new String[]{"false", "SECURITY", "Forces all global and tenant users to set up 2FA/MFA"});
+        defaults.put("session_idle_timeout", new String[]{"15", "SECURITY", "Idle timeout in minutes before user session is auto-locked or logged out"});
+        defaults.put("map_auto_lock_duration", new String[]{"10", "SECURITY", "Inactive duration in minutes before mapping canvas is auto-locked for security"});
+        defaults.put("wa_gateway_enabled", new String[]{"false", "SECURITY", "Enables or disables WhatsApp notification gateway integration"});
+        defaults.put("wa_gateway_api_url", new String[]{"https://api.whatsapp-gateway.com/send", "SECURITY", "Base API endpoint for sending WhatsApp messages"});
+        defaults.put("wa_gateway_token", new String[]{"token_secret_placeholder", "SECURITY", "Secret token/credential key for WhatsApp Notification Gateway authorization"});
+        defaults.put("wa_otp_enabled", new String[]{"false", "SECURITY", "Enables global WhatsApp OTP multi-factor authentication check upon login"});
 
         // GIS
         defaults.put("default_map_lat", new String[]{"-6.9175", "GIS", "Default center Latitude of the GIS Map"});
@@ -111,5 +117,23 @@ public class SystemSettingService {
             // 3. Connection is reachable and responded to HELO
             log.info("✅ SMTP Connection test to {}:{} succeeded!", host, port);
         }
+    }
+
+    public String getSettingValue(String key) {
+        return settingRepository.findById(key)
+                .map(SystemSetting::getValue)
+                .orElse("");
+    }
+
+    public String getSettingValue(String key, String defaultValue) {
+        return settingRepository.findById(key)
+                .map(SystemSetting::getValue)
+                .orElse(defaultValue);
+    }
+
+    public boolean getSettingBoolean(String key, boolean defaultValue) {
+        return settingRepository.findById(key)
+                .map(setting -> "true".equalsIgnoreCase(setting.getValue()))
+                .orElse(defaultValue);
     }
 }

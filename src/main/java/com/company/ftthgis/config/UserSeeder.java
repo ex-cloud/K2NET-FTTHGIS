@@ -88,12 +88,14 @@ public class UserSeeder implements CommandLineRunner {
     private void seedRoles() {
         for (Map.Entry<String, List<String>> entry : ROLE_PERMISSIONS.entrySet()) {
             String roleName = entry.getKey();
-            Role role = roleRepository.findByName(roleName).orElse(new Role());
+            Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName).orElse(null);
             
-            if (role.getId() == null) {
+            if (role == null) {
+                role = new Role();
                 role.setName(roleName);
                 role.setDisplayName(roleName.replace("_", " ").toUpperCase());
                 role.setDescription("System Role: " + roleName);
+                role.setSystemRole(true);
                 log.info("Creating Role: {}", roleName);
             } else {
                 log.info("Updating Role permissions: {}", roleName);
@@ -145,7 +147,7 @@ public class UserSeeder implements CommandLineRunner {
 
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isEmpty()) {
-            Role role = roleRepository.findByName(roleName)
+            Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                     .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
 
             User user = new User();
@@ -187,7 +189,7 @@ public class UserSeeder implements CommandLineRunner {
             
             // Update role locally if different
             if (!user.getRole().getName().equals(roleName)) {
-                Role newRole = roleRepository.findByName(roleName)
+                Role newRole = roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                         .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
                 user.setRole(newRole);
                 changed = true;

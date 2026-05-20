@@ -132,6 +132,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- GeoIP Lookup for Security Monitoring -->
+		<dependency>
+			<groupId>com.maxmind.geoip2</groupId>
+			<artifactId>geoip2</artifactId>
+			<version>4.2.0</version>
+		</dependency>
+
 		<!-- Rate Limiting -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

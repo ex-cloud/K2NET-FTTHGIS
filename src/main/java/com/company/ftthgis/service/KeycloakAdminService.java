@@ -9,12 +9,17 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserSessionRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ import java.util.List;
 public class KeycloakAdminService {
 
     private final Keycloak keycloak;
+    private final OrganizationRepository organizationRepository;
 
     @Value("${keycloak.realm}")
     private String defaultRealm;
@@ -212,6 +218,179 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             log.error("Failed to fetch all users from Keycloak: {}", e.getMessage());
             return Collections.emptyList();
+        }
+    }
+
+    public RealmRepresentation getRealmConfig() {
+        return keycloak.realm(defaultRealm).toRepresentation();
+    }
+
+    public void updateRealmConfig(boolean registrationAllowed, boolean verifyEmail, boolean resetPasswordAllowed) {
+        log.info("⚙️ Updating Keycloak Realm Config for realm: {}", defaultRealm);
+        RealmRepresentation realm = keycloak.realm(defaultRealm).toRepresentation();
+        realm.setRegistrationAllowed(registrationAllowed);
+        realm.setVerifyEmail(verifyEmail);
+        realm.setResetPasswordAllowed(resetPasswordAllowed);
+        keycloak.realm(defaultRealm).update(realm);
+        log.info("✅ Keycloak Realm Config updated successfully.");
+    }
+
+    public List<UserSessionRepresentation> getActiveSessions() {
+        List<UserSessionRepresentation> allSessions = new java.util.ArrayList<>();
+        java.util.Set<String> seenSessionIds = new java.util.HashSet<>();
+        try {
+            java.util.Set<String> realms = new java.util.HashSet<>();
+            realms.add("ftth-realm");
+            realms.addAll(organizationRepository.findAllSlugs());
+
+            log.info("🔍 [ACTIVE SESSIONS SCAN] Realms to scan: {}", realms);
+
+            for (String realmName : realms) {
+                try {
+                    // Use getClientSessionStats() to efficiently find clients with active/offline sessions
+                    List<java.util.Map<String, String>> stats = keycloak.realm(realmName).getClientSessionStats();
+                    log.info("🌐 [REALM SCAN] Realm: {}, Client Session Stats: {}", realmName, stats);
+
+                    for (java.util.Map<String, String> stat : stats) {
+                        String clientUuid = stat.get("id");
+                        String clientId = stat.getOrDefault("clientId", "unknown");
+                        int activeCount = 0;
+                        int offlineCount = 0;
+                        try {
+                            activeCount = Integer.parseInt(stat.getOrDefault("active", "0"));
+                        } catch (NumberFormatException ignored) {}
+                        try {
+                            offlineCount = Integer.parseInt(stat.getOrDefault("offline", "0"));
+                        } catch (NumberFormatException ignored) {}
+
+                        if (activeCount == 0 && offlineCount == 0) continue;
+                        // Skip internal system clients
+                        if ("admin-cli".equalsIgnoreCase(clientId)) continue;
+
+                        log.info("   📊 Client '{}' (uuid: {}) has {} active and {} offline sessions in realm '{}'",
+                                clientId, clientUuid, activeCount, offlineCount, realmName);
+
+                        if (activeCount > 0) {
+                            List<UserSessionRepresentation> activeSessions = keycloak.realm(realmName)
+                                    .clients().get(clientUuid).getUserSessions(0, 100);
+                            if (activeSessions != null) {
+                                for (UserSessionRepresentation sess : activeSessions) {
+                                    if (seenSessionIds.add(sess.getId())) {
+                                        log.info("      └─ [ACTIVE] User: {}, IP: {}, Start: {}", 
+                                                sess.getUsername(), sess.getIpAddress(), sess.getStart());
+                                        allSessions.add(sess);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (offlineCount > 0) {
+                            List<UserSessionRepresentation> offlineSessions = keycloak.realm(realmName)
+                                    .clients().get(clientUuid).getOfflineUserSessions(0, 100);
+                            if (offlineSessions != null) {
+                                for (UserSessionRepresentation sess : offlineSessions) {
+                                    if (seenSessionIds.add(sess.getId())) {
+                                        log.info("      └─ [OFFLINE] User: {}, IP: {}, Start: {}", 
+                                                sess.getUsername(), sess.getIpAddress(), sess.getStart());
+                                        allSessions.add(sess);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("⚠️ Failed to fetch sessions for realm {}: {}", realmName, e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ Failed to fetch active sessions from Keycloak: {}", e.getMessage(), e);
+        }
+        log.info("✅ [ACTIVE SESSIONS SCAN] Total unique sessions found: {}", allSessions.size());
+        return allSessions;
+    }
+
+    public void revokeSession(String sessionId) {
+        boolean deleted = false;
+        try {
+            java.util.Set<String> realms = new java.util.HashSet<>();
+            realms.add("master");
+            realms.add("ftth-realm");
+            realms.addAll(organizationRepository.findAllSlugs());
+
+            for (String realmName : realms) {
+                // Try deleting as active session first
+                try {
+                    keycloak.realm(realmName).deleteSession(sessionId, false);
+                    log.info("Successfully revoked active session {} in realm {}", sessionId, realmName);
+                    deleted = true;
+                    break;
+                } catch (Exception e) {
+                    // Try deleting as offline session if active failed or was not found
+                }
+
+                try {
+                    keycloak.realm(realmName).deleteSession(sessionId, true);
+                    log.info("Successfully revoked offline session {} in realm {}", sessionId, realmName);
+                    deleted = true;
+                    break;
+                } catch (Exception e) {
+                    // Try next realm
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to revoke session {} in Keycloak: {}", sessionId, e.getMessage(), e);
+        }
+        if (!deleted) {
+            throw new RuntimeException("Session ID " + sessionId + " not found or could not be revoked in any realm.");
+        }
+    }
+
+    public List<IdentityProviderRepresentation> getIdentityProviders() {
+        try {
+            return keycloak.realm(defaultRealm).identityProviders().findAll();
+        } catch (Exception e) {
+            log.error("Failed to fetch Identity Providers from Keycloak: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public void updateOrCreateIdentityProvider(String providerId, String clientId, String clientSecret) {
+        try {
+            log.info("Configuring Identity Provider {} in Keycloak for realm: {}", providerId, defaultRealm);
+            var idpsResource = keycloak.realm(defaultRealm).identityProviders();
+            
+            List<IdentityProviderRepresentation> existing = idpsResource.findAll();
+            Optional<IdentityProviderRepresentation> providerOpt = existing.stream()
+                    .filter(i -> providerId.equalsIgnoreCase(i.getAlias()))
+                    .findFirst();
+            
+            IdentityProviderRepresentation idp = providerOpt.orElseGet(() -> {
+                IdentityProviderRepresentation newIdp = new IdentityProviderRepresentation();
+                newIdp.setAlias(providerId);
+                newIdp.setProviderId(providerId);
+                newIdp.setEnabled(true);
+                return newIdp;
+            });
+            
+            java.util.Map<String, String> config = idp.getConfig();
+            if (config == null) {
+                config = new java.util.HashMap<>();
+            }
+            config.put("clientId", clientId);
+            config.put("clientSecret", clientSecret);
+            config.put("syncMode", "IMPORT");
+            idp.setConfig(config);
+            
+            if (providerOpt.isPresent()) {
+                idpsResource.get(providerId).update(idp);
+                log.info("Successfully updated Identity Provider: {}", providerId);
+            } else {
+                idpsResource.create(idp);
+                log.info("Successfully created Identity Provider: {}", providerId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to configure Identity Provider {} in Keycloak: {}", providerId, e.getMessage(), e);
+            throw new RuntimeException("Failed to configure Identity Provider: " + e.getMessage());
         }
     }
 }
