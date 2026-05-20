@@ -74,7 +74,7 @@ public class SecurityController {
     @GetMapping("/sessions")
     public ResponseEntity<List<ActiveSessionDto>> getActiveSessions() {
         try {
-            List<UserSessionRepresentation> sessions = keycloakAdminService.getActiveSessions();
+            List<KeycloakAdminService.RealmUserSession> sessions = keycloakAdminService.getActiveSessions();
             List<ActiveSessionDto> dtos = sessions.stream()
                     .map(this::mapToActiveSessionDto)
                     .collect(Collectors.toList());
@@ -217,7 +217,8 @@ public class SecurityController {
 
     // --- Helper Mappers ---
 
-    private ActiveSessionDto mapToActiveSessionDto(UserSessionRepresentation session) {
+    private ActiveSessionDto mapToActiveSessionDto(KeycloakAdminService.RealmUserSession realmSession) {
+        UserSessionRepresentation session = realmSession.session();
         List<String> clients = new java.util.ArrayList<>();
         if (session.getClients() != null) {
             clients.addAll(session.getClients().values());
@@ -228,7 +229,8 @@ public class SecurityController {
                 session.getIpAddress(),
                 session.getStart(),
                 session.getLastAccess(),
-                clients
+                clients,
+                realmSession.tenantName()
         );
     }
 
@@ -246,7 +248,8 @@ public class SecurityController {
             String ipAddress,
             long start,
             long lastAccess,
-            List<String> clients
+            List<String> clients,
+            String tenant
     ) {}
 
     public record SsoProviderResponse(

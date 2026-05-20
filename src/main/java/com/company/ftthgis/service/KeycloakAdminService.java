@@ -235,8 +235,14 @@ public class KeycloakAdminService {
         log.info("✅ Keycloak Realm Config updated successfully.");
     }
 
-    public List<UserSessionRepresentation> getActiveSessions() {
-        List<UserSessionRepresentation> allSessions = new java.util.ArrayList<>();
+    public record RealmUserSession(
+            UserSessionRepresentation session,
+            String realm,
+            String tenantName
+    ) {}
+
+    public List<RealmUserSession> getActiveSessions() {
+        List<RealmUserSession> allSessions = new java.util.ArrayList<>();
         java.util.Set<String> seenSessionIds = new java.util.HashSet<>();
         try {
             java.util.Set<String> realms = new java.util.HashSet<>();
@@ -247,6 +253,14 @@ public class KeycloakAdminService {
 
             for (String realmName : realms) {
                 try {
+                    // Resolve tenant/organization display name
+                    String tenantDisplayName = "System/Root";
+                    if (!"ftth-realm".equals(realmName)) {
+                        tenantDisplayName = organizationRepository.findBySlug(realmName)
+                                .map(org -> org.getName())
+                                .orElse(realmName);
+                    }
+
                     // Use getClientSessionStats() to efficiently find clients with active/offline sessions
                     List<java.util.Map<String, String>> stats = keycloak.realm(realmName).getClientSessionStats();
                     log.info("🌐 [REALM SCAN] Realm: {}, Client Session Stats: {}", realmName, stats);
@@ -275,10 +289,20 @@ public class KeycloakAdminService {
                                     .clients().get(clientUuid).getUserSessions(0, 100);
                             if (activeSessions != null) {
                                 for (UserSessionRepresentation sess : activeSessions) {
+                                    String username = sess.getUsername();
+                                    // Skip superadmin and xsuperadmin sessions
+                                    if (username != null && (
+                                        username.equalsIgnoreCase("xsuperadmin") ||
+                                        username.equalsIgnoreCase("superadmin") ||
+                                        username.toLowerCase().contains("superadmin")
+                                    )) {
+                                        continue;
+                                    }
+
                                     if (seenSessionIds.add(sess.getId())) {
                                         log.info("      └─ [ACTIVE] User: {}, IP: {}, Start: {}", 
-                                                sess.getUsername(), sess.getIpAddress(), sess.getStart());
-                                        allSessions.add(sess);
+                                                username, sess.getIpAddress(), sess.getStart());
+                                        allSessions.add(new RealmUserSession(sess, realmName, tenantDisplayName));
                                     }
                                 }
                             }
@@ -289,10 +313,20 @@ public class KeycloakAdminService {
                                     .clients().get(clientUuid).getOfflineUserSessions(0, 100);
                             if (offlineSessions != null) {
                                 for (UserSessionRepresentation sess : offlineSessions) {
+                                    String username = sess.getUsername();
+                                    // Skip superadmin and xsuperadmin sessions
+                                    if (username != null && (
+                                        username.equalsIgnoreCase("xsuperadmin") ||
+                                        username.equalsIgnoreCase("superadmin") ||
+                                        username.toLowerCase().contains("superadmin")
+                                    )) {
+                                        continue;
+                                    }
+
                                     if (seenSessionIds.add(sess.getId())) {
                                         log.info("      └─ [OFFLINE] User: {}, IP: {}, Start: {}", 
-                                                sess.getUsername(), sess.getIpAddress(), sess.getStart());
-                                        allSessions.add(sess);
+                                                username, sess.getIpAddress(), sess.getStart());
+                                        allSessions.add(new RealmUserSession(sess, realmName, tenantDisplayName));
                                     }
                                 }
                             }
@@ -305,6 +339,10 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             log.error("❌ Failed to fetch active sessions from Keycloak: {}", e.getMessage(), e);
         }
+
+        // Sort by start time descending (newest first). Note: start time is in seconds or ms.
+        allSessions.sort((s1, s2) -> Long.compare(s2.session().getStart(), s1.session().getStart()));
+
         log.info("✅ [ACTIVE SESSIONS SCAN] Total unique sessions found: {}", allSessions.size());
         return allSessions;
     }
