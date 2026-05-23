@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;
 
@@ -34,12 +35,14 @@ public class OrganizationService {
     private final EncryptionUtils encryptionUtils;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final com.company.ftthgis.config.security.TenantSecurity tenantSecurity;
+    private final com.company.ftthgis.domain.user.repository.RoleRepository roleRepository;
     
     // Asset Repositories for Cleanup
     private final com.company.ftthgis.domain.network.repository.AssetRepository assetRepository;
     private final com.company.ftthgis.domain.network.repository.NetworkNodeRepository networkNodeRepository;
     private final com.company.ftthgis.domain.network.repository.CustomerRepository customerRepository;
     private final com.company.ftthgis.domain.network.repository.FiberCableRepository fiberCableRepository;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -168,10 +171,10 @@ public class OrganizationService {
                 .subscriptionPlan(plan)
                 .status(Organization.OrganizationStatus.ACTIVE);
 
-        // Handle Trial Expiry for FREE plan (1 Minute for TESTING)
+        // Handle Trial Expiry for FREE plan (7 Days Trial)
         if (plan != null && "FREE".equalsIgnoreCase(plan.getName())) {
-            log.info("🎁 FREE Plan detected for {}. Setting 1-minute trial expiry for testing.", request.getSlug());
-            orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusMinutes(1));
+            log.info("🎁 FREE Plan detected for {}. Setting 7-day trial expiry.", request.getSlug());
+            orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
         }
 
         Organization org = orgBuilder.build();
@@ -212,8 +215,18 @@ public class OrganizationService {
             localUser.setEmail(request.getAdminEmail());
             localUser.setOrganization(saved);
             localUser.setStatus("ACTIVE");
-            
-            userRepository.save(localUser);
+
+            // Assign the 'admin' system role to the organization owner
+            com.company.ftthgis.domain.user.entity.Role adminRole = roleRepository
+                    .findByNameAndIsSystemRoleTrue(ownerRoleName)
+                    .orElseGet(() -> roleRepository.findByName(ownerRoleName)
+                            .orElseThrow(() -> new RuntimeException("Required role '" + ownerRoleName + "' not found in database")));
+            localUser.setRole(adminRole);
+            log.info("🛡️ Assigned role '{}' (ID: {}) to owner user '{}'", adminRole.getName(), adminRole.getId(), adminUsername);
+
+            // CRITICAL: Use persist() instead of save() because User has a manually-assigned UUID (from Keycloak).
+            // Spring Data's save() calls merge() when ID is pre-set, which can lose the role association.
+            entityManager.persist(localUser);
 
             // Step 4: Configure LDAP if requested
             if (request.isLdapEnabled()) {
@@ -368,6 +381,10 @@ public class OrganizationService {
 
             // 5. Delete Organization Profile & Configs
             // Configs will be deleted automatically due to CascadeType.ALL in Organization entity
+            if (org.getLogoUrl() != null && !org.getLogoUrl().isEmpty()) {
+                log.info("🗑️ Deleting logo file for deleted organization: {}", org.getLogoUrl());
+                fileStorageService.deleteFile(org.getLogoUrl());
+            }
             organizationRepository.delete(org);
 
             log.info("✅ SUCCESS: Organization '{}' and all associated resources have been nuked.", slug);

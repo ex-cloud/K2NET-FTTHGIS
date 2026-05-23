@@ -78,9 +78,45 @@ public class SecurityConfig {
     public JwtIssuerAuthenticationManagerResolver authenticationManagerResolver(
             JwtAuthenticationConverter jwtAuthenticationConverter) {
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
-            if (issuer.startsWith(keycloakServerUrl + "/realms/")) {
-                var provider = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider(
-                        org.springframework.security.oauth2.jwt.JwtDecoders.fromIssuerLocation(issuer));
+            String cleanIssuer = issuer;
+            if (issuer.startsWith("http://auth-gis.k2net.id:8081/realms/")) {
+                cleanIssuer = issuer.replace("http://auth-gis.k2net.id:8081", keycloakServerUrl);
+            } else if (issuer.startsWith("http://localhost:8081/realms/")) {
+                cleanIssuer = issuer.replace("http://localhost:8081", keycloakServerUrl);
+            }
+
+            if (cleanIssuer.startsWith(keycloakServerUrl + "/realms/")) {
+                String realmName = cleanIssuer.substring((keycloakServerUrl + "/realms/").length());
+                if (realmName.contains("/")) {
+                    realmName = realmName.substring(0, realmName.indexOf("/"));
+                }
+                String jwkSetUri = "http://localhost:8081/realms/" + realmName + "/protocol/openid-connect/certs";
+                
+                org.springframework.security.oauth2.jwt.NimbusJwtDecoder jwtDecoder = 
+                    org.springframework.security.oauth2.jwt.NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+                
+                final String finalIssuer = issuer;
+                final String finalCleanIssuer = cleanIssuer;
+                org.springframework.security.oauth2.core.OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> issuerValidator = jwt -> {
+                    String tokenIssuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+                    if (tokenIssuer.equals(finalIssuer) || tokenIssuer.equals(finalCleanIssuer)) {
+                        return org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success();
+                    }
+                    return org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.failure(
+                        new org.springframework.security.oauth2.core.OAuth2Error(
+                            "invalid_token", "The issuer " + tokenIssuer + " is not trusted", null
+                        )
+                    );
+                };
+                
+                org.springframework.security.oauth2.core.OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> delegatingValidator = 
+                    new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
+                        org.springframework.security.oauth2.jwt.JwtValidators.createDefault(),
+                        issuerValidator
+                    );
+                jwtDecoder.setJwtValidator(delegatingValidator);
+                
+                var provider = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider(jwtDecoder);
                 provider.setJwtAuthenticationConverter(jwtAuthenticationConverter);
                 return provider::authenticate;
             }

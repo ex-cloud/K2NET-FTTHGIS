@@ -90,6 +90,11 @@
       "defaultValue": "client_credentials"
     },
     {
+      "name": "keycloak.internal-url",
+      "type": "java.lang.String",
+      "sourceType": "com.company.ftthgis.config.KeycloakProperties"
+    },
+    {
       "name": "keycloak.password",
       "type": "java.lang.String",
       "sourceType": "com.company.ftthgis.config.KeycloakProperties"

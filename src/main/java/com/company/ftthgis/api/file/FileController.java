@@ -30,7 +30,10 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "tenant", required = false) String tenant,
+            @RequestParam(value = "folder", required = false, defaultValue = "asset") String folder) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
@@ -43,11 +46,25 @@ public class FileController {
             }
             
             String fileName = UUID.randomUUID().toString() + extension;
-            Path path = Paths.get(uploadDir).resolve(fileName);
+            
+            Path path;
+            String fileUrl;
+            if (tenant != null && !tenant.trim().isEmpty()) {
+                // Sanitize tenant and folder names to prevent directory traversal
+                String safeTenant = tenant.replaceAll("[^a-zA-Z0-9-]", "");
+                String safeFolder = folder.replaceAll("[^a-zA-Z0-9-]", "");
+                
+                path = Paths.get(uploadDir).resolve(safeTenant).resolve(safeFolder).resolve(fileName);
+                fileUrl = "/uploads/" + safeTenant + "/" + safeFolder + "/" + fileName;
+            } else {
+                path = Paths.get(uploadDir).resolve(fileName);
+                fileUrl = "/uploads/" + fileName;
+            }
+            
+            // Create directory if it doesn't exist
+            Files.createDirectories(path.getParent());
             
             Files.copy(file.getInputStream(), path);
-            
-            String fileUrl = "/uploads/" + fileName;
             
             log.info("File uploaded successfully: {} -> {}", originalFilename, fileUrl);
             

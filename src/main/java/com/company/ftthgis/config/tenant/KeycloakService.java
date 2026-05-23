@@ -51,6 +51,17 @@ public class KeycloakService {
             try {
                 keycloak.realms().create(realm);
                 log.info("✅ SUCCESS: Created realm '{}'", realmName);
+
+                // CRITICAL FIX: Invalidate the cached access token after creating a new realm.
+                // The old token was issued BEFORE this realm existed, so it does NOT include
+                // permissions to manage resources within it. Fetching a fresh token resolves
+                // the HTTP 403 Forbidden error on subsequent API calls to the new realm.
+                log.info("🔄 Invalidating cached admin token to acquire permissions for new realm '{}'", realmName);
+                String currentToken = keycloak.tokenManager().getAccessTokenString();
+                keycloak.tokenManager().invalidate(currentToken);
+                keycloak.tokenManager().grantToken(); // Force fetch of a brand new token
+                log.info("✅ Fresh admin token acquired with permissions for realm '{}'", realmName);
+
             } catch (jakarta.ws.rs.WebApplicationException ex) {
                 if (ex.getResponse().getStatus() == 409) {
                     log.info("✅ INFO: Realm '{}' already exists. Synchronizing config...", realmName);
@@ -96,32 +107,36 @@ public class KeycloakService {
             client.setServiceAccountsEnabled(false);
             
             // DYNAMIC REDIRECT URIS (Option B: Automated Provisioning)
-            // Logic: http[s]://[realm].[frontend-url]/*
+            // Logic: http[s]://[realm]-[rootHost]/* (production) or http[s]://[realm].[rootHost]/* (local)
             // We use http for localhost, and https for production (detection by protocol in frontendUrl)
-            String protocol = frontendUrl.contains("://") ? "" : "http://";
-            String baseUrl = protocol + frontendUrl;
+            String protocol = "http://";
+            String host = frontendUrl;
+            if (frontendUrl.contains("://")) {
+                String[] parts = frontendUrl.split("://");
+                protocol = parts[0] + "://";
+                host = parts[1];
+            }
+            
+            String rootHost = host;
+            boolean isHyphen = false;
+            if (host.startsWith("system-")) {
+                rootHost = host.substring(7);
+                isHyphen = true;
+            } else if (host.startsWith("system.")) {
+                rootHost = host.substring(7);
+            }
             
             String tenantUrl;
             List<String> redirects = new ArrayList<>();
-            redirects.add(baseUrl + "/*");
+            redirects.add(protocol + host + "/*");
             
             if ("ftth-realm".equals(realmName) || "master".equals(realmName)) {
-                // For system realm, we also allow the 'system' subdomain
-                if (baseUrl.contains("://")) {
-                    String[] parts = baseUrl.split("://");
-                    tenantUrl = parts[0] + "://system." + parts[1];
-                } else {
-                    tenantUrl = "http://system." + frontendUrl;
-                }
+                // For system realm, the url is system-gis.k2net.id or system.localhost:3000
+                tenantUrl = protocol + (isHyphen ? "system-" : "system.") + rootHost;
                 redirects.add(tenantUrl + "/*");
             } else {
-                // Construct tenant subdomain: http://k2net.localhost:3000
-                if (baseUrl.contains("://")) {
-                    String[] parts = baseUrl.split("://");
-                    tenantUrl = parts[0] + "://" + realmName + "." + parts[1];
-                } else {
-                    tenantUrl = "http://" + realmName + "." + frontendUrl;
-                }
+                // Construct tenant subdomain
+                tenantUrl = protocol + realmName + (isHyphen ? "-" : ".") + rootHost;
                 redirects.add(tenantUrl + "/*");
             }
 
@@ -324,10 +339,14 @@ public class KeycloakService {
      * Verifies if the given password is correct for the specified username in a
      * specific realm.
      */
-    public boolean verifyUserPassword(String username, String password, String userRealm) {
+     public boolean verifyUserPassword(String username, String password, String userRealm) {
         try {
+            String url = properties.getInternalUrl();
+            if (url == null || url.trim().isEmpty()) {
+                url = properties.getServerUrl();
+            }
             try (org.keycloak.admin.client.Keycloak userKeycloak = org.keycloak.admin.client.KeycloakBuilder.builder()
-                    .serverUrl(properties.getServerUrl())
+                    .serverUrl(url)
                     .realm(userRealm)
                     .clientId(properties.getClientId())
                     .clientSecret(properties.getClientSecret())

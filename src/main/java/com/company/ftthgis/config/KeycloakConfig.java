@@ -38,8 +38,13 @@ public class KeycloakConfig {
                 .register(new LenientJacksonProvider(), 1)
                 .build();
 
+        String url = properties.getInternalUrl();
+        if (url == null || url.trim().isEmpty()) {
+            url = properties.getServerUrl();
+        }
+
         KeycloakBuilder builder = KeycloakBuilder.builder()
-                .serverUrl(properties.getServerUrl())
+                .serverUrl(url)
                 .realm(properties.getRealm())
                 .grantType(properties.getGrantType())
                 .clientId(properties.getClientId())
