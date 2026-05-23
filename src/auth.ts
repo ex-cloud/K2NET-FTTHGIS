@@ -45,14 +45,23 @@ declare module "next-auth/jwt" {
 async function refreshAccessToken(token: NextAuthJWT) {
   try {
     // Dynamic Issuer: Use the issuer stored in the token if available, otherwise fallback to env
-    const issuer = (token.issuer as string) || process.env.AUTH_KEYCLOAK_ISSUER;
+    const issuer = (token.issuer as string) || process.env.AUTH_KEYCLOAK_ISSUER || "";
     
     logInfo(`Refreshing token for user ${token.email} using issuer: ${issuer}`);
 
+    // Bypass Cloudflare challenge for server-to-server token refresh
+    const internalIssuer = issuer
+      .replace("https://auth-gis.k2net.id", "http://localhost:8081")
+      .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+
     const response = await fetch(
-      `${issuer}/protocol/openid-connect/token`,
+      `${internalIssuer}/protocol/openid-connect/token`,
       {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { 
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Forwarded-Host": "auth-gis.k2net.id",
+          "X-Forwarded-Proto": "https",
+        },
         body: new URLSearchParams({
           client_id: process.env.AUTH_KEYCLOAK_ID!,
           client_secret: process.env.AUTH_KEYCLOAK_SECRET!,
@@ -89,6 +98,24 @@ async function refreshAccessToken(token: NextAuthJWT) {
 // Helper for logging since we are in a server context
 function logInfo(msg: string) {
   console.log(`[Auth.ts] ${new Date().toISOString()}: ${msg}`);
+}
+
+function getCookieDomain() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) return undefined;
+  try {
+    const hostname = new URL(appUrl).hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      return undefined;
+    }
+    const parts = hostname.split(".");
+    if (parts.length >= 2) {
+      return "." + parts.slice(-2).join(".");
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -271,8 +298,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        domain: process.env.NODE_ENV === "production" ? ".ftthgis.com" : ".lvh.me",
-        secure: process.env.NODE_ENV === "production",
+        domain: getCookieDomain(),
+        secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://"),
       },
     },
   },

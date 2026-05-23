@@ -24,9 +24,10 @@ interface ResetPasswordDialogProps {
   user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  token?: string;
 }
 
-export function ResetPasswordDialog({ user, open, onOpenChange }: ResetPasswordDialogProps) {
+export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPasswordDialogProps) {
   const { data: session } = useSession();
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +52,9 @@ export function ResetPasswordDialog({ user, open, onOpenChange }: ResetPasswordD
       return;
     }
 
-    if (!session?.accessToken) {
+    const activeToken = token || session?.accessToken;
+
+    if (!activeToken) {
       toast.error("Authentication Error", {
         description: "You must be logged in to perform this action.",
       });
@@ -64,7 +67,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange }: ResetPasswordD
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.accessToken}`,
+          "Authorization": `Bearer ${activeToken}`,
         },
         body: JSON.stringify({
           newPassword,

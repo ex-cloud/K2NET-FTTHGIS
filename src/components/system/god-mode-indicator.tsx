@@ -17,8 +17,31 @@ export function GodModeIndicator() {
 
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
-  const tenantSlug = isLocal && !isSystemSubdomain ? hostname.split(".")[0] : null;
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
+  
+  let tenantSlug = null;
+  if (!isSystemSubdomain) {
+    if (isLocal) {
+      const parts = hostname.split(".");
+      if (parts.length > 2 && parts[0] !== "www") tenantSlug = parts[0];
+    } else {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl) {
+        try {
+          let rootHost = new URL(appUrl).hostname;
+          if (rootHost.startsWith("system-")) rootHost = rootHost.substring(7);
+          else if (rootHost.startsWith("system.")) rootHost = rootHost.substring(7);
+          
+          if (hostname.endsWith(`-${rootHost}`)) {
+            tenantSlug = hostname.substring(0, hostname.length - rootHost.length - 1);
+          } else if (hostname.endsWith(`.${rootHost}`)) {
+            tenantSlug = hostname.substring(0, hostname.length - rootHost.length - 1);
+          }
+        } catch {}
+      }
+    }
+  }
+
   const isSuperadmin = session?.user?.roles?.includes("super_admin");
   const isImpersonating = isSuperadmin && !!tenantSlug;
 

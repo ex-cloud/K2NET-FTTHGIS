@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, Globe, ShieldAlert, Check, Copy, ExternalLink, Info, Loader2, Upload, Trash2 } from "lucide-react";
+import { Building2, Globe, ShieldAlert, Check, Copy, ExternalLink, Info, Loader2, Upload, Trash2, Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
-import { getBaseUrl, getCurrentOrgSlug } from "@/lib/domain";
+import { getBaseUrl, getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";
 
 interface Project {
   id: string;
@@ -71,7 +71,7 @@ export default function GeneralSettingsPage() {
       setOrgData(currentOrg);
       setName(currentOrg.name);
       setSlug(currentOrg.slug);
-      setLogoUrl(currentOrg.logoUrl || "");
+      setLogoUrl(currentOrg.logoUrl ? getLogoUrl(currentOrg.logoUrl) : "");
       setDescription(currentOrg.description || "");
       setAddress(currentOrg.address || "");
       setWebsite(currentOrg.website || "");
@@ -175,7 +175,8 @@ export default function GeneralSettingsPage() {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch('/api/v1/files/upload', {
+    const tenantSlug = orgData?.slug || slug;
+    const res = await fetch(`/api/v1/files/upload?tenant=${tenantSlug}&folder=asset`, {
       method: 'POST',
       headers: {
         "Authorization": `Bearer ${session?.accessToken}`
@@ -186,8 +187,7 @@ export default function GeneralSettingsPage() {
     if (!res.ok) throw new Error("Failed to upload logo");
     
     const data = await res.json();
-    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9090";
-    return data.url.startsWith('http') ? data.url : `${baseUrl}${data.url}`;
+    return getLogoUrl(data.url);
   };
 
   const handleSave = async () => {
@@ -280,7 +280,7 @@ export default function GeneralSettingsPage() {
   };
 
   if (loading || orgsLoading) return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 max-w-4xl mx-auto w-full">
       <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded" />
       <div className="h-64 w-full bg-zinc-900 animate-pulse rounded-xl" />
     </div>
@@ -296,235 +296,251 @@ export default function GeneralSettingsPage() {
     !!logoFile;
 
   return (
-    <div className="p-8 pb-24 space-y-10 w-full">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">General Settings</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Manage your organization details and core identifiers.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            className="border-zinc-800 text-zinc-400 hover:text-zinc-100"
-            disabled={!hasChanges || updateMutation.isPending}
-            onClick={() => {
-              setName(orgData?.name || "");
-              setSlug(orgData?.slug || "");
-              setDescription(orgData?.description || "");
-              setAddress(orgData?.address || "");
-              setWebsite(orgData?.website || "");
-              setLogoUrl(orgData?.logoUrl || "");
-              setLogoPreview(null);
-              setLogoFile(null);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={!hasChanges || updateMutation.isPending || uploading}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)] min-w-[120px]"
-          >
-            {(updateMutation.isPending || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
-          </Button>
-        </div>
+    <div className="p-8 pb-24 space-y-10 w-full max-w-4xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Organization Settings</h1>
+        <p className="text-sm text-zinc-500 mt-1">
+          General configuration, privacy, and lifecycle controls.
+        </p>
       </div>
 
       {/* Organization Logo */}
-      <Card className="bg-[#0c0c0c] border-zinc-800/50 shadow-2xl overflow-hidden">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
-            <Upload className="w-5 h-5 text-emerald-500" />
-            Organization Logo
-          </CardTitle>
-          <CardDescription className="text-zinc-500">
-            Customize your organization branding.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center gap-8 py-6">
-          <div className="relative group">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*"
-              onChange={handleLogoSelect}
-            />
-            <Avatar 
-              className="h-24 w-24 border-2 border-zinc-800 ring-4 ring-zinc-900 shadow-2xl cursor-pointer hover:border-emerald-500/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {(logoPreview || (logoUrl && logoUrl.trim() !== "")) ? (
-                <AvatarImage src={logoPreview || logoUrl} />
-              ) : null}
-              <AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold uppercase">
-                {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : name?.substring(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <div 
-              className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer pointer-events-none"
-            >
-              <Upload className="w-6 h-6 text-white" />
-            </div>
-            {uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">Organization logo</h2>
+        </div>
+        <Card className="bg-[#0c0c0c] border-zinc-800/80 shadow-2xl overflow-hidden">
+          <CardContent className="flex items-center gap-8 py-6 px-6">
+            <div className="relative group">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleLogoSelect}
+              />
+              <Avatar 
+                className="h-24 w-24 border-2 border-zinc-800 ring-4 ring-zinc-900 shadow-2xl cursor-pointer hover:border-emerald-500/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {(logoPreview || (logoUrl && logoUrl.trim() !== "")) ? (
+                  <AvatarImage src={logoPreview || getLogoUrl(logoUrl)} />
+                ) : null}
+                <AvatarFallback className="bg-zinc-900 text-zinc-500 rounded flex items-center justify-center">
+                  {uploading ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <Boxes className="w-12 h-12 text-zinc-600" strokeWidth={1.5} />
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <div 
+                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer pointer-events-none"
+              >
+                <Upload className="w-6 h-6 text-white" />
               </div>
-            )}
-          </div>
-          <div className="space-y-4 flex-1">
-            <div className="grid gap-2">
-              <Label htmlFor="logoUrl" className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold">
-                Logo URL (or Upload by clicking avatar)
-              </Label>
-              <div className="flex gap-2">
-                <Input 
-                  id="logoUrl" 
-                  value={logoUrl}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogoUrl(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
-                  placeholder="https://example.com/logo.png"
-                />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-9 border-zinc-800 hover:bg-zinc-800 gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload
-                </Button>
-                {logoUrl && (
+              {uploading && (
+                <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-4 flex-1">
+              <div className="grid gap-2">
+                <Label htmlFor="logoUrl" className="text-zinc-400 text-[10px] uppercase tracking-widest font-bold">
+                  Logo URL (or Upload by clicking avatar)
+                </Label>
+                <div className="flex gap-2">
+                  <Input 
+                    id="logoUrl" 
+                    value={logoUrl}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogoUrl(e.target.value)}
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
+                    placeholder="https://example.com/logo.png"
+                  />
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm" 
-                    className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
-                    onClick={() => {
-                      setLogoUrl("");
-                      setLogoFile(null);
-                      setLogoPreview(null);
-                    }}
+                    className="h-9 border-zinc-800 hover:bg-zinc-800 gap-2 text-zinc-300"
+                    onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Remove
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload
                   </Button>
-                )}
+                  {logoUrl && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2"
+                      onClick={() => {
+                        setLogoUrl("");
+                        setLogoFile(null);
+                        setLogoPreview(null);
+                      }}
+                      disabled={uploading}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
               </div>
+              <p className="text-xs text-zinc-600">
+                Optimal size is 400x400px. JPG, PNG or SVG allowed. Max 2MB.
+              </p>
             </div>
-            <p className="text-xs text-zinc-600">
-              Optimal size is 400x400px. JPG, PNG or SVG allowed. Max 2MB.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Organization Details */}
-      <Card className="bg-[#0c0c0c] border-zinc-800/50 shadow-2xl">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-medium flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-emerald-500" />
-            Organization Details
-          </CardTitle>
-          <CardDescription className="text-zinc-500">
-            General information about your organization.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-2">
-          <div className="grid gap-2">
-            <Label htmlFor="orgName" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
-              Organization Name
-            </Label>
-            <Input 
-              id="orgName" 
-              value={name} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-              className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200"
-              placeholder="Enter organization name"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="orgSlug" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
-              Organization Slug
-            </Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-wider">Organization details</h2>
+        </div>
+        <Card className="bg-[#0c0c0c] border-zinc-800/80 shadow-2xl overflow-hidden divide-y divide-zinc-800/50">
+          <CardContent className="p-0 divide-y divide-zinc-800/50">
+            {/* Row 1: Organization name */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-6 items-center">
+              <Label htmlFor="orgName" className="text-zinc-400 text-sm font-medium">
+                Organization name
+              </Label>
+              <div className="md:col-span-2">
                 <Input 
-                  id="orgSlug" 
-                  value={slug} 
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200 font-mono text-sm"
-                  placeholder="organization-slug"
+                  id="orgName" 
+                  value={name} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200"
+                  placeholder="Enter organization name"
                 />
-                <button 
-                  onClick={copyToClipboard}
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-emerald-500 transition-colors"
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </button>
               </div>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="border-zinc-800 hover:bg-zinc-800"
-                onClick={() => window.open(`/org/${orgId}`, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 text-zinc-400" />
-              </Button>
             </div>
-            <p className="text-[11px] text-zinc-600 mt-1 flex items-center gap-1.5">
-              <Info className="w-3 h-3" />
-              Slugs are used in your unique URL. Changing this will break all existing links to this organization.
-            </p>
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="orgDesc" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
-              Description
-            </Label>
-            <textarea 
-              id="orgDesc" 
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200 ring-offset-background placeholder:text-zinc-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Tell us about your organization..."
-            />
-          </div>
+            {/* Row 2: Organization slug (DISABLED) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-6 items-center">
+              <div className="flex flex-col">
+                <Label htmlFor="orgSlug" className="text-zinc-400 text-sm font-medium">
+                  Organization slug
+                </Label>
+                <span className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                  Locked due to subdomains binding.
+                </span>
+              </div>
+              <div className="md:col-span-2 flex gap-2">
+                <div className="relative flex-1">
+                  <Input 
+                    id="orgSlug" 
+                    value={slug} 
+                    disabled
+                    className="bg-zinc-900/20 border-zinc-800 text-zinc-500 font-mono text-sm cursor-not-allowed select-all pr-10"
+                    placeholder="organization-slug"
+                  />
+                  <button 
+                    onClick={copyToClipboard}
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-emerald-500 transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="border-zinc-800 hover:bg-zinc-800 shrink-0"
+                  onClick={() => window.open(window.location.protocol + "//" + orgId + "." + window.location.host.replace(/^(system[-.])/, ""), '_blank')}
+                  title="Open organization domain"
+                >
+                  <ExternalLink className="w-4 h-4 text-zinc-400" />
+                </Button>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="orgWebsite" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
+            {/* Row 3: Description */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-6 items-start">
+              <Label htmlFor="orgDesc" className="text-zinc-400 text-sm font-medium pt-2">
+                Description
+              </Label>
+              <div className="md:col-span-2">
+                <textarea 
+                  id="orgDesc" 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-200 ring-offset-background placeholder:text-zinc-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/50"
+                  placeholder="Tell us about your organization..."
+                />
+              </div>
+            </div>
+
+            {/* Row 4: Website */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-6 items-center">
+              <Label htmlFor="orgWebsite" className="text-zinc-400 text-sm font-medium">
                 Website
               </Label>
-              <Input 
-                id="orgWebsite" 
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
-                placeholder="https://company.com"
-              />
+              <div className="md:col-span-2">
+                <Input 
+                  id="orgWebsite" 
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                  placeholder="https://company.com"
+                />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="orgAddress" className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">
+
+            {/* Row 5: Address */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 px-6 items-center">
+              <Label htmlFor="orgAddress" className="text-zinc-400 text-sm font-medium">
                 Address
               </Label>
-              <Input 
-                id="orgAddress" 
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
-                placeholder="123 Street, City, Country"
-              />
+              <div className="md:col-span-2">
+                <Input 
+                  id="orgAddress" 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                  placeholder="123 Street, City, Country"
+                />
+              </div>
+            </div>
+          </CardContent>
+
+          {/* Compact Supabase Card Footer */}
+          <div className="flex justify-between items-center py-4 px-6 bg-zinc-950/40 border-t border-zinc-800/80">
+            <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+              Please save your changes to apply them to your organization.
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="border-zinc-800 text-zinc-400 hover:text-zinc-100 h-9"
+                disabled={!hasChanges || updateMutation.isPending}
+                onClick={() => {
+                  setName(orgData?.name || "");
+                  setSlug(orgData?.slug || "");
+                  setDescription(orgData?.description || "");
+                  setAddress(orgData?.address || "");
+                  setWebsite(orgData?.website || "");
+                  setLogoUrl(orgData?.logoUrl ? getLogoUrl(orgData.logoUrl) : "");
+                  setLogoPreview(null);
+                  setLogoFile(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSave}
+                disabled={!hasChanges || updateMutation.isPending || uploading}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)] h-9 min-w-[100px]"
+              >
+                {(updateMutation.isPending || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Slug Confirmation Dialog */}
       <Dialog open={slugConfirmOpen} onOpenChange={setSlugConfirmOpen}>

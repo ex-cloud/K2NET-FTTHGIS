@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { UserNav } from "../user-nav";
 import { HealthBadge } from "../health-badge";
 
-import { getBaseUrl } from "@/lib/domain";
+import { getBaseUrl, getLogoUrl } from "@/lib/domain";
 
 import Image from "next/image";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -28,7 +28,7 @@ export function SystemHeader() {
           <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group overflow-hidden"}>
             {logoUrl ? (
               <Image
-                src={logoUrl}
+                src={getLogoUrl(logoUrl)}
                 width={20}
                 height={20}
                 className="h-5 w-5 object-contain"

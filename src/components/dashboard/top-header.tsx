@@ -31,7 +31,7 @@ export function TopHeader() {
       </div>
 
       {/* Impersonation Banner */}
-      {typeof window !== "undefined" && !window.location.hostname.startsWith("system.") && (
+      {typeof window !== "undefined" && !(window.location.hostname.startsWith("system.") || window.location.hostname.startsWith("system-")) && (
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-3 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full group hover:bg-amber-500/20 transition-all cursor-default">
             <div className="relative">
@@ -51,7 +51,7 @@ export function TopHeader() {
       )}
 
       {/* Impersonation Banner */}
-      {typeof window !== "undefined" && !window.location.hostname.startsWith("system.") && (
+      {typeof window !== "undefined" && !(window.location.hostname.startsWith("system.") || window.location.hostname.startsWith("system-")) && (
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-3 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full group hover:bg-amber-500/20 transition-all cursor-default">
             <div className="relative">

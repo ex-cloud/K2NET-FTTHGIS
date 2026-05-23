@@ -32,9 +32,10 @@ interface UserTableProps {
   data: PaginatedResponse<User> | null;
   currentPage: number;
   isGlobalView?: boolean;
+  token?: string;
 }
 
-export function UserTable({ data, currentPage, isGlobalView = false }: UserTableProps) {
+export function UserTable({ data, currentPage, isGlobalView = false, token }: UserTableProps) {
   const users = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
@@ -275,6 +276,7 @@ export function UserTable({ data, currentPage, isGlobalView = false }: UserTable
           open={isResetPasswordDialogOpen}
           onOpenChange={setIsResetPasswordDialogOpen}
           user={selectedUserForReset}
+          token={token}
         />
       )}
       <TeamInviteWizard 

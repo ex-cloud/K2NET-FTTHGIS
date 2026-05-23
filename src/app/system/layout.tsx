@@ -9,6 +9,7 @@ import { SystemSecondarySidebar } from "@/components/system/system-secondary-sid
 
 import * as React from "react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { getLogoUrl } from "@/lib/domain";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -39,7 +40,7 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
         link.rel = "icon";
         document.head.appendChild(link);
       }
-      link.href = logoUrl;
+      link.href = getLogoUrl(logoUrl);
     }
   }, [settings, pathname, isLoginPage]);
 

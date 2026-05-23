@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 
@@ -33,6 +33,23 @@ export default function AdminOrganizationsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  const [displaySuffix, setDisplaySuffix] = useState(".ftthgis.com");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname.startsWith("system-")) {
+        setDisplaySuffix("-" + hostname.substring(7));
+      } else if (hostname.startsWith("system.")) {
+        setDisplaySuffix("." + hostname.substring(7));
+      } else {
+        const parts = hostname.split(".");
+        if (parts.length >= 2) {
+          setDisplaySuffix("." + parts.slice(-2).join("."));
+        }
+      }
+    }
+  }, []);
 
   // Real-time filtering logic
   const filteredOrgs = useMemo(() => {
@@ -168,7 +185,7 @@ export default function AdminOrganizationsPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <span className="font-mono">{org.slug}.ftthgis.com</span>
+                        <span className="font-mono">{org.slug}{displaySuffix}</span>
                         <span className="text-border">•</span>
                         <span className="capitalize">{org.subscriptionPlan?.name || "Free"} Plan</span>
                       </div>

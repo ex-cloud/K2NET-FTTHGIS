@@ -111,7 +111,7 @@ export default async function UserManagementPage(props: {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <UserStats stats={statsData} />
-          <UserTable data={usersData} currentPage={page} />
+          <UserTable data={usersData} currentPage={page} token={token} />
         </div>
       </div>
 

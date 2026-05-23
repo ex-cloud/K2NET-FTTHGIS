@@ -34,7 +34,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
   const detectedSubdomain = prefilledOrg || null;
 
   // Auto-detect if we are on the system subdomain via window.location
-  const isSystemSubdomain = typeof window !== "undefined" && window.location.hostname.startsWith("system.");
+  const isSystemSubdomain = typeof window !== "undefined" && (window.location.hostname.startsWith("system.") || window.location.hostname.startsWith("system-"));
   const effectiveIsAdmin = isAdmin || isSystemSubdomain;
 
   const form = useForm<LoginFormData>({

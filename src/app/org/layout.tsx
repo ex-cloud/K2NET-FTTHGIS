@@ -6,8 +6,9 @@ import {
 import { SuspensionOverlay } from "@/components/tenant/suspension-overlay";
 import { GlobalHeader } from "@/components/global-header";
 import { useUIStore } from "@/store/ui-store";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
+import { getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";
 
 import { usePathname } from "next/navigation";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -23,9 +24,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
   // Resolve active org dynamically (handles subdomains and path-based development routes)
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
-  const tenantSlug = isLocal && !isSystemSubdomain ? hostname.split(".")[0] : null;
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
+  const tenantSlug = getCurrentOrgSlug();
 
   const segmentsList = pathname?.split("/").filter(Boolean) || [];
   const orgIdFromPath = segmentsList[0] === "org" ? segmentsList[1] : (segmentsList[0] !== "project" ? segmentsList[0] : "");
@@ -43,8 +43,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   }, [params?.orgId, setOrganizationSuspended]);
 
   // Dynamic tenant-level tab title & favicon sync
+  const desiredTitleRef = React.useRef<string>("");
+  
   useEffect(() => {
-    const appName = settings.find((s) => s.key === "app_name")?.value || "FTTH GISS";
+    const appName = settings.find((s) => s.key === "app_name")?.value || "FTTH GIS";
     const systemLogo = settings.find((s) => s.key === "logo_url")?.value || "";
 
     // 1. Determine Tab Title
@@ -74,18 +76,37 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       }
     }
 
+    let computedTitle = "";
     if (currentOrg) {
-      document.title = lastSegment === activeSlug 
+      computedTitle = lastSegment === activeSlug 
         ? `${currentOrg.name} | ${appName}`
         : `${pageTitle} | ${currentOrg.name} - ${appName}`;
     } else {
-      document.title = `Select Organization | ${appName}`;
+      computedTitle = `Select Organization | ${appName}`;
     }
 
-    // 2. Determine Tab Favicon (Tenant Logo -> System Logo -> fallback)
+    desiredTitleRef.current = computedTitle;
+    document.title = computedTitle;
+
+    // 2. Observe <title> mutations to re-assert our title
+    // This guards against Next.js soft-navigation resetting the title
+    // to the root layout metadata default ("FTTH GIS") on same-page navigations.
+    const titleEl = document.querySelector("title");
+    if (titleEl) {
+      const observer = new MutationObserver(() => {
+        if (document.title !== desiredTitleRef.current && desiredTitleRef.current) {
+          document.title = desiredTitleRef.current;
+        }
+      });
+      observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+      // Cleanup observer on effect re-run
+      return () => observer.disconnect();
+    }
+
+    // 3. Determine Tab Favicon (Tenant Logo -> System Logo -> fallback)
     const favUrl = (currentOrg && currentOrg.logoUrl && currentOrg.logoUrl.trim() !== "") 
-      ? currentOrg.logoUrl 
-      : systemLogo;
+      ? getLogoUrl(currentOrg.logoUrl) 
+      : getLogoUrl(systemLogo);
 
     if (favUrl) {
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");

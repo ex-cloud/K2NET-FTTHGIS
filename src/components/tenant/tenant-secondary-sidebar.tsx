@@ -36,6 +36,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { TENANT_SIDEBAR_NAVIGATION } from "@/config/tenant-sidebar-navigation";
+import { getCurrentOrgSlug } from "@/lib/domain";
 
 const iconMap: Record<string, React.ElementType> = {
   Settings2,
@@ -69,11 +70,8 @@ export function TenantSecondarySidebar() {
 
   // 1. Detect subdomain context
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
-  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
-    ? hostname.split(".")[0] 
-    : null;
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
+  const tenantSlug = getCurrentOrgSlug();
 
   // 2. Extract IDs based on context
   const parts = pathname?.split("/").filter(Boolean) || [];
@@ -157,12 +155,17 @@ export function TenantSecondarySidebar() {
               <CollapsibleContent className="space-y-0.5 mt-2">
                 {section.items.map((item, idx) => {
                   const itemUrl = item.url ? `${baseUrl}${item.url}` : baseUrl;
-                  const isActive = pathname === itemUrl || pathname?.startsWith(`${itemUrl}/`);
+                  // For items with no sub-path (url=""), use exact match only
+                  // to prevent General from being active on /billing, /integrations, etc.
+                  const isActive = item.url
+                    ? (pathname === itemUrl || pathname?.startsWith(`${itemUrl}/`))
+                    : pathname === itemUrl;
                   const Icon = iconMap[item.icon] || Settings2;
                   return (
                     <Link
                       key={idx}
                       href={itemUrl}
+                      onClick={(e) => { if (isActive) e.preventDefault(); }}
                       className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
                         isActive
                           ? "bg-emerald-500/10 text-emerald-500 font-medium border border-emerald-500/20"

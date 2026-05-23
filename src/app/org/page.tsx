@@ -9,7 +9,7 @@ import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { getTenantUrl } from "@/lib/domain";
+import { getTenantUrl, getCurrentOrgSlug } from "@/lib/domain";
 
 export default function OrgsPage() {
   const { data: session } = useSession();
@@ -18,11 +18,8 @@ export default function OrgsPage() {
 
   // 1. Detect subdomain context for isolation
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
-  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
-    ? hostname.split(".")[0] 
-    : null;
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
+  const tenantSlug = getCurrentOrgSlug();
 
   // 2. Filter organizations if we are in a tenant subdomain
   const filteredOrganizations = tenantSlug 

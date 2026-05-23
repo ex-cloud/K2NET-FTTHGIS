@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Activity, Database, Server, Wifi, Cpu } from "lucide-react";
-import { getBackendBaseUrl, getMartinBaseUrl } from "@/lib/api-config";
+import { getBackendBaseUrl, getMartinBaseUrl, getPollerBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
 import {
   Tooltip,
@@ -57,7 +57,7 @@ export function HealthBadge() {
     // 3. Check Poller (Go)
     let pollerStatus: ServiceStatus = "down";
     try {
-      const res = await fetch("http://localhost:9091/healthz", { cache: "no-cache" });
+      const res = await fetch(`${getPollerBaseUrl()}/healthz`, { cache: "no-cache" });
       pollerStatus = res.ok ? "up" : "down";
     } catch {
       pollerStatus = "down";

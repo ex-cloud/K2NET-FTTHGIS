@@ -6,23 +6,42 @@ export default async function LoginPage() {
   const headersList = await headers();
   const hostname = headersList.get("host") || "";
   
-  const isProduction = process.env.NODE_ENV === "production" && process.env.VERCEL === "1";
+  // Extract root domain from NEXT_PUBLIC_APP_URL or hostname
   let rootDomain = "localhost:3000";
-  if (isProduction) {
-    rootDomain = "ftthgis.com";
-  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
     try {
-      rootDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).host;
+      const url = new URL(process.env.NEXT_PUBLIC_APP_URL);
+      rootDomain = url.host; // e.g. system-gis.k2net.id or system.gis.k2net.id
     } catch {
       rootDomain = process.env.NEXT_PUBLIC_APP_URL.replace("http://", "").replace("https://", "");
     }
   }
-  
+
+  // Strip system. or system- prefix to get the base domain
+  let baseDomain = rootDomain;
+  let isHyphen = false;
+  if (rootDomain.startsWith("system-")) {
+    baseDomain = rootDomain.substring(7);
+    isHyphen = true;
+  } else if (rootDomain.startsWith("system.")) {
+    baseDomain = rootDomain.substring(7);
+  }
+
   let detectedSubdomain = null;
-  if (hostname.includes(rootDomain)) {
-    const extracted = hostname.replace(`.${rootDomain}`, "");
-    if (extracted !== hostname && extracted !== "www" && extracted !== "system") {
-      detectedSubdomain = extracted;
+  if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
+    detectedSubdomain = null;
+  } else if (isHyphen && hostname.endsWith(`-${baseDomain}`)) {
+    detectedSubdomain = hostname.substring(0, hostname.length - baseDomain.length - 1);
+  } else if (!isHyphen && hostname.endsWith(`.${baseDomain}`)) {
+    detectedSubdomain = hostname.substring(0, hostname.length - baseDomain.length - 1);
+  } else if (hostname.includes(".lvh.me") || hostname.includes(".localhost")) {
+    // Local development fallback
+    const parts = hostname.split(".");
+    if (parts.length > 2) {
+      const sub = parts[0];
+      if (sub !== "www" && sub !== "system") {
+        detectedSubdomain = sub;
+      }
     }
   }
 

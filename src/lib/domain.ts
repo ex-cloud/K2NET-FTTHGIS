@@ -14,10 +14,22 @@ export function getTenantUrl(slug: string, path: string = "/dashboard"): string 
   try {
     const url = new URL(appUrl);
     const protocol = url.protocol; // http: or https:
-    const host = url.host; // localhost:3000 or ftthgis.com
+    let host = url.host; // localhost:3000 or ftthgis.com
 
-    // Construct subdomain: http://slug.host
-    return `${protocol}//${slug}.${host}${path}`;
+    // Extract root host by stripping "system." or "system-" prefix
+    let isHyphen = false;
+    if (host.startsWith("system-")) {
+      host = host.substring(7);
+      isHyphen = true;
+    } else if (host.startsWith("system.")) {
+      host = host.substring(7);
+    }
+
+    if (isHyphen) {
+      return `${protocol}//${slug}-${host}${path}`;
+    } else {
+      return `${protocol}//${slug}.${host}${path}`;
+    }
   } catch {
     // Fallback if URL is invalid
     return `http://${slug}.localhost:3000${path}`;
@@ -38,6 +50,11 @@ export function getSystemUrl(path: string = "/organizations"): string {
   const baseUrl = getBaseUrl();
   try {
     const url = new URL(baseUrl);
+    // If baseUrl already starts with system- or system., we just return it with path
+    if (url.host.startsWith("system-") || url.host.startsWith("system.")) {
+      return `${url.protocol}//${url.host}${path}`;
+    }
+    // Otherwise (fallback/default), construct system subdomain
     return `${url.protocol}//system.${url.host}${path}`;
   } catch {
     return `http://system.localhost:3000${path}`;
@@ -56,12 +73,29 @@ export function getCurrentOrgSlug(): string | null {
   
   try {
     const url = new URL(appUrl);
-    const rootHost = url.hostname;
+    let rootHost = url.hostname;
+    let isHyphen = false;
     
-    if (hostname.endsWith(`.${rootHost}`)) {
-      const subdomain = hostname.replace(`.${rootHost}`, "");
-      if (subdomain && subdomain !== "www" && subdomain !== "system") {
-        return subdomain;
+    if (rootHost.startsWith("system-")) {
+      rootHost = rootHost.substring(7);
+      isHyphen = true;
+    } else if (rootHost.startsWith("system.")) {
+      rootHost = rootHost.substring(7);
+    }
+    
+    if (isHyphen) {
+      if (hostname.endsWith(`-${rootHost}`)) {
+        const subdomain = hostname.substring(0, hostname.length - rootHost.length - 1);
+        if (subdomain && subdomain !== "www" && subdomain !== "system" && subdomain !== "auth") {
+          return subdomain;
+        }
+      }
+    } else {
+      if (hostname.endsWith(`.${rootHost}`)) {
+        const subdomain = hostname.substring(0, hostname.length - rootHost.length - 1);
+        if (subdomain && subdomain !== "www" && subdomain !== "system" && subdomain !== "auth") {
+          return subdomain;
+        }
       }
     }
     
@@ -78,4 +112,16 @@ export function getCurrentOrgSlug(): string | null {
   }
   
   return null;
+}
+
+/**
+ * Normalizes a logo URL to a relative path reachable via the frontend proxy.
+ * E.g. "http://localhost:9090/uploads/uuid.png" becomes "/uploads/uuid.png".
+ */
+export function getLogoUrl(logoUrl: string | undefined | null): string {
+  if (!logoUrl) return "";
+  if (logoUrl.includes("/uploads/")) {
+    return logoUrl.substring(logoUrl.lastIndexOf("/uploads/"));
+  }
+  return logoUrl;
 }

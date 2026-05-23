@@ -3,28 +3,49 @@ import { getToken } from "next-auth/jwt";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostname = request.headers.get("host") || "";
+  const hostname = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  
+  if (!pathname.startsWith("/_next") && !pathname.startsWith("/favicon.ico") && !pathname.startsWith("/api")) {
+    console.log(`[Proxy Middleware] Incoming Host: ${hostname}, Path: ${pathname}`);
+  }
 
   // 1. Subdomain Detection
-  const isProduction = process.env.NODE_ENV === "production" && process.env.VERCEL === "1";
-  
-  // Extract root domain from env or fallback
+  // Extract root domain from NEXT_PUBLIC_APP_URL or hostname
   let rootDomain = "localhost:3000";
-  if (isProduction) {
-    rootDomain = "ftthgis.com";
-  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
     try {
-      rootDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).host;
+      const url = new URL(process.env.NEXT_PUBLIC_APP_URL);
+      rootDomain = url.host; // e.g. system-gis.k2net.id or system.gis.k2net.id
     } catch {
       rootDomain = process.env.NEXT_PUBLIC_APP_URL.replace("http://", "").replace("https://", "");
     }
   }
-  
+
+  // Strip system. or system- prefix to get the base domain
+  let baseDomain = rootDomain;
+  let isHyphen = false;
+  if (rootDomain.startsWith("system-")) {
+    baseDomain = rootDomain.substring(7);
+    isHyphen = true;
+  } else if (rootDomain.startsWith("system.")) {
+    baseDomain = rootDomain.substring(7);
+  }
+
   let subdomain = "";
-  if (hostname.includes(rootDomain)) {
-    const extracted = hostname.replace(`.${rootDomain}`, "");
-    if (extracted !== hostname && extracted !== "www" && extracted !== rootDomain) {
-      subdomain = extracted;
+  if (hostname === baseDomain || hostname === `www.${baseDomain}`) {
+    subdomain = "";
+  } else if (isHyphen && hostname.endsWith(`-${baseDomain}`)) {
+    subdomain = hostname.substring(0, hostname.length - baseDomain.length - 1);
+  } else if (!isHyphen && hostname.endsWith(`.${baseDomain}`)) {
+    subdomain = hostname.substring(0, hostname.length - baseDomain.length - 1);
+  } else if (hostname.includes(".lvh.me") || hostname.includes(".localhost")) {
+    // Local development fallback
+    const parts = hostname.split(".");
+    if (parts.length > 2) {
+      const sub = parts[0];
+      if (sub !== "www" && sub !== "system") {
+        subdomain = sub;
+      }
     }
   }
 
@@ -95,6 +116,7 @@ export async function proxy(request: NextRequest) {
 
   // 5. Perform the Rewrite
   if (effectivePathname !== pathname) {
+    console.log(`[Proxy Middleware] Rewriting: ${pathname} -> ${effectivePathname}`);
     const url = request.nextUrl.clone();
     url.pathname = effectivePathname;
     return NextResponse.rewrite(url);
@@ -102,6 +124,9 @@ export async function proxy(request: NextRequest) {
 
   return NextResponse.next();
 }
+
+export { proxy as middleware };
+export default proxy;
 
 export const config = {
   matcher: [

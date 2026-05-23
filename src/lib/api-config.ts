@@ -4,31 +4,26 @@
  * Ini memungkinkan akses lancar via localhost maupun IP Jaringan (Mobile/Laptop lain).
  */
 export const getBackendBaseUrl = () => {
-  // Try to get from environment variable first
-  const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
-  // If envUrl is set and is an absolute URL, use it
-  if (envUrl && (envUrl.startsWith("http://") || envUrl.startsWith("https://"))) {
-    return envUrl;
-  }
-
   // Hanya jalankan logika ini di sisi browser (client-side)
   if (typeof window !== "undefined") {
     const { hostname, protocol } = window.location;
 
-    // Use absolute current origin for API calls if possible to avoid CORS preflight mismatch
     if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-      // In production/staged environment, we assume backend is on port 9090 of the same host
-      return `${protocol}//${hostname}:9090/api/v1`;
+      // In production/staged environment, backend is proxied under the same host/domain via Nginx
+      return `${protocol}//${hostname}/api/v1`;
     }
     
-    // Fallback to localhost if we are on local
+    // Fallback to localhost if we are on local development
     if (hostname === "localhost" || hostname === "127.0.0.1") {
       return `http://localhost:9090/api/v1`;
     }
   }
 
-  // Global default fallback
+  // Server-side default: Next.js server accesses backend directly on localhost
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl.startsWith("http")) {
+    return envUrl;
+  }
   return "http://localhost:9090/api/v1";
 };
 
@@ -39,11 +34,23 @@ export const getMartinBaseUrl = () => {
   if (typeof window !== "undefined") {
     const { hostname, protocol } = window.location;
     if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-      return `${protocol}//${hostname}:3001`;
+      // In production, Martin is proxied under the main host via Nginx
+      return `${protocol}//${hostname}`;
     }
   }
 
   return defaultUrl;
+};
+
+export const getPollerBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    const { hostname, protocol } = window.location;
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+      // In production, Poller is proxied under /poller
+      return `${protocol}//${hostname}/poller`;
+    }
+  }
+  return "http://localhost:9091";
 };
 
 export const getAuthUrl = () => {

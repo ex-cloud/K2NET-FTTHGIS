@@ -24,7 +24,7 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
     // We use the activeTenantId from the UI store which is synchronized by NavOrgSwitcher
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
-      const isSystemSubdomain = hostname.startsWith("system.");
+      const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
       
       // JANGAN kirim X-Tenant-ID jika kita di subdomain system
       if (!isSystemSubdomain) {

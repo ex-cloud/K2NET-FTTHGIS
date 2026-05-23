@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useSidebarMode } from "../sidebar-mode-context";
 import { SidebarControl } from "../sidebar-control";
+import { getCurrentOrgSlug } from "@/lib/domain";
 
 type NavItem = {
   title: string;
@@ -44,13 +45,10 @@ export function MainSidebar() {
 
   // Subdomain detection
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
   
   // Extract tenant slug from subdomain if applicable
-  const tenantSlug = isLocal && !isSystemSubdomain && hostname.includes(".") 
-    ? hostname.split(".")[0] 
-    : null;
+  const tenantSlug = getCurrentOrgSlug();
 
   const orgId = params.orgId || tenantSlug || "default";
   

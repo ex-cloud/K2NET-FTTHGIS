@@ -45,7 +45,7 @@ export default async function GlobalUsersPage(props: {
             <UserStats stats={statsData} />
           </div>
           <div className="flex-1 min-h-0">
-            <UserTable data={usersData} currentPage={page} isGlobalView={true} />
+            <UserTable data={usersData} currentPage={page} isGlobalView={true} token={token} />
           </div>
         </div>
       </div>

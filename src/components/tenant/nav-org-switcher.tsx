@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Check, ChevronsUpDown, Search, X } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Search, X, Boxes } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { OrganizationWizard } from "./organization-wizard";
-import { getTenantUrl } from "@/lib/domain";
+import { getTenantUrl, getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";
 import { useUIStore } from "@/store/ui-store";
 import { useRouter } from "next/navigation";
 
@@ -37,9 +37,8 @@ export function NavOrgSwitcher() {
   // 2. Logic Declarations (Must be above useEffect that uses them)
   const segments = pathname?.split("/").filter(Boolean) || [];
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.");
-  const tenantSlug = isLocal && !isSystemSubdomain ? hostname.split(".")[0] : null;
+  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
+  const tenantSlug = getCurrentOrgSlug();
 
   const orgIdFromPath = segments[1];
   const activeSlug = tenantSlug || orgIdFromPath;
@@ -109,12 +108,12 @@ export function NavOrgSwitcher() {
           }
         }}
       >
-        <Avatar className="size-5 rounded border border-border">
+        <Avatar className="size-5 rounded border border-border bg-emerald-600/10 flex items-center justify-center">
           {currentOrg?.logoUrl && currentOrg.logoUrl.trim() !== "" ? (
-            <AvatarImage src={currentOrg.logoUrl} />
+            <AvatarImage src={getLogoUrl(currentOrg.logoUrl)} />
           ) : null}
-          <AvatarFallback className="bg-emerald-600/20 text-emerald-500 text-[10px] font-bold uppercase rounded leading-none">
-            {displayName.substring(0, 1)}
+          <AvatarFallback className="bg-emerald-600/10 text-emerald-500 rounded flex items-center justify-center">
+            <Boxes className="size-3.5" strokeWidth={1.5} />
           </AvatarFallback>
         </Avatar>
         <span className="truncate max-w-[120px] group-hover:text-foreground transition-colors font-semibold tracking-tight">
@@ -182,12 +181,12 @@ export function NavOrgSwitcher() {
                     }
                   }}
                 >
-                  <Avatar className="size-7 rounded border border-border bg-muted/50">
+                  <Avatar className="size-7 rounded border border-border bg-muted/50 flex items-center justify-center">
                     {org.logoUrl && org.logoUrl.trim() !== "" ? (
-                      <AvatarImage src={org.logoUrl} />
+                      <AvatarImage src={getLogoUrl(org.logoUrl)} />
                     ) : null}
-                    <AvatarFallback className="bg-zinc-900 text-zinc-500 text-xs font-bold uppercase rounded">
-                      {org.name.charAt(0).toUpperCase()}
+                    <AvatarFallback className="bg-zinc-900/50 text-zinc-500 rounded flex items-center justify-center">
+                      <Boxes className="size-4" strokeWidth={1.5} />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col flex-1">

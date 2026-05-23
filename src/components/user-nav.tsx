@@ -139,7 +139,7 @@ export function UserNav() {
         <DropdownMenuSeparator className="bg-border" />
         
         {/* Impersonation Back Link */}
-        {user?.roles?.includes("super_admin") && !window.location.hostname.startsWith("system.") && (
+        {user?.roles?.includes("super_admin") && !(window.location.hostname.startsWith("system.") || window.location.hostname.startsWith("system-")) && (
           <>
             <DropdownMenuGroup>
               <DropdownMenuItem 

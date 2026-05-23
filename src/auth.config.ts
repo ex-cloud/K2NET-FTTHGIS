@@ -8,8 +8,8 @@ export default {
     authorized({ auth, request: { nextUrl, headers } }) {
       const isLoggedIn = !!auth?.user;
       const { pathname } = nextUrl;
-      const hostname = headers.get("host") || "";
-      const isSystemSubdomain = hostname.startsWith("system.");
+      const hostname = headers.get("x-forwarded-host") || headers.get("host") || "";
+      const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
 
       // 1. System Admin Area Protection (via Subdomain)
       if (isSystemSubdomain) {
@@ -98,11 +98,18 @@ export default {
             }
 
             // 2. Authenticate against the discovered Keycloak realm
+            // Bypass Cloudflare challenge for server-to-server calls
+            const internalIssuerUrl = issuerUrl
+              .replace("https://auth-gis.k2net.id", "http://localhost:8081")
+              .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+
             const tokenResponse = await fetch(
-              `${issuerUrl}/protocol/openid-connect/token`,
+              `${internalIssuerUrl}/protocol/openid-connect/token`,
               {
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded",
+                  "X-Forwarded-Host": "auth-gis.k2net.id",
+                  "X-Forwarded-Proto": "https",
                 },
                 body: new URLSearchParams({
                   client_id: process.env.AUTH_KEYCLOAK_ID!,
