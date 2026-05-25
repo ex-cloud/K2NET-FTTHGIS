@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("admin")
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/error").permitAll()
