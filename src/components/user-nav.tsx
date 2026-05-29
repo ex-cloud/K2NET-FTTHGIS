@@ -126,7 +126,10 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">
+          <DropdownMenuItem 
+            className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer"
+            onClick={() => window.location.assign("/account/preferences")}
+          >
             Account preferences
           </DropdownMenuItem>
           <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground text-xs font-medium cursor-pointer">

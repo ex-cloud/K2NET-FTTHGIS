@@ -81,36 +81,72 @@ export async function proxy(request: NextRequest) {
   if (subdomain === "system") {
     // If the URL already contains /system/ (e.g. from a direct link), we let it be
     // but we prefer to rewrite clean URLs like /organizations to /system/organizations
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system") && !pathname.startsWith("/login")) {
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system") && !pathname.startsWith("/login") && !pathname.startsWith("/account")) {
       effectivePathname = `/system${pathname === "/" ? "" : pathname}`;
     } else if (pathname === "/login") {
       effectivePathname = "/system/login";
     }
   } else if (subdomain) {
     // Rewrite tenant routes to /org/[slug]/...
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/login") && !pathname.startsWith("/org")) {
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/login") && !pathname.startsWith("/org") && !pathname.startsWith("/account")) {
       effectivePathname = `/org/${subdomain}${pathname === "/" ? "" : pathname}`;
     }
   }
 
   // 4. Security Check (Lightweight)
-  // We do a basic check here to handle /login vs /dashboard redirects early
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
     cookieName: "next-auth.session-token",
-    secureCookie: process.env.NODE_ENV === "production",
+    secureCookie: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") || process.env.NODE_ENV === "production",
   });
   const isLoggedIn = !!token;
 
-  // If logged in and hitting login page, redirect to the appropriate portal
-  if (isLoggedIn && pathname === "/login") {
+  // Protect paths: define public static or API assets
+  const isStaticOrApi = pathname.startsWith("/_next") || 
+                        pathname.startsWith("/favicon.ico") || 
+                        pathname.startsWith("/api") ||
+                        pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|css|js)$/);
+
+  if (!isStaticOrApi) {
+    // Check device verification status
+    const fingerprint = request.cookies.get("device_fingerprint")?.value;
+    const isDeviceVerified = fingerprint ? request.cookies.get(`device_verified_${fingerprint}`)?.value === "true" : false;
+
+    if (isLoggedIn && !isDeviceVerified && pathname !== "/login/otp") {
+      console.log(`[Proxy Middleware] Logged in but device unverified. Redirecting to /login/otp`);
+      return NextResponse.redirect(new URL(`/login/otp?callbackUrl=${encodeURIComponent(pathname + request.nextUrl.search)}`, request.url));
+    }
     if (subdomain === "system") {
-      return NextResponse.redirect(new URL("/organizations", request.url));
+      const isLoginPath = pathname === "/login" || pathname === "/system/login";
+      if (!isLoggedIn && !isLoginPath) {
+        console.log(`[Proxy Middleware] Unauthenticated access to system: ${pathname}. Redirecting to /login`);
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+      if (isLoggedIn && isLoginPath) {
+        return NextResponse.redirect(new URL("/organizations", request.url));
+      }
     } else if (subdomain) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      // Tenant Subdomain
+      const isLoginPath = pathname === "/login";
+      if (!isLoggedIn && !isLoginPath) {
+        console.log(`[Proxy Middleware] Unauthenticated access to tenant ${subdomain}: ${pathname}. Redirecting to /login`);
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+      if (isLoggedIn && isLoginPath) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
     } else {
-      return NextResponse.redirect(new URL("/org", request.url));
+      // Root Domain
+      const isProtectedRootPath = pathname.startsWith("/org") || pathname.startsWith("/dashboard");
+      const isLoginPath = pathname === "/login";
+      if (isProtectedRootPath && !isLoggedIn) {
+        console.log(`[Proxy Middleware] Unauthenticated access to root protected path: ${pathname}. Redirecting to /login`);
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+      if (isLoggedIn && (isLoginPath || pathname === "/")) {
+        return NextResponse.redirect(new URL("/org", request.url));
+      }
     }
   }
 

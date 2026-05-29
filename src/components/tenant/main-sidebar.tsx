@@ -50,7 +50,7 @@ export function MainSidebar() {
   // Extract tenant slug from subdomain if applicable
   const tenantSlug = getCurrentOrgSlug();
 
-  const orgId = params.orgId || tenantSlug || "default";
+  const orgId = params.orgId || tenantSlug || "system";
   
   // Link Prefix logic: 
   // During hydration (not mounted), we MUST match what the server renders.

@@ -15,13 +15,16 @@ export async function authenticate(
   try {
     const org = formData.get("org")?.toString() || "system";
     const callbackUrl = formData.get("callbackUrl")?.toString();
-    const redirectTo = callbackUrl || ((org === "system") ? "/organizations" : `/dashboard`);
+    const targetUrl = callbackUrl || ((org === "system") ? "/organizations" : `/dashboard`);
+    
+    // Always route through the OTP verification step first
+    const otpRedirectUrl = `/login/otp?callbackUrl=${encodeURIComponent(targetUrl)}`;
 
     await signIn("credentials", {
       username: formData.get("username"),
       password: formData.get("password"),
       org: org,
-      redirectTo: redirectTo,
+      redirectTo: otpRedirectUrl,
     });
     return { success: true };
   } catch (error) {

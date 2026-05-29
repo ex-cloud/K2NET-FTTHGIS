@@ -1,9 +1,11 @@
 import type { NextAuthConfig } from "next-auth";
+import { customFetch } from "next-auth";
 import Keycloak from "next-auth/providers/keycloak";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
 export default {
+  trustHost: true,
   callbacks: {
     authorized({ auth, request: { nextUrl, headers } }) {
       const isLoggedIn = !!auth?.user;
@@ -49,6 +51,56 @@ export default {
       clientId: process.env.AUTH_KEYCLOAK_ID,
       clientSecret: process.env.AUTH_KEYCLOAK_SECRET,
       issuer: process.env.AUTH_KEYCLOAK_ISSUER,
+      // customFetch to route server-side requests internally to Keycloak (localhost:8081)
+      [customFetch]: async (input, init) => {
+        let urlStr = "";
+        let requestInit: RequestInit = init || {};
+
+        if (input instanceof Request) {
+          urlStr = input.url;
+          requestInit = input;
+        } else {
+          urlStr = input.toString();
+        }
+
+        if (urlStr.includes("https://auth-gis.k2net.id")) {
+          const targetUrl = urlStr
+            .replace("https://auth-gis.k2net.id", "http://localhost:8081")
+            .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+          
+          console.log(`[customFetch] Intercepting and rewriting URL: ${urlStr} -> ${targetUrl}`);
+          
+          // Modify headers to preserve host information for Keycloak multi-tenant routing
+          const headers = new Headers(requestInit.headers);
+          headers.set("X-Forwarded-Host", "auth-gis.k2net.id");
+          headers.set("X-Forwarded-Proto", "https");
+          
+          if (input instanceof Request) {
+            const newRequest = new Request(targetUrl, input);
+            newRequest.headers.set("X-Forwarded-Host", "auth-gis.k2net.id");
+            newRequest.headers.set("X-Forwarded-Proto", "https");
+            return fetch(newRequest);
+          } else {
+            return fetch(targetUrl, {
+              ...requestInit,
+              headers,
+            });
+          }
+        }
+
+        return fetch(input, init);
+      },
+      // Bypass Cloudflare 403 on OIDC Discovery by using internal URL.
+      // Keycloak is configured with KC_HOSTNAME so it returns correct public URLs
+      // (https://auth-gis.k2net.id/...) even when queried internally.
+      wellKnown: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/.well-known/openid-configuration`,
+      // Server-side token exchange also needs internal URL to bypass Cloudflare
+      token: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/token`,
+      userinfo: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/userinfo`,
+      // Bypass TypeScript OIDCUserConfig limitation to pass runtime jwks_uri
+      ...({
+        jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/certs`,
+      } as any),
     }),
     Credentials({
       async authorize(credentials) {
@@ -158,6 +210,7 @@ export default {
                   username: profile.username,
                   avatar_url: profile.avatarUrl,
                   image: profile.avatarUrl, // Legacy compat
+                  organizationSlug: profile.organizationSlug,
                   tokens: tokens,
                 };
               } else {
@@ -182,6 +235,7 @@ export default {
               username: username,
               image: null,
               avatar_url: null,
+              organizationSlug: orgSlug === "ftth-realm" ? null : orgSlug,
               tokens: tokens,
             };
           } catch (error) {

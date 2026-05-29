@@ -1,6 +1,7 @@
 import NextAuth, { DefaultSession } from "next-auth";
 import authConfig from "./auth.config";
 import { JWT as NextAuthJWT } from "next-auth/jwt";
+import { headers } from "next/headers";
 
 interface KeycloakIdTokenPayload {
   email?: string;
@@ -20,6 +21,7 @@ declare module "next-auth" {
     preferred_username?: string;
     avatar_url?: string | null;
     roles?: string[];
+    organizationSlug?: string | null;
   }
 
   interface Session extends DefaultSession {
@@ -179,6 +181,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               exUser.username ||
               exUser.preferred_username,
             roles: roles,
+            organizationSlug: (user as any).organizationSlug || null,
           };
 
           logInfo(`🔑 Login via Credentials. Issuer extracted from ID token: ${profile.iss}`);
@@ -231,11 +234,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
           }
 
+          let orgSlug = "ftth-realm";
+          if (issuer) {
+            const parts = issuer.split("/");
+            orgSlug = parts[parts.length - 1];
+          }
+
           token.user = {
             ...user,
             avatar_url: exUser.avatar_url || exUser.image,
             username: exUser.preferred_username || exUser.username,
             roles: roles,
+            organizationSlug: orgSlug === "ftth-realm" ? null : orgSlug,
           };
           return {
             ...token,
@@ -280,6 +290,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           username: tokenUser.username,
           roles: tokenUser.roles || [],
           avatar_url: tokenUser.avatar_url,
+          organizationSlug: tokenUser.organizationSlug,
         };
       }
       
@@ -290,6 +301,83 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       
       return session;
     },
+    async signIn({ user, account }) {
+      // Only intercept OAuth/Keycloak logins (not Credentials)
+      if (account?.provider === "keycloak") {
+        const email = user.email;
+        if (!email) {
+          logInfo("❌ OAuth signIn blocked: no email in user object");
+          return "/login?error=no_email";
+        }
+
+        let clientIp = "127.0.0.1";
+        let userAgent = "unknown";
+        let deviceId = "unknown";
+
+        try {
+          const reqHeaders = await headers();
+          clientIp = reqHeaders.get("x-forwarded-for") || reqHeaders.get("x-real-ip") || "127.0.0.1";
+          if (clientIp.includes(",")) {
+            clientIp = clientIp.split(",")[0].trim();
+          }
+          userAgent = reqHeaders.get("user-agent") || "unknown";
+          
+          const cookieHeader = reqHeaders.get("cookie") || "";
+          const deviceIdMatch = cookieHeader.match(/device_id=([^;]+)/);
+          if (deviceIdMatch) {
+            deviceId = deviceIdMatch[1];
+          }
+        } catch (e) {
+          console.warn("Failed to retrieve request headers in signIn callback:", e);
+        }
+
+        try {
+          const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:9090";
+          const internalSecret = process.env.INTERNAL_API_SECRET || "ftth-internal-secret-2026";
+
+          logInfo(`🔐 OAuth gate check for: ${email} (IP: ${clientIp}, DeviceID: ${deviceId})`);
+
+          const res = await fetch(`${backendUrl}/api/v1/auth/oauth-gate/check`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Internal-Secret": internalSecret,
+            },
+            body: JSON.stringify({ 
+              email,
+              ip: clientIp,
+              userAgent,
+              deviceId
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.allowed === true) {
+              logInfo(`✅ OAuth gate ALLOWED for: ${email}`);
+              return true;
+            } else {
+              logInfo(`🚫 OAuth gate BLOCKED for: ${email} (reason: ${data.reason})`);
+              if (data.reason === "suspended") {
+                return "/login?error=suspended";
+              }
+              return "/login?error=not_registered";
+            }
+          } else {
+            logInfo(`⚠️ OAuth gate API returned ${res.status} for: ${email}, allowing as fallback`);
+            return true; // Allow on API error to avoid locking out legitimate users
+          }
+        } catch (error) {
+          console.error("OAuth gate check failed:", error);
+          return true; // Allow on network error to avoid locking out legitimate users
+        }
+      }
+      return true; // Allow Credentials and other providers
+    },
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
   },
   cookies: {
     sessionToken: {
