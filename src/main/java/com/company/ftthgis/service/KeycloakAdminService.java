@@ -12,6 +12,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -157,6 +158,21 @@ public class KeycloakAdminService {
         } catch (Exception e) {
             log.error("Failed to reset password in Keycloak for user {}: {}", userId, e.getMessage());
             throw new RuntimeException("Failed to reset password in Keycloak: " + e.getMessage());
+        }
+    }
+
+    public void updateUserProfileInRealm(String targetRealm, String userId, String email, String firstName, String lastName) {
+        try {
+            UserResource userResource = keycloak.realm(targetRealm).users().get(userId);
+            UserRepresentation user = userResource.toRepresentation();
+            user.setEmail(email);
+            user.setFirstName(firstName);
+            user.setLastName(lastName);
+            userResource.update(user);
+            log.info("Successfully updated profile for user ID {} in realm {}", userId, targetRealm);
+        } catch (Exception e) {
+            log.error("Failed to update profile in Keycloak for user {}: {}", userId, e.getMessage());
+            // Fallback for user not found or similar
         }
     }
 
@@ -430,5 +446,80 @@ public class KeycloakAdminService {
             log.error("Failed to configure Identity Provider {} in Keycloak: {}", providerId, e.getMessage(), e);
             throw new RuntimeException("Failed to configure Identity Provider: " + e.getMessage());
         }
+    }
+
+    public List<FederatedIdentityRepresentation> getUserFederatedIdentities(String realm, String userId) {
+        try {
+            return keycloak.realm(realm).users().get(userId).getFederatedIdentity();
+        } catch (Exception e) {
+            log.error("Failed to fetch federated identities for user {} in realm {}: {}", userId, realm, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    public void removeUserFederatedIdentity(String realm, String userId, String provider) {
+        try {
+            keycloak.realm(realm).users().get(userId).removeFederatedIdentity(provider);
+            log.info("Successfully removed federated identity {} for user {} in realm {}", provider, userId, realm);
+        } catch (Exception e) {
+            log.error("Failed to remove federated identity {} for user {} in realm {}: {}", provider, userId, realm, e.getMessage());
+            throw new RuntimeException("Failed to disconnect identity provider: " + e.getMessage());
+        }
+    }
+
+    public void addFederatedIdentity(String realm, String userId, String provider, FederatedIdentityRepresentation identity) {
+        try {
+            List<FederatedIdentityRepresentation> existing = keycloak.realm(realm).users().get(userId).getFederatedIdentity();
+            boolean alreadyLinked = existing.stream().anyMatch(fi -> provider.equalsIgnoreCase(fi.getIdentityProvider()));
+            if (!alreadyLinked) {
+                keycloak.realm(realm).users().get(userId).addFederatedIdentity(provider, identity);
+                log.info("Successfully linked identity {} to user {} in realm {}", provider, userId, realm);
+            }
+        } catch (Exception e) {
+            log.error("Failed to add federated identity to user {} in realm {}: {}", userId, realm, e.getMessage());
+            throw new RuntimeException("Failed to link identity: " + e.getMessage());
+        }
+    }
+
+    public void deleteUser(String realm, String userId) {
+        try {
+            keycloak.realm(realm).users().get(userId).remove();
+            log.info("Successfully deleted user {} in realm {}", userId, realm);
+        } catch (Exception e) {
+            log.error("Failed to delete user {} in realm {}: {}", userId, realm, e.getMessage());
+        }
+    }
+
+    public boolean deleteUserByEmail(String email) {
+        java.util.Set<String> realms = new java.util.LinkedHashSet<>();
+        realms.add(defaultRealm);
+        realms.add("ftth-realm"); // Explicitly add system realm where google users reside
+        try {
+            for (String slug : organizationRepository.findAllSlugs()) {
+                if ("ex-cloud-org".equals(slug) || "system".equals(slug) || "default".equals(slug)) {
+                    realms.add("ftth-realm");
+                } else {
+                    realms.add(slug);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch org slugs for cleanup: {}", e.getMessage());
+        }
+
+        for (String realm : realms) {
+            try {
+                List<UserRepresentation> users = keycloak.realm(realm).users().searchByEmail(email, true);
+                if (!users.isEmpty()) {
+                    String userId = users.get(0).getId();
+                    keycloak.realm(realm).users().get(userId).remove();
+                    log.info("🧹 Cleaned up unauthorized Keycloak user {} (ID: {}) from realm {}", email, userId, realm);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to search/delete user {} in realm {}: {}", email, realm, e.getMessage());
+            }
+        }
+        log.warn("User {} not found in any Keycloak realm for cleanup", email);
+        return false;
     }
 }

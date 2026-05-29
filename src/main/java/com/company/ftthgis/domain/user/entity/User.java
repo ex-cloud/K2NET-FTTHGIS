@@ -24,6 +24,9 @@ public class User extends OrganizationAwareEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "secondary_email")
+    private String secondaryEmail;
+
     @Column(unique = true)
     private String username;
 

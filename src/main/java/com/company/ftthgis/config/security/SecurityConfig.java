@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
+                        .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("admin")
                         .requestMatchers("/uploads/**").permitAll()
@@ -136,9 +137,11 @@ public class SecurityConfig {
             // 1. Sync User to Local DB (JIT)
             try {
                 userSyncService.syncUserFromJwt(jwt);
+            } catch (org.springframework.security.core.AuthenticationException e) {
+                throw e; // Rethrow to block login
             } catch (Exception e) {
-                // We don't want to block login if local sync fails, but we should log it
-                System.err.println("Failed to sync user from JWT: " + e.getMessage());
+                // Ignore transient database connection errors
+                System.err.println("Generic error syncing user from JWT: " + e.getMessage());
             }
 
             // 2. Extract Roles and dynamic Permissions

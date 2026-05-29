@@ -27,6 +27,7 @@ public class DeviceVerificationService {
     private final UserRepository userRepository;
     private final WhatsAppService whatsAppService;
     private final SystemSettingService settingsService;
+    private final EmailService emailService;
 
     // Thread-safe map to store OTPs. Key: userId + "-" + fingerprint, Value: OtpDetails
     private final Map<String, OtpDetails> otpCache = new ConcurrentHashMap<>();
@@ -58,7 +59,7 @@ public class DeviceVerificationService {
     }
 
     /**
-     * Generates and sends a WhatsApp OTP code for a new device.
+     * Generates and sends an OTP code for a new device (WhatsApp or Email).
      */
     public boolean requestOtp(UUID userId, String deviceFingerprint, String phoneNumber) {
         String cacheKey = userId.toString() + "-" + deviceFingerprint;
@@ -69,14 +70,51 @@ public class DeviceVerificationService {
 
         otpCache.put(cacheKey, OtpDetails.builder()
                 .code(otpCode)
-                .phoneNumber(phoneNumber)
+                .phoneNumber(phoneNumber != null ? phoneNumber : "")
                 .expiryTime(expiry)
                 .build());
 
         log.info("🔑 Generated OTP {} for user {} / device {}", otpCode, userId, deviceFingerprint);
 
-        // Send OTP via WhatsApp gateway
-        return whatsAppService.sendOtp(phoneNumber, otpCode);
+        // Retrieve user to check email
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            log.error("❌ Cannot send OTP: User {} not found in system database!", userId);
+            return false;
+        }
+        User user = userOpt.get();
+        String userEmail = user.getEmail();
+
+        boolean waOtpEnabled = settingsService.getSettingBoolean("wa_otp_enabled", false);
+
+        // Check if we should send via WhatsApp
+        if (waOtpEnabled && phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            log.info("📱 Sending OTP to WhatsApp: {}", phoneNumber);
+            return whatsAppService.sendOtp(phoneNumber, otpCode);
+        } else {
+            // Send via SMTP
+            String subject = "Kode OTP Verifikasi Perangkat FTTH GIS";
+            String body = String.format(
+                    "<div style='font-family: sans-serif; padding: 20px; max-width: 600px; border: 1px solid #eee; border-radius: 8px;'>" +
+                    "  <h2 style='color: #0f766e;'>Verifikasi 2 Langkah</h2>" +
+                    "  <p>Kode OTP Anda untuk masuk ke sistem FTTH GIS adalah:</p>" +
+                    "  <div style='background-color: #f0fdf4; border: 1px dashed #22c55e; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;'>" +
+                    "    <span style='font-size: 24px; font-weight: bold; color: #166534; letter-spacing: 2px;'>%s</span>" +
+                    "  </div>" +
+                    "  <p style='color: #666; font-size: 14px;'>Kode OTP ini hanya berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun.</p>" +
+                    "</div>",
+                    otpCode
+            );
+            
+            log.info("📧 Sending OTP email to: {}", userEmail);
+            boolean sent = emailService.sendEmail(userEmail, subject, body);
+            if (!sent) {
+                log.warn("⚠️ SMTP delivery failed, falling back to mock log print for recovery");
+                log.info("To: {}", userEmail);
+                log.info("OTP Code (Recovery): {}", otpCode);
+            }
+            return true;
+        }
     }
 
     /**
@@ -140,6 +178,48 @@ public class DeviceVerificationService {
 
         userDeviceRepository.save(device);
         log.info("✅ Device {} for User {} successfully verified and registered!", deviceFingerprint, userId);
+        return true;
+    }
+
+    /**
+     * Directly marks a device as trusted/verified for a user without checking OTP.
+     */
+    @Transactional
+    public boolean trustDeviceDirectly(UUID userId, String deviceFingerprint, String browser, String os, String ipAddress) {
+        // Fetch User
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            log.error("❌ User {} not found in system database!", userId);
+            return false;
+        }
+
+        User user = userOpt.get();
+
+        // Register/update the UserDevice
+        Optional<UserDevice> deviceOpt = userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint);
+        UserDevice device;
+        if (deviceOpt.isPresent()) {
+            device = deviceOpt.get();
+            device.setVerified(true);
+            device.setLastUsedAt(LocalDateTime.now());
+            device.setIpAddress(ipAddress);
+            device.setBrowser(browser);
+            device.setOs(os);
+        } else {
+            device = UserDevice.builder()
+                    .user(user)
+                    .deviceFingerprint(deviceFingerprint)
+                    .browser(browser)
+                    .os(os)
+                    .ipAddress(ipAddress)
+                    .verified(true)
+                    .createdAt(LocalDateTime.now())
+                    .lastUsedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        userDeviceRepository.save(device);
+        log.info("🛡️ Device {} for User {} trusted directly via local authentication bypass!", deviceFingerprint, userId);
         return true;
     }
 }

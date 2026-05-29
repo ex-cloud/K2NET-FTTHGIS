@@ -12,6 +12,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -63,6 +65,42 @@ public class UserController {
             e.printStackTrace();
             return org.springframework.http.ResponseEntity.internalServerError().body(e.getMessage());
         }
+    }
+
+    @PutMapping("/profile")
+    public UserDto updateProfile(
+            @RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userService.updateProfile(userId, request.fullName(), request.email(), request.avatarUrl());
+    }
+
+    @GetMapping("/me/social-identities")
+    public List<Map<String, String>> getSocialIdentities(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return userService.getUserSocialIdentitiesDetailed(userId);
+    }
+
+    @DeleteMapping("/me/social-identities/{provider}")
+    public Map<String, Object> disconnectSocial(@PathVariable String provider, @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.disconnectSocialIdentity(userId, provider);
+        return Map.of("success", true, "message", "Disconnected " + provider + " identity provider");
+    }
+
+    @PostMapping("/me/social-identities/link")
+    public Map<String, Object> linkSocial(
+            @RequestBody LinkSocialRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.linkSocialIdentity(userId, request.provider(), request.code(), request.redirectUri());
+        return Map.of("success", true, "message", "Linked " + request.provider() + " identity provider");
+    }
+
+    public record LinkSocialRequest(String provider, String code, String redirectUri) {
+    }
+
+    public record UpdateProfileRequest(String fullName, String email, String avatarUrl) {
     }
 
     public record UpdateUserRequest(String role, String status, String reason) {

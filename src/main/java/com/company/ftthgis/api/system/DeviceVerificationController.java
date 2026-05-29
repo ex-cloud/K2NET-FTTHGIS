@@ -49,17 +49,19 @@ public class DeviceVerificationController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody RequestOtpPayload payload) {
         
-        if (payload.deviceFingerprint() == null || payload.phoneNumber() == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "deviceFingerprint and phoneNumber are required"));
+        if (payload.deviceFingerprint() == null || payload.deviceFingerprint().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "deviceFingerprint is required"));
         }
 
         UUID userId = UUID.fromString(jwt.getSubject());
-        boolean sent = deviceVerificationService.requestOtp(userId, payload.deviceFingerprint(), payload.phoneNumber());
+        String phoneNumber = payload.phoneNumber();
+        
+        boolean sent = deviceVerificationService.requestOtp(userId, payload.deviceFingerprint(), phoneNumber);
 
         if (sent) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "OTP sent successfully via WhatsApp"));
+            return ResponseEntity.ok(Map.of("success", true, "message", "OTP sent successfully"));
         } else {
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Failed to send OTP via WhatsApp gateway"));
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Failed to send OTP code"));
         }
     }
 
@@ -130,9 +132,38 @@ public class DeviceVerificationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/trust-current")
+    public ResponseEntity<?> trustCurrentDevice(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody TrustDevicePayload payload,
+            HttpServletRequest request) {
+
+        if (payload.deviceFingerprint() == null || payload.deviceFingerprint().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "deviceFingerprint is required"));
+        }
+
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String ipAddress = request.getRemoteAddr();
+
+        boolean verified = deviceVerificationService.trustDeviceDirectly(
+                userId,
+                payload.deviceFingerprint(),
+                payload.browser() != null ? payload.browser() : "Unknown Browser",
+                payload.os() != null ? payload.os() : "Unknown OS",
+                ipAddress
+        );
+
+        if (verified) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Perangkat berhasil diverifikasi dan ditambahkan ke daftar perangkat terpercaya."));
+        } else {
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Gagal mendaftarkan perangkat terpercaya"));
+        }
+    }
+
     // --- Records ---
     public record RequestOtpPayload(String deviceFingerprint, String phoneNumber) {}
     public record VerifyOtpPayload(String deviceFingerprint, String otpCode, String browser, String os) {}
+    public record TrustDevicePayload(String deviceFingerprint, String browser, String os) {}
     public record UserDeviceDto(
             Long id,
             String deviceFingerprint,

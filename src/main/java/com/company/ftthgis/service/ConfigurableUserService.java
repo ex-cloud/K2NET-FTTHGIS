@@ -40,6 +40,16 @@ public class ConfigurableUserService {
     private final ProjectMemberRepository projectMemberRepository;
     private final OrganizationRepository organizationRepository;
     private final UserAuditLogRepository userAuditLogRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://localhost:8081}")
+    private String keycloakInternalUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
+    private String clientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:6b2eKluzW7eVxg5Fapx1p3e2O6b91oFs}")
+    private String clientSecret;
 
     /**
      * Helper to resolve the correct Keycloak Realm based on architectural rules.
@@ -64,7 +74,8 @@ public class ConfigurableUserService {
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
             OrganizationRepository organizationRepository,
-            UserAuditLogRepository userAuditLogRepository) {
+            UserAuditLogRepository userAuditLogRepository,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         this.roleRepository = roleRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.userRepository = userRepository;
@@ -72,6 +83,7 @@ public class ConfigurableUserService {
         this.projectMemberRepository = projectMemberRepository;
         this.organizationRepository = organizationRepository;
         this.userAuditLogRepository = userAuditLogRepository;
+        this.objectMapper = objectMapper;
     }
 
     public UserDto getCurrentUser(String keycloakSubject) {
@@ -343,6 +355,52 @@ public class ConfigurableUserService {
         return userRepository.findAll(spec, pageable).map(this::mapToDto);
     }
 
+    @Transactional
+    public UserDto updateProfile(UUID id, String fullName, String email, String avatarUrl) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String oldEmail = user.getEmail();
+
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            user.setFullName(fullName);
+        }
+        if (email != null && !email.trim().isEmpty()) {
+            String trimmedEmail = email.trim();
+            if (!trimmedEmail.equalsIgnoreCase(oldEmail)) {
+                // If user changes email back to their secondary email, clear the secondary email
+                if (trimmedEmail.equalsIgnoreCase(user.getSecondaryEmail())) {
+                    user.setSecondaryEmail(null);
+                } else if (user.getSecondaryEmail() == null) {
+                    // Only set secondary email if it wasn't already set, to preserve original registration email
+                    user.setSecondaryEmail(oldEmail);
+                }
+                user.setEmail(trimmedEmail);
+            }
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(avatarUrl);
+        }
+
+        String firstName = "";
+        String lastName = "";
+        if (user.getFullName() != null) {
+            String[] parts = user.getFullName().split(" ", 2);
+            firstName = parts[0];
+            lastName = parts.length > 1 ? parts[1] : "";
+        }
+
+        // Sync name and primary email changes to Keycloak using the updated email
+        String targetRealm = resolveKeycloakRealm(user.getOrganization());
+        try {
+            keycloakAdminService.updateUserProfileInRealm(targetRealm, user.getId().toString(), user.getEmail(), firstName, lastName);
+        } catch (Exception e) {
+            log.warn("Failed to sync profile change to Keycloak in realm {}: {}", targetRealm, e.getMessage());
+        }
+
+        return mapToDto(userRepository.save(user));
+    }
+
     private UserDto mapToDto(User user) {
         List<UserDto.ProjectRoleDto> projectRoles = new ArrayList<>();
         
@@ -361,6 +419,7 @@ public class ConfigurableUserService {
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .secondaryEmail(user.getSecondaryEmail())
                 .username(user.getUsername())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
@@ -374,5 +433,135 @@ public class ConfigurableUserService {
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)
                 .build();
+    }
+
+    public List<String> getUserSocialIdentities(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        String realm = resolveKeycloakRealm(user.getOrganization());
+        return keycloakAdminService.getUserFederatedIdentities(realm, userId.toString()).stream()
+                .map(identity -> identity.getIdentityProvider()) // e.g., "google", "github"
+                .collect(Collectors.toList());
+    }
+
+    public List<java.util.Map<String, String>> getUserSocialIdentitiesDetailed(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        String realm = resolveKeycloakRealm(user.getOrganization());
+        return keycloakAdminService.getUserFederatedIdentities(realm, userId.toString()).stream()
+                .map(identity -> {
+                    java.util.Map<String, String> map = new java.util.HashMap<>();
+                    map.put("provider", identity.getIdentityProvider() != null ? identity.getIdentityProvider() : "");
+                    map.put("userId", identity.getUserId() != null ? identity.getUserId() : "");
+                    map.put("userName", identity.getUserName() != null ? identity.getUserName() : "");
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void disconnectSocialIdentity(UUID userId, String provider) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        String realm = resolveKeycloakRealm(user.getOrganization());
+        
+        // 1. Remove federated identity from Keycloak
+        keycloakAdminService.removeUserFederatedIdentity(realm, userId.toString(), provider);
+
+        // 2. Revert primary email back to secondary email if it exists
+        String currentEmail = user.getEmail();
+        String backupEmail = user.getSecondaryEmail();
+        
+        if (backupEmail != null && !backupEmail.isEmpty() && !currentEmail.equalsIgnoreCase(backupEmail)) {
+            log.info("Reverting primary email from {} to secondary email {} due to social disconnect of {}", 
+                    currentEmail, backupEmail, provider);
+            user.setEmail(backupEmail);
+            user.setSecondaryEmail(null);
+            userRepository.save(user);
+
+            // Sync the reverted email back to Keycloak
+            String firstName = "";
+            String lastName = "";
+            if (user.getFullName() != null) {
+                String[] parts = user.getFullName().split(" ", 2);
+                firstName = parts[0];
+                lastName = parts.length > 1 ? parts[1] : "";
+            }
+            try {
+                keycloakAdminService.updateUserProfileInRealm(realm, user.getId().toString(), backupEmail, firstName, lastName);
+                log.info("Successfully updated Keycloak email to {} after social disconnect", backupEmail);
+            } catch (Exception e) {
+                log.error("Failed to update Keycloak email to {} during social disconnect: {}", backupEmail, e.getMessage());
+            }
+        }
+    }
+
+    @Transactional
+    public void linkSocialIdentity(UUID currentUserId, String provider, String code, String redirectUri) {
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + currentUserId));
+        String realm = resolveKeycloakRealm(user.getOrganization());
+
+        try {
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            String requestBody = "grant_type=authorization_code" +
+                    "&code=" + java.net.URLEncoder.encode(code, java.nio.charset.StandardCharsets.UTF_8) +
+                    "&redirect_uri=" + java.net.URLEncoder.encode(redirectUri, java.nio.charset.StandardCharsets.UTF_8) +
+                    "&client_id=" + java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8) +
+                    "&client_secret=" + java.net.URLEncoder.encode(clientSecret, java.nio.charset.StandardCharsets.UTF_8);
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(keycloakInternalUrl + "/realms/" + realm + "/protocol/openid-connect/token"))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("X-Forwarded-Host", "auth-gis.k2net.id")
+                    .header("X-Forwarded-Proto", "https")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                log.error("Keycloak token exchange failed with status {}: {}", response.statusCode(), response.body());
+                throw new RuntimeException("Keycloak token exchange failed: " + response.body());
+            }
+
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(response.body());
+            String accessToken = node.get("access_token").asText();
+
+            String[] parts = accessToken.split("\\.");
+            if (parts.length < 2) {
+                throw new RuntimeException("Invalid token format from Keycloak");
+            }
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]), java.nio.charset.StandardCharsets.UTF_8);
+            com.fasterxml.jackson.databind.JsonNode payloadNode = objectMapper.readTree(payload);
+            String oauthUserId = payloadNode.get("sub").asText();
+
+            log.info("Token exchange successful. Current user: {}, OAuth user: {}", currentUserId, oauthUserId);
+
+            if (!oauthUserId.equals(currentUserId.toString())) {
+                List<org.keycloak.representations.idm.FederatedIdentityRepresentation> federatedIdentities = 
+                        keycloakAdminService.getUserFederatedIdentities(realm, oauthUserId);
+                
+                org.keycloak.representations.idm.FederatedIdentityRepresentation targetIdentity = federatedIdentities.stream()
+                        .filter(fi -> provider.equalsIgnoreCase(fi.getIdentityProvider()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (targetIdentity != null) {
+                    keycloakAdminService.addFederatedIdentity(realm, currentUserId.toString(), provider, targetIdentity);
+                    keycloakAdminService.deleteUser(realm, oauthUserId);
+                    log.info("Successfully linked {} identity and cleaned up duplicate user {}", provider, oauthUserId);
+                } else {
+                    log.warn("No federated identity found for provider {} on temporary user {}", provider, oauthUserId);
+                    throw new RuntimeException("No federated identity found on oauth user");
+                }
+            } else {
+                log.info("Social identity for provider {} was already linked directly", provider);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to link social identity: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to link social identity: " + e.getMessage());
+        }
     }
 }

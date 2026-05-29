@@ -147,6 +147,10 @@ public class UserSeeder implements CommandLineRunner {
 
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isEmpty()) {
+            if (userRepository.findByUsername(username).isPresent()) {
+                log.warn("⚠️ Skipping user seeding for {} - username '{}' is already taken by another user.", email, username);
+                return;
+            }
             Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName)
                     .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
 

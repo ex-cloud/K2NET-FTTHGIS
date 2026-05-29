@@ -26,6 +26,7 @@ public class UserSyncService {
     private final RoleRepository roleRepository;
     private final OrganizationRepository organizationRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final SystemSettingService settingsService;
 
     /**
      * Synchronize ALL users from Keycloak to Local Database.
@@ -109,8 +110,45 @@ public class UserSyncService {
 
         UUID uuid = UUID.fromString(keycloakId);
         Optional<User> existingUser = userRepository.findById(uuid);
+        Optional<User> userByEmail = userRepository.findByEmail(email);
+
+        boolean userExists = existingUser.isPresent() || userByEmail.isPresent();
+
+        // 1. Strict Self-Registration Enforcement
+        boolean allowSelfReg = settingsService.getSettingBoolean("allow_self_registration", false);
+        if (!allowSelfReg && !userExists) {
+            log.warn("❌ Blocking login for unregistered user: {}", email);
+            throw new org.springframework.security.authentication.BadCredentialsException(
+                "Registrasi mandiri dinonaktifkan. Silakan hubungi administrator untuk mendapatkan undangan."
+            );
+        }
+
+        // 2. Strict Tenant Domain / Realm Alignment Check
+        User targetUser = existingUser.orElseGet(() -> userByEmail.orElse(null));
+        if (targetUser != null) {
+            Organization userOrg = targetUser.getOrganization();
+            String userOrgSlug = (userOrg != null) ? userOrg.getSlug() : "system";
+
+            boolean isSystemRealm = "ftth-realm".equals(realmName) || "master".equals(realmName);
+            String targetRealmSlug = isSystemRealm ? "system" : realmName;
+
+            if (!userOrgSlug.equalsIgnoreCase(targetRealmSlug)) {
+                log.warn("❌ Realm mismatch block for user {}: Registered organization is '{}', but logging in via realm '{}'", 
+                    email, userOrgSlug, targetRealmSlug);
+                throw new org.springframework.security.authentication.BadCredentialsException(
+                    "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
+                );
+            }
+        }
+
         if (existingUser.isPresent()) {
-            return updateExistingUser(existingUser.get(), email, name, username, org);
+            boolean isJwtStale = false;
+            User user = existingUser.get();
+            if (jwt.getIssuedAt() != null && user.getUpdatedAt() != null) {
+                java.time.Instant updatedAtInstant = user.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant();
+                isJwtStale = jwt.getIssuedAt().isBefore(updatedAtInstant.minusSeconds(5));
+            }
+            return updateExistingUser(user, email, name, username, org, isJwtStale);
         } else {
             return userRepository.findByEmail(email)
                     .map(user -> {
@@ -124,6 +162,10 @@ public class UserSyncService {
     }
 
     private User updateExistingUser(User user, String email, String name, String username, Organization org) {
+        return updateExistingUser(user, email, name, username, org, false);
+    }
+
+    private User updateExistingUser(User user, String email, String name, String username, Organization org, boolean isJwtStale) {
         boolean changed = false;
         
         // Update organization if changed (though it rarely should)
@@ -132,27 +174,48 @@ public class UserSyncService {
             changed = true;
         }
 
-        if (name != null && !name.isEmpty() && (user.getFullName() == null || !user.getFullName().equals(name))) {
-            user.setFullName(name);
-            changed = true;
+        if (email != null && !email.trim().isEmpty()) {
+            String trimmedEmail = email.trim();
+            boolean matchesPrimary = trimmedEmail.equalsIgnoreCase(user.getEmail());
+            boolean matchesSecondary = user.getSecondaryEmail() != null && trimmedEmail.equalsIgnoreCase(user.getSecondaryEmail());
+            
+            // Only sync email from JWT if it matches neither primary nor secondary, and token is not stale.
+            // This prevents overwriting user-chosen primary/secondary email configurations.
+            if (!matchesPrimary && !matchesSecondary) {
+                if (!isJwtStale) {
+                    user.setEmail(trimmedEmail);
+                    changed = true;
+                } else {
+                    log.debug("Skipping email sync from stale JWT for user {}: JWT email is {}", user.getEmail(), trimmedEmail);
+                }
+            }
         }
 
-        if (username != null && !username.isEmpty()
-                && (user.getUsername() == null || !user.getUsername().equals(username))) {
-            user.setUsername(username);
-            changed = true;
+        if (!isJwtStale) {
+            if (name != null && !name.isEmpty() && (user.getFullName() == null || !user.getFullName().equals(name))) {
+                user.setFullName(name);
+                changed = true;
+            }
+
+            if (username != null && !username.isEmpty()
+                    && (user.getUsername() == null || !user.getUsername().equals(username))) {
+                user.setUsername(username);
+                changed = true;
+            }
+        } else if (log.isDebugEnabled()) {
+            log.debug("Skipping fullName/username sync from stale JWT for user {}", user.getEmail());
         }
 
         // Ensure avatar is never empty
         if (user.getAvatarUrl() == null || user.getAvatarUrl().isEmpty()) {
-            String seed = email.split("@")[0];
+            String seed = user.getEmail().split("@")[0];
             user.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
             changed = true;
         }
 
         if (changed) {
             userRepository.save(user);
-            log.debug("Updated local user profile for {}", email);
+            log.debug("Updated local user profile for {}", user.getEmail());
         }
 
         // AUTO-PROVISION: Ensure the organization has its own roles cloned from system roles

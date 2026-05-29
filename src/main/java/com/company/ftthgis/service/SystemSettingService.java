@@ -34,9 +34,9 @@ public class SystemSettingService {
         defaults.put("system_maintenance_mode", new String[]{"false", "GENERAL", "Enables or disables platform-wide maintenance mode"});
         
         // SMTP
-        defaults.put("smtp_host", new String[]{"smtp.mailtrap.io", "SMTP", "SMTP outgoing mail server host"});
-        defaults.put("smtp_port", new String[]{"2525", "SMTP", "SMTP outgoing mail server port"});
-        defaults.put("smtp_username", new String[]{"smtp_user", "SMTP", "SMTP username"});
+        defaults.put("smtp_host", new String[]{"smtp-relay.brevo.com", "SMTP", "SMTP outgoing mail server host"});
+        defaults.put("smtp_port", new String[]{"587", "SMTP", "SMTP outgoing mail server port"});
+        defaults.put("smtp_username", new String[]{"ac9057001@smtp-brevo.com", "SMTP", "SMTP username"});
         defaults.put("smtp_password", new String[]{"smtp_pass", "SMTP", "SMTP password"});
         defaults.put("smtp_from", new String[]{"noreply@ftthgis.com", "SMTP", "Sender address for system notifications"});
         
