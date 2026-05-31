@@ -18,7 +18,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/ftth_gis
     username: postgres
-    password: ${DB_PASSWORD:9kFw2mSp7r9D8zXpQ}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -59,7 +59,7 @@ keycloak:
   realm: master
   # Service Account for Backend to manage everything (from master realm)
   client-id: ftth-gis-admin
-  client-secret: 5eUIWOk9GmUxX0nSwDSLmOHVFFY2JRk8
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:}
   grant-type: client_credentials
 
 # Custom Config for App Security
@@ -72,7 +72,14 @@ app:
   security:
     keycloak:
       provision-client-id: ${AUTH_KEYCLOAK_ID:ftth-gis-frontend}
-      provision-client-secret: ${AUTH_KEYCLOAK_SECRET:6b2eKluzW7eVxg5Fapx1p3e2O6b91oFs}
+      provision-client-secret: ${AUTH_KEYCLOAK_SECRET:}
+    oauth2:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:}
+        client-secret: ${GOOGLE_CLIENT_SECRET:}
+      github:
+        client-id: ${GITHUB_CLIENT_ID:}
+        client-secret: ${GITHUB_CLIENT_SECRET:}
     cors:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
       allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"

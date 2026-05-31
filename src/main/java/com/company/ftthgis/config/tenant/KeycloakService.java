@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentRepresentation;
+import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.springframework.stereotype.Service;
 import com.company.ftthgis.config.KeycloakProperties;
 
@@ -35,6 +36,18 @@ public class KeycloakService {
     @org.springframework.beans.factory.annotation.Value("${app.frontend-url:localhost:3000}")
     private String frontendUrl;
 
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.google.client-id}")
+    private String googleClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.google.client-secret}")
+    private String googleClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.github.client-id}")
+    private String githubClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.security.oauth2.github.client-secret}")
+    private String githubClientSecret;
+
     /**
      * Ensures a realm exists for a tenant.
      * Uses the singleton Keycloak admin client.
@@ -42,11 +55,55 @@ public class KeycloakService {
     public void ensureRealmExists(String realmName) {
         log.info("🛡️ Ensuring Keycloak Realm exists: {}", realmName);
         try {
-            // 1. Try to create the realm directly
-            org.keycloak.representations.idm.RealmRepresentation realm = new org.keycloak.representations.idm.RealmRepresentation();
-            realm.setRealm(realmName);
-            realm.setEnabled(true);
-            realm.setDisplayName("Organization: " + realmName);
+            // 1. Try to create the realm directly using ftth-realm as a template to clone its custom flows, themes, and identity providers
+            org.keycloak.representations.idm.RealmRepresentation realm;
+            try {
+                log.info("📋 Fetching template realm 'ftth-realm' to clone configuration...");
+                realm = keycloak.realm("ftth-realm").toRepresentation();
+                
+                // Overwrite identifiers for the new realm
+                realm.setId(realmName);
+                realm.setRealm(realmName);
+                realm.setDisplayName("Organization: " + realmName);
+                
+                // Clear stateful data
+                realm.setUsers(null);
+                realm.setRoles(null);
+                realm.setGroups(null);
+                realm.setComponents(null); // Let Keycloak generate default key providers
+                realm.setClients(null);    // Let provisionDefaultClient handle frontend client
+                
+                // Restore unmasked OAuth secrets since toRepresentation() returns masked secrets ("**********")
+                if (realm.getIdentityProviders() != null) {
+                    for (var idp : realm.getIdentityProviders()) {
+                        java.util.Map<String, String> config = idp.getConfig();
+                        if (config != null) {
+                            if ("google".equalsIgnoreCase(idp.getAlias())) {
+                                if (googleClientId != null && !googleClientId.trim().isEmpty()) {
+                                    config.put("clientId", googleClientId);
+                                }
+                                if (googleClientSecret != null && !googleClientSecret.trim().isEmpty()) {
+                                    config.put("clientSecret", googleClientSecret);
+                                }
+                            } else if ("github".equalsIgnoreCase(idp.getAlias())) {
+                                if (githubClientId != null && !githubClientId.trim().isEmpty()) {
+                                    config.put("clientId", githubClientId);
+                                }
+                                if (githubClientSecret != null && !githubClientSecret.trim().isEmpty()) {
+                                    config.put("clientSecret", githubClientSecret);
+                                }
+                            }
+                        }
+                    }
+                }
+                log.info("✅ SUCCESS: Template realm loaded and secrets restored.");
+            } catch (Exception ex) {
+                log.warn("⚠️ Failed to fetch ftth-realm template. Creating a basic blank realm. Error: {}", ex.getMessage());
+                realm = new org.keycloak.representations.idm.RealmRepresentation();
+                realm.setRealm(realmName);
+                realm.setEnabled(true);
+                realm.setDisplayName("Organization: " + realmName);
+            }
 
             try {
                 keycloak.realms().create(realm);
@@ -74,6 +131,11 @@ public class KeycloakService {
             // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend)
             // This is the most important step for login success
             provisionDefaultClient(realmName);
+
+            // 3. Clone Google Identity Provider from system realm if this is a tenant realm
+            if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
+                cloneIdentityProvider("ftth-realm", realmName, "google");
+            }
 
         } catch (Exception e) {
             log.error("❌ CRITICAL: Unexpected error in ensureRealmExists for '{}': {}", realmName, e.getMessage());
@@ -386,6 +448,49 @@ public class KeycloakService {
         } catch (Exception e) {
             log.error("❌ Unexpected error deleting realm '{}': {}", realmName, e.getMessage());
             throw new RuntimeException("Failed to delete realm: " + realmName, e);
+        }
+    }
+
+    /**
+     * Clones an identity provider (e.g. Google) from a source realm to a target realm.
+     */
+    private void cloneIdentityProvider(String sourceRealm, String targetRealm, String providerAlias) {
+        try {
+            var targetRealmResource = keycloak.realm(targetRealm);
+            
+            // Check if it already exists in target realm
+            boolean exists = targetRealmResource.identityProviders().findAll().stream()
+                    .anyMatch(idp -> providerAlias.equalsIgnoreCase(idp.getAlias()));
+            if (exists) {
+                log.info("ℹ️ Identity Provider '{}' already exists in realm '{}'. Skipping clone.", providerAlias, targetRealm);
+                return;
+            }
+
+            // Fetch from source realm
+            var sourceRealmResource = keycloak.realm(sourceRealm);
+            IdentityProviderRepresentation sourceIdp = 
+                    sourceRealmResource.identityProviders().get(providerAlias).toRepresentation();
+            
+            if (sourceIdp != null) {
+                // Clear internal ID so Keycloak generates a new one
+                sourceIdp.setInternalId(null);
+                
+                try {
+                    // Try to create with the cloned flow alias
+                    targetRealmResource.identityProviders().create(sourceIdp);
+                    log.info("✅ SUCCESS: Automatically cloned Identity Provider '{}' from '{}' to '{}'", 
+                            providerAlias, sourceRealm, targetRealm);
+                } catch (jakarta.ws.rs.WebApplicationException ex) {
+                    log.warn("⚠️ Failed to clone Identity Provider with original flow alias. Retrying with 'first broker login' fallback. Error: {}", ex.getMessage());
+                    sourceIdp.setFirstBrokerLoginFlowAlias("first broker login");
+                    targetRealmResource.identityProviders().create(sourceIdp);
+                    log.info("✅ SUCCESS: Cloned Identity Provider '{}' with fallback flow 'first broker login' in realm '{}'", 
+                            providerAlias, targetRealm);
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ ERROR: Failed to clone Identity Provider '{}' from '{}' to '{}': {}", 
+                    providerAlias, sourceRealm, targetRealm, e.getMessage());
         }
     }
 }
