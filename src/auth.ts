@@ -52,18 +52,31 @@ async function refreshAccessToken(token: NextAuthJWT) {
     
     logInfo(`Refreshing token for user ${token.email} using issuer: ${issuer}`);
 
+    const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+    const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
+
+    let keycloakHost = "auth-gis.k2net.id";
+    let keycloakProto = "https";
+    try {
+      const parsedUrl = new URL(serverUrl);
+      keycloakHost = parsedUrl.host;
+      keycloakProto = parsedUrl.protocol.replace(":", "");
+    } catch (e) {
+      console.error("[refreshAccessToken] Failed to parse NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL:", e);
+    }
+
     // Bypass Cloudflare challenge for server-to-server token refresh
     const internalIssuer = issuer
-      .replace("https://auth-gis.k2net.id", "http://localhost:8081")
-      .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+      .replace(serverUrl, "http://localhost:8081")
+      .replace(`${serverUrl}:8081`, "http://localhost:8081");
 
     const response = await fetch(
       `${internalIssuer}/protocol/openid-connect/token`,
       {
         headers: { 
           "Content-Type": "application/x-www-form-urlencoded",
-          "X-Forwarded-Host": "auth-gis.k2net.id",
-          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": keycloakHost,
+          "X-Forwarded-Proto": keycloakProto,
         },
         body: new URLSearchParams({
           client_id: process.env.AUTH_KEYCLOAK_ID!,

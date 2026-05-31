@@ -4,6 +4,19 @@ import Keycloak from "next-auth/providers/keycloak";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
+const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
+
+let keycloakHost = "auth-gis.k2net.id";
+let keycloakProto = "https";
+try {
+  const parsedUrl = new URL(serverUrl);
+  keycloakHost = parsedUrl.host;
+  keycloakProto = parsedUrl.protocol.replace(":", "");
+} catch (e) {
+  console.error("Failed to parse NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL in auth.config.ts:", e);
+}
+
 export default {
   trustHost: true,
   callbacks: {
@@ -63,22 +76,22 @@ export default {
           urlStr = input.toString();
         }
 
-        if (urlStr.includes("https://auth-gis.k2net.id")) {
+        if (urlStr.includes(serverUrl)) {
           const targetUrl = urlStr
-            .replace("https://auth-gis.k2net.id", "http://localhost:8081")
-            .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+            .replace(serverUrl, "http://localhost:8081")
+            .replace(`${serverUrl}:8081`, "http://localhost:8081");
           
           console.log(`[customFetch] Intercepting and rewriting URL: ${urlStr} -> ${targetUrl}`);
           
           // Modify headers to preserve host information for Keycloak multi-tenant routing
           const headers = new Headers(requestInit.headers);
-          headers.set("X-Forwarded-Host", "auth-gis.k2net.id");
-          headers.set("X-Forwarded-Proto", "https");
+          headers.set("X-Forwarded-Host", keycloakHost);
+          headers.set("X-Forwarded-Proto", keycloakProto);
           
           if (input instanceof Request) {
             const newRequest = new Request(targetUrl, input);
-            newRequest.headers.set("X-Forwarded-Host", "auth-gis.k2net.id");
-            newRequest.headers.set("X-Forwarded-Proto", "https");
+            newRequest.headers.set("X-Forwarded-Host", keycloakHost);
+            newRequest.headers.set("X-Forwarded-Proto", keycloakProto);
             return fetch(newRequest);
           } else {
             return fetch(targetUrl, {
@@ -92,14 +105,14 @@ export default {
       },
       // Bypass Cloudflare 403 on OIDC Discovery by using internal URL.
       // Keycloak is configured with KC_HOSTNAME so it returns correct public URLs
-      // (https://auth-gis.k2net.id/...) even when queried internally.
-      wellKnown: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/.well-known/openid-configuration`,
+      // even when queried internally.
+      wellKnown: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/.well-known/openid-configuration`,
       // Server-side token exchange also needs internal URL to bypass Cloudflare
-      token: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/token`,
-      userinfo: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/userinfo`,
+      token: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/token`,
+      userinfo: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/userinfo`,
       // Bypass TypeScript OIDCUserConfig limitation to pass runtime jwks_uri
       ...({
-        jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace("https://auth-gis.k2net.id", "http://localhost:8081")}/protocol/openid-connect/certs`,
+        jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/certs`,
       } as any),
     }),
     Credentials({
@@ -152,16 +165,16 @@ export default {
             // 2. Authenticate against the discovered Keycloak realm
             // Bypass Cloudflare challenge for server-to-server calls
             const internalIssuerUrl = issuerUrl
-              .replace("https://auth-gis.k2net.id", "http://localhost:8081")
-              .replace("https://auth-gis.k2net.id:8081", "http://localhost:8081");
+              .replace(serverUrl, "http://localhost:8081")
+              .replace(`${serverUrl}:8081`, "http://localhost:8081");
 
             const tokenResponse = await fetch(
               `${internalIssuerUrl}/protocol/openid-connect/token`,
               {
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded",
-                  "X-Forwarded-Host": "auth-gis.k2net.id",
-                  "X-Forwarded-Proto": "https",
+                  "X-Forwarded-Host": keycloakHost,
+                  "X-Forwarded-Proto": keycloakProto,
                 },
                 body: new URLSearchParams({
                   client_id: process.env.AUTH_KEYCLOAK_ID!,
