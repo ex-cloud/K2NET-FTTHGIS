@@ -1,4 +1,5 @@
-import { handlers } from "@/auth"; // Referring to the auth.ts we just created
+import { getDynamicAuthConfig } from "@/auth";
+import NextAuth from "next-auth";
 import { NextRequest } from "next/server";
 
 /**
@@ -25,6 +26,20 @@ const withCorrectUrl = (req: NextRequest): NextRequest => {
   return req;
 };
 
-export const GET = (req: NextRequest) => handlers.GET(withCorrectUrl(req));
-export const POST = (req: NextRequest) => handlers.POST(withCorrectUrl(req));
+export const GET = (req: NextRequest) => {
+  const correctedReq = withCorrectUrl(req);
+  const host = correctedReq.headers.get("x-forwarded-host") || correctedReq.headers.get("host") || "";
+  const dynamicConfig = getDynamicAuthConfig(host);
+  const { handlers } = NextAuth(dynamicConfig);
+  return handlers.GET(correctedReq);
+};
+
+export const POST = (req: NextRequest) => {
+  const correctedReq = withCorrectUrl(req);
+  const host = correctedReq.headers.get("x-forwarded-host") || correctedReq.headers.get("host") || "";
+  const dynamicConfig = getDynamicAuthConfig(host);
+  const { handlers } = NextAuth(dynamicConfig);
+  return handlers.POST(correctedReq);
+};
+
 

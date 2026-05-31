@@ -1,4 +1,5 @@
-import NextAuth, { DefaultSession } from "next-auth";
+import NextAuth, { DefaultSession, customFetch, type NextAuthConfig } from "next-auth";
+import Keycloak from "next-auth/providers/keycloak";
 import authConfig from "./auth.config";
 import { JWT as NextAuthJWT } from "next-auth/jwt";
 import { headers } from "next/headers";
@@ -120,7 +121,7 @@ function getCookieDomain() {
   }
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const baseAuthOptions: NextAuthConfig = {
   ...authConfig,
   callbacks: {
     async jwt({ token, account, user }) {
@@ -391,4 +392,128 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     },
   },
-});
+};
+
+export const { handlers, signIn, signOut, auth } = NextAuth(baseAuthOptions);
+
+/**
+ * Cleanly extract the Keycloak realm name from the request hostname/headers.
+ * Examples:
+ * - system-gis.k2net.id -> ftth-realm
+ * - garut-gis.k2net.id -> garut
+ * - localhost:3000 -> ftth-realm (default fallback)
+ */
+export function getRealmFromHost(host: string): string {
+  if (!host) return "ftth-realm";
+  
+  // Clean port if present (e.g., garut.localhost:3000 -> garut.localhost)
+  const cleanHost = host.split(":")[0];
+  
+  // If localhost or pure IP, use system default realm
+  if (
+    cleanHost === "localhost" || 
+    cleanHost === "127.0.0.1" || 
+    cleanHost.match(/^\d+\.\d+\.\d+\.\d+$/)
+  ) {
+    return "ftth-realm";
+  }
+  
+  // Extract subdomain (first part of host before dot)
+  const subdomain = cleanHost.split(".")[0];
+  if (!subdomain || subdomain.startsWith("system")) {
+    return "ftth-realm";
+  }
+  
+  // Strip suffix -gis if present (e.g. garut-gis -> garut)
+  let realm = subdomain;
+  if (subdomain.endsWith("-gis")) {
+    realm = subdomain.substring(0, subdomain.length - 4);
+  }
+  
+  // Sanitize realm name to prevent injection or directory traversal
+  return realm.replace(/[^a-zA-Z0-9-]/g, "");
+}
+
+/**
+ * Create a customized NextAuthConfig where Keycloak is dynamically
+ * configured with the correct OIDC endpoints matching the current tenant realm.
+ */
+export function getDynamicAuthConfig(host: string | null): any {
+  const realm = getRealmFromHost(host || "");
+  const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+  const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
+  const dynamicIssuer = `${serverUrl}/realms/${realm}`;
+
+  let keycloakHost = "auth-gis.k2net.id";
+  let keycloakProto = "https";
+  try {
+    const parsedUrl = new URL(serverUrl);
+    keycloakHost = parsedUrl.host;
+    keycloakProto = parsedUrl.protocol.replace(":", "");
+  } catch (e) {
+    console.error("[getDynamicAuthConfig] Failed to parse NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL:", e);
+  }
+
+  console.log(`[getDynamicAuthConfig] Host: ${host} -> Resolved Realm: ${realm} -> Dynamic Issuer: ${dynamicIssuer} (Host: ${keycloakHost}, Proto: ${keycloakProto})`);
+
+  // Create a customized Keycloak provider for this realm
+  const dynamicKeycloakProvider = Keycloak({
+    clientId: process.env.AUTH_KEYCLOAK_ID,
+    clientSecret: process.env.AUTH_KEYCLOAK_SECRET,
+    issuer: dynamicIssuer,
+    // customFetch to route server-side requests internally to Keycloak (localhost:8081)
+    [customFetch]: async (input, init) => {
+      let urlStr = "";
+      let requestInit: RequestInit = init || {};
+
+      if (input instanceof Request) {
+        urlStr = input.url;
+        requestInit = input;
+      } else {
+        urlStr = input.toString();
+      }
+
+      if (urlStr.includes(serverUrl)) {
+        const targetUrl = urlStr
+          .replace(serverUrl, "http://localhost:8081")
+          .replace(`${serverUrl}:8081`, "http://localhost:8081");
+        
+        console.log(`[customFetch Dynamic] Intercepting and rewriting URL: ${urlStr} -> ${targetUrl}`);
+        
+        const headersList = new Headers(requestInit.headers);
+        headersList.set("X-Forwarded-Host", keycloakHost);
+        headersList.set("X-Forwarded-Proto", keycloakProto);
+        
+        if (input instanceof Request) {
+          const newRequest = new Request(targetUrl, input);
+          newRequest.headers.set("X-Forwarded-Host", keycloakHost);
+          newRequest.headers.set("X-Forwarded-Proto", keycloakProto);
+          return fetch(newRequest);
+        } else {
+          return fetch(targetUrl, {
+            ...requestInit,
+            headers: headersList,
+          });
+        }
+      }
+
+      return fetch(input, init);
+    },
+    // Bypass Cloudflare 403 on OIDC Discovery by using internal URL.
+    wellKnown: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/.well-known/openid-configuration`,
+    token: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/token`,
+    userinfo: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/userinfo`,
+    ...({
+      jwks_uri: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/certs`,
+    } as any),
+  });
+
+  return {
+    ...baseAuthOptions,
+    providers: [
+      dynamicKeycloakProvider,
+      ...baseAuthOptions.providers.filter((p: any) => p.id !== "keycloak"),
+    ],
+  };
+}
+
