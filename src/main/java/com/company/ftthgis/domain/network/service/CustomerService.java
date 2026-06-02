@@ -18,6 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.company.ftthgis.service.GeocodingService;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final ODPRepository odpRepository;
     private final StatusPropagationService statusPropagationService;
+    private final GeocodingService geocodingService;
 
     @Transactional(readOnly = true)
     public Page<CustomerDto> getCustomers(String search, String status, String name, String code, String odpCode, Pageable pageable) {
@@ -155,13 +157,26 @@ public class CustomerService {
             customer.setHealthStatus("UP");
         }
 
-        if (dto.getLng() != null && dto.getLat() != null) {
+        Double lng = dto.getLng();
+        Double lat = dto.getLat();
+        
+        if (lng == null || lat == null) {
+            if (dto.getGeom() != null) {
+                customer.setGeom(dto.getGeom());
+            } else if (StringUtils.hasText(dto.getAddress())) {
+                GeocodingService.GeocodeResult geocodeResult = geocodingService.geocode(dto.getAddress());
+                if (geocodeResult != null) {
+                    lng = geocodeResult.getLng();
+                    lat = geocodeResult.getLat();
+                }
+            }
+        }
+
+        if (lng != null && lat != null) {
             GeometryFactory geometryFactory = new GeometryFactory();
-            Point point = geometryFactory.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+            Point point = geometryFactory.createPoint(new Coordinate(lng, lat));
             point.setSRID(4326);
             customer.setGeom(point);
-        } else if (dto.getGeom() != null) {
-            customer.setGeom(dto.getGeom());
         }
 
         if (dto.getOdpId() != null) {

@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
                         .requestMatchers("/api/v1/network/notifications/**").permitAll()
                         .requestMatchers("/api/v1/network/assets/**").permitAll()
+                        .requestMatchers("/api/payments/callback").permitAll()
                         .requestMatchers("/api/v1/network/trace-path/**").authenticated()
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
                         .requestMatchers("/api/v1/network/analytics/**").permitAll()

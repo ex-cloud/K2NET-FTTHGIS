@@ -394,4 +394,30 @@ public class OrganizationService {
             throw new RuntimeException("Failed to perform full organization cleanup: " + e.getMessage(), e);
         }
     }
+
+    @Transactional
+    public boolean upgradeSubscription(String slug, String planName) {
+        Optional<Organization> orgOpt = organizationRepository.findBySlug(slug);
+        if (orgOpt.isEmpty()) {
+            log.error("Organization not found for subscription upgrade: {}", slug);
+            return false;
+        }
+
+        Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(planName);
+        if (planOpt.isEmpty()) {
+            log.error("Subscription plan not found: {}", planName);
+            return false;
+        }
+
+        Organization org = orgOpt.get();
+        SubscriptionPlan plan = planOpt.get();
+
+        org.setSubscriptionPlan(plan);
+        org.setStatus(Organization.OrganizationStatus.ACTIVE);
+        org.setTrialExpiresAt(null); // Clear trial since they have upgraded/paid
+
+        organizationRepository.save(org);
+        log.info("✅ Successfully upgraded organization '{}' to plan '{}'", slug, planName);
+        return true;
+    }
 }

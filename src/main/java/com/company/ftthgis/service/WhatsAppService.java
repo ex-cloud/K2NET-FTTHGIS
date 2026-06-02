@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -20,14 +21,18 @@ public class WhatsAppService {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
+    @Value("${app.gateway.notification-url}")
+    private String gatewayUrl;
+
+    @Value("${app.gateway.token}")
+    private String gatewayToken;
+
     /**
-     * Send a WhatsApp message to a specific number.
+     * Send a WhatsApp message to a specific number via the notification-gateway.
      * If the gateway is disabled, logs the message and returns true.
      */
     public boolean sendMessage(String targetNumber, String message) {
         boolean enabled = settingsService.getSettingBoolean("wa_gateway_enabled", false);
-        String apiUrl = settingsService.getSettingValue("wa_gateway_api_url", "https://api.whatsapp-gateway.com/send");
-        String token = settingsService.getSettingValue("wa_gateway_token", "");
 
         if (!enabled) {
             log.info("📢 [WhatsApp Service - MOCK FALLBACK]");
@@ -36,42 +41,53 @@ public class WhatsAppService {
             return true;
         }
 
-        if (token.isEmpty() || "token_secret_placeholder".equals(token)) {
-            log.warn("⚠️ WhatsApp Service is enabled but token is not configured or is placeholder!");
-            return false;
-        }
-
         try {
             // Clean number format (remove non-digits, replace starting 0 with 62 for Indonesia)
             String cleanNumber = targetNumber.replaceAll("\\D", "");
             if (cleanNumber.startsWith("0")) {
                 cleanNumber = "62" + cleanNumber.substring(1);
             }
+            
+            // E.164 country code format with '+'
+            String formattedNumber = "+" + cleanNumber;
 
-            // Support standard JSON body payload: {"target": "...", "message": "..."} or {"to": "...", "text": "..."}
-            // For Fonnte style compatibility
-            String jsonPayload = String.format("{\"target\":\"%s\",\"message\":\"%s\"}", cleanNumber, message.replace("\"", "\\\""));
+            String apiUrl = gatewayUrl + "/api/v1/notify";
+
+            // Support standard JSON body payload: {"type": "whatsapp", "to": "whatsapp:+62...", "body": "..."}
+            String escapedMessage = message
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+
+            String jsonPayload = String.format(
+                    "{\"type\":\"whatsapp\",\"to\":\"%s\",\"body\":\"%s\"}",
+                    formattedNumber,
+                    escapedMessage
+            );
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", token) // Fonnte and many API gateways use direct token in Authorization
+                    .header("X-Gateway-Token", gatewayToken)
+                    .header("X-Idempotency-Key", java.util.UUID.randomUUID().toString())
                     .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                     .timeout(Duration.ofSeconds(8))
                     .build();
 
-            log.info("Sending WhatsApp request to: {}", apiUrl);
+            log.info("Sending WhatsApp request to notification-gateway: {}", apiUrl);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                log.info("✅ WhatsApp message successfully sent to {}. Status: {}", cleanNumber, response.statusCode());
+                log.info("✅ WhatsApp message successfully sent via gateway to {}. Status: {}", formattedNumber, response.statusCode());
                 return true;
             } else {
-                log.error("❌ Failed to send WhatsApp message. Status: {}, Body: {}", response.statusCode(), response.body());
+                log.error("❌ Failed to send WhatsApp message via gateway. Status: {}, Body: {}", response.statusCode(), response.body());
                 return false;
             }
         } catch (Exception e) {
-            log.error("❌ Exception occurred while sending WhatsApp message to {}", targetNumber, e);
+            log.error("❌ Exception occurred while sending WhatsApp message via gateway to {}", targetNumber, e);
             return false;
         }
     }
