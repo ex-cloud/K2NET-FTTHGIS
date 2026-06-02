@@ -5,9 +5,9 @@ import { auth } from "@/auth";
 
 function getGatewayToken(): string {
   try {
-    const envPath = "/opt/project5/gateways/.env";
-    if (!fs.existsSync(envPath)) {
-      console.warn(`[Gateway Actions] env file not found at ${envPath}, using default token`);
+    const envPath = process.env.GATEWAY_ENV_PATH;
+    if (!envPath || !fs.existsSync(envPath)) {
+      console.warn("[Gateway Actions] Gateway env file not configured or not found");
       return "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN";
     }
     const content = fs.readFileSync(envPath, "utf-8");
