@@ -15,7 +15,36 @@ export interface HttpClientOptions extends RequestInit {
 export async function httpClient(url: string, options: HttpClientOptions = {}) {
   const { token, projectId, headers, ...rest } = options;
 
+  const method = (rest.method || "GET").toUpperCase();
+  const isWrite = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+
   const requestHeaders = new Headers(headers);
+
+  if (typeof window !== "undefined" && !navigator.onLine && isWrite) {
+    try {
+      const { enqueueOfflineRequest } = await import("@/lib/offline/offlineQueue");
+      
+      if (token) {
+        requestHeaders.set("Authorization", `Bearer ${token}`);
+      }
+      if (projectId) {
+        requestHeaders.set("X-Project-ID", projectId);
+      }
+      
+      const plainHeaders: Record<string, string> = {};
+      requestHeaders.forEach((value, key) => {
+        plainHeaders[key] = value;
+      });
+
+      await enqueueOfflineRequest(url, method, rest.body, plainHeaders);
+      return new Response(JSON.stringify({ offline: true, success: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (enqueueError) {
+      console.error("Failed to enqueue offline request:", enqueueError);
+    }
+  }
 
   if (token) {
     requestHeaders.set("Authorization", `Bearer ${token}`);
@@ -105,6 +134,31 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
     return response;
   } catch (error) {
     console.error(`[HTTP Client] Fetch error at ${url}:`, error);
+
+    const method = (rest.method || "GET").toUpperCase();
+    const isWrite = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+
+    if (isWrite && typeof window !== "undefined") {
+      try {
+        const { enqueueOfflineRequest } = await import("@/lib/offline/offlineQueue");
+        
+        const plainHeaders: Record<string, string> = {};
+        requestHeaders.forEach((value, key) => {
+          plainHeaders[key] = value;
+        });
+
+        await enqueueOfflineRequest(url, method, rest.body, plainHeaders);
+
+        // Return a mock successful response to prevent frontend crash/errors
+        return new Response(JSON.stringify({ offline: true, success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (enqueueError) {
+        console.error("Failed to enqueue offline request:", enqueueError);
+      }
+    }
+
     throw error;
   }
 }

@@ -326,6 +326,21 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
     }
   }, [statusOverrides, mounted, triggerTileRefresh]);
 
+  // Force-refresh map tiles when offline sync finishes and connection is restored
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleSyncComplete = () => {
+      console.log("Offline sync complete, refreshing network tiles...");
+      triggerTileRefresh();
+    };
+
+    window.addEventListener("offline-sync-complete", handleSyncComplete);
+    return () => {
+      window.removeEventListener("offline-sync-complete", handleSyncComplete);
+    };
+  }, [triggerTileRefresh]);
+
   // Ant-trail animation for traced path
   useEffect(() => {
     let animationFrame: number;

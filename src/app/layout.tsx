@@ -6,6 +6,15 @@ import { auth } from "@/auth";
 export const metadata: Metadata = {
   title: "FTTH GIS",
   description: "Fiber To The Home - Geographic Information System",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FTTH GIS",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default async function RootLayout({
