@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "network_edges")
+@EntityListeners(MapCacheEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -12,6 +12,7 @@ import java.util.UUID;
 @Table(name = "network_nodes")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "node_type")
+@EntityListeners(MapCacheEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
