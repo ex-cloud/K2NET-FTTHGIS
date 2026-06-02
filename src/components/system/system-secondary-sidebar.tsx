@@ -16,6 +16,11 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  BarChart3,
+  MessageSquare,
+  CreditCard,
+  Map,
+  Database,
 } from "lucide-react";
 import {
   Collapsible,
@@ -34,6 +39,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
   FileText,
   ScrollText,
   ShieldAlert,
+  BarChart3,
+  MessageSquare,
+  CreditCard,
+  Map,
+  Database,
 };
 
 export function SystemSecondarySidebar() {
@@ -46,6 +56,8 @@ export function SystemSecondarySidebar() {
     activeKey = "users";
   } else if (pathname?.includes("/security")) {
     activeKey = "security";
+  } else if (pathname?.includes("/gateways")) {
+    activeKey = "gateways";
   }
 
   if (!activeKey) return null;

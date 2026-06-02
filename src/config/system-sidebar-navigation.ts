@@ -73,4 +73,24 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  gateways: {
+    title: "Gateways & Integration",
+    sections: [
+      {
+        title: "Overview",
+        items: [
+          { title: "Status & Metrics", url: "/gateways/overview", icon: "BarChart3" },
+        ],
+      },
+      {
+        title: "Services Control",
+        items: [
+          { title: "Notification Gateway", url: "/gateways/notification", icon: "MessageSquare" },
+          { title: "Payment Gateway", url: "/gateways/payment", icon: "CreditCard" },
+          { title: "Map Gateway", url: "/gateways/map", icon: "Map" },
+          { title: "Storage Gateway", url: "/gateways/storage", icon: "Database" },
+        ],
+      },
+    ],
+  },
 };

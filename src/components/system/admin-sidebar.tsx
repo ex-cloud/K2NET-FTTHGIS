@@ -9,6 +9,7 @@ import {
   Activity,
   History,
   Lock,
+  Cpu,
 } from "lucide-react";
 import {
   Tooltip,
@@ -75,6 +76,12 @@ export function AdminSidebar() {
       icon: Lock,
       href: "/security",
       isActive: pathname === "/security" || pathname === "/system/security" || pathname?.startsWith("/security"),
+    },
+    {
+      title: "Gateways",
+      icon: Cpu,
+      href: "/gateways/overview",
+      isActive: pathname?.startsWith("/gateways") || pathname?.startsWith("/system/gateways"),
     },
     {
       title: "Settings",
