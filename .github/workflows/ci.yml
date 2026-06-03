@@ -69,9 +69,10 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: ${{ secrets.STAGING_SSH_PORT || 22 }}
           script: |
-            cd /opt/project5
+            cd /opt/project5/backend
             git checkout develop
             git pull origin develop
+            cd /opt/project5
             bash scripts/deploy.sh staging
 
   deploy-production:
@@ -86,7 +87,8 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.PROD_SSH_PORT || 22 }}
           script: |
-            cd /opt/project5
+            cd /opt/project5/backend
             git checkout main
             git pull origin main
+            cd /opt/project5
             bash scripts/deploy.sh production
