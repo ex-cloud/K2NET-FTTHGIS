@@ -42,8 +42,8 @@ spring:
   data:
     redis:
       enabled: true # Set to false if Redis is not running
-      host: 127.0.0.1
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
   security:
     oauth2:
@@ -117,6 +117,6 @@ management:
       probability: 1.0
   zipkin:
     tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
 
 
