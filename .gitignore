@@ -40,3 +40,7 @@ thumbs.db
 *.log
 bootlog.txt
 startup_debug.log
+logs/
+*.txt
+*.sql
+
