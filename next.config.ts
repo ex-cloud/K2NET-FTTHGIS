@@ -51,6 +51,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactCompiler: true,
   allowedDevOrigins: ["system.lvh.me", "localhost", "lvh.me", "system.gis.k2net.id", "system-gis.k2net.id", "gis.k2net.id"],
   async rewrites() {
