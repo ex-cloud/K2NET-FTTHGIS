@@ -4,6 +4,12 @@ import fs from "fs";
 import { auth } from "@/auth";
 
 function getGatewayToken(): string {
+  // 1. Check environment variable first (Docker / production)
+  if (process.env.GATEWAY_TOKEN) {
+    return process.env.GATEWAY_TOKEN;
+  }
+
+  // 2. Fallback: read from env file (host-level / development)
   try {
     const envPath = process.env.GATEWAY_ENV_PATH;
     if (!envPath || !fs.existsSync(envPath)) {
