@@ -47,4 +47,9 @@ public class User extends OrganizationAwareEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.Set<com.company.ftthgis.domain.tenant.entity.ProjectMember> projectMembers = new java.util.HashSet<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.envers.NotAudited
+    private java.util.Set<UserDevice> userDevices = new java.util.HashSet<>();
+
 }

@@ -76,6 +76,9 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${keycloak.server-url}")
     private String keycloakServerUrl;
 
+    @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://localhost:8081}")
+    private String keycloakInternalUrl;
+
     @Bean
     public JwtIssuerAuthenticationManagerResolver authenticationManagerResolver(
             JwtAuthenticationConverter jwtAuthenticationConverter) {
@@ -92,7 +95,7 @@ public class SecurityConfig {
                 if (realmName.contains("/")) {
                     realmName = realmName.substring(0, realmName.indexOf("/"));
                 }
-                String jwkSetUri = "http://localhost:8081/realms/" + realmName + "/protocol/openid-connect/certs";
+                String jwkSetUri = keycloakInternalUrl + "/realms/" + realmName + "/protocol/openid-connect/certs";
                 
                 org.springframework.security.oauth2.jwt.NimbusJwtDecoder jwtDecoder = 
                     org.springframework.security.oauth2.jwt.NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
