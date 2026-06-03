@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import Link from "next/link";
 import {
   Settings2,
@@ -66,39 +66,33 @@ const iconMap: Record<string, React.ElementType> = {
 export function TenantSecondarySidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // 1. Detect subdomain context
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
-  const tenantSlug = getCurrentOrgSlug();
+  const params = useParams();
 
-  // 2. Extract IDs based on context
-  const parts = pathname?.split("/").filter(Boolean) || [];
-  let orgId = "";
-  let projectId = "";
+  // 1. Extract IDs based on useParams and fallback to subdomain (fully available on both SSR and client after mount)
+  const orgId = (params?.orgId as string) || getCurrentOrgSlug() || "";
+  const projectId = (params?.projectId as string) || "";
 
-  if (tenantSlug) {
-    // Clean URL on subdomain: /project/[projectId]/...
-    if (parts[0] === "project") {
-      projectId = parts[1];
-    }
-  } else {
-    // Legacy URL on root domain: /org/[orgId]/project/[projectId]/...
-    if (parts[0] === "org") {
-      orgId = parts[1];
-      if (parts[2] === "project") {
-        projectId = parts[3];
-      }
-    }
-  }
+  // 2. Detect subdomain context deterministically on client
+  const isCleanUrlMode = !pathname?.startsWith("/org");
 
   // 3. Determine active module & baseUrl
   let activeModuleKey: string | null = null;
   let baseUrl = "";
 
+  if (!mounted) {
+    return (
+      <aside className="w-[240px] border-r border-border bg-[#0c0c0c] h-full hidden md:flex shrink-0" />
+    );
+  }
+
   if (projectId) {
-    baseUrl = tenantSlug ? `/project/${projectId}` : `/org/${orgId}/project/${projectId}`;
+    baseUrl = isCleanUrlMode ? `/project/${projectId}` : `/org/${orgId}/project/${projectId}`;
     
     // Check exact match for Overview
     const isOverview = pathname === baseUrl || pathname === `${baseUrl}/`;
@@ -113,10 +107,10 @@ export function TenantSecondarySidebar() {
     // Org level modules
     if (pathname?.includes("/settings")) {
       activeModuleKey = "settings";
-      baseUrl = tenantSlug ? "/settings" : `/org/${orgId}/settings`;
+      baseUrl = isCleanUrlMode ? "/settings" : `/org/${orgId}/settings`;
     } else if (pathname?.includes("/team")) {
       activeModuleKey = "team";
-      baseUrl = tenantSlug ? "/team" : `/org/${orgId}/team`;
+      baseUrl = isCleanUrlMode ? "/team" : `/org/${orgId}/team`;
     }
   }
 

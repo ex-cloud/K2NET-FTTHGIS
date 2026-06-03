@@ -43,20 +43,9 @@ export function MainSidebar() {
     setMounted(true);
   }, []);
 
-  // Subdomain detection
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
-  
-  // Extract tenant slug from subdomain if applicable
-  const tenantSlug = getCurrentOrgSlug();
-
-  const orgId = params.orgId || tenantSlug || "system";
-  
-  // Link Prefix logic: 
-  // During hydration (not mounted), we MUST match what the server renders.
-  // The server renders path-based links if it doesn't know the subdomain.
-  const isSubdomainMode = mounted && !!tenantSlug;
-  const linkPrefix = isSubdomainMode ? "" : `/org/${orgId}`;
+  const orgId = (params?.orgId as string) || getCurrentOrgSlug() || "";
+  const isCleanUrlMode = !pathname?.startsWith("/org");
+  const linkPrefix = isCleanUrlMode ? "" : `/org/${orgId}`;
 
   // Route sniffing — detect project context
   const isInsideProject = pathname?.includes("/project/");
@@ -68,6 +57,12 @@ export function MainSidebar() {
 
   // Hover mode uses absolute positioning (floating over content, Supabase-style)
   const isFloating = sidebarMode === "hover";
+
+  if (!mounted) {
+    return (
+      <aside className="border-r border-white/5 bg-sidebar shrink-0 h-full w-[50px]" />
+    );
+  }
 
   // ── Org-level navigation ──
   const orgNavItems: NavItem[] = [

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
+import { getCurrentOrgSlug } from "@/lib/domain";
 
 export function NavProjectSwitcher() {
   const pathname = usePathname();
@@ -23,9 +24,16 @@ export function NavProjectSwitcher() {
   const router = useRouter();
   const [search, setSearch] = React.useState("");
   const [wizardOpen, setWizardOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
-  const orgId = params.orgId as string;
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const orgId = (params?.orgId as string) || getCurrentOrgSlug() || "";
   const projectId = params.projectId as string;
+  const isCleanUrlMode = !pathname?.startsWith("/org");
+  const linkPrefix = isCleanUrlMode ? "" : `/org/${orgId}`;
 
   const { projects, loading, refresh } = useProjects(orgId);
 
@@ -38,6 +46,12 @@ export function NavProjectSwitcher() {
   // If we are not in a project context, don't render or show "Select Project"
   if (!projectId && !pathname.includes("/project/")) return null;
 
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center gap-1.5 px-0.5 h-8 animate-pulse bg-muted/20 rounded-md w-32" />
+    );
+  }
+
   const displayName = loading 
     ? "Loading project..." 
     : (currentProject?.name || projectId || "Select Project");
@@ -46,7 +60,7 @@ export function NavProjectSwitcher() {
     <div className="flex items-center justify-center">
       <div className="flex items-center justify-center gap-1.5 px-0.5 rounded-md hover:bg-accent border border-transparent hover:border-border text-sm font-medium text-muted-foreground cursor-pointer transition-colors group">
         <Link
-          href={`/org/${orgId}/project/${projectId}`}
+          href={`${linkPrefix}/project/${projectId}`}
           className="flex items-center gap-1.5"
         >
           <Box className="size-3 flex items-center justify-center" />
@@ -116,7 +130,7 @@ export function NavProjectSwitcher() {
                   className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer group"
                   asChild
                 >
-                  <Link href={`/org/${orgId}/project/${project.id}`}>
+                  <Link href={`${linkPrefix}/project/${project.id}`}>
                     <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/50">
                       <span className="font-bold text-xs group-hover:text-emerald-500">
                         {project.name.charAt(0).toUpperCase()}
@@ -146,7 +160,7 @@ export function NavProjectSwitcher() {
           <div className="p-1 space-y-0.5">
             <DropdownMenuItem 
               className="gap-2 p-2 hover:bg-accent focus:bg-accent cursor-pointer rounded-md text-muted-foreground hover:text-foreground"
-              onClick={() => router.push(`/org/${orgId}`)}
+              onClick={() => router.push(linkPrefix || "/dashboard")}
             >
               <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted">
                 <Search className="size-3.5" strokeWidth={1.5} />

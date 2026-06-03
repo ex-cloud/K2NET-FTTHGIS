@@ -4,7 +4,7 @@ import { Network } from "lucide-react";
 
 export default async function LoginPage() {
   const headersList = await headers();
-  const hostname = headersList.get("host") || "";
+  const hostname = headersList.get("x-forwarded-host") || headersList.get("host") || "";
   
   // Extract root domain from NEXT_PUBLIC_APP_URL or hostname
   let rootDomain = "localhost:3000";
@@ -44,6 +44,9 @@ export default async function LoginPage() {
       }
     }
   }
+
+  console.log(`[Login Page Debug] hostname: "${hostname}", rootDomain: "${rootDomain}", baseDomain: "${baseDomain}", isHyphen: ${isHyphen}, detectedSubdomain: "${detectedSubdomain}"`);
+
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">

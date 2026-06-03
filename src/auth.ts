@@ -65,10 +65,11 @@ async function refreshAccessToken(token: NextAuthJWT) {
       console.error("[refreshAccessToken] Failed to parse NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL:", e);
     }
 
+    const keycloakInternalUrl = process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
     // Bypass Cloudflare challenge for server-to-server token refresh
     const internalIssuer = issuer
-      .replace(serverUrl, "http://localhost:8081")
-      .replace(`${serverUrl}:8081`, "http://localhost:8081");
+      .replace(serverUrl, keycloakInternalUrl)
+      .replace(`${serverUrl}:8081`, keycloakInternalUrl);
 
     const response = await fetch(
       `${internalIssuer}/protocol/openid-connect/token`,
@@ -455,6 +456,7 @@ export function getDynamicAuthConfig(host: string | null): any {
   const realm = getRealmFromHost(host || "");
   const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
   const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
+  const keycloakInternalUrl = process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
   const dynamicIssuer = `${serverUrl}/realms/${realm}`;
 
   let keycloakHost = "auth-gis.k2net.id";
@@ -488,8 +490,8 @@ export function getDynamicAuthConfig(host: string | null): any {
 
       if (urlStr.includes(serverUrl)) {
         const targetUrl = urlStr
-          .replace(serverUrl, "http://localhost:8081")
-          .replace(`${serverUrl}:8081`, "http://localhost:8081");
+          .replace(serverUrl, keycloakInternalUrl)
+          .replace(`${serverUrl}:8081`, keycloakInternalUrl);
         
         console.log(`[customFetch Dynamic] Intercepting and rewriting URL: ${urlStr} -> ${targetUrl}`);
         
@@ -513,11 +515,11 @@ export function getDynamicAuthConfig(host: string | null): any {
       return fetch(input, init);
     },
     // Bypass Cloudflare 403 on OIDC Discovery by using internal URL.
-    wellKnown: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/.well-known/openid-configuration`,
-    token: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/token`,
-    userinfo: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/userinfo`,
+    wellKnown: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/.well-known/openid-configuration`,
+    token: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/token`,
+    userinfo: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/userinfo`,
     ...({
-      jwks_uri: `${dynamicIssuer.replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/certs`,
+      jwks_uri: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/certs`,
     } as any),
   });
 

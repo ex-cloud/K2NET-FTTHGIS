@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
 const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
+const keycloakInternalUrl = process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
 
 let keycloakHost = "auth-gis.k2net.id";
 let keycloakProto = "https";
@@ -78,8 +79,8 @@ export default {
 
         if (urlStr.includes(serverUrl)) {
           const targetUrl = urlStr
-            .replace(serverUrl, "http://localhost:8081")
-            .replace(`${serverUrl}:8081`, "http://localhost:8081");
+            .replace(serverUrl, keycloakInternalUrl)
+            .replace(`${serverUrl}:8081`, keycloakInternalUrl);
           
           console.log(`[customFetch] Intercepting and rewriting URL: ${urlStr} -> ${targetUrl}`);
           
@@ -106,13 +107,13 @@ export default {
       // Bypass Cloudflare 403 on OIDC Discovery by using internal URL.
       // Keycloak is configured with KC_HOSTNAME so it returns correct public URLs
       // even when queried internally.
-      wellKnown: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/.well-known/openid-configuration`,
+      wellKnown: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, keycloakInternalUrl)}/.well-known/openid-configuration`,
       // Server-side token exchange also needs internal URL to bypass Cloudflare
-      token: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/token`,
-      userinfo: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/userinfo`,
+      token: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/token`,
+      userinfo: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/userinfo`,
       // Bypass TypeScript OIDCUserConfig limitation to pass runtime jwks_uri
       ...({
-        jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, "http://localhost:8081")}/protocol/openid-connect/certs`,
+        jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/certs`,
       } as any),
     }),
     Credentials({
@@ -165,8 +166,8 @@ export default {
             // 2. Authenticate against the discovered Keycloak realm
             // Bypass Cloudflare challenge for server-to-server calls
             const internalIssuerUrl = issuerUrl
-              .replace(serverUrl, "http://localhost:8081")
-              .replace(`${serverUrl}:8081`, "http://localhost:8081");
+              .replace(serverUrl, keycloakInternalUrl)
+              .replace(`${serverUrl}:8081`, keycloakInternalUrl);
 
             const tokenResponse = await fetch(
               `${internalIssuerUrl}/protocol/openid-connect/token`,

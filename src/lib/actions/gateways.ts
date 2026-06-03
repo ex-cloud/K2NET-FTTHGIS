@@ -23,6 +23,8 @@ function getGatewayToken(): string {
   return "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN";
 }
 
+const GATEWAY_BASE_URL = process.env.NOTIFICATION_GATEWAY_URL || "http://127.0.0.1:5001";
+
 async function verifySuperAdmin() {
   const session = await auth();
   const roles = session?.user?.roles || [];
@@ -60,7 +62,7 @@ export async function getGatewayConfig(): Promise<ConfigResponse> {
   await verifySuperAdmin();
   
   const token = getGatewayToken();
-  const res = await fetch("http://127.0.0.1:5001/api/v1/config", {
+  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/config`, {
     headers: {
       "X-Gateway-Token": token,
     },
@@ -78,7 +80,7 @@ export async function updateGatewayConfig(updates: Record<string, string>): Prom
   await verifySuperAdmin();
 
   const token = getGatewayToken();
-  const res = await fetch("http://127.0.0.1:5001/api/v1/config", {
+  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/config`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +101,7 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
   await verifySuperAdmin();
 
   const token = getGatewayToken();
-  const res = await fetch("http://127.0.0.1:5001/api/v1/gateway-status", {
+  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/gateway-status`, {
     headers: {
       "X-Gateway-Token": token,
     },
