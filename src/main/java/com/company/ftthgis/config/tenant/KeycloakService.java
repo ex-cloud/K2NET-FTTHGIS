@@ -30,7 +30,7 @@ public class KeycloakService {
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
     private String provisionClientId;
 
-    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:DtQ5wZE9uCsenEM2eIRu0wFv7ioLhAmd}")
+    @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-secret:}")
     private String provisionClientSecret;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend-url:localhost:3000}")
@@ -55,6 +55,27 @@ public class KeycloakService {
     public void ensureRealmExists(String realmName) {
         log.info("🛡️ Ensuring Keycloak Realm exists: {}", realmName);
         try {
+            // 0. Check if the realm already exists to avoid creation conflicts
+            try {
+                keycloak.realm(realmName).toRepresentation();
+                log.info("✅ INFO: Realm '{}' already exists. Synchronizing config...", realmName);
+                
+                // Always sync default client and IDP even if the realm already exists
+                provisionDefaultClient(realmName);
+                if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
+                    cloneIdentityProvider("ftth-realm", realmName, "google");
+                    cloneIdentityProvider("ftth-realm", realmName, "github");
+                }
+                return;
+            } catch (jakarta.ws.rs.WebApplicationException ex) {
+                if (ex.getResponse().getStatus() == 404) {
+                    log.info("🆕 Realm '{}' does not exist. Proceeding to create it...", realmName);
+                } else {
+                    log.error("❌ ERROR: Unexpected error while checking existence of realm '{}': {}", realmName, ex.getMessage());
+                    throw ex;
+                }
+            }
+
             // 1. Try to create the realm directly using ftth-realm as a template to clone its custom flows, themes, and identity providers
             org.keycloak.representations.idm.RealmRepresentation realm;
             try {
@@ -73,9 +94,16 @@ public class KeycloakService {
                 realm.setComponents(null); // Let Keycloak generate default key providers
                 realm.setClients(null);    // Let provisionDefaultClient handle frontend client
                 
+                // CRITICAL FIX: Clear default roles to prevent SQL unique constraint violations on KEYCLOAK_ROLE
+                realm.setDefaultRole(null);
+                realm.setDefaultRoles(null);
+                
                 // Restore unmasked OAuth secrets since toRepresentation() returns masked secrets ("**********")
                 if (realm.getIdentityProviders() != null) {
                     for (var idp : realm.getIdentityProviders()) {
+                        // Clear internal ID so Keycloak generates a new one
+                        idp.setInternalId(null);
+                        
                         java.util.Map<String, String> config = idp.getConfig();
                         if (config != null) {
                             if ("google".equalsIgnoreCase(idp.getAlias())) {
@@ -96,6 +124,14 @@ public class KeycloakService {
                         }
                     }
                 }
+                
+                // Clear IDs of identity provider mappers to prevent ID conflicts
+                if (realm.getIdentityProviderMappers() != null) {
+                    for (var mapper : realm.getIdentityProviderMappers()) {
+                        mapper.setId(null);
+                    }
+                }
+                
                 log.info("✅ SUCCESS: Template realm loaded and secrets restored.");
             } catch (Exception ex) {
                 log.warn("⚠️ Failed to fetch ftth-realm template. Creating a basic blank realm. Error: {}", ex.getMessage());
@@ -120,26 +156,23 @@ public class KeycloakService {
                 log.info("✅ Fresh admin token acquired with permissions for realm '{}'", realmName);
 
             } catch (jakarta.ws.rs.WebApplicationException ex) {
-                if (ex.getResponse().getStatus() == 409) {
-                    log.info("✅ INFO: Realm '{}' already exists. Synchronizing config...", realmName);
-                } else {
-                    log.error("❌ ERROR: Failed to create realm '{}': {}", realmName, ex.getMessage());
-                    // Don't throw, try to continue to client provisioning
-                }
+                log.error("❌ ERROR: Failed to create realm '{}': {}", realmName, ex.getMessage());
+                throw ex; // Re-throw to allow transaction rollback or propagation
             }
 
             // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend)
             // This is the most important step for login success
             provisionDefaultClient(realmName);
 
-            // 3. Clone Google Identity Provider from system realm if this is a tenant realm
+            // 3. Clone Google & GitHub Identity Providers from system realm if this is a tenant realm
             if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
                 cloneIdentityProvider("ftth-realm", realmName, "google");
+                cloneIdentityProvider("ftth-realm", realmName, "github");
             }
 
         } catch (Exception e) {
             log.error("❌ CRITICAL: Unexpected error in ensureRealmExists for '{}': {}", realmName, e.getMessage());
-            // We still don't throw to allow the rest of the org creation to finish if possible
+            throw new RuntimeException("Realm provisioning failed for " + realmName, e);
         }
     }
 
@@ -474,6 +507,26 @@ public class KeycloakService {
             if (sourceIdp != null) {
                 // Clear internal ID so Keycloak generates a new one
                 sourceIdp.setInternalId(null);
+                
+                // Restore unmasked OAuth secrets since toRepresentation() returns masked secrets ("**********")
+                java.util.Map<String, String> config = sourceIdp.getConfig();
+                if (config != null) {
+                    if ("google".equalsIgnoreCase(sourceIdp.getAlias())) {
+                        if (googleClientId != null && !googleClientId.trim().isEmpty()) {
+                            config.put("clientId", googleClientId);
+                        }
+                        if (googleClientSecret != null && !googleClientSecret.trim().isEmpty()) {
+                            config.put("clientSecret", googleClientSecret);
+                        }
+                    } else if ("github".equalsIgnoreCase(sourceIdp.getAlias())) {
+                        if (githubClientId != null && !githubClientId.trim().isEmpty()) {
+                            config.put("clientId", githubClientId);
+                        }
+                        if (githubClientSecret != null && !githubClientSecret.trim().isEmpty()) {
+                            config.put("clientSecret", githubClientSecret);
+                        }
+                    }
+                }
                 
                 try {
                     // Try to create with the cloned flow alias
