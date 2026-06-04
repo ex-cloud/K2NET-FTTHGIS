@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Building2, Globe, ShieldAlert, Check, Copy, ExternalLink, Info, Loader2, Upload, Trash2, Boxes } from "lucide-react";
+import { Globe, ShieldAlert, Check, Copy, ExternalLink, Info, Loader2, Upload, Trash2, Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";

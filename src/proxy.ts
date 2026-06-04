@@ -79,16 +79,17 @@ export async function proxy(request: NextRequest) {
   let effectivePathname = pathname;
 
   if (subdomain === "system") {
-    // If the URL already contains /system/ (e.g. from a direct link), we let it be
-    // but we prefer to rewrite clean URLs like /organizations to /system/organizations
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system") && !pathname.startsWith("/login") && !pathname.startsWith("/account")) {
+    // If accessing tenant routes on system subdomain, rewrite to /org/system/...
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/project") || pathname.startsWith("/team")) {
+      effectivePathname = `/org/system${pathname}`;
+    } else if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/system") && !pathname.startsWith("/login") && !pathname.startsWith("/account") && !pathname.startsWith("/org/")) {
       effectivePathname = `/system${pathname === "/" ? "" : pathname}`;
     } else if (pathname === "/login") {
       effectivePathname = "/system/login";
     }
   } else if (subdomain) {
     // Rewrite tenant routes to /org/[slug]/...
-    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/login") && !pathname.startsWith("/org") && !pathname.startsWith("/account")) {
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/login") && !pathname.startsWith("/org/") && !pathname.startsWith("/account")) {
       effectivePathname = `/org/${subdomain}${pathname === "/" ? "" : pathname}`;
     }
   }
@@ -98,7 +99,7 @@ export async function proxy(request: NextRequest) {
     req: request,
     secret: process.env.AUTH_SECRET,
     cookieName: "next-auth.session-token",
-    secureCookie: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") || process.env.NODE_ENV === "production",
+    secureCookie: false, // Must be false since cookieName in auth.ts is hardcoded to "next-auth.session-token" without __Secure- prefix
   });
   const isLoggedIn = !!token;
 

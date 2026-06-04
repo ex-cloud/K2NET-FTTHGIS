@@ -23,8 +23,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { settings = [] } = useSystemSettings();
 
   // Resolve active org dynamically (handles subdomains and path-based development routes)
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
   const tenantSlug = getCurrentOrgSlug();
 
   const segmentsList = pathname?.split("/").filter(Boolean) || [];

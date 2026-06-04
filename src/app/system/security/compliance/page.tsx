@@ -6,10 +6,8 @@ import { toast } from "sonner";
 import {
   FileText,
   ShieldCheck,
-  Sliders,
   RefreshCw,
   Clock,
-  Map,
   MessageSquare,
   Eye,
   EyeOff,
@@ -39,6 +37,7 @@ export default function SecurityCompliancePage() {
   const [showToken, setShowToken] = useState<boolean>(false);
 
   // Sync state from settings when loaded
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (settings && settings.length > 0) {
       const timeoutSetting = settings.find(s => s.key === "session_idle_timeout");
@@ -60,6 +59,7 @@ export default function SecurityCompliancePage() {
       if (waTokenSetting) setWaToken(waTokenSetting.value || "");
     }
   }, [settings]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSaveCompliance = async () => {
     try {
@@ -73,8 +73,8 @@ export default function SecurityCompliancePage() {
         "wa_gateway_token": waToken
       });
       toast.success("Security compliance rules and gateway parameters updated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update compliance settings");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update compliance settings");
     }
   };
 

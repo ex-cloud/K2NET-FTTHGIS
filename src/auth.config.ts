@@ -114,6 +114,7 @@ export default {
       // Bypass TypeScript OIDCUserConfig limitation to pass runtime jwks_uri
       ...({
         jwks_uri: `${(process.env.AUTH_KEYCLOAK_ISSUER || "").replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/certs`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required to bypass OIDCUserConfig type limitation for runtime jwks_uri
       } as any),
     }),
     Credentials({

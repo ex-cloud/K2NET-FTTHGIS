@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
-  ArrowLeft, User, Key, Shield, FileText, Network, Loader2 
+  ArrowLeft, User, Key, Shield, FileText, Loader2 
 } from "lucide-react";
 import { SystemHeader } from "@/components/system/system-header";
 import { GlobalHeader } from "@/components/global-header";
@@ -15,13 +15,14 @@ export default function AccountLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [subdomain, setSubdomain] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;

@@ -9,9 +9,6 @@ import {
   Lock,
   RefreshCw,
   KeyRound,
-  Eye,
-  EyeOff,
-  Sliders,
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
@@ -35,6 +32,7 @@ export default function PasswordPolicyPage() {
   const [expiryDays, setExpiryDays] = useState<number>(90);
 
   // Sync state from settings when loaded
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (settings && settings.length > 0) {
       const minLenSetting = settings.find(s => s.key === "password_min_length");
@@ -52,6 +50,7 @@ export default function PasswordPolicyPage() {
       if (expirySetting) setExpiryDays(parseInt(expirySetting.value) || 90);
     }
   }, [settings]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSavePolicies = async () => {
     try {
@@ -64,8 +63,8 @@ export default function PasswordPolicyPage() {
         "password_expiry_days": expiryDays.toString()
       });
       toast.success("Password policies and complexity rules updated successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update password policies");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update password policies");
     }
   };
 

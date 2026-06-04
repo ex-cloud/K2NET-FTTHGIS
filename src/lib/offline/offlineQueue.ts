@@ -38,7 +38,7 @@ function getDB() {
 export async function enqueueOfflineRequest(
   url: string,
   method: string,
-  body: any,
+  body: unknown,
   headers: Record<string, string> = {}
 ) {
   const db = await getDB();

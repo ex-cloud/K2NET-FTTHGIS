@@ -10,13 +10,12 @@ import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
 
+import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
+
 interface ProjectItem {
   id: string;
   name: string;
 }
-
-import { useOrganizations } from "@/hooks/useOrganizations";
-import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
 
 export default function OrgDashboardPage({
   params,
@@ -25,16 +24,12 @@ export default function OrgDashboardPage({
 }) {
   const { orgId: slug } = use(params);
   const { data: session } = useSession();
-  const { useOrganizationBySlug, loading: orgsLoading } = useOrganizations();
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  const organization = useOrganizationBySlug(slug);
-  const realOrgId = organization?.id || slug;
-
   const fetchProjects = useCallback(async () => {
-    if (!session?.accessToken || orgsLoading) return;
+    if (!session?.accessToken) return;
     try {
       setLoading(true);
       const baseUrl = getBackendBaseUrl();
@@ -50,7 +45,7 @@ export default function OrgDashboardPage({
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken, slug, orgsLoading]);
+  }, [session?.accessToken, slug]);
 
   useEffect(() => {
     fetchProjects();

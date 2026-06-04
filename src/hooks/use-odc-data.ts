@@ -137,7 +137,7 @@ export function useOdcData() {
  
       const csvContent = [
         Object.keys(rows[0]).join(","),
-        ...rows.map((row: any) => Object.values(row).map(v => `"${v}"`).join(","))
+        ...rows.map((row: Record<string, unknown>) => Object.values(row).map(v => `"${v}"`).join(","))
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

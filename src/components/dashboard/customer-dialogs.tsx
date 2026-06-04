@@ -19,13 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Customer, ODP } from "@/types/network";
-import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
-import { networkApi } from "@/lib/api/network";
+import { Customer } from "@/types/network";
 import { toast } from "sonner";
-import { customerSchema } from "@/lib/validations/network";
-import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin, UserCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";

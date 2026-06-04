@@ -6,7 +6,6 @@ import {
   Play,
   Share2,
   Printer,
-  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

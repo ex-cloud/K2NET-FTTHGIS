@@ -1,6 +1,6 @@
 "use client";
 
-import { useSecuritySettings, SecurityEvent, BlockedIp } from "@/hooks/useSecuritySettings";
+import { useSecuritySettings, SecurityEvent } from "@/hooks/useSecuritySettings";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
@@ -10,18 +10,16 @@ import {
   Play,
   MapPin,
   Plus,
-  RefreshCw,
   Globe,
   Skull,
   ShieldAlert as ShieldIcon,
   X,
   Radio,
-  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -80,6 +78,7 @@ export default function SecurityAlertsPage() {
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -98,8 +97,8 @@ export default function SecurityAlertsPage() {
       toast.success("IP/CIDR blocked successfully!");
       setIpInput("");
       setReasonInput("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to block IP.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to block IP.");
     }
   };
 
@@ -107,8 +106,8 @@ export default function SecurityAlertsPage() {
     try {
       await unblockIp(id);
       toast.success("IP/CIDR unblocked successfully.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to unblock IP.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to unblock IP.");
     }
   };
 
@@ -117,8 +116,8 @@ export default function SecurityAlertsPage() {
       await clearAlerts();
       toast.success("Security logs cleared successfully.");
       setSelectedAlert(null);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to clear logs.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to clear logs.");
     }
   };
 
@@ -134,8 +133,8 @@ export default function SecurityAlertsPage() {
       } else {
         toast.info(res.message || "Travel looks safe.");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to simulate travel.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to simulate travel.");
     }
   };
 
@@ -147,8 +146,8 @@ export default function SecurityAlertsPage() {
         count: simFailCount,
       });
       toast.success(`Simulated ${simFailCount} failed logins successfully.`);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to simulate failed logins.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to simulate failed logins.");
     }
   };
 
@@ -376,7 +375,6 @@ export default function SecurityAlertsPage() {
                 ) : (
                   <div className="max-h-[500px] overflow-y-auto custom-scrollbar space-y-3 pr-1">
                     {alerts.map((alert) => {
-                      const isCritical = alert.severity === "CRITICAL";
                       return (
                         <div
                           key={alert.id}

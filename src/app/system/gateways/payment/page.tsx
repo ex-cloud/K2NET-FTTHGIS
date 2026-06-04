@@ -11,7 +11,6 @@ import {
   Server,
   Lock,
   RefreshCw,
-  TrendingUp,
   Clock,
   CheckCircle2
 } from "lucide-react";
@@ -20,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+
 
 export default function PaymentGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -49,9 +48,9 @@ export default function PaymentGatewayPage() {
         setConfig(flatConfig);
         setCensored(flatCensored);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + err.message);
+      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -102,9 +101,9 @@ export default function PaymentGatewayPage() {
         fetchConfig();
       }, 3000);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + err.message);
+      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

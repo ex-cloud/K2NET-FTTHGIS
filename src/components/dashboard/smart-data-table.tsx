@@ -127,6 +127,7 @@ export function SmartDataTable<TData, TValue>({
     return [selectColumn, ...columns];
   }, [columns]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns: tableColumns,

@@ -17,8 +17,6 @@ export default function OrgsPage() {
   const [wizardOpen, setWizardOpen] = React.useState(false);
 
   // 1. Detect subdomain context for isolation
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
   const tenantSlug = getCurrentOrgSlug();
 
   // 2. Filter organizations if we are in a tenant subdomain

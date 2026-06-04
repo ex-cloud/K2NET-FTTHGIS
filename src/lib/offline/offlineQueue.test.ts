@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Test mocks require extensive `as any` casts for globalThis and mock stores */
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { enqueueOfflineRequest, getOfflineQueue, clearOfflineRequest, syncOfflineQueue } from "./offlineQueue";
 import { toast } from "sonner";

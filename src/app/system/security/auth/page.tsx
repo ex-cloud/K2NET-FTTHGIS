@@ -9,14 +9,10 @@ import {
   History,
   Lock,
   Globe,
-  KeyRound,
   RefreshCw,
   Trash2,
   AlertTriangle,
   Monitor,
-  Calendar,
-  Layers,
-  Network,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -57,6 +53,7 @@ export default function SystemAuthPage() {
 
   // Reset page when sessions count changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset pagination when data changes
     setCurrentPage(1);
   }, [sessions.length]);
 
@@ -71,6 +68,7 @@ export default function SystemAuthPage() {
   const [clientSecretInput, setClientSecretInput] = useState("");
 
   // Sync state when data is loaded
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (realmConfig) {
       setRegAllowed(realmConfig.registrationAllowed);
@@ -78,6 +76,7 @@ export default function SystemAuthPage() {
       setResetAllowed(realmConfig.resetPasswordAllowed);
     }
   }, [realmConfig]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSaveRealmConfig = async () => {
     try {
@@ -87,8 +86,8 @@ export default function SystemAuthPage() {
         resetPasswordAllowed: resetAllowed,
       });
       toast.success("MFA & Keycloak configurations saved successfully!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update Keycloak settings");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update Keycloak settings");
     }
   };
 
@@ -107,8 +106,8 @@ export default function SystemAuthPage() {
       setSelectedProvider(null);
       setClientIdInput("");
       setClientSecretInput("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to configure SSO");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to configure SSO");
     }
   };
 
@@ -116,8 +115,8 @@ export default function SystemAuthPage() {
     try {
       await revokeSession(sessionId);
       toast.success("User session terminated successfully.");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to revoke session");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to revoke session");
     }
   };
 

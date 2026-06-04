@@ -8,12 +8,8 @@ import {
   Loader2, 
   Eye,
   EyeOff,
-  Database,
-  Lock,
   Globe,
   Compass,
-  ArrowUpRight,
-  TrendingUp,
   DollarSign
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,9 +46,9 @@ export default function MapGatewayPage() {
         setConfig(flatConfig);
         setCensored(flatCensored);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + err.message);
+      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -102,9 +98,9 @@ export default function MapGatewayPage() {
         fetchConfig();
       }, 3000);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + err.message);
+      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

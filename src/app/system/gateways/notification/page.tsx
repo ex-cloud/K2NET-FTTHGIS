@@ -6,14 +6,11 @@ import {
   MessageSquare, 
   Save, 
   Loader2, 
-  HelpCircle,
   Eye,
   EyeOff,
   Server,
   Lock,
-  MessageCircle,
-  CheckCircle,
-  Clock
+  MessageCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,9 +46,9 @@ export default function NotificationGatewayPage() {
         setConfig(flatConfig);
         setCensored(flatCensored);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal memuat konfigurasi: " + err.message);
+      toast.error("Gagal memuat konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -110,9 +107,9 @@ export default function NotificationGatewayPage() {
         fetchConfig();
       }, 3000);
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan konfigurasi: " + err.message);
+      toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

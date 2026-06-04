@@ -37,7 +37,6 @@ export function NavOrgSwitcher() {
   // 2. Logic Declarations (Must be above useEffect that uses them)
   const segments = pathname?.split("/").filter(Boolean) || [];
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
   const tenantSlug = getCurrentOrgSlug();
 
   const orgIdFromPath = segments[1];

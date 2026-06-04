@@ -6,7 +6,6 @@ import {
   Cpu, 
   RefreshCw, 
   Activity, 
-  Zap, 
   Database, 
   HardDrive, 
   ArrowRight,
@@ -34,9 +33,9 @@ export default function GatewaysOverviewPage() {
           toast.success("Status gateway berhasil diperbarui!");
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error("Gagal mengambil status gateway: " + err.message);
+      toast.error("Gagal mengambil status gateway: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
       setRefreshing(false);

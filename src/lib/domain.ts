@@ -2,6 +2,70 @@
  * Utility to handle multi-tenant domain and subdomain routing.
  */
 
+export function parseDomain(hostname: string) {
+  let subdomain = "";
+  let baseDomain = "";
+  let isHyphen = false;
+
+  // Strip port if present (e.g., system.lvh.me:3000 -> system.lvh.me)
+  const hostOnly = hostname.split(":")[0];
+
+  if (hostOnly.endsWith("gis-staging.k2net.id")) {
+    baseDomain = "gis-staging.k2net.id";
+    isHyphen = true;
+    if (hostOnly !== baseDomain) {
+      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+    }
+  } else if (hostOnly.endsWith("gis.k2net.id")) {
+    baseDomain = "gis.k2net.id";
+    isHyphen = true;
+    if (hostOnly !== baseDomain) {
+      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+    }
+  } else if (hostOnly.endsWith("lvh.me")) {
+    baseDomain = "lvh.me";
+    isHyphen = false;
+    const parts = hostOnly.split(".");
+    if (parts.length > 2) {
+      subdomain = parts[0];
+    }
+  } else if (hostOnly.endsWith("localhost")) {
+    baseDomain = "localhost";
+    isHyphen = false;
+    const parts = hostOnly.split(".");
+    if (parts.length > 2) {
+      subdomain = parts[0];
+    }
+  } else {
+    // Dynamic fallback based on env
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    try {
+      const url = new URL(appUrl);
+      baseDomain = url.host;
+      if (baseDomain.startsWith("system-")) {
+        baseDomain = baseDomain.substring(7);
+        isHyphen = true;
+      } else if (baseDomain.startsWith("system.")) {
+        baseDomain = baseDomain.substring(7);
+      }
+      
+      if (isHyphen) {
+        if (hostOnly.endsWith(`-${baseDomain}`)) {
+          subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+        }
+      } else {
+        if (hostOnly.endsWith(`.${baseDomain}`)) {
+          subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+        }
+      }
+    } catch {
+      baseDomain = "localhost:3000";
+    }
+  }
+
+  return { subdomain, baseDomain, isHyphen };
+}
+
 /**
  * Constructs a full URL for a specific tenant, handling both localhost and production domains.
  * @param slug The organization slug (subdomain)
@@ -9,29 +73,42 @@
  * @returns Full URL string
  */
 export function getTenantUrl(slug: string, path: string = "/dashboard"): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  
   try {
-    const url = new URL(appUrl);
-    const protocol = url.protocol; // http: or https:
-    let host = url.host; // localhost:3000 or ftthgis.com
-
-    // Extract root host by stripping "system." or "system-" prefix
-    let isHyphen = false;
-    if (host.startsWith("system-")) {
-      host = host.substring(7);
-      isHyphen = true;
-    } else if (host.startsWith("system.")) {
-      host = host.substring(7);
+    let protocol = "https:";
+    
+    if (typeof window !== "undefined") {
+      protocol = window.location.protocol;
+      const hostname = window.location.hostname;
+      const port = window.location.port;
+      
+      const { baseDomain, isHyphen } = parseDomain(hostname);
+      const portSuffix = port ? `:${port}` : "";
+      
+      if (isHyphen) {
+        return `${protocol}//${slug}-${baseDomain}${portSuffix}${path}`;
+      } else {
+        return `${protocol}//${slug}.${baseDomain}${portSuffix}${path}`;
+      }
     }
-
+    
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const url = new URL(appUrl);
+    protocol = url.protocol;
+    let fallbackHost = url.host;
+    let isHyphen = false;
+    if (fallbackHost.startsWith("system-")) {
+      fallbackHost = fallbackHost.substring(7);
+      isHyphen = true;
+    } else if (fallbackHost.startsWith("system.")) {
+      fallbackHost = fallbackHost.substring(7);
+    }
+    
     if (isHyphen) {
-      return `${protocol}//${slug}-${host}${path}`;
+      return `${protocol}//${slug}-${fallbackHost}${path}`;
     } else {
-      return `${protocol}//${slug}.${host}${path}`;
+      return `${protocol}//${slug}.${fallbackHost}${path}`;
     }
   } catch {
-    // Fallback if URL is invalid
     return `http://${slug}.localhost:3000${path}`;
   }
 }
@@ -47,14 +124,27 @@ export function getBaseUrl(): string {
  * Returns the System Admin URL.
  */
 export function getSystemUrl(path: string = "/organizations"): string {
-  const baseUrl = getBaseUrl();
   try {
+    if (typeof window !== "undefined") {
+      const protocol = window.location.protocol;
+      const hostname = window.location.hostname;
+      const port = window.location.port;
+      
+      const { baseDomain, isHyphen } = parseDomain(hostname);
+      const portSuffix = port ? `:${port}` : "";
+      
+      if (isHyphen) {
+        return `${protocol}//system-${baseDomain}${portSuffix}${path}`;
+      } else {
+        return `${protocol}//system.${baseDomain}${portSuffix}${path}`;
+      }
+    }
+    
+    const baseUrl = getBaseUrl();
     const url = new URL(baseUrl);
-    // If baseUrl already starts with system- or system., we just return it with path
     if (url.host.startsWith("system-") || url.host.startsWith("system.")) {
       return `${url.protocol}//${url.host}${path}`;
     }
-    // Otherwise (fallback/default), construct system subdomain
     return `${url.protocol}//system.${url.host}${path}`;
   } catch {
     return `http://system.localhost:3000${path}`;
@@ -69,46 +159,19 @@ export function getCurrentOrgSlug(): string | null {
   if (typeof window === "undefined") return null;
   
   const hostname = window.location.hostname;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const pathname = window.location.pathname;
   
-  try {
-    const url = new URL(appUrl);
-    let rootHost = url.hostname;
-    let isHyphen = false;
-    
-    if (rootHost.startsWith("system-")) {
-      rootHost = rootHost.substring(7);
-      isHyphen = true;
-    } else if (rootHost.startsWith("system.")) {
-      rootHost = rootHost.substring(7);
+  const { subdomain } = parseDomain(hostname);
+  
+  if (subdomain === "system") {
+    if (pathname.startsWith("/org/") || pathname === "/dashboard" || pathname.startsWith("/dashboard/") || pathname.startsWith("/project/") || pathname.startsWith("/team/")) {
+      return "system";
     }
-    
-    if (isHyphen) {
-      if (hostname.endsWith(`-${rootHost}`)) {
-        const subdomain = hostname.substring(0, hostname.length - rootHost.length - 1);
-        if (subdomain && subdomain !== "www" && subdomain !== "system" && subdomain !== "auth") {
-          return subdomain;
-        }
-      }
-    } else {
-      if (hostname.endsWith(`.${rootHost}`)) {
-        const subdomain = hostname.substring(0, hostname.length - rootHost.length - 1);
-        if (subdomain && subdomain !== "www" && subdomain !== "system" && subdomain !== "auth") {
-          return subdomain;
-        }
-      }
-    }
-    
-    // Fallback for localhost.me or other dev setups
-    if (hostname.includes(".lvh.me") || hostname.includes(".localhost")) {
-      const parts = hostname.split(".");
-      if (parts.length > 2) {
-        const subdomain = parts[0];
-        if (subdomain !== "www" && subdomain !== "system") return subdomain;
-      }
-    }
-  } catch {
-    // Ignore
+    return null;
+  }
+  
+  if (subdomain && subdomain !== "auth" && subdomain !== "www") {
+    return subdomain;
   }
   
   return null;

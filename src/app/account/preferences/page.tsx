@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { 
-  User, Smartphone, Github, Chrome, CheckCircle2, 
   AlertCircle, Loader2, Save, Info, Check 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

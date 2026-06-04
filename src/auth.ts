@@ -196,6 +196,7 @@ export const baseAuthOptions: NextAuthConfig = {
               exUser.username ||
               exUser.preferred_username,
             roles: roles,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NextAuth user type does not expose organizationSlug
             organizationSlug: (user as any).organizationSlug || null,
           };
 
@@ -452,6 +453,7 @@ export function getRealmFromHost(host: string): string {
  * Create a customized NextAuthConfig where Keycloak is dynamically
  * configured with the correct OIDC endpoints matching the current tenant realm.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns dynamic NextAuth config object with modified providers
 export function getDynamicAuthConfig(host: string | null): any {
   const realm = getRealmFromHost(host || "");
   const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
@@ -520,6 +522,7 @@ export function getDynamicAuthConfig(host: string | null): any {
     userinfo: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/userinfo`,
     ...({
       jwks_uri: `${dynamicIssuer.replace(serverUrl, keycloakInternalUrl)}/protocol/openid-connect/certs`,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Required to bypass OIDCUserConfig type limitation for runtime jwks_uri
     } as any),
   });
 
@@ -527,6 +530,7 @@ export function getDynamicAuthConfig(host: string | null): any {
     ...baseAuthOptions,
     providers: [
       dynamicKeycloakProvider,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NextAuth Provider is a complex union type
       ...baseAuthOptions.providers.filter((p: any) => p.id !== "keycloak"),
     ],
   };

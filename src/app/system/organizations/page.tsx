@@ -35,6 +35,7 @@ export default function AdminOrganizationsPage() {
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const [displaySuffix, setDisplaySuffix] = useState(".ftthgis.com");
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
@@ -50,6 +51,7 @@ export default function AdminOrganizationsPage() {
       }
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Real-time filtering logic
   const filteredOrgs = useMemo(() => {

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { 
   Lock, Phone, Mail, KeyRound, Loader2, AlertCircle, CheckCircle, 
-  ArrowLeft, ShieldCheck, Laptop, HelpCircle, Fingerprint 
+  ArrowLeft, ShieldCheck, Laptop, Fingerprint 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,15 @@ export default function OtpPage() {
     }
   }, [countdown]);
 
+  const redirectToMain = useCallback(() => {
+    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+    if (hostname.startsWith("system.") || hostname.startsWith("system-")) {
+      router.push("/organizations");
+    } else {
+      router.push("/dashboard");
+    }
+  }, [router]);
+
   // Handle automatic check on load if device is already verified
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -141,16 +150,7 @@ export default function OtpPage() {
       };
       checkStatus();
     }
-  }, [status, session, fingerprint, hasCheckedSession, updateSession]);
-
-  const redirectToMain = () => {
-    const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-    if (hostname.startsWith("system.") || hostname.startsWith("system-")) {
-      router.push("/organizations");
-    } else {
-      router.push("/dashboard");
-    }
-  };
+  }, [status, session, fingerprint, hasCheckedSession, updateSession, redirectToMain]);
 
   // Send OTP handler
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -211,7 +211,7 @@ export default function OtpPage() {
   };
 
   // Verify OTP handler
-  const handleVerifyOtp = async () => {
+  const handleVerifyOtp = useCallback(async () => {
     if (!session?.accessToken || !fingerprint) return;
     
     const otpCode = otp.join("");
@@ -266,7 +266,7 @@ export default function OtpPage() {
     } finally {
       setIsVerifying(false);
     }
-  };
+  }, [session, fingerprint, otp, browser, os, redirectToMain]);
 
   // Automatically verify OTP when 6 digits are fully entered
   useEffect(() => {
@@ -274,7 +274,7 @@ export default function OtpPage() {
     if (otpCode.length === 6 && sessionReady && fingerprint && !isVerifying) {
       handleVerifyOtp();
     }
-  }, [otp, sessionReady, fingerprint, isVerifying]);
+  }, [otp, sessionReady, fingerprint, isVerifying, handleVerifyOtp]);
 
   const handleTrustDevice = async () => {
     setIsTrustingDevice(true);
