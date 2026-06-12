@@ -184,7 +184,7 @@ export default {
                   grant_type: "password",
                   username: username,
                   password: password,
-                  scope: "openid profile email offline_access",
+                  scope: "openid profile email",
                 }),
                 method: "POST",
               },

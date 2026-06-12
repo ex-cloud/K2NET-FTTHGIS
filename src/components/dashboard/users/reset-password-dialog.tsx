@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Key, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { getBaseUrl } from "@/lib/domain";
 
 import { useSession } from "next-auth/react";
 
@@ -63,7 +62,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${getBaseUrl()}/api/v1/users/${user.id}/reset-password`, {
+      const response = await fetch(`/api/v1/users/${user.id}/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

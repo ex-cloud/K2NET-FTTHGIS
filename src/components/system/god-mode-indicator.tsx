@@ -3,7 +3,7 @@
 import * as React from "react";
 import { ShieldCheck } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { getSystemUrl } from "@/lib/domain";
+import { getCurrentOrgSlug, getSystemUrl } from "@/lib/domain";
 
 export function GodModeIndicator() {
   const { data: session } = useSession();
@@ -15,35 +15,9 @@ export function GodModeIndicator() {
 
   if (!mounted) return null;
 
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const isLocal = hostname.includes("localhost") || hostname.includes("lvh.me");
-  const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
-  
-  let tenantSlug = null;
-  if (!isSystemSubdomain) {
-    if (isLocal) {
-      const parts = hostname.split(".");
-      if (parts.length > 2 && parts[0] !== "www") tenantSlug = parts[0];
-    } else {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-      if (appUrl) {
-        try {
-          let rootHost = new URL(appUrl).hostname;
-          if (rootHost.startsWith("system-")) rootHost = rootHost.substring(7);
-          else if (rootHost.startsWith("system.")) rootHost = rootHost.substring(7);
-          
-          if (hostname.endsWith(`-${rootHost}`)) {
-            tenantSlug = hostname.substring(0, hostname.length - rootHost.length - 1);
-          } else if (hostname.endsWith(`.${rootHost}`)) {
-            tenantSlug = hostname.substring(0, hostname.length - rootHost.length - 1);
-          }
-        } catch {}
-      }
-    }
-  }
-
+  const slug = getCurrentOrgSlug();
   const isSuperadmin = session?.user?.roles?.includes("super_admin");
-  const isImpersonating = isSuperadmin && !!tenantSlug;
+  const isImpersonating = isSuperadmin && slug && slug !== "system";
 
   if (!isImpersonating) return null;
 

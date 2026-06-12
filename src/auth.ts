@@ -41,9 +41,14 @@ declare module "next-auth/jwt" {
     idToken?: string;
     issuer?: string;
     expiresAt?: number;
+    issuedAt?: number; // Tracks when the session was first created (epoch seconds)
     user?: import("next-auth").User;
   }
 }
+
+// Maximum absolute session lifetime in seconds (3 days)
+// After this time, user MUST re-login regardless of activity
+const MAX_SESSION_LIFETIME_SECONDS = 3 * 24 * 60 * 60; // 3 days = 259200 seconds
 
 async function refreshAccessToken(token: NextAuthJWT) {
   try {
@@ -208,6 +213,7 @@ export const baseAuthOptions: NextAuthConfig = {
             refreshToken: userWithTokens.tokens.refresh_token,
             idToken: userWithTokens.tokens.id_token,
             issuer: profile.iss, // Store issuer for dynamic refresh!
+            issuedAt: Math.floor(Date.now() / 1000), // Track session creation time
             expiresAt: Math.floor(
               Date.now() / 1000 + userWithTokens.tokens.expires_in,
             ),
@@ -269,25 +275,35 @@ export const baseAuthOptions: NextAuthConfig = {
             refreshToken: account.refresh_token,
             idToken: account.id_token,
             issuer: issuer, // Store issuer for dynamic refresh!
+            issuedAt: Math.floor(Date.now() / 1000), // Track session creation time
             expiresAt: account.expires_at,
           };
         }
       }
 
-      // 2. Return previous token if the access token has not expired yet
+      // 2. Check absolute session lifetime — force re-login after MAX_SESSION_LIFETIME_SECONDS
+      // This prevents infinite sessions where refresh tokens keep extending the session
+      const sessionAge = Math.floor(Date.now() / 1000) - (token.issuedAt as number || 0);
+      if (token.issuedAt && sessionAge > MAX_SESSION_LIFETIME_SECONDS) {
+        logInfo(`⏰ Session expired for user ${token.email}: session age ${Math.floor(sessionAge / 3600)}h exceeds max ${MAX_SESSION_LIFETIME_SECONDS / 3600}h. Forcing re-login.`);
+        return {
+          ...token,
+          error: "RefreshAccessTokenError" as const,
+        };
+      }
+
+      // 3. Return previous token if the access token has not expired yet
       // buffer time 15s (increased from 10s)
       const isExpired = Date.now() > (token.expiresAt as number) * 1000 - 15000;
       if (!isExpired) {
         return token;
       }
 
-      // 3. Access token has expired, try to update it
+      // 4. Access token has expired, try to update it
       const refreshedToken = await refreshAccessToken(token);
       
-      // SAFETY: If refresh fails, keep the old token for one more cycle 
-      // instead of returning an error that triggers immediate signout
       if (refreshedToken.error === "RefreshAccessTokenError") {
-        return token; 
+        return refreshedToken; 
       }
 
       return refreshedToken;
@@ -406,6 +422,10 @@ export const baseAuthOptions: NextAuthConfig = {
         secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://"),
       },
     },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 3 * 24 * 60 * 60, // 3 days session expiration (matches Keycloak offline session max lifespan)
   },
 };
 

@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getPollerBaseUrl } from "@/lib/api-config";
 
 interface PollerStatus {
   status: string;
@@ -22,7 +23,7 @@ export function PollerHealthBadge() {
 
   const checkHealth = async () => {
     try {
-      const res = await fetch("http://localhost:9091/healthz");
+      const res = await fetch(`${getPollerBaseUrl()}/healthz`);
       if (res.ok) {
         const data = await res.json();
         setHealth(data);

@@ -210,45 +210,49 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
           </div>
         )}
 
-        {/* Social Logins (Supabase Style) */}
-        <div className="space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSocialLogin("github")}
-            className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
-          >
-            <Github className="w-4 h-4" />
-            Continue with GitHub
-          </Button>
+        {/* Social Logins (Supabase Style) - Hidden for System/Pusat Kendali Admins */}
+        {!effectiveIsAdmin && (
+          <>
+            <div className="space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleSocialLogin("github")}
+                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+              >
+                <Github className="w-4 h-4" />
+                Continue with GitHub
+              </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSocialLogin("google")}
-            className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
-          >
-            <Chrome className="w-4 h-4 text-zinc-100" />
-            Continue with Google
-          </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleSocialLogin("google")}
+                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+              >
+                <Chrome className="w-4 h-4 text-zinc-100" />
+                Continue with Google
+              </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => toast.info("Otentikasi Single Sign-On (SSO) Enterprise saat ini dalam mode Sandbox/Mock.")}
-            className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all opacity-85"
-          >
-            <Key className="w-4 h-4" />
-            Continue with SSO
-          </Button>
-        </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => toast.info("Otentikasi Single Sign-On (SSO) Enterprise saat ini dalam mode Sandbox/Mock.")}
+                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all opacity-85"
+              >
+                <Key className="w-4 h-4" />
+                Continue with SSO
+              </Button>
+            </div>
 
-        {/* Beautiful Or Divider */}
-        <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-zinc-800/80"></div>
-          <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-wider font-bold">or</span>
-          <div className="flex-grow border-t border-zinc-800/80"></div>
-        </div>
+            {/* Beautiful Or Divider */}
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-zinc-800/80"></div>
+              <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-wider font-bold">or</span>
+              <div className="flex-grow border-t border-zinc-800/80"></div>
+            </div>
+          </>
+        )}
 
         {!effectiveIsAdmin && !detectedSubdomain && (
           <FormField
