@@ -2,7 +2,7 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -14,7 +14,6 @@ on:
         type: choice
         options:
           - production
-          - staging
 
 jobs:
   build-and-test:
@@ -45,26 +44,8 @@ jobs:
       - name: Build Next.js Production App
         run: pnpm build
 
-  deploy-staging:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    steps:
-      - name: Deploy to Staging Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.STAGING_SSH_HOST }}
-          username: ${{ secrets.STAGING_SSH_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
-          script: |
-            cd /opt/project5/frontend
-            git checkout develop
-            git pull origin develop
-            cd /opt/project5
-            bash scripts/deploy.sh staging frontend
- 
   deploy-production:
+    needs: build-and-test
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
     steps:
