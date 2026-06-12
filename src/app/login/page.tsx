@@ -111,14 +111,14 @@ export default async function LoginPage() {
               {/* Action Buttons */}
               <div className="space-y-4">
                 <p className="text-xs text-zinc-400 text-center leading-relaxed">
-                  Jika Anda merasa ini adalah kesalahan sistem, silakan hubungi Administrator atau kembali ke Portal Pusat Kendali.
+                  Silakan kembali ke halaman utama untuk informasi lebih lanjut mengenai layanan kami.
                 </p>
                 
                 <a
-                  href="https://system-gis.k2net.id/login"
+                  href={`https://${baseDomain}`}
                   className="flex items-center justify-center w-full h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 hover:text-white transition-all text-sm font-semibold shadow-md border border-zinc-700/50"
                 >
-                  Portal Pusat Kendali
+                  Kembali ke Beranda
                 </a>
               </div>
             </>
