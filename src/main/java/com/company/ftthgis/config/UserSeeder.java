@@ -113,7 +113,7 @@ public class UserSeeder implements CommandLineRunner {
     private void seedUsers() {
         String defaultPassword = "Password@123";
         // Find our default organization
-        Organization defaultOrg = organizationRepository.findBySlug("ex-cloud-org").orElse(null);
+        Organization defaultOrg = organizationRepository.findBySlug("system").orElse(null);
         
         createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin", defaultPassword, "ACTIVE", null); // Platform level
         createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE", defaultOrg);
@@ -126,22 +126,34 @@ public class UserSeeder implements CommandLineRunner {
         createUserIfNotExists("inactive@example.com", "xinactive", "Inactive User", "viewer", defaultPassword, "INACTIVE", defaultOrg);
     }
 
+    private String resolveKeycloakRealm(Organization org) {
+        if (org == null) {
+            return "ftth-realm";
+        }
+        String slug = org.getSlug();
+        if ("ex-cloud-org".equals(slug) || "system".equals(slug)) {
+            return "ftth-realm";
+        }
+        return slug;
+    }
+
     private void createUserIfNotExists(String email, String username, String fullName, String roleName, String password,
             String status, Organization organization) {
         String keycloakId = null;
+        String targetRealm = resolveKeycloakRealm(organization);
         try {
-            keycloakId = keycloakAdminService.createUser(email, username, password, fullName.split(" ")[0],
+            keycloakId = keycloakAdminService.createUserInRealm(targetRealm, email, username, password, fullName.split(" ")[0],
                     fullName.contains(" ") ? fullName.split(" ")[1] : "", roleName);
         } catch (Exception e) {
-            log.warn("Failed to sync user {} to Keycloak: {}", email, e.getMessage());
+            log.warn("Failed to sync user {} to Keycloak realm {}: {}", email, targetRealm, e.getMessage());
         }
 
         // Always attempt to sync role to Keycloak to ensure consistency
         if (keycloakId != null) {
             try {
-                keycloakAdminService.updateUserRole(email, roleName);
+                keycloakAdminService.updateUserRoleInRealm(targetRealm, email, roleName);
             } catch (Exception e) {
-                log.warn("Failed to sync role {} for user {} to Keycloak: {}", roleName, email, e.getMessage());
+                log.warn("Failed to sync role {} for user {} to Keycloak realm {}: {}", roleName, email, targetRealm, e.getMessage());
             }
         }
 
@@ -202,8 +214,24 @@ public class UserSeeder implements CommandLineRunner {
             // Backfill ID from Keycloak if needed (Though with UUID as PK, it should already be set)
             if (keycloakId != null && !user.getId().toString().equals(keycloakId)) {
                 log.warn("ID mismatch for user {}: Local={}, Keycloak={}. Re-linking...", email, user.getId(), keycloakId);
-                // Note: Changing PK is risky, but for seeding it might be necessary if they drifted.
-                // However, since we truncated, this is unlikely.
+                userRepository.delete(user);
+                userRepository.flush();
+
+                User newUser = new User();
+                newUser.setId(UUID.fromString(keycloakId));
+                newUser.setEmail(email);
+                newUser.setUsername(username);
+                newUser.setFullName(fullName);
+                Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName)
+                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                newUser.setRole(role);
+                newUser.setStatus(status);
+                newUser.setOrganization(organization);
+                String seed = email.split("@")[0];
+                newUser.setAvatarUrl("https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed);
+                userRepository.save(newUser);
+                log.info("Successfully re-linked local user {} to correct Keycloak ID {}", email, keycloakId);
+                return;
             }
 
             // Backfill Avatar URL if missing

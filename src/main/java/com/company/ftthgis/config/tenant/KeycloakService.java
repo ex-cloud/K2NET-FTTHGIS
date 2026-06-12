@@ -11,6 +11,7 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.springframework.stereotype.Service;
 import com.company.ftthgis.config.KeycloakProperties;
+import com.company.ftthgis.service.SystemSettingService;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -26,6 +27,7 @@ public class KeycloakService {
 
     private final Keycloak keycloak;
     private final KeycloakProperties properties;
+    private final SystemSettingService settingsService;
 
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
     private String provisionClientId;
@@ -63,6 +65,57 @@ public class KeycloakService {
                 // Always sync default client and IDP even if the realm already exists
                 provisionDefaultClient(realmName);
                 if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
+                    // Sync SMTP configuration for the existing realm
+                    try {
+                        org.keycloak.representations.idm.RealmRepresentation existingRealm = keycloak.realm(realmName).toRepresentation();
+                        java.util.Map<String, String> smtpServer = existingRealm.getSmtpServer();
+                        if (smtpServer == null) {
+                            smtpServer = new java.util.HashMap<>();
+                        }
+                        String smtpHost = settingsService.getSettingValue("smtp_host", "smtp-relay.brevo.com");
+                        String smtpPort = settingsService.getSettingValue("smtp_port", "587");
+                        String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
+                        String smtpPass = settingsService.getSettingValue("smtp_password", "");
+                        String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@k2net.id");
+
+                        smtpServer.put("host", smtpHost);
+                        smtpServer.put("port", smtpPort);
+                        smtpServer.put("user", smtpUser);
+                        smtpServer.put("password", smtpPass);
+                        smtpServer.put("from", smtpFrom);
+                        smtpServer.put("auth", "true");
+                        smtpServer.put("starttls", "true");
+                        smtpServer.put("ssl", "false");
+                        smtpServer.put("fromDisplayName", "FTTH GIS Platform");
+
+                        existingRealm.setSmtpServer(smtpServer);
+
+                        // === Session & Token Lifespan Configuration ===
+                        // SSO Session: controls browser SSO cookie lifetime
+                        existingRealm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
+                        existingRealm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
+                        existingRealm.setAccessTokenLifespan(300);       // 5 minutes access token lifespan
+
+                        // Offline Session: controls refresh token absolute lifetime
+                        // This is the ROOT setting that prevents infinite sessions
+                        existingRealm.setOfflineSessionMaxLifespanEnabled(true); // CRITICAL: enable max lifespan!
+                        existingRealm.setOfflineSessionMaxLifespan(259200);      // 3 days absolute max (72 hours)
+                        existingRealm.setOfflineSessionIdleTimeout(86400);       // 1 day idle timeout for offline sessions
+
+                        // Client Session: inherit from realm (0 = use realm defaults)
+                        existingRealm.setClientSessionIdleTimeout(0);
+                        existingRealm.setClientSessionMaxLifespan(0);
+
+                        // Refresh token revocation: each refresh token can only be used once
+                        existingRealm.setRevokeRefreshToken(true);
+                        existingRealm.setRefreshTokenMaxReuse(0); // no reuse allowed
+
+                        keycloak.realm(realmName).update(existingRealm);
+                        log.info("✅ SUCCESS: Dynamic SMTP, session, and token lifespan configurations synchronized for existing realm '{}'", realmName);
+                    } catch (Exception ex) {
+                        log.error("❌ Failed to sync SMTP configuration for existing realm '{}': {}", realmName, ex.getMessage());
+                    }
+
                     cloneIdentityProvider("ftth-realm", realmName, "google");
                     cloneIdentityProvider("ftth-realm", realmName, "github");
                 }
@@ -79,8 +132,8 @@ public class KeycloakService {
             // 1. Try to create the realm directly using ftth-realm as a template to clone its custom flows, themes, and identity providers
             org.keycloak.representations.idm.RealmRepresentation realm;
             try {
-                log.info("📋 Fetching template realm 'ftth-realm' to clone configuration...");
-                realm = keycloak.realm("ftth-realm").toRepresentation();
+                log.info("📋 Fetching template realm 'ftth-realm' to clone configuration via partial export...");
+                realm = keycloak.realm("ftth-realm").partialExport(true, true);
                 
                 // Overwrite identifiers for the new realm
                 realm.setId(realmName);
@@ -93,12 +146,25 @@ public class KeycloakService {
                 realm.setGroups(null);
                 realm.setComponents(null); // Let Keycloak generate default key providers
                 realm.setClients(null);    // Let provisionDefaultClient handle frontend client
+                realm.setClientScopes(null);
                 
                 // CRITICAL FIX: Clear default roles to prevent SQL unique constraint violations on KEYCLOAK_ROLE
                 realm.setDefaultRole(null);
                 realm.setDefaultRoles(null);
                 
-                // Restore unmasked OAuth secrets since toRepresentation() returns masked secrets ("**********")
+                // Clear IDs of authentication flows and configs to prevent constraint violations
+                if (realm.getAuthenticationFlows() != null) {
+                    for (var flow : realm.getAuthenticationFlows()) {
+                        flow.setId(null);
+                    }
+                }
+                if (realm.getAuthenticatorConfig() != null) {
+                    for (var config : realm.getAuthenticatorConfig()) {
+                        config.setId(null);
+                    }
+                }
+                
+                // Restore unmasked OAuth secrets since partialExport() returns masked secrets ("**********")
                 if (realm.getIdentityProviders() != null) {
                     for (var idp : realm.getIdentityProviders()) {
                         // Clear internal ID so Keycloak generates a new one
@@ -132,7 +198,50 @@ public class KeycloakService {
                     }
                 }
                 
-                log.info("✅ SUCCESS: Template realm loaded and secrets restored.");
+                // Restore SMTP server configurations with actual unmasked values from system settings
+                java.util.Map<String, String> smtpServer = realm.getSmtpServer();
+                if (smtpServer == null) {
+                    smtpServer = new java.util.HashMap<>();
+                }
+                String smtpHost = settingsService.getSettingValue("smtp_host", "smtp-relay.brevo.com");
+                String smtpPort = settingsService.getSettingValue("smtp_port", "587");
+                String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
+                String smtpPass = settingsService.getSettingValue("smtp_password", "");
+                String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@k2net.id");
+
+                smtpServer.put("host", smtpHost);
+                smtpServer.put("port", smtpPort);
+                smtpServer.put("user", smtpUser);
+                smtpServer.put("password", smtpPass);
+                smtpServer.put("from", smtpFrom);
+                smtpServer.put("auth", "true");
+                smtpServer.put("starttls", "true");
+                smtpServer.put("ssl", "false");
+                smtpServer.put("fromDisplayName", "FTTH GIS Platform");
+
+                realm.setSmtpServer(smtpServer);
+
+                // === Session & Token Lifespan Configuration ===
+                // SSO Session: controls browser SSO cookie lifetime
+                realm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
+                realm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
+                realm.setAccessTokenLifespan(300);       // 5 minutes access token lifespan
+
+                // Offline Session: controls refresh token absolute lifetime
+                // This is the ROOT setting that prevents infinite sessions
+                realm.setOfflineSessionMaxLifespanEnabled(true); // CRITICAL: enable max lifespan!
+                realm.setOfflineSessionMaxLifespan(259200);      // 3 days absolute max (72 hours)
+                realm.setOfflineSessionIdleTimeout(86400);       // 1 day idle timeout for offline sessions
+
+                // Client Session: inherit from realm (0 = use realm defaults)
+                realm.setClientSessionIdleTimeout(0);
+                realm.setClientSessionMaxLifespan(0);
+
+                // Refresh token revocation: each refresh token can only be used once
+                realm.setRevokeRefreshToken(true);
+                realm.setRefreshTokenMaxReuse(0); // no reuse allowed
+
+                log.info("✅ SUCCESS: Template realm loaded, flows/configs cleaned, SMTP secrets restored, and session/token lifespans configured.");
             } catch (Exception ex) {
                 log.warn("⚠️ Failed to fetch ftth-realm template. Creating a basic blank realm. Error: {}", ex.getMessage());
                 realm = new org.keycloak.representations.idm.RealmRepresentation();
@@ -440,11 +549,13 @@ public class KeycloakService {
             if (url == null || url.trim().isEmpty()) {
                 url = properties.getServerUrl();
             }
+            String clientId = "master".equalsIgnoreCase(userRealm) ? properties.getClientId() : provisionClientId;
+            String clientSecret = "master".equalsIgnoreCase(userRealm) ? properties.getClientSecret() : provisionClientSecret;
             try (org.keycloak.admin.client.Keycloak userKeycloak = org.keycloak.admin.client.KeycloakBuilder.builder()
                     .serverUrl(url)
                     .realm(userRealm)
-                    .clientId(properties.getClientId())
-                    .clientSecret(properties.getClientSecret())
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
                     .username(username)
                     .password(password)
                     .grantType(org.keycloak.OAuth2Constants.PASSWORD)
@@ -528,17 +639,28 @@ public class KeycloakService {
                     }
                 }
                 
-                try {
-                    // Try to create with the cloned flow alias
-                    targetRealmResource.identityProviders().create(sourceIdp);
-                    log.info("✅ SUCCESS: Automatically cloned Identity Provider '{}' from '{}' to '{}'", 
-                            providerAlias, sourceRealm, targetRealm);
-                } catch (jakarta.ws.rs.WebApplicationException ex) {
-                    log.warn("⚠️ Failed to clone Identity Provider with original flow alias. Retrying with 'first broker login' fallback. Error: {}", ex.getMessage());
-                    sourceIdp.setFirstBrokerLoginFlowAlias("first broker login");
-                    targetRealmResource.identityProviders().create(sourceIdp);
-                    log.info("✅ SUCCESS: Cloned Identity Provider '{}' with fallback flow 'first broker login' in realm '{}'", 
-                            providerAlias, targetRealm);
+                try (Response response = targetRealmResource.identityProviders().create(sourceIdp)) {
+                    if (response.getStatus() == 201 || response.getStatus() == 200 || response.getStatus() == 204) {
+                        log.info("✅ SUCCESS: Automatically cloned Identity Provider '{}' from '{}' to '{}'", 
+                                providerAlias, sourceRealm, targetRealm);
+                    } else {
+                        String errorInfo = response.readEntity(String.class);
+                        log.warn("⚠️ Failed to clone Identity Provider with original flow alias. Status: {}, Error: {}. Retrying with 'first broker login' fallback.", 
+                                response.getStatus(), errorInfo);
+                        
+                        sourceIdp.setFirstBrokerLoginFlowAlias("first broker login");
+                        try (Response fallbackResponse = targetRealmResource.identityProviders().create(sourceIdp)) {
+                            if (fallbackResponse.getStatus() == 201 || fallbackResponse.getStatus() == 200 || fallbackResponse.getStatus() == 204) {
+                                log.info("✅ SUCCESS: Cloned Identity Provider '{}' with fallback flow 'first broker login' in realm '{}'", 
+                                        providerAlias, targetRealm);
+                            } else {
+                                String fallbackErrorInfo = fallbackResponse.readEntity(String.class);
+                                log.error("❌ ERROR: Failed to clone Identity Provider with fallback. Status: {}, Error: {}", 
+                                        fallbackResponse.getStatus(), fallbackErrorInfo);
+                                throw new RuntimeException("Failed to clone Identity Provider with fallback flow: " + fallbackErrorInfo);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception e) {

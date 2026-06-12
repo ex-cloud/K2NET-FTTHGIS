@@ -43,7 +43,7 @@ public class KeycloakAdminService {
         UsersResource usersResource = keycloak.realm(targetRealm).users();
 
         // Check if user already exists
-        List<UserRepresentation> existing = usersResource.search(email, true);
+        List<UserRepresentation> existing = usersResource.searchByEmail(email, true);
         if (!existing.isEmpty()) {
             UserRepresentation existingUser = existing.get(0);
             String targetUsername = username != null && !username.isEmpty() ? username : email;
@@ -110,7 +110,7 @@ public class KeycloakAdminService {
         UsersResource usersResource = keycloak.realm(targetRealm).users();
 
         // Check if user already exists
-        List<UserRepresentation> existing = usersResource.search(email, true);
+        List<UserRepresentation> existing = usersResource.searchByEmail(email, true);
         if (!existing.isEmpty()) {
             throw new RuntimeException("User with email " + email + " already exists in Keycloak");
         }
@@ -182,7 +182,7 @@ public class KeycloakAdminService {
 
     public void updateUserRoleInRealm(String targetRealm, String email, String newRoleName) {
         UsersResource usersResource = keycloak.realm(targetRealm).users();
-        List<UserRepresentation> users = usersResource.search(email, true);
+        List<UserRepresentation> users = usersResource.searchByEmail(email, true);
 
         if (users.isEmpty()) {
             log.warn("Cannot sync role: User {} not found in Keycloak", email);

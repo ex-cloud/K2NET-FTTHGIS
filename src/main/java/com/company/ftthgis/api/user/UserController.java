@@ -97,6 +97,22 @@ public class UserController {
         return Map.of("success", true, "message", "Linked " + request.provider() + " identity provider");
     }
 
+    @PostMapping("/me/change-password")
+    public org.springframework.http.ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            userService.changePassword(
+                UUID.fromString(jwt.getSubject()), 
+                request.currentPassword(), 
+                request.newPassword()
+            );
+            return org.springframework.http.ResponseEntity.ok(Map.of("success", true, "message", "Password berhasil diubah."));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     public record LinkSocialRequest(String provider, String code, String redirectUri) {
     }
 
@@ -107,5 +123,8 @@ public class UserController {
     }
 
     public record ResetPasswordRequest(String newPassword, boolean temporary) {
+    }
+
+    public record ChangePasswordRequest(String currentPassword, String newPassword) {
     }
 }

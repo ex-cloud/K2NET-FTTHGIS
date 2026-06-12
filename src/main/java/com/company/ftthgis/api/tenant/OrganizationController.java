@@ -3,6 +3,7 @@ package com.company.ftthgis.api.tenant;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.api.tenant.dto.OrganizationCreateRequest;
 import com.company.ftthgis.service.OrganizationService;
+import com.company.ftthgis.config.tenant.KeycloakService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
     private final com.company.ftthgis.service.ConfigurableUserService userService;
+    private final KeycloakService keycloakService;
 
     @GetMapping
     public ResponseEntity<List<Organization>> getAll() {
@@ -84,6 +86,13 @@ public class OrganizationController {
     @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.delete')")
     public ResponseEntity<Void> delete(@PathVariable String slug) {
         organizationService.deleteOrganization(slug);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{slug}/sync-keycloak")
+    @PreAuthorize("hasRole('super_admin')")
+    public ResponseEntity<Void> syncKeycloak(@PathVariable String slug) {
+        keycloakService.ensureRealmExists(slug);
         return ResponseEntity.ok().build();
     }
 }

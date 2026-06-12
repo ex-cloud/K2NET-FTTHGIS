@@ -41,6 +41,7 @@ public class ConfigurableUserService {
     private final OrganizationRepository organizationRepository;
     private final UserAuditLogRepository userAuditLogRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
 
     @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://localhost:8081}")
     private String keycloakInternalUrl;
@@ -75,7 +76,8 @@ public class ConfigurableUserService {
             ProjectMemberRepository projectMemberRepository,
             OrganizationRepository organizationRepository,
             UserAuditLogRepository userAuditLogRepository,
-            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+            com.company.ftthgis.config.tenant.KeycloakService keycloakService) {
         this.roleRepository = roleRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.userRepository = userRepository;
@@ -84,6 +86,7 @@ public class ConfigurableUserService {
         this.organizationRepository = organizationRepository;
         this.userAuditLogRepository = userAuditLogRepository;
         this.objectMapper = objectMapper;
+        this.keycloakService = keycloakService;
     }
 
     public UserDto getCurrentUser(String keycloakSubject) {
@@ -278,6 +281,43 @@ public class ConfigurableUserService {
                 .organization(user.getOrganization())
                 .build();
         auditLog.setCreatedBy(modifiedBySubject);
+        userAuditLogRepository.save(auditLog);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String realm = resolveKeycloakRealm(user.getOrganization());
+        
+        boolean isCurrentPasswordValid = keycloakService.verifyUserPassword(user.getUsername(), currentPassword, realm);
+        if (!isCurrentPasswordValid) {
+            throw new RuntimeException("Password lama salah. Silakan coba lagi.");
+        }
+
+        String keycloakId = user.getId().toString();
+        try {
+            keycloakAdminService.resetUserPasswordInRealm(realm, keycloakId, newPassword, false);
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("404")) {
+                log.warn("User {} not found in realm {}, falling back to master realm", keycloakId, realm);
+                keycloakAdminService.resetUserPasswordInRealm("master", keycloakId, newPassword, false);
+            } else {
+                throw e;
+            }
+        }
+
+        UserAuditLog auditLog = UserAuditLog.builder()
+                .targetUserId(user.getId())
+                .targetUserEmail(user.getEmail())
+                .action("CHANGE_PASSWORD")
+                .previousValue("HIDDEN")
+                .newValue("PERMANENT")
+                .reason("User self-initiated password change")
+                .organization(user.getOrganization())
+                .build();
+        auditLog.setCreatedBy(userId.toString());
         userAuditLogRepository.save(auditLog);
     }
 
