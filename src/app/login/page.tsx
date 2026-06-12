@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { LoginForm } from "@/components/auth/login-form";
-import { Network } from "lucide-react";
+import { Network, Building2 } from "lucide-react";
 
 export default async function LoginPage() {
   const headersList = await headers();
@@ -47,6 +47,27 @@ export default async function LoginPage() {
 
   console.log(`[Login Page Debug] hostname: "${hostname}", rootDomain: "${rootDomain}", baseDomain: "${baseDomain}", isHyphen: ${isHyphen}, detectedSubdomain: "${detectedSubdomain}"`);
 
+  let tenantExists = true;
+  let organizationName = "FTTH GIS Platform";
+
+  if (detectedSubdomain && detectedSubdomain !== "system" && detectedSubdomain !== "admin") {
+    try {
+      const backendUrl = process.env.BACKEND_API_URL || "http://localhost:9090";
+      const discoveryRes = await fetch(`${backendUrl}/api/v1/auth/discovery/${detectedSubdomain}`, {
+        next: { revalidate: 60 } // Cache verification for 60 seconds
+      });
+      
+      if (discoveryRes.status === 404) {
+        tenantExists = false;
+      } else if (discoveryRes.ok) {
+        const data = await discoveryRes.json();
+        organizationName = data.organizationName || detectedSubdomain;
+      }
+    } catch (err) {
+      console.error("[Login Page] Failed to verify tenant existence:", err);
+      // Fallback: allow loading form if backend can't be reached
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
@@ -72,28 +93,61 @@ export default async function LoginPage() {
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="backdrop-blur-xl bg-card/80 border border-border/50 rounded-2xl shadow-2xl p-8">
-          {/* Logo & Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-cyan-500 shadow-lg shadow-primary/25 mb-4">
-              <Network className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              FTTH GIS
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Fiber To The Home - Geographic Information System
-            </p>
-          </div>
+          {!tenantExists ? (
+            <>
+              {/* Tenant Not Found Header */}
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-red-500 to-amber-500 shadow-lg shadow-red-500/25 mb-4">
+                  <Building2 className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  Organisasi Tidak Ditemukan
+                </h1>
+                <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
+                  Subdomain <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-red-400 font-mono font-semibold">{detectedSubdomain}-gis.k2net.id</code> tidak terdaftar atau telah dinonaktifkan di platform kami.
+                </p>
+              </div>
 
-          {/* Login Form */}
-          <LoginForm prefilledOrg={detectedSubdomain || undefined} />
+              {/* Action Buttons */}
+              <div className="space-y-4">
+                <p className="text-xs text-zinc-400 text-center leading-relaxed">
+                  Jika Anda merasa ini adalah kesalahan sistem, silakan hubungi Administrator atau kembali ke Portal Pusat Kendali.
+                </p>
+                
+                <a
+                  href="https://system-gis.k2net.id/login"
+                  className="flex items-center justify-center w-full h-11 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 hover:text-white transition-all text-sm font-semibold shadow-md border border-zinc-700/50"
+                >
+                  Portal Pusat Kendali
+                </a>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Logo & Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-cyan-500 shadow-lg shadow-primary/25 mb-4">
+                  <Network className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  {detectedSubdomain && detectedSubdomain !== "system" ? organizationName : "FTTH GIS"}
+                </h1>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Fiber To The Home - Geographic Information System
+                </p>
+              </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-muted-foreground">
-              Protected by Enterprise Security
-            </p>
-          </div>
+              {/* Login Form */}
+              <LoginForm prefilledOrg={detectedSubdomain || undefined} />
+
+              {/* Footer */}
+              <div className="mt-8 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Protected by Enterprise Security
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom Security Badge */}
