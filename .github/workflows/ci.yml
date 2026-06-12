@@ -73,7 +73,7 @@ jobs:
             git checkout develop
             git pull origin develop
             cd /opt/project5
-            bash scripts/deploy.sh staging
+            bash scripts/deploy.sh staging backend
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -91,4 +91,4 @@ jobs:
             git checkout main
             git pull origin main
             cd /opt/project5
-            bash scripts/deploy.sh production
+            bash scripts/deploy.sh production backend
