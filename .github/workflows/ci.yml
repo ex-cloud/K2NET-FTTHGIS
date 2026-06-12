@@ -62,8 +62,8 @@ jobs:
             git checkout develop
             git pull origin develop
             cd /opt/project5
-            bash scripts/deploy.sh staging
-
+            bash scripts/deploy.sh staging frontend
+ 
   deploy-production:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
@@ -80,4 +80,4 @@ jobs:
             git checkout main
             git pull origin main
             cd /opt/project5
-            bash scripts/deploy.sh production
+            bash scripts/deploy.sh production frontend
