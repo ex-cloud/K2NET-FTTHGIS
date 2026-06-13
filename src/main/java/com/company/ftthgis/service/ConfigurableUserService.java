@@ -42,6 +42,7 @@ public class ConfigurableUserService {
     private final UserAuditLogRepository userAuditLogRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
+    private final PasswordValidationService passwordValidationService;
 
     @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://localhost:8081}")
     private String keycloakInternalUrl;
@@ -77,7 +78,8 @@ public class ConfigurableUserService {
             OrganizationRepository organizationRepository,
             UserAuditLogRepository userAuditLogRepository,
             com.fasterxml.jackson.databind.ObjectMapper objectMapper,
-            com.company.ftthgis.config.tenant.KeycloakService keycloakService) {
+            com.company.ftthgis.config.tenant.KeycloakService keycloakService,
+            PasswordValidationService passwordValidationService) {
         this.roleRepository = roleRepository;
         this.keycloakAdminService = keycloakAdminService;
         this.userRepository = userRepository;
@@ -87,6 +89,7 @@ public class ConfigurableUserService {
         this.userAuditLogRepository = userAuditLogRepository;
         this.objectMapper = objectMapper;
         this.keycloakService = keycloakService;
+        this.passwordValidationService = passwordValidationService;
     }
 
     public UserDto getCurrentUser(String keycloakSubject) {
@@ -118,8 +121,13 @@ public class ConfigurableUserService {
                 });
 
         // 3. Create User in Keycloak with password based on creation mode in the ORGANIZATION'S REALM
-        String defaultPassword = "DIRECT".equalsIgnoreCase(request.getCreationMode()) && request.getCustomPassword() != null && !request.getCustomPassword().isEmpty()
-                ? request.getCustomPassword()
+        String customPassword = request.getCustomPassword();
+        if ("DIRECT".equalsIgnoreCase(request.getCreationMode()) && customPassword != null && !customPassword.isEmpty()) {
+            passwordValidationService.validatePassword(customPassword);
+        }
+        
+        String defaultPassword = "DIRECT".equalsIgnoreCase(request.getCreationMode()) && customPassword != null && !customPassword.isEmpty()
+                ? customPassword
                 : "Password123!"; 
         String targetRealm = resolveKeycloakRealm(organization);
         log.info("🔑 Creating user in Keycloak realm: {} (Mode: {})", targetRealm, request.getCreationMode());
@@ -253,6 +261,8 @@ public class ConfigurableUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        passwordValidationService.validatePassword(newPassword);
+
         String realm = resolveKeycloakRealm(user.getOrganization());
         
         // Ensure Keycloak ID format (UUID to String)
@@ -288,6 +298,8 @@ public class ConfigurableUserService {
     public void changePassword(UUID userId, String currentPassword, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        passwordValidationService.validatePassword(newPassword);
 
         String realm = resolveKeycloakRealm(user.getOrganization());
         

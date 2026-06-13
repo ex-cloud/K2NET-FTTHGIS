@@ -522,4 +522,16 @@ public class KeycloakAdminService {
         log.warn("User {} not found in any Keycloak realm for cleanup", email);
         return false;
     }
+
+    public void syncPasswordPolicyToRealm(String realmName, String policyString) {
+        try {
+            log.info("⚙️ Syncing password policy to realm {}: '{}'", realmName, policyString);
+            RealmRepresentation realm = keycloak.realm(realmName).toRepresentation();
+            realm.setPasswordPolicy(policyString);
+            keycloak.realm(realmName).update(realm);
+            log.info("✅ Password policy synced successfully to realm {}", realmName);
+        } catch (Exception e) {
+            log.error("Failed to sync password policy to Keycloak realm {}: {}", realmName, e.getMessage(), e);
+        }
+    }
 }

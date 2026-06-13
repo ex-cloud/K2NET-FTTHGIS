@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.domain.common.SystemSetting;
 import com.company.ftthgis.domain.common.repository.SystemSettingRepository;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,8 @@ import java.util.HashMap;
 public class SystemSettingService {
 
     private final SystemSettingRepository settingRepository;
+    private final KeycloakAdminService keycloakAdminService;
+    private final OrganizationRepository organizationRepository;
 
     @PostConstruct
     public void initDefaultSettings() {
@@ -49,6 +52,12 @@ public class SystemSettingService {
         defaults.put("wa_gateway_api_url", new String[]{"https://api.whatsapp-gateway.com/send", "SECURITY", "Base API endpoint for sending WhatsApp messages"});
         defaults.put("wa_gateway_token", new String[]{"token_secret_placeholder", "SECURITY", "Secret token/credential key for WhatsApp Notification Gateway authorization"});
         defaults.put("wa_otp_enabled", new String[]{"false", "SECURITY", "Enables global WhatsApp OTP multi-factor authentication check upon login"});
+        defaults.put("password_min_length", new String[]{"8", "SECURITY", "Minimum password length requirement"});
+        defaults.put("password_require_symbols", new String[]{"true", "SECURITY", "Require at least one special character"});
+        defaults.put("password_require_numbers", new String[]{"true", "SECURITY", "Require at least one numeric digit"});
+        defaults.put("password_require_uppercase", new String[]{"true", "SECURITY", "Require at least one uppercase letter"});
+        defaults.put("password_history_limit", new String[]{"3", "SECURITY", "Number of unique previous passwords to remember"});
+        defaults.put("password_expiry_days", new String[]{"90", "SECURITY", "Password validity duration in days"});
 
         // GIS
         defaults.put("default_map_lat", new String[]{"-6.9175", "GIS", "Default center Latitude of the GIS Map"});
@@ -84,13 +93,75 @@ public class SystemSettingService {
     @Transactional
     public List<SystemSetting> updateSettings(Map<String, String> newSettings) {
         log.info("⚙️ Updating system settings: {}", newSettings);
+        boolean passwordPoliciesChanged = false;
         for (Map.Entry<String, String> entry : newSettings.entrySet()) {
-            settingRepository.findById(entry.getKey()).ifPresent(setting -> {
-                setting.setValue(entry.getValue());
-                settingRepository.save(setting);
-            });
+            String key = entry.getKey();
+            if (key.startsWith("password_")) {
+                passwordPoliciesChanged = true;
+            }
+            SystemSetting setting = settingRepository.findById(key)
+                    .orElseGet(() -> SystemSetting.builder()
+                            .key(key)
+                            .category("SECURITY")
+                            .description("Dynamically updated system setting")
+                            .build());
+            setting.setValue(entry.getValue());
+            settingRepository.save(setting);
+        }
+        if (passwordPoliciesChanged) {
+            syncPasswordPoliciesToKeycloak();
         }
         return settingRepository.findAll();
+    }
+
+    private void syncPasswordPoliciesToKeycloak() {
+        try {
+            int minLength = Integer.parseInt(getSettingValue("password_min_length", "8"));
+            boolean requireSymbols = "true".equalsIgnoreCase(getSettingValue("password_require_symbols", "true"));
+            boolean requireNumbers = "true".equalsIgnoreCase(getSettingValue("password_require_numbers", "true"));
+            boolean requireUppercase = "true".equalsIgnoreCase(getSettingValue("password_require_uppercase", "true"));
+            int historyLimit = Integer.parseInt(getSettingValue("password_history_limit", "3"));
+            int expiryDays = Integer.parseInt(getSettingValue("password_expiry_days", "90"));
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("length(").append(minLength).append(")");
+            
+            if (requireNumbers) {
+                sb.append(" and digits(1)");
+            }
+            if (requireUppercase) {
+                sb.append(" and upperCase(1)");
+            }
+            if (requireSymbols) {
+                sb.append(" and specialChars(1)");
+            }
+            if (historyLimit > 0) {
+                sb.append(" and passwordHistory(").append(historyLimit).append(")");
+            }
+            if (expiryDays > 0) {
+                sb.append(" and forceExpiredPasswordChange(").append(expiryDays).append(")");
+            }
+
+            String policyString = sb.toString();
+            log.info("🔄 Triggering Keycloak sync for all realms with policy: {}", policyString);
+            
+            // Sync default realm
+            keycloakAdminService.syncPasswordPolicyToRealm("ftth-realm", policyString);
+            
+            // Sync all organization realms
+            try {
+                List<String> slugs = organizationRepository.findAllSlugs();
+                for (String slug : slugs) {
+                    if (!"ftth-realm".equals(slug) && !"ex-cloud-org".equals(slug) && !"system".equals(slug)) {
+                        keycloakAdminService.syncPasswordPolicyToRealm(slug, policyString);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to sync password policy to organization realms: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("Failed to compile or sync password policy: {}", e.getMessage(), e);
+        }
     }
 
     public void testSmtpConnection(String host, int port, String username, String password) throws Exception {

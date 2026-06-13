@@ -15,12 +15,43 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Map;
 
+import com.company.ftthgis.service.SystemSettingService;
+import java.util.HashMap;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final ConfigurableUserService userService;
+    private final SystemSettingService settingService;
+
+    @GetMapping("/password-policy")
+    public Map<String, Object> getPasswordPolicy() {
+        int minLength = 8;
+        try {
+            minLength = Integer.parseInt(settingService.getSettingValue("password_min_length", "8"));
+        } catch (NumberFormatException ignored) {}
+
+        int historyLimit = 3;
+        try {
+            historyLimit = Integer.parseInt(settingService.getSettingValue("password_history_limit", "3"));
+        } catch (NumberFormatException ignored) {}
+
+        int expiryDays = 90;
+        try {
+            expiryDays = Integer.parseInt(settingService.getSettingValue("password_expiry_days", "90"));
+        } catch (NumberFormatException ignored) {}
+
+        return Map.of(
+            "minLength", minLength,
+            "requireSymbols", "true".equalsIgnoreCase(settingService.getSettingValue("password_require_symbols", "true")),
+            "requireNumbers", "true".equalsIgnoreCase(settingService.getSettingValue("password_require_numbers", "true")),
+            "requireUppercase", "true".equalsIgnoreCase(settingService.getSettingValue("password_require_uppercase", "true")),
+            "historyLimit", historyLimit,
+            "expiryDays", expiryDays
+        );
+    }
 
     @GetMapping("/me")
     public UserDto me(@AuthenticationPrincipal Jwt jwt) {
