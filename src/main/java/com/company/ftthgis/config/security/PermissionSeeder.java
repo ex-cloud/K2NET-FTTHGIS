@@ -76,7 +76,12 @@ public class PermissionSeeder implements CommandLineRunner {
             
             // Tenant Organization Settings
             new PermissionData("organizations.view", "View Organization Details", "Organization"),
-            new PermissionData("organizations.update", "Update Organization Settings", "Organization")
+            new PermissionData("organizations.update", "Update Organization Settings", "Organization"),
+            new PermissionData("organizations.create", "Create Organizations", "Organization"),
+            new PermissionData("organizations.delete", "Delete Organizations", "Organization"),
+
+            // Users (invite)
+            new PermissionData("users.invite", "Invite Users", "Security")
         );
 
         // 2. Ensure all permissions exist in DB
