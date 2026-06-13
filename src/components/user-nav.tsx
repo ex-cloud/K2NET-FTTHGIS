@@ -141,8 +141,12 @@ export function UserNav() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-border" />
         
-        {/* Impersonation Back Link */}
-        {user?.roles?.includes("super_admin") && !(window.location.hostname.startsWith("system.") || window.location.hostname.startsWith("system-")) && (
+        {/* Impersonation/Admin Back Link */}
+        {user?.roles?.includes("super_admin") && 
+         (typeof window !== "undefined" && 
+          !(window.location.pathname === "/organizations" || 
+            window.location.pathname.startsWith("/organizations/") || 
+            window.location.pathname.startsWith("/system"))) && (
           <>
             <DropdownMenuGroup>
               <DropdownMenuItem 

@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { UserNav } from "../user-nav";
 import { HealthBadge } from "../health-badge";
 
-import { getBaseUrl, getLogoUrl } from "@/lib/domain";
+import { getLogoUrl, getTenantUrl } from "@/lib/domain";
 
 import Image from "next/image";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -58,7 +58,7 @@ export function SystemHeader() {
           variant="ghost"
           size="sm"
           className="hidden text-muted-foreground hover:text-foreground md:flex text-[11px] font-medium h-8 px-2 gap-2"
-          onClick={() => window.location.assign(getBaseUrl())}
+          onClick={() => window.location.assign(getTenantUrl("system"))}
         >
           <ArrowLeftRight className="h-3.5 w-3.5" />
           Switch to Tenant
