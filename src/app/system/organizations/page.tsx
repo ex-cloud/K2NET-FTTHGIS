@@ -125,10 +125,8 @@ export default function AdminOrganizationsPage() {
     }
   };
 
-  const allProjectsAcknowledged = projects.length === 0 || 
-    (projects.every(p => checkedProjects[p.id]) && deleteReason !== "");
-
-  const canDelete = orgToDelete && deleteConfirmSlug === orgToDelete.slug && allProjectsAcknowledged;
+  const allProjectsChecked = projects.length === 0 || projects.every(p => checkedProjects[p.id]);
+  const canDelete = orgToDelete && deleteConfirmSlug === orgToDelete.slug && allProjectsChecked && deleteReason !== "";
 
   const [displaySuffix, setDisplaySuffix] = useState(".ftthgis.com");
   /* eslint-disable react-hooks/set-state-in-effect */
