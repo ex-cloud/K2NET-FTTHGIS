@@ -10,6 +10,7 @@ import {
   History,
   Lock,
   Cpu,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   Tooltip,
@@ -41,6 +42,12 @@ export function AdminSidebar() {
   const isFloating = sidebarMode === "hover";
 
   const adminNavItems: NavItem[] = [
+    {
+      title: "Overview",
+      icon: LayoutDashboard,
+      href: "/overview",
+      isActive: pathname === "/overview" || pathname === "/system/overview",
+    },
     {
       title: "Organizations",
       icon: Building2,
