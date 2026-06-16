@@ -20,7 +20,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   History,
-  ExternalLink
+  ExternalLink,
+  GitBranch,
+  HardDrive,
+  Github,
+  Clock,
+  Globe,
+  Shield,
+  DatabaseBackup
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +40,41 @@ interface UserStats {
   totalUsers: number;
   activeUsers: number;
   pendingRequests: number;
+}
+
+interface DevOpsStats {
+  git: {
+    branch: string;
+    commitShort: string;
+    commitFull: string;
+    commitMessage: string;
+    commitTime: string;
+    commitAuthor: string;
+  };
+  lastMigration: {
+    version: string;
+    description: string;
+    installedOn: string;
+    success: boolean;
+  };
+  compute: {
+    tier: string;
+    cpuCores: number;
+    maxMemoryMb: number;
+    usedMemoryMb: number;
+    totalMemoryMb: number;
+    javaVersion: string;
+    osInfo: string;
+  };
+  lastBackup: {
+    lastBackupTime: string;
+    status: string;
+    success: boolean;
+  };
+  github: {
+    frontendRepo: string;
+    backendRepo: string;
+  };
 }
 
 interface ServiceNode {
@@ -56,6 +98,7 @@ export default function SystemOverviewPage() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
+  const [devopsStats, setDevopsStats] = useState<DevOpsStats | null>(null);
 
   // Load resource details simulation
   const systemResources = useMemo(() => {
@@ -90,6 +133,17 @@ export default function SystemOverviewPage() {
         if (res.ok) {
           const stats = await res.json();
           setUserStats(stats);
+        }
+
+        // 2b. Fetch DevOps stats from backend
+        const devOpsRes = await fetch("/api/v1/system/devops-stats", {
+          headers: {
+            "Authorization": `Bearer ${session.accessToken}`
+          }
+        });
+        if (devOpsRes.ok) {
+          const devOps = await devOpsRes.json();
+          setDevopsStats(devOps);
         }
       }
 
@@ -484,6 +538,211 @@ export default function SystemOverviewPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* ═══════════════════ DevOps Status Grid (Supabase Style) ═══════════════════ */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+            <h2 className="text-lg font-light text-zinc-200 tracking-tight flex items-center gap-2">
+              <Shield className="w-4.5 h-4.5 text-zinc-500" /> DevOps & Deployment Status
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            {/* Card 1: Global Status */}
+            <a href="/health" className="group block">
+              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-emerald-500/30 transition-all duration-300 cursor-pointer hover:shadow-[0_0_20px_rgba(16,185,129,0.08)] h-full">
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                    Global Status
+                    <CheckCircle2 className="w-3.5 h-3.5 text-zinc-600 group-hover:text-emerald-500 transition-colors" />
+                  </CardDescription>
+                  <CardTitle className="text-base font-light text-zinc-200 mt-1 flex items-center gap-2">
+                    <span className={cn(
+                      "w-2 h-2 rounded-full animate-pulse",
+                      globalHealthState === "operational" ? "bg-emerald-500" :
+                      globalHealthState === "warning" ? "bg-amber-500" : "bg-red-500"
+                    )} />
+                    {globalHealthState === "operational" ? "All Systems Operational" :
+                     globalHealthState === "warning" ? "Partially Degraded" :
+                     globalHealthState === "loading" ? "Checking..." : "Critical Issues"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <p className="text-[10px] text-zinc-500">
+                    {globalHealthState === "operational"
+                      ? "All core services, gateways, and database connections are healthy."
+                      : "Some services may be experiencing issues. Check infrastructure map for details."}
+                  </p>
+                </CardContent>
+              </Card>
+            </a>
+
+            {/* Card 2: Compute */}
+            <a href="/health" className="group block">
+              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-sky-500/30 transition-all duration-300 cursor-pointer hover:shadow-[0_0_20px_rgba(14,165,233,0.08)] h-full">
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                    Compute
+                    <HardDrive className="w-3.5 h-3.5 text-zinc-600 group-hover:text-sky-500 transition-colors" />
+                  </CardDescription>
+                  <CardTitle className="text-base font-light text-zinc-200 mt-1">
+                    {devopsStats ? `${devopsStats.compute.tier} — ${devopsStats.compute.cpuCores} vCPU / ${Math.round(devopsStats.compute.maxMemoryMb / 1024)} GB` : "Loading..."}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>JVM Memory Used</span>
+                      <span className="font-mono text-zinc-400">{devopsStats ? `${devopsStats.compute.usedMemoryMb} MB / ${devopsStats.compute.totalMemoryMb} MB` : "—"}</span>
+                    </div>
+                    {devopsStats && (
+                      <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-sky-500 to-sky-400 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min((devopsStats.compute.usedMemoryMb / devopsStats.compute.totalMemoryMb) * 100, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                    <p className="text-[9px] text-zinc-600 font-mono mt-0.5">
+                      {devopsStats ? `Java ${devopsStats.compute.javaVersion} • ${devopsStats.compute.osInfo}` : ""}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </a>
+
+            {/* Card 3: GitHub */}
+            <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-violet-500/30 transition-all duration-300 hover:shadow-[0_0_20px_rgba(139,92,246,0.08)] h-full group">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                  GitHub Repository
+                  <Github className="w-3.5 h-3.5 text-zinc-600 group-hover:text-violet-500 transition-colors" />
+                </CardDescription>
+                <CardTitle className="text-base font-light text-zinc-200 mt-1">
+                  Connected
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4 space-y-2">
+                <a
+                  href={devopsStats?.github?.frontendRepo || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-violet-400 transition-colors font-mono"
+                >
+                  <Globe className="w-3 h-3" /> Frontend Repo <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+                <a
+                  href={devopsStats?.github?.backendRepo || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-violet-400 transition-colors font-mono"
+                >
+                  <Server className="w-3 h-3" /> Backend Repo <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Recent Branch */}
+            <a
+              href={devopsStats?.github?.backendRepo ? `${devopsStats.github.backendRepo}/commit/${devopsStats.git.commitFull}` : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group block"
+            >
+              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-orange-500/30 transition-all duration-300 cursor-pointer hover:shadow-[0_0_20px_rgba(249,115,22,0.08)] h-full">
+                <CardHeader className="pb-2">
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                    Recent Branch
+                    <GitBranch className="w-3.5 h-3.5 text-zinc-600 group-hover:text-orange-500 transition-colors" />
+                  </CardDescription>
+                  <CardTitle className="text-base font-light text-zinc-200 mt-1 flex items-center gap-2">
+                    <Badge className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-mono px-1.5 py-0">
+                      {devopsStats?.git?.branch || "main"}
+                    </Badge>
+                    <span className="text-[10px] text-zinc-500 font-mono">@{devopsStats?.git?.commitShort || "..."}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <p className="text-[10px] text-zinc-500 truncate">
+                    {devopsStats?.git?.commitMessage || "Loading commit info..."}
+                  </p>
+                  <p className="text-[9px] text-zinc-600 font-mono mt-1">
+                    {devopsStats?.git?.commitAuthor || ""} • {devopsStats?.git?.commitTime || ""}
+                  </p>
+                </CardContent>
+              </Card>
+            </a>
+
+            {/* Card 5: Last Migration */}
+            <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-teal-500/30 transition-all duration-300 hover:shadow-[0_0_20px_rgba(20,184,166,0.08)] h-full group cursor-default">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                  Last Migration
+                  <Database className="w-3.5 h-3.5 text-zinc-600 group-hover:text-teal-500 transition-colors" />
+                </CardDescription>
+                <CardTitle className="text-base font-light text-zinc-200 mt-1 flex items-center gap-2">
+                  {devopsStats?.lastMigration?.version
+                    ? `V${devopsStats.lastMigration.version}`
+                    : "Loading..."}
+                  {devopsStats?.lastMigration?.success && (
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] px-1.5 py-0">
+                      Success
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <p className="text-[10px] text-zinc-500 truncate font-mono">
+                  {devopsStats?.lastMigration?.description || "—"}
+                </p>
+                <p className="text-[9px] text-zinc-600 font-mono mt-1">
+                  Installed: {devopsStats?.lastMigration?.installedOn || "—"}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card 6: Last Backup */}
+            <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md hover:border-rose-500/30 transition-all duration-300 hover:shadow-[0_0_20px_rgba(244,63,94,0.08)] h-full group cursor-default">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center justify-between">
+                  Last Backup
+                  <DatabaseBackup className="w-3.5 h-3.5 text-zinc-600 group-hover:text-rose-500 transition-colors" />
+                </CardDescription>
+                <CardTitle className="text-base font-light text-zinc-200 mt-1 flex items-center gap-2">
+                  {devopsStats?.lastBackup?.status === "NOT_CONFIGURED" ? (
+                    <span className="text-zinc-500">Not Configured</span>
+                  ) : devopsStats?.lastBackup?.success ? (
+                    <>
+                      <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>{devopsStats.lastBackup.lastBackupTime}</span>
+                    </>
+                  ) : (
+                    <span className="text-amber-500">Check Status</span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <div className="flex items-center gap-1.5">
+                  <Badge
+                    className={cn(
+                      "text-[9px] font-mono px-1.5 py-0 border",
+                      devopsStats?.lastBackup?.success
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : devopsStats?.lastBackup?.status === "NOT_CONFIGURED"
+                        ? "bg-zinc-800 text-zinc-500 border-white/5"
+                        : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    )}
+                  >
+                    {devopsStats?.lastBackup?.status || "UNKNOWN"}
+                  </Badge>
+                  <span className="text-[9px] text-zinc-600">PostgreSQL pg_dump</span>
+                </div>
+              </CardContent>
+            </Card>
+
+          </div>
         </div>
 
         {/* Network Infrastructure Node Map & Details */}
