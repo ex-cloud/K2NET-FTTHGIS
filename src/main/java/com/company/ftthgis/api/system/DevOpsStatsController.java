@@ -53,12 +53,18 @@ public class DevOpsStatsController {
             // 4. Determine last backup timestamp
             BackupInfo backupInfo = loadBackupInfo();
 
+            // 5. Check database settings for custom GitHub repository
+            String dbGithubSetting = getGithubRepoFromSettings();
+            String repo = parseRepoFromJson(dbGithubSetting);
+            String frontendUrl = (repo != null && !repo.isEmpty()) ? "https://github.com/" + repo : frontendRepoUrl;
+            String backendUrl = (repo != null && !repo.isEmpty()) ? "https://github.com/" + repo : backendRepoUrl;
+
             DevOpsStatsResponse response = new DevOpsStatsResponse(
                     gitInfo,
                     migrationInfo,
                     computeInfo,
                     backupInfo,
-                    new GithubInfo(frontendRepoUrl, backendRepoUrl)
+                    new GithubInfo(frontendUrl, backendUrl)
             );
 
             return ResponseEntity.ok(response);
@@ -66,6 +72,33 @@ public class DevOpsStatsController {
             log.error("Failed to load DevOps stats: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    private String getGithubRepoFromSettings() {
+        try {
+            return jdbcTemplate.queryForObject(
+                    "SELECT config_value FROM system_settings WHERE config_key = 'github_integration'",
+                    String.class
+            );
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String parseRepoFromJson(String json) {
+        if (json == null || !json.contains("\"repo\":\"")) {
+            return null;
+        }
+        try {
+            int start = json.indexOf("\"repo\":\"") + 8;
+            int end = json.indexOf("\"", start);
+            if (start > 7 && end > start) {
+                return json.substring(start, end);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return null;
     }
 
     /**

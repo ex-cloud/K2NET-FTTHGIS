@@ -91,6 +91,12 @@ app:
       allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
       allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
       allowed-headers: "*"
+  devops:
+    github:
+      frontend-repo: ${DEVOPS_GITHUB_FRONTEND_REPO:https://github.com/user/front_springboot_ftth_gis}
+      backend-repo: ${DEVOPS_GITHUB_BACKEND_REPO:https://github.com/user/back_springboot_ftth_gis}
+    backup:
+      log-path: ${DEVOPS_BACKUP_LOG_PATH:/var/backups/postgresql/last_backup.log}
 
 logging:
   level:
