@@ -51,11 +51,13 @@ jobs:
       - name: Package JAR
         run: mvn package -DskipTests
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: ftth-backend-jar
-          path: target/*.jar
+      # Temporarily disabled: Artifact storage quota exceeded
+      # Will re-enable after GitHub recalculates quota (6-12 hours)
+      # - name: Upload Build Artifact
+      #   uses: actions/upload-artifact@v5
+      #   with:
+      #     name: ftth-backend-jar
+      #     path: target/*.jar
 
   deploy-production:
     needs: build-and-test
