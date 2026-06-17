@@ -29,6 +29,7 @@ import {
   Shield,
   DatabaseBackup
 } from "lucide-react";
+import { throughputData } from "@/lib/system-overview-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -337,35 +338,7 @@ export default function SystemOverviewPage() {
     return serviceNodes.find(n => n.id === activeNode) || null;
   }, [activeNode, serviceNodes]);
 
-  // Synthetic load statistics (last 24 hours load bars)
-  const throughputData = [
-    { hour: "06:00", hits: 45 },
-    { hour: "07:00", hits: 60 },
-    { hour: "08:00", hits: 80 },
-    { hour: "09:00", hits: 110 },
-    { hour: "10:00", hits: 145 },
-    { hour: "11:00", hits: 130 },
-    { hour: "12:00", hits: 120 },
-    { hour: "13:00", hits: 140 },
-    { hour: "14:00", hits: 155 },
-    { hour: "15:00", hits: 165 },
-    { hour: "16:00", hits: 180 },
-    { hour: "17:00", hits: 175 },
-    { hour: "18:00", hits: 150 },
-    { hour: "19:00", hits: 135 },
-    { hour: "20:00", hits: 120 },
-    { hour: "21:00", hits: 115 },
-    { hour: "22:00", hits: 95 },
-    { hour: "23:00", hits: 75 },
-    { hour: "00:00", hits: 50 },
-    { hour: "01:00", hits: 35 },
-    { hour: "02:00", hits: 25 },
-    { hour: "03:00", hits: 30 },
-    { hour: "04:00", hits: 40 },
-    { hour: "05:00", hits: 45 },
-  ];
-
-  const maxHits = Math.max(...throughputData.map(d => d.hits));
+  const maxHits = Math.max(...throughputData.map((d) => d.hits));
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
   const globalHealthState = useMemo(() => {
