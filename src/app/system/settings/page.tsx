@@ -34,6 +34,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { MapCoordinatePicker } from "@/components/dashboard/map-coordinate-picker";
+import { GithubAppConfigCard } from "@/components/system-settings/GithubAppConfigCard";
 import { GithubIntegrationCard } from "@/components/system-settings/GithubIntegrationCard";
 
 export default function SystemSettingsPage() {
@@ -845,10 +846,13 @@ export default function SystemSettingsPage() {
 
           {/* INTEGRATIONS TAB */}
           <TabsContent value="integrations">
-            <GithubIntegrationCard
-              githubIntegrationValue={githubIntegrationValue}
-              updateSettings={updateSettings}
-            />
+            <div className="space-y-6">
+              <GithubIntegrationCard
+                githubIntegrationValue={githubIntegrationValue}
+                updateSettings={updateSettings}
+              />
+              <GithubAppConfigCard />
+            </div>
           </TabsContent>
 
         </Tabs>
