@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Github, ChevronDown, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { httpClient } from "@/lib/httpClient";
 
 interface GithubIntegrationCardProps {
   githubIntegrationValue?: string;
@@ -18,15 +21,11 @@ interface GithubConfig {
   repo: string;
 }
 
-const MOCK_REPOS = [
-  "ex-cloud/k2net",
-  "ex-cloud/larademo",
-  "ex-cloud/vue_test",
-  "ex-cloud/svelte-kduanet",
-  "ex-cloud/my-angular-app",
-  "ex-cloud/laravel_vuex",
-  "ex-cloud/laravel-socialite",
-];
+interface RepositoryItem {
+  fullName: string;
+  name: string;
+  htmlUrl: string;
+}
 
 const parseGithubConfig = (raw?: string): GithubConfig => {
   if (!raw) {
@@ -45,21 +44,56 @@ const parseGithubConfig = (raw?: string): GithubConfig => {
 };
 
 export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }: GithubIntegrationCardProps) {
+  const { data: session } = useSession();
   const [isGithubDropdownOpen, setIsGithubDropdownOpen] = useState(false);
   const [githubSearchQuery, setGithubSearchQuery] = useState("");
   const [connectingGithub, setConnectingGithub] = useState(false);
+  const [liveRepos, setLiveRepos] = useState<RepositoryItem[]>([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
 
   const githubConfig = useMemo(
     () => parseGithubConfig(githubIntegrationValue),
     [githubIntegrationValue]
   );
 
-  const filteredMockRepos = useMemo(
+  useEffect(() => {
+    const loadRepos = async () => {
+      if (!session?.accessToken) return;
+      setLoadingRepos(true);
+      try {
+        const baseUrl = getBackendBaseUrl();
+        const res = await httpClient(`${baseUrl}/system/github-integration/status`, {
+          token: session.accessToken,
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load GitHub repositories");
+        }
+
+        const data = await res.json();
+        const repos = Array.isArray(data?.repositories) ? data.repositories : [];
+        setLiveRepos(repos.map((repo: RepositoryItem) => ({
+          fullName: repo.fullName || repo.name,
+          name: repo.name,
+          htmlUrl: repo.htmlUrl,
+        })));
+      } catch (error) {
+        const err = error as Error;
+        toast.error(err.message || "Unable to load live GitHub repositories.");
+      } finally {
+        setLoadingRepos(false);
+      }
+    };
+
+    void loadRepos();
+  }, [session?.accessToken]);
+
+  const filteredRepos = useMemo(
     () =>
-      MOCK_REPOS.filter((repo) =>
-        repo.toLowerCase().includes(githubSearchQuery.toLowerCase())
+      liveRepos.filter((repo) =>
+        repo.fullName.toLowerCase().includes(githubSearchQuery.toLowerCase())
       ),
-    [githubSearchQuery]
+    [githubSearchQuery, liveRepos]
   );
 
   const handleConnectGithub = async () => {
@@ -178,16 +212,18 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                      {filteredMockRepos.length > 0 ? (
-                        filteredMockRepos.map((repo) => (
+                      {loadingRepos ? (
+                        <div className="p-3 text-[11px] text-zinc-600 text-center">Loading repositories…</div>
+                      ) : filteredRepos.length > 0 ? (
+                        filteredRepos.map((repo) => (
                           <button
-                            key={repo}
+                            key={repo.fullName}
                             type="button"
-                            onClick={() => handleSelectRepo(repo)}
+                            onClick={() => handleSelectRepo(repo.fullName)}
                             className="w-full text-left px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 flex items-center gap-2 transition-colors font-mono"
                           >
                             <Github className="w-3.5 h-3.5 text-zinc-500" />
-                            {repo}
+                            {repo.fullName}
                           </button>
                         ))
                       ) : (

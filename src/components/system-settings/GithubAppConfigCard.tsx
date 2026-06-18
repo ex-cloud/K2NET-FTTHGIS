@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { toast } from "sonner";
 import { Github, Loader2, RefreshCw, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -49,21 +48,49 @@ const GITHUB_APP_KEYS = [
 
 export function GithubAppConfigCard() {
   const { data: session } = useSession();
-  const { settings, refresh } = useSystemSettings();
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
+  const [initialConfigValues, setInitialConfigValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const loadGithubAppConfig = useCallback(async () => {
+    if (!session?.accessToken) {
+      setConfigValues({});
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/system/github-app`, {
+        token: session.accessToken,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to load GitHub App configuration");
+      }
+
+      const data = (await res.json()) as Array<{ key: string; value: string }>;
+      const nextValues = Object.fromEntries(
+        GITHUB_APP_KEYS.map((item) => [item.key, data.find((entry) => entry.key === item.key)?.value || ""])
+      );
+      setConfigValues(nextValues);
+      setInitialConfigValues(nextValues);
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || "Unable to load GitHub App configuration.");
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.accessToken]);
 
   useEffect(() => {
-    const defaults: Record<string, string> = {};
-    GITHUB_APP_KEYS.forEach((item) => {
-      defaults[item.key] = settings.find((setting) => setting.key === item.key)?.value || "";
-    });
-    setConfigValues(defaults);
-  }, [settings]);
+    void loadGithubAppConfig();
+  }, [loadGithubAppConfig]);
 
   const hasChanges = useMemo(
-    () => GITHUB_APP_KEYS.some((item) => configValues[item.key] !== (settings.find((setting) => setting.key === item.key)?.value || "")),
-    [configValues, settings]
+    () => GITHUB_APP_KEYS.some((item) => configValues[item.key] !== (initialConfigValues[item.key] || "")),
+    [configValues, initialConfigValues]
   );
 
   const handleChange = (key: string, value: string) => {
@@ -94,7 +121,7 @@ export function GithubAppConfigCard() {
       }
 
       toast.success("GitHub App configuration saved successfully.");
-      refresh();
+      await loadGithubAppConfig();
     } catch (error: unknown) {
       const err = error as Error;
       toast.error(err.message || "Unable to save GitHub App configuration.");
@@ -165,9 +192,9 @@ export function GithubAppConfigCard() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => refresh()}
+          onClick={() => void loadGithubAppConfig()}
           className="border-zinc-800 text-zinc-300 hover:bg-zinc-800/60 hover:text-white text-xs h-9 gap-2"
-          disabled={saving}
+          disabled={saving || loading}
         >
           <RefreshCw className="w-3.5 h-3.5" /> Reload
         </Button>
