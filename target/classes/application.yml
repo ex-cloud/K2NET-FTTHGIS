@@ -93,10 +93,25 @@ app:
       allowed-headers: "*"
   devops:
     github:
-      frontend-repo: ${DEVOPS_GITHUB_FRONTEND_REPO:https://github.com/user/front_springboot_ftth_gis}
-      backend-repo: ${DEVOPS_GITHUB_BACKEND_REPO:https://github.com/user/back_springboot_ftth_gis}
+      auth-mode: ${GITHUB_AUTH_MODE:app} # app or personal
+      app-id: ${GITHUB_APP_ID:}
+      app-private-key: ${GITHUB_APP_PRIVATE_KEY:}
+      app-private-key-path: ${GITHUB_APP_PRIVATE_KEY_PATH:}
+      webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+      webhook-url: ${GITHUB_WEBHOOK_URL:https://system-gis.k2net.id/api/github/webhook}
+      callback-url: ${GITHUB_APP_CALLBACK_URL:https://system-gis.k2net.id/auth/github/callback}
+      homepage-url: ${GITHUB_APP_HOMEPAGE_URL:https://system-gis.k2net.id}
+      organization: ${GITHUB_ORGANIZATION:ex-cloud}
+      frontend-repo: ${DEVOPS_GITHUB_FRONTEND_REPO:https://github.com/ex-cloud/front_springboot_ftth_gis}
+      backend-repo: ${DEVOPS_GITHUB_BACKEND_REPO:https://github.com/ex-cloud/back_springboot_ftth_gis}
+      default-branch: ${DEVOPS_GITHUB_DEFAULT_BRANCH:main}
+      installation-target: ${GITHUB_APP_INSTALLATION_TARGET:org}
+    cicd:
+      enable-auto-deploy: ${DEVOPS_AUTO_DEPLOY:true}
+      deployment-timeout: ${DEVOPS_DEPLOY_TIMEOUT:3600}
     backup:
       log-path: ${DEVOPS_BACKUP_LOG_PATH:/var/backups/postgresql/last_backup.log}
+      retention-days: ${DEVOPS_BACKUP_RETENTION:30}
 
 logging:
   level:
