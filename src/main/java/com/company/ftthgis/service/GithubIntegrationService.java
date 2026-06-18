@@ -6,20 +6,23 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import java.io.StringReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.Signature;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -103,17 +106,23 @@ public class GithubIntegrationService {
     }
 
     private PrivateKey parsePrivateKey(String privateKeyPem) throws Exception {
-        String normalized = privateKeyPem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .replace("-----END RSA PRIVATE KEY-----", "")
-                .replaceAll("\\s+", "");
+        try (StringReader stringReader = new StringReader(privateKeyPem);
+             PEMParser pemParser = new PEMParser(stringReader)) {
 
-        byte[] decoded = Base64.getDecoder().decode(normalized);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePrivate(keySpec);
+            Object object = pemParser.readObject();
+            if (object == null) {
+                throw new IllegalArgumentException("Private key content is empty.");
+            }
+
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+            if (object instanceof PrivateKeyInfo privateKeyInfo) {
+                return converter.getPrivateKey(privateKeyInfo);
+            }
+            if (object instanceof PEMKeyPair pemKeyPair) {
+                return converter.getKeyPair(pemKeyPair).getPrivate();
+            }
+            throw new IllegalArgumentException("Unsupported private key format.");
+        }
     }
 
     private List<InstallationResponse> listInstallations(String jwt) throws Exception {
