@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)
+                        .requestMatchers("/api/github/webhook").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("admin")
                         .requestMatchers("/uploads/**").permitAll()
