@@ -34,8 +34,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { MapCoordinatePicker } from "@/components/dashboard/map-coordinate-picker";
-import { GithubAppConfigCard } from "@/components/system-settings/GithubAppConfigCard";
-import { GithubIntegrationCard } from "@/components/system-settings/GithubIntegrationCard";
+import { GithubAppConfigCard } from "@/components/system/settings/GithubAppConfigCard";
+import { GithubIntegrationCard } from "@/components/system/settings/GithubIntegrationCard";
 
 export default function SystemSettingsPage() {
   const {
