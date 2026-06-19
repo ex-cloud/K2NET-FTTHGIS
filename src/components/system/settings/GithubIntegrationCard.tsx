@@ -84,6 +84,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
   const [connectingGithub, setConnectingGithub] = useState(false);
   const [liveRepos, setLiveRepos] = useState<RepositoryItem[]>([]);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [hasSavedConfig, setHasSavedConfig] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<GithubIntegrationStatusResponse>({ connected: false, repositories: [] });
 
   const githubConfig = useMemo(
@@ -120,9 +121,39 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
     }
   }, [session?.accessToken]);
 
+  const loadSavedConfig = useCallback(async () => {
+    if (!session?.accessToken) {
+      setHasSavedConfig(false);
+      return;
+    }
+
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/system/github-app`, {
+        token: session.accessToken,
+      });
+
+      if (!res.ok) {
+        setHasSavedConfig(false);
+        return;
+      }
+
+      const data = (await res.json()) as Array<{ key: string; value?: string }>;
+      const appId = data.find((entry) => entry.key === "github_app_id")?.value?.trim() || "";
+      const privateKey = data.find((entry) => entry.key === "github_app_private_key")?.value?.trim() || "";
+      setHasSavedConfig(Boolean(appId && privateKey));
+    } catch {
+      setHasSavedConfig(false);
+    }
+  }, [session?.accessToken]);
+
   useEffect(() => {
     void loadIntegrationStatus();
   }, [loadIntegrationStatus]);
+
+  useEffect(() => {
+    void loadSavedConfig();
+  }, [loadSavedConfig]);
 
   const filteredRepos = useMemo(
     () =>
@@ -132,10 +163,12 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
     [githubSearchQuery, liveRepos]
   );
 
-  const statusLabel = integrationStatus.connected ? "Connected" : "Not configured";
+  const statusLabel = integrationStatus.connected ? "Connected" : hasSavedConfig ? "Configured" : "Not configured";
   const statusDescription = integrationStatus.connected
     ? integrationStatus.message || "GitHub App is connected and repositories are available."
-    : integrationStatus.message || "Connect GitHub App first to sync repositories and deployment settings.";
+    : hasSavedConfig
+      ? integrationStatus.message || "GitHub App credentials are saved. The live installation still needs to be verified against GitHub."
+      : integrationStatus.message || "Connect GitHub App first to sync repositories and deployment settings.";
   const repoCount = integrationStatus.repositories.length || liveRepos.length;
   const organizationLabel = integrationStatus.organization || "Not available";
   const installationTarget = integrationStatus.installationTarget || "org";

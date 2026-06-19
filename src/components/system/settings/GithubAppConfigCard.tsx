@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Github, Loader2, RefreshCw, Save } from "lucide-react";
+import { Github, Loader2, Save, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +52,7 @@ export function GithubAppConfigCard() {
   const [initialConfigValues, setInitialConfigValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
 
   const loadGithubAppConfig = useCallback(async () => {
     if (!session?.accessToken) {
@@ -95,6 +96,39 @@ export function GithubAppConfigCard() {
 
   const handleChange = (key: string, value: string) => {
     setConfigValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true);
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/system/github-integration/validate`, {
+        method: "POST",
+        token: session?.accessToken,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          github_app_id: configValues.github_app_id || "",
+          github_app_private_key: configValues.github_app_private_key || "",
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to validate GitHub App configuration");
+      }
+
+      const data = (await res.json()) as { connected: boolean; message?: string };
+      if (data.connected) {
+        toast.success(data.message || "GitHub App configuration is valid.");
+      } else {
+        toast.error(data.message || "GitHub App configuration is invalid.");
+      }
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(err.message || "Unable to validate GitHub App configuration.");
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const handleSave = async () => {
@@ -192,11 +226,11 @@ export function GithubAppConfigCard() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => void loadGithubAppConfig()}
+          onClick={() => void handleTestConnection()}
           className="border-zinc-800 text-zinc-300 hover:bg-zinc-800/60 hover:text-white text-xs h-9 gap-2"
-          disabled={saving || loading}
+          disabled={saving || loading || testingConnection}
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Reload
+          {testingConnection ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />} Test Connection
         </Button>
         <Button
           onClick={handleSave}
