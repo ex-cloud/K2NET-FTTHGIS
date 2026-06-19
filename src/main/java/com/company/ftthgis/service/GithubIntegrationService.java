@@ -45,19 +45,23 @@ public class GithubIntegrationService {
     private String defaultOrganization;
 
     public GithubIntegrationStatus getIntegrationStatus() {
-        String appId = githubAppConfigService.getConfig("github_app_id")
-                .map(GithubAppConfig::getValue)
-                .filter(value -> !value.isBlank())
-                .orElse(null);
+        GithubValidationResult validation = validateConfiguration(
+                githubAppConfigService.getConfig("github_app_id")
+                        .map(GithubAppConfig::getValue)
+                        .filter(value -> !value.isBlank())
+                        .orElse(null),
+                githubAppConfigService.getConfig("github_app_private_key")
+                        .map(GithubAppConfig::getValue)
+                        .filter(value -> !value.isBlank())
+                        .orElse(null)
+        );
 
-        String privateKey = githubAppConfigService.getConfig("github_app_private_key")
-                .map(GithubAppConfig::getValue)
-                .filter(value -> !value.isBlank())
-                .orElse(null);
-
-        if (appId == null || privateKey == null) {
-            return GithubIntegrationStatus.disconnected("GitHub App credentials are not configured yet.");
+        if (!validation.connected()) {
+            return GithubIntegrationStatus.disconnected(validation.message());
         }
+
+        String appId = validation.appId();
+        String privateKey = validation.privateKey();
 
         try {
             String jwt = generateJwt(appId, privateKey);
@@ -83,6 +87,23 @@ public class GithubIntegrationService {
         } catch (Exception e) {
             log.error("Failed to fetch live GitHub integration status", e);
             return GithubIntegrationStatus.disconnected("Unable to reach GitHub App installation: " + e.getMessage());
+        }
+    }
+
+    public GithubValidationResult validateConfiguration(String appId, String privateKey) {
+        if (appId == null || appId.isBlank()) {
+            return new GithubValidationResult(false, null, null, "GitHub App ID is not configured yet.");
+        }
+
+        if (privateKey == null || privateKey.isBlank()) {
+            return new GithubValidationResult(false, appId, null, "GitHub App private key is not configured yet.");
+        }
+
+        try {
+            parsePrivateKey(privateKey);
+            return new GithubValidationResult(true, appId, privateKey, "GitHub App credentials are present and syntactically valid.");
+        } catch (Exception e) {
+            return new GithubValidationResult(false, appId, privateKey, "GitHub App private key could not be parsed: " + e.getMessage());
         }
     }
 
@@ -190,6 +211,14 @@ public class GithubIntegrationService {
             }
         }
         return repositories;
+    }
+
+    public record GithubValidationResult(
+            boolean connected,
+            String appId,
+            String privateKey,
+            String message
+    ) {
     }
 
     public record GithubIntegrationStatus(

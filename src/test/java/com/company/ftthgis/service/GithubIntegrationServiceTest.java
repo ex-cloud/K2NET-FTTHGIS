@@ -6,9 +6,21 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Method;
 import java.security.PrivateKey;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GithubIntegrationServiceTest {
+
+    @Test
+    void validateConfiguration_returnsDisconnectedWhenRequiredValuesMissing() {
+        GithubIntegrationService service = new GithubIntegrationService(null, new ObjectMapper());
+
+        GithubIntegrationService.GithubValidationResult result = service.validateConfiguration("", "");
+
+        assertFalse(result.connected());
+        assertTrue(result.message().contains("not configured"));
+    }
 
     @Test
     void parsePrivateKey_acceptsPkcs1Pem() throws Exception {
