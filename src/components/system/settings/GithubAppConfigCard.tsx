@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Github, Loader2, Save, Sparkles } from "lucide-react";
+import { Github, Loader2, Save, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
@@ -53,6 +54,7 @@ export function GithubAppConfigCard() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
 
   const loadGithubAppConfig = useCallback(async () => {
     if (!session?.accessToken) {
@@ -190,21 +192,45 @@ export function GithubAppConfigCard() {
           {GITHUB_APP_KEYS.map((item) => (
             <div key={item.key} className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor={item.key} className="text-zinc-200 text-xs font-medium">
-                  {item.label}
-                </Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={item.key} className="text-zinc-200 text-xs font-medium">
+                    {item.label}
+                  </Label>
+                  {item.key === "github_app_private_key" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowPrivateKey((prev) => !prev)}
+                      className="w-5 h-5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-sm"
+                    >
+                      {showPrivateKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    </Button>
+                  )}
+                </div>
                 <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
                   {item.key}
                 </span>
               </div>
-              <Input
-                id={item.key}
-                type={item.key === "github_app_private_key" ? "password" : "text"}
-                value={configValues[item.key] || ""}
-                onChange={(event) => handleChange(item.key, event.target.value)}
-                placeholder={item.placeholder}
-                className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
-              />
+              {item.key === "github_app_private_key" && showPrivateKey ? (
+                <Textarea
+                  id={item.key}
+                  rows={6}
+                  value={configValues[item.key] || ""}
+                  onChange={(event) => handleChange(item.key, event.target.value)}
+                  placeholder={item.placeholder}
+                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs font-mono focus:border-emerald-500/50 focus:ring-emerald-500/50 resize-y"
+                />
+              ) : (
+                <Input
+                  id={item.key}
+                  type={item.key === "github_app_private_key" ? "password" : "text"}
+                  value={configValues[item.key] || ""}
+                  onChange={(event) => handleChange(item.key, event.target.value)}
+                  placeholder={item.placeholder}
+                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                />
+              )}
               <p className="text-[11px] text-zinc-500">{item.description}</p>
             </div>
           ))}
