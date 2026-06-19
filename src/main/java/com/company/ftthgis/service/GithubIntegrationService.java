@@ -127,6 +127,7 @@ public class GithubIntegrationService {
     }
 
     private PrivateKey parsePrivateKey(String privateKeyPem) throws Exception {
+        privateKeyPem = sanitizePrivateKeyPem(privateKeyPem);
         try (StringReader stringReader = new StringReader(privateKeyPem);
              PEMParser pemParser = new PEMParser(stringReader)) {
 
@@ -144,6 +145,43 @@ public class GithubIntegrationService {
             }
             throw new IllegalArgumentException("Unsupported private key format.");
         }
+    }
+
+    private String sanitizePrivateKeyPem(String pem) {
+        if (pem == null || pem.isBlank()) {
+            return pem;
+        }
+
+        String trimmed = pem.trim();
+        String beginHeader = "-----BEGIN RSA PRIVATE KEY-----";
+        String endHeader = "-----END RSA PRIVATE KEY-----";
+        String beginHeaderPkcs8 = "-----BEGIN PRIVATE KEY-----";
+        String endHeaderPkcs8 = "-----END PRIVATE KEY-----";
+
+        String activeBeginHeader = null;
+        String activeEndHeader = null;
+
+        if (trimmed.contains(beginHeader) && trimmed.contains(endHeader)) {
+            activeBeginHeader = beginHeader;
+            activeEndHeader = endHeader;
+        } else if (trimmed.contains(beginHeaderPkcs8) && trimmed.contains(endHeaderPkcs8)) {
+            activeBeginHeader = beginHeaderPkcs8;
+            activeEndHeader = endHeaderPkcs8;
+        }
+
+        if (activeBeginHeader != null) {
+            int startIndex = trimmed.indexOf(activeBeginHeader) + activeBeginHeader.length();
+            int endIndex = trimmed.indexOf(activeEndHeader);
+            if (endIndex > startIndex) {
+                String base64Content = trimmed.substring(startIndex, endIndex);
+                // Remove all whitespace (including spaces, newlines, tabs)
+                base64Content = base64Content.replaceAll("\\s+", "");
+                // Reconstruct with standard newlines
+                return activeBeginHeader + "\n" + base64Content + "\n" + activeEndHeader;
+            }
+        }
+
+        return trimmed;
     }
 
     private List<InstallationResponse> listInstallations(String jwt) throws Exception {

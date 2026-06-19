@@ -43,4 +43,26 @@ class GithubIntegrationServiceTest {
 
         assertNotNull(key);
     }
+
+    @Test
+    void parsePrivateKey_acceptsPkcs1PemWithSpaces() throws Exception {
+        GithubIntegrationService service = new GithubIntegrationService(null, new ObjectMapper());
+
+        String pem = "-----BEGIN RSA PRIVATE KEY----- " +
+                "MIIBOwIBAAJBAM/Qs4NalIwhbRuxYFKOzZ4ePcWXoLVfwJ5KQjBbHuWucTBMvwcu " +
+                "AEc4VXa2Hi76DiBARvIW75fzNSSjZ0P4DeECAwEAAQJBALR+hrvKe4SuL47C428x " +
+                "GsN/bpVkma+OZ8TTqGNJcS94XtmC6bb8bWQsH8aIpfhjaPWoq+VOogVAQVFMA8Vx " +
+                "MPUCIQD13DHbYNhcTfRauG9sMWLe762hze7H9b3O2zipdXQ08wIhANhi04gRgiZz " +
+                "i3HBsmJ9IeJtP+8sjkSpJ+sJLsbG7rbbAiBslw7mSEYHrt6oWyHLdZynvtC/0IcQ " +
+                "hneJL8Y9AoWLBQIhAIM2CgbsdvtR/TCRv9WxAycGEEq7vdksqaQAAXlPj9kZAiBn " +
+                "sTXFQy/T2euv13eQCLGvvuY+Es0F3ga22YZtnQcGrg== " +
+                "-----END RSA PRIVATE KEY-----";
+
+        Method method = GithubIntegrationService.class.getDeclaredMethod("parsePrivateKey", String.class);
+        method.setAccessible(true);
+
+        PrivateKey key = (PrivateKey) method.invoke(service, pem);
+
+        assertNotNull(key);
+    }
 }
