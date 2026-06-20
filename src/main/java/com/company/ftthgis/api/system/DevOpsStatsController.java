@@ -196,28 +196,22 @@ public class DevOpsStatsController {
      */
     private BackupInfo loadBackupInfo() {
         try {
-            java.io.File backupFile = new java.io.File(backupLogPath);
-            if (backupFile.exists() && backupFile.canRead()) {
-                // Read last modified time of the backup log file
-                long lastModified = backupFile.lastModified();
-                LocalDateTime lastBackupTime = LocalDateTime.ofInstant(
-                        java.time.Instant.ofEpochMilli(lastModified),
-                        java.time.ZoneId.systemDefault()
-                );
-
-                // Read the first line of the file for status
-                java.util.List<String> lines = java.nio.file.Files.readAllLines(backupFile.toPath());
-                String statusLine = lines.isEmpty() ? "OK" : lines.get(0).trim();
-                boolean success = !statusLine.toLowerCase().contains("error") && !statusLine.toLowerCase().contains("fail");
-
-                return new BackupInfo(
-                        lastBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                        success ? "SUCCESS" : "FAILED",
-                        success
-                );
-            }
+            return jdbcTemplate.queryForObject(
+                    "SELECT backup_time, status, success FROM database_backups ORDER BY id DESC LIMIT 1",
+                    (rs, rowNum) -> {
+                        java.sql.Timestamp ts = rs.getTimestamp("backup_time");
+                        String timeStr = ts != null 
+                                ? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                                : "N/A";
+                        return new BackupInfo(
+                                timeStr,
+                                rs.getString("status"),
+                                rs.getBoolean("success")
+                        );
+                    }
+            );
         } catch (Exception e) {
-            log.warn("Could not read backup log at {}: {}", backupLogPath, e.getMessage());
+            log.debug("No backup record found in database_backups or table does not exist: {}", e.getMessage());
         }
 
         // Fallback: No backup log found – return placeholder
