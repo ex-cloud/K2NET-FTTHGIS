@@ -3,7 +3,7 @@
 import fs from "fs";
 import { auth } from "@/auth";
 
-let lastMetricsCache: Record<string, { count: number; time: number; throughput: number }> = {};
+const lastMetricsCache: Record<string, { count: number; time: number; throughput: number }> = {};
 
 function getGatewayToken(): string {
   // 1. Check environment variable first (Docker / production)
@@ -129,7 +129,7 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
     ? new URL(process.env.NOTIFICATION_GATEWAY_URL).hostname 
     : "host.docker.internal";
 
-  const updatedServices = await Promise.all((data.services || []).map(async (svc: any) => {
+  const updatedServices = await Promise.all((data.services || []).map(async (svc: GatewayServiceStatus) => {
     if (!svc.active) {
       return { ...svc, latency: 0, throughput: 0 };
     }
