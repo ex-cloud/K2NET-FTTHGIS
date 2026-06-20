@@ -1,0 +1,27 @@
+# Environment Variables and Secrets
+.env
+*.env
+
+# Compile Binaries
+storage-gateway/storage-gateway
+map-gateway/map-gateway
+notification-gateway/notification-gateway
+payment-gateway/payment-gateway
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Development / OS Files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
