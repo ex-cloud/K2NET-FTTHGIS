@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"gateways/shared/logger"
@@ -27,6 +29,16 @@ import (
 	"github.com/chai2010/webp"
 	"go.uber.org/zap"
 )
+
+type StorageStats struct {
+	TotalFiles          int64 `json:"total_files"`
+	TotalOriginalSize   int64 `json:"total_original_size"`
+	TotalCompressedSize int64 `json:"total_compressed_size"`
+	FailureCount        int64 `json:"failure_count"`
+	SuccessCount        int64 `json:"success_count"`
+}
+
+var statsMutex sync.Mutex
 
 type StorageService struct {
 	cfg        config.Config
@@ -62,20 +74,42 @@ func NewStorageService(cfg config.Config) *StorageService {
 }
 
 func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filename string, size int64, mimeType string, targetBucket string) (string, error) {
+	statsMutex.Lock()
+	stats, _ := s.readStats()
+	stats.TotalFiles++
+	stats.TotalOriginalSize += size
+	s.writeStats(stats)
+	statsMutex.Unlock()
+
 	// Batasan ukuran: 10MB untuk gambar, 150MB untuk file lainnya
 	isImage := strings.HasPrefix(mimeType, "image/jpeg") || strings.HasPrefix(mimeType, "image/png")
 	if isImage {
 		if size > 10*1024*1024 {
+			statsMutex.Lock()
+			stats, _ = s.readStats()
+			stats.FailureCount++
+			s.writeStats(stats)
+			statsMutex.Unlock()
 			return "", errors.New("image size exceeds maximum limit of 10MB")
 		}
 	} else {
 		if size > 150*1024*1024 {
+			statsMutex.Lock()
+			stats, _ = s.readStats()
+			stats.FailureCount++
+			s.writeStats(stats)
+			statsMutex.Unlock()
 			return "", errors.New("file size exceeds maximum limit of 150MB")
 		}
 	}
 
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, file); err != nil {
+		statsMutex.Lock()
+		stats, _ = s.readStats()
+		stats.FailureCount++
+		s.writeStats(stats)
+		statsMutex.Unlock()
 		return "", err
 	}
 	rawBytes := buf.Bytes()
@@ -102,6 +136,11 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 			logger.Info(ctx, "Processing image compression", zap.String("format", format), zap.Int64("original_size", size))
 			var webpBuf bytes.Buffer
 			if err := webp.Encode(&webpBuf, img, &webp.Options{Quality: 75}); err != nil {
+				statsMutex.Lock()
+				stats, _ = s.readStats()
+				stats.FailureCount++
+				s.writeStats(stats)
+				statsMutex.Unlock()
 				return "", fmt.Errorf("failed to compress to WebP: %w", err)
 			}
 			uploadBytes = webpBuf.Bytes()
@@ -109,6 +148,11 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 
 			bytesSeed := make([]byte, 16)
 			if _, err := rand.Read(bytesSeed); err != nil {
+				statsMutex.Lock()
+				stats, _ = s.readStats()
+				stats.FailureCount++
+				s.writeStats(stats)
+				statsMutex.Unlock()
 				return "", err
 			}
 			finalKey = hex.EncodeToString(bytesSeed) + ".webp"
@@ -131,13 +175,31 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 
 		cleanedPath := filepath.Clean(outPath)
 		if !strings.HasPrefix(cleanedPath, "/opt/project5/backups/") {
+			statsMutex.Lock()
+			stats, _ = s.readStats()
+			stats.FailureCount++
+			s.writeStats(stats)
+			statsMutex.Unlock()
 			return "", errors.New("directory traversal attempt blocked")
 		}
 
 		err := os.WriteFile(cleanedPath, uploadBytes, 0600)
 		if err != nil {
+			statsMutex.Lock()
+			stats, _ = s.readStats()
+			stats.FailureCount++
+			s.writeStats(stats)
+			statsMutex.Unlock()
 			return "", err
 		}
+
+		statsMutex.Lock()
+		stats, _ = s.readStats()
+		stats.TotalCompressedSize += int64(len(uploadBytes))
+		stats.SuccessCount++
+		s.writeStats(stats)
+		statsMutex.Unlock()
+
 		return "file://localhost" + cleanedPath, nil
 	}
 
@@ -149,8 +211,20 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 		ContentType:   aws.String(finalMimeType),
 	})
 	if err != nil {
+		statsMutex.Lock()
+		stats, _ = s.readStats()
+		stats.FailureCount++
+		s.writeStats(stats)
+		statsMutex.Unlock()
 		return "", err
 	}
+
+	statsMutex.Lock()
+	stats, _ = s.readStats()
+	stats.TotalCompressedSize += int64(len(uploadBytes))
+	stats.SuccessCount++
+	s.writeStats(stats)
+	statsMutex.Unlock()
 
 	publicURL := fmt.Sprintf("%s/%s/%s", s.cfg.AWSEndpoint, bucket, finalKey)
 	return publicURL, nil
@@ -171,4 +245,80 @@ func (s *StorageService) GeneratePresignedURL(ctx context.Context, bucket string
 		return "", err
 	}
 	return urlStr, nil
+}
+
+func (s *StorageService) getStatsFilePath() string {
+	return "storage-stats.json"
+}
+
+func (s *StorageService) readStats() (StorageStats, error) {
+	filePath := s.getStatsFilePath()
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return s.initializeStats()
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return StorageStats{}, err
+	}
+
+	var stats StorageStats
+	err = json.Unmarshal(data, &stats)
+	return stats, err
+}
+
+func (s *StorageService) writeStats(stats StorageStats) error {
+	data, err := json.MarshalIndent(stats, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(s.getStatsFilePath(), data, 0644)
+}
+
+func (s *StorageService) initializeStats() (StorageStats, error) {
+	stats := StorageStats{}
+	if s.localStore {
+		files, err := os.ReadDir("/opt/project5/backups")
+		if err == nil {
+			for _, file := range files {
+				if !file.IsDir() {
+					info, err := file.Info()
+					if err == nil {
+						stats.TotalFiles++
+						stats.SuccessCount++
+						stats.TotalOriginalSize += info.Size()
+						stats.TotalCompressedSize += info.Size()
+					}
+				}
+			}
+		}
+		s.writeStats(stats)
+		return stats, nil
+	}
+
+	buckets := []string{"tenant-assets", "public-contents", "db-backups"}
+	for _, b := range buckets {
+		err := s.s3Client.ListObjectsPagesWithContext(context.Background(), &s3.ListObjectsInput{
+			Bucket: aws.String(b),
+		}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
+			for _, obj := range page.Contents {
+				stats.TotalFiles++
+				stats.SuccessCount++
+				stats.TotalOriginalSize += aws.Int64Value(obj.Size)
+				stats.TotalCompressedSize += aws.Int64Value(obj.Size)
+			}
+			return true
+		})
+		if err != nil {
+			continue
+		}
+	}
+	s.writeStats(stats)
+	return stats, nil
+}
+
+func (s *StorageService) GetStats(ctx context.Context) (StorageStats, error) {
+	statsMutex.Lock()
+	defer statsMutex.Unlock()
+	return s.readStats()
 }

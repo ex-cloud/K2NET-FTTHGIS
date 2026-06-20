@@ -108,6 +108,38 @@ func main() {
 				"url": url,
 			})
 		})
+
+		// Endpoint untuk mengambil statistik penyimpanan secara real-time
+		api.GET("/stats", func(c *gin.Context) {
+			stats, err := storageService.GetStats(c.Request.Context())
+			if err != nil {
+				logger.Error(c.Request.Context(), "Failed to get storage stats", zap.Error(err))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			// Hitung persentase penghematan ruang
+			var spaceSavedPercent float64
+			if stats.TotalOriginalSize > 0 {
+				spaceSavedPercent = float64(stats.TotalOriginalSize-stats.TotalCompressedSize) / float64(stats.TotalOriginalSize) * 100
+			}
+
+			var failureRate float64
+			totalOps := stats.SuccessCount + stats.FailureCount
+			if totalOps > 0 {
+				failureRate = float64(stats.FailureCount) / float64(totalOps) * 100
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"total_files":          stats.TotalFiles,
+				"total_original_size":  stats.TotalOriginalSize,
+				"total_compressed_size": stats.TotalCompressedSize,
+				"success_count":        stats.SuccessCount,
+				"failure_count":        stats.FailureCount,
+				"space_saved_percent":  spaceSavedPercent,
+				"failure_rate_percent": failureRate,
+			})
+		})
 	}
 
 	srv := &http.Server{

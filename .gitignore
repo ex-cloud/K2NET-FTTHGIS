@@ -25,3 +25,7 @@ dist/
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Runtime Files
+storage-gateway/storage-stats.json
+
