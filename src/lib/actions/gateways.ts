@@ -197,3 +197,33 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
     services: updatedServices,
   };
 }
+
+export type StorageStats = {
+  total_files: number;
+  total_original_size: number;
+  total_compressed_size: number;
+  success_count: number;
+  failure_count: number;
+  space_saved_percent: number;
+  failure_rate_percent: number;
+};
+
+export async function getStorageStats(): Promise<StorageStats> {
+  await verifySuperAdmin();
+
+  const token = getGatewayToken();
+  const storageGatewayUrl = process.env.STORAGE_GATEWAY_URL || "http://127.0.0.1:5004";
+
+  const res = await fetch(`${storageGatewayUrl}/api/v1/stats`, {
+    headers: {
+      "X-Gateway-Token": token,
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch storage stats: ${res.statusText}`);
+  }
+
+  return res.json();
+}
