@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -41,19 +42,32 @@ func main() {
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
-		router.MaxMultipartMemory = 10 << 20 
+		router.MaxMultipartMemory = 150 << 20 // Max size 150MB untuk database backup
 
 		api.POST("/upload", func(c *gin.Context) {
-			file, header, err := c.Request.FormFile("image")
+			// Dukung form field 'file' atau 'image' (Spring Boot legacy)
+			file, header, err := c.Request.FormFile("file")
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Multipart field 'image' is required"})
-				return
+				// Fallback ke 'image'
+				file, header, err = c.Request.FormFile("image")
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Multipart field 'file' or 'image' is required"})
+					return
+				}
 			}
 			defer file.Close()
 
-			url, err := storageService.UploadImage(c.Request.Context(), file, header.Filename, header.Size)
+			// Baca target bucket dinamis
+			bucket := c.DefaultPostForm("bucket", "")
+			if bucket == "" {
+				bucket = c.DefaultQuery("bucket", "")
+			}
+
+			contentType := header.Header.Get("Content-Type")
+
+			url, err := storageService.UploadFile(c.Request.Context(), file, header.Filename, header.Size, contentType, bucket)
 			if err != nil {
-				logger.Error(c.Request.Context(), "Image upload failed", zap.Error(err), zap.String("filename", header.Filename))
+				logger.Error(c.Request.Context(), "File upload failed", zap.Error(err), zap.String("filename", header.Filename))
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
@@ -61,6 +75,37 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "Success",
 				"url":    url,
+				"name":   header.Filename,
+				"size":   header.Size,
+			})
+		})
+
+		api.GET("/presigned-url", func(c *gin.Context) {
+			bucket := c.Query("bucket")
+			key := c.Query("key")
+			expiryStr := c.Query("expiry_minutes")
+
+			if bucket == "" || key == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Params 'bucket' and 'key' are required"})
+				return
+			}
+
+			expiryMinutes := 15
+			if expiryStr != "" {
+				if val, err := strconv.Atoi(expiryStr); err == nil {
+					expiryMinutes = val
+				}
+			}
+
+			url, err := storageService.GeneratePresignedURL(c.Request.Context(), bucket, key, time.Duration(expiryMinutes)*time.Minute)
+			if err != nil {
+				logger.Error(c.Request.Context(), "Failed to generate presigned URL", zap.Error(err))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"url": url,
 			})
 		})
 	}
