@@ -3,6 +3,8 @@
 import fs from "fs";
 import { auth } from "@/auth";
 
+let lastMetricsCache: Record<string, { count: number; time: number; throughput: number }> = {};
+
 function getGatewayToken(): string {
   // 1. Check environment variable first (Docker / production)
   if (process.env.GATEWAY_TOKEN) {
@@ -57,6 +59,8 @@ export type GatewayServiceStatus = {
   port: number;
   active: boolean;
   status: string;
+  latency?: number;
+  throughput?: number;
 };
 
 export type StatusResponse = {
@@ -118,5 +122,78 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
     throw new Error(`Failed to fetch status from gateway: ${res.statusText}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  
+  // Measure latency and parse throughput for each active service
+  const host = process.env.NOTIFICATION_GATEWAY_URL 
+    ? new URL(process.env.NOTIFICATION_GATEWAY_URL).hostname 
+    : "host.docker.internal";
+
+  const updatedServices = await Promise.all((data.services || []).map(async (svc: any) => {
+    if (!svc.active) {
+      return { ...svc, latency: 0, throughput: 0 };
+    }
+
+    const url = `http://${host}:${svc.port}/metrics`;
+    const start = Date.now();
+    try {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 800); // 800ms timeout
+      
+      const pingRes = await fetch(url, {
+        signal: controller.signal,
+        next: { revalidate: 0 },
+      });
+      clearTimeout(id);
+      
+      const latency = Date.now() - start;
+      
+      if (!pingRes.ok) {
+        return { ...svc, latency, throughput: 0 };
+      }
+
+      const text = await pingRes.text();
+      // Parse counter gateway_http_requests_total
+      let totalRequests = 0;
+      const lines = text.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("gateway_http_requests_total")) {
+          const parts = line.trim().split(" ");
+          const value = parseFloat(parts[parts.length - 1]);
+          if (!isNaN(value)) {
+            totalRequests += value;
+          }
+        }
+      }
+
+      // Calculate throughput (req/min) based on difference with lastMetricsCache
+      const now = Date.now();
+      const prev = lastMetricsCache[svc.name];
+      let throughput = 0;
+      
+      if (prev && now > prev.time) {
+        const timeDiffMin = (now - prev.time) / 60000;
+        if (timeDiffMin > 0 && totalRequests >= prev.count) {
+          throughput = Math.round((totalRequests - prev.count) / timeDiffMin);
+        }
+      }
+      
+      // Update cache
+      lastMetricsCache[svc.name] = {
+        count: totalRequests,
+        time: now,
+        throughput: throughput,
+      };
+
+      return { ...svc, latency, throughput };
+    } catch (err) {
+      console.warn(`[Gateway Latency Check] Failed for ${svc.name}:`, err);
+      return { ...svc, latency: 0, throughput: 0 };
+    }
+  }));
+
+  return {
+    status: "ok",
+    services: updatedServices,
+  };
 }

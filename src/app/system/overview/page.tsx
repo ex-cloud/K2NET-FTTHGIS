@@ -67,6 +67,7 @@ export default function SystemOverviewPage() {
     diskUsage: 40,
     postgresConns: 8,
     redisHitRatio: 95.0,
+    redisKeysCached: 0,
     postgresStatus: "healthy",
     redisStatus: "healthy",
     keycloakStatus: "healthy",
@@ -147,6 +148,7 @@ export default function SystemOverviewPage() {
               diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
               postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
               redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
+              redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
               postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
               redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
               keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
@@ -207,6 +209,7 @@ export default function SystemOverviewPage() {
               diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
               postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
               redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
+              redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
               postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
               redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
               keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
@@ -215,6 +218,14 @@ export default function SystemOverviewPage() {
           }
         })
         .catch((err) => console.debug("Silent overview metrics poll failed:", err));
+
+      getGatewayStatus()
+        .then((gwRes) => {
+          if (gwRes.status === "ok") {
+            setGateways(gwRes.services);
+          }
+        })
+        .catch((err) => console.debug("Silent gateway status poll failed:", err));
     }, 15000);
 
     return () => clearInterval(interval);
@@ -304,7 +315,7 @@ export default function SystemOverviewPage() {
         details: "Distributed cache layer to lower database overhead, store maps geocoding data, and session timeouts.",
         metrics: {
           "Hit Ratio": `${systemResources.redisCacheHit}%`,
-          "Keys Cached": "1,424 active",
+          "Keys Cached": `${systemHealth.redisKeysCached} active`,
           "Eviction Policy": "volatile-lru",
         },
         x: 6,
@@ -318,8 +329,8 @@ export default function SystemOverviewPage() {
         port: 5001,
         details: "Handles microservice triggers for SMS, Email (Brevo), and WhatsApp messages.",
         metrics: {
-          Throughput: "12 req/min",
-          Latency: "18ms",
+          Throughput: `${gateways.find((g) => g.name === "ftth-notification-gateway")?.throughput ?? 0} req/min`,
+          Latency: `${gateways.find((g) => g.name === "ftth-notification-gateway")?.latency ?? 0}ms`,
           "Provider status": "Twilio & Brevo OK",
         },
         x: 1,
@@ -333,8 +344,8 @@ export default function SystemOverviewPage() {
         port: 5002,
         details: "Orchestrates tenant subscriptions, plan invoices, and webhooks processing.",
         metrics: {
-          Throughput: "4 req/min",
-          Latency: "240ms",
+          Throughput: `${gateways.find((g) => g.name === "ftth-payment-gateway")?.throughput ?? 0} req/min`,
+          Latency: `${gateways.find((g) => g.name === "ftth-payment-gateway")?.latency ?? 0}ms`,
           Integrations: "Xendit SDK OK",
         },
         x: 4,
@@ -348,8 +359,8 @@ export default function SystemOverviewPage() {
         port: 5003,
         details: "Direct vector maps provider linking database geospatial assets with ODP/ODC layouts.",
         metrics: {
-          Throughput: "145 req/min",
-          Latency: "12ms",
+          Throughput: `${gateways.find((g) => g.name === "ftth-map-gateway")?.throughput ?? 0} req/min`,
+          Latency: `${gateways.find((g) => g.name === "ftth-map-gateway")?.latency ?? 0}ms`,
           "Basemap Cache": "94.2% hit",
         },
         x: 8,
@@ -364,8 +375,8 @@ export default function SystemOverviewPage() {
         details: "Serves tenant assets with automatic WebP dynamic image compression on fly.",
         metrics: {
           Optimization: "68.5% Saved",
-          "Disk Status": "Optimal",
-          Throughput: "8 files/min",
+          Latency: `${gateways.find((g) => g.name === "ftth-storage-gateway")?.latency ?? 0}ms`,
+          Throughput: `${gateways.find((g) => g.name === "ftth-storage-gateway")?.throughput ?? 0} req/min`,
         },
         x: 11,
         y: 7,
@@ -373,13 +384,20 @@ export default function SystemOverviewPage() {
     ];
 
     return nodes;
-  }, [allGatewaysHealthy, gateways, totalOrgs, systemResources, systemHealth.keycloakStatus, systemHealth.postgresStatus, systemHealth.redisStatus]);
+  }, [allGatewaysHealthy, gateways, totalOrgs, systemResources, systemHealth.keycloakStatus, systemHealth.postgresStatus, systemHealth.redisStatus, systemHealth.redisKeysCached]);
 
   const activeNodeData = useMemo(() => serviceNodes.find((node) => node.id === activeNode) || null, [activeNode, serviceNodes]);
 
   const displayThroughput = systemHealth.throughput.length > 0 ? systemHealth.throughput : throughputData;
   const maxHits = Math.max(...displayThroughput.map((d) => d.hits), 1);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  const avgLatency = useMemo(() => {
+    const activeGws = gateways.filter((g) => g.active && g.latency !== undefined);
+    if (activeGws.length === 0) return "0ms";
+    const sum = activeGws.reduce((acc, g) => acc + (g.latency || 0), 0);
+    return `${Math.round(sum / activeGws.length)}ms`;
+  }, [gateways]);
 
   const globalHealthState = useMemo(() => {
     if (loadingStats) return "loading";
@@ -492,7 +510,7 @@ export default function SystemOverviewPage() {
                 <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-emerald-500" : "text-amber-500")}>{allGatewaysHealthy ? "Healthy" : "Degraded"}</span>
               </span>
             }
-            helper={<span>Avg Latency: 42ms</span>}
+            helper={<span>Avg Latency: {loadingStats ? "..." : avgLatency}</span>}
             footer="Service routing"
             icon={Zap}
             footerLinkHref="/gateways/overview"
