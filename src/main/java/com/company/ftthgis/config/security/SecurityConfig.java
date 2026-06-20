@@ -40,11 +40,13 @@ public class SecurityConfig {
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
-            com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter) throws Exception {
+            com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
+            com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(apiRequestLoggingFilter, IpBlockingFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(ipBlockingFilter, RateLimitingFilter.class)
                 .addFilterAfter(organizationStatusFilter,

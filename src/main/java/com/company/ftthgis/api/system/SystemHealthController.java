@@ -212,27 +212,35 @@ public class SystemHealthController {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:00");
         
-        // Generate pseudo-random variations that are deterministic per hour to prevent erratic graph shifts
-        int baseSeed = now.getDayOfYear() * 24 + now.getHour();
-        Random random = new Random(baseSeed);
-        
+        // Query request log counts per hour for the past 24 hours
+        Map<String, Integer> dbHits = new HashMap<>();
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT to_char(created_at, 'HH24:00') as hr, count(*) as hits " +
+                    "FROM api_request_logs " +
+                    "WHERE created_at >= NOW() - INTERVAL '24 hours' " +
+                    "GROUP BY hr"
+            );
+            for (Map<String, Object> row : rows) {
+                String hr = (String) row.get("hr");
+                Number hits = (Number) row.get("hits");
+                if (hr != null && hits != null) {
+                    dbHits.put(hr, hits.intValue());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to query api_request_logs from database: {}", e.getMessage());
+        }
+
+        // Fill in the 24-hour sequence (mapping to 0 if no requests were logged for that hour)
         for (int i = 23; i >= 0; i--) {
             LocalDateTime time = now.minusHours(i);
             String hourStr = time.format(formatter);
-            
-            int hourOfDay = time.getHour();
-            int baseHits;
-            if (hourOfDay >= 8 && hourOfDay <= 18) {
-                baseHits = 100 + random.nextInt(80); // Day peak
-            } else if (hourOfDay >= 23 || hourOfDay <= 5) {
-                baseHits = 20 + random.nextInt(30);  // Night valley
-            } else {
-                baseHits = 50 + random.nextInt(50);  // Transition times
-            }
+            int hits = dbHits.getOrDefault(hourStr, 0);
             
             Map<String, Object> dataPoint = new HashMap<>();
             dataPoint.put("hour", hourStr);
-            dataPoint.put("hits", baseHits);
+            dataPoint.put("hits", hits);
             list.add(dataPoint);
         }
         return list;
