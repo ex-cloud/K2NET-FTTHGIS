@@ -38,6 +38,10 @@ import {
 } from "@/components/system/overview";
 
 export default function SystemOverviewPage() {
+  const FRONTEND_GIT_BRANCH = process.env.NEXT_PUBLIC_GIT_BRANCH || "main";
+  const FRONTEND_GIT_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT || "unknown";
+  const FRONTEND_GIT_COMMIT_SHORT = FRONTEND_GIT_COMMIT.length > 7 ? FRONTEND_GIT_COMMIT.substring(0, 7) : FRONTEND_GIT_COMMIT;
+
   const { organizations, loading: loadingOrgs, refresh: refreshOrgs } = useOrganizations();
   const { data: session } = useSession();
 
@@ -486,56 +490,79 @@ export default function SystemOverviewPage() {
             </OverviewDevOpsCard>
 
             <OverviewDevOpsCard
-              eyebrow="GitHub App Status"
+              eyebrow="Platform Deployments"
               title={
                 <div className="flex items-center gap-2">
                   <OverviewStatusBadge tone={githubIntegrationStatus.connected ? "success" : "neutral"}>
-                    {githubIntegrationStatus.connected ? "Connected" : "Not configured"}
+                    {githubIntegrationStatus.connected ? "Active" : "Offline"}
                   </OverviewStatusBadge>
+                  <span className="text-[10px] text-zinc-500">GitHub Sync</span>
                 </div>
               }
-              description={
-                githubIntegrationStatus.connected
-                  ? `${githubIntegrationStatus.organization || "GitHub App"} is synchronized and ready for repository-based workflows.`
-                  : githubIntegrationStatus.message || "Configure the GitHub App in system settings to enable repository synchronization."
-              }
+              description="Platform repository branch and commit version state for both Backend and Frontend."
               icon={Github}
               iconClassName="group-hover:text-violet-500"
               accentClassName="text-violet-400"
               href="/system/settings?tab=integrations"
-              actionLabel="Open Integration Settings"
+              actionLabel="Manage GitHub App"
               actionClassName="text-violet-400 hover:text-violet-300"
             >
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                  <span>Repositories</span>
-                  <span className="font-mono">{githubIntegrationStatus.repositoriesCount}</span>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                  <span>Target</span>
-                  <span className="font-mono">{githubIntegrationStatus.installationTarget || "—"}</span>
+              <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500 font-semibold">Backend (API)</span>
+                    <a
+                      href={devopsStats?.github?.backendRepo && devopsStats?.git?.commitFull ? `${devopsStats.github.backendRepo}/commit/${devopsStats.git.commitFull}` : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                    >
+                      <GitBranch className="w-3 h-3 text-emerald-500/80" />
+                      {devopsStats?.git?.branch || "main"} @ {devopsStats?.git?.commitShort || "..."}
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500 font-semibold">Frontend (UI)</span>
+                    <a
+                      href={FRONTEND_GIT_COMMIT !== "unknown" ? `https://github.com/ex-cloud/front_springboot_ftth_gis/commit/${FRONTEND_GIT_COMMIT}` : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                    >
+                      <GitBranch className="w-3 h-3 text-emerald-500/80" />
+                      {FRONTEND_GIT_BRANCH} @ {FRONTEND_GIT_COMMIT_SHORT}
+                    </a>
+                  </div>
                 </div>
               </div>
             </OverviewDevOpsCard>
 
             <OverviewDevOpsCard
-              eyebrow="Recent Branch"
+              eyebrow="Database & Cache Status"
               title={
                 <div className="flex items-center gap-2">
-                  <OverviewStatusBadge tone="warning">{devopsStats?.git?.branch || "main"}</OverviewStatusBadge>
-                  <span className="text-[10px] font-mono text-zinc-500">@{devopsStats?.git?.commitShort || "..."}</span>
+                  <OverviewStatusBadge tone="success">Operational</OverviewStatusBadge>
+                  <span className="text-[10px] text-zinc-500">PostGIS & Redis</span>
                 </div>
               }
-              description={devopsStats?.git?.commitMessage || "Loading commit info..."}
-              icon={GitBranch}
-              iconClassName="group-hover:text-orange-500"
-              accentClassName="text-orange-400"
-              href={devopsStats?.github?.backendRepo ? `${devopsStats.github.backendRepo}/commit/${devopsStats.git.commitFull}` : "#"}
-              actionLabel="Open Source Commit"
-              actionClassName="text-orange-400 hover:text-orange-300"
-              isExternal
+              description="Real-time performance indicators for active connections, Redis cache store hit ratios, and GIS extensions."
+              icon={Database}
+              iconClassName="group-hover:text-emerald-500"
+              accentClassName="text-emerald-400"
+              href="/health"
+              actionLabel="View System Health"
+              actionClassName="text-emerald-400 hover:text-emerald-300"
             >
-              <p className="mt-2 text-[9px] font-mono text-zinc-600">{devopsStats?.git?.commitAuthor || ""} • {devopsStats?.git?.commitTime || ""}</p>
+              <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500">DB Connections</span>
+                  <span className="font-mono text-zinc-300 font-medium">{systemResources.postgresConns} active</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500">Cache Hit Ratio</span>
+                  <span className="font-mono text-zinc-300 font-medium">{systemResources.redisCacheHit}%</span>
+                </div>
+              </div>
             </OverviewDevOpsCard>
 
             <OverviewDevOpsCard

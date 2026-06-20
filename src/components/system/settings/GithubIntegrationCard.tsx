@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github, ChevronDown, Search, Loader2, RefreshCw } from "lucide-react";
+import { Github, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
@@ -79,8 +79,6 @@ const parseGithubStatus = (payload: unknown): GithubIntegrationStatusResponse =>
 
 export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }: GithubIntegrationCardProps) {
   const { data: session } = useSession();
-  const [isGithubDropdownOpen, setIsGithubDropdownOpen] = useState(false);
-  const [githubSearchQuery, setGithubSearchQuery] = useState("");
   const [connectingGithub, setConnectingGithub] = useState(false);
   const [liveRepos, setLiveRepos] = useState<RepositoryItem[]>([]);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -155,24 +153,10 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
     void loadSavedConfig();
   }, [loadSavedConfig]);
 
-  const filteredRepos = useMemo(
-    () =>
-      liveRepos.filter((repo) =>
-        repo.fullName.toLowerCase().includes(githubSearchQuery.toLowerCase())
-      ),
-    [githubSearchQuery, liveRepos]
-  );
-
   const statusLabel = integrationStatus.connected ? "Connected" : hasSavedConfig ? "Configured" : "Not configured";
-  const statusDescription = integrationStatus.connected
-    ? integrationStatus.message || "GitHub App is connected and repositories are available."
-    : hasSavedConfig
-      ? integrationStatus.message || "GitHub App credentials are saved. The live installation still needs to be verified against GitHub."
-      : integrationStatus.message || "Connect GitHub App first to sync repositories and deployment settings.";
   const repoCount = integrationStatus.repositories.length || liveRepos.length;
   const organizationLabel = integrationStatus.organization || "Not available";
   const installationTarget = integrationStatus.installationTarget || "org";
-  const isReady = integrationStatus.connected || githubConfig.connected;
 
   const handleConnectGithub = async () => {
     setConnectingGithub(true);
@@ -200,16 +184,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
     }
   };
 
-  const handleSelectRepo = async (repo: string) => {
-    try {
-      await updateSettings({ github_integration: JSON.stringify({ connected: true, repo }) });
-      toast.success(`Connected repository: ${repo}`);
-      setIsGithubDropdownOpen(false);
-    } catch (error: unknown) {
-      const err = error as Error;
-      toast.error(err.message || "Failed to connect repository");
-    }
-  };
+
 
   return (
     <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
@@ -235,7 +210,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
       </CardHeader>
 
       <CardContent className="space-y-6 pt-6">
-        <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="max-w-2xl mx-auto w-full">
           <div className="border border-zinc-800/50 bg-[#0c0c0c]/80 rounded-xl p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-zinc-900 text-zinc-400">
@@ -267,76 +242,6 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
                 <span className="font-mono text-zinc-300">{repoCount}</span>
               </div>
             </div>
-          </div>
-
-          <div className="border border-zinc-800/50 bg-[#0c0c0c]/80 rounded-xl p-5 space-y-4">
-            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-zinc-500">
-              <Github className="w-3.5 h-3.5" /> Repository visibility
-            </div>
-            <p className="text-sm text-zinc-300 leading-relaxed">{statusDescription}</p>
-
-            {isReady ? (
-              <div className="space-y-3 relative max-w-md">
-                <div className="flex flex-col gap-1">
-                  <label className="text-zinc-400 text-[10px] uppercase tracking-wider font-semibold">
-                    Project Repository
-                  </label>
-                  <p className="text-[10px] text-zinc-500">Select the repository to connect to your project</p>
-                </div>
-
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsGithubDropdownOpen(!isGithubDropdownOpen)}
-                    className="w-full flex items-center justify-between bg-zinc-950 border border-zinc-900 rounded-lg px-3 py-2 text-sm text-zinc-300 hover:border-zinc-800 transition-colors focus:outline-none"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Github className="w-4 h-4 text-zinc-400" />
-                      {githubConfig.repo || "Choose GitHub repository"}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-zinc-500" />
-                  </button>
-
-                  {isGithubDropdownOpen && (
-                    <div className="absolute z-50 left-0 right-0 mt-1.5 bg-zinc-950 border border-zinc-800 rounded-lg shadow-xl overflow-hidden">
-                      <div className="flex items-center gap-2 p-2 border-b border-zinc-900">
-                        <Search className="w-3.5 h-3.5 text-zinc-500" />
-                        <input
-                          type="text"
-                          placeholder="Search repositories..."
-                          value={githubSearchQuery}
-                          onChange={(event) => setGithubSearchQuery(event.target.value)}
-                          className="w-full bg-transparent text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none font-sans"
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                        {statusLoading ? (
-                          <div className="p-3 text-[11px] text-zinc-600 text-center">Loading repositories…</div>
-                        ) : filteredRepos.length > 0 ? (
-                          filteredRepos.map((repo) => (
-                            <button
-                              key={repo.fullName}
-                              type="button"
-                              onClick={() => handleSelectRepo(repo.fullName)}
-                              className="w-full text-left px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 flex items-center gap-2 transition-colors font-mono"
-                            >
-                              <Github className="w-3.5 h-3.5 text-zinc-500" />
-                              {repo.fullName}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="p-3 text-[11px] text-zinc-600 text-center">No repositories found</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-zinc-500 leading-relaxed font-light">
-                Connect GitHub App first to make repositories available for deployment and project integration.
-              </p>
-            )}
           </div>
         </div>
       </CardContent>
