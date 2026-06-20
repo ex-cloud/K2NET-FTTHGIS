@@ -4,6 +4,10 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
+ARG NEXT_PUBLIC_GIT_BRANCH
+ARG NEXT_PUBLIC_GIT_COMMIT
+ENV NEXT_PUBLIC_GIT_BRANCH=$NEXT_PUBLIC_GIT_BRANCH
+ENV NEXT_PUBLIC_GIT_COMMIT=$NEXT_PUBLIC_GIT_COMMIT
 RUN pnpm build
 
 FROM node:22-alpine AS runner
