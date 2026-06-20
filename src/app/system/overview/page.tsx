@@ -59,18 +59,32 @@ export default function SystemOverviewPage() {
     message: "",
   });
 
+  const [systemHealth, setSystemHealth] = useState({
+    cpuUsage: 15,
+    memoryUsage: 50,
+    memoryUsedGb: "8.0 GB",
+    memoryTotalGb: "16.0 GB",
+    diskUsage: 40,
+    postgresConns: 8,
+    redisHitRatio: 95.0,
+    postgresStatus: "healthy",
+    redisStatus: "healthy",
+    keycloakStatus: "healthy",
+    throughput: [] as Array<{ hour: string; hits: number }>,
+  });
+
+
   const systemResources = useMemo(() => {
-    void refreshing;
     return {
-      cpu: 18 + Math.floor(Math.random() * 8),
-      memory: 54,
-      memoryUsed: "8.6 GB",
-      memoryTotal: "16 GB",
-      disk: 42,
-      postgresConns: 12 + Math.floor(Math.random() * 5),
-      redisCacheHit: 96.4,
+      cpu: systemHealth.cpuUsage,
+      memory: systemHealth.memoryUsage,
+      memoryUsed: systemHealth.memoryUsedGb,
+      memoryTotal: systemHealth.memoryTotalGb,
+      disk: systemHealth.diskUsage,
+      postgresConns: systemHealth.postgresConns,
+      redisCacheHit: systemHealth.redisHitRatio,
     };
-  }, [refreshing]);
+  }, [systemHealth]);
 
   const loadData = async (showToast = false) => {
     if (showToast) setRefreshing(true);
@@ -115,6 +129,33 @@ export default function SystemOverviewPage() {
             message: typeof githubStatus?.message === "string" ? githubStatus.message : "",
           });
         }
+
+        // Fetch health-metrics
+        try {
+          const healthRes = await fetch("/api/v1/system/health-metrics", {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`,
+            },
+          });
+          if (healthRes.ok) {
+            const healthData = await healthRes.json();
+            setSystemHealth({
+              cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
+              memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
+              memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
+              memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
+              diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
+              postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
+              redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
+              postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
+              redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
+              keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
+              throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch health metrics:", err);
+        }
       }
 
       const gwRes = await getGatewayStatus();
@@ -143,6 +184,42 @@ export default function SystemOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
+  // Periodic polling for dynamic health metrics (every 15 seconds)
+  useEffect(() => {
+    if (!session?.accessToken) return;
+
+    const interval = setInterval(() => {
+      fetch("/api/v1/system/health-metrics", {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      })
+        .then((res) => {
+          if (res.ok) return res.json();
+        })
+        .then((healthData) => {
+          if (healthData) {
+            setSystemHealth({
+              cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
+              memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
+              memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
+              memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
+              diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
+              postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
+              redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
+              postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
+              redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
+              keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
+              throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
+            });
+          }
+        })
+        .catch((err) => console.debug("Silent overview metrics poll failed:", err));
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [session?.accessToken]);
+
   const totalOrgs = organizations.length;
   const activeOrgs = organizations.filter((o) => o.status === "ACTIVE").length;
   const trialOrgs = organizations.filter((o) => o.status === "ACTIVE" && o.trialExpiresAt).length;
@@ -162,9 +239,9 @@ export default function SystemOverviewPage() {
   }, [organizations]);
 
   const serviceNodes: ServiceNode[] = useMemo(() => {
-    const postgresActive = true;
-    const redisActive = true;
-    const keycloakActive = true;
+    const postgresActive = systemHealth.postgresStatus === "healthy";
+    const redisActive = systemHealth.redisStatus === "healthy";
+    const keycloakActive = systemHealth.keycloakStatus === "healthy";
 
     const getGwActive = (name: string) => gateways.find((g) => g.name === name)?.active ?? false;
     const notificationActive = getGwActive("ftth-notification-gateway");
@@ -296,11 +373,12 @@ export default function SystemOverviewPage() {
     ];
 
     return nodes;
-  }, [allGatewaysHealthy, gateways, totalOrgs, systemResources]);
+  }, [allGatewaysHealthy, gateways, totalOrgs, systemResources, systemHealth.keycloakStatus, systemHealth.postgresStatus, systemHealth.redisStatus]);
 
   const activeNodeData = useMemo(() => serviceNodes.find((node) => node.id === activeNode) || null, [activeNode, serviceNodes]);
 
-  const maxHits = Math.max(...throughputData.map((d) => d.hits));
+  const displayThroughput = systemHealth.throughput.length > 0 ? systemHealth.throughput : throughputData;
+  const maxHits = Math.max(...displayThroughput.map((d) => d.hits), 1);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
   const globalHealthState = useMemo(() => {
@@ -541,7 +619,21 @@ export default function SystemOverviewPage() {
               eyebrow="Database & Cache Status"
               title={
                 <div className="flex items-center gap-2">
-                  <OverviewStatusBadge tone="success">Operational</OverviewStatusBadge>
+                  <OverviewStatusBadge
+                    tone={
+                      systemHealth.postgresStatus === "healthy" && systemHealth.redisStatus === "healthy"
+                        ? "success"
+                        : systemHealth.postgresStatus === "error" && systemHealth.redisStatus === "error"
+                        ? "danger"
+                        : "warning"
+                    }
+                  >
+                    {systemHealth.postgresStatus === "healthy" && systemHealth.redisStatus === "healthy"
+                      ? "Operational"
+                      : systemHealth.postgresStatus === "error" && systemHealth.redisStatus === "error"
+                      ? "Critical Outage"
+                      : "Degraded"}
+                  </OverviewStatusBadge>
                   <span className="text-[10px] text-zinc-500">PostGIS & Redis</span>
                 </div>
               }
@@ -625,9 +717,9 @@ export default function SystemOverviewPage() {
               <h4 className="text-sm font-semibold text-zinc-200">Combined System Throughput</h4>
               <p className="mt-0.5 text-[10px] text-zinc-500">Aggregated API request load and geocoding activity across all microservices over the last 24 hours.</p>
             </div>
-            {hoveredBarIndex !== null ? (
+            {hoveredBarIndex !== null && displayThroughput[hoveredBarIndex] ? (
               <Badge className="border-emerald-500/20 bg-emerald-500/10 text-[10px] font-mono text-emerald-500">
-                {throughputData[hoveredBarIndex].hour} ➔ {throughputData[hoveredBarIndex].hits} Requests
+                {displayThroughput[hoveredBarIndex].hour} ➔ {displayThroughput[hoveredBarIndex].hits} Requests
               </Badge>
             ) : (
               <Badge variant="outline" className="border-white/10 text-[10px] font-mono text-zinc-500">
@@ -637,7 +729,7 @@ export default function SystemOverviewPage() {
           </div>
 
           <div className="relative flex h-28 items-end gap-1.5 border-b border-white/5 px-2 pb-2">
-            {throughputData.map((d, idx) => (
+            {displayThroughput.map((d, idx) => (
               <div key={idx} className="relative flex h-full flex-1 flex-col justify-end" onMouseEnter={() => setHoveredBarIndex(idx)} onMouseLeave={() => setHoveredBarIndex(null)}>
                 <div style={{ height: `${(d.hits / maxHits) * 100}%` }} className={cn("w-full rounded-t transition-all duration-200", hoveredBarIndex === idx ? "cursor-pointer bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]" : "cursor-pointer bg-gradient-to-t from-emerald-500/20 to-emerald-500/60")} />
               </div>
