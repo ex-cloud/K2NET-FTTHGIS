@@ -422,6 +422,24 @@ export const baseAuthOptions: NextAuthConfig = {
         secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://"),
       },
     },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        path: "/",
+        domain: getCookieDomain(),
+        secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://"),
+      },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        domain: getCookieDomain(),
+        secure: process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://"),
+      },
+    },
   },
   session: {
     strategy: "jwt",
