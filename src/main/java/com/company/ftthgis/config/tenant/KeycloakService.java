@@ -107,7 +107,7 @@ public class KeycloakService {
                         existingRealm.setClientSessionMaxLifespan(0);
 
                         // Refresh token revocation: each refresh token can only be used once
-                        existingRealm.setRevokeRefreshToken(true);
+                        existingRealm.setRevokeRefreshToken(false);
                         existingRealm.setRefreshTokenMaxReuse(0); // no reuse allowed
 
                         keycloak.realm(realmName).update(existingRealm);
@@ -238,7 +238,7 @@ public class KeycloakService {
                 realm.setClientSessionMaxLifespan(0);
 
                 // Refresh token revocation: each refresh token can only be used once
-                realm.setRevokeRefreshToken(true);
+                realm.setRevokeRefreshToken(false);
                 realm.setRefreshTokenMaxReuse(0); // no reuse allowed
 
                 log.info("✅ SUCCESS: Template realm loaded, flows/configs cleaned, SMTP secrets restored, and session/token lifespans configured.");
