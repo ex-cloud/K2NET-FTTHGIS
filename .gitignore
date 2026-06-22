@@ -1,0 +1,67 @@
+# =============================================
+# 🔴 KREDENSIAL & RAHASIA (PRIORITAS UTAMA!)
+# =============================================
+.env
+.env.*
+!.env.example        # ← Pengecualian: template boleh masuk
+
+# Java/Spring Boot properties dengan secrets
+apps/api/src/main/resources/application-local.properties
+apps/api/src/main/resources/application-prod.properties
+
+# =============================================
+# 🔴 DATA PERSISTEN (BESAR & BERISI DATA USER)
+# =============================================
+minio_data/
+backups/
+
+# =============================================
+# 🔴 DOKUMEN INTERNAL & CATATAN PRIBADI
+# =============================================
+# Folder docs di /opt/project5/docs TIDAK dimasukkan ke repo
+# karena berisi catatan pribadi dan data internal
+# (Gunakan apps/docs/ untuk dokumentasi publik di masa depan)
+
+# =============================================
+# 🟡 DEPENDENCIES & BUILD OUTPUT
+# =============================================
+# Frontend
+apps/studio/node_modules/
+apps/studio/.next/
+apps/www/node_modules/
+apps/www/.next/
+apps/docs/node_modules/
+packages/ui/node_modules/
+packages/design-system/node_modules/
+
+# Backend Java
+apps/api/target/
+
+# Go binaries
+services/poller/poller
+services/poller/poller.exe
+services/poller/poller-test.exe
+**/*.exe
+**/*.out
+
+# Maven local repository
+.m2/
+
+# =============================================
+# 🟡 FILE SISTEM & EDITOR
+# =============================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
+*.iml
+
+# =============================================
+# 🟡 LOG & TEMPORARY
+# =============================================
+*.log
+*.tmp
+migration_monorepo/
+lint_output.txt
