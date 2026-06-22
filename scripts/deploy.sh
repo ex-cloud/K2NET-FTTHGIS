@@ -54,15 +54,21 @@ echo "Rebuilding and restarting services..."
 TARGET_SERVICE=""
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
-    if [ "$2" = "backend" ]; then
+    if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
       TARGET_SERVICE="backend-staging"
-    elif [ "$2" = "frontend" ]; then
+    elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
       TARGET_SERVICE="frontend-staging"
     else
       TARGET_SERVICE="$2"
     fi
   else
-    TARGET_SERVICE="$2"
+    if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
+      TARGET_SERVICE="backend"
+    elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
+      TARGET_SERVICE="frontend"
+    else
+      TARGET_SERVICE="$2"
+    fi
   fi
 fi
 
