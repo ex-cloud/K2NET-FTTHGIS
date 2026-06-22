@@ -182,7 +182,7 @@ services:
   # Backend App Core
   backend:
     build:
-      context: ./backend
+      context: ./apps/api
       dockerfile: Dockerfile
     container_name: ftth-backend
     restart: always
@@ -228,7 +228,7 @@ services:
   # Frontend App (Next.js)
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/studio
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_GIT_BRANCH=${NEXT_PUBLIC_GIT_BRANCH:-main}

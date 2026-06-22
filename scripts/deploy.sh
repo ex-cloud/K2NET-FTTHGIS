@@ -43,8 +43,8 @@ fi
 
 # Set Git env variables for Frontend build
 echo "Fetching frontend git metadata for compilation..."
-export NEXT_PUBLIC_GIT_BRANCH=$((git -C frontend rev-parse --abbrev-ref HEAD 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null) || echo "main")
-export NEXT_PUBLIC_GIT_COMMIT=$((git -C frontend rev-parse HEAD 2>/dev/null || git rev-parse HEAD 2>/dev/null) || echo "unknown")
+export NEXT_PUBLIC_GIT_BRANCH=$((git -C apps/studio rev-parse --abbrev-ref HEAD 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null) || echo "main")
+export NEXT_PUBLIC_GIT_COMMIT=$((git -C apps/studio rev-parse HEAD 2>/dev/null || git rev-parse HEAD 2>/dev/null) || echo "unknown")
 echo "Git Branch: $NEXT_PUBLIC_GIT_BRANCH"
 echo "Git Commit: $NEXT_PUBLIC_GIT_COMMIT"
 
