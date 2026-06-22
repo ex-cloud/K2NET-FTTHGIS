@@ -1,0 +1,56 @@
+groups:
+  - name: FTTH_GIS_Alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "Service {{ $labels.job }} ({{ $labels.application }}) is down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (application, uri) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate on {{ $labels.uri }} in {{ $labels.application }}"
+          description: "URI {{ $labels.uri }} is experiencing 5xx error rate > 0.1 requests/sec."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, application, uri)) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response latency on {{ $labels.uri }} in {{ $labels.application }}"
+          description: "95th percentile response time is above 2 seconds."
+
+      - alert: HighMemoryUsage
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM Heap usage is high on {{ $labels.instance }}"
+          description: "JVM Heap usage is above 85% for 5 minutes."
+
+      - alert: DatabaseConnectionExhaustion
+        expr: hikaricp_connections_active / hikaricp_connections_max > 0.8
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HikariCP DB connection pool near exhaustion on {{ $labels.instance }}"
+          description: "Active connections are above 80% of maximum pool size."
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_free_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk space low"
+          description: "Free disk space on / is less than 10%."

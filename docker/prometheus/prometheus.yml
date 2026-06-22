@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  - job_name: "spring-boot"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["backend:9090"]
+        labels:
+          application: "ftth-gis-core"
+
+  - job_name: "go-poller"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:9091"]
+        labels:
+          application: "ftth-poller"
+
+  - job_name: "notification-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:5001"]
+        labels:
+          application: "notification-gateway"
+
+  - job_name: "payment-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:5002"]
+        labels:
+          application: "payment-gateway"
+
+  - job_name: "map-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:5003"]
+        labels:
+          application: "map-gateway"
+
+  - job_name: "storage-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:5004"]
+        labels:
+          application: "storage-gateway"
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          application: "host-metrics"
+

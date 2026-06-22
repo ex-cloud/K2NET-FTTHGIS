@@ -4,6 +4,7 @@ use (
 	./map-gateway
 	./notification-gateway
 	./payment-gateway
+	./poller
 	./shared
 	./storage-gateway
 )

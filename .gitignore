@@ -3,7 +3,8 @@
 # =============================================
 .env
 .env.*
-!.env.example        # ← Pengecualian: template boleh masuk
+# Pengecualian: template boleh masuk
+!.env.example
 
 # Java/Spring Boot properties dengan secrets
 apps/api/src/main/resources/application-local.properties
