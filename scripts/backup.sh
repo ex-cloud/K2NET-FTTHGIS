@@ -21,7 +21,7 @@ if [ $PG_STATUS -eq 0 ]; then
     echo "Backup database sukses: $BACKUP_FILE.gz"
 
     # Unggah cadangan database ke MinIO lokal via Storage Gateway secara background
-    GATEWAY_TOKEN=$(grep -E "^GATEWAY_TOKEN=" /opt/project5/gateways/.env | cut -d'=' -f2)
+    GATEWAY_TOKEN=$(grep -E "^GATEWAY_TOKEN=" /opt/project5/services/.env | cut -d'=' -f2)
     if [ -n "$GATEWAY_TOKEN" ]; then
       echo "Mengunggah berkas cadangan database ke MinIO S3 lokal..."
       curl -s -X POST \

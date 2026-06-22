@@ -24,7 +24,7 @@ type ConfigHandler struct {
 func NewConfigHandler() *ConfigHandler {
 	envPath := os.Getenv("ENV_FILE_PATH")
 	if envPath == "" {
-		envPath = "/opt/project5/gateways/.env"
+		envPath = "/opt/project5/services/.env"
 	}
 	return &ConfigHandler{envPath: envPath}
 }
@@ -64,7 +64,7 @@ func (h *ConfigHandler) parseEnvFile() ([]configEntry, error) {
 
 	// Validate the path to prevent directory traversal
 	cleanPath := filepath.Clean(h.envPath)
-	if !strings.HasPrefix(cleanPath, "/opt/project5/gateways/") {
+	if !strings.HasPrefix(cleanPath, "/opt/project5/services/") {
 		return nil, fmt.Errorf("invalid env file path")
 	}
 
@@ -118,7 +118,7 @@ func (h *ConfigHandler) writeEnvFile(updates map[string]string) error {
 	defer h.mu.Unlock()
 
 	cleanPath := filepath.Clean(h.envPath)
-	if !strings.HasPrefix(cleanPath, "/opt/project5/gateways/") {
+	if !strings.HasPrefix(cleanPath, "/opt/project5/services/") {
 		return fmt.Errorf("invalid env file path")
 	}
 

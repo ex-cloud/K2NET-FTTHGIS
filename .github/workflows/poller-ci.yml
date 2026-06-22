@@ -76,4 +76,9 @@ jobs:
               git checkout develop
               git pull origin develop
             fi
-            bash scripts/deploy.sh ${{ env.DEPLOY_ENV }} poller
+            echo "Building poller..."
+            cd services/poller && go build -o poller ./cmd/...
+            echo "Restarting SNMP Poller service..."
+            systemctl restart ftth-poller
+            sleep 3
+            systemctl status ftth-poller --no-pager

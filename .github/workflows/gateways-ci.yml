@@ -82,4 +82,12 @@ jobs:
               git checkout develop
               git pull origin develop
             fi
-            bash scripts/deploy.sh ${{ env.DEPLOY_ENV }} gateways
+            cd services
+            for svc in map-gateway notification-gateway payment-gateway storage-gateway; do
+              echo "Building $svc..."
+              cd $svc && go build -o $svc ./cmd/... && cd ..
+            done
+            echo "Restarting Go gateway services..."
+            systemctl restart ftth-map-gateway ftth-notification-gateway ftth-payment-gateway ftth-storage-gateway
+            sleep 3
+            systemctl status ftth-map-gateway ftth-notification-gateway ftth-payment-gateway ftth-storage-gateway --no-pager
