@@ -1,0 +1,285 @@
+
+> frontend@0.1.0 lint /opt/project5/frontend
+> eslint
+
+
+/opt/project5/frontend/src/app/account/layout.tsx
+   8:43  warning  'Network' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+  18:17  warning  'session' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  25:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/account/layout.tsx:25:5
+  23 |
+  24 |   useEffect(() => {
+> 25 |     setMounted(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |     if (typeof window !== "undefined") {
+  27 |       const hostname = window.location.hostname;
+  28 |       if (hostname.startsWith("system.") || hostname.startsWith("system-")) {  react-hooks/set-state-in-effect
+
+/opt/project5/frontend/src/app/account/preferences/page.tsx
+  6:3   warning  'User' is defined but never used          @typescript-eslint/no-unused-vars
+  6:9   warning  'Smartphone' is defined but never used    @typescript-eslint/no-unused-vars
+  6:21  warning  'Github' is defined but never used        @typescript-eslint/no-unused-vars
+  6:29  warning  'Chrome' is defined but never used        @typescript-eslint/no-unused-vars
+  6:37  warning  'CheckCircle2' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/login/otp/page.tsx
+    8:35  warning  'HelpCircle' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  144:6   warning  React Hook useEffect has a missing dependency: 'redirectToMain'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  277:6   warning  React Hook useEffect has a missing dependency: 'handleVerifyOtp'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/opt/project5/frontend/src/app/org/[orgId]/dashboard/page.tsx
+  34:9  warning  'realOrgId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/org/[orgId]/project/[projectId]/infrastructure/heatmap/page.tsx
+  9:3  warning  'HelpCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/org/[orgId]/settings/page.tsx
+  5:10  warning  'Building2' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/org/layout.tsx
+  27:9  warning  'isSystemSubdomain' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/org/page.tsx
+  21:9  warning  'isSystemSubdomain' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/system/gateways/map/page.tsx
+   11:3   warning  'Database' is defined but never used      @typescript-eslint/no-unused-vars
+   12:3   warning  'Lock' is defined but never used          @typescript-eslint/no-unused-vars
+   15:3   warning  'ArrowUpRight' is defined but never used  @typescript-eslint/no-unused-vars
+   16:3   warning  'TrendingUp' is defined but never used    @typescript-eslint/no-unused-vars
+   53:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/gateways/notification/page.tsx
+    9:3   warning  'HelpCircle' is defined but never used    @typescript-eslint/no-unused-vars
+   15:3   warning  'CheckCircle' is defined but never used   @typescript-eslint/no-unused-vars
+   16:3   warning  'Clock' is defined but never used         @typescript-eslint/no-unused-vars
+   52:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/gateways/overview/page.tsx
+   9:3   warning  'Zap' is defined but never used           @typescript-eslint/no-unused-vars
+  37:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/gateways/payment/page.tsx
+   14:3   warning  'TrendingUp' is defined but never used    @typescript-eslint/no-unused-vars
+   23:10  warning  'Badge' is defined but never used         @typescript-eslint/no-unused-vars
+   52:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/gateways/storage/page.tsx
+   11:3   warning  'Server' is defined but never used        @typescript-eslint/no-unused-vars
+   16:3   warning  'Zap' is defined but never used           @typescript-eslint/no-unused-vars
+   17:3   warning  'TrendingDown' is defined but never used  @typescript-eslint/no-unused-vars
+   53:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/organizations/page.tsx
+  42:9  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/organizations/page.tsx:42:9
+  40 |       const hostname = window.location.hostname;
+  41 |       if (hostname.startsWith("system-")) {
+> 42 |         setDisplaySuffix("-" + hostname.substring(7));
+     |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  43 |       } else if (hostname.startsWith("system.")) {
+  44 |         setDisplaySuffix("." + hostname.substring(7));
+  45 |       } else {  react-hooks/set-state-in-effect
+
+/opt/project5/frontend/src/app/system/security/alerts/page.tsx
+    3:46  warning  'BlockedIp' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   13:3   warning  'RefreshCw' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   19:3   warning  'FileText' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   24:46  warning  'CardFooter' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   83:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/security/alerts/page.tsx:83:5
+  81 |
+  82 |   useEffect(() => {
+> 83 |     setMounted(true);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  84 |   }, []);
+  85 |
+  86 |   const handleBlockIp = async (e: React.FormEvent) => {  react-hooks/set-state-in-effect
+  101:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  110:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  120:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  137:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  150:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  379:29  warning  'isCritical' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/app/system/security/auth/page.tsx
+   12:3   warning  'KeyRound' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   17:3   warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   18:3   warning  'Layers' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   19:3   warning  'Network' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   60:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/security/auth/page.tsx:60:5
+  58 |   // Reset page when sessions count changes
+  59 |   useEffect(() => {
+> 60 |     setCurrentPage(1);
+     |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  61 |   }, [sessions.length]);
+  62 |
+  63 |   const indexOfLastItem = currentPage * itemsPerPage;                                            react-hooks/set-state-in-effect
+   76:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/security/auth/page.tsx:76:7
+  74 |   useEffect(() => {
+  75 |     if (realmConfig) {
+> 76 |       setRegAllowed(realmConfig.registrationAllowed);
+     |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  77 |       setEmailVerify(realmConfig.verifyEmail);
+  78 |       setResetAllowed(realmConfig.resetPasswordAllowed);
+  79 |     }  react-hooks/set-state-in-effect
+   90:21  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+  110:21  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+  119:21  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/security/compliance/page.tsx
+   9:3   warning  'Sliders' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  12:3   warning  'Map' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  53:27  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/security/compliance/page.tsx:53:27
+  51 |       const waTokenSetting = settings.find(s => s.key === "wa_gateway_token");
+  52 |
+> 53 |       if (timeoutSetting) setSessionTimeout(parseInt(timeoutSetting.value) || 30);
+     |                           ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  54 |       if (lockSetting) setMapLockDuration(parseInt(lockSetting.value) || 10);
+  55 |       if (mfaSetting) setMfaEnforced(mfaSetting.value === "true");
+  56 |       if (otpSetting) setWaOtpEnabled(otpSetting.value === "true");  react-hooks/set-state-in-effect
+  76:21  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/app/system/security/password-policy/page.tsx
+  12:3   warning  'Eye' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  13:3   warning  'EyeOff' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  14:3   warning  'Sliders' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  47:26  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/opt/project5/frontend/src/app/system/security/password-policy/page.tsx:47:26
+  45 |       const expirySetting = settings.find(s => s.key === "password_expiry_days");
+  46 |
+> 47 |       if (minLenSetting) setMinLength(parseInt(minLenSetting.value) || 8);
+     |                          ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |       if (symbolsSetting) setRequireSymbols(symbolsSetting.value === "true");
+  49 |       if (numbersSetting) setRequireNumbers(numbersSetting.value === "true");
+  50 |       if (upperSetting) setRequireUppercase(upperSetting.value === "true");  react-hooks/set-state-in-effect
+  67:21  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/auth.config.ts
+  117:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/auth.ts
+  199:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  455:60  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  523:10  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  530:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/components/dashboard/customer-dialogs.tsx
+  22:20  warning  'ODP' is defined but never used             @typescript-eslint/no-unused-vars
+  23:10  warning  'useSession' is defined but never used      @typescript-eslint/no-unused-vars
+  24:10  warning  'useParams' is defined but never used       @typescript-eslint/no-unused-vars
+  25:10  warning  'networkApi' is defined but never used      @typescript-eslint/no-unused-vars
+  27:10  warning  'customerSchema' is defined but never used  @typescript-eslint/no-unused-vars
+  28:10  warning  'z' is defined but never used               @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/components/dashboard/network-status-badge.tsx
+  8:3  warning  'Settings' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/components/dashboard/odp-dialogs.tsx
+  22:10  warning  'ODC' is defined but never used         @typescript-eslint/no-unused-vars
+  23:10  warning  'useSession' is defined but never used  @typescript-eslint/no-unused-vars
+  24:10  warning  'useParams' is defined but never used   @typescript-eslint/no-unused-vars
+  25:10  warning  'networkApi' is defined but never used  @typescript-eslint/no-unused-vars
+  27:10  warning  'odpSchema' is defined but never used   @typescript-eslint/no-unused-vars
+  28:10  warning  'z' is defined but never used           @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/components/dashboard/smart-data-table.tsx
+  130:17  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/opt/project5/frontend/src/components/dashboard/smart-data-table.tsx:130:17
+  128 |   }, [columns]);
+  129 |
+> 130 |   const table = useReactTable({
+      |                 ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  131 |     data,
+  132 |     columns: tableColumns,
+  133 |     getCoreRowModel: React.useMemo(() => getCoreRowModel(), []),  react-hooks/incompatible-library
+
+/opt/project5/frontend/src/components/tenant/nav-org-switcher.tsx
+  40:9  warning  'isSystemSubdomain' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/opt/project5/frontend/src/hooks/use-customer-data.ts
+  139:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/hooks/use-odc-data.ts
+  140:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/hooks/use-odp-data.ts
+  140:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/lib/offline/offlineQueue.test.ts
+  16:16  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:85  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/project5/frontend/src/lib/offline/offlineQueue.ts
+  41:9  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 102 problems (0 errors, 102 warnings)
+
