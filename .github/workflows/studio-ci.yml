@@ -47,7 +47,7 @@ jobs:
         run: |
           cd apps/studio
           pnpm run lint || true
-          pnpm run build --no-lint
+          pnpm run build
 
   deploy:
     name: Deploy to Server
