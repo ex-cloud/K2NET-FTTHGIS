@@ -1,0 +1,9 @@
+go 1.25.0
+
+use (
+	./map-gateway
+	./notification-gateway
+	./payment-gateway
+	./shared
+	./storage-gateway
+)

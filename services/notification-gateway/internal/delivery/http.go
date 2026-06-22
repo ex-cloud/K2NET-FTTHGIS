@@ -1,0 +1,101 @@
+package delivery
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"gateways/notification-gateway/internal/provider"
+	"gateways/notification-gateway/internal/service"
+	"gateways/shared/logger"
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
+)
+
+type HTTPHandler struct {
+	worker *service.Worker
+	rdb    *redis.Client
+}
+
+func NewHTTPHandler(worker *service.Worker, rdb *redis.Client) *HTTPHandler {
+	return &HTTPHandler{
+		worker: worker,
+		rdb:    rdb,
+	}
+}
+
+// RateLimiter implements a sliding-window rate limiting algorithm using Redis
+func (h *HTTPHandler) RateLimiter() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		clientIP := c.ClientIP()
+		
+		key := "ratelimit:" + clientIP
+		limit := int64(30) // Allow max 30 requests per minute
+		
+		now := time.Now().UnixNano()
+		clearBefore := now - int64(60*time.Second)
+		
+		pipe := h.rdb.TxPipeline()
+		pipe.ZRemRangeByScore(ctx, key, "0", strconv.FormatInt(clearBefore, 10))
+		pipe.ZCard(ctx, key)
+		pipe.ZAdd(ctx, key, redis.Z{Score: float64(now), Member: strconv.FormatInt(now, 10)})
+		pipe.Expire(ctx, key, 70*time.Second)
+		
+		cmds, err := pipe.Exec(ctx)
+		if err != nil && err != redis.Nil {
+			logger.Error(ctx, "Rate limit Redis error", zap.Error(err))
+			c.Next()
+			return
+		}
+		
+		count := cmds[1].(*redis.IntCmd).Val()
+		if count > limit {
+			logger.Warn(ctx, "Rate limit exceeded", zap.String("ip", clientIP))
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Rate limit exceeded. Max 30 requests/minute.",
+			})
+			c.Abort()
+			return
+		}
+		
+		c.Next()
+	}
+}
+
+func (h *HTTPHandler) SendNotification(c *gin.Context) {
+	ctx := c.Request.Context()
+	
+	var payload provider.NotificationPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	idempotencyKey := c.GetHeader("X-Idempotency-Key")
+	if idempotencyKey != "" {
+		unique, err := h.worker.CheckIdempotency(ctx, idempotencyKey)
+		if err != nil {
+			logger.Error(ctx, "Idempotency check failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+			return
+		}
+		if !unique {
+			logger.Warn(ctx, "Duplicate request blocked", zap.String("key", idempotencyKey))
+			c.JSON(http.StatusConflict, gin.H{"error": "Duplicate request blocked by idempotency check"})
+			return
+		}
+	}
+	
+	if err := h.worker.Enqueue(ctx, payload); err != nil {
+		logger.Error(ctx, "Failed to enqueue notification task", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusAccepted, gin.H{
+		"status": "Accepted",
+		"message": "Notification enqueued asynchronously",
+	})
+}
