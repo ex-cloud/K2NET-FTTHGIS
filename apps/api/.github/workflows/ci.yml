@@ -1,0 +1,79 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    services:
+      postgres:
+        image: pgrouting/pgrouting:16-3.5-4.0
+        env:
+          POSTGRES_DB: ftth_gis_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build and Run Tests
+        run: mvn verify -DskipITs=false
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ftth_gis_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: testpass
+
+      - name: Package JAR
+        run: mvn package -DskipTests
+
+      # Temporarily disabled: Artifact storage quota exceeded
+      # Will re-enable after GitHub recalculates quota (6-12 hours)
+      # - name: Upload Build Artifact
+      #   uses: actions/upload-artifact@v5
+      #   with:
+      #     name: ftth-backend-jar
+      #     path: target/*.jar
+
+  deploy-production:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    steps:
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          script: |
+            cd /opt/project5/backend
+            git checkout main
+            git pull origin main
+            cd /opt/project5
+            bash scripts/deploy.sh production backend

@@ -1,0 +1,2 @@
+-- Baseline empty migration for FTTH GIS schema
+-- Flyway will baseline the database to version 1 using baseline-on-migrate

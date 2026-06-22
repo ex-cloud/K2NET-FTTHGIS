@@ -1,0 +1,68 @@
+package com.company.ftthgis.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Method;
+import java.security.PrivateKey;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class GithubIntegrationServiceTest {
+
+    @Test
+    void validateConfiguration_returnsDisconnectedWhenRequiredValuesMissing() {
+        GithubIntegrationService service = new GithubIntegrationService(null, new ObjectMapper());
+
+        GithubIntegrationService.GithubValidationResult result = service.validateConfiguration("", "");
+
+        assertFalse(result.connected());
+        assertTrue(result.message().contains("not configured"));
+    }
+
+    @Test
+    void parsePrivateKey_acceptsPkcs1Pem() throws Exception {
+        GithubIntegrationService service = new GithubIntegrationService(null, new ObjectMapper());
+
+        String pem = "-----BEGIN RSA PRIVATE KEY-----\n" +
+                "MIIBOwIBAAJBAM/Qs4NalIwhbRuxYFKOzZ4ePcWXoLVfwJ5KQjBbHuWucTBMvwcu\n" +
+                "AEc4VXa2Hi76DiBARvIW75fzNSSjZ0P4DeECAwEAAQJBALR+hrvKe4SuL47C428x\n" +
+                "GsN/bpVkma+OZ8TTqGNJcS94XtmC6bb8bWQsH8aIpfhjaPWoq+VOogVAQVFMA8Vx\n" +
+                "MPUCIQD13DHbYNhcTfRauG9sMWLe762hze7H9b3O2zipdXQ08wIhANhi04gRgiZz\n" +
+                "i3HBsmJ9IeJtP+8sjkSpJ+sJLsbG7rbbAiBslw7mSEYHrt6oWyHLdZynvtC/0IcQ\n" +
+                "hneJL8Y9AoWLBQIhAIM2CgbsdvtR/TCRv9WxAycGEEq7vdksqaQAAXlPj9kZAiBn\n" +
+                "sTXFQy/T2euv13eQCLGvvuY+Es0F3ga22YZtnQcGrg==\n" +
+                "-----END RSA PRIVATE KEY-----";
+
+        Method method = GithubIntegrationService.class.getDeclaredMethod("parsePrivateKey", String.class);
+        method.setAccessible(true);
+
+        PrivateKey key = (PrivateKey) method.invoke(service, pem);
+
+        assertNotNull(key);
+    }
+
+    @Test
+    void parsePrivateKey_acceptsPkcs1PemWithSpaces() throws Exception {
+        GithubIntegrationService service = new GithubIntegrationService(null, new ObjectMapper());
+
+        String pem = "-----BEGIN RSA PRIVATE KEY----- " +
+                "MIIBOwIBAAJBAM/Qs4NalIwhbRuxYFKOzZ4ePcWXoLVfwJ5KQjBbHuWucTBMvwcu " +
+                "AEc4VXa2Hi76DiBARvIW75fzNSSjZ0P4DeECAwEAAQJBALR+hrvKe4SuL47C428x " +
+                "GsN/bpVkma+OZ8TTqGNJcS94XtmC6bb8bWQsH8aIpfhjaPWoq+VOogVAQVFMA8Vx " +
+                "MPUCIQD13DHbYNhcTfRauG9sMWLe762hze7H9b3O2zipdXQ08wIhANhi04gRgiZz " +
+                "i3HBsmJ9IeJtP+8sjkSpJ+sJLsbG7rbbAiBslw7mSEYHrt6oWyHLdZynvtC/0IcQ " +
+                "hneJL8Y9AoWLBQIhAIM2CgbsdvtR/TCRv9WxAycGEEq7vdksqaQAAXlPj9kZAiBn " +
+                "sTXFQy/T2euv13eQCLGvvuY+Es0F3ga22YZtnQcGrg== " +
+                "-----END RSA PRIVATE KEY-----";
+
+        Method method = GithubIntegrationService.class.getDeclaredMethod("parsePrivateKey", String.class);
+        method.setAccessible(true);
+
+        PrivateKey key = (PrivateKey) method.invoke(service, pem);
+
+        assertNotNull(key);
+    }
+}

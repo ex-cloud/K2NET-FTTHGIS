@@ -1,0 +1,143 @@
+server:
+  port: 9090
+  max-http-header-size: 65536
+  max-http-request-header-size: 65536
+  tomcat:
+    max-http-request-header-size: 65536
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/x-protobuf
+    min-response-size: 1024
+
+spring:
+  application:
+    name: ftth-gis-core
+  cache:
+    type: redis
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ftth_gis
+    username: postgres
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      "[hibernate.format_sql]": false
+      "jakarta.persistence.sharedCache.mode": ENABLE_SELECTIVE
+      "hibernate.cache.use_second_level_cache": true
+      "hibernate.cache.use_query_cache": true
+      "hibernate.cache.region.factory_class": org.redisson.hibernate.RedissonRegionFactory
+      "hibernate.cache.redisson.config": classpath:redisson.yaml
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      enabled: true # Set to false if Redis is not running
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth-gis.k2net.id/realms/ftth-realm
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8081/realms/ftth-realm/protocol/openid-connect/certs}
+
+# Keycloak Admin Configuration
+keycloak:
+  server-url: https://auth-gis.k2net.id
+  internal-url: ${KEYCLOAK_INTERNAL_URL:http://localhost:8081}
+  realm: master
+  # Service Account for Backend to manage everything (from master realm)
+  client-id: ftth-gis-admin
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+  grant-type: client_credentials
+
+# Custom Config for App Security
+# Note: 'app' is a custom property. The IDE warning 'Unknown property' is safe to ignore
+# as it is not part of the internal Spring Boot schema.
+app:
+  gateway:
+    token: ${GATEWAY_TOKEN:}
+    notification-url: ${NOTIFICATION_GATEWAY_URL:http://localhost:5001}
+    payment-url: ${PAYMENT_GATEWAY_URL:http://localhost:5002}
+    map-url: ${MAP_GATEWAY_URL:http://localhost:5003}
+    storage-url: ${STORAGE_GATEWAY_URL:http://localhost:5004}
+    webhook-key: ${XENDIT_WEBHOOK_KEY:}
+  seeder:
+    enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
+  frontend-url: ${FRONTEND_URL:localhost:3000}
+  security:
+    keycloak:
+      provision-client-id: ${AUTH_KEYCLOAK_ID:ftth-gis-frontend}
+      provision-client-secret: ${AUTH_KEYCLOAK_SECRET:}
+    oauth2:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:}
+        client-secret: ${GOOGLE_CLIENT_SECRET:}
+      github:
+        client-id: ${GITHUB_CLIENT_ID:}
+        client-secret: ${GITHUB_CLIENT_SECRET:}
+    cors:
+      allowed-origins: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.40.11:3000"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+  devops:
+    github:
+      auth-mode: ${GITHUB_AUTH_MODE:app} # app or personal
+      app-id: ${GITHUB_APP_ID:}
+      app-private-key: ${GITHUB_APP_PRIVATE_KEY:}
+      app-private-key-path: ${GITHUB_APP_PRIVATE_KEY_PATH:}
+      webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
+      webhook-url: ${GITHUB_WEBHOOK_URL:https://system-gis.k2net.id/api/github/webhook}
+      callback-url: ${GITHUB_APP_CALLBACK_URL:https://system-gis.k2net.id/auth/github/callback}
+      homepage-url: ${GITHUB_APP_HOMEPAGE_URL:https://system-gis.k2net.id}
+      organization: ${GITHUB_ORGANIZATION:ex-cloud}
+      frontend-repo: ${DEVOPS_GITHUB_FRONTEND_REPO:https://github.com/ex-cloud/front_springboot_ftth_gis}
+      backend-repo: ${DEVOPS_GITHUB_BACKEND_REPO:https://github.com/ex-cloud/back_springboot_ftth_gis}
+      default-branch: ${DEVOPS_GITHUB_DEFAULT_BRANCH:main}
+      installation-target: ${GITHUB_APP_INSTALLATION_TARGET:org}
+    cicd:
+      enable-auto-deploy: ${DEVOPS_AUTO_DEPLOY:true}
+      deployment-timeout: ${DEVOPS_DEPLOY_TIMEOUT:3600}
+    backup:
+      log-path: ${DEVOPS_BACKUP_LOG_PATH:/var/backups/postgresql/last_backup.log}
+      retention-days: ${DEVOPS_BACKUP_RETENTION:30}
+
+logging:
+  level:
+    "[org.hibernate.SQL]": WARN
+    "[org.hibernate.type.descriptor.sql.BasicBinder]": WARN
+    "[org.springframework.security]": WARN
+  file:
+    name: logs/ftth-backend.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+
+

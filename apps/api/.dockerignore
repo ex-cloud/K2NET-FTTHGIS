@@ -1,0 +1,9 @@
+target
+.git
+*.log
+logs/
+*.txt
+*.sql
+*.stackdump
+uploads/
+artifacts/
