@@ -22,6 +22,9 @@ backups/
 # Folder docs di /opt/project5/docs TIDAK dimasukkan ke repo
 # karena berisi catatan pribadi dan data internal
 # (Gunakan apps/docs/ untuk dokumentasi publik di masa depan)
+/docs/
+.config/
+artifacts/
 
 # =============================================
 # 🟡 DEPENDENCIES & BUILD OUTPUT
