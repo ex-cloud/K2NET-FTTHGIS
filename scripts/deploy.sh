@@ -95,8 +95,16 @@ if $BUILD_CMD; then
       echo "Backend is healthy!"
       
       # Now check frontend
-      echo "Checking health of frontend on port $PORT_FRONTEND..."
-      if curl -sI "http://127.0.0.1:$PORT_FRONTEND" | grep -q -E "HTTP/1\.[01] [23][0-9][0-9]|HTTP/2 [23][0-9][0-9]"; then
+      echo "Checking health of frontend..."
+      if [ "$ENV" = "production" ]; then
+        # Get internal container IP for production since port 3000 is not exposed to host
+        CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ftth-frontend 2>/dev/null || echo "127.0.0.1")
+        FRONTEND_URL="http://$CONTAINER_IP:3000"
+      else
+        FRONTEND_URL="http://127.0.0.1:$PORT_FRONTEND"
+      fi
+
+      if curl -sI "$FRONTEND_URL" | grep -q -E "HTTP/1\.[01] [23][0-9][0-9]|HTTP/2 [23][0-9][0-9]"; then
         echo "Frontend is healthy!"
         HEALTHY=true
         break
