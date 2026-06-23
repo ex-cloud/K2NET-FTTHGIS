@@ -1,6 +1,67 @@
 version: '3.8'
 
 services:
+  # Ingress Controller (Traefik v3)
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--log.level=info"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./docker/certs:/certs:ro"
+      - "./docker/traefik/dynamic:/etc/traefik/dynamic:ro"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # API Gateway (Kong in DB-less mode)
+  # Diakses oleh Nginx (host) melalui 127.0.0.1:8000
+  kong:
+    image: kong:latest
+    container_name: kong
+    restart: always
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/usr/local/kong/declarative/kong.yml"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_LOG_LEVEL: "info"
+    volumes:
+      - ./docker/kong/kong.yml:/usr/local/kong/declarative/kong.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8001:8001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`))"
+      - "traefik.http.routers.kong.entrypoints=websecure"
+      - "traefik.http.routers.kong.tls=true"
+      - "traefik.http.routers.kong.priority=10"
+      - "traefik.http.services.kong.loadbalancer.server.port=8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 512M
+
   # Database Spasial GIS
   postgres:
     image: pgrouting/pgrouting:16-3.5-4.0
@@ -57,8 +118,12 @@ services:
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: "${DB_PASSWORD}"
     command: start-dev --http-port=8081
-    ports:
-      - "127.0.0.1:8081:8081"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`auth-gis.k2net.id`)"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8081"
     volumes:
       - keycloak_data:/opt/keycloak/data
     depends_on:
@@ -77,8 +142,13 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
-    ports:
-      - "127.0.0.1:3001:3001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.martin.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
+      - "traefik.http.routers.martin.entrypoints=websecure"
+      - "traefik.http.routers.martin.tls=true"
+      - "traefik.http.routers.martin.priority=10"
+      - "traefik.http.services.martin.loadbalancer.server.port=3001"
     command: --listen-addresses 0.0.0.0:3001
     depends_on:
       postgres:
@@ -213,7 +283,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "0.0.0.0:9090:9090"
+      - "127.0.0.1:9090:9090"
     depends_on:
       postgres:
         condition: service_healthy
@@ -252,8 +322,13 @@ services:
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "127.0.0.1:3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     depends_on:
       backend:
         condition: service_started

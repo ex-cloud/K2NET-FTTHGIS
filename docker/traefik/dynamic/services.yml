@@ -1,0 +1,35 @@
+http:
+  routers:
+    poller-router:
+      rule: "(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && PathPrefix(`/poller/`)"
+      entrypoints:
+        - websecure
+      tls: {}
+      middlewares:
+        - poller-stripprefix
+      service: poller-service
+      priority: 15
+
+    sms-webhook-router:
+      rule: "(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && PathPrefix(`/webhooks/sms`)"
+      entrypoints:
+        - websecure
+      tls: {}
+      service: sms-webhook-service
+      priority: 15
+
+  middlewares:
+    poller-stripprefix:
+      stripPrefix:
+        prefixes:
+          - "/poller"
+
+  services:
+    poller-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:9091"
+    sms-webhook-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:5001"

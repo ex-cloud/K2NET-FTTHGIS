@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /certs/gis.pem
+      keyFile: /certs/gis.key
