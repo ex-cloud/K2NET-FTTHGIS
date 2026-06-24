@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # Ingress Controller (Traefik v3)
   traefik:
-    image: traefik:latest
+    image: traefik:3.7.5
     container_name: traefik
     restart: always
     command:
@@ -34,7 +32,7 @@ services:
   # API Gateway (Kong in DB-less mode)
   # Diakses oleh Nginx (host) melalui 127.0.0.1:8000
   kong:
-    image: kong:latest
+    image: kong:3.9.3
     container_name: kong
     restart: always
     environment:
@@ -137,7 +135,7 @@ services:
 
   # Martin Vector Tile Server (Rust PostGIS Map Tile Generator)
   martin:
-    image: maplibre/martin
+    image: maplibre/martin:v0.8.0
     container_name: ftth-martin
     restart: always
     environment:
@@ -174,7 +172,7 @@ services:
 
   # Centralized Monitoring (Prometheus)
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.11.3
     container_name: ftth-prometheus
     restart: always
     volumes:
@@ -195,9 +193,26 @@ services:
           cpus: '0.5'
           memory: 256M
 
+  # Alert Notification Manager (Alertmanager)
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: ftth-alertmanager
+    restart: always
+    volumes:
+      - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "127.0.0.1:9093:9093"
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+
   # Visualization Dashboard (Grafana)
   grafana:
-    image: grafana/grafana-oss:latest
+    image: grafana/grafana-oss:13.0.1
     container_name: ftth-grafana
     restart: always
     volumes:
@@ -205,7 +220,7 @@ services:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "127.0.0.1:3002:3000"
+      - "100.110.205.109:3002:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     deploy:
@@ -216,7 +231,7 @@ services:
 
   # Distributed Tracing (Zipkin)
   zipkin:
-    image: openzipkin/zipkin-slim:latest
+    image: openzipkin/zipkin-slim@sha256:fc29b9862c14f4fc241cf0259c585e1cfd4e9b18f01ad36d86adaabb7d01815c
     container_name: ftth-zipkin
     restart: always
     ports:
@@ -229,7 +244,7 @@ services:
 
   # Node Exporter (Host/OS metrics)
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.11.1
     container_name: ftth-node-exporter
     restart: always
     volumes:
@@ -289,6 +304,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -331,7 +351,12 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://$$(hostname -i):3000/login || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -340,12 +365,12 @@ services:
 
   # Self-Hosted S3-Compatible Object Storage (MinIO)
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: ftth-minio
     restart: always
     ports:
-      - "127.0.0.1:9005:9000" # API Port (Host: 9005)
-      - "127.0.0.1:9006:9001" # Web Console UI Port (Host: 9006)
+      - "100.110.205.109:9005:9000" # API Port (Tailscale only)
+      - "100.110.205.109:9006:9001" # Web Console UI Port (Tailscale only)
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
@@ -368,7 +393,7 @@ services:
 
   # Auto-initialize MinIO buckets on first boot
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     container_name: ftth-minio-init
     depends_on:
       minio:

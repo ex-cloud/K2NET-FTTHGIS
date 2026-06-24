@@ -1,6 +1,33 @@
 _format_version: "3.0"
 _transform: true
 
+# ====================================================
+# Consumers
+# ====================================================
+consumers:
+  # Keycloak JWT consumer — maps to authenticated users
+  - username: keycloak-users
+    jwt_secrets:
+      - key: "https://auth-gis.k2net.id/realms/ftth-realm"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1UQGxFRrdQqlqCq2ylve
+          fxDYLwJSPfjS+wYUcMQ4ZX/MBgPwm+wW3+LokFsVExqT+9NhK5yVcwRQJ27JdTMv
+          n8hV10sVjpKzqjQGthOwQ193nNnUGw1UqgRw29yTenc5qMlTqcgs/0uXif4HCqfB
+          83sZR0IFrZ1Dcpwh0+1kRxIyyiKpPqSTT8JtJTa6590sAljxM/TF/Ow60asqxBo+
+          z5OyU01ocJH+tPKv9LpZS+TcIyLuZQh/ikQjsQd8yJwlEG0SiLSEjPCXcnYUWFI8
+          UH/lcJji2aFaGrIERnILEZrEkjQD12/R7CsU5ZNJaCadNWlCtE2fTjZAZCaW/1PM
+          IwIDAQAB
+          -----END PUBLIC KEY-----
+
+  # Anonymous consumer — allows requests without a valid JWT to pass through
+  # Kong won't block them; Spring Boot will enforce auth on protected endpoints
+  - username: anonymous-user
+
+# ====================================================
+# Services & Routes
+# ====================================================
 services:
   # ====================================================
   # Spring Boot Backend (Docker container)
@@ -12,10 +39,50 @@ services:
         paths:
           - /api/v1
         strip_path: false
+        plugins:
+          # JWT verification — validates token signature against Keycloak public key
+          # If token is absent or invalid, falls back to anonymous-user (no 401 from Kong)
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+              run_on_preflight: false
+          # Extract JWT claims into upstream headers
+          - name: post-function
+            config:
+              access:
+                - |
+                  local claims = kong.ctx.shared.jwt_claims
+                  if claims then
+                      kong.service.request.set_header("X-User-Id", claims.sub or "")
+                      kong.service.request.set_header("X-User-Email", claims.email or "")
+                      kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
+
+                      local iss = claims.iss
+                      if iss then
+                          local parts = {}
+                          for part in string.gmatch(iss, "[^/]+") do
+                              table.insert(parts, part)
+                          end
+                          local realm = parts[#parts]
+                          if realm ~= "ftth-realm" then
+                              kong.service.request.set_header("X-Tenant-Id", realm)
+                          end
+                      end
+                  else
+                      -- Anonymous request: clear any spoofed headers
+                      kong.service.request.clear_header("X-User-Id")
+                      kong.service.request.clear_header("X-User-Email")
+                      kong.service.request.clear_header("X-User-Username")
+                      kong.service.request.clear_header("X-Tenant-Id")
+                  end
+
       - name: backend-actuator-route
         paths:
           - /actuator
         strip_path: false
+        # No JWT plugin — actuator is public for health checks
 
   # ====================================================
   # Go Microservices (systemd on host)
@@ -49,6 +116,7 @@ services:
         strip_path: false
         methods:
           - POST
+        # No JWT plugin — callback from external payment gateway
 
   - name: storage-gateway-service
     url: http://host.docker.internal:5004
@@ -58,6 +126,9 @@ services:
           - /gateway/storage
         strip_path: true
 
+# ====================================================
+# Global Plugins
+# ====================================================
 plugins:
   - name: cors
     config:

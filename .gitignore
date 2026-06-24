@@ -70,3 +70,4 @@ Thumbs.db
 *.tmp
 migration_monorepo/
 lint_output.txt
+docker/alertmanager/alertmanager.yml
