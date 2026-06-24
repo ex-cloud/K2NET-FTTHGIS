@@ -27,19 +27,16 @@
 
 ## Features
 
-- [x] **GIS Dashboard** — Peta interaktif berbasis MapLibre GL JS untuk visualisasi jaringan fiber optik (ODC, ODP, kabel, pelanggan)
-- [x] **Multi-Tenant Architecture** — Isolasi data per organisasi dengan subdomain routing (`<org>.gis.k2net.id`)
-- [x] **Authentication & SSO** — Keycloak OpenID Connect dengan dukungan Google & GitHub OAuth
-- [x] **REST API** — Spring Boot API dengan JWT token verification & role-based access control
-- [x] **Real-time Monitoring** — SNMP Poller untuk monitoring perangkat jaringan secara real-time
-- [x] **Microservices Gateway** — Go-based gateways untuk payment, notification, map, dan storage
-- [x] **Object Storage** — Self-hosted MinIO (S3-compatible) untuk upload file & aset
-- [x] **Observability Stack** — Prometheus + Grafana + Alertmanager + Zipkin (metrics, alerts, tracing)
-- [x] **API Gateway** — Kong (DB-less) dengan JWT verification offloading & rate limiting
-- [x] **Reverse Proxy** — Traefik v3 dengan Cloudflare Origin CA SSL
-- [ ] Landing Page & Public Docs *(Fase 3)*
-
----
+- [x] **Interactive GIS Dashboard** — Visualisasi aset jaringan fiber optik secara *real-time* (jalur kabel backbone/distribusi, tiang, penempatan ODC/ODP, status redaman, dan pemetaan port pelanggan) berbasis MapLibre GL JS.
+- [x] **Web-QGIS Design & Simulation Mode** — Fitur cerdas pemisahan area *Operasional (O&M)* dan *Perencanaan (Planning)*. Admin tenant dapat mensimulasikan coretan jalur ekspansi, menghitung otomatis kebutuhan kabel (*Bill of Quantity - BoQ*), mendeteksi *Blank Spot* pemukiman via **Buffer Analysis**, serta menggambar jalur kabel otomatis mengikuti jalan raya raya via **pgRouting**.
+- [x] **Multi-Tenant Monorepo Architecture** — Isolasi data tingkat tinggi antar organisasi/ISP secara logis pada level database, storage, dan routing terpusat menggunakan sub-domain dinamis (`<tenant>.gis.k2net.id`) dikelola dalam satu repositori terpadu ala Supabase.
+- [x] **Identity Management & SSO** — Autentikasi terpusat berskala industri menggunakan Keycloak OpenID Connect (OIDC) yang mendukung proteksi multi-realm serta integrasi aman Google & GitHub OAuth.
+- [x] **Enterprise REST API Core** — Backend kokoh penopang logika bisnis utama (siklus hidup pelanggan, *automated billing engine* penagihan otomatis massal, inventaris perangkat, dan kontrol akses berbasis peran/RBAC).
+- [x] **Automated Provisioning SNMP Poller** — Layanan latar belakang (*daemon*) Go Poller asinkron terhubung via Redis Queue untuk mengotomatisasi perintah jaringan riil (*Zero-Touch Configuration*, pencarian otomatis SN modem baru, isolir otomatis saat jatuh tempo, dan buka isolir).
+- [x] **Microservices Integration Gateways** — Arsitektur pintu gerbang mikroservis berbasis Go yang efisien untuk menangani fungsionalitas spesifik (*payment callback handler*, *WhatsApp notification dispatch*, *MVT tile server proxy*, dan *MinIO storage broker*).
+- [x] **Unified API Gateway Layer** — Kong API Gateway bertindak sebagai "Satpam Digital" di pintu depan internal server guna melakukan *Auth Token Verification Offloading*, pembersihan header ilegal, CORS global, dan pembatasan laju trafik (*Rate Limiting*).
+- [x] **Edge Routing & Reverse Proxy** — Traefik v3 sebagai Ingress controller terluar yang memonitor API Docker secara dinavis untuk otomatisasi pembuatan sertifikat SSL HTTPS wildcard bagi tenant baru.
+- [x] **Cloud-Native Full Observability Suite** — Pengawasan infrastruktur 360 derajat yang menggabungkan metrik performa (*Prometheus*), pelacakan latensi request (*Zipkin Tracing via OpenTelemetry*), visualisasi metrik (*Grafana*), serta agregasi log terpusat rendah resource (*Grafana Loki + Promtail*).
 
 ## Architecture
 
@@ -87,21 +84,21 @@
 
 Setiap komponen dalam FTTH GIS menggunakan teknologi open-source yang battle-tested:
 
-| Komponen | Teknologi | Deskripsi |
-|:---------|:----------|:----------|
-| **Frontend** | [Next.js 15](https://nextjs.org/) | React-based dashboard dengan SSR, subdomain routing, & server actions |
-| **Backend API** | [Spring Boot 3](https://spring.io/projects/spring-boot) | REST API dengan OAuth2 Resource Server, JPA/Hibernate, & Zipkin tracing |
-| **Database** | [PostgreSQL 16 + PostGIS](https://postgis.net/) | Spatial database dengan pgRouting untuk analisis jaringan fiber |
-| **Auth** | [Keycloak 26](https://www.keycloak.org/) | OpenID Connect identity provider, multi-realm, SSO |
-| **API Gateway** | [Kong 3.9](https://konghq.com/) | DB-less mode, JWT verification offloading, CORS, rate limiting |
-| **Reverse Proxy** | [Traefik v3](https://traefik.io/) | Auto-discovery via Docker labels, Cloudflare Origin CA |
-| **Tile Server** | [Martin](https://maplibre.org/martin/) | PostGIS vector tile server untuk rendering peta |
-| **Microservices** | [Go + Gin](https://gin-gonic.com/) | Payment, Notification, Map, & Storage gateways |
-| **SNMP Poller** | Go (Custom) | Real-time monitoring perangkat jaringan (OLT, Switch) |
-| **Object Storage** | [MinIO](https://min.io/) | S3-compatible self-hosted storage |
-| **Monitoring** | [Prometheus](https://prometheus.io/) + [Grafana](https://grafana.com/) | Metrics collection & visualization dashboards |
-| **Alerting** | [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) | Alert routing ke Discord webhook |
-| **Tracing** | [Zipkin](https://zipkin.io/) | Distributed tracing untuk debugging request latency |
+| Komponen | Teknologi | Kategori | Deskripsi |
+|:---------|:----------|:---------|:----------|
+| **Frontend UI** | [Next.js 15](https://nextjs.org/) | App Core | Server-side rendering (SSR), middleware subdomain routing, Server Actions & UI konsisten terintegrasi via Shared Packages. |
+| **Backend API** | [Spring Boot 3](https://spring.io/projects/spring-boot) | Core Logic | REST API Engine berjalan di Java 21, diamankan OAuth2 Resource Server, abstraksi JPA/Hibernate, & OpenTelemetry integration. |
+| **Database** | [PostgreSQL 16 + PostGIS](https://postgis.net/) | Spatial DB | Penyimpanan relasional & spasial geometris dengan ekstensi `pgRouting` untuk kalkulasi topologi jaringan jalan raya. |
+| **Identity/Auth** | [Keycloak 26](https://www.keycloak.org/) | Identity / IAM | Penyedia identitas utama (Identity Provider), enkripsi token JWT, manajemen multi-realm, & RBAC token mapping. |
+| **API Gateway** | [Kong 3.9](https://konghq.com/) | Traffic Security | Berjalan pada DB-less mode, menangani JWT validation offloading, global CORS, & IP Rate Limiting. |
+| **Reverse Proxy** | [Traefik v3](https://traefik.io/) | Ingress Controller | Deteksi kontainer otomatis via Docker Labels, SSL Termination via Cloudflare Origin CA Certificate. |
+| **Tile Server** | [Martin](https://maplibre.org/martin/) | Geo Streaming | PostGIS Map Vector Tiles (MVT) server berkecepatan tinggi untuk streaming ribuan aset peta di browser tanpa lag. |
+| **Microservices** | [Go (Golang) + Gin](https://gin-gonic.com/) | Edge Gateways | 4 Microservices Go (Payment, Notification, Map, Storage) berjalan ringan di level host network. |
+| **Network Poller** | Go (Custom Daemon) | Automation | Mesin otomatisasi perangkat keras OLT/Mikrotik terintegrasi dengan `GoSNMP` & `Crypto/SSH` via Redis Message Broker. |
+| **Object Storage** | [MinIO](https://min.io/) | Asset Storage | S3-compatible self-hosted object storage untuk berkas KTP pelanggan & unggahan foto redaman teknisi lapangan. |
+| **Logging Suite** | [Grafana Loki + Promtail](https://grafana.com/oss/loki/) | Logging | Agregasi log terpusat berbasis kompresi metadata (*label-index*) untuk pelacakan log container & systemd. |
+| **Metrics Suite** | [Prometheus + Grafana](https://prometheus.io/) | Metrics | Pengumpul metrik (*Scraping mechanism*) performa host/container dipadukan dengan Visual Grafana Dashboard. |
+| **Distributed Tracing**| [Zipkin](https://zipkin.io/) | Request Tracing | Pelacakan visual linimasa latensi API (*Trace ID correlation*) dari pintu gerbang hingga ke lapisan database. |
 
 ---
 
