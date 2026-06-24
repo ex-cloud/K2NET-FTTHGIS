@@ -12,10 +12,6 @@
 
 <p align="center">
   <a href="https://gis.k2net.id"><strong>Live App »</strong></a>
-  ·
-  <a href="https://system-gis.k2net.id"><strong>System Portal »</strong></a>
-  ·
-  <a href="https://auth-gis.k2net.id"><strong>Auth Server »</strong></a>
 </p>
 
 <p align="center">
