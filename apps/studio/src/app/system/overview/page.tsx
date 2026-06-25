@@ -186,7 +186,7 @@ export default function SystemOverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
-  // Periodic polling for dynamic health metrics (every 15 seconds)
+// Periodic polling for dynamic health metrics and gateway status (every 15 seconds)
   useEffect(() => {
     if (!session?.accessToken) return;
 

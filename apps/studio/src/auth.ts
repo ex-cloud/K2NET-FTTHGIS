@@ -131,16 +131,14 @@ function getCookieDomain() {
       return undefined;
     }
 
-    // Only set a shared cookie domain for GIS platform subdomains.
-    // Avoid using `.k2net.id` because it would expose cookies to unrelated domains.
-    if (hostname.endsWith("gis.k2net.id")) {
-      return ".gis.k2net.id";
-    }
-    if (hostname.endsWith("gis-staging.k2net.id")) {
-      return ".gis-staging.k2net.id";
+    // Shared cookie domain for the trusted k2net.id platform.
+    // This covers both `system-gis.k2net.id` and subdomains like `garut.gis.k2net.id`.
+    if (hostname === "k2net.id" || hostname.endsWith(".k2net.id")) {
+      return ".k2net.id";
     }
 
-    // For unknown hosts, fallback to default NextAuth behavior.
+    // For hyphen-style hosts like system-gis.k2net.id, use host-only cookies.
+    // Browser rejects `.gis.k2net.id` for this pattern because it is not a parent domain.
     return undefined;
   } catch {
     return undefined;
