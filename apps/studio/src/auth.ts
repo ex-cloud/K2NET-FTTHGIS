@@ -130,10 +130,17 @@ function getCookieDomain() {
     if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
       return undefined;
     }
-    const parts = hostname.split(".");
-    if (parts.length >= 2) {
-      return "." + parts.slice(-2).join(".");
+
+    // Only set a shared cookie domain for GIS platform subdomains.
+    // Avoid using `.k2net.id` because it would expose cookies to unrelated domains.
+    if (hostname.endsWith("gis.k2net.id")) {
+      return ".gis.k2net.id";
     }
+    if (hostname.endsWith("gis-staging.k2net.id")) {
+      return ".gis-staging.k2net.id";
+    }
+
+    // For unknown hosts, fallback to default NextAuth behavior.
     return undefined;
   } catch {
     return undefined;
