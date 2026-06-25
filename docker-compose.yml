@@ -112,6 +112,7 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME: https://auth-gis.k2net.id
       KC_HTTP_ENABLED: "true"
+      KC_HTTP_CHALLENGE_COOKIE_SAME_SITE: "lax"
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
       KC_DB_USERNAME: postgres
