@@ -98,8 +98,8 @@ export async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    cookieName: "next-auth.session-token",
-    secureCookie: false, // Must be false since cookieName in auth.ts is hardcoded to "next-auth.session-token" without __Secure- prefix
+    cookieName: "k2net-gis.session-token",
+    secureCookie: false, // Must be false since cookieName in auth.ts is not using __Secure- prefix
   });
   const isLoggedIn = !!token;
 

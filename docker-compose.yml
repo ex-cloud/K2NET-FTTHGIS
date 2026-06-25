@@ -49,10 +49,11 @@ services:
       - "127.0.0.1:8001:8001"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`))"
+      # - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`))"
+      - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
       - "traefik.http.routers.kong.entrypoints=websecure"
       - "traefik.http.routers.kong.tls=true"
-      - "traefik.http.routers.kong.priority=10"
+      - "traefik.http.routers.kong.priority=100"
       - "traefik.http.services.kong.loadbalancer.server.port=8000"
     deploy:
       resources:

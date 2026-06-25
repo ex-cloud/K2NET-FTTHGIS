@@ -420,7 +420,7 @@ export const baseAuthOptions: NextAuthConfig = {
   },
   cookies: {
     sessionToken: {
-      name: "next-auth.session-token",
+      name: "k2net-gis.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -430,7 +430,7 @@ export const baseAuthOptions: NextAuthConfig = {
       },
     },
     callbackUrl: {
-      name: "next-auth.callback-url",
+      name: "k2net-gis.callback-url",
       options: {
         path: "/",
         domain: getCookieDomain(),
@@ -438,7 +438,7 @@ export const baseAuthOptions: NextAuthConfig = {
       },
     },
     csrfToken: {
-      name: "next-auth.csrf-token",
+      name: "k2net-gis.csrf-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
