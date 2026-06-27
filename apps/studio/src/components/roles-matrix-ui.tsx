@@ -316,13 +316,13 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
 
       {/* TAMPILAN UTAMA 1: MATRIX TABLE */}
       {viewMode === "table" && (
-        <div className="w-full overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-md shadow-2xl">
-          <table className="w-full border-collapse text-left text-sm">
+        <div className="w-full overflow-auto rounded-xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-md shadow-2xl max-h-[calc(100vh-280px)] custom-scrollbar relative">
+          <table className="w-full border-collapse text-left text-sm border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/80 sticky top-0 backdrop-blur-md">
-                <th className="p-4 font-medium text-zinc-300 min-w-[280px]">Modul & Hak Akses</th>
+              <tr className="border-b border-zinc-800">
+                <th className="sticky left-0 top-0 z-40 bg-zinc-950 p-4 font-medium text-zinc-300 border-r border-b border-zinc-800 min-w-[280px] shadow-[2px_2px_5px_rgba(0,0,0,0.5)]">Modul & Hak Akses</th>
                 {roles.map((role) => (
-                  <th key={role.id} className="p-4 font-medium text-center min-w-[150px] border-l border-zinc-900">
+                  <th key={role.id} className="sticky top-0 z-30 p-4 font-medium text-center min-w-[150px] border-b border-zinc-800 bg-zinc-950 shadow-[0_2px_3px_rgba(0,0,0,0.3)]">
                     <span className="block text-zinc-200 font-semibold">{role.displayName || role.name}</span>
                     <span className="block text-[10px] text-zinc-500 font-mono mt-0.5">{role.name}</span>
                     
@@ -354,15 +354,16 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 <React.Fragment key={moduleName}>
                   {/* Row Header untuk Sub-Modul */}
                   <tr className="bg-zinc-900/30 font-medium text-xs tracking-wider text-zinc-400">
-                    <td colSpan={roles.length + 1} className="px-4 py-2 bg-zinc-900/40 border-y border-zinc-900 font-mono uppercase text-emerald-500/90">
+                    <td className="sticky left-0 z-20 bg-zinc-900/80 px-4 py-2 text-emerald-500/90 font-mono uppercase border-r border-zinc-800">
                       📦 {moduleName}
                     </td>
+                    <td colSpan={roles.length} className="px-4 py-2 bg-zinc-900/40 border-y border-zinc-900" />
                   </tr>
                   
                   {/* Baris Item Permission */}
                   {perms.map((perm) => (
                     <tr key={perm.id} className="hover:bg-zinc-900/40 transition-colors group">
-                      <td className="p-4">
+                      <td className="sticky left-0 z-10 bg-[#0c0c0c] p-4 border-r border-zinc-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] group-hover:bg-zinc-800 transition-colors">
                         <div className="font-medium text-zinc-200 group-hover:text-white">
                           {perm.description || perm.code}
                         </div>
