@@ -24,7 +24,7 @@ public class AnalyticsController {
     private final NetworkEventRepository networkEventRepository;
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<DashboardStatsDTO> getDashboardStats(@RequestParam(required = false) UUID projectId) {
         return ResponseEntity.ok(analyticsService.getDashboardStats(projectId));
     }
@@ -35,7 +35,7 @@ public class AnalyticsController {
      * /api/v1/analytics/history?from=2026-02-10T00:00:00&to=2026-02-11T23:59:59
      */
     @GetMapping("/history")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<SnapshotDTO>> getSnapshotHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
@@ -47,7 +47,7 @@ public class AnalyticsController {
      * Returns individual network events for scatter plot visualization.
      */
     @GetMapping("/events")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPER_ADMIN', 'TENANT_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<NetworkEvent>> getEventHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,

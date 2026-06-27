@@ -45,6 +45,10 @@ public class Permission extends AuditableEntity {
     @Column(nullable = false)
     private String module; 
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String scope = "TENANT";
+
     @JsonIgnore
     @ManyToMany(mappedBy = "permissions")
     @Builder.Default

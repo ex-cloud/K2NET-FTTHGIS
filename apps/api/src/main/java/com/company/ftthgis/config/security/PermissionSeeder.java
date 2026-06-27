@@ -71,8 +71,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("users.view", "View Team Users", "Security"),
             new PermissionData("users.manage", "Manage User Status", "Security"),
 
-            new PermissionData("orgs.view", "View Organizations", "System"),
-            new PermissionData("orgs.manage", "Manage Organizations", "System"),
+            new PermissionData("orgs.view", "View Organizations", "System", "SYSTEM"),
+            new PermissionData("orgs.manage", "Manage Organizations", "System", "SYSTEM"),
             
             // Tenant Organization Settings
             new PermissionData("organizations.view", "View Organization Details", "Organization"),
@@ -88,12 +88,20 @@ public class PermissionSeeder implements CommandLineRunner {
         Set<Permission> allPermissionsInDb = new HashSet<>();
         for (PermissionData data : permissionsToSeed) {
             Permission p = permissionRepository.findByCode(data.code)
+                    .map(existing -> {
+                        if (!data.scope.equals(existing.getScope())) {
+                            existing.setScope(data.scope);
+                            return permissionRepository.save(existing);
+                        }
+                        return existing;
+                    })
                     .orElseGet(() -> {
                         log.info("🆕 Adding missing permission: {}", data.code);
                         Permission newP = Permission.builder()
                                 .code(data.code)
                                 .name(data.name)
                                 .module(data.module)
+                                .scope(data.scope)
                                 .description("Automatically seeded permission for " + data.module)
                                 .build();
                         return permissionRepository.save(newP);
@@ -117,6 +125,10 @@ public class PermissionSeeder implements CommandLineRunner {
 
     private void syncSystemRole(String roleName, Set<Permission> allPermissions, String... prefixes) {
         roleRepository.findByNameAndIsSystemRoleTrue(roleName).ifPresent(role -> {
+            String expectedScope = "super_admin".equalsIgnoreCase(roleName) ? "SYSTEM" : "TENANT";
+            if (!expectedScope.equals(role.getScope())) {
+                role.setScope(expectedScope);
+            }
             syncRolePermissions(role, allPermissions, prefixes);
         });
     }
@@ -171,5 +183,13 @@ public class PermissionSeeder implements CommandLineRunner {
         String code;
         String name;
         String module;
+        String scope;
+
+        PermissionData(String code, String name, String module) {
+            this.code = code;
+            this.name = name;
+            this.module = module;
+            this.scope = "TENANT";
+        }
     }
 }

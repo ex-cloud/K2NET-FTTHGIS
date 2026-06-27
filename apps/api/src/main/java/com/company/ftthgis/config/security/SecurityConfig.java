@@ -55,12 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
                         .requestMatchers("/api/v1/network/notifications/**").permitAll()
-                        .requestMatchers("/api/v1/network/assets/**").permitAll()
                         .requestMatchers("/api/payments/callback").permitAll()
                         .requestMatchers("/api/v1/network/trace-path/**").authenticated()
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
-                        .requestMatchers("/api/v1/network/analytics/**").permitAll()
-                        .requestMatchers("/api/v1/analytics/**").permitAll() // Correct path for AnalyticsController
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)

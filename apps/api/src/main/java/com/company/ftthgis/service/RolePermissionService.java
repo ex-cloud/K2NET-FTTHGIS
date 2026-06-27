@@ -26,7 +26,7 @@ public class RolePermissionService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public List<Role> getRoles() {
+    public List<Role> getRoles(String scopeFilter) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Jwt)) {
             return List.of();
@@ -35,13 +35,14 @@ public class RolePermissionService {
         Jwt jwt = (Jwt) auth.getPrincipal();
         boolean isSuperAdmin = hasRole(jwt, "super_admin");
 
+        List<Role> rawRoles;
         if (isSuperAdmin) {
             // 1. SYSTEM ADMIN VIEW: Only see pure master templates (no duplicates, no tenant roles)
-            return roleRepository.findByIsSystemRoleTrueAndOrganizationIsNull();
+            rawRoles = roleRepository.findByIsSystemRoleTrueAndOrganizationIsNull();
         } else {
             // 2. TENANT VIEW: See filtered templates (NO super_admin) + their own organization's roles
             UUID userId = UUID.fromString(jwt.getSubject());
-            return userRepository.findById(userId)
+            rawRoles = userRepository.findById(userId)
                     .map(user -> {
                         if (user.getOrganization() == null) {
                             // Fallback for system-realm users who aren't super_admins (rare)
@@ -71,11 +72,44 @@ public class RolePermissionService {
                     })
                     .orElse(List.of());
         }
+
+        // Apply scope filter if specified
+        if (scopeFilter != null && !scopeFilter.isEmpty()) {
+            return rawRoles.stream()
+                    .filter(r -> scopeFilter.equalsIgnoreCase(r.getScope()))
+                    .toList();
+        }
+        
+        // Fallback: Non-super_admin defaults to TENANT scope
+        if (!isSuperAdmin) {
+            return rawRoles.stream()
+                    .filter(r -> "TENANT".equalsIgnoreCase(r.getScope()))
+                    .toList();
+        }
+        
+        return rawRoles;
     }
 
     @Transactional(readOnly = true)
-    public List<Permission> getAllPermissions() {
-        return permissionRepository.findAll();
+    public List<Permission> getAllPermissions(String scopeFilter) {
+        List<Permission> allPerms = permissionRepository.findAll();
+        if (scopeFilter != null && !scopeFilter.isEmpty()) {
+            return allPerms.stream()
+                    .filter(p -> scopeFilter.equalsIgnoreCase(p.getScope()))
+                    .toList();
+        }
+        
+        // Fallback: if not super admin, only return TENANT scope permissions
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) auth.getPrincipal();
+            if (!hasRole(jwt, "super_admin")) {
+                return allPerms.stream()
+                        .filter(p -> "TENANT".equalsIgnoreCase(p.getScope()))
+                        .toList();
+            }
+        }
+        return allPerms;
     }
 
     @Transactional

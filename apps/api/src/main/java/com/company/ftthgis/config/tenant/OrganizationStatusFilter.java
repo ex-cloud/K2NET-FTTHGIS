@@ -34,54 +34,59 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth != null && auth.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) auth.getPrincipal();
-            String issuer = jwt.getIssuer().toString();
-            
-            // Extract slug from issuer (e.g., http://localhost:8081/realms/test -> test)
-            String[] parts = issuer.split("/");
-            String slug = parts[parts.length - 1];
-
-            // Skip check for the master system realm
-            if (!"ftth-realm".equals(slug) && !"master".equals(slug)) {
-                Optional<Organization> orgOpt = organizationRepository.findBySlug(slug);
+        try {
+            if (auth != null && auth.getPrincipal() instanceof Jwt) {
+                Jwt jwt = (Jwt) auth.getPrincipal();
+                String issuer = jwt.getIssuer().toString();
                 
-                if (orgOpt.isPresent()) {
-                    Organization org = orgOpt.get();
+                // Extract slug from issuer (e.g., http://localhost:8081/realms/test -> test)
+                String[] parts = issuer.split("/");
+                String slug = parts[parts.length - 1];
+
+                // Skip check for the master system realm
+                if (!"ftth-realm".equals(slug) && !"master".equals(slug)) {
+                    Optional<Organization> orgOpt = organizationRepository.findBySlug(slug);
                     
-                    if (org.getStatus() == Organization.OrganizationStatus.SUSPENDED || 
-                        org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED) {
+                    if (orgOpt.isPresent()) {
+                        Organization org = orgOpt.get();
+                        OrganizationContext.setOrganizationId(org.getId());
                         
-                        // Define SAFE paths (Supabase style: still can see profile/billing)
-                        String path = request.getRequestURI();
-                        String method = request.getMethod();
-                        
-                        boolean isSafePath = path.equals("/api/v1/organizations") ||  // Org list (for /org page)
-                                             path.equals("/api/v1/organizations/" + slug) || // Org detail ONLY (not sub-paths!)
-                                             path.contains("/api/v1/users/me") ||     // Profile (for login flow)
-                                             path.contains("/api/v1/billing") ||
-                                             path.contains("/api/v1/auth/logout");
-
-                        // Allow ALL read-only access (GET) to any endpoint so the UI can display data.
-                        // This fulfills the "Read-Only" requirement for suspended tenants.
-                        if ("GET".equalsIgnoreCase(method)) {
-                            isSafePath = true;
-                        }
-
-                        // Block all WRITE operations and sensitive data access
-                        if (!isSafePath || (!"GET".equalsIgnoreCase(method) && !path.contains("/billing") && !path.contains("/auth/logout"))) {
-                            log.warn("🛡️ ENFORCEMENT: Access blocked for suspended organization: {} - Path: {}", slug, path);
+                        if (org.getStatus() == Organization.OrganizationStatus.SUSPENDED || 
+                            org.getStatus() == Organization.OrganizationStatus.TRIAL_EXPIRED) {
                             
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\": \"ORGANIZATION_SUSPENDED\", \"message\": \"Your trial has expired. Please upgrade your plan to continue.\"}");
-                            return;
+                            // Define SAFE paths (Supabase style: still can see profile/billing)
+                            String path = request.getRequestURI();
+                            String method = request.getMethod();
+                            
+                            boolean isSafePath = path.equals("/api/v1/organizations") ||  // Org list (for /org page)
+                                                 path.equals("/api/v1/organizations/" + slug) || // Org detail ONLY (not sub-paths!)
+                                                 path.contains("/api/v1/users/me") ||     // Profile (for login flow)
+                                                 path.contains("/api/v1/billing") ||
+                                                 path.contains("/api/v1/auth/logout");
+
+                            // Allow ALL read-only access (GET) to any endpoint so the UI can display data.
+                            // This fulfills the "Read-Only" requirement for suspended tenants.
+                            if ("GET".equalsIgnoreCase(method)) {
+                                isSafePath = true;
+                            }
+
+                            // Block all WRITE operations and sensitive data access
+                            if (!isSafePath || (!"GET".equalsIgnoreCase(method) && !path.contains("/billing") && !path.contains("/auth/logout"))) {
+                                log.warn("🛡️ ENFORCEMENT: Access blocked for suspended organization: {} - Path: {}", slug, path);
+                                
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\": \"ORGANIZATION_SUSPENDED\", \"message\": \"Your trial has expired. Please upgrade your plan to continue.\"}");
+                                return;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+        } finally {
+            OrganizationContext.clear();
+        }
     }
 }

@@ -21,14 +21,14 @@ public class RolePermissionController {
     // It returns isolated roles based on the JWT context
     @GetMapping
     @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.view')")
-    public ResponseEntity<List<Role>> getRoles() {
-        return ResponseEntity.ok(rolePermissionService.getRoles());
+    public ResponseEntity<List<Role>> getRoles(@RequestParam(required = false) String scope) {
+        return ResponseEntity.ok(rolePermissionService.getRoles(scope));
     }
 
     @GetMapping("/permissions")
     @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.view')")
-    public ResponseEntity<List<Permission>> getPermissions() {
-        return ResponseEntity.ok(rolePermissionService.getAllPermissions());
+    public ResponseEntity<List<Permission>> getPermissions(@RequestParam(required = false) String scope) {
+        return ResponseEntity.ok(rolePermissionService.getAllPermissions(scope));
     }
 
     @PutMapping("/{roleId}/permissions")

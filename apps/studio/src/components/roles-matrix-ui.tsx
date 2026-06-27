@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle, Shield, Building } from "lucide-react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
@@ -32,12 +32,17 @@ type Role = {
   permissions: Permission[];
 };
 
-export function RolesMatrixUI() {
+export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
   const { data: session } = useSession();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "list">("table");
+  
+  // Scope filter: SYSTEM (Control Plane) or TENANT (Data Plane)
+  const [selectedScope, setSelectedScope] = useState<"SYSTEM" | "TENANT">(
+    context === "system" ? "SYSTEM" : "TENANT"
+  );
 
   // States for Custom Confirmation Dialog
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -55,8 +60,8 @@ export function RolesMatrixUI() {
       const baseUrl = getBackendBaseUrl();
       
       const [rolesRes, permsRes] = await Promise.all([
-        httpClient(`${baseUrl}/roles`, { token: session.accessToken }),
-        httpClient(`${baseUrl}/roles/permissions`, { token: session.accessToken }),
+        httpClient(`${baseUrl}/roles?scope=${selectedScope}`, { token: session.accessToken }),
+        httpClient(`${baseUrl}/roles/permissions?scope=${selectedScope}`, { token: session.accessToken }),
       ]);
       
       if (!rolesRes.ok || !permsRes.ok) throw new Error("Failed to fetch data");
@@ -90,7 +95,7 @@ export function RolesMatrixUI() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, selectedScope]);
 
   useEffect(() => {
     fetchData();
@@ -159,7 +164,7 @@ export function RolesMatrixUI() {
 
   return (
     <div className="space-y-6 w-full overflow-x-hidden">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-100">Roles & Permissions</h2>
           <p className="text-sm text-zinc-400 mt-1">
@@ -167,22 +172,44 @@ export function RolesMatrixUI() {
           </p>
         </div>
         
-        {/* View Toggle */}
-        <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-          <button
-            onClick={() => setViewMode("table")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${viewMode === "table" ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-300"}`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Table
-          </button>
-          <button
-            onClick={() => setViewMode("list")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${viewMode === "list" ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-300"}`}
-          >
-            <List className="w-4 h-4" />
-            List
-          </button>
+        <div className="flex items-center gap-3">
+          {/* Scope Filter — only visible for system admin context */}
+          {context === "system" && (
+            <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+              <button
+                onClick={() => setSelectedScope("SYSTEM")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${selectedScope === "SYSTEM" ? "bg-emerald-600/20 text-emerald-400 border border-emerald-600/50" : "text-zinc-400 hover:text-zinc-300"}`}
+              >
+                <Shield className="w-4 h-4" />
+                System
+              </button>
+              <button
+                onClick={() => setSelectedScope("TENANT")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${selectedScope === "TENANT" ? "bg-blue-600/20 text-blue-400 border border-blue-600/50" : "text-zinc-400 hover:text-zinc-300"}`}
+              >
+                <Building className="w-4 h-4" />
+                Tenant
+              </button>
+            </div>
+          )}
+
+          {/* View Toggle */}
+          <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${viewMode === "table" ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-300"}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Table
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${viewMode === "list" ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-300"}`}
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
+          </div>
         </div>
       </div>
 

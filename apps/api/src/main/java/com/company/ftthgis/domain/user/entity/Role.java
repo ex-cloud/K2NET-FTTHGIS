@@ -43,6 +43,10 @@ public class Role extends AuditableEntity {
     @com.fasterxml.jackson.annotation.JsonProperty("isSystemRole")
     private boolean isSystemRole = false;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String scope = "TENANT";
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
     @JsonIgnore
