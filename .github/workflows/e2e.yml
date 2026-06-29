@@ -12,9 +12,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set environment variables for Docker Compose
+        run: |
+          echo "DB_PASSWORD=postgres_test_password" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=postgres_test_password" >> $GITHUB_ENV
+
       - name: Start services with Docker Compose
         run: docker compose -f docker-compose.yml up -d --build backend frontend postgres redis
         timeout-minutes: 15
+        env:
+          DB_PASSWORD: postgres_test_password
 
       - name: Wait for backend health
         run: |
