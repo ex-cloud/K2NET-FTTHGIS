@@ -34,6 +34,8 @@ public class Role extends AuditableEntity {
     @Column(nullable = false)
     private String name; // e.g., "super_admin", "admin", "technician"
 
+    private String code; // e.g., "SYS-01", "TENT-01"
+
     private String displayName;
 
     private String description;

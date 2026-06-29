@@ -26,10 +26,12 @@ type Permission = {
 type Role = {
   id: number;
   name: string;
+  code?: string;
   displayName: string;
   description: string;
   isSystemRole: boolean;
   permissions: Permission[];
+  scope?: "SYSTEM" | "TENANT";
 };
 
 export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
@@ -324,7 +326,10 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 {roles.map((role) => (
                   <th key={role.id} className="sticky top-0 z-30 p-4 font-medium text-center min-w-[150px] border-b border-zinc-800 bg-zinc-950 shadow-[0_2px_3px_rgba(0,0,0,0.3)]">
                     <span className="block text-zinc-200 font-semibold">{role.displayName || role.name}</span>
-                    <span className="block text-[10px] text-zinc-500 font-mono mt-0.5">{role.name}</span>
+                    <span className="block text-[10px] font-mono font-bold text-emerald-400 mt-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 inline-block">
+                      {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
+                    </span>
+                    <span className="block text-[10px] text-zinc-500 font-mono mt-1">({role.name})</span>
                     
                     {/* Role Type Indicator Badge */}
                     <div className="mt-1 flex items-center justify-center gap-1">
@@ -412,7 +417,12 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 <div className="flex items-start justify-between pb-3 border-b border-zinc-900">
                   <div>
                     <h3 className="font-semibold text-zinc-100 text-base">{role.displayName || role.name}</h3>
-                    <p className="text-xs font-mono text-zinc-500">{role.name}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                        {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
+                      </span>
+                      <span className="text-xs font-mono text-zinc-500">({role.name})</span>
+                    </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-1">

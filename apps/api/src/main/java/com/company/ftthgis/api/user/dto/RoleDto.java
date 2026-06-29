@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class RoleDto {
     private Long id;
     private String name;
+    private String code;
     private String displayName;
     private String description;
 }

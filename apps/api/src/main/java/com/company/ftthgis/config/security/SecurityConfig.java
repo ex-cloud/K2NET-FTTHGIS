@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/payments/callback").permitAll()
                         .requestMatchers("/api/v1/network/trace-path/**").authenticated()
                         .requestMatchers("/api/v1/network/assets/**").authenticated()
+                        .requestMatchers("/api/v1/organizations/register").permitAll() // Self-service tenant registration
+                        .requestMatchers("/api/v1/organizations/check-slug/**").permitAll() // Slug availability check
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)

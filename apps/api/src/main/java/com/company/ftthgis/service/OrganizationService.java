@@ -420,4 +420,141 @@ public class OrganizationService {
         log.info("✅ Successfully upgraded organization '{}' to plan '{}'", slug, planName);
         return true;
     }
+
+    @Transactional
+    public Organization registerSelfService(OrganizationCreateRequest request) {
+        if (organizationRepository.existsBySlug(request.getSlug())) {
+            throw new RuntimeException("Organization with slug '" + request.getSlug() + "' already exists!");
+        }
+
+        log.info("📝 Self-service registration for tenant: {} with slug: {}", request.getName(), request.getSlug());
+
+        SubscriptionPlan plan = subscriptionPlanRepository
+                .findByName(request.getPlan() != null ? request.getPlan() : "FREE")
+                .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
+
+        Organization org = Organization.builder()
+                .name(request.getName())
+                .slug(request.getSlug())
+                .description(request.getDescription())
+                .address(request.getAddress())
+                .website(request.getWebsite())
+                .subscriptionPlan(plan)
+                .status(Organization.OrganizationStatus.PENDING_APPROVAL)
+                .build();
+
+        Organization saved = organizationRepository.save(org);
+        
+        // Save temporary admin details in config
+        saveConfig(saved, "pending_admin_email", request.getAdminEmail());
+        saveConfig(saved, "pending_admin_username", request.getAdminUsername() != null ? request.getAdminUsername() : request.getAdminEmail());
+        if (request.isLdapEnabled()) {
+            saveConfig(saved, "ldap_enabled", "true");
+            saveConfig(saved, "ldap_url", request.getLdapUrl());
+            saveConfig(saved, "ldap_base_dn", request.getLdapBaseDn());
+            saveConfig(saved, "ldap_bind_dn", request.getLdapBindDn());
+            if (request.getLdapBindPassword() != null && !request.getLdapBindPassword().isEmpty()) {
+                try {
+                    saveConfig(saved, "ldap_bind_password", encryptionUtils.encrypt(request.getLdapBindPassword()));
+                } catch (Exception e) {
+                    log.error("Failed to encrypt LDAP password: {}", e.getMessage());
+                }
+            }
+        }
+        
+        return saved;
+    }
+
+    @Transactional
+    public java.util.Map<String, Object> approveOrganization(java.util.UUID orgId) {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new RuntimeException("Organization not found with ID: " + orgId));
+
+        if (org.getStatus() != Organization.OrganizationStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("Organization is not in PENDING_APPROVAL status!");
+        }
+
+        log.info("✅ Approving tenant organization: {} (Slug: {})", org.getName(), org.getSlug());
+
+        // Retrieve pending admin details from config
+        String adminEmail = org.getConfigs().stream()
+                .filter(c -> "pending_admin_email".equals(c.getConfigKey()))
+                .map(OrganizationConfig::getConfigValue)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Pending admin email not found in configuration!"));
+
+        String adminUsername = org.getConfigs().stream()
+                .filter(c -> "pending_admin_username".equals(c.getConfigKey()))
+                .map(OrganizationConfig::getConfigValue)
+                .findFirst()
+                .orElse(adminEmail);
+
+        boolean ldapEnabled = org.getConfigs().stream()
+                .anyMatch(c -> "ldap_enabled".equals(c.getConfigKey()) && "true".equals(c.getConfigValue()));
+
+        // Update status to ACTIVE
+        org.setStatus(Organization.OrganizationStatus.ACTIVE);
+        
+        // Handle Trial Expiry for FREE plan (7 Days Trial)
+        if (org.getSubscriptionPlan() != null && "FREE".equalsIgnoreCase(org.getSubscriptionPlan().getName())) {
+            org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+        }
+
+        Organization saved = organizationRepository.saveAndFlush(org);
+
+        // Provision Keycloak
+        String tempPassword = "Temp@" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        try {
+            log.info("🔑 Provisioning Keycloak for approved organization: {}", saved.getSlug());
+            keycloakService.ensureRealmExists(saved.getSlug());
+
+            String ownerRoleName = "admin";
+            String keycloakId = keycloakService.createOwnerUser(saved.getSlug(), adminUsername, adminEmail, tempPassword, ownerRoleName);
+
+            log.info("💾 Saving local user mapping for approved tenant owner: {}", keycloakId);
+            com.company.ftthgis.domain.user.entity.User localUser = new com.company.ftthgis.domain.user.entity.User();
+            localUser.setId(java.util.UUID.fromString(keycloakId));
+            localUser.setUsername(adminUsername);
+            localUser.setEmail(adminEmail);
+            localUser.setOrganization(saved);
+            localUser.setStatus("ACTIVE");
+
+            com.company.ftthgis.domain.user.entity.Role adminRole = roleRepository
+                    .findByNameAndIsSystemRoleTrue(ownerRoleName)
+                    .orElseThrow(() -> new RuntimeException("Required role '" + ownerRoleName + "' not found"));
+            localUser.setRole(adminRole);
+
+            entityManager.persist(localUser);
+
+            // Configure LDAP if enabled
+            if (ldapEnabled) {
+                log.info("📡 Configuring LDAP Federation for approved realm: {}", saved.getSlug());
+                com.company.ftthgis.config.tenant.LdapConfig ldapConfig = new com.company.ftthgis.config.tenant.LdapConfig();
+                
+                org.getConfigs().stream().filter(c -> "ldap_url".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setUrl(c.getConfigValue()));
+                org.getConfigs().stream().filter(c -> "ldap_base_dn".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setUserDn(c.getConfigValue()));
+                org.getConfigs().stream().filter(c -> "ldap_bind_dn".equals(c.getConfigKey())).findFirst().ifPresent(c -> ldapConfig.setBindDn(c.getConfigValue()));
+                org.getConfigs().stream().filter(c -> "ldap_bind_password".equals(c.getConfigKey())).findFirst().ifPresent(c -> {
+                    try {
+                        ldapConfig.setBindPassword(encryptionUtils.decrypt(c.getConfigValue()));
+                    } catch (Exception e) {
+                        log.error("Failed to decrypt LDAP password: {}", e.getMessage());
+                    }
+                });
+
+                keycloakService.configureLdap(saved.getSlug(), ldapConfig);
+            }
+
+            log.info("✅ APPROVED & PROVISIONED: Tenant '{}' is now active. Owner: {}", saved.getName(), adminUsername);
+
+        } catch (Exception e) {
+            log.error("❌ Keycloak provisioning failed during approval of {}: {}", saved.getSlug(), e.getMessage());
+            throw new RuntimeException("Approval failed due to security provisioning error: " + e.getMessage());
+        }
+
+        return java.util.Map.of(
+            "organization", saved,
+            "adminPassword", tempPassword
+        );
+    }
 }

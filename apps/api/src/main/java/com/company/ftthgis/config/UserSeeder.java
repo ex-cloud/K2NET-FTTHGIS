@@ -31,12 +31,51 @@ public class UserSeeder implements CommandLineRunner {
     private final KeycloakAdminService keycloakAdminService;
     private final UserSyncService userSyncService;
 
-    // Permission Definitions
-    // Permission Definitions based on Organization Roles Guide
+    // Role prefix and code mapping
+    private static final Map<String, String> SYSTEM_ROLE_CODES = new LinkedHashMap<>() {{
+        put("super_admin", "SYS-01");
+        put("system_support", "SYS-02");
+        put("system_billing", "SYS-03");
+        put("account_manager", "SYS-04");
+        put("system_auditor", "SYS-05");
+        put("platform_engineer", "SYS-06");
+    }};
+
+    private static final Map<String, String> TENANT_ROLE_CODES = new LinkedHashMap<>() {{
+        put("admin", "TENT-01");
+        put("noc", "TENT-02");
+        put("surveyor", "TENT-03");
+        put("technician", "TENT-04");
+        put("finance", "TENT-05");
+        put("helpdesk", "TENT-06");
+        put("supervisor", "TENT-07");
+        put("warehouse", "TENT-08");
+        put("auditor", "TENT-09");
+        put("vendor", "TENT-10");
+        put("viewer", "TENT-11");
+    }};
+
+    // Permission mappings for both scopes
     private static final Map<String, List<String>> ROLE_PERMISSIONS = new LinkedHashMap<>() {{
-        put("super_admin", List.of("*.*")); // Full Access
+        // SYSTEM Roles
+        put("super_admin", List.of("*.*")); // Full access
+        put("system_support", List.of("system.support.impersonate", "orgs.view"));
+        put("system_billing", List.of("system.billing.manage"));
+        put("account_manager", List.of(
+            "system.tenants.create", "system.tenants.approve", "system.tenants.suspend",
+            "system.contracts.view", "system.contracts.upload", "system.quotas.manage", "orgs.view"
+        ));
+        put("system_auditor", List.of("system.audit.view", "orgs.view"));
+        put("platform_engineer", List.of("system.gis.manage"));
+
+        // TENANT Roles
         put("admin", List.of(
-            "inventory.*", "billing.*", "team.*", "network.*", "report.*", "customer.*", "ticket.*", "survey.*", "audit.*"
+            "inventory.view", "inventory.edit", "inventory.manage", "inventory.report",
+            "billing.view", "billing.manage", "team.view", "team.invite", "team.manage",
+            "network.view", "network.monitor", "network.manage", "network.nodes", "network.audit",
+            "report.view", "report.export", "customer.view", "ticket.view", "ticket.create", "ticket.update",
+            "survey.create", "audit.view", "approval.manage", "map.view", "map.edit",
+            "organizations.view", "organizations.update", "projects.view", "projects.create", "projects.edit", "projects.delete"
         ));
         put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));
         put("noc", List.of("network.view", "network.monitor", "inventory.view", "dashboard.view"));
@@ -64,7 +103,6 @@ public class UserSeeder implements CommandLineRunner {
             log.info("--- [USER SEEDER] Seeding Complete ---");
         } catch (Exception e) {
             log.error("--- [USER SEEDER] FAILED to complete seeding: {} ---", e.getMessage(), e);
-            // Don't rethrow to avoid killing the application
         }
     }
 
@@ -73,14 +111,24 @@ public class UserSeeder implements CommandLineRunner {
         ROLE_PERMISSIONS.values().forEach(allPermissions::addAll);
 
         for (String code : allPermissions) {
+            if ("*.*".equals(code)) continue;
+            
             if (!permissionRepository.existsByCode(code)) {
                 Permission p = new Permission();
                 p.setCode(code);
                 p.setName(code.replace(".", " ").toUpperCase());
                 p.setModule(code.split("\\.")[0]);
                 p.setDescription("Permission: " + code);
+                
+                // Determine scope based on naming convention
+                if (code.startsWith("system.") || code.startsWith("orgs.")) {
+                    p.setScope("SYSTEM");
+                } else {
+                    p.setScope("TENANT");
+                }
+                
                 permissionRepository.save(p);
-                log.info("Created Permission: {}", code);
+                log.info("Created Permission: {} with scope: {}", code, p.getScope());
             }
         }
     }
@@ -90,20 +138,32 @@ public class UserSeeder implements CommandLineRunner {
             String roleName = entry.getKey();
             Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName).orElse(null);
             
+            boolean isSystemScope = SYSTEM_ROLE_CODES.containsKey(roleName);
+            String roleCode = isSystemScope ? SYSTEM_ROLE_CODES.get(roleName) : TENANT_ROLE_CODES.get(roleName);
+
             if (role == null) {
                 role = new Role();
                 role.setName(roleName);
                 role.setDisplayName(roleName.replace("_", " ").toUpperCase());
                 role.setDescription("System Role: " + roleName);
                 role.setSystemRole(true);
-                log.info("Creating Role: {}", roleName);
+                role.setScope(isSystemScope ? "SYSTEM" : "TENANT");
+                role.setCode(roleCode);
+                log.info("Creating Role: {} ({}) with scope: {}", roleName, roleCode, role.getScope());
             } else {
-                log.info("Updating Role permissions: {}", roleName);
+                role.setCode(roleCode);
+                role.setScope(isSystemScope ? "SYSTEM" : "TENANT");
+                log.info("Updating Role: {} ({}) with scope: {}", roleName, roleCode, role.getScope());
             }
 
             Set<Permission> permissions = new HashSet<>();
             for (String permCode : entry.getValue()) {
-                permissionRepository.findByCode(permCode).ifPresent(permissions::add);
+                if ("*.*".equals(permCode)) {
+                    // For super_admin, we can add all permissions
+                    permissionRepository.findAll().forEach(permissions::add);
+                } else {
+                    permissionRepository.findByCode(permCode).ifPresent(permissions::add);
+                }
             }
             role.setPermissions(permissions);
             roleRepository.save(role);
@@ -116,6 +176,7 @@ public class UserSeeder implements CommandLineRunner {
         Organization defaultOrg = organizationRepository.findBySlug("system").orElse(null);
         
         createUserIfNotExists("superadmin@example.com", "xsuperadmin", "Super Admin User", "super_admin", defaultPassword, "ACTIVE", null); // Platform level
+        createUserIfNotExists("accountmanager@example.com", "xaccountmanager", "Account Manager User", "account_manager", defaultPassword, "ACTIVE", null); // Platform level
         createUserIfNotExists("admin@example.com", "xadmin", "Admin User", "admin", defaultPassword, "ACTIVE", defaultOrg);
         createUserIfNotExists("noc@example.com", "xnoc", "NOC Operator", "noc", defaultPassword, "ACTIVE", defaultOrg);
         createUserIfNotExists("finance@example.com", "xfinance", "Finance Manager", "finance", defaultPassword, "ACTIVE", defaultOrg);

@@ -78,6 +78,7 @@ public class Organization {
 
     public enum OrganizationStatus {
         ACTIVE,
+        PENDING_APPROVAL,
         SUSPENDED,
         TRIAL_EXPIRED,
         DELETED

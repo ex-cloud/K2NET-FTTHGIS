@@ -34,7 +34,7 @@ public class OrganizationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('super_admin')") // Only system super admin can create orgs
+    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('system.tenants.create')")
     public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
             java.util.Map<String, Object> result = organizationService.createOrganization(request);
@@ -45,6 +45,41 @@ public class OrganizationController {
                 "id", saved.getId().toString(),
                 "name", saved.getName(),
                 "slug", saved.getSlug(),
+                "adminPassword", adminPassword
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerSelfService(@RequestBody OrganizationCreateRequest request) {
+        try {
+            Organization saved = organizationService.registerSelfService(request);
+            return ResponseEntity.ok(java.util.Map.of(
+                "id", saved.getId().toString(),
+                "name", saved.getName(),
+                "slug", saved.getSlug(),
+                "status", saved.getStatus().toString()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{orgId}/approve")
+    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('system.tenants.approve')")
+    public ResponseEntity<?> approve(@PathVariable java.util.UUID orgId) {
+        try {
+            java.util.Map<String, Object> result = organizationService.approveOrganization(orgId);
+            Organization saved = (Organization) result.get("organization");
+            String adminPassword = (String) result.get("adminPassword");
+            
+            return ResponseEntity.ok(java.util.Map.of(
+                "id", saved.getId().toString(),
+                "name", saved.getName(),
+                "slug", saved.getSlug(),
+                "status", saved.getStatus().toString(),
                 "adminPassword", adminPassword
             ));
         } catch (RuntimeException e) {
