@@ -136,10 +136,25 @@ public class UserSeeder implements CommandLineRunner {
     private void seedRoles() {
         for (Map.Entry<String, List<String>> entry : ROLE_PERMISSIONS.entrySet()) {
             String roleName = entry.getKey();
-            Role role = roleRepository.findByNameAndIsSystemRoleTrue(roleName).orElse(null);
-            
+
             boolean isSystemScope = SYSTEM_ROLE_CODES.containsKey(roleName);
             String roleCode = isSystemScope ? SYSTEM_ROLE_CODES.get(roleName) : TENANT_ROLE_CODES.get(roleName);
+
+            // Look up by name + code to uniquely identify the canonical role.
+            // Fallback to findByNameAndIsSystemRoleTrue only if code is not set yet (first run).
+            Role role = null;
+            if (roleCode != null) {
+                List<Role> candidates = roleRepository.findAll().stream()
+                        .filter(r -> roleName.equals(r.getName()) && Boolean.TRUE.equals(r.isSystemRole()))
+                        .toList();
+                // Prefer the one matching the canonical code; fall back to first found
+                role = candidates.stream()
+                        .filter(r -> roleCode.equals(r.getCode()))
+                        .findFirst()
+                        .orElse(candidates.isEmpty() ? null : candidates.get(0));
+            } else {
+                role = roleRepository.findByNameAndIsSystemRoleTrue(roleName).orElse(null);
+            }
 
             if (role == null) {
                 role = new Role();

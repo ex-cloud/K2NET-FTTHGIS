@@ -29,7 +29,22 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalArgumentException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, "Invalid request", ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
+    }
+
+    /**
+     * Handles business rule violations such as quota exceeded or geofencing violations.
+     * Services throw RuntimeException directly for these cases.
+     * Returns 400 Bad Request with the actual message so the frontend can display it.
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        // Let Spring Security handle its own AccessDeniedException
+        if (ex instanceof org.springframework.security.access.AccessDeniedException ade) {
+            return handleAccessDenied(ade);
+        }
+        log.warn("Business rule violation: {}", ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
