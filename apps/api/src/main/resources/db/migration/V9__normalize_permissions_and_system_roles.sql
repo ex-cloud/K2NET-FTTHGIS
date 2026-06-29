@@ -7,15 +7,62 @@ ALTER TABLE roles_aud ADD COLUMN IF NOT EXISTS code VARCHAR(50);
 UPDATE permissions SET module = LOWER(module);
 
 -- Step 3: Consolidate 'tickets' to 'ticket' module
--- A. Update permissions code from 'tickets.*' to 'ticket.*'
-UPDATE permissions SET code = 'ticket.view', module = 'ticket' WHERE code = 'tickets.view';
-UPDATE permissions SET code = 'ticket.create', module = 'ticket' WHERE code = 'tickets.create';
-UPDATE permissions SET code = 'ticket.update', module = 'ticket' WHERE code = 'tickets.update';
-UPDATE permissions SET code = 'ticket.assign', module = 'ticket' WHERE code = 'tickets.assign';
+-- A. Ensure standard 'ticket.' permissions exist in the database
+INSERT INTO permissions (code, name, description, module, scope) VALUES
+('ticket.view', 'VIEW TICKET', 'Permission: ticket.view', 'ticket', 'TENANT'),
+('ticket.create', 'CREATE TICKET', 'Permission: ticket.create', 'ticket', 'TENANT'),
+('ticket.update', 'UPDATE TICKET', 'Permission: ticket.update', 'ticket', 'TENANT'),
+('ticket.assign', 'ASSIGN TICKET', 'Permission: ticket.assign', 'ticket', 'TENANT')
+ON CONFLICT (code) DO NOTHING;
 
--- B. Delete any duplicates that might have been created
-DELETE FROM permissions p1 USING permissions p2 
-WHERE p1.id > p2.id AND p1.code = p2.code;
+-- B. Prevent duplicate mapping errors in role_permissions table before remapping
+DELETE FROM role_permissions rp
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view')
+  AND rp.role_id IN (
+      SELECT rp2.role_id FROM role_permissions rp2 
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view')
+  );
+
+DELETE FROM role_permissions rp
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create')
+  AND rp.role_id IN (
+      SELECT rp2.role_id FROM role_permissions rp2 
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create')
+  );
+
+DELETE FROM role_permissions rp
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update')
+  AND rp.role_id IN (
+      SELECT rp2.role_id FROM role_permissions rp2 
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update')
+  );
+
+DELETE FROM role_permissions rp
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign')
+  AND rp.role_id IN (
+      SELECT rp2.role_id FROM role_permissions rp2 
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign')
+  );
+
+-- C. Remap all role_permissions references from tickets.xxx to ticket.xxx
+UPDATE role_permissions 
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view')
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view');
+
+UPDATE role_permissions 
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create')
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create');
+
+UPDATE role_permissions 
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update')
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update');
+
+UPDATE role_permissions 
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign')
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign');
+
+-- D. Safely delete the legacy tickets.xxx permissions
+DELETE FROM permissions WHERE code IN ('tickets.view', 'tickets.create', 'tickets.update', 'tickets.assign');
 
 -- Step 4: Add new system-scoped permissions
 INSERT INTO permissions (code, name, description, module, scope) VALUES
