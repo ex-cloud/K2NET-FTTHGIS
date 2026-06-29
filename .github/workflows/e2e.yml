@@ -18,15 +18,35 @@ jobs:
         env:
           DB_PASSWORD: postgres_test
 
+      - name: Wait and debug services startup
+        run: |
+          sleep 10
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo ""
+          echo "=== PostgreSQL logs ==="
+          docker logs ftth-postgres 2>&1 | tail -30
+          echo ""
+          echo "=== Redis logs ==="
+          docker logs ftth-redis 2>&1 | tail -20
+          echo ""
+          echo "=== Backend logs ==="
+          docker logs ftth-backend 2>&1 | tail -50
+
       - name: Wait for backend health
         run: |
-          for i in $(seq 1 60); do
-            if curl -fsS http://localhost:9090/actuator/health >/dev/null 2>&1; then
-              echo "backend healthy"; exit 0;
+          echo "Waiting for backend on :9090..."
+          for i in $(seq 1 120); do
+            if curl -fsS -m 5 http://localhost:9090/actuator/health >/dev/null 2>&1; then
+              echo "✓ Backend is healthy"
+              exit 0
             fi
+            echo "Attempt $i/120... waiting 2s"
             sleep 2
           done
-          echo "backend did not become healthy"; exit 1
+          echo "✗ Backend health check failed after 240 seconds"
+          docker logs ftth-backend 2>&1 | tail -50
+          exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
