@@ -4,6 +4,7 @@ import com.company.ftthgis.domain.network.dto.SplitterPortDto;
 import com.company.ftthgis.domain.network.service.SplitterPortService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,16 +18,19 @@ public class SplitterPortController {
     private final SplitterPortService portService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<SplitterPortDto>> getPortsByNode(@PathVariable UUID nodeId) {
         return ResponseEntity.ok(portService.getPortsByNodeId(nodeId));
     }
 
     @GetMapping("/summary")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<SplitterPortService.PortSummary> getPortSummary(@PathVariable UUID nodeId) {
         return ResponseEntity.ok(portService.getPortSummary(nodeId));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<SplitterPortDto> createPort(
             @PathVariable UUID nodeId,
             @RequestBody SplitterPortDto dto) {
@@ -34,6 +38,7 @@ public class SplitterPortController {
     }
 
     @PutMapping("/{portId}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<SplitterPortDto> updatePort(
             @PathVariable UUID nodeId,
             @PathVariable UUID portId,
@@ -42,6 +47,7 @@ public class SplitterPortController {
     }
 
     @DeleteMapping("/{portId}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Void> deletePort(
             @PathVariable UUID nodeId,
             @PathVariable UUID portId) {
@@ -50,6 +56,7 @@ public class SplitterPortController {
     }
 
     @PostMapping("/generate")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<List<SplitterPortDto>> generatePorts(
             @PathVariable UUID nodeId,
             @RequestParam(defaultValue = "ODP") String nodeType,

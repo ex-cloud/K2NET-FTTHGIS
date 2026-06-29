@@ -36,13 +36,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+        public SecurityFilterChain securityFilterChain(HttpSecurity http,
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
             com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
-            com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter) throws Exception {
+            com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter,
+            AuditingAccessDeniedHandler auditingAccessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -72,7 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .authenticationManagerResolver(authenticationManagerResolver));
+                    .authenticationManagerResolver(authenticationManagerResolver))
+                .exceptionHandling(ex -> ex.accessDeniedHandler(auditingAccessDeniedHandler));
 
         return http.build();
     }

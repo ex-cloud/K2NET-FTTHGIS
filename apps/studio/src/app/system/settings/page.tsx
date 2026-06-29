@@ -36,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { MapCoordinatePicker } from "@/components/dashboard/map-coordinate-picker";
 import { GithubAppConfigCard } from "@/components/system/settings/GithubAppConfigCard";
 import { GithubIntegrationCard } from "@/components/system/settings/GithubIntegrationCard";
+import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
 
 export default function SystemSettingsPage() {
   const {
@@ -179,6 +180,7 @@ export default function SystemSettingsPage() {
   }
 
   return (
+    <SystemSettingsWrapper>
     <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] h-full overflow-y-auto custom-scrollbar select-none text-zinc-100">
       <div className="w-full max-w-5xl mx-auto space-y-10 pb-20">
         
@@ -877,5 +879,6 @@ export default function SystemSettingsPage() {
       />
 
     </div>
+    </SystemSettingsWrapper>
   );
 }

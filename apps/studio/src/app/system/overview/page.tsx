@@ -36,6 +36,7 @@ import {
   OverviewShell,
   OverviewStatusBadge,
 } from "@/components/system/overview";
+import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
 
 export default function SystemOverviewPage() {
   const FRONTEND_GIT_BRANCH = process.env.NEXT_PUBLIC_GIT_BRANCH || "main";
@@ -407,6 +408,7 @@ export default function SystemOverviewPage() {
   }, [loadingStats, allGatewaysHealthy, activeGatewaysCount]);
 
   return (
+    <SystemOverviewWrapper>
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-[#080808] px-8 pt-16">
       <div className="mx-auto w-full max-w-5xl space-y-8 pb-20">
         <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 md:flex-row md:items-center">
@@ -763,5 +765,6 @@ export default function SystemOverviewPage() {
         <OverviewActivityFeed loading={loadingOrgs} recentOrgs={recentOrgs} />
       </div>
     </div>
+    </SystemOverviewWrapper>
   );
 }

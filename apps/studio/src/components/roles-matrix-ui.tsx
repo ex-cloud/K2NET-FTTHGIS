@@ -5,6 +5,7 @@ import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangl
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -36,6 +37,7 @@ type Role = {
 
 export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
   const { data: session } = useSession();
+  const { canAccess } = usePermissions();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,9 +305,9 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
           {/* Master Save Button */}
           <button
             onClick={handleSaveAll}
-            disabled={batchSaving || !hasAnyModifiedRoles}
+            disabled={batchSaving || !hasAnyModifiedRoles || !canAccess('roles.update')}
             className={`flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg transition-all shadow-lg ${
-              hasAnyModifiedRoles
+              hasAnyModifiedRoles && canAccess('roles.update')
                 ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/20 cursor-pointer"
                 : "bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none"
             }`}

@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { SecurityChallengeModal } from "@/components/auth/security-challenge-modal";
 import { getCurrentOrgSlug } from "@/lib/domain";
+import { IntegrationsPageWrapper } from "@/components/page-guards/integrations-page-wrapper";
 
 interface Config {
   id: string;
@@ -256,6 +257,7 @@ export default function IntegrationsPage() {
   }
 
   return (
+    <IntegrationsPageWrapper>
     <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
@@ -442,5 +444,6 @@ export default function IntegrationsPage() {
         description="Password verification required to update integration settings."
       />
     </div>
+    </IntegrationsPageWrapper>
   );
 }

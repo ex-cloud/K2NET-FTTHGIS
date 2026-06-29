@@ -19,12 +19,13 @@ public class NetworkController {
     private final NetworkService networkService;
 
     @PostMapping("/odc")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<ODCDto> createODC(@RequestBody ODCDto dto) {
         return ResponseEntity.ok(networkService.createODC(dto));
     }
 
     @GetMapping("/map/cables")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<FiberCableMapDto>> getMapCables(
             @RequestParam double xmin,
             @RequestParam double ymin,
@@ -35,12 +36,14 @@ public class NetworkController {
     }
 
     @GetMapping("/trace-path")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<FiberCableMapDto>> tracePath(
             @RequestParam UUID startNodeId,
             @RequestParam UUID endNodeId) {
         return ResponseEntity.ok(networkService.tracePath(startNodeId, endNodeId));
     }
     @GetMapping("/trace-upstream")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<List<FiberCableMapDto>> traceUpstream(
             @RequestParam UUID nodeId) {
         return ResponseEntity.ok(networkService.traceUpstream(nodeId));

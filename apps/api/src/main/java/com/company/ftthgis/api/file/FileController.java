@@ -7,6 +7,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/files")
 @Slf4j
 @CrossOrigin(origins = "*")
+@PreAuthorize("isAuthenticated()")
 public class FileController {
 
     @Value("${app.gateway.storage-url}")
@@ -30,6 +32,7 @@ public class FileController {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostMapping("/upload")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "tenant", required = false) String tenant,

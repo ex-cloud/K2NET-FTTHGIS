@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { UsagePageWrapper } from "@/components/page-guards/usage-page-wrapper";
 
 interface Stats {
   projectCount: number;
@@ -91,6 +92,7 @@ export default function UsagePage() {
   ];
 
   return (
+    <UsagePageWrapper>
     <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
@@ -186,5 +188,6 @@ export default function UsagePage() {
         </Card>
       </div>
     </div>
+    </UsagePageWrapper>
   );
 }

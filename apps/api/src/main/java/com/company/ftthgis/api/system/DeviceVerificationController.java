@@ -6,6 +6,7 @@ import com.company.ftthgis.service.DeviceVerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,7 @@ public class DeviceVerificationController {
     private final UserDeviceRepository userDeviceRepository;
 
     @GetMapping("/status")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getDeviceStatus(
             @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "X-Device-Fingerprint", required = false) String fingerprint) {
@@ -45,6 +47,7 @@ public class DeviceVerificationController {
     }
 
     @PostMapping("/request-otp")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> requestOtp(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody RequestOtpPayload payload) {
@@ -66,6 +69,7 @@ public class DeviceVerificationController {
     }
 
     @PostMapping("/verify")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> verifyOtp(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody VerifyOtpPayload payload,
@@ -95,6 +99,7 @@ public class DeviceVerificationController {
     }
 
     @GetMapping("/my-devices")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<UserDeviceDto>> getMyDevices(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         List<UserDevice> devices = userDeviceRepository.findAllByUserId(userId);
@@ -116,6 +121,7 @@ public class DeviceVerificationController {
     }
 
     @DeleteMapping("/my-devices/{deviceId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> revokeDevice(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Long deviceId) {
@@ -133,6 +139,7 @@ public class DeviceVerificationController {
     }
 
     @PostMapping("/trust-current")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> trustCurrentDevice(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody TrustDevicePayload payload,

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BillingPageWrapper } from "@/components/page-guards/billing-page-wrapper";
 
 export default function BillingPage() {
 
@@ -46,6 +47,7 @@ export default function BillingPage() {
   ];
 
   return (
+    <BillingPageWrapper>
     <div className="p-8 space-y-8 w-full">
       <div className="flex justify-between items-start">
         <div>
@@ -127,5 +129,6 @@ export default function BillingPage() {
         </CardContent>
       </Card>
     </div>
+    </BillingPageWrapper>
   );
 }

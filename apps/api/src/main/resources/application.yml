@@ -115,6 +115,17 @@ app:
     backup:
       log-path: ${DEVOPS_BACKUP_LOG_PATH:/var/backups/postgresql/last_backup.log}
       retention-days: ${DEVOPS_BACKUP_RETENTION:30}
+  
+  # Rate Limiting Configuration (Bucket4j Token Bucket Algorithm)
+  rate-limiting:
+    enabled: ${RATE_LIMITING_ENABLED:true}
+    auth:
+      requests-per-minute: ${RATE_LIMIT_AUTH_PER_MIN:5}      # Brute force protection
+      requests-per-hour: ${RATE_LIMIT_AUTH_PER_HOUR:50}      # Daily login attempts
+    admin:
+      requests-per-minute: ${RATE_LIMIT_ADMIN_PER_MIN:30}    # System admin operations
+    api:
+      requests-per-minute: ${RATE_LIMIT_API_PER_MIN:100}     # Standard API usage
 
 logging:
   level:

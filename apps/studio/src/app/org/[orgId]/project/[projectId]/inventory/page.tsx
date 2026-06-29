@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { use } from "react";
+import { InventoryPageWrapper } from "@/components/page-guards/inventory-page-wrapper";
 
 export default function InventoryPage({
   params,
@@ -9,5 +10,12 @@ export default function InventoryPage({
   params: Promise<{ orgId: string; projectId: string }>;
 }) {
   const { orgId, projectId } = use(params);
-  redirect(`/org/${orgId}/project/${projectId}/inventory/odc`);
+
+  return (
+    <InventoryPageWrapper>
+      <div className="hidden">
+        {redirect(`/org/${orgId}/project/${projectId}/inventory/odc`)}
+      </div>
+    </InventoryPageWrapper>
+  );
 }

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 export default function NotificationGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -124,6 +125,7 @@ export default function NotificationGatewayPage() {
   ];
 
   return (
+    <GatewayPageWrapper>
     <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
@@ -332,5 +334,6 @@ export default function NotificationGatewayPage() {
 
       </div>
     </div>
+    </GatewayPageWrapper>
   );
 }

@@ -4,6 +4,7 @@ import com.company.ftthgis.service.network.ImportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,7 @@ public class ImportController {
     private final ImportService importService;
 
     @PostMapping("/{projectId}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<?> importGeoJson(
             @PathVariable UUID projectId,
             @RequestParam("file") MultipartFile file,
@@ -41,6 +43,7 @@ public class ImportController {
     }
 
     @PostMapping("/{projectId}/analyze")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<?> analyzeImport(
             @PathVariable UUID projectId,
             @RequestParam("file") MultipartFile file) {
@@ -60,6 +63,7 @@ public class ImportController {
     }
 
     @PostMapping("/{projectId}/direct")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<?> importGeoJsonDirect(
             @PathVariable UUID projectId,
             @RequestBody String geoJsonContent,

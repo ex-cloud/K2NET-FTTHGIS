@@ -9,6 +9,7 @@ import { getCurrentOrgSlug } from "@/lib/domain";
 import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PermissionGuard } from "@/hooks/use-permissions";
 import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
 import { UpdateUserDialog } from "@/components/dashboard/users/update-user-dialog";
 import { 
@@ -89,8 +90,20 @@ export default function OrganizationTeamPage() {
   }, [fetchMembers]);
 
   return (
-    <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar">
-      <div className="flex flex-col gap-6 px-6 pt-6 pb-20 w-full">
+    <PermissionGuard 
+      permission="team.view"
+      fallback={
+        <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
+          <div className="text-center">
+            <Shield className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-foreground">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">You do not have permission to view team management.</p>
+          </div>
+        </div>
+      }
+    >
+      <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar">
+        <div className="flex flex-col gap-6 px-6 pt-6 pb-20 w-full">
         {/* Page Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -341,6 +354,7 @@ export default function OrganizationTeamPage() {
         </div>
 
       </div>
-    </div>
+      </div>
+    </PermissionGuard>
   );
 }

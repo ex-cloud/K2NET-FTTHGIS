@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +51,7 @@ public class NetworkAssetController {
     private final AuditHistoryService auditHistoryService;
 
     @PostMapping("/simulate-failure")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Map<String, Object>> simulateFailure(
             @RequestParam String targetCode,
             @RequestParam String targetType,
@@ -85,6 +87,7 @@ public class NetworkAssetController {
      * Batch update assets (Status, etc)
      */
     @PostMapping("/batch-update")
+    @PreAuthorize("hasAuthority('network.manage')")
     @Transactional
     public ResponseEntity<Map<String, Object>> batchUpdate(@RequestBody BatchUpdateRequest request) {
         log.info("📦 Batch update triggered for {} {} assets. Status: {}", 
@@ -195,6 +198,7 @@ public class NetworkAssetController {
      * Batch delete assets
      */
     @DeleteMapping("/batch-delete")
+    @PreAuthorize("hasAuthority('network.manage')")
     @Transactional
     public ResponseEntity<Map<String, Object>> batchDelete(
             @RequestParam String type,
@@ -236,6 +240,7 @@ public class NetworkAssetController {
      * Check if an Asset Code is already used globally
      */
     @GetMapping("/check-code")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> checkAssetCode(@RequestParam String code) {
         if (code == null || code.trim().isEmpty()) {
@@ -249,6 +254,7 @@ public class NetworkAssetController {
      * Get detail by ID (Safer version to avoid 500 on string IDs)
      */
     @GetMapping("/{type}/{id}")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getAssetDetail(
             @PathVariable String type,
@@ -284,6 +290,7 @@ public class NetworkAssetController {
     }
 
     @GetMapping("/by-code/{type}/{code}")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<AssetDetailDto> getAssetDetailByCode(
             @PathVariable String type,
@@ -417,6 +424,7 @@ public class NetworkAssetController {
     }
 
     @PostMapping("/{type}/{code}/diagnostics")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Map<String, Object>> runDiagnostics(
             @PathVariable String type,
             @PathVariable String code) {
@@ -432,6 +440,7 @@ public class NetworkAssetController {
     }
 
     @GetMapping("/all-nodes")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<List<AssetSearchResult>> getAllNodes(
             @RequestParam(required = false) String orgSlug,
@@ -463,6 +472,7 @@ public class NetworkAssetController {
      * Uses Hibernate Envers to retrieve all historical revisions.
      */
     @GetMapping("/{type}/{code}/history")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<List<AuditHistoryDto>> getAssetHistory(
             @PathVariable String type,
@@ -479,6 +489,7 @@ public class NetworkAssetController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAuthority('network.view')")
     @Transactional(readOnly = true)
     public ResponseEntity<List<AssetSearchResult>> search(
             @RequestParam String q,

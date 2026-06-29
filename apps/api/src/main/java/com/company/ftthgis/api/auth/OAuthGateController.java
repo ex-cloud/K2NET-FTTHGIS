@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -131,6 +132,7 @@ public class OAuthGateController {
      * the temporary Keycloak user that was created by the first broker login flow.
      */
     @PostMapping("/check")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> checkAndGate(
             @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
             @RequestBody Map<String, String> request) {
@@ -193,6 +195,7 @@ public class OAuthGateController {
      * Public endpoint for the frontend to check if the user's IP or device is currently suspended.
      */
     @GetMapping("/check-suspension")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> checkSuspension(
             @RequestParam(value = "ip", required = false) String ip,
             @RequestParam(value = "device_id", required = false) String deviceId,

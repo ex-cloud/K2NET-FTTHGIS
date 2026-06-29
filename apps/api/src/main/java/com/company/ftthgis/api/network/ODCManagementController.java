@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class ODCManagementController {
     private final AssetDeletionLogRepository deletionLogRepository;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<Page<ODCDto>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -31,21 +33,25 @@ public class ODCManagementController {
     }
 
     @GetMapping("/{code}")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<ODCDto> getByCode(@PathVariable String code) {
         return ResponseEntity.ok(odcService.getOdcByCode(code));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<ODCDto> create(@RequestBody ODCDto dto) {
         return ResponseEntity.ok(odcService.createOdc(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<ODCDto> update(@PathVariable UUID id, @RequestBody ODCDto dto) {
         return ResponseEntity.ok(odcService.updateOdc(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = odcService.deleteOdc(id);

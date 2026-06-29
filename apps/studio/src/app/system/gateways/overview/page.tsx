@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 export default function GatewaysOverviewPage() {
   const [services, setServices] = useState<GatewayServiceStatus[]>([]);
@@ -67,6 +68,7 @@ export default function GatewaysOverviewPage() {
   };
 
   return (
+    <GatewayPageWrapper>
     <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
         
@@ -307,5 +309,6 @@ export default function GatewaysOverviewPage() {
 
       </div>
     </div>
+    </GatewayPageWrapper>
   );
 }

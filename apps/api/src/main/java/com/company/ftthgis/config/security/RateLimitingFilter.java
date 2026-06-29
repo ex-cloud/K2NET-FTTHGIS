@@ -9,7 +9,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,17 +20,30 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Filter untuk membatasi jumlah request (Rate Limiting) guna mencegah abuse.
- * Menggunakan algoritma Token Bucket via library Bucket4j.
+ * Rate Limiting Filter with Granular Control
+ * 
+ * Implements token bucket algorithm via Bucket4j with different limits for:
+ * - Authentication endpoints (5 req/min) - protect against brute force
+ * - Admin endpoints (30 req/min) - prevent admin abuse
+ * - API endpoints (100 req/min) - standard usage
+ * 
+ * In-memory caching used; for production at scale use Redis backend.
  */
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class RateLimitingFilter implements Filter {
 
-    // Cache bucket per Client IP (In-memory, untuk production skala besar gunakan Redis)
+    private final RateLimitingConfiguration rateLimitingConfig;
+    private final com.company.ftthgis.service.AuditLoggingService auditLoggingService;
+
+    @Value("${app.rate-limiting.enabled:true}")
+    private boolean rateLimitingEnabled;
+
+    // Legacy fallback buckets (deprecated, using RateLimitingConfiguration instead)
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
-    // Konfigurasi: 100 request per menit per IP
+    @Deprecated
     private Bucket createNewBucket() {
         return Bucket.builder()
                 .addLimit(limit -> limit.capacity(100).refillGreedy(100, Duration.ofMinutes(1)))
@@ -39,38 +54,114 @@ public class RateLimitingFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         
+        if (!rateLimitingEnabled) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        // Hanya batasi endpoint API, tapi KECUALIKAN SSE (Server-Sent Events) agar tidak kena 429
         String uri = httpRequest.getRequestURI();
-        if (uri.startsWith("/api/") && !uri.endsWith("/map-updates")) {
-            String clientIp = getClientIP(httpRequest);
-            Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createNewBucket());
+        String clientId = getClientIdentifier(httpRequest);
 
-            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-            if (probe.isConsumed()) {
-                // Request diizinkan
-                httpResponse.addHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
-                chain.doFilter(request, response);
-            } else {
-                // Request ditolak (Too Many Requests)
-                log.warn("Rate limit exceeded for IP: {} on URI: {}", clientIp, httpRequest.getRequestURI());
-                httpResponse.setStatus(429); // HTTP 429 Too Many Requests
-                httpResponse.setHeader("X-Rate-Limit-Retry-After-Seconds", String.valueOf(probe.getNanosToWaitForRefill() / 1_000_000_000));
-                httpResponse.setContentType("application/json");
-                httpResponse.getWriter().write("{\"error\": \"Too many requests\", \"message\": \"Please wait before trying again.\"}");
-            }
-        } else {
+        // Skip rate limiting for non-API and SSE endpoints
+        if (!uri.startsWith("/api/") || uri.endsWith("/map-updates")) {
             chain.doFilter(request, response);
+            return;
+        }
+
+        // Apply granular rate limiting based on endpoint type
+        boolean allowed = true;
+        int limit = 100;
+        
+        if (isAuthEndpoint(uri)) {
+            allowed = rateLimitingConfig.tryConsumeAuthToken(clientId);
+            limit = 5;
+        } else if (isAdminEndpoint(uri)) {
+            allowed = rateLimitingConfig.tryConsumeAdminToken(clientId);
+            limit = 30;
+        } else if (isApiEndpoint(uri)) {
+            allowed = rateLimitingConfig.tryConsumeApiToken(clientId);
+            limit = 100;
+        }
+
+        if (allowed) {
+            httpResponse.addHeader("X-Rate-Limit-Limit", String.valueOf(limit));
+            chain.doFilter(request, response);
+        } else {
+            // Rate limit exceeded
+            log.warn("🚫 Rate limit exceeded for client: {} on URI: {}", clientId, uri);
+            // Record audit log for rate limit violation
+            try {
+                auditLoggingService.logRateLimitExceeded(clientId, getClientIP(httpRequest), httpRequest.getMethod(), uri, "Rate limit exceeded for client");
+            } catch (Exception e) {
+                log.debug("Failed to log rate limit event", e);
+            }
+            httpResponse.setStatus(429); // Too Many Requests
+            httpResponse.setHeader("Retry-After", "60");
+            httpResponse.setHeader("X-Rate-Limit-Limit", String.valueOf(limit));
+            httpResponse.setHeader("X-Rate-Limit-Remaining", "0");
+            httpResponse.setContentType("application/json");
+            httpResponse.getWriter().write("{\"error\": \"Too many requests\", \"message\": \"Rate limit exceeded. Please retry after 60 seconds.\"}");
         }
     }
 
+    /**
+     * Get unique client identifier (User ID or IP)
+     */
+    private String getClientIdentifier(HttpServletRequest request) {
+        try {
+            String userId = request.getUserPrincipal() != null ? request.getUserPrincipal().getName() : null;
+            if (userId != null && !userId.isEmpty()) {
+                return "user:" + userId;
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract user from principal", e);
+        }
+        return "ip:" + getClientIP(request);
+    }
+
+    /**
+     * Extract client IP address (handles proxy headers)
+     */
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null) {
-            return request.getRemoteAddr();
+        if (xfHeader != null && !xfHeader.isEmpty()) {
+            return xfHeader.split(",")[0].trim();
         }
-        return xfHeader.split(",")[0];
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
+    }
+
+    /**
+     * Check if path is auth endpoint
+     */
+    private boolean isAuthEndpoint(String path) {
+        return path.contains("/auth") || 
+               path.contains("/login") || 
+               path.contains("/password-reset") ||
+               path.contains("/oauth");
+    }
+
+    /**
+     * Check if path is admin endpoint
+     */
+    private boolean isAdminEndpoint(String path) {
+        return path.contains("/admin") || 
+               path.contains("/system") ||
+               path.contains("/security") ||
+               path.contains("/roles") ||
+               path.contains("/users/manage");
+    }
+
+    /**
+     * Check if path is API endpoint
+     */
+    private boolean isApiEndpoint(String path) {
+        return path.startsWith("/api/");
     }
 }

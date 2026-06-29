@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class CustomerManagementController {
     private final AssetDeletionLogRepository deletionLogRepository;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<Page<CustomerDto>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -31,21 +33,25 @@ public class CustomerManagementController {
     }
 
     @GetMapping("/{code}")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<CustomerDto> getByCode(@PathVariable String code) {
         return ResponseEntity.ok(customerService.getCustomerByCode(code));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<CustomerDto> create(@RequestBody CustomerDto dto) {
         return ResponseEntity.ok(customerService.createCustomer(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<CustomerDto> update(@PathVariable UUID id, @RequestBody CustomerDto dto) {
         return ResponseEntity.ok(customerService.updateCustomer(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = customerService.deleteCustomer(id);

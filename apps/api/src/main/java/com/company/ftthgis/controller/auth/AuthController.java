@@ -3,6 +3,7 @@ package com.company.ftthgis.controller.auth;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ public class AuthController {
      * Verifies the current user's password before sensitive operations.
      */
     @PostMapping("/verify-password")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> verifyPassword(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody Map<String, String> request) {

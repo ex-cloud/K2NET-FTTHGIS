@@ -10,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -47,5 +51,51 @@ public class ProjectService {
 
         log.info("🚀 Creating new project: {} for organization: {}", project.getName(), org.getName());
         return projectRepository.save(project);
+    }
+
+    @Transactional
+    public Project updateProject(UUID projectId, Project incoming) {
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        if (incoming.getName() != null) {
+            existing.setName(incoming.getName());
+        }
+        if (incoming.getCode() != null) {
+            existing.setCode(incoming.getCode());
+        }
+        if (incoming.getDescription() != null) {
+            existing.setDescription(incoming.getDescription());
+        }
+        if (incoming.getRegion() != null) {
+            existing.setRegion(incoming.getRegion());
+        }
+        if (incoming.getBoundaryGeom() != null) {
+            existing.setBoundaryGeom(incoming.getBoundaryGeom());
+        }
+
+        return projectRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteProject(UUID projectId) {
+        Project existing = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        projectRepository.delete(existing);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> exportProject(UUID projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", project.getId());
+        payload.put("name", project.getName());
+        payload.put("code", project.getCode());
+        payload.put("description", project.getDescription());
+        payload.put("region", project.getRegion());
+        payload.put("boundaryGeom", project.getBoundaryGeom());
+        return payload;
     }
 }

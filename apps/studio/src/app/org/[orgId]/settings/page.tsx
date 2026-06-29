@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { getBaseUrl, getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";
+import { SettingsPageWrapper } from "@/components/page-guards/settings-page-wrapper";
 
 interface Project {
   id: string;
@@ -296,6 +297,7 @@ export default function GeneralSettingsPage() {
     !!logoFile;
 
   return (
+    <SettingsPageWrapper>
     <div className="p-8 pb-24 space-y-10 w-full max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">Organization Settings</h1>
@@ -724,5 +726,6 @@ export default function GeneralSettingsPage() {
         </div>
       )}
     </div>
+    </SettingsPageWrapper>
   );
 }

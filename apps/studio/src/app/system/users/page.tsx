@@ -1,6 +1,7 @@
 import { UserStats } from "@/components/dashboard/users/user-stats";
 import { UserTable } from "@/components/dashboard/users/user-table";
 import { UserFilters } from "@/components/dashboard/users/user-filters";
+import { UsersPageWrapper } from "@/components/page-guards/users-page-wrapper";
 import { auth } from "@/auth";
 import { getUsers, getUserStats } from "@/lib/api/users";
 
@@ -37,20 +38,22 @@ export default async function GlobalUsersPage(props: {
   }
 
   return (
-    <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-[#0c0c0c] relative">
+    <UsersPageWrapper>
+      <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-[#0c0c0c] relative">
 
-      <div className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-hidden">
-        <div className="max-w-[1600px] mx-auto w-full pb-8 h-full flex flex-col space-y-6">
-          <div className="shrink-0">
-            <UserStats stats={statsData} />
-          </div>
-          <div className="flex-1 min-h-0">
-            <UserTable data={usersData} currentPage={page} isGlobalView={true} token={token} />
+        <div className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-hidden">
+          <div className="max-w-[1600px] mx-auto w-full pb-8 h-full flex flex-col space-y-6">
+            <div className="shrink-0">
+              <UserStats stats={statsData} />
+            </div>
+            <div className="flex-1 min-h-0">
+              <UserTable data={usersData} currentPage={page} isGlobalView={true} token={token} />
+            </div>
           </div>
         </div>
+        
+        <UserFilters />
       </div>
-      
-      <UserFilters />
-    </div>
+    </UsersPageWrapper>
   );
 }

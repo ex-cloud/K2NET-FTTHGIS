@@ -13,6 +13,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -100,6 +101,7 @@ public class PaymentController {
      * Generates a Xendit invoice url via Go Payment Gateway.
      */
     @PostMapping("/api/v1/payments/subscribe")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> subscribeToPlan(@RequestBody Map<String, String> request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Jwt)) {

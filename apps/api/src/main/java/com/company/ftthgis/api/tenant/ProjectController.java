@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -80,6 +81,37 @@ public class ProjectController {
     public ResponseEntity<?> createProject(@PathVariable String orgSlug, @RequestBody Project project) {
         try {
             return ResponseEntity.ok(projectService.createProject(orgSlug, project));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{projectId}")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.edit')")
+    public ResponseEntity<?> updateProject(@PathVariable String orgSlug, @PathVariable UUID projectId, @RequestBody Project project) {
+        try {
+            return ResponseEntity.ok(projectService.updateProject(projectId, project));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{projectId}")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.delete')")
+    public ResponseEntity<?> deleteProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
+        try {
+            projectService.deleteProject(projectId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Project deleted"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{projectId}/export")
+    @PreAuthorize("@tenantSecurity.isOwner(#orgSlug) and @tenantSecurity.canAccessProject(#projectId) and hasAuthority('projects.export')")
+    public ResponseEntity<?> exportProject(@PathVariable String orgSlug, @PathVariable UUID projectId) {
+        try {
+            return ResponseEntity.ok(projectService.exportProject(projectId));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

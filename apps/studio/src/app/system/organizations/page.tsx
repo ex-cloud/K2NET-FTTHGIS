@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 
 interface Project {
   id: string;
@@ -159,6 +160,7 @@ export default function AdminOrganizationsPage() {
   }, [organizations, searchQuery]);
 
   return (
+    <OrganizationPageWrapper>
     <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
       {/* Header section */}
@@ -530,5 +532,6 @@ export default function AdminOrganizationsPage() {
       )}
       </div>
     </div>
+    </OrganizationPageWrapper>
   );
 }

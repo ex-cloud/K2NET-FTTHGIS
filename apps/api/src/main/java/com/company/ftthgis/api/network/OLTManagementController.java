@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class OLTManagementController {
     private final AssetDeletionLogRepository deletionLogRepository;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<Page<OLTDto>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -30,21 +32,25 @@ public class OLTManagementController {
     }
 
     @GetMapping("/{code}")
+    @PreAuthorize("hasAuthority('network.view')")
     public ResponseEntity<OLTDto> getByCode(@PathVariable String code) {
         return ResponseEntity.ok(oltService.getOltByCode(code));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<OLTDto> create(@RequestBody OLTDto dto) {
         return ResponseEntity.ok(oltService.createOlt(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<OLTDto> update(@PathVariable UUID id, @RequestBody OLTDto dto) {
         return ResponseEntity.ok(oltService.updateOlt(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<Void> delete(@PathVariable UUID id,
                                        @RequestParam(required = false, defaultValue = "No reason provided") String reason) {
         String deletedCode = oltService.deleteOlt(id);

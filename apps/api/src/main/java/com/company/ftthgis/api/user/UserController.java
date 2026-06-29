@@ -27,6 +27,7 @@ public class UserController {
     private final SystemSettingService settingService;
 
     @GetMapping("/password-policy")
+    @PreAuthorize("isAuthenticated()")
     public Map<String, Object> getPasswordPolicy() {
         int minLength = 8;
         try {
@@ -54,18 +55,19 @@ public class UserController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasRole('authenticated')")
     public UserDto me(@AuthenticationPrincipal Jwt jwt) {
         return userService.getCurrentUser(jwt.getSubject());
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.view')")
     public UserStatsDto getStats() {
         return userService.getUserStats();
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('users.view')")
     public Page<UserDto> index(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
             @RequestParam(required = false) String search,
@@ -76,6 +78,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('users.manage')")
     public UserDto update(
             @PathVariable UUID id,
             @RequestBody UpdateUserRequest request,
@@ -99,6 +102,7 @@ public class UserController {
     }
 
     @PutMapping("/profile")
+    @PreAuthorize("hasRole('authenticated')")
     public UserDto updateProfile(
             @RequestBody UpdateProfileRequest request,
             @AuthenticationPrincipal Jwt jwt) {
@@ -107,12 +111,14 @@ public class UserController {
     }
 
     @GetMapping("/me/social-identities")
+    @PreAuthorize("isAuthenticated()")
     public List<Map<String, String>> getSocialIdentities(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return userService.getUserSocialIdentitiesDetailed(userId);
     }
 
     @DeleteMapping("/me/social-identities/{provider}")
+    @PreAuthorize("isAuthenticated()")
     public Map<String, Object> disconnectSocial(@PathVariable String provider, @AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         userService.disconnectSocialIdentity(userId, provider);
@@ -120,6 +126,7 @@ public class UserController {
     }
 
     @PostMapping("/me/social-identities/link")
+    @PreAuthorize("isAuthenticated()")
     public Map<String, Object> linkSocial(
             @RequestBody LinkSocialRequest request,
             @AuthenticationPrincipal Jwt jwt) {
@@ -129,6 +136,7 @@ public class UserController {
     }
 
     @PostMapping("/me/change-password")
+    @PreAuthorize("isAuthenticated()")
     public org.springframework.http.ResponseEntity<?> changePassword(
             @RequestBody ChangePasswordRequest request,
             @AuthenticationPrincipal Jwt jwt) {

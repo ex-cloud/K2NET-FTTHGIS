@@ -21,6 +21,7 @@ public class OrganizationController {
     private final KeycloakService keycloakService;
 
     @GetMapping
+    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('organizations.view')")
     public ResponseEntity<List<Organization>> getAll() {
         return ResponseEntity.ok(organizationService.getAllOrganizations());
     }
