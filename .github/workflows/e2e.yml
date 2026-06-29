@@ -18,6 +18,19 @@ jobs:
         env:
           DB_PASSWORD: postgres_test
 
+      - name: Debug Docker build and container status
+        if: always()
+        run: |
+          echo "=== Checking if build succeeded ==="
+          docker images | grep ftth
+          echo ""
+          echo "=== Container status ==="
+          docker ps -a
+          echo ""
+          echo "=== Network test ==="
+          docker network ls
+          docker inspect bridge | grep -i gateway || true
+
       - name: Wait and debug services startup
         run: |
           sleep 10
