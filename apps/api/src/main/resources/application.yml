@@ -41,9 +41,12 @@ spring:
 
   data:
     redis:
-      enabled: true # Set to false if Redis is not running
       host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+      repositories:
+        enabled: false  # Redis is used for CACHING only (not as a data store).
+                        # Disabling prevents Spring Data from mis-detecting JPA
+                        # repositories as Redis repositories when both are on the classpath.
 
   security:
     oauth2:
