@@ -17,49 +17,49 @@ ON CONFLICT (code) DO NOTHING;
 
 -- B. Prevent duplicate mapping errors in role_permissions table before remapping
 DELETE FROM role_permissions rp
-WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view')
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view' LIMIT 1)
   AND rp.role_id IN (
       SELECT rp2.role_id FROM role_permissions rp2 
-      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view')
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view' LIMIT 1)
   );
 
 DELETE FROM role_permissions rp
-WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create')
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create' LIMIT 1)
   AND rp.role_id IN (
       SELECT rp2.role_id FROM role_permissions rp2 
-      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create')
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create' LIMIT 1)
   );
 
 DELETE FROM role_permissions rp
-WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update')
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update' LIMIT 1)
   AND rp.role_id IN (
       SELECT rp2.role_id FROM role_permissions rp2 
-      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update')
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update' LIMIT 1)
   );
 
 DELETE FROM role_permissions rp
-WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign')
+WHERE rp.permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign' LIMIT 1)
   AND rp.role_id IN (
       SELECT rp2.role_id FROM role_permissions rp2 
-      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign')
+      WHERE rp2.permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign' LIMIT 1)
   );
 
 -- C. Remap all role_permissions references from tickets.xxx to ticket.xxx
 UPDATE role_permissions 
-SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view')
-WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view');
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.view' LIMIT 1)
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.view' LIMIT 1);
 
 UPDATE role_permissions 
-SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create')
-WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create');
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.create' LIMIT 1)
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.create' LIMIT 1);
 
 UPDATE role_permissions 
-SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update')
-WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update');
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.update' LIMIT 1)
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.update' LIMIT 1);
 
 UPDATE role_permissions 
-SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign')
-WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign');
+SET permission_id = (SELECT id FROM permissions WHERE code = 'ticket.assign' LIMIT 1)
+WHERE permission_id = (SELECT id FROM permissions WHERE code = 'tickets.assign' LIMIT 1);
 
 -- D. Safely delete the legacy tickets.xxx permissions
 DELETE FROM permissions WHERE code IN ('tickets.view', 'tickets.create', 'tickets.update', 'tickets.assign');
@@ -116,11 +116,11 @@ DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE scope 
 
 -- A. super_admin gets all SYSTEM and TENANT permissions (using helper query)
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'super_admin' AND scope = 'SYSTEM'), id FROM permissions;
+SELECT (SELECT id FROM roles WHERE name = 'super_admin' AND scope = 'SYSTEM' LIMIT 1), id FROM permissions;
 
 -- B. account_manager gets specific onboarding & contract permissions
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'account_manager' AND scope = 'SYSTEM'), id 
+SELECT (SELECT id FROM roles WHERE name = 'account_manager' AND scope = 'SYSTEM' LIMIT 1), id 
 FROM permissions 
 WHERE code IN (
   'system.tenants.create', 'system.tenants.approve', 'system.tenants.suspend', 
@@ -129,24 +129,24 @@ WHERE code IN (
 
 -- C. system_support gets impersonation and basic system view
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'system_support' AND scope = 'SYSTEM'), id 
+SELECT (SELECT id FROM roles WHERE name = 'system_support' AND scope = 'SYSTEM' LIMIT 1), id 
 FROM permissions 
 WHERE code IN ('system.support.impersonate', 'orgs.view');
 
 -- D. system_billing gets billing management
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'system_billing' AND scope = 'SYSTEM'), id 
+SELECT (SELECT id FROM roles WHERE name = 'system_billing' AND scope = 'SYSTEM' LIMIT 1), id 
 FROM permissions 
 WHERE code IN ('system.billing.manage');
 
 -- E. system_auditor gets global audit viewing
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'system_auditor' AND scope = 'SYSTEM'), id 
+SELECT (SELECT id FROM roles WHERE name = 'system_auditor' AND scope = 'SYSTEM' LIMIT 1), id 
 FROM permissions 
 WHERE code IN ('system.audit.view', 'orgs.view');
 
 -- F. platform_engineer gets GIS core engine and poller management
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'platform_engineer' AND scope = 'SYSTEM'), id 
+SELECT (SELECT id FROM roles WHERE name = 'platform_engineer' AND scope = 'SYSTEM' LIMIT 1), id 
 FROM permissions 
 WHERE code IN ('system.gis.manage');
