@@ -5,13 +5,20 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import java.util.UUID;
 
+import com.company.ftthgis.config.tenant.OrganizationContext;
+import com.company.ftthgis.config.tenant.TenantContext;
 import com.company.ftthgis.domain.network.dto.ODPDto;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.ODP;
+import com.company.ftthgis.domain.network.repository.NetworkNodeRepository;
 import com.company.ftthgis.domain.network.repository.ODCRepository;
 import com.company.ftthgis.domain.network.repository.ODPRepository;
+import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,11 +29,15 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ODPService {
 
     private final ODPRepository odpRepository;
     private final ODCRepository odcRepository;
     private final StatusPropagationService statusPropagationService;
+    private final NetworkNodeRepository networkNodeRepository;
+    private final ProjectRepository projectRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Transactional(readOnly = true)
     public Page<ODPDto> getOdps(String search, String status, String name, String code, String odcCode, Pageable pageable) {
@@ -81,6 +92,45 @@ public class ODPService {
     public ODPDto createOdp(ODPDto dto) {
         if (odpRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("ODP Code already exists");
+        }
+
+        // --- ABAC: Quota Check ---
+        UUID orgId = OrganizationContext.getOrganizationId();
+        if (orgId != null) {
+            organizationRepository.findById(orgId).ifPresent(org -> {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                if (plan != null && plan.getMaxOdps() != null) {
+                    String projectIdStr = TenantContext.getTenantId();
+                    UUID projectId = projectIdStr != null ? UUID.fromString(projectIdStr) : null;
+                    long currentCount = projectId != null
+                            ? networkNodeRepository.countByTypeAndProjectId("ODP", projectId)
+                            : 0;
+                    if (currentCount >= plan.getMaxOdps()) {
+                        throw new RuntimeException(String.format(
+                                "Quota exceeded: Your plan allows a maximum of %d ODPs. Current count: %d.",
+                                plan.getMaxOdps(), currentCount));
+                    }
+                    log.debug("✅ ODP quota OK: {}/{}", currentCount, plan.getMaxOdps());
+                }
+            });
+        }
+
+        // --- ABAC: Geofencing Check ---
+        String projectIdStr = TenantContext.getTenantId();
+        if (projectIdStr != null && dto.getLng() != null && dto.getLat() != null) {
+            UUID projectId = UUID.fromString(projectIdStr);
+            projectRepository.findById(projectId).ifPresent(project -> {
+                if (project.getBoundaryGeom() != null) {
+                    GeometryFactory gf = new GeometryFactory();
+                    Point point = gf.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+                    point.setSRID(4326);
+                    if (!project.getBoundaryGeom().contains(point)) {
+                        throw new RuntimeException(
+                                "Geofencing violation: ODP coordinates are outside the project's boundary area.");
+                    }
+                    log.debug("✅ ODP geofencing OK for project: {}", projectId);
+                }
+            });
         }
 
         ODP odp = new ODP();

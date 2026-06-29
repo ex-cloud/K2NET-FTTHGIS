@@ -5,13 +5,20 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import java.util.UUID;
 
+import com.company.ftthgis.config.tenant.OrganizationContext;
+import com.company.ftthgis.config.tenant.TenantContext;
 import com.company.ftthgis.domain.network.dto.CustomerDto;
 import com.company.ftthgis.domain.network.entity.Customer;
 import com.company.ftthgis.domain.network.entity.ODP;
 import com.company.ftthgis.domain.network.repository.CustomerRepository;
+import com.company.ftthgis.domain.network.repository.NetworkNodeRepository;
 import com.company.ftthgis.domain.network.repository.ODPRepository;
+import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,12 +30,16 @@ import com.company.ftthgis.service.GeocodingService;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final ODPRepository odpRepository;
     private final StatusPropagationService statusPropagationService;
     private final GeocodingService geocodingService;
+    private final NetworkNodeRepository networkNodeRepository;
+    private final ProjectRepository projectRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Transactional(readOnly = true)
     public Page<CustomerDto> getCustomers(String search, String status, String name, String code, String odpCode, Pageable pageable) {
@@ -81,10 +92,50 @@ public class CustomerService {
             throw new IllegalArgumentException("Customer Code already exists");
         }
 
+        // --- ABAC: Quota Check ---
+        UUID orgId = OrganizationContext.getOrganizationId();
+        if (orgId != null) {
+            organizationRepository.findById(orgId).ifPresent(org -> {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                if (plan != null && plan.getMaxCustomers() != null) {
+                    String projectIdStr = TenantContext.getTenantId();
+                    UUID projectId = projectIdStr != null ? UUID.fromString(projectIdStr) : null;
+                    long currentCount = projectId != null
+                            ? networkNodeRepository.countByTypeAndProjectId("CUSTOMER", projectId)
+                            : 0;
+                    if (currentCount >= plan.getMaxCustomers()) {
+                        throw new RuntimeException(String.format(
+                                "Quota exceeded: Your plan allows a maximum of %d Customers. Current count: %d.",
+                                plan.getMaxCustomers(), currentCount));
+                    }
+                    log.debug("✅ Customer quota OK: {}/{}", currentCount, plan.getMaxCustomers());
+                }
+            });
+        }
+
+        // --- ABAC: Geofencing Check ---
+        // Geofencing is applied after coordinates are resolved (may come from geocoding)
+        // so we build the point first, then validate
+        String projectIdStr = TenantContext.getTenantId();
+
         Customer customer = new Customer();
         updateEntityFromDto(customer, dto);
-        customer = customerRepository.save(customer);
-        return toDto(customer);
+
+        if (projectIdStr != null && customer.getGeom() != null) {
+            UUID projectId = UUID.fromString(projectIdStr);
+            projectRepository.findById(projectId).ifPresent(project -> {
+                if (project.getBoundaryGeom() != null) {
+                    if (!project.getBoundaryGeom().contains(customer.getGeom())) {
+                        throw new RuntimeException(
+                                "Geofencing violation: Customer location is outside the project's boundary area.");
+                    }
+                    log.debug("✅ Customer geofencing OK for project: {}", projectId);
+                }
+            });
+        }
+
+        Customer savedCustomer = customerRepository.save(customer);
+        return toDto(savedCustomer);
     }
 
     public CustomerDto updateCustomer(UUID id, CustomerDto dto) {

@@ -5,13 +5,22 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import java.util.UUID;
 
+import com.company.ftthgis.config.tenant.OrganizationContext;
+import com.company.ftthgis.config.tenant.TenantContext;
 import com.company.ftthgis.domain.network.dto.ODCDto;
 import com.company.ftthgis.domain.network.entity.ODC;
 import com.company.ftthgis.domain.network.entity.OLT;
+import com.company.ftthgis.domain.network.repository.NetworkNodeRepository;
 import com.company.ftthgis.domain.network.repository.ODCRepository;
 import com.company.ftthgis.domain.network.repository.OLTRepository;
+import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.Project;
+import com.company.ftthgis.domain.tenant.entity.SubscriptionPlan;
+import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,11 +31,15 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ODCService {
 
     private final ODCRepository odcRepository;
     private final OLTRepository oltRepository;
     private final StatusPropagationService statusPropagationService;
+    private final NetworkNodeRepository networkNodeRepository;
+    private final ProjectRepository projectRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Transactional(readOnly = true)
     public Page<ODCDto> getOdcs(String search, String status, String name, String code, String oltCode, Pageable pageable) {
@@ -80,6 +93,45 @@ public class ODCService {
     public ODCDto createOdc(ODCDto dto) {
         if (odcRepository.existsByCode(dto.getCode())) {
             throw new IllegalArgumentException("ODC Code already exists");
+        }
+
+        // --- ABAC: Quota Check ---
+        UUID orgId = OrganizationContext.getOrganizationId();
+        if (orgId != null) {
+            organizationRepository.findById(orgId).ifPresent(org -> {
+                SubscriptionPlan plan = org.getSubscriptionPlan();
+                if (plan != null && plan.getMaxOdcs() != null) {
+                    String projectIdStr = TenantContext.getTenantId();
+                    UUID projectId = projectIdStr != null ? UUID.fromString(projectIdStr) : null;
+                    long currentCount = projectId != null
+                            ? networkNodeRepository.countByTypeAndProjectId("ODC", projectId)
+                            : 0;
+                    if (currentCount >= plan.getMaxOdcs()) {
+                        throw new RuntimeException(String.format(
+                                "Quota exceeded: Your plan allows a maximum of %d ODCs. Current count: %d.",
+                                plan.getMaxOdcs(), currentCount));
+                    }
+                    log.debug("✅ ODC quota OK: {}/{}", currentCount, plan.getMaxOdcs());
+                }
+            });
+        }
+
+        // --- ABAC: Geofencing Check ---
+        String projectIdStr = TenantContext.getTenantId();
+        if (projectIdStr != null && dto.getLng() != null && dto.getLat() != null) {
+            UUID projectId = UUID.fromString(projectIdStr);
+            projectRepository.findById(projectId).ifPresent(project -> {
+                if (project.getBoundaryGeom() != null) {
+                    GeometryFactory gf = new GeometryFactory();
+                    Point point = gf.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+                    point.setSRID(4326);
+                    if (!project.getBoundaryGeom().contains(point)) {
+                        throw new RuntimeException(
+                                "Geofencing violation: ODC coordinates are outside the project's boundary area.");
+                    }
+                    log.debug("✅ ODC geofencing OK for project: {}", projectId);
+                }
+            });
         }
 
         ODC odc = new ODC();

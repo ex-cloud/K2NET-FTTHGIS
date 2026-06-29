@@ -41,6 +41,7 @@ public class SecurityConfig {
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
+            com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
             com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Stateless API tidak butuh CSRF
@@ -51,6 +52,7 @@ public class SecurityConfig {
                 .addFilterBefore(apiRequestLoggingFilter, IpBlockingFilter.class)
                 .addFilterAfter(organizationStatusFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(tenantFilter, com.company.ftthgis.config.tenant.OrganizationStatusFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()

@@ -5,10 +5,12 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import java.util.UUID;
 
+import com.company.ftthgis.config.tenant.TenantContext;
 import com.company.ftthgis.domain.network.dto.OLTDto;
 import com.company.ftthgis.domain.network.entity.OLT;
 import com.company.ftthgis.domain.network.mapper.NetworkMapper;
 import com.company.ftthgis.domain.network.repository.OLTRepository;
+import com.company.ftthgis.domain.tenant.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ public class OLTService {
     private final OLTRepository oltRepository;
     private final NetworkMapper networkMapper;
     private final StatusPropagationService statusPropagationService;
+    private final ProjectRepository projectRepository;
 
     @Transactional(readOnly = true)
     public Page<OLTDto> getOlts(String search, String status, String name, String code, Pageable pageable) {
@@ -76,6 +79,25 @@ public class OLTService {
         if (oltRepository.existsByCode(dto.getCode())) {
             throw new RuntimeException("OLT with code " + dto.getCode() + " already exists");
         }
+
+        // --- ABAC: Geofencing Check ---
+        String projectIdStr = TenantContext.getTenantId();
+        if (projectIdStr != null && dto.getLng() != null && dto.getLat() != null) {
+            UUID projectId = UUID.fromString(projectIdStr);
+            projectRepository.findById(projectId).ifPresent(project -> {
+                if (project.getBoundaryGeom() != null) {
+                    GeometryFactory gf = new GeometryFactory();
+                    Point point = gf.createPoint(new Coordinate(dto.getLng(), dto.getLat()));
+                    point.setSRID(4326);
+                    if (!project.getBoundaryGeom().contains(point)) {
+                        throw new RuntimeException(
+                                "Geofencing violation: OLT coordinates are outside the project's boundary area.");
+                    }
+                    log.debug("✅ OLT geofencing OK for project: {}", projectId);
+                }
+            });
+        }
+
         OLT olt = new OLT();
         updateEntityFromDto(olt, dto);
         return networkMapper.toOLTDto(oltRepository.save(olt));

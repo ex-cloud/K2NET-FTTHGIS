@@ -40,6 +40,9 @@ public class Project extends OrganizationAwareEntity {
     @Column
     private String region;
 
+    @Column(name = "boundary_geom", columnDefinition = "geometry(Polygon, 4326)")
+    private org.locationtech.jts.geom.Polygon boundaryGeom;
+
     @JsonIgnore
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @NotAudited

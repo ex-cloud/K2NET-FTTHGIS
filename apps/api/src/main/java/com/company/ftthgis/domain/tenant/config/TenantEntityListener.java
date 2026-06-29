@@ -1,8 +1,10 @@
 package com.company.ftthgis.domain.tenant.config;
 
 import com.company.ftthgis.config.tenant.TenantContext;
+import com.company.ftthgis.config.tenant.OrganizationContext;
 import com.company.ftthgis.domain.common.BaseEntity;
 import com.company.ftthgis.domain.tenant.entity.Project;
+import com.company.ftthgis.domain.tenant.entity.Organization;
 import jakarta.persistence.PrePersist;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,12 +22,17 @@ public class TenantEntityListener {
             
             if (projectId != null && baseEntity.getProject() == null) {
                 log.debug("🛡️ Auto-assigning project {} to entity: {}", projectId, entity.getClass().getSimpleName());
-                
-                // We create a proxy project object with just the ID to avoid extra DB hit
                 Project project = new Project();
                 project.setId(UUID.fromString(projectId));
-                
                 baseEntity.setProject(project);
+            }
+            
+            UUID orgId = OrganizationContext.getOrganizationId();
+            if (orgId != null && baseEntity.getOrganization() == null) {
+                log.debug("🛡️ Auto-assigning organization {} to entity: {}", orgId, entity.getClass().getSimpleName());
+                Organization org = new Organization();
+                org.setId(orgId);
+                baseEntity.setOrganization(org);
             }
         }
     }
