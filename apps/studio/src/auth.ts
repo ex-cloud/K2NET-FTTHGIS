@@ -192,6 +192,23 @@ export const baseAuthOptions: NextAuthConfig = {
           }
 
           const exUser = user as import("next-auth").User;
+
+          // Fetch fine-grained permissions from backend profile
+          let permissions: string[] = [];
+          try {
+            const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:9090";
+            const profileRes = await fetch(`${backendUrl}/api/v1/users/me`, {
+              headers: { Authorization: `Bearer ${userWithTokens.tokens.access_token}` },
+            });
+            if (profileRes.ok) {
+              const profileData = await profileRes.json();
+              permissions = profileData.permissions || [];
+              logInfo(`🔑 Loaded ${permissions.length} permissions for credentials user`);
+            }
+          } catch (e) {
+            console.warn("[Auth.ts] Failed to fetch permissions for credentials user:", e);
+          }
+
           const enrichedUser = {
             id: user.id || token.sub,
             email: profile.email || exUser.email || token.email,
@@ -206,6 +223,7 @@ export const baseAuthOptions: NextAuthConfig = {
               exUser.username ||
               exUser.preferred_username,
             roles: roles,
+            permissions: permissions,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NextAuth user type does not expose organizationSlug
             organizationSlug: (user as any).organizationSlug || null,
           };
@@ -267,11 +285,30 @@ export const baseAuthOptions: NextAuthConfig = {
             orgSlug = parts[parts.length - 1];
           }
 
+          // Fetch fine-grained permissions from backend profile (OAuth flow)
+          let oauthPermissions: string[] = [];
+          if (account.access_token) {
+            try {
+              const backendUrl = process.env.BACKEND_API_URL || "http://127.0.0.1:9090";
+              const profileRes = await fetch(`${backendUrl}/api/v1/users/me`, {
+                headers: { Authorization: `Bearer ${account.access_token}` },
+              });
+              if (profileRes.ok) {
+                const profileData = await profileRes.json();
+                oauthPermissions = profileData.permissions || [];
+                logInfo(`🔑 Loaded ${oauthPermissions.length} permissions for OAuth user`);
+              }
+            } catch (e) {
+              console.warn("[Auth.ts] Failed to fetch permissions for OAuth user:", e);
+            }
+          }
+
           token.user = {
             ...user,
             avatar_url: exUser.avatar_url || exUser.image,
             username: exUser.preferred_username || exUser.username,
             roles: roles,
+            permissions: oauthPermissions,
             organizationSlug: orgSlug === "ftth-realm" ? null : orgSlug,
           };
           return {
@@ -326,6 +363,7 @@ export const baseAuthOptions: NextAuthConfig = {
           id: tokenUser.id || session.user.id,
           username: tokenUser.username,
           roles: tokenUser.roles || [],
+          permissions: tokenUser.permissions || [],
           avatar_url: tokenUser.avatar_url,
           organizationSlug: tokenUser.organizationSlug,
         };

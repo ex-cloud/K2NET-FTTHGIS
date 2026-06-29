@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle, Shield, Server, Users } from "lucide-react";
+import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle, Server, Users } from "lucide-react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "next-auth/react";
@@ -123,7 +123,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
   };
 
   // Helper to determine if a specific role's permissions have changed
-  const isRoleModified = (roleId: number) => {
+  const isRoleModified = useCallback((roleId: number) => {
     const current = editedRoles[roleId];
     const original = originalRoles[roleId];
     if (!current || !original) return false;
@@ -132,12 +132,12 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
       if (!original.has(val)) return true;
     }
     return false;
-  };
+  }, [editedRoles, originalRoles]);
 
   // Check if any role in the entire matrix has been modified
   const hasAnyModifiedRoles = useMemo(() => {
     return roles.some(role => isRoleModified(role.id));
-  }, [roles, editedRoles, originalRoles]);
+  }, [roles, isRoleModified]);
 
   const handleSave = async (role: Role) => {
     if (!session?.accessToken) return;

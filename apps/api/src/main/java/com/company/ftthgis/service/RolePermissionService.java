@@ -177,4 +177,28 @@ public class RolePermissionService {
         }
         return false;
     }
+
+    @Transactional
+    public Permission createPermission(Permission permission) {
+        if (permissionRepository.existsByCode(permission.getCode())) {
+            throw new IllegalArgumentException("Permission dengan code '" + permission.getCode() + "' sudah terdaftar.");
+        }
+        log.info("✅ Creating new permission: code={}, module={}, scope={}", 
+            permission.getCode(), permission.getModule(), permission.getScope());
+        return permissionRepository.save(permission);
+    }
+
+    @Transactional
+    public void deletePermission(Long id) {
+        Permission permission = permissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Permission dengan ID " + id + " tidak ditemukan."));
+
+        // Remove the permission from all roles that reference it before deleting
+        if (permission.getRoles() != null) {
+            permission.getRoles().forEach(role -> role.getPermissions().remove(permission));
+        }
+
+        log.info("🗑️ Deleting permission: id={}, code={}", id, permission.getCode());
+        permissionRepository.delete(permission);
+    }
 }

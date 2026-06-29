@@ -28,6 +28,7 @@ public class UserDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<ProjectRoleDto> projectRoles;
+    private List<String> permissions;
 
     @Data
     @Builder

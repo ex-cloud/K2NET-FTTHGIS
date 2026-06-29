@@ -38,4 +38,17 @@ public class RolePermissionController {
             @RequestBody List<Long> permissionIds) {
         return ResponseEntity.ok(rolePermissionService.updateRolePermissions(roleId, permissionIds));
     }
+
+    @PostMapping("/permissions")
+    @PreAuthorize("hasRole('super_admin')")
+    public ResponseEntity<Permission> createPermission(@RequestBody Permission permission) {
+        return ResponseEntity.ok(rolePermissionService.createPermission(permission));
+    }
+
+    @DeleteMapping("/permissions/{id}")
+    @PreAuthorize("hasRole('super_admin')")
+    public ResponseEntity<Void> deletePermission(@PathVariable Long id) {
+        rolePermissionService.deletePermission(id);
+        return ResponseEntity.noContent().build();
+    }
 }

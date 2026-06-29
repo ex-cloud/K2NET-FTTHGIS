@@ -468,6 +468,12 @@ public class ConfigurableUserService {
                 .collect(Collectors.toList());
         }
 
+        // Collect permission codes from the user's assigned role
+        List<String> permissionsList = new ArrayList<>();
+        if (user.getRole() != null && user.getRole().getPermissions() != null) {
+            user.getRole().getPermissions().forEach(p -> permissionsList.add(p.getCode()));
+        }
+
         return UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -484,6 +490,7 @@ public class ConfigurableUserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)
+                .permissions(permissionsList)
                 .build();
     }
 
