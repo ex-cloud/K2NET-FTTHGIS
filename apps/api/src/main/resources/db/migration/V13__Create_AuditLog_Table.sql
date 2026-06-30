@@ -4,16 +4,15 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     event_type VARCHAR(50) NOT NULL,
     user_id UUID,
     username VARCHAR(255),
-    old_value TEXT,
-    new_value TEXT,
-    status VARCHAR(50),
-    ip_address VARCHAR(45),
-    user_agent TEXT,
+    client_ip VARCHAR(45),
     http_method VARCHAR(10),
-    endpoint VARCHAR(255),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    request_uri TEXT,
+    required_permission VARCHAR(255),
+    status VARCHAR(50) NOT NULL,
+    details TEXT,
+    severity VARCHAR(20) NOT NULL DEFAULT 'WARN',
+    timestamp TIMESTAMP NOT NULL,
+    org_id VARCHAR(255)
 );
 
 -- Create indexes for common queries
