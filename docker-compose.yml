@@ -232,19 +232,6 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Distributed Tracing (Zipkin)
-  zipkin:
-    image: openzipkin/zipkin-slim@sha256:fc29b9862c14f4fc241cf0259c585e1cfd4e9b18f01ad36d86adaabb7d01815c
-    container_name: ftth-zipkin
-    restart: always
-    ports:
-      - "127.0.0.1:9411:9411"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
   # Node Exporter (Host/OS metrics)
   node-exporter:
     image: prom/node-exporter:v1.11.1
@@ -286,7 +273,6 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/certs
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
-      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - NOTIFICATION_GATEWAY_URL=http://host.docker.internal:5001
       - PAYMENT_GATEWAY_URL=http://host.docker.internal:5002
       - MAP_GATEWAY_URL=http://host.docker.internal:5003

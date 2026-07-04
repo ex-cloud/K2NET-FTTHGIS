@@ -148,6 +148,7 @@ management:
     health:
       show-details: when_authorized
   tracing:
+    enabled: false
     sampling:
       probability: 1.0
   zipkin:
