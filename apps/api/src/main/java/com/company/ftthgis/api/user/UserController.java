@@ -55,7 +55,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('authenticated')")
+    @PreAuthorize("isAuthenticated()")
     public UserDto me(@AuthenticationPrincipal Jwt jwt) {
         return userService.getCurrentUser(jwt.getSubject());
     }
@@ -102,7 +102,7 @@ public class UserController {
     }
 
     @PutMapping("/profile")
-    @PreAuthorize("hasRole('authenticated')")
+    @PreAuthorize("isAuthenticated()")
     public UserDto updateProfile(
             @RequestBody UpdateProfileRequest request,
             @AuthenticationPrincipal Jwt jwt) {

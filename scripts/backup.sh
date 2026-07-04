@@ -45,12 +45,46 @@ else
   exit 1
 fi
 
+# =============================================================================
+# BACKUP KEYCLOAK DATABASE (keycloak_db)
+# Berisi konfigurasi realm, user credentials, identity providers, session data.
+# Data ini TIDAK bisa di-recover dari kode saja jika hilang.
+# =============================================================================
+KC_BACKUP_FILE="$BACKUP_DIR/keycloak_db_backup_$TIMESTAMP.sql"
+
+echo "Memulai backup database Keycloak (keycloak_db)..."
+docker exec -i ftth-postgres pg_dump -U postgres keycloak_db > $KC_BACKUP_FILE
+KC_STATUS=$?
+
+if [ $KC_STATUS -eq 0 ]; then
+  gzip -f $KC_BACKUP_FILE
+  KC_GZIP_STATUS=$?
+  if [ $KC_GZIP_STATUS -eq 0 ]; then
+    echo "Backup database Keycloak sukses: $KC_BACKUP_FILE.gz"
+
+    # Unggah cadangan Keycloak ke MinIO lokal
+    if [ -n "${GATEWAY_TOKEN:-}" ]; then
+      echo "Mengunggah berkas cadangan Keycloak ke MinIO S3 lokal..."
+      curl -s -X POST \
+        -H "X-Gateway-Token: $GATEWAY_TOKEN" \
+        -F "file=@$KC_BACKUP_FILE.gz" \
+        -F "bucket=db-backups" \
+        http://127.0.0.1:5004/api/v1/upload > /dev/null &
+    fi
+  else
+    echo "Error: Kompresi backup Keycloak gagal"
+  fi
+else
+  echo "Error: pg_dump Keycloak gagal"
+fi
+
 # 🚀 TINGKAT KEAMANAN TINGGI (Offsite Backup):
 # Unggah otomatis berkas backup terkompresi ke S3-compatible cloud storage (misal: Cloudflare R2 / AWS S3)
 # menggunakan Rclone jika sudah dikonfigurasi.
 if which rclone >/dev/null 2>&1 && rclone listremotes | grep -q "^cloudflare-r2:"; then
   echo "Mengunggah berkas backup database ke offsite cloud storage (cloudflare-r2)..."
   rclone copy "$BACKUP_FILE.gz" cloudflare-r2:ftth-gis-disaster-recovery/database/
+  rclone copy "$KC_BACKUP_FILE.gz" cloudflare-r2:ftth-gis-disaster-recovery/keycloak/ 2>/dev/null
   RCLONE_STATUS=$?
   if [ $RCLONE_STATUS -eq 0 ]; then
     echo "Backup database offsite sukses!"

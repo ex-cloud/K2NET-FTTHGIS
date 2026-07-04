@@ -378,18 +378,23 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                       </td>
                       {roles.map((role) => {
                         const isChecked = editedRoles[role.id]?.has(perm.id);
+                        const canEdit = canAccess('roles.update');
                         return (
                           <td 
                             key={role.id} 
-                            onClick={() => togglePermission(role.id, perm.id)}
-                            className="p-4 text-center cursor-pointer border-l border-zinc-900/50 hover:bg-zinc-800/20 transition-all"
+                            onClick={() => canEdit && togglePermission(role.id, perm.id)}
+                            className={`p-4 text-center border-l border-zinc-900/50 transition-all ${
+                              canEdit
+                                ? "cursor-pointer hover:bg-zinc-800/20"
+                                : "cursor-default"
+                            }`}
                           >
                             <div className="flex items-center justify-center mx-auto">
                               <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                                 isChecked 
                                   ? "bg-emerald-500 border-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/10" 
                                   : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
-                              }`}>
+                              } ${!canEdit ? "opacity-60" : ""}`}>
                                 {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                               </div>
                             </div>
@@ -466,11 +471,16 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                         
                         {perms.map((perm) => {
                           const isChecked = editedRoles[role.id]?.has(perm.id);
+                          const canEdit = canAccess('roles.update');
                           return (
                             <div 
                               key={perm.id} 
-                              onClick={() => togglePermission(role.id, perm.id)}
-                              className="flex items-center justify-between py-1.5 cursor-pointer hover:bg-zinc-900/40 px-1 rounded transition-colors"
+                              onClick={() => canEdit && togglePermission(role.id, perm.id)}
+                              className={`flex items-center justify-between py-1.5 px-1 rounded transition-colors ${
+                                canEdit
+                                  ? "cursor-pointer hover:bg-zinc-900/40"
+                                  : "cursor-default"
+                              }`}
                             >
                               <div className="pr-2">
                                 <span className="block font-medium text-zinc-300">{perm.description || perm.code}</span>
@@ -478,7 +488,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                               </div>
                               <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
                                 isChecked ? "bg-emerald-500 border-emerald-400 text-zinc-950" : "border-zinc-700 bg-zinc-900"
-                              }`}>
+                              } ${!canEdit ? "opacity-60" : ""}`}>
                                 {isChecked && <Check className="w-3 h-3 text-black stroke-[3]" />}
                               </div>
                             </div>
@@ -490,8 +500,8 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 </div>
               </div>
               
-              {/* Individual Save Button for Card */}
-              {isRoleModified(role.id) && (
+              {/* Individual Save Button for Card — only shown if user can update roles */}
+              {isRoleModified(role.id) && canAccess('roles.update') && (
                 <div className="mt-4 pt-3 border-t border-zinc-900">
                   <button
                     onClick={() => {

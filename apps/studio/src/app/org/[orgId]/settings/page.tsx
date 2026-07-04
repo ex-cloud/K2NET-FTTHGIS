@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { getBaseUrl, getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";
 import { SettingsPageWrapper } from "@/components/page-guards/settings-page-wrapper";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface Project {
   id: string;
@@ -25,14 +26,8 @@ interface Project {
   region: string;
 }
 
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  roleName: string;
-}
-
 export default function GeneralSettingsPage() {
+  const { canAccess, isSuperAdmin } = usePermissions();
   const params = useParams();
   const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
   const router = useRouter();
@@ -49,7 +44,6 @@ export default function GeneralSettingsPage() {
   const [logoUrl, setLogoUrl] = React.useState("");
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null);
-  const [userData, setUserData] = React.useState<User | null>(null);
   const [slug, setSlug] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [address, setAddress] = React.useState("");
@@ -88,19 +82,11 @@ export default function GeneralSettingsPage() {
           "Authorization": `Bearer ${session.accessToken}`
         };
 
-        const [projectsRes, userRes] = await Promise.all([
-          fetch(`/api/v1/organizations/${orgId}/projects`, { headers }),
-          fetch(`/api/v1/users/me`, { headers })
-        ]);
+        const projectsRes = await fetch(`/api/v1/organizations/${orgId}/projects`, { headers });
 
         if (projectsRes.ok) {
           const projectData = await projectsRes.json();
           setProjects(projectData);
-        }
-
-        if (userRes.ok) {
-          const data = await userRes.json();
-          setUserData(data);
         }
       } catch (error) {
         console.error("Failed to fetch additional data", error);
@@ -144,12 +130,9 @@ export default function GeneralSettingsPage() {
     }
   });
 
-  const isAdmin = React.useMemo(() => {
-    if (!userData) return false;
-    const role = userData.roleName?.toLowerCase() || "";
-    const username = userData.username?.toLowerCase() || "";
-    return role.includes("admin") || role.includes("super") || role.includes("owner") || username.includes("admin");
-  }, [userData]);
+  // Danger Zone is visible only to users with organizations.delete permission or super_admin.
+  // This aligns with the backend @PreAuthorize("@tenantSecurity.isOwner(#id) AND hasAuthority('organizations.delete')")
+  const isAdmin = canAccess("organizations.delete") || isSuperAdmin;
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -10,6 +10,7 @@ import com.company.ftthgis.domain.user.repository.RoleRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.KeycloakAdminService;
 import com.company.ftthgis.service.UserSyncService;
+import com.company.ftthgis.config.tenant.KeycloakService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -30,6 +31,7 @@ public class UserSeeder implements CommandLineRunner {
     private final OrganizationRepository organizationRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final UserSyncService userSyncService;
+    private final KeycloakService keycloakService;
 
     // Role prefix and code mapping
     private static final Map<String, String> SYSTEM_ROLE_CODES = new LinkedHashMap<>() {{
@@ -92,6 +94,9 @@ public class UserSeeder implements CommandLineRunner {
     public void run(String... args) {
         try {
             log.info("--- [USER SEEDER] Starting User, Role & Permission Seeding ---");
+
+            // Ensure the main platform realm (ftth-realm) exists in Keycloak before seeding users
+            keycloakService.ensureRealmExists("ftth-realm");
 
             seedPermissions();
             seedRoles();

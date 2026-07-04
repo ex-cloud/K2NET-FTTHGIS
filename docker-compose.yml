@@ -427,10 +427,26 @@ services:
         echo 'Lifecycle rule already exists for db-backups.';
       fi
 
-      # 5. Enable Server-Side Encryption (SSE-S3) for private buckets
+      # 5. code-backups bucket (Private)
+      /usr/bin/mc mb --ignore-existing localminio/code-backups;
+      /usr/bin/mc anonymous set private localminio/code-backups;
+      if ! /usr/bin/mc ilm rule ls localminio/code-backups | grep -q 'Expiration'; then
+        /usr/bin/mc ilm rule add --expire-days 30 localminio/code-backups;
+      fi
+
+      # 6. docker-backups bucket (Private)
+      /usr/bin/mc mb --ignore-existing localminio/docker-backups;
+      /usr/bin/mc anonymous set private localminio/docker-backups;
+      if ! /usr/bin/mc ilm rule ls localminio/docker-backups | grep -q 'Expiration'; then
+        /usr/bin/mc ilm rule add --expire-days 30 localminio/docker-backups;
+      fi
+
+      # 7. Enable Server-Side Encryption (SSE-S3) for private buckets
       echo 'Configuring Server-Side Encryption (SSE-S3)...';
       /usr/bin/mc encrypt set sse-s3 localminio/tenant-assets;
       /usr/bin/mc encrypt set sse-s3 localminio/db-backups;
+      /usr/bin/mc encrypt set sse-s3 localminio/code-backups;
+      /usr/bin/mc encrypt set sse-s3 localminio/docker-backups;
 
       echo 'MinIO S3 Buckets initialized successfully!';
       exit 0;

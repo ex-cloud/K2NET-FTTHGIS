@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PermissionGuard } from "@/hooks/use-permissions";
+import { usePermissions } from "@/hooks/use-permissions";
 import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
 import { UpdateUserDialog } from "@/components/dashboard/users/update-user-dialog";
 import { 
@@ -41,6 +42,10 @@ export default function OrganizationTeamPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const { canAccess, isSuperAdmin } = usePermissions();
+  const canManageTeam = canAccess("team.manage") || isSuperAdmin;
+  const canInviteTeam = canAccess("team.invite") || canManageTeam;
+
   const { data: session } = useSession();
   const params = useParams();
   const orgId = (params.orgId as string) || (typeof window !== "undefined" ? getCurrentOrgSlug() : "") || "";
@@ -119,13 +124,15 @@ export default function OrganizationTeamPage() {
               </p>
             </div>
           </div>
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
-            onClick={() => setIsWizardOpen(true)}
-          >
-            <Plus className="w-4 h-4" />
-            Invite Member
-          </Button>
+          {canInviteTeam && (
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+              onClick={() => setIsWizardOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Invite Member
+            </Button>
+          )}
         </div>
 
         <TeamInviteWizard 
@@ -278,17 +285,19 @@ export default function OrganizationTeamPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => {
-                          setSelectedUser(member);
-                          setIsUpdateDialogOpen(true);
-                        }}
-                      >
-                        Edit Access
-                      </Button>
+                      {canManageTeam && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => {
+                            setSelectedUser(member);
+                            setIsUpdateDialogOpen(true);
+                          }}
+                        >
+                          Edit Access
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

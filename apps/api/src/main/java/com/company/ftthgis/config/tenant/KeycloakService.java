@@ -9,6 +9,7 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
+import org.keycloak.representations.idm.AuthenticationExecutionInfoRepresentation;
 import org.springframework.stereotype.Service;
 import com.company.ftthgis.config.KeycloakProperties;
 import com.company.ftthgis.service.SystemSettingService;
@@ -64,6 +65,7 @@ public class KeycloakService {
                 
                 // Always sync default client and IDP even if the realm already exists
                 provisionDefaultClient(realmName);
+                disableReviewProfileInFirstBrokerLogin(realmName);
                 if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
                     // Sync SMTP configuration for the existing realm
                     try {
@@ -272,6 +274,7 @@ public class KeycloakService {
             // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend)
             // This is the most important step for login success
             provisionDefaultClient(realmName);
+            disableReviewProfileInFirstBrokerLogin(realmName);
 
             // 3. Clone Google & GitHub Identity Providers from system realm if this is a tenant realm
             if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
@@ -666,6 +669,34 @@ public class KeycloakService {
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to clone Identity Provider '{}' from '{}' to '{}': {}", 
                     providerAlias, sourceRealm, targetRealm, e.getMessage());
+        }
+    }
+
+    /**
+     * Dynamically disables 'Review Profile' execution in the 'first broker login' flow.
+     * This avoids prompt page during first login via Social Identity Providers (Google/GitHub).
+     */
+    private void disableReviewProfileInFirstBrokerLogin(String realmName) {
+        log.info("⚙️ Disabling 'Review Profile' execution in flow 'first broker login' for realm '{}'", realmName);
+        try {
+            var realmResource = keycloak.realm(realmName);
+            List<AuthenticationExecutionInfoRepresentation> executions = 
+                    realmResource.flows().getExecutions("first broker login");
+            
+            for (var execution : executions) {
+                if ("idp-review-profile".equals(execution.getProviderId())) {
+                    if (!"DISABLED".equals(execution.getRequirement())) {
+                        execution.setRequirement("DISABLED");
+                        realmResource.flows().updateExecutions("first broker login", execution);
+                        log.info("✅ SUCCESS: Disabled 'Review Profile' execution in flow 'first broker login' for realm '{}'", realmName);
+                    } else {
+                        log.info("ℹ️ 'Review Profile' execution is already DISABLED for realm '{}'", realmName);
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ ERROR: Failed to disable 'Review Profile' execution in realm '{}': {}", realmName, e.getMessage());
         }
     }
 }

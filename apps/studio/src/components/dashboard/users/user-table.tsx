@@ -27,6 +27,7 @@ import { UpdateUserDialog } from "./update-user-dialog";
 import { UserSearch } from "./user-search";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface UserTableProps {
   data: PaginatedResponse<User> | null;
@@ -39,6 +40,10 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
   const users = data?.content || [];
   const totalPages = data?.totalPages || 0;
   const totalElements = data?.totalElements || 0;
+
+  const { canAccess, isSuperAdmin } = usePermissions();
+  const canManageUsers = canAccess("users.manage") || isSuperAdmin;
+  const canInviteUsers = canAccess("users.invite") || canManageUsers;
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUserForReset, setSelectedUserForReset] = useState<User | null>(null);
@@ -75,13 +80,15 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
             <Button variant="outline" className="h-9 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 hidden sm:flex">
               Docs
             </Button>
-            <Button 
-              onClick={() => setIsInviteWizardOpen(true)}
-              className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
+            {canInviteUsers && (
+              <Button 
+                onClick={() => setIsInviteWizardOpen(true)}
+                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add User
+              </Button>
+            )}
           </div>
         </div>
 
@@ -199,22 +206,28 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                     </TableCell>
                     <TableCell className="px-4 py-2 text-right">
                       <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
-                          onClick={() => handleEdit(user)}
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
-                          onClick={() => handleResetPassword(user)}
-                        >
-                          <Key className="w-3.5 h-3.5" />
-                        </Button>
+                        {canManageUsers && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
+                            title="Edit user"
+                            onClick={() => handleEdit(user)}
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {canManageUsers && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
+                            title="Reset password"
+                            onClick={() => handleResetPassword(user)}
+                          >
+                            <Key className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

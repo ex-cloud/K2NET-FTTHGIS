@@ -48,7 +48,12 @@ export default function SystemOverviewPage() {
 
   const [userStats, setUserStats] = useState<UserStats>({ totalUsers: 0, activeUsers: 0, pendingRequests: 0 });
   const [gateways, setGateways] = useState<GatewayServiceStatus[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingDevops, setLoadingDevops] = useState(true);
+  const [loadingGithub, setLoadingGithub] = useState(true);
+  const [loadingHealth, setLoadingHealth] = useState(true);
+  const [loadingGateways, setLoadingGateways] = useState(true);
+  const loadingStats = loadingUsers || loadingDevops || loadingGithub || loadingHealth || loadingGateways;
   const [refreshing, setRefreshing] = useState(false);
   const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
   const [devopsStats, setDevopsStats] = useState<DevOpsStats | null>(null);
@@ -90,92 +95,106 @@ export default function SystemOverviewPage() {
 
   const loadData = async (showToast = false) => {
     if (showToast) setRefreshing(true);
-    setLoadingStats(true);
+    setLoadingUsers(true);
+    setLoadingDevops(true);
+    setLoadingGithub(true);
+    setLoadingHealth(true);
+    setLoadingGateways(true);
 
-    try {
-      await refreshOrgs();
+    // 1. Fetch organization data in parallel
+    refreshOrgs()
+      .catch((err) => console.error("Error refreshing organizations:", err));
 
-      if (session?.accessToken) {
-        const res = await fetch("/api/v1/users/stats", {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-        if (res.ok) {
-          const stats = await res.json();
-          setUserStats(stats);
+    // 2. Fetch gateways status in parallel
+    getGatewayStatus()
+      .then((gwRes) => {
+        if (gwRes.status === "ok") {
+          setGateways(gwRes.services);
         }
+      })
+      .catch((err) => console.error("Error fetching gateways:", err))
+      .finally(() => setLoadingGateways(false));
 
-        const devOpsRes = await fetch("/api/v1/system/devops-stats", {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-        if (devOpsRes.ok) {
-          const devOps = await devOpsRes.json();
-          setDevopsStats(devOps);
+    // 3. Fetch backend statistics & health metrics in parallel using Promise.allSettled
+    if (session?.accessToken) {
+      const headers = {
+        Authorization: `Bearer ${session.accessToken}`,
+      };
+
+      Promise.allSettled([
+        // Users stats
+        fetch("/api/v1/users/stats", { headers })
+          .then(async (res) => {
+            if (res.ok) {
+              const stats = await res.json();
+              setUserStats(stats);
+            }
+          })
+          .catch((err) => console.error("Error fetching user stats:", err))
+          .finally(() => setLoadingUsers(false)),
+
+        // DevOps stats
+        fetch("/api/v1/system/devops-stats", { headers })
+          .then(async (res) => {
+            if (res.ok) {
+              const devOps = await res.json();
+              setDevopsStats(devOps);
+            }
+          })
+          .catch((err) => console.error("Error fetching devops stats:", err))
+          .finally(() => setLoadingDevops(false)),
+
+        // GitHub integration status
+        fetch("/api/v1/system/github-integration/status", { headers })
+          .then(async (res) => {
+            if (res.ok) {
+              const githubStatus = await res.json();
+              setGithubIntegrationStatus({
+                connected: Boolean(githubStatus?.connected),
+                organization: typeof githubStatus?.organization === "string" ? githubStatus.organization : "",
+                installationTarget: typeof githubStatus?.installationTarget === "string" ? githubStatus.installationTarget : "",
+                repositoriesCount: Array.isArray(githubStatus?.repositories) ? githubStatus.repositories.length : 0,
+                message: typeof githubStatus?.message === "string" ? githubStatus.message : "",
+              });
+            }
+          })
+          .catch((err) => console.error("Error fetching github integration status:", err))
+          .finally(() => setLoadingGithub(false)),
+
+        // Health metrics
+        fetch("/api/v1/system/health-metrics", { headers })
+          .then(async (res) => {
+            if (res.ok) {
+              const healthData = await res.json();
+              setSystemHealth({
+                cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
+                memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
+                memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
+                memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
+                diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
+                postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
+                redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
+                redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
+                postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
+                redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
+                keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
+                throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
+              });
+            }
+          })
+          .catch((err) => console.error("Error fetching system health metrics:", err))
+          .finally(() => setLoadingHealth(false))
+      ]).then(() => {
+        if (showToast) {
+          toast.success("Statistik sistem berhasil diperbarui!");
         }
-
-        const githubStatusRes = await fetch("/api/v1/system/github-integration/status", {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        });
-        if (githubStatusRes.ok) {
-          const githubStatus = await githubStatusRes.json();
-          setGithubIntegrationStatus({
-            connected: Boolean(githubStatus?.connected),
-            organization: typeof githubStatus?.organization === "string" ? githubStatus.organization : "",
-            installationTarget: typeof githubStatus?.installationTarget === "string" ? githubStatus.installationTarget : "",
-            repositoriesCount: Array.isArray(githubStatus?.repositories) ? githubStatus.repositories.length : 0,
-            message: typeof githubStatus?.message === "string" ? githubStatus.message : "",
-          });
-        }
-
-        // Fetch health-metrics
-        try {
-          const healthRes = await fetch("/api/v1/system/health-metrics", {
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-            },
-          });
-          if (healthRes.ok) {
-            const healthData = await healthRes.json();
-            setSystemHealth({
-              cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
-              memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
-              memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
-              memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
-              diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
-              postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
-              redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
-              redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
-              postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
-              redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
-              keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
-              throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
-            });
-          }
-        } catch (err) {
-          console.error("Failed to fetch health metrics:", err);
-        }
-      }
-
-      const gwRes = await getGatewayStatus();
-      if (gwRes.status === "ok") {
-        setGateways(gwRes.services);
-      }
-
-      if (showToast) {
-        toast.success("Statistik sistem berhasil diperbarui!");
-      }
-    } catch (err) {
-      console.error("Error fetching overview data:", err);
-      if (showToast) {
-        toast.error("Gagal memperbarui beberapa data sistem.");
-      }
-    } finally {
-      setLoadingStats(false);
+        setRefreshing(false);
+      });
+    } else {
+      setLoadingUsers(false);
+      setLoadingDevops(false);
+      setLoadingGithub(false);
+      setLoadingHealth(false);
       setRefreshing(false);
     }
   };
@@ -493,11 +512,11 @@ export default function SystemOverviewPage() {
             eyebrow="Global Users"
             value={
               <span className="flex items-baseline gap-2">
-                {loadingStats ? "..." : userStats.totalUsers}
-                <span className="text-xs text-zinc-500">{loadingStats ? "" : `${userStats.activeUsers} Verified`}</span>
+                {loadingUsers ? "..." : userStats.totalUsers}
+                <span className="text-xs text-zinc-500">{loadingUsers ? "" : `${userStats.activeUsers} Verified`}</span>
               </span>
             }
-            helper={<span>Pending Invites: {userStats.pendingRequests}</span>}
+            helper={<span>Pending Invites: {loadingUsers ? "..." : userStats.pendingRequests}</span>}
             footer="Identity administration"
             icon={Users}
             footerLinkHref="/users"
@@ -508,11 +527,11 @@ export default function SystemOverviewPage() {
             eyebrow="Active Gateways"
             value={
               <span className="flex items-baseline gap-2">
-                {loadingStats ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
+                {loadingGateways ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
                 <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-emerald-500" : "text-amber-500")}>{allGatewaysHealthy ? "Healthy" : "Degraded"}</span>
               </span>
             }
-            helper={<span>Avg Latency: {loadingStats ? "..." : avgLatency}</span>}
+            helper={<span>Avg Latency: {loadingGateways ? "..." : avgLatency}</span>}
             footer="Service routing"
             icon={Zap}
             footerLinkHref="/gateways/overview"
@@ -523,11 +542,11 @@ export default function SystemOverviewPage() {
             eyebrow="CPU / RAM Load"
             value={
               <span className="flex items-baseline gap-2">
-                {systemResources.cpu}% <span className="text-xs text-zinc-500">CPU</span>
-                <span className="text-xs text-zinc-500">/ {systemResources.memory}% RAM</span>
+                {loadingHealth ? "..." : `${systemResources.cpu}%`} <span className="text-xs text-zinc-500">{loadingHealth ? "" : "CPU"}</span>
+                {loadingHealth ? null : <span className="text-xs text-zinc-500">/ {systemResources.memory}% RAM</span>}
               </span>
             }
-            helper={<span>RAM Used: {systemResources.memoryUsed}</span>}
+            helper={<span>RAM Used: {loadingHealth ? "..." : systemResources.memoryUsed}</span>}
             footer="Infrastructure health"
             icon={Activity}
             footerLinkHref="/health"
