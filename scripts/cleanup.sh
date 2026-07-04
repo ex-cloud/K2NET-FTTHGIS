@@ -269,9 +269,20 @@ fi
 # --- Kirim ke Telegram ---
 if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
   log "📣 Mengirim notifikasi ke Telegram..."
-  TELEGRAM_MSG="*$NOTIF_TITLE*%0A%0A$(printf '%s' "$NOTIF_BODY" | sed 's/\\n/%0A/g; s/ /+/g')"
+  TELEGRAM_TEXT="🧹 *FTTH GIS — Storage Cleanup Selesai*
+
+📅 $(date +"%d %b %Y, %H:%M") WIB
+💾 Sebelum : $DISK_BEFORE
+✅ Sesudah  : $DISK_AFTER
+📂 Tersedia : $DISK_AVAIL"
+  TG_PAYLOAD=$(printf '{"chat_id": "%s", "parse_mode": "Markdown", "text": "%s"}' \
+    "$TELEGRAM_CHAT_ID" \
+    "$(echo "$TELEGRAM_TEXT" | sed 's/"/\\"/g')")
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&parse_mode=Markdown&text=${TELEGRAM_MSG}" \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d "$TG_PAYLOAD" \
+    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     2>/dev/null || echo "000")
   if [ "$HTTP_STATUS" = "200" ]; then
     log "   ✅ Notifikasi Telegram terkirim."
