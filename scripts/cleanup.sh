@@ -223,15 +223,63 @@ done
 
 log ""
 
-# Kirim notifikasi via notification-gateway jika tersedia
-GATEWAY_TOKEN=$(grep -E "^GATEWAY_TOKEN=" /opt/project5/services/.env 2>/dev/null | cut -d'=' -f2 || echo "")
-if [ -n "$GATEWAY_TOKEN" ]; then
-  NOTIF_MSG="✅ *Cleanup Selesai* [$(date +"%d/%m/%Y %H:%M")]\n\n💾 Disk: $DISK_BEFORE → $DISK_AFTER\n📁 Tersedia: $DISK_AVAIL\n📄 Log: $LOG_FILE"
-  curl -s -X POST \
-    -H "X-Gateway-Token: $GATEWAY_TOKEN" \
+# ==============================================================================
+# NOTIFIKASI — Discord Webhook + Telegram Bot
+# Baca credentials dari .env utama
+# ==============================================================================
+
+# Load env vars notifikasi
+ENV_FILE="/opt/project5/.env"
+DISCORD_WEBHOOK_URL=$(grep -E "^DISCORD_WEBHOOK_URL=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+TELEGRAM_BOT_TOKEN=$(grep -E "^TELEGRAM_BOT_TOKEN=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+TELEGRAM_CHAT_ID=$(grep -E "^TELEGRAM_CHAT_ID=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+
+# Susun pesan notifikasi
+NOTIF_TITLE="🧹 FTTH GIS — Storage Cleanup Selesai"
+NOTIF_BODY="📅 $(date +"%d %b %Y, %H:%M WIB")\n💾 Sebelum : $DISK_BEFORE\n✅ Sesudah  : $DISK_AFTER\n📂 Tersedia : $DISK_AVAIL\n📄 Log      : $LOG_FILE"
+
+# --- Kirim ke Discord ---
+if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+  log "📣 Mengirim notifikasi ke Discord..."
+  DISCORD_PAYLOAD=$(cat <<JSON
+{
+  "embeds": [{
+    "title": "$NOTIF_TITLE",
+    "description": "$(printf '%s' "$NOTIF_BODY" | sed 's/\\n/\n/g')",
+    "color": 3066993,
+    "footer": { "text": "FTTH GIS Server Maintenance" }
+  }]
+}
+JSON
+)
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST \
     -H "Content-Type: application/json" \
-    -d "{\"channel\":\"whatsapp\",\"to\":\"system\",\"message\":\"$NOTIF_MSG\"}" \
-    http://127.0.0.1:5001/api/v1/notify > /dev/null 2>&1 || true
+    -d "$DISCORD_PAYLOAD" \
+    "$DISCORD_WEBHOOK_URL" 2>/dev/null || echo "000")
+  if [ "$HTTP_STATUS" = "204" ]; then
+    log "   ✅ Notifikasi Discord terkirim."
+  else
+    log "   ⚠️  Discord gagal (HTTP $HTTP_STATUS) — dilewati."
+  fi
+else
+  log "   ℹ️  DISCORD_WEBHOOK_URL tidak dikonfigurasi, notifikasi Discord dilewati."
+fi
+
+# --- Kirim ke Telegram ---
+if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+  log "📣 Mengirim notifikasi ke Telegram..."
+  TELEGRAM_MSG="*$NOTIF_TITLE*%0A%0A$(printf '%s' "$NOTIF_BODY" | sed 's/\\n/%0A/g; s/ /+/g')"
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&parse_mode=Markdown&text=${TELEGRAM_MSG}" \
+    2>/dev/null || echo "000")
+  if [ "$HTTP_STATUS" = "200" ]; then
+    log "   ✅ Notifikasi Telegram terkirim."
+  else
+    log "   ⚠️  Telegram gagal (HTTP $HTTP_STATUS) — dilewati."
+  fi
+else
+  log "   ℹ️  TELEGRAM_BOT_TOKEN/CHAT_ID tidak dikonfigurasi, notifikasi Telegram dilewati."
 fi
 
 if [ "$DRY_RUN" = false ]; then
