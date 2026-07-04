@@ -26,6 +26,7 @@ backups/
 /docs/
 .config/
 artifacts/
+AGENTS.md
 
 # =============================================
 # 🟡 DEPENDENCIES & BUILD OUTPUT
