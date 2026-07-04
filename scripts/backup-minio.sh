@@ -35,8 +35,8 @@ if [ $TAR_STATUS -eq 0 ]; then
     echo "Warning: Rclone belum terinstal atau remote 'cloudflare-r2' belum terkonfigurasi. Sinkronisasi offsite dilewati."
   fi
   
-  # Hapus berkas lokal yang berusia lebih dari 14 hari
-  find $BACKUP_DIR -type f -name "minio_backup_*.tar.gz" -mtime +14 -delete
+  # Hapus berkas lokal yang berusia lebih dari 3 hari
+  find $BACKUP_DIR -type f -name "minio_backup_*.tar.gz" -mtime +3 -delete
 else
   echo "Error: Kompresi data MinIO GAGAL!"
   exit 1

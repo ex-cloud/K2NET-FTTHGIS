@@ -95,5 +95,5 @@ else
   echo "Warning: Rclone belum terinstal atau remote 'cloudflare-r2' belum dikonfigurasi. Backup database offsite dilewati."
 fi
 
-# Hapus backup lokal yang lebih tua dari 7 hari agar disk AlmaLinux tidak penuh
-find $BACKUP_DIR -type f -name "*.gz" -mtime +7 -delete
+# Hapus backup lokal yang lebih tua dari 3 hari agar disk AlmaLinux tidak penuh
+find $BACKUP_DIR -type f -name "*.gz" -mtime +3 -delete

@@ -66,7 +66,7 @@ for LABEL in "${!VOLUMES[@]}"; do
   fi
 done
 
-# Hapus backup lokal yang lebih tua dari 30 hari
-find "$BACKUP_DIR" -type f -name "*_volume_*.tar.gz" -mtime +30 -delete
+# Hapus backup lokal yang lebih tua dari 7 hari
+find "$BACKUP_DIR" -type f -name "*_volume_*.tar.gz" -mtime +7 -delete
 
 echo "=== Backup Docker Persistent Data Selesai ==="

@@ -56,8 +56,8 @@ if [ $TAR_STATUS -eq 0 ]; then
     echo "Warning: GATEWAY_TOKEN tidak ditemukan. Upload ke MinIO dilewati."
   fi
 
-  # Hapus backup lokal yang lebih tua dari 7 hari
-  find "$BACKUP_DIR" -type f -name "ftth_code_backup_*.tar.gz" -mtime +7 -delete
+  # Hapus backup lokal yang lebih tua dari 2 hari
+  find "$BACKUP_DIR" -type f -name "ftth_code_backup_*.tar.gz" -mtime +2 -delete
   echo "=== Backup Kode Sumber Selesai ==="
 else
   echo "Error: Arsip kode sumber GAGAL!"
