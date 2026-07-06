@@ -7,6 +7,11 @@ COPY notification-gateway/go.mod notification-gateway/go.sum ./notification-gate
 COPY payment-gateway/go.mod payment-gateway/go.sum ./payment-gateway/
 COPY poller/go.mod poller/go.sum ./poller/
 COPY storage-gateway/go.mod storage-gateway/go.sum ./storage-gateway/
+COPY gateway-audit/go.mod gateway-audit/go.sum ./gateway-audit/
+COPY gateway-export/go.mod gateway-export/go.sum ./gateway-export/
+COPY gateway-olt/go.mod gateway-olt/go.sum ./gateway-olt/
+COPY gateway-scheduler/go.mod gateway-scheduler/go.sum ./gateway-scheduler/
+COPY gateway-whatsapp/go.mod gateway-whatsapp/go.sum ./gateway-whatsapp/
 RUN go work sync
 COPY shared/ ./shared/
 COPY map-gateway/ ./map-gateway/

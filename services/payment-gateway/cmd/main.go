@@ -50,6 +50,13 @@ func main() {
 	router.Use(telemetry.TelemetryMiddleware())
 
 	router.GET("/metrics", telemetry.GetMetricsHandler())
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "payment-gateway",
+			"version": "1.0.0",
+		})
+	})
 
 	router.POST("/webhooks/payment", func(c *gin.Context) {
 		reqCtx := c.Request.Context()

@@ -38,6 +38,13 @@ func main() {
 	router.Use(telemetry.TelemetryMiddleware())
 
 	router.GET("/metrics", telemetry.GetMetricsHandler())
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "storage-gateway",
+			"version": "1.0.0",
+		})
+	})
 
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())

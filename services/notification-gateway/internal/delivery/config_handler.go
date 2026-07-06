@@ -2,13 +2,15 @@ package delivery
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"gateways/shared/logger"
 	"github.com/gin-gonic/gin"
@@ -161,24 +163,13 @@ func (h *ConfigHandler) writeEnvFile(updates map[string]string) error {
 	return os.WriteFile(cleanPath, []byte(strings.Join(updatedLines, "\n")), 0600)
 }
 
-// restartGatewayServices triggers a systemd restart of all 4 gateway services
+// restartGatewayServices triggers a self-restart by exiting, allowing Docker's restart policy to reboot it
 func restartGatewayServices() error {
-	services := []string{
-		"ftth-notification-gateway",
-		"ftth-payment-gateway",
-		"ftth-map-gateway",
-		"ftth-storage-gateway",
-	}
-	for _, svc := range services {
-		// Validate service name to prevent command injection
-		if !strings.HasPrefix(svc, "ftth-") || strings.ContainsAny(svc, " ;&|`$") {
-			continue
-		}
-		cmd := exec.Command("systemctl", "restart", svc)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to restart %s: %w", svc, err)
-		}
-	}
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		logger.Warn(context.Background(), "Exiting process to trigger Docker container restart...")
+		os.Exit(0)
+	}()
 	return nil
 }
 
@@ -219,21 +210,37 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 
 	// Whitelist: only allow known configuration keys to be updated
 	allowedKeys := map[string]bool{
-		"GATEWAY_TOKEN":        true,
-		"REDIS_ADDR":           true,
-		"TWILIO_ACCOUNT_SID":   true,
-		"TWILIO_AUTH_TOKEN":     true,
-		"TWILIO_FROM_NUMBER":   true,
-		"XENDIT_API_KEY":       true,
-		"XENDIT_WEBHOOK_KEY":   true,
-		"CORE_API_URL":         true,
-		"GOOGLE_MAPS_API_KEY":  true,
-		"HERE_MAPS_API_KEY":    true,
-		"AWS_REGION":           true,
-		"AWS_ENDPOINT":         true,
-		"AWS_ACCESS_KEY_ID":    true,
-		"AWS_SECRET_ACCESS_KEY": true,
-		"AWS_BUCKET_NAME":      true,
+		"GATEWAY_TOKEN":                  true,
+		"REDIS_ADDR":                     true,
+		"TWILIO_ACCOUNT_SID":             true,
+		"TWILIO_AUTH_TOKEN":              true,
+		"TWILIO_FROM_NUMBER":             true,
+		"XENDIT_API_KEY":                 true,
+		"XENDIT_WEBHOOK_KEY":             true,
+		"CORE_API_URL":                   true,
+		"GOOGLE_MAPS_API_KEY":            true,
+		"HERE_MAPS_API_KEY":              true,
+		"AWS_REGION":                     true,
+		"AWS_ENDPOINT":                   true,
+		"AWS_ACCESS_KEY_ID":              true,
+		"AWS_SECRET_ACCESS_KEY":          true,
+		"AWS_BUCKET_NAME":                true,
+		"WA_API_URL":                     true,
+		"WA_ACCESS_TOKEN":                true,
+		"WA_VERIFY_TOKEN":                true,
+		"WA_PHONE_NUMBER_ID":             true,
+		"TIMEZONE":                       true,
+		"MAX_CONCURRENT_JOBS":            true,
+		"STORAGE_GATEWAY_URL":            true,
+		"JOB_TIMEOUT_MINUTES":            true,
+		"MAX_CONCURRENT_EXPORTS":          true,
+		"FONT_DIR":                       true,
+		"TEMPLATE_DIR":                   true,
+		"OLT_ENCRYPTION_KEY":             true,
+		"SNMP_TIMEOUT_SECONDS":           true,
+		"SSH_TIMEOUT_SECONDS":            true,
+		"MAX_CONCURRENT_OLT_CONNECTIONS": true,
+		"RETENTION_DAYS":                 true,
 	}
 
 	sanitized := make(map[string]string)
@@ -262,23 +269,21 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 	logger.Info(ctx, "Configuration updated successfully via admin panel",
 		zap.Int("keys_updated", len(sanitized)))
 
-	// Restart all gateway services to pick up the new config
+	// Restart self-service to pick up new config. Warn that other containers should be restarted.
 	go func() {
 		if err := restartGatewayServices(); err != nil {
-			logger.Error(ctx, "Failed to restart gateway services after config update", zap.Error(err))
-		} else {
-			logger.Info(ctx, "All gateway services restarted successfully after config update")
+			logger.Error(ctx, "Failed to initiate restart of gateway config handler", zap.Error(err))
 		}
 	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":       "ok",
-		"message":      "Configuration updated. Gateway services are restarting...",
+		"message":      "Configuration updated. notification-gateway is restarting. Please manually restart other services if needed to apply changes.",
 		"keys_updated": len(sanitized),
 	})
 }
 
-// GetGatewayStatus returns the status of all gateway systemd services
+// GetGatewayStatus returns the status of all gateway containers by checking their ports in the Docker network
 func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -297,14 +302,26 @@ func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 		{"ftth-payment-gateway", 5002},
 		{"ftth-map-gateway", 5003},
 		{"ftth-storage-gateway", 5004},
+		{"ftth-whatsapp-gateway", 5005},
+		{"ftth-scheduler-gateway", 5006},
+		{"ftth-export-gateway", 5007},
+		{"ftth-olt-gateway", 5008},
+		{"ftth-audit-gateway", 5009},
+		{"ftth-poller", 5010},
 	}
 
 	var results []serviceStatus
 	for _, svc := range services {
-		cmd := exec.Command("systemctl", "is-active", svc.name)
-		output, err := cmd.Output()
-		status := strings.TrimSpace(string(output))
-		active := err == nil && status == "active"
+		// Use the docker-compose service hostname to check port health
+		address := fmt.Sprintf("%s:%d", svc.name, svc.port)
+		conn, err := net.DialTimeout("tcp", address, 300*time.Millisecond)
+		active := err == nil
+		status := "active"
+		if !active {
+			status = "inactive"
+		} else {
+			conn.Close()
+		}
 
 		results = append(results, serviceStatus{
 			Name:   svc.name,
@@ -314,7 +331,7 @@ func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 		})
 	}
 
-	logger.Info(ctx, "Gateway status check performed")
+	logger.Info(ctx, "Gateway container status check performed via TCP dial")
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "ok",

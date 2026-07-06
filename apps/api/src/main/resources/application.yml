@@ -75,6 +75,11 @@ app:
     payment-url: ${PAYMENT_GATEWAY_URL:http://localhost:5002}
     map-url: ${MAP_GATEWAY_URL:http://localhost:5003}
     storage-url: ${STORAGE_GATEWAY_URL:http://localhost:5004}
+    whatsapp-url: ${WHATSAPP_GATEWAY_URL:http://localhost:5005}
+    scheduler-url: ${SCHEDULER_GATEWAY_URL:http://localhost:5006}
+    export-url: ${EXPORT_GATEWAY_URL:http://localhost:5007}
+    olt-url: ${OLT_GATEWAY_URL:http://localhost:5008}
+    audit-url: ${AUDIT_GATEWAY_URL:http://localhost:5009}
     webhook-key: ${XENDIT_WEBHOOK_KEY:}
   seeder:
     enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.

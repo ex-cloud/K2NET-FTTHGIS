@@ -77,4 +77,18 @@ else
   echo "Tidak ada file backup MinIO ditemukan."
 fi
 
+# 5. Sinkronisasi backup secrets terenkripsi (OLT_ENCRYPTION_KEY, dll.)
+echo "--- Sinkronisasi backup secrets terenkripsi ---"
+if [ -d "$BACKUP_BASE/secrets" ] && ls "$BACKUP_BASE/secrets"/*.enc 1>/dev/null 2>&1; then
+  rclone copy "$BACKUP_BASE/secrets/" "${REMOTE}:${REMOTE_BASE}/secrets/" \
+    --include "*.enc" \
+    --transfers 2 \
+    --retries 3 \
+    --low-level-retries 10 \
+    -v
+  echo "Secrets backups: OK"
+else
+  echo "Tidak ada file backup secrets ditemukan."
+fi
+
 echo "=== Sinkronisasi ke Nextcloud Selesai [$(date '+%Y-%m-%d %H:%M:%S')] ==="

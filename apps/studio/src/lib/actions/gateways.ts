@@ -124,16 +124,17 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
 
   const data = await res.json();
   
-  // Measure latency and parse throughput for each active service
-  const host = process.env.NOTIFICATION_GATEWAY_URL 
-    ? new URL(process.env.NOTIFICATION_GATEWAY_URL).hostname 
-    : "host.docker.internal";
-
   const updatedServices = await Promise.all((data.services || []).map(async (svc: GatewayServiceStatus) => {
     if (!svc.active) {
       return { ...svc, latency: 0, throughput: 0 };
     }
 
+    // Determine host: if NOTIFICATION_GATEWAY_URL points to a container name (Docker environment),
+    // use svc.name to connect to that service container directly. Otherwise use localhost/127.0.0.1.
+    const isDocker = process.env.NOTIFICATION_GATEWAY_URL && 
+                     !process.env.NOTIFICATION_GATEWAY_URL.includes("localhost") && 
+                     !process.env.NOTIFICATION_GATEWAY_URL.includes("127.0.0.1");
+    const host = isDocker ? svc.name : "127.0.0.1";
     const url = `http://${host}:${svc.port}/metrics`;
     const start = Date.now();
     try {

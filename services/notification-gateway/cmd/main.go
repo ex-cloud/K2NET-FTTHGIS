@@ -55,6 +55,13 @@ func main() {
 	handler := delivery.NewHTTPHandler(worker, rdb)
 
 	router.GET("/metrics", telemetry.GetMetricsHandler())
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "notification-gateway",
+			"version": "1.0.0",
+		})
+	})
 
 	configHandler := delivery.NewConfigHandler()
 
