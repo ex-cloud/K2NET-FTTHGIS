@@ -273,10 +273,10 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/certs
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
-      - NOTIFICATION_GATEWAY_URL=http://host.docker.internal:5001
-      - PAYMENT_GATEWAY_URL=http://host.docker.internal:5002
-      - MAP_GATEWAY_URL=http://host.docker.internal:5003
-      - STORAGE_GATEWAY_URL=http://host.docker.internal:5004
+      - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
+      - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
+      - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
+      - STORAGE_GATEWAY_URL=http://ftth-storage-gateway:5004
       - FRONTEND_URL=${FRONTEND_URL}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -326,8 +326,8 @@ services:
       - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.k2net.id
       - AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
       - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
-      - NOTIFICATION_GATEWAY_URL=http://host.docker.internal:5001
-      - STORAGE_GATEWAY_URL=http://host.docker.internal:5004
+      - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
+      - STORAGE_GATEWAY_URL=http://ftth-storage-gateway:5004
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -9,6 +9,11 @@ on:
       - 'services/notification-gateway/**'
       - 'services/payment-gateway/**'
       - 'services/storage-gateway/**'
+      - 'services/gateway-whatsapp/**'
+      - 'services/gateway-scheduler/**'
+      - 'services/gateway-export/**'
+      - 'services/gateway-olt/**'
+      - 'services/gateway-audit/**'
       - 'services/shared/**'
       - 'services/go.work'
       - '.github/workflows/gateways-ci.yml'
@@ -29,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway]
+        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -82,12 +87,6 @@ jobs:
               git checkout develop
               git pull origin develop
             fi
-            cd services
-            for svc in map-gateway notification-gateway payment-gateway storage-gateway; do
-              echo "Building $svc..."
-              cd $svc && go build -o $svc ./cmd/... && cd ..
-            done
-            echo "Restarting Go gateway services..."
-            systemctl restart ftth-map-gateway ftth-notification-gateway ftth-payment-gateway ftth-storage-gateway
+            docker compose -f docker-compose.gateways.yml up -d --build
             sleep 3
-            systemctl status ftth-map-gateway ftth-notification-gateway ftth-payment-gateway ftth-storage-gateway --no-pager
+            docker compose -f docker-compose.gateways.yml ps

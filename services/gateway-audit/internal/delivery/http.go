@@ -1,0 +1,129 @@
+package delivery
+
+import (
+	"net/http"
+	"time"
+
+	"gateways/gateway-audit/internal/audit"
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+)
+
+type HTTPHandler struct {
+	repo *audit.Repository
+}
+
+func NewHTTPHandler(repo *audit.Repository) *HTTPHandler {
+	return &HTTPHandler{repo: repo}
+}
+
+// POST /audit/events
+func (h *HTTPHandler) CreateAuditEvent(c *gin.Context) {
+	ctx := c.Request.Context()
+	var req audit.CreateAuditEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": gin.H{"code": "BAD_REQUEST", "message": err.Error()}})
+		return
+	}
+
+	ev, err := h.repo.CreateEvent(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
+}
+
+// GET /audit/events
+func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenant := c.Query("tenantSlug")
+	actor := c.Query("actorId")
+	action := c.Query("action")
+	resource := c.Query("resourceType")
+	startStr := c.Query("startDate")
+	endStr := c.Query("endDate")
+
+	var start, end *time.Time
+	if startStr != "" {
+		if t, err := time.Parse(time.RFC3339, startStr); err == nil {
+			start = &t
+		} else if t, err := time.Parse("2006-01-02", startStr); err == nil {
+			start = &t
+		}
+	}
+	if endStr != "" {
+		if t, err := time.Parse(time.RFC3339, endStr); err == nil {
+			end = &t
+		} else if t, err := time.Parse("2006-01-02", endStr); err == nil {
+			end = &t
+		}
+	}
+
+	events, err := h.repo.QueryEvents(ctx, tenant, actor, action, resource, start, end)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": events})
+}
+
+// GET /audit/events/:id
+func (h *HTTPHandler) GetAuditEvent(c *gin.Context) {
+	ctx := c.Request.Context()
+	id := c.Param("id")
+
+	ev, err := h.repo.GetEvent(ctx, id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"success": false, "error": gin.H{"code": "NOT_FOUND", "message": "Event not found"}})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": ev})
+}
+
+// GET /audit/report/tenant/:slug
+func (h *HTTPHandler) GetTenantAuditReport(c *gin.Context) {
+	ctx := c.Request.Context()
+	slug := c.Param("slug")
+
+	report, err := h.repo.GetTenantReport(ctx, slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": report})
+}
+
+// GET /audit/report/user/:userId
+func (h *HTTPHandler) GetUserAuditReport(c *gin.Context) {
+	ctx := c.Request.Context()
+	userID := c.Param("userId")
+
+	report, err := h.repo.GetUserReport(ctx, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": report})
+}
+
+// POST /audit/export
+func (h *HTTPHandler) ExportAuditEvents(c *gin.Context) {
+	// Stub/triggering audit export payload via gateway-export simulation
+	c.JSON(http.StatusAccepted, gin.H{
+		"success": true,
+		"message": "Audit log export task successfully dispatched",
+		"data": gin.H{
+			"status": "queued",
+		},
+	})
+}

@@ -21,37 +21,72 @@ scrape_configs:
   - job_name: "go-poller"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["host.docker.internal:9091"]
+      - targets: ["ftth-poller:9091"]
         labels:
           application: "ftth-poller"
 
   - job_name: "notification-gateway"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["host.docker.internal:5001"]
+      - targets: ["ftth-notification-gateway:5001"]
         labels:
           application: "notification-gateway"
 
   - job_name: "payment-gateway"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["host.docker.internal:5002"]
+      - targets: ["ftth-payment-gateway:5002"]
         labels:
           application: "payment-gateway"
 
   - job_name: "map-gateway"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["host.docker.internal:5003"]
+      - targets: ["ftth-map-gateway:5003"]
         labels:
           application: "map-gateway"
 
   - job_name: "storage-gateway"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["host.docker.internal:5004"]
+      - targets: ["ftth-storage-gateway:5004"]
         labels:
           application: "storage-gateway"
+
+  - job_name: "whatsapp-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-whatsapp-gateway:5005"]
+        labels:
+          application: "whatsapp-gateway"
+
+  - job_name: "scheduler-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-scheduler-gateway:5006"]
+        labels:
+          application: "scheduler-gateway"
+
+  - job_name: "export-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-export-gateway:5007"]
+        labels:
+          application: "export-gateway"
+
+  - job_name: "olt-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-olt-gateway:5008"]
+        labels:
+          application: "olt-gateway"
+
+  - job_name: "audit-gateway"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ftth-audit-gateway:5009"]
+        labels:
+          application: "audit-gateway"
 
   - job_name: "node-exporter"
     static_configs:

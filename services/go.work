@@ -1,6 +1,11 @@
 go 1.25.7
 
 use (
+	./gateway-audit
+	./gateway-export
+	./gateway-olt
+	./gateway-scheduler
+	./gateway-whatsapp
 	./map-gateway
 	./notification-gateway
 	./payment-gateway
