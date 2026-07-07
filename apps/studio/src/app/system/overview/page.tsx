@@ -134,6 +134,7 @@ export default function SystemOverviewPage() {
             activeNode={activeNode}
             onSelectNode={setActiveNode}
             activeNodeData={activeNodeData}
+            gateways={data.gateways}
           />
 
           {/* Throughput chart */}

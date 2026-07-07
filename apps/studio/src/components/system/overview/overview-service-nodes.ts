@@ -37,10 +37,40 @@ export function buildServiceNodes({
   const redisActive = redisStatus === "healthy";
   const keycloakActive = keycloakStatus === "healthy";
 
-  const notificationActive = getGwActive(gateways, "ftth-notification-gateway");
-  const paymentActive = getGwActive(gateways, "ftth-payment-gateway");
-  const mapActive = getGwActive(gateways, "ftth-map-gateway");
-  const storageActive = getGwActive(gateways, "ftth-storage-gateway");
+  // All 9 gateway names tracked in the cluster
+  const ALL_GATEWAY_NAMES = [
+    "ftth-notification-gateway",
+    "ftth-payment-gateway",
+    "ftth-map-gateway",
+    "ftth-storage-gateway",
+    "ftth-whatsapp-gateway",
+    "ftth-scheduler-gateway",
+    "ftth-export-gateway",
+    "ftth-olt-gateway",
+    "ftth-audit-gateway",
+  ];
+
+  const onlineGateways = ALL_GATEWAY_NAMES.filter((name) =>
+    getGwActive(gateways, name)
+  ).length;
+  const totalGateways = ALL_GATEWAY_NAMES.length;
+
+  const avgLatency = ALL_GATEWAY_NAMES.reduce(
+    (sum, name) => sum + getGwMetric(gateways, name, "latency"),
+    0
+  ) / totalGateways;
+
+  const totalThroughput = ALL_GATEWAY_NAMES.reduce(
+    (sum, name) => sum + getGwMetric(gateways, name, "throughput"),
+    0
+  );
+
+  const clusterStatus: ServiceNode["status"] =
+    onlineGateways === totalGateways
+      ? "healthy"
+      : onlineGateways === 0
+      ? "error"
+      : "warning";
 
   return [
     {
@@ -101,68 +131,23 @@ export function buildServiceNodes({
         "Keys Cached": `${redisKeysCached} active`,
         "Eviction Policy": "volatile-lru",
       },
-      x: 6,
-      y: 5,
-    },
-    {
-      id: "gw-notification",
-      name: "Notification Gateway",
-      type: "gateway",
-      status: notificationActive ? "healthy" : "error",
-      port: 5001,
-      details: "Handles microservice triggers for SMS, Email (Brevo), and WhatsApp messages.",
-      metrics: {
-        Throughput: `${getGwMetric(gateways, "ftth-notification-gateway", "throughput")} req/min`,
-        Latency: `${getGwMetric(gateways, "ftth-notification-gateway", "latency")}ms`,
-        "Provider status": "Twilio & Brevo OK",
-      },
-      x: 1,
-      y: 7,
-    },
-    {
-      id: "gw-payment",
-      name: "Payment Gateway",
-      type: "gateway",
-      status: paymentActive ? "healthy" : "error",
-      port: 5002,
-      details: "Orchestrates tenant subscriptions, plan invoices, and webhooks processing.",
-      metrics: {
-        Throughput: `${getGwMetric(gateways, "ftth-payment-gateway", "throughput")} req/min`,
-        Latency: `${getGwMetric(gateways, "ftth-payment-gateway", "latency")}ms`,
-        Integrations: "Xendit SDK OK",
-      },
       x: 4,
-      y: 7,
+      y: 6,
     },
     {
-      id: "gw-map",
-      name: "Map Tile Gateway",
+      id: "gw-cluster",
+      name: "Go Gateways",
       type: "gateway",
-      status: mapActive ? "healthy" : "error",
-      port: 5003,
-      details: "Direct vector maps provider linking database geospatial assets with ODP/ODC layouts.",
+      status: clusterStatus,
+      port: 0,
+      details: `Cluster of ${totalGateways} Go microservice gateways. Handles notifications, payments, map tiles, storage, WhatsApp, OLT monitoring, audit logging, scheduling, and exports.`,
       metrics: {
-        Throughput: `${getGwMetric(gateways, "ftth-map-gateway", "throughput")} req/min`,
-        Latency: `${getGwMetric(gateways, "ftth-map-gateway", "latency")}ms`,
-        "Basemap Cache": "94.2% hit",
+        "Online": `${onlineGateways} / ${totalGateways}`,
+        "Avg Latency": `${Math.round(avgLatency)} ms`,
+        "Total Throughput": `${totalThroughput} req/min`,
       },
-      x: 8,
-      y: 7,
-    },
-    {
-      id: "gw-storage",
-      name: "WebP Storage Gateway",
-      type: "gateway",
-      status: storageActive ? "healthy" : "error",
-      port: 5004,
-      details: "Serves tenant assets with automatic WebP dynamic image compression on fly.",
-      metrics: {
-        Optimization: "68.5% Saved",
-        Latency: `${getGwMetric(gateways, "ftth-storage-gateway", "latency")}ms`,
-        Throughput: `${getGwMetric(gateways, "ftth-storage-gateway", "throughput")} req/min`,
-      },
-      x: 11,
-      y: 7,
+      x: 9,
+      y: 6,
     },
   ];
 }
