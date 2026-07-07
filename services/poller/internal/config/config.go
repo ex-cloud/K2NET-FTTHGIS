@@ -62,13 +62,13 @@ func Load() (*Config, error) {
 		PollInterval: time.Duration(getEnvInt("POLL_INTERVAL_SEC", 60)) * time.Second,
 		WorkerCount:  getEnvInt("WORKER_COUNT", 10),
 
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:123456@localhost:5432/ftth_gis"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:123456@postgres:5432/ftth_gis"),
 
 		// Default device for testing
 		Devices: []DeviceConfig{
 			{
 				Code: "OLT-TEST-01",
-				IP:   "127.0.0.1",
+				IP:   "ftth-snmpsim",
 				Port: 161,
 				Type: "OLT",
 				OIDList: []string{

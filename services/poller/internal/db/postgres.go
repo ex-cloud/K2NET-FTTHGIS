@@ -79,7 +79,7 @@ func (s *Service) SeedDevData(ctx context.Context) error {
 
 	updateQuery := `
         UPDATE olt
-        SET ip_address = '127.0.0.1', snmp_community = 'public'
+        SET ip_address = 'ftth-snmpsim', snmp_community = 'public'
         WHERE ip_address IS NULL OR ip_address = ''
     `
 	// Note: The UPDATE ... FROM syntax is specific to Postgres

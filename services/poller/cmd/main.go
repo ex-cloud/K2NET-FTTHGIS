@@ -14,6 +14,7 @@ import (
 	"ftth-gis-poller/internal/db"
 	"ftth-gis-poller/internal/worker"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -81,7 +82,12 @@ func main() {
 	pool.Start()
 
 	// 🛠️ Start Health Check and Metrics HTTP Server
-	healthPort := 9091
+	healthPort := 5010
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		if p, err := strconv.Atoi(envPort); err == nil {
+			healthPort = p
+		}
+	}
 	go func() {
 		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			// ✅ Allow Frontend Access
