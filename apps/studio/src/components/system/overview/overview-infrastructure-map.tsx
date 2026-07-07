@@ -308,7 +308,7 @@ export function OverviewInfrastructureMap({
                       filter={isHighlighted ? (isHealthy ? "url(#glow)" : "url(#glow-red)") : undefined}
                       style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
                     />
-                    {isHealthy && (isHighlighted || !activeNode) && !conn.dashed && (
+                    {isHealthy && (isHighlighted || (!activeNode && !conn.dashed)) && (
                       <line
                         x1={`${start.x}%`} y1={`${start.y}%`}
                         x2={`${end.x}%`} y2={`${end.y}%`}
