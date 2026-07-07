@@ -283,15 +283,16 @@ export default function SystemOverviewPage() {
     const nodes: ServiceNode[] = [
       {
         id: "core-router",
-        name: "Nginx Ingress / Router",
+        name: "Kong API Gateway",
         type: "core",
         status: allGatewaysHealthy ? "healthy" : "warning",
-        port: 80,
-        details: "Dynamic routing proxy & SSL termination at platform gateway layer.",
+        port: 8000,
+        details: "Edge router and request decorator. Validates Keycloak JWTs, handles global rate limiting, and enforces IP restrictions.",
         metrics: {
-          "Traffic Load": "Normal",
-          "Routing Rules": "Active",
-          "Active Hostnames": `${totalOrgs + 1} domains`,
+          "Global Rate Limit": "Active (100 req/min)",
+          "IP Restriction": "WhatsApp Webhook CIDR Enforced",
+          "JWT Validation": "Active (Globally Enforced)",
+          "Routing Rules": "Active (DB-less Declarative)",
         },
         x: 6,
         y: 1,
