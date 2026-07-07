@@ -14,7 +14,7 @@ import {
 import { Dot, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
-import { getSystemUrl } from "@/lib/domain";
+import { getSystemUrl, parseDomain } from "@/lib/domain";
 import * as React from "react";
 
 export function UserNav() {
@@ -30,6 +30,12 @@ export function UserNav() {
 
   const [isMono, setIsMono] = React.useState(false);
   const user = session?.user;
+
+  const isSystemSubdomain = React.useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const { subdomain } = parseDomain(window.location.hostname);
+    return subdomain === "system";
+  }, [mounted]);
 
   // Modern way to handle hydration/mounting safely and sync state
   React.useEffect(() => {
@@ -144,6 +150,7 @@ export function UserNav() {
         {/* Impersonation/Admin Back Link */}
         {user?.roles?.includes("super_admin") && 
          (typeof window !== "undefined" && 
+          !isSystemSubdomain && 
           !(window.location.pathname === "/organizations" || 
             window.location.pathname.startsWith("/organizations/") || 
             window.location.pathname.startsWith("/system"))) && (

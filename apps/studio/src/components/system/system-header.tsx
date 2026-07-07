@@ -7,7 +7,6 @@ import { HelpCircle, MessageSquare, ShieldCheck, ArrowLeftRight } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { UserNav } from "../user-nav";
-import { HealthBadge } from "../health-badge";
 
 import { getLogoUrl, getTenantUrl } from "@/lib/domain";
 
@@ -79,7 +78,6 @@ export function SystemHeader() {
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
-          <HealthBadge />
           <Separator orientation="vertical" className="mx-1 h-4 bg-border" />
           <UserNav />
         </div>
