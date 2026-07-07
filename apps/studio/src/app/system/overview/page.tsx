@@ -1,790 +1,148 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useOrganizations } from "@/hooks/useOrganizations";
-import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
-import { useSession } from "next-auth/react";
-import {
-  Activity,
-  AlertTriangle,
-  Building2,
-  CheckCircle2,
-  Clock,
-  Database,
-  DatabaseBackup,
-  GitBranch,
-  Github,
-  HardDrive,
-  RefreshCw,
-  Shield,
-  Sparkles,
-  Users,
-  Zap,
-} from "lucide-react";
-import { throughputData } from "@/lib/system-overview-data";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
+import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DevOpsStats, ServiceNode, UserStats } from "@/components/system/overview/overview-types";
+import { throughputData } from "@/lib/system-overview-data";
+import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
+import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import {
   OverviewActivityFeed,
-  OverviewDevOpsCard,
+  OverviewDevopsSection,
   OverviewInfrastructureMap,
-  OverviewMetricCard,
-  OverviewShell,
-  OverviewStatusBadge,
+  OverviewMetricCardsRow,
+  OverviewStatusBanner,
+  OverviewThroughputChart,
 } from "@/components/system/overview";
 import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
+import type { ServiceNode } from "@/components/system/overview/overview-types";
+
+const FRONTEND_GIT_BRANCH = process.env.NEXT_PUBLIC_GIT_BRANCH || "main";
+const FRONTEND_GIT_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT || "unknown";
+const FRONTEND_GIT_COMMIT_SHORT =
+  FRONTEND_GIT_COMMIT.length > 7 ? FRONTEND_GIT_COMMIT.substring(0, 7) : FRONTEND_GIT_COMMIT;
 
 export default function SystemOverviewPage() {
-  const FRONTEND_GIT_BRANCH = process.env.NEXT_PUBLIC_GIT_BRANCH || "main";
-  const FRONTEND_GIT_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT || "unknown";
-  const FRONTEND_GIT_COMMIT_SHORT = FRONTEND_GIT_COMMIT.length > 7 ? FRONTEND_GIT_COMMIT.substring(0, 7) : FRONTEND_GIT_COMMIT;
-
-  const { organizations, loading: loadingOrgs, refresh: refreshOrgs } = useOrganizations();
-  const { data: session } = useSession();
-
-  const [userStats, setUserStats] = useState<UserStats>({ totalUsers: 0, activeUsers: 0, pendingRequests: 0 });
-  const [gateways, setGateways] = useState<GatewayServiceStatus[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [loadingDevops, setLoadingDevops] = useState(true);
-  const [loadingGithub, setLoadingGithub] = useState(true);
-  const [loadingHealth, setLoadingHealth] = useState(true);
-  const [loadingGateways, setLoadingGateways] = useState(true);
-  const loadingStats = loadingUsers || loadingDevops || loadingGithub || loadingHealth || loadingGateways;
-  const [refreshing, setRefreshing] = useState(false);
+  const data = useSystemOverviewData();
   const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
-  const [devopsStats, setDevopsStats] = useState<DevOpsStats | null>(null);
-  const [githubIntegrationStatus, setGithubIntegrationStatus] = useState({
-    connected: false,
-    organization: "",
-    installationTarget: "",
-    repositoriesCount: 0,
-    message: "",
+
+  const serviceNodes: ServiceNode[] = useServiceNodes({
+    postgresStatus: data.systemHealth.postgresStatus,
+    redisStatus: data.systemHealth.redisStatus,
+    keycloakStatus: data.systemHealth.keycloakStatus,
+    gateways: data.gateways,
+    allGatewaysHealthy: data.allGatewaysHealthy,
+    totalOrgs: data.totalOrgs,
+    postgresConns: data.systemResources.postgresConns,
+    redisCacheHit: data.systemResources.redisCacheHit,
+    redisKeysCached: data.systemHealth.redisKeysCached,
   });
 
-  const [systemHealth, setSystemHealth] = useState({
-    cpuUsage: 15,
-    memoryUsage: 50,
-    memoryUsedGb: "8.0 GB",
-    memoryTotalGb: "16.0 GB",
-    diskUsage: 40,
-    postgresConns: 8,
-    redisHitRatio: 95.0,
-    redisKeysCached: 0,
-    postgresStatus: "healthy",
-    redisStatus: "healthy",
-    keycloakStatus: "healthy",
-    throughput: [] as Array<{ hour: string; hits: number }>,
-  });
-
-
-  const systemResources = useMemo(() => {
-    return {
-      cpu: systemHealth.cpuUsage,
-      memory: systemHealth.memoryUsage,
-      memoryUsed: systemHealth.memoryUsedGb,
-      memoryTotal: systemHealth.memoryTotalGb,
-      disk: systemHealth.diskUsage,
-      postgresConns: systemHealth.postgresConns,
-      redisCacheHit: systemHealth.redisHitRatio,
-    };
-  }, [systemHealth]);
-
-  const loadData = async (showToast = false) => {
-    if (showToast) setRefreshing(true);
-    setLoadingUsers(true);
-    setLoadingDevops(true);
-    setLoadingGithub(true);
-    setLoadingHealth(true);
-    setLoadingGateways(true);
-
-    // 1. Fetch organization data in parallel
-    refreshOrgs()
-      .catch((err) => console.error("Error refreshing organizations:", err));
-
-    // 2. Fetch gateways status in parallel
-    getGatewayStatus()
-      .then((gwRes) => {
-        if (gwRes.status === "ok") {
-          setGateways(gwRes.services);
-        }
-      })
-      .catch((err) => console.error("Error fetching gateways:", err))
-      .finally(() => setLoadingGateways(false));
-
-    // 3. Fetch backend statistics & health metrics in parallel using Promise.allSettled
-    if (session?.accessToken) {
-      const headers = {
-        Authorization: `Bearer ${session.accessToken}`,
-      };
-
-      Promise.allSettled([
-        // Users stats
-        fetch("/api/v1/users/stats", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              const stats = await res.json();
-              setUserStats(stats);
-            }
-          })
-          .catch((err) => console.error("Error fetching user stats:", err))
-          .finally(() => setLoadingUsers(false)),
-
-        // DevOps stats
-        fetch("/api/v1/system/devops-stats", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              const devOps = await res.json();
-              setDevopsStats(devOps);
-            }
-          })
-          .catch((err) => console.error("Error fetching devops stats:", err))
-          .finally(() => setLoadingDevops(false)),
-
-        // GitHub integration status
-        fetch("/api/v1/system/github-integration/status", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              const githubStatus = await res.json();
-              setGithubIntegrationStatus({
-                connected: Boolean(githubStatus?.connected),
-                organization: typeof githubStatus?.organization === "string" ? githubStatus.organization : "",
-                installationTarget: typeof githubStatus?.installationTarget === "string" ? githubStatus.installationTarget : "",
-                repositoriesCount: Array.isArray(githubStatus?.repositories) ? githubStatus.repositories.length : 0,
-                message: typeof githubStatus?.message === "string" ? githubStatus.message : "",
-              });
-            }
-          })
-          .catch((err) => console.error("Error fetching github integration status:", err))
-          .finally(() => setLoadingGithub(false)),
-
-        // Health metrics
-        fetch("/api/v1/system/health-metrics", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              const healthData = await res.json();
-              setSystemHealth({
-                cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
-                memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
-                memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
-                memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
-                diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
-                postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
-                redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
-                redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
-                postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
-                redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
-                keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
-                throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
-              });
-            }
-          })
-          .catch((err) => console.error("Error fetching system health metrics:", err))
-          .finally(() => setLoadingHealth(false))
-      ]).then(() => {
-        if (showToast) {
-          toast.success("Statistik sistem berhasil diperbarui!");
-        }
-        setRefreshing(false);
-      });
-    } else {
-      setLoadingUsers(false);
-      setLoadingDevops(false);
-      setLoadingGithub(false);
-      setLoadingHealth(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session?.accessToken) {
-      loadData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
-
-// Periodic polling for dynamic health metrics and gateway status (every 15 seconds)
-  useEffect(() => {
-    if (!session?.accessToken) return;
-
-    const interval = setInterval(() => {
-      fetch("/api/v1/system/health-metrics", {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-        },
-      })
-        .then((res) => {
-          if (res.ok) return res.json();
-        })
-        .then((healthData) => {
-          if (healthData) {
-            setSystemHealth({
-              cpuUsage: typeof healthData?.system?.cpuUsage === "number" ? healthData.system.cpuUsage : 15,
-              memoryUsage: typeof healthData?.system?.memoryUsage === "number" ? healthData.system.memoryUsage : 50,
-              memoryUsedGb: typeof healthData?.system?.memoryUsedGb === "number" ? `${healthData.system.memoryUsedGb} GB` : "8.0 GB",
-              memoryTotalGb: typeof healthData?.system?.memoryTotalGb === "number" ? `${healthData.system.memoryTotalGb} GB` : "16.0 GB",
-              diskUsage: typeof healthData?.system?.diskUsage === "number" ? healthData.system.diskUsage : 40,
-              postgresConns: typeof healthData?.postgresConnections === "number" ? healthData.postgresConnections : 8,
-              redisHitRatio: typeof healthData?.redis?.hitRatio === "number" ? healthData.redis.hitRatio : 95.0,
-              redisKeysCached: typeof healthData?.redis?.keysCached === "number" ? healthData.redis.keysCached : 0,
-              postgresStatus: typeof healthData?.services?.postgres === "string" ? healthData.services.postgres : "healthy",
-              redisStatus: typeof healthData?.services?.redis === "string" ? healthData.services.redis : "healthy",
-              keycloakStatus: typeof healthData?.services?.keycloak === "string" ? healthData.services.keycloak : "healthy",
-              throughput: Array.isArray(healthData?.throughput) ? healthData.throughput : [],
-            });
-          }
-        })
-        .catch((err) => console.debug("Silent overview metrics poll failed:", err));
-
-      getGatewayStatus()
-        .then((gwRes) => {
-          if (gwRes.status === "ok") {
-            setGateways(gwRes.services);
-          }
-        })
-        .catch((err) => console.debug("Silent gateway status poll failed:", err));
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [session?.accessToken]);
-
-  const totalOrgs = organizations.length;
-  const activeOrgs = organizations.filter((o) => o.status === "ACTIVE").length;
-  const trialOrgs = organizations.filter((o) => o.status === "ACTIVE" && o.trialExpiresAt).length;
-
-  const totalGatewaysCount = gateways.length || 4;
-  const activeGatewaysCount = gateways.filter((g) => g.active).length;
-  const allGatewaysHealthy = activeGatewaysCount === totalGatewaysCount;
-
-  const recentOrgs = useMemo(() => {
-    return [...organizations]
-      .sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      })
-      .slice(0, 5);
-  }, [organizations]);
-
-  const serviceNodes: ServiceNode[] = useMemo(() => {
-    const postgresActive = systemHealth.postgresStatus === "healthy";
-    const redisActive = systemHealth.redisStatus === "healthy";
-    const keycloakActive = systemHealth.keycloakStatus === "healthy";
-
-    const getGwActive = (name: string) => gateways.find((g) => g.name === name)?.active ?? false;
-    const notificationActive = getGwActive("ftth-notification-gateway");
-    const paymentActive = getGwActive("ftth-payment-gateway");
-    const mapActive = getGwActive("ftth-map-gateway");
-    const storageActive = getGwActive("ftth-storage-gateway");
-
-    const nodes: ServiceNode[] = [
-      {
-        id: "core-router",
-        name: "Kong API Gateway",
-        type: "core",
-        status: allGatewaysHealthy ? "healthy" : "warning",
-        port: 8000,
-        details: "Edge router and request decorator. Validates Keycloak JWTs, handles global rate limiting, and enforces IP restrictions.",
-        metrics: {
-          "Global Rate Limit": "Active (100 req/min)",
-          "IP Restriction": "WhatsApp Webhook CIDR Enforced",
-          "JWT Validation": "Active (Globally Enforced)",
-          "Routing Rules": "Active (DB-less Declarative)",
-        },
-        x: 6,
-        y: 1,
-      },
-      {
-        id: "auth-keycloak",
-        name: "Keycloak IAM",
-        type: "auth",
-        status: keycloakActive ? "healthy" : "error",
-        port: 8081,
-        details: "Centralized security gateway. Manages dynamic realm provisioning, MFA, and SSO integrations.",
-        metrics: {
-          "Realms Provisioned": `${totalOrgs} Active Realms`,
-          Protocol: "OpenID Connect / SAML",
-          "Session Limits": "Enforced",
-        },
-        x: 2,
-        y: 3,
-      },
-      {
-        id: "db-postgres",
-        name: "PostgreSQL Spasial",
-        type: "db",
-        status: postgresActive ? "healthy" : "error",
-        port: 5432,
-        details: "Primary database storing platform schemas, billing history, and geographical spatial tables.",
-        metrics: {
-          "Db Name": "ftth_gis",
-          Connections: `${systemResources.postgresConns} active`,
-          Extensions: "PostGIS, Topology",
-        },
-        x: 10,
-        y: 3,
-      },
-      {
-        id: "cache-redis",
-        name: "Redis Cache Store",
-        type: "cache",
-        status: redisActive ? "healthy" : "error",
-        port: 6379,
-        details: "Distributed cache layer to lower database overhead, store maps geocoding data, and session timeouts.",
-        metrics: {
-          "Hit Ratio": `${systemResources.redisCacheHit}%`,
-          "Keys Cached": `${systemHealth.redisKeysCached} active`,
-          "Eviction Policy": "volatile-lru",
-        },
-        x: 6,
-        y: 5,
-      },
-      {
-        id: "gw-notification",
-        name: "Notification Gateway",
-        type: "gateway",
-        status: notificationActive ? "healthy" : "error",
-        port: 5001,
-        details: "Handles microservice triggers for SMS, Email (Brevo), and WhatsApp messages.",
-        metrics: {
-          Throughput: `${gateways.find((g) => g.name === "ftth-notification-gateway")?.throughput ?? 0} req/min`,
-          Latency: `${gateways.find((g) => g.name === "ftth-notification-gateway")?.latency ?? 0}ms`,
-          "Provider status": "Twilio & Brevo OK",
-        },
-        x: 1,
-        y: 7,
-      },
-      {
-        id: "gw-payment",
-        name: "Payment Gateway",
-        type: "gateway",
-        status: paymentActive ? "healthy" : "error",
-        port: 5002,
-        details: "Orchestrates tenant subscriptions, plan invoices, and webhooks processing.",
-        metrics: {
-          Throughput: `${gateways.find((g) => g.name === "ftth-payment-gateway")?.throughput ?? 0} req/min`,
-          Latency: `${gateways.find((g) => g.name === "ftth-payment-gateway")?.latency ?? 0}ms`,
-          Integrations: "Xendit SDK OK",
-        },
-        x: 4,
-        y: 7,
-      },
-      {
-        id: "gw-map",
-        name: "Map Tile Gateway",
-        type: "gateway",
-        status: mapActive ? "healthy" : "error",
-        port: 5003,
-        details: "Direct vector maps provider linking database geospatial assets with ODP/ODC layouts.",
-        metrics: {
-          Throughput: `${gateways.find((g) => g.name === "ftth-map-gateway")?.throughput ?? 0} req/min`,
-          Latency: `${gateways.find((g) => g.name === "ftth-map-gateway")?.latency ?? 0}ms`,
-          "Basemap Cache": "94.2% hit",
-        },
-        x: 8,
-        y: 7,
-      },
-      {
-        id: "gw-storage",
-        name: "WebP Storage Gateway",
-        type: "gateway",
-        status: storageActive ? "healthy" : "error",
-        port: 5004,
-        details: "Serves tenant assets with automatic WebP dynamic image compression on fly.",
-        metrics: {
-          Optimization: "68.5% Saved",
-          Latency: `${gateways.find((g) => g.name === "ftth-storage-gateway")?.latency ?? 0}ms`,
-          Throughput: `${gateways.find((g) => g.name === "ftth-storage-gateway")?.throughput ?? 0} req/min`,
-        },
-        x: 11,
-        y: 7,
-      },
-    ];
-
-    return nodes;
-  }, [allGatewaysHealthy, gateways, totalOrgs, systemResources, systemHealth.keycloakStatus, systemHealth.postgresStatus, systemHealth.redisStatus, systemHealth.redisKeysCached]);
-
-  const activeNodeData = useMemo(() => serviceNodes.find((node) => node.id === activeNode) || null, [activeNode, serviceNodes]);
-
-  const displayThroughput = systemHealth.throughput.length > 0 ? systemHealth.throughput : throughputData;
-  const maxHits = Math.max(...displayThroughput.map((d) => d.hits), 1);
-  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
-
-  const avgLatency = useMemo(() => {
-    const activeGws = gateways.filter((g) => g.active && g.latency !== undefined);
-    if (activeGws.length === 0) return "0ms";
-    const sum = activeGws.reduce((acc, g) => acc + (g.latency || 0), 0);
-    return `${Math.round(sum / activeGws.length)}ms`;
-  }, [gateways]);
+  const activeNodeData = useMemo(
+    () => serviceNodes.find((n) => n.id === activeNode) ?? null,
+    [activeNode, serviceNodes]
+  );
 
   const globalHealthState = useMemo(() => {
-    if (loadingStats) return "loading";
-    if (allGatewaysHealthy) return "operational";
-    if (activeGatewaysCount > 0) return "warning";
-    return "critical";
-  }, [loadingStats, allGatewaysHealthy, activeGatewaysCount]);
+    if (data.loadingStats) return "loading" as const;
+    if (data.allGatewaysHealthy) return "operational" as const;
+    if (data.activeGatewaysCount > 0) return "warning" as const;
+    return "critical" as const;
+  }, [data.loadingStats, data.allGatewaysHealthy, data.activeGatewaysCount]);
+
+  const displayThroughput =
+    data.systemHealth.throughput.length > 0 ? data.systemHealth.throughput : throughputData;
 
   return (
     <SystemOverviewWrapper>
-    <div className="flex h-full flex-1 flex-col overflow-y-auto bg-[#080808] px-8 pt-16">
-      <div className="mx-auto w-full max-w-5xl space-y-8 pb-20">
-        <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 md:flex-row md:items-center">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Badge className="border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500 hover:bg-emerald-500/20">
-                Admin Platform Control
-              </Badge>
+      <div className="flex h-full flex-1 flex-col overflow-y-auto bg-[#080808] px-8 pt-16">
+        <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-20">
+
+          {/* Page header */}
+          <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 md:flex-row md:items-center">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge className="border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500 hover:bg-emerald-500/20">
+                  Admin Platform Control
+                </Badge>
+              </div>
+              <h1 className="flex items-center gap-3 text-3xl font-light tracking-tight text-zinc-100">
+                System Overview <Sparkles className="h-5 w-5 animate-pulse text-emerald-500" />
+              </h1>
+              <p className="text-xs text-zinc-500">
+                Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
+              </p>
             </div>
-            <h1 className="flex items-center gap-3 text-3xl font-light tracking-tight text-zinc-100">
-              System Overview <Sparkles className="h-5 w-5 animate-pulse text-emerald-500" />
-            </h1>
-            <p className="text-xs text-zinc-500">
-              Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
-            </p>
+            <Button
+              onClick={() => data.loadData(true)}
+              disabled={data.refreshing || data.loadingOrgs || data.loadingStats}
+              variant="outline"
+              className="gap-2 border-white/10 bg-zinc-950/80 text-xs text-zinc-300 transition-all hover:border-emerald-500/30 hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-emerald-500")} />
+              Refresh Dashboard
+            </Button>
           </div>
 
-          <Button
-            onClick={() => loadData(true)}
-            disabled={refreshing || loadingOrgs || loadingStats}
-            variant="outline"
-            className="gap-2 border-white/10 bg-zinc-950/80 text-xs text-zinc-300 transition-all hover:border-emerald-500/30 hover:bg-zinc-900 hover:text-zinc-100"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin text-emerald-500")} />
-            Refresh Dashboard
-          </Button>
+          {/* Status banner */}
+          <OverviewStatusBanner
+            globalHealthState={globalHealthState}
+            activeGatewaysCount={data.activeGatewaysCount}
+            totalGatewaysCount={data.totalGatewaysCount}
+          />
+
+          {/* 4 KPI metric cards */}
+          <OverviewMetricCardsRow
+            loadingOrgs={data.loadingOrgs}
+            loadingUsers={data.loadingUsers}
+            loadingGateways={data.loadingGateways}
+            loadingHealth={data.loadingHealth}
+            totalOrgs={data.totalOrgs}
+            activeOrgs={data.activeOrgs}
+            trialOrgs={data.trialOrgs}
+            totalUsers={data.userStats.totalUsers}
+            activeUsers={data.userStats.activeUsers}
+            pendingRequests={data.userStats.pendingRequests}
+            activeGatewaysCount={data.activeGatewaysCount}
+            totalGatewaysCount={data.totalGatewaysCount}
+            allGatewaysHealthy={data.allGatewaysHealthy}
+            avgLatency={data.avgLatency}
+            cpu={data.systemResources.cpu}
+            memory={data.systemResources.memory}
+            memoryUsed={data.systemResources.memoryUsed}
+          />
+
+          {/* DevOps section */}
+          <OverviewDevopsSection
+            devopsStats={data.devopsStats}
+            githubIntegrationStatus={data.githubIntegrationStatus}
+            postgresStatus={data.systemHealth.postgresStatus}
+            redisStatus={data.systemHealth.redisStatus}
+            postgresConns={data.systemResources.postgresConns}
+            redisCacheHit={data.systemResources.redisCacheHit}
+            globalHealthState={globalHealthState}
+            frontendGitBranch={FRONTEND_GIT_BRANCH}
+            frontendGitCommit={FRONTEND_GIT_COMMIT}
+            frontendGitCommitShort={FRONTEND_GIT_COMMIT_SHORT}
+          />
+
+          {/* Interactive infrastructure map */}
+          <OverviewInfrastructureMap
+            serviceNodes={serviceNodes}
+            activeNode={activeNode}
+            onSelectNode={setActiveNode}
+            activeNodeData={activeNodeData}
+          />
+
+          {/* Throughput chart */}
+          <OverviewThroughputChart data={displayThroughput} />
+
+          {/* Activity feed */}
+          <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />
         </div>
-
-        {globalHealthState === "operational" && (
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 transition-all duration-300">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-emerald-400">All Core Services Operational</h4>
-              <p className="mt-0.5 text-[10px] text-zinc-400">Tenant routing, authentication, and GIS services are currently operating within normal parameters.</p>
-            </div>
-          </div>
-        )}
-
-        {globalHealthState === "warning" && (
-          <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 transition-all duration-300">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-amber-400">Some Gateways Offline</h4>
-              <p className="mt-0.5 text-[10px] text-zinc-400">Only {activeGatewaysCount}/{totalGatewaysCount} gateways are currently responding. Certain platform services may be partially degraded.</p>
-            </div>
-          </div>
-        )}
-
-        {globalHealthState === "critical" && (
-          <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 transition-all duration-300">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-red-400">All Microservice Gateways Down</h4>
-              <p className="mt-0.5 text-[10px] text-zinc-400">The platform is currently reporting a critical gateway outage. Immediate infrastructure review is advised.</p>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <OverviewMetricCard
-            eyebrow="Active Tenants"
-            value={
-              <span className="flex items-baseline gap-2">
-                {loadingOrgs ? "..." : totalOrgs}
-                <span className="text-xs text-emerald-500">{loadingOrgs ? "" : `${activeOrgs} Active`}</span>
-              </span>
-            }
-            helper={<span>Trialing: {trialOrgs}</span>}
-            footer="Platform coverage"
-            icon={Building2}
-            footerLinkHref="/organizations"
-            footerLinkLabel="Manage Orgs"
-          />
-
-          <OverviewMetricCard
-            eyebrow="Global Users"
-            value={
-              <span className="flex items-baseline gap-2">
-                {loadingUsers ? "..." : userStats.totalUsers}
-                <span className="text-xs text-zinc-500">{loadingUsers ? "" : `${userStats.activeUsers} Verified`}</span>
-              </span>
-            }
-            helper={<span>Pending Invites: {loadingUsers ? "..." : userStats.pendingRequests}</span>}
-            footer="Identity administration"
-            icon={Users}
-            footerLinkHref="/users"
-            footerLinkLabel="Manage Users"
-          />
-
-          <OverviewMetricCard
-            eyebrow="Active Gateways"
-            value={
-              <span className="flex items-baseline gap-2">
-                {loadingGateways ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
-                <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-emerald-500" : "text-amber-500")}>{allGatewaysHealthy ? "Healthy" : "Degraded"}</span>
-              </span>
-            }
-            helper={<span>Avg Latency: {loadingGateways ? "..." : avgLatency}</span>}
-            footer="Service routing"
-            icon={Zap}
-            footerLinkHref="/gateways/overview"
-            footerLinkLabel="Gateways Panel"
-          />
-
-          <OverviewMetricCard
-            eyebrow="CPU / RAM Load"
-            value={
-              <span className="flex items-baseline gap-2">
-                {loadingHealth ? "..." : `${systemResources.cpu}%`} <span className="text-xs text-zinc-500">{loadingHealth ? "" : "CPU"}</span>
-                {loadingHealth ? null : <span className="text-xs text-zinc-500">/ {systemResources.memory}% RAM</span>}
-              </span>
-            }
-            helper={<span>RAM Used: {loadingHealth ? "..." : systemResources.memoryUsed}</span>}
-            footer="Infrastructure health"
-            icon={Activity}
-            footerLinkHref="/health"
-            footerLinkLabel="System Stats"
-          />
-        </div>
-
-        <OverviewShell
-          title={
-            <span className="flex items-center gap-2">
-              <Shield className="h-4.5 w-4.5 text-zinc-500" /> DevOps & Deployment Status
-            </span>
-          }
-          description="Operational indicators for deployment health, compute capacity, backup state, and GitHub integration."
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <OverviewDevOpsCard
-              eyebrow="Global Status"
-              title={
-                <span className="flex items-center gap-2">
-                  <span className={cn("h-2 w-2 rounded-full animate-pulse", globalHealthState === "operational" ? "bg-emerald-500" : globalHealthState === "warning" ? "bg-amber-500" : "bg-red-500")} />
-                  {globalHealthState === "operational" ? "All Systems Operational" : globalHealthState === "warning" ? "Partially Degraded" : globalHealthState === "loading" ? "Checking..." : "Critical Issues"}
-                </span>
-              }
-              description={globalHealthState === "operational" ? "Identity, routing, and core services are healthy and responding normally." : "Some services may be degraded. Review the infrastructure map for impact details."}
-              icon={CheckCircle2}
-              iconClassName="group-hover:text-emerald-500"
-              accentClassName="text-emerald-400"
-              href="/health"
-              actionLabel="View Health Center"
-              actionClassName="text-emerald-400 hover:text-emerald-300"
-            />
-
-            <OverviewDevOpsCard
-              eyebrow="Compute"
-              title={devopsStats ? `${devopsStats.compute.tier} — ${devopsStats.compute.cpuCores} vCPU / ${Math.round(devopsStats.compute.maxMemoryMb / 1024)} GB` : "Loading..."}
-              description={
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] text-zinc-500">
-                    <span>JVM Memory Used</span>
-                    <span className="font-mono text-zinc-400">{devopsStats ? `${devopsStats.compute.usedMemoryMb} MB / ${devopsStats.compute.totalMemoryMb} MB` : "—"}</span>
-                  </div>
-                  {devopsStats ? (
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-500" style={{ width: `${Math.min((devopsStats.compute.usedMemoryMb / devopsStats.compute.totalMemoryMb) * 100, 100)}%` }} />
-                    </div>
-                  ) : null}
-                </div>
-              }
-              icon={HardDrive}
-              iconClassName="group-hover:text-sky-500"
-              accentClassName="text-sky-400"
-              href="/health"
-              actionLabel="Inspect Runtime Metrics"
-              actionClassName="text-sky-400 hover:text-sky-300"
-            >
-              {devopsStats ? <p className="mt-2 text-[9px] font-mono text-zinc-600">Java {devopsStats.compute.javaVersion} • {devopsStats.compute.osInfo}</p> : null}
-            </OverviewDevOpsCard>
-
-            <OverviewDevOpsCard
-              eyebrow="Platform Deployments"
-              title={
-                <div className="flex items-center gap-2">
-                  <OverviewStatusBadge tone={githubIntegrationStatus.connected ? "success" : "neutral"}>
-                    {githubIntegrationStatus.connected ? "Active" : "Offline"}
-                  </OverviewStatusBadge>
-                  <span className="text-[10px] text-zinc-500">GitHub Sync</span>
-                </div>
-              }
-              description="Platform repository branch and commit version state for both Backend and Frontend."
-              icon={Github}
-              iconClassName="group-hover:text-violet-500"
-              accentClassName="text-violet-400"
-              href="/system/settings?tab=integrations"
-              actionLabel="Manage GitHub App"
-              actionClassName="text-violet-400 hover:text-violet-300"
-            >
-              <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500 font-semibold">Backend (API)</span>
-                    <a
-                      href={devopsStats?.github?.backendRepo && devopsStats?.git?.commitFull ? `${devopsStats.github.backendRepo}/commit/${devopsStats.git.commitFull}` : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                    >
-                      <GitBranch className="w-3 h-3 text-emerald-500/80" />
-                      {devopsStats?.git?.branch || "main"} @ {devopsStats?.git?.commitShort || "..."}
-                    </a>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500 font-semibold">Frontend (UI)</span>
-                    <a
-                      href={FRONTEND_GIT_COMMIT !== "unknown" ? `https://github.com/ex-cloud/front_springboot_ftth_gis/commit/${FRONTEND_GIT_COMMIT}` : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
-                    >
-                      <GitBranch className="w-3 h-3 text-emerald-500/80" />
-                      {FRONTEND_GIT_BRANCH} @ {FRONTEND_GIT_COMMIT_SHORT}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </OverviewDevOpsCard>
-
-            <OverviewDevOpsCard
-              eyebrow="Database & Cache Status"
-              title={
-                <div className="flex items-center gap-2">
-                  <OverviewStatusBadge
-                    tone={
-                      systemHealth.postgresStatus === "healthy" && systemHealth.redisStatus === "healthy"
-                        ? "success"
-                        : systemHealth.postgresStatus === "error" && systemHealth.redisStatus === "error"
-                        ? "danger"
-                        : "warning"
-                    }
-                  >
-                    {systemHealth.postgresStatus === "healthy" && systemHealth.redisStatus === "healthy"
-                      ? "Operational"
-                      : systemHealth.postgresStatus === "error" && systemHealth.redisStatus === "error"
-                      ? "Critical Outage"
-                      : "Degraded"}
-                  </OverviewStatusBadge>
-                  <span className="text-[10px] text-zinc-500">PostGIS & Redis</span>
-                </div>
-              }
-              description="Real-time performance indicators for active connections, Redis cache store hit ratios, and GIS extensions."
-              icon={Database}
-              iconClassName="group-hover:text-emerald-500"
-              accentClassName="text-emerald-400"
-              href="/health"
-              actionLabel="View System Health"
-              actionClassName="text-emerald-400 hover:text-emerald-300"
-            >
-              <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">DB Connections</span>
-                  <span className="font-mono text-zinc-300 font-medium">{systemResources.postgresConns} active</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Cache Hit Ratio</span>
-                  <span className="font-mono text-zinc-300 font-medium">{systemResources.redisCacheHit}%</span>
-                </div>
-              </div>
-            </OverviewDevOpsCard>
-
-            <OverviewDevOpsCard
-              eyebrow="Last Migration"
-              title={
-                <div className="flex items-center gap-2">
-                  {devopsStats?.lastMigration?.version ? `V${devopsStats.lastMigration.version}` : "Loading..."}
-                  {devopsStats?.lastMigration?.success ? <OverviewStatusBadge tone="success">Success</OverviewStatusBadge> : null}
-                </div>
-              }
-              description={
-                <div>
-                  <p className="truncate font-mono text-[10px] text-zinc-500">{devopsStats?.lastMigration?.description || "—"}</p>
-                  <p className="mt-1 text-[9px] font-mono text-zinc-600">Installed: {devopsStats?.lastMigration?.installedOn || "—"}</p>
-                </div>
-              }
-              icon={Database}
-              iconClassName="group-hover:text-teal-500"
-              accentClassName="text-teal-400"
-            />
-
-            <OverviewDevOpsCard
-              eyebrow="Last Backup"
-              title={
-                devopsStats?.lastBackup?.status === "NOT_CONFIGURED" ? (
-                  <span className="text-zinc-500">Not Configured</span>
-                ) : devopsStats?.lastBackup?.success ? (
-                  <span className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 text-emerald-500" /> {devopsStats.lastBackup.lastBackupTime}
-                  </span>
-                ) : (
-                  <span className="text-amber-500">Check Status</span>
-                )
-              }
-              description={
-                <div className="flex items-center gap-1.5">
-                  <OverviewStatusBadge tone={devopsStats?.lastBackup?.success ? "success" : devopsStats?.lastBackup?.status === "NOT_CONFIGURED" ? "neutral" : "warning"}>
-                    {devopsStats?.lastBackup?.status || "UNKNOWN"}
-                  </OverviewStatusBadge>
-                  <span className="text-[9px] text-zinc-600">PostgreSQL pg_dump</span>
-                </div>
-              }
-              icon={DatabaseBackup}
-              iconClassName="group-hover:text-rose-500"
-              accentClassName="text-rose-400"
-            />
-          </div>
-        </OverviewShell>
-
-        <OverviewInfrastructureMap
-          serviceNodes={serviceNodes}
-          activeNode={activeNode}
-          onSelectNode={setActiveNode}
-          activeNodeData={activeNodeData}
-        />
-
-        <Card className="border-white/5 bg-[#0b0b0b]/40 p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h4 className="text-sm font-semibold text-zinc-200">Combined System Throughput</h4>
-              <p className="mt-0.5 text-[10px] text-zinc-500">Aggregated API request load and geocoding activity across all microservices over the last 24 hours.</p>
-            </div>
-            {hoveredBarIndex !== null && displayThroughput[hoveredBarIndex] ? (
-              <Badge className="border-emerald-500/20 bg-emerald-500/10 text-[10px] font-mono text-emerald-500">
-                {displayThroughput[hoveredBarIndex].hour} ➔ {displayThroughput[hoveredBarIndex].hits} Requests
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="border-white/10 text-[10px] font-mono text-zinc-500">
-                Peak load: {maxHits} req/min
-              </Badge>
-            )}
-          </div>
-
-          <div className="relative flex h-28 items-end gap-1.5 border-b border-white/5 px-2 pb-2">
-            {displayThroughput.map((d, idx) => (
-              <div key={idx} className="relative flex h-full flex-1 flex-col justify-end" onMouseEnter={() => setHoveredBarIndex(idx)} onMouseLeave={() => setHoveredBarIndex(null)}>
-                <div style={{ height: `${(d.hits / maxHits) * 100}%` }} className={cn("w-full rounded-t transition-all duration-200", hoveredBarIndex === idx ? "cursor-pointer bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]" : "cursor-pointer bg-gradient-to-t from-emerald-500/20 to-emerald-500/60")} />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2.5 flex justify-between px-1 text-[9px] font-mono text-zinc-500">
-            <span>24 Jam Lalu</span>
-            <span>12 Jam Lalu</span>
-            <span>Sekarang (Real-Time)</span>
-          </div>
-        </Card>
-
-        <OverviewActivityFeed loading={loadingOrgs} recentOrgs={recentOrgs} />
       </div>
-    </div>
     </SystemOverviewWrapper>
   );
 }
