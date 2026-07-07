@@ -91,4 +91,18 @@ else
   echo "Tidak ada file backup secrets ditemukan."
 fi
 
+# 6. Sinkronisasi arsip audit log ke cold storage Nextcloud
+echo "--- Sinkronisasi arsip audit_logs (cold storage) ---"
+if [ -d "$BACKUP_BASE/archive/audit_logs" ] && ls "$BACKUP_BASE/archive/audit_logs"/*.csv.gz 1>/dev/null 2>&1; then
+  rclone copy "$BACKUP_BASE/archive/audit_logs/" "${REMOTE}:${REMOTE_BASE}/archive/audit_logs/" \
+    --include "*.csv.gz" \
+    --transfers 2 \
+    --retries 3 \
+    --low-level-retries 10 \
+    -v
+  echo "Archive audit_logs: OK"
+else
+  echo "Tidak ada file arsip audit_logs ditemukan."
+fi
+
 echo "=== Sinkronisasi ke Nextcloud Selesai [$(date '+%Y-%m-%d %H:%M:%S')] ==="

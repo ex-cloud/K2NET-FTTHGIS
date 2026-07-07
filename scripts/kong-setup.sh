@@ -10,16 +10,18 @@
 # Kita gunakan localhost jika port admin di-expose, atau panggil docker exec.
 KONG_ADMIN_URL="http://localhost:8001"
 
-# Check apakah Kong Admin API aktif
-if ! curl -s --head --request GET "$KONG_ADMIN_URL" | grep "200" > /dev/null; then
-  echo "Kong Admin API tidak terdeteksi di $KONG_ADMIN_URL. Mencoba bypass via docker network..."
+# Check apakah Kong Admin API aktif di localhost
+USE_DOCKER_EXEC=false
+if curl -s -o /dev/null -w "%{http_code}" "$KONG_ADMIN_URL" | grep -q "200"; then
+  echo "Kong Admin API terdeteksi aktif di $KONG_ADMIN_URL"
+else
   KONG_ADMIN_URL="http://127.0.0.1:8001"
-  if ! docker exec kong curl -s -o /dev/null -w "%{http_code}" http://localhost:8001 | grep "200" > /dev/null; then
-    echo "ERROR: Kong tidak dapat dihubungi. Pastikan kontainer 'kong' sedang berjalan."
+  if curl -s -o /dev/null -w "%{http_code}" "$KONG_ADMIN_URL" | grep -q "200"; then
+    echo "Kong Admin API terdeteksi aktif di $KONG_ADMIN_URL"
+  else
+    echo "ERROR: Kong Admin API tidak dapat dihubungi dari host di localhost:8001 atau 127.0.0.1:8001."
     exit 1
   fi
-  # Jika Kong hanya bisa diakses lewat docker exec
-  USE_DOCKER_EXEC=true
 fi
 
 register_service_and_routes() {
@@ -108,6 +110,62 @@ register_service_and_routes "olt-gateway" "http://ftth-olt-gateway:5008" "ont-ro
 
 # 9. Audit Gateway (Port 5009)
 register_service_and_routes "audit-gateway" "http://ftth-audit-gateway:5009" "audit-route" "/api/v1/audit" "false"
+
+# ==============================================================================
+# Keamanan Tambahan & Pengerasan (Security Hardening)
+# ==============================================================================
+
+echo "------------------------------------------------------------"
+echo "Mengonfigurasi Pengerasan Keamanan (Security Hardening)..."
+
+# 1. Rate Limiting Global (100 request per menit per IP)
+echo "Mengaktifkan Global Rate Limiting (100 req/min)..."
+if [ "$USE_DOCKER_EXEC" = true ]; then
+  local_exists=$(docker exec kong curl -s "http://localhost:8001/plugins" | grep -o '"name":"rate-limiting"' || true)
+  if [ -z "$local_exists" ]; then
+    docker exec kong curl -s -X POST "http://localhost:8001/plugins" \
+      --data "name=rate-limiting" \
+      --data "config.minute=100" \
+      --data "config.policy=local" > /dev/null
+  fi
+else
+  exists=$(curl -s "$KONG_ADMIN_URL/plugins" | grep -o '"name":"rate-limiting"' || true)
+  if [ -z "$exists" ]; then
+    curl -s -X POST "$KONG_ADMIN_URL/plugins" \
+      --data "name=rate-limiting" \
+      --data "config.minute=100" \
+      --data "config.policy=local" > /dev/null
+  fi
+fi
+
+# 2. IP Restriction pada Webhook WhatsApp (Hanya menerima dari IP Meta/Facebook dan localhost)
+META_IPS="163.70.0.0/16,129.134.0.0/16,157.240.0.0/16,173.252.64.0/18,185.89.216.0/22,31.13.64.0/18,127.0.0.1,172.18.0.1"
+echo "Mengaktifkan IP Restriction untuk webhook WhatsApp..."
+if [ "$USE_DOCKER_EXEC" = true ]; then
+  local_exists=$(docker exec kong curl -s "http://localhost:8001/services/whatsapp-webhook/plugins" | grep -o '"name":"ip-restriction"' || true)
+  if [ -z "$local_exists" ]; then
+    docker exec kong curl -s -X POST "http://localhost:8001/services/whatsapp-webhook/plugins" \
+      --data "name=ip-restriction" \
+      --data "config.allow=$META_IPS" > /dev/null
+  else
+    plugin_id=$(docker exec kong curl -s "http://localhost:8001/services/whatsapp-webhook/plugins" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(p['id'] for p in d['data'] if p['name']=='ip-restriction'))" 2>/dev/null || true)
+    if [ -n "$plugin_id" ]; then
+      docker exec kong curl -s -X PATCH "http://localhost:8001/plugins/$plugin_id" --data "config.allow=$META_IPS" > /dev/null
+    fi
+  fi
+else
+  exists=$(curl -s "$KONG_ADMIN_URL/services/whatsapp-webhook/plugins" | grep -o '"name":"ip-restriction"' || true)
+  if [ -z "$exists" ]; then
+    curl -s -X POST "$KONG_ADMIN_URL/services/whatsapp-webhook/plugins" \
+      --data "name=ip-restriction" \
+      --data "config.allow=$META_IPS" > /dev/null
+  else
+    plugin_id=$(curl -s "$KONG_ADMIN_URL/services/whatsapp-webhook/plugins" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(p['id'] for p in d['data'] if p['name']=='ip-restriction'))" 2>/dev/null || true)
+    if [ -n "$plugin_id" ]; then
+      curl -s -X PATCH "$KONG_ADMIN_URL/plugins/$plugin_id" --data "config.allow=$META_IPS" > /dev/null
+    fi
+  fi
+fi
 
 echo "============================================================"
 echo "Selesai! Seluruh Go Gateways telah berhasil didaftarkan ke Kong."

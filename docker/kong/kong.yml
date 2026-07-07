@@ -22,16 +22,13 @@ consumers:
           -----END PUBLIC KEY-----
 
   # Anonymous consumer — allows requests without a valid JWT to pass through
-  # Kong won't block them; Spring Boot will enforce auth on protected endpoints
   - username: anonymous-user
 
 # ====================================================
 # Services & Routes
 # ====================================================
 services:
-  # ====================================================
-  # Spring Boot Backend (Docker container)
-  # ====================================================
+  # ─── Spring Boot Backend ────────────────────────────────────────────────────
   - name: backend-service
     url: http://backend:9090
     routes:
@@ -40,15 +37,12 @@ services:
           - /api/v1
         strip_path: false
         plugins:
-          # JWT verification — validates token signature against Keycloak public key
-          # If token is absent or invalid, falls back to anonymous-user (no 401 from Kong)
           - name: jwt
             config:
               anonymous: anonymous-user
               claims_to_verify:
                 - exp
               run_on_preflight: false
-          # Extract JWT claims into upstream headers
           - name: post-function
             config:
               access:
@@ -71,65 +65,193 @@ services:
                           end
                       end
                   else
-                      -- Anonymous request: clear any spoofed headers
                       kong.service.request.clear_header("X-User-Id")
                       kong.service.request.clear_header("X-User-Email")
                       kong.service.request.clear_header("X-User-Username")
                       kong.service.request.clear_header("X-Tenant-Id")
                   end
-
       - name: backend-actuator-route
         paths:
           - /actuator
         strip_path: false
-        # No JWT plugin — actuator is public for health checks
 
-  # ====================================================
-  # Go Microservices (systemd on host)
-  # ====================================================
-  - name: map-gateway-service
-    url: http://host.docker.internal:5003
+  # ─── 1. Notification Gateway (Port 5001) ───────────────────────────────────
+  - name: notification-gateway
+    url: http://ftth-notification-gateway:5001
     routes:
-      - name: map-gateway-route
+      - name: notify-route
         paths:
-          - /gateway/map
-        strip_path: true
+          - /api/v1/notify
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
 
-  - name: notification-gateway-service
-    url: http://host.docker.internal:5001
+  # ─── 2. Payment Gateway (Port 5002) ────────────────────────────────────────
+  - name: payment-gateway
+    url: http://ftth-payment-gateway:5002
     routes:
-      - name: notification-gateway-route
+      - name: payment-invoice-route
         paths:
-          - /gateway/notification
-        strip_path: true
-
-  - name: payment-gateway-service
-    url: http://host.docker.internal:5002
-    routes:
-      - name: payment-gateway-route
-        paths:
-          - /gateway/payment
-        strip_path: true
+          - /api/v1/invoice
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
       - name: payment-webhook-route
         paths:
           - /webhooks/payment
         strip_path: false
         methods:
           - POST
-        # No JWT plugin — callback from external payment gateway
 
-  - name: storage-gateway-service
-    url: http://host.docker.internal:5004
+  # ─── 3. Map Gateway (Port 5003) ─────────────────────────────────────────────
+  - name: map-gateway
+    url: http://ftth-map-gateway:5003
     routes:
-      - name: storage-gateway-route
+      - name: geocode-route
         paths:
-          - /gateway/storage
-        strip_path: true
+          - /api/v1/geocode
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── 4. Storage Gateway (Port 5004) ─────────────────────────────────────────
+  - name: storage-gateway
+    url: http://ftth-storage-gateway:5004
+    routes:
+      - name: storage-route
+        paths:
+          - /api/v1/storage
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── 5. WhatsApp Gateway (Port 5005) ────────────────────────────────────────
+  - name: whatsapp-gateway
+    url: http://ftth-whatsapp-gateway:5005
+    routes:
+      - name: wa-api-route
+        paths:
+          - /api/v1/wa
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── WhatsApp Webhook (Bypass JWT + IP Whitelisting) ────────────────────────
+  - name: whatsapp-webhook
+    url: http://ftth-whatsapp-gateway:5005/wa/webhook
+    routes:
+      - name: wa-webhook-route
+        paths:
+          - /api/v1/wa/webhook
+        strip_path: false
+        plugins:
+          - name: ip-restriction
+            config:
+              allow:
+                - 163.70.0.0/16
+                - 129.134.0.0/16
+                - 157.240.0.0/16
+                - 173.252.64.0/18
+                - 185.89.216.0/22
+                - 31.13.64.0/18
+                - 127.0.0.1
+                - 172.18.0.1
+
+  # ─── 6. Scheduler Gateway (Port 5006) ───────────────────────────────────────
+  - name: scheduler-gateway
+    url: http://ftth-scheduler-gateway:5006
+    routes:
+      - name: scheduler-route
+        paths:
+          - /api/v1/scheduler
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── 7. Export Gateway (Port 5007) ──────────────────────────────────────────
+  - name: export-gateway
+    url: http://ftth-export-gateway:5007
+    routes:
+      - name: export-route
+        paths:
+          - /api/v1/export
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── 8. OLT Gateway (Port 5008) ─────────────────────────────────────────────
+  - name: olt-gateway
+    url: http://ftth-olt-gateway:5008
+    routes:
+      - name: olt-route
+        paths:
+          - /api/v1/olt
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+      - name: ont-route
+        paths:
+          - /api/v1/ont
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
+  # ─── 9. Audit Gateway (Port 5009) ─────────────────────────────────────────────
+  - name: audit-gateway
+    url: http://ftth-audit-gateway:5009
+    routes:
+      - name: audit-route
+        paths:
+          - /api/v1/audit
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
 
 # ====================================================
 # Global Plugins
 # ====================================================
 plugins:
+  # ─── CORS ───────────────────────────────────────────────────────────────────
   - name: cors
     config:
       origins:
@@ -153,8 +275,9 @@ plugins:
       credentials: true
       max_age: 3600
 
+  # ─── Global Rate Limiting (100 req/min per IP) ──────────────────────────────
   - name: rate-limiting
     config:
-      second: 30
-      minute: 1000
+      minute: 100
       policy: local
+      limit_by: ip
