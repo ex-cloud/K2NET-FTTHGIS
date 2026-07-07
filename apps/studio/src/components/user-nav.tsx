@@ -35,7 +35,7 @@ export function UserNav() {
     if (typeof window === "undefined") return false;
     const { subdomain } = parseDomain(window.location.hostname);
     return subdomain === "system";
-  }, [mounted]);
+  }, []);
 
   // Modern way to handle hydration/mounting safely and sync state
   React.useEffect(() => {
