@@ -3,6 +3,7 @@ import Keycloak from "next-auth/providers/keycloak";
 import authConfig from "./auth.config";
 import { JWT as NextAuthJWT } from "next-auth/jwt";
 import { headers } from "next/headers";
+import { createHash } from "crypto";
 
 interface KeycloakIdTokenPayload {
   email?: string;
@@ -122,6 +123,17 @@ function logInfo(msg: string) {
   console.log(`[Auth.ts] ${new Date().toISOString()}: ${msg}`);
 }
 
+/**
+ * Generate a Gravatar URL from an email address.
+ * Falls back to identicon (geometric pattern) if no Gravatar exists.
+ * This ensures a consistent avatar across all login methods.
+ */
+function generateGravatar(email: string | null | undefined): string | null {
+  if (!email) return null;
+  const hash = createHash("md5").update(email.trim().toLowerCase()).digest("hex");
+  return `https://www.gravatar.com/avatar/${hash}?s=200&d=identicon`;
+}
+
 function getCookieDomain() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return undefined;
@@ -209,15 +221,25 @@ export const baseAuthOptions: NextAuthConfig = {
             console.warn("[Auth.ts] Failed to fetch permissions for credentials user:", e);
           }
 
+          const credEmail = profile.email || exUser.email || token.email;
+          const credAvatarUrl =
+            profile.avatar_url ||
+            profile.picture ||
+            exUser.avatar_url ||
+            exUser.image ||
+            generateGravatar(credEmail as string); // Gravatar fallback for consistent avatar across login methods
+
           const enrichedUser = {
             id: user.id || token.sub,
-            email: profile.email || exUser.email || token.email,
-            name: profile.name || exUser.name || token.name,
-            avatar_url:
-              profile.avatar_url ||
-              profile.picture ||
-              exUser.avatar_url ||
-              exUser.image,
+            email: credEmail,
+            // Prefer username (e.g. "xsuperadmin") over full name ("Super Admin") for consistent display
+            name:
+              profile.preferred_username ||
+              exUser.preferred_username ||
+              profile.name ||
+              exUser.name ||
+              token.name,
+            avatar_url: credAvatarUrl,
             username:
               profile.preferred_username ||
               exUser.username ||
@@ -303,9 +325,21 @@ export const baseAuthOptions: NextAuthConfig = {
             }
           }
 
+          const oauthEmail = exUser.email || user.email;
+          const oauthAvatarUrl =
+            exUser.avatar_url ||
+            exUser.image ||
+            generateGravatar(oauthEmail as string); // Gravatar fallback for SSO login
+
           token.user = {
             ...user,
-            avatar_url: exUser.avatar_url || exUser.image,
+            // Prefer preferred_username (e.g. "xsuperadmin") over full display name ("Super Admin")
+            // This ensures the displayed name is consistent between credentials and SSO login.
+            name:
+              exUser.preferred_username ||
+              exUser.username ||
+              user.name,
+            avatar_url: oauthAvatarUrl,
             username: exUser.preferred_username || exUser.username,
             roles: roles,
             permissions: oauthPermissions,
