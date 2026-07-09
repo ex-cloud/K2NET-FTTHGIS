@@ -333,12 +333,15 @@ services:
       - AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
       - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
       - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
+      - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
+      - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
       - STORAGE_GATEWAY_URL=http://ftth-storage-gateway:5004
       - WHATSAPP_GATEWAY_URL=http://ftth-whatsapp-gateway:5005
       - SCHEDULER_GATEWAY_URL=http://ftth-scheduler-gateway:5006
       - EXPORT_GATEWAY_URL=http://ftth-export-gateway:5007
       - OLT_GATEWAY_URL=http://ftth-olt-gateway:5008
       - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
+      - POLLER_GATEWAY_URL=http://ftth-poller:5010
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
