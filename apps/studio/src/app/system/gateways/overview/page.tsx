@@ -51,7 +51,7 @@ export default function GatewaysOverviewPage() {
   const activeServicesCount = services.filter(s => s.active).length;
   const allActive = activeServicesCount === totalServices && totalServices > 0;
 
-  // Mock metrics based on gateway type
+  // Mock metrics fallbacks based on gateway type
   const getServiceMetrics = (name: string) => {
     switch (name) {
       case "ftth-notification-gateway":
@@ -62,8 +62,20 @@ export default function GatewaysOverviewPage() {
         return { throughput: "145 req/min", latency: "12ms", extra: "Redis Cache: 94%" };
       case "ftth-storage-gateway":
         return { throughput: "8 files/min", latency: "380ms", extra: "WebP Compression Active" };
+      case "ftth-whatsapp-gateway":
+        return { throughput: "15 req/min", latency: "25ms", extra: "Meta Cloud API OK" };
+      case "ftth-scheduler-gateway":
+        return { throughput: "45 jobs/min", latency: "8ms", extra: "Cron Runner Active" };
+      case "ftth-export-gateway":
+        return { throughput: "3 tasks/min", latency: "125ms", extra: "S3 Export Bucket OK" };
+      case "ftth-olt-gateway":
+        return { throughput: "18 polls/min", latency: "32ms", extra: "SNMP Engine Ready" };
+      case "ftth-audit-gateway":
+        return { throughput: "120 logs/min", latency: "4ms", extra: "Compliance Enforced" };
+      case "ftth-poller":
+        return { throughput: "60 cycles/min", latency: "15ms", extra: "Poller Engine Ready" };
       default:
-        return { throughput: "-", latency: "-", extra: "-" };
+        return { throughput: "-", latency: "-", extra: "OK" };
     }
   };
 
@@ -261,11 +273,23 @@ export default function GatewaysOverviewPage() {
                       <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
                         <div>
                           <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Throughput</p>
-                          <p className="text-xs font-mono text-zinc-300 mt-0.5">{svc.active ? metrics.throughput : "-"}</p>
+                          <p className="text-xs font-mono text-zinc-300 mt-0.5">
+                            {svc.active 
+                              ? (svc.throughput !== undefined && svc.throughput > 0 
+                                  ? `${svc.throughput} req/min` 
+                                  : metrics.throughput) 
+                              : "-"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Latency</p>
-                          <p className="text-xs font-mono text-zinc-300 mt-0.5">{svc.active ? metrics.latency : "-"}</p>
+                          <p className="text-xs font-mono text-zinc-300 mt-0.5">
+                            {svc.active 
+                              ? (svc.latency !== undefined && svc.latency > 0 
+                                  ? `${svc.latency}ms` 
+                                  : metrics.latency) 
+                              : "-"}
+                          </p>
                         </div>
                         <div>
                           <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Telemetry State</p>

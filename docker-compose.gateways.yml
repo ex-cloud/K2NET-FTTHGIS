@@ -12,6 +12,9 @@ services:
     environment:
       - PORT=5001
       - REDIS_ADDR=redis:6379
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5001:5001"
     deploy:

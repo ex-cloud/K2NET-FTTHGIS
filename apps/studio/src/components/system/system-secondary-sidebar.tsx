@@ -21,6 +21,11 @@ import {
   CreditCard,
   Map,
   Database,
+  MessageCircle,
+  Clock,
+  Download,
+  Network,
+  Activity,
 } from "lucide-react";
 import {
   Collapsible,
@@ -44,6 +49,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
   CreditCard,
   Map,
   Database,
+  MessageCircle,
+  Clock,
+  Download,
+  Network,
+  Activity,
 };
 
 export function SystemSecondarySidebar() {
