@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfig, updateGatewayConfig } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
 import { 
   FileText, 
   Save, 
@@ -26,7 +26,7 @@ export default function AuditGatewayPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const data = await getGatewayConfig();
+      const data = await getGatewayConfigByKey("audit");
       if (data.status === "ok") {
         const flatConfig: Record<string, string> = {};
         const flatCensored: Record<string, string> = {};
@@ -86,7 +86,7 @@ export default function AuditGatewayPage() {
         return;
       }
 
-      const res = await updateGatewayConfig(updates);
+      const res = await updateGatewayConfigByKey("audit", updates);
       toast.success(res.message || "Konfigurasi Audit Gateway berhasil disimpan!");
       
       setTimeout(() => {

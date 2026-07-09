@@ -33,6 +33,23 @@ function getGatewayToken(): string {
 
 const GATEWAY_BASE_URL = process.env.NOTIFICATION_GATEWAY_URL || "http://127.0.0.1:5001";
 
+/**
+ * Map of gateway identifiers to their backend URL environment variables.
+ * Each gateway has its own /api/v1/config endpoint.
+ */
+export const GATEWAY_URL_MAP: Record<string, string> = {
+  notification: process.env.NOTIFICATION_GATEWAY_URL || "http://127.0.0.1:5001",
+  payment:      process.env.PAYMENT_GATEWAY_URL      || "http://127.0.0.1:5002",
+  map:          process.env.MAP_GATEWAY_URL           || "http://127.0.0.1:5003",
+  storage:      process.env.STORAGE_GATEWAY_URL       || "http://127.0.0.1:5004",
+  whatsapp:     process.env.WHATSAPP_GATEWAY_URL      || "http://127.0.0.1:5005",
+  scheduler:    process.env.SCHEDULER_GATEWAY_URL     || "http://127.0.0.1:5006",
+  export:       process.env.EXPORT_GATEWAY_URL        || "http://127.0.0.1:5007",
+  olt:          process.env.OLT_GATEWAY_URL           || "http://127.0.0.1:5008",
+  audit:        process.env.AUDIT_GATEWAY_URL         || "http://127.0.0.1:5009",
+  poller:       process.env.POLLER_GATEWAY_URL        || "http://127.0.0.1:5010",
+};
+
 async function verifySuperAdmin() {
   const session = await auth();
   const roles = session?.user?.roles || [];
@@ -224,6 +241,64 @@ export async function getStorageStats(): Promise<StorageStats> {
 
   if (!res.ok) {
     throw new Error(`Failed to fetch storage stats: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Universal: fetch config from any gateway by its identifier key.
+ * Example: getGatewayConfigByKey("payment") → calls PAYMENT_GATEWAY_URL/api/v1/config
+ */
+export async function getGatewayConfigByKey(gatewayKey: string): Promise<ConfigResponse> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP[gatewayKey];
+  if (!baseUrl) {
+    throw new Error(`Unknown gateway key: "${gatewayKey}". Valid keys: ${Object.keys(GATEWAY_URL_MAP).join(", ")}`);
+  }
+
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/config`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`[${gatewayKey}] Failed to fetch config: ${res.status} ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Universal: save config updates to any gateway by its identifier key.
+ * Example: updateGatewayConfigByKey("payment", { XENDIT_API_KEY: "..." })
+ */
+export async function updateGatewayConfigByKey(
+  gatewayKey: string,
+  updates: Record<string, string>
+): Promise<{ status: string; message: string; keys_updated: number }> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP[gatewayKey];
+  if (!baseUrl) {
+    throw new Error(`Unknown gateway key: "${gatewayKey}". Valid keys: ${Object.keys(GATEWAY_URL_MAP).join(", ")}`);
+  }
+
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/config`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+    },
+    body: JSON.stringify({ updates }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `[${gatewayKey}] Failed to update config: ${res.status} ${res.statusText}`);
   }
 
   return res.json();

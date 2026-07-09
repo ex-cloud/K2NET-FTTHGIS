@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfig, updateGatewayConfig } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
 import { 
   MessageSquare, 
   Save, 
@@ -31,7 +31,7 @@ export default function NotificationGatewayPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const data = await getGatewayConfig();
+      const data = await getGatewayConfigByKey("notification");
       if (data.status === "ok") {
         const flatConfig: Record<string, string> = {};
         const flatCensored: Record<string, string> = {};
@@ -100,7 +100,7 @@ export default function NotificationGatewayPage() {
         return;
       }
 
-      const res = await updateGatewayConfig(updates);
+      const res = await updateGatewayConfigByKey("notification", updates);
       toast.success(res.message || "Konfigurasi berhasil disimpan! Layanan sedang memuat ulang...");
       
       // Reload config after short delay to get new censored placeholders

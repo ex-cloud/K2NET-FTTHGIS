@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfig, updateGatewayConfig } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
 import { 
   Network, 
   Save, 
@@ -29,7 +29,7 @@ export default function OltGatewayPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const data = await getGatewayConfig();
+      const data = await getGatewayConfigByKey("olt");
       if (data.status === "ok") {
         const flatConfig: Record<string, string> = {};
         const flatCensored: Record<string, string> = {};
@@ -93,7 +93,7 @@ export default function OltGatewayPage() {
         return;
       }
 
-      const res = await updateGatewayConfig(updates);
+      const res = await updateGatewayConfigByKey("olt", updates);
       toast.success(res.message || "Konfigurasi OLT Gateway berhasil disimpan!");
       
       setTimeout(() => {

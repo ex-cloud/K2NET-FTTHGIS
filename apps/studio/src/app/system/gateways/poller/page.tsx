@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfig, updateGatewayConfig } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
 import { 
   Activity, 
   Save, 
@@ -25,7 +25,7 @@ export default function PollerGatewayPage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const data = await getGatewayConfig();
+      const data = await getGatewayConfigByKey("poller");
       if (data.status === "ok") {
         const flatConfig: Record<string, string> = {};
         const flatCensored: Record<string, string> = {};
@@ -86,7 +86,7 @@ export default function PollerGatewayPage() {
         return;
       }
 
-      const res = await updateGatewayConfig(updates);
+      const res = await updateGatewayConfigByKey("poller", updates);
       toast.success(res.message || "Konfigurasi Poller Gateway berhasil disimpan!");
       
       setTimeout(() => {
