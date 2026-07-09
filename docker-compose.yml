@@ -127,6 +127,7 @@ services:
       - "traefik.http.services.keycloak.loadbalancer.server.port=8081"
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./keycloak-themes:/opt/keycloak/themes  # Custom FTTH GIS login theme
     depends_on:
       postgres:
         condition: service_healthy

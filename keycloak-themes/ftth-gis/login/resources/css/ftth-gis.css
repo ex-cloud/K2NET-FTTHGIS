@@ -1,0 +1,570 @@
+/* ============================================================
+   FTTH GIS — Keycloak Custom Login Theme
+   Matches system-gis.k2net.id/system/login branding
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ---------- CSS Reset & Base ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-left: #09090b;
+  --bg-right: #000000;
+  --border: #27272a;
+  --border-subtle: rgba(39, 39, 42, 0.5);
+  --emerald: #10b981;
+  --emerald-dim: rgba(16, 185, 129, 0.08);
+  --emerald-border: rgba(16, 185, 129, 0.2);
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-900: #18181b;
+  --zinc-950: #09090b;
+  --red-dim: rgba(239, 68, 68, 0.1);
+  --red-border: rgba(239, 68, 68, 0.3);
+  --red-text: #f87171;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-left);
+  color: var(--zinc-200);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Remove default Keycloak wrappers ---------- */
+body .container-fluid,
+body .container,
+#kc-header,
+#kc-header-wrapper {
+  display: none !important;
+}
+
+/* ---------- Full Page Split Layout ---------- */
+#kc-login-container,
+.login-pf body {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* Override Patternfly defaults from parent theme */
+.login-pf {
+  background: var(--bg-left) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ---------- Left Column ---------- */
+#ftth-left {
+  width: 100%;
+  max-width: 48%;
+  min-height: 100vh;
+  background: var(--bg-left);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 64px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1023px) {
+  #ftth-left {
+    max-width: 100%;
+    padding: 32px 24px;
+  }
+  #ftth-right {
+    display: none !important;
+  }
+}
+
+/* ---------- Header ---------- */
+#ftth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#ftth-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#ftth-logo-icon {
+  display: flex;
+  height: 24px;
+  width: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--emerald-dim);
+  border: 1px solid var(--emerald-border);
+}
+
+#ftth-logo-icon svg {
+  width: 14px;
+  height: 14px;
+  color: var(--emerald);
+}
+
+#ftth-logo-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--zinc-100);
+}
+
+#ftth-docs-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(39, 39, 42, 0.8);
+  background: rgba(24, 24, 27, 0.4);
+  color: var(--zinc-400);
+  font-size: 10px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+#ftth-docs-link:hover {
+  background: rgba(39, 39, 42, 0.6);
+  color: white;
+  text-decoration: none;
+}
+
+/* ---------- Form Area ---------- */
+#ftth-form-area {
+  width: 100%;
+  max-width: 384px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+#ftth-welcome h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: white;
+  margin-bottom: 4px;
+}
+
+#ftth-welcome p {
+  font-size: 12px;
+  color: var(--zinc-400);
+}
+
+/* ---------- Card Wrapper ---------- */
+#ftth-card {
+  background: rgba(9, 9, 11, 0.4);
+  border: 1px solid rgba(39, 39, 42, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+}
+
+/* ---------- SSO Button ---------- */
+#ftth-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: var(--zinc-900);
+  border: 1px solid var(--zinc-800);
+  border-radius: 8px;
+  color: var(--zinc-100);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+}
+
+#ftth-sso-btn:hover {
+  background: var(--zinc-800);
+  color: white;
+  text-decoration: none;
+}
+
+#ftth-sso-btn svg {
+  width: 16px;
+  height: 16px;
+  color: var(--emerald);
+  flex-shrink: 0;
+}
+
+/* ---------- Divider ---------- */
+.ftth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ftth-divider::before,
+.ftth-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid rgba(39, 39, 42, 0.8);
+}
+
+.ftth-divider span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--zinc-500);
+  flex-shrink: 0;
+}
+
+/* ---------- Form Labels & Inputs ---------- */
+#ftth-card .form-group,
+#kc-form-login .form-group {
+  margin-bottom: 16px;
+}
+
+#ftth-card label,
+#kc-form-login label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(244, 244, 245, 0.8);
+  margin-bottom: 6px;
+}
+
+#ftth-card input[type="text"],
+#ftth-card input[type="password"],
+#ftth-card input[type="email"],
+#kc-form-login input[type="text"],
+#kc-form-login input[type="password"],
+#kc-form-login input[type="email"] {
+  width: 100%;
+  height: 44px;
+  background: rgba(9, 9, 11, 0.5);
+  border: 1px solid rgba(63, 63, 70, 0.5);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--zinc-100);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#ftth-card input:focus,
+#kc-form-login input:focus {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+}
+
+#ftth-card input::placeholder,
+#kc-form-login input::placeholder {
+  color: var(--zinc-600);
+}
+
+/* ---------- Password row with forgot link ---------- */
+.ftth-pw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ftth-pw-header a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--emerald);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.ftth-pw-header a:hover {
+  color: rgba(16, 185, 129, 0.8);
+  text-decoration: none;
+}
+
+/* ---------- Remember Me Checkbox ---------- */
+.ftth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.ftth-remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--emerald);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ftth-remember label {
+  font-size: 13px !important;
+  color: var(--zinc-400) !important;
+  cursor: pointer;
+  margin: 0 !important;
+}
+
+/* ---------- Submit Button ---------- */
+#kc-login,
+input[type="submit"] {
+  width: 100%;
+  height: 44px;
+  background: linear-gradient(135deg, var(--emerald), rgba(16, 185, 129, 0.8));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#kc-login:hover,
+input[type="submit"]:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(16, 185, 129, 0.7));
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+#kc-login:active,
+input[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* ---------- Error Alert ---------- */
+#kc-form-options,
+.alert,
+.pf-c-alert {
+  border-radius: 8px !important;
+  margin-bottom: 16px !important;
+  font-size: 12px !important;
+}
+
+.alert-danger,
+.pf-m-danger {
+  background: var(--red-dim) !important;
+  border: 1px solid var(--red-border) !important;
+  color: var(--red-text) !important;
+  padding: 12px !important;
+}
+
+.alert-info {
+  background: var(--emerald-dim) !important;
+  border: 1px solid var(--emerald-border) !important;
+  color: var(--emerald) !important;
+  padding: 12px !important;
+}
+
+/* ---------- Security Notice ---------- */
+#ftth-security-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.05);
+  padding: 12px;
+  font-size: 10px;
+  color: rgba(52, 211, 153, 0.9);
+  line-height: 1.6;
+}
+
+#ftth-security-notice svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ---------- Footer ---------- */
+#ftth-footer {
+  border-top: 1px solid var(--zinc-900);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#ftth-footer p {
+  font-size: 10px;
+  color: var(--zinc-500);
+}
+
+#ftth-footer a {
+  color: var(--zinc-500);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+#ftth-footer a:hover {
+  color: var(--zinc-300);
+}
+
+#ftth-footer .copyright {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--zinc-600);
+}
+
+/* ---------- Right Column ---------- */
+#ftth-right {
+  flex: 1;
+  background: var(--bg-right);
+  border-left: 1px solid var(--zinc-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ambient glow spots */
+#ftth-right::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: 25%;
+  width: 384px;
+  height: 384px;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+#ftth-right::after {
+  content: '';
+  position: absolute;
+  bottom: 25%;
+  left: 25%;
+  width: 320px;
+  height: 320px;
+  background: rgba(39, 39, 42, 0.1);
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+/* Dot-grid overlay */
+#ftth-dot-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+#ftth-testimonial {
+  position: relative;
+  z-index: 10;
+  max-width: 448px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+#ftth-quote-icon {
+  width: 32px;
+  height: 32px;
+  color: rgba(16, 185, 129, 0.8);
+  transform: rotate(180deg);
+}
+
+#ftth-blockquote {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--zinc-100);
+  line-height: 1.7;
+  font-family: 'Inter', sans-serif;
+}
+
+#ftth-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+#ftth-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--zinc-800);
+  border: 1px solid var(--zinc-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--zinc-300);
+  flex-shrink: 0;
+}
+
+#ftth-author-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--zinc-200);
+}
+
+#ftth-author-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--zinc-500);
+  margin-top: 2px;
+}
+
+/* ---------- Hide default Keycloak cruft ---------- */
+#kc-content,
+#kc-content-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.login-pf-page .card-pf,
+.card-pf {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.login-pf-header {
+  display: none !important;
+}
