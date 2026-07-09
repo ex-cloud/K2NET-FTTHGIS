@@ -115,6 +115,21 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
     });
   };
 
+  const handleSSOLogin = () => {
+    const org = orgValue || (isSystemSubdomain ? "system" : "ftth-realm");
+    const targetUrl = callbackUrl || (org === "system" ? "/organizations" : "/dashboard");
+    
+    // Always route through device verification
+    const otpRedirectUrl = `/login/otp?callbackUrl=${encodeURIComponent(targetUrl)}`;
+
+    toast.loading("Mengarahkan Anda ke Portal Autentikasi SSO Keycloak...");
+    signIn("keycloak", { 
+      callbackUrl: otpRedirectUrl,
+    }, { 
+      prompt: "login" // Force Keycloak login page to display
+    });
+  };
+
   // Map common error codes to user-friendly messages
   let oauthError = null;
   if (errorParam) {
@@ -210,10 +225,22 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
           </div>
         )}
 
-        {/* Social Logins (Supabase Style) - Hidden for System/Pusat Kendali Admins */}
-        {!effectiveIsAdmin && (
-          <>
-            <div className="space-y-3">
+        {/* Social Logins (Supabase Style) */}
+        <div className="space-y-3">
+          {effectiveIsAdmin ? (
+            /* System Admin SSO */
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSSOLogin}
+              className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+            >
+              <Key className="w-4 h-4 text-emerald-500" />
+              Continue with SSO Keycloak
+            </Button>
+          ) : (
+            /* Tenant Social Logins */
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -237,22 +264,22 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => toast.info("Otentikasi Single Sign-On (SSO) Enterprise saat ini dalam mode Sandbox/Mock.")}
+                onClick={handleSSOLogin}
                 className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all opacity-85"
               >
                 <Key className="w-4 h-4" />
-                Continue with SSO
+                Continue with SSO Keycloak
               </Button>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Beautiful Or Divider */}
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-zinc-800/80"></div>
-              <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-wider font-bold">or</span>
-              <div className="flex-grow border-t border-zinc-800/80"></div>
-            </div>
-          </>
-        )}
+        {/* Beautiful Or Divider */}
+        <div className="relative flex py-2 items-center">
+          <div className="flex-grow border-t border-zinc-800/80"></div>
+          <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-wider font-bold">or</span>
+          <div className="flex-grow border-t border-zinc-800/80"></div>
+        </div>
 
         {!effectiveIsAdmin && !detectedSubdomain && (
           <FormField
