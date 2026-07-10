@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfig, updateGatewayConfig, getStorageStats, StorageStats } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getStorageStats, StorageStats } from "@/lib/actions/gateways";
 import { 
   Database, 
   Save, 
