@@ -78,6 +78,7 @@ func main() {
 	notifyGroup.Use(handler.RateLimiter())
 	{
 		notifyGroup.POST("/notify", handler.SendNotification)
+		notifyGroup.GET("/notification/logs", handler.GetNotificationLogs)
 	}
 
 	srv := &http.Server{

@@ -75,6 +75,65 @@ func (w *Worker) GetJob(ctx context.Context, jobID string) (*ExportJob, error) {
 	return &job, nil
 }
 
+// ListRecentJobs scans Redis for all export:job:* keys and returns up to 20 most recent jobs
+func (w *Worker) ListRecentJobs(ctx context.Context) ([]*ExportJob, error) {
+	var cursor uint64
+	var keys []string
+
+	for {
+		ks, nextCursor, err := w.rdb.Scan(ctx, cursor, "export:job:*", 100).Result()
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan redis keys: %w", err)
+		}
+		keys = append(keys, ks...)
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	if len(keys) == 0 {
+		return []*ExportJob{}, nil
+	}
+
+	// Batch-get all jobs
+	pipe := w.rdb.Pipeline()
+	cmds := make([]*redis.StringCmd, len(keys))
+	for i, k := range keys {
+		cmds[i] = pipe.Get(ctx, k)
+	}
+	if _, err := pipe.Exec(ctx); err != nil && err != redis.Nil {
+		return nil, fmt.Errorf("failed to batch get jobs: %w", err)
+	}
+
+	var jobs []*ExportJob
+	for _, cmd := range cmds {
+		raw, err := cmd.Result()
+		if err != nil {
+			continue
+		}
+		var job ExportJob
+		if err := json.Unmarshal([]byte(raw), &job); err != nil {
+			continue
+		}
+		jobs = append(jobs, &job)
+	}
+
+	// Sort by UpdatedAt descending (most recent first), take up to 20
+	for i := 0; i < len(jobs)-1; i++ {
+		for j := i + 1; j < len(jobs); j++ {
+			if jobs[j].UpdatedAt.After(jobs[i].UpdatedAt) {
+				jobs[i], jobs[j] = jobs[j], jobs[i]
+			}
+		}
+	}
+	if len(jobs) > 20 {
+		jobs = jobs[:20]
+	}
+
+	return jobs, nil
+}
+
 // UpdateJobStatus updates the status of a job in Redis
 func (w *Worker) updateJob(ctx context.Context, job *ExportJob) {
 	job.UpdatedAt = time.Now()

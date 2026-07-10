@@ -127,6 +127,25 @@ func (h *HTTPHandler) enqueueGenericReport(c *gin.Context, reportType string) {
 	})
 }
 
+// GET /export/jobs — list recent export jobs from Redis
+func (h *HTTPHandler) GetRecentJobs(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	jobs, err := h.worker.ListRecentJobs(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   gin.H{"code": "INTERNAL_ERROR", "message": err.Error()},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    jobs,
+	})
+}
+
 // GET /export/job/:jobId/status
 func (h *HTTPHandler) GetJobStatus(c *gin.Context) {
 	ctx := c.Request.Context()

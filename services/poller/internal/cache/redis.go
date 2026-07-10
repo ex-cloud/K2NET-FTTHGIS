@@ -107,3 +107,20 @@ func (sc *StatusCache) Close() error {
 func (sc *StatusCache) Ping() error {
 	return sc.client.Ping(sc.ctx).Err()
 }
+
+// ScanDeviceKeys scans Redis for all device:status:* keys and returns device codes
+func (sc *StatusCache) ScanDeviceKeys(ctx context.Context, cursor uint64) (codes []string, nextCursor uint64, err error) {
+	ks, next, err := sc.client.Scan(ctx, cursor, "device:status:*", 100).Result()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to scan device keys: %w", err)
+	}
+	// Strip "device:status:" prefix to get bare device codes
+	for _, k := range ks {
+		code := k
+		if len(k) > len("device:status:") {
+			code = k[len("device:status:"):]
+		}
+		codes = append(codes, code)
+	}
+	return codes, next, nil
+}

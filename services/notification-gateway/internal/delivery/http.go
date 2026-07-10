@@ -1,6 +1,8 @@
 package delivery
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -89,13 +91,95 @@ func (h *HTTPHandler) SendNotification(c *gin.Context) {
 	}
 	
 	if err := h.worker.Enqueue(ctx, payload); err != nil {
+		// Log failed notification to Redis
+		h.appendNotificationLog(ctx, payload, "failed", err.Error())
 		logger.Error(ctx, "Failed to enqueue notification task", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Log successful notification to Redis
+	h.appendNotificationLog(ctx, payload, "sent", "")
 	
 	c.JSON(http.StatusAccepted, gin.H{
 		"status": "Accepted",
 		"message": "Notification enqueued asynchronously",
+	})
+}
+
+// appendNotificationLog pushes a log entry to Redis list gateway:notification:logs (max 50 entries)
+func (h *HTTPHandler) appendNotificationLog(c *gin.Context, payload provider.NotificationPayload, status, errMsg string) {
+	ctx := c.Request.Context()
+	type logEntry struct {
+		ID           string `json:"id"`
+		Channel      string `json:"channel"`
+		Recipient    string `json:"recipient"`
+		Subject      string `json:"subject,omitempty"`
+		Status       string `json:"status"`
+		ErrorMessage string `json:"errorMessage,omitempty"`
+		SentAt       string `json:"sentAt"`
+	}
+
+	entry := logEntry{
+		ID:           fmt.Sprintf("%d", time.Now().UnixNano()),
+		Channel:      string(payload.Channel),
+		Recipient:    payload.Recipient,
+		Subject:      payload.Subject,
+		Status:       status,
+		ErrorMessage: errMsg,
+		SentAt:       time.Now().UTC().Format(time.RFC3339),
+	}
+
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return
+	}
+
+	pipe := h.rdb.TxPipeline()
+	pipe.LPush(ctx, "gateway:notification:logs", string(data))
+	pipe.LTrim(ctx, "gateway:notification:logs", 0, 49) // Keep last 50 entries
+	if _, err := pipe.Exec(ctx); err != nil {
+		logger.Error(ctx, "Failed to push notification log to Redis", zap.Error(err))
+	}
+}
+
+// GetNotificationLogs reads the last 50 notification logs from Redis list
+func (h *HTTPHandler) GetNotificationLogs(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	items, err := h.rdb.LRange(ctx, "gateway:notification:logs", 0, 49).Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   gin.H{"code": "REDIS_ERROR", "message": err.Error()},
+		})
+		return
+	}
+
+	type logEntry struct {
+		ID           string `json:"id"`
+		Channel      string `json:"channel"`
+		Recipient    string `json:"recipient"`
+		Subject      string `json:"subject,omitempty"`
+		Status       string `json:"status"`
+		ErrorMessage string `json:"errorMessage,omitempty"`
+		SentAt       string `json:"sentAt"`
+	}
+
+	var logs []logEntry
+	for _, item := range items {
+		var entry logEntry
+		if err := json.Unmarshal([]byte(item), &entry); err != nil {
+			continue
+		}
+		logs = append(logs, entry)
+	}
+	if logs == nil {
+		logs = []logEntry{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    logs,
 	})
 }

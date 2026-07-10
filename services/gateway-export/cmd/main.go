@@ -94,6 +94,7 @@ func main() {
 		api.POST("/export/report/tickets", handler.ExportTicketsReport)
 		api.POST("/export/report/customer", handler.ExportCustomerReport)
 		
+		api.GET("/export/jobs", handler.GetRecentJobs)
 		api.GET("/export/job/:jobId/status", handler.GetJobStatus)
 		api.GET("/export/job/:jobId/download", handler.DownloadJob)
 	}

@@ -137,8 +137,8 @@ func main() {
 
 		http.HandleFunc("/api/v1/config", func(w http.ResponseWriter, r *http.Request) {
 			gatewayToken := os.Getenv("GATEWAY_TOKEN")
-			authHeader := r.Header.Get("Authorization")
-			if authHeader != "Bearer "+gatewayToken {
+			token := r.Header.Get("X-Gateway-Token")
+			if token == "" || token != gatewayToken {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte(`{"error":"Unauthorized"}`))
@@ -195,6 +195,92 @@ func main() {
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"status":   "ok",
 				"sections": sections,
+			})
+		})
+
+		http.HandleFunc("/api/v1/devices/status", func(w http.ResponseWriter, r *http.Request) {
+			gatewayToken := os.Getenv("GATEWAY_TOKEN")
+			token := r.Header.Get("X-Gateway-Token")
+			if token == "" || token != gatewayToken {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"Unauthorized"}`))
+				return
+			}
+
+			ctx := r.Context()
+			w.Header().Set("Content-Type", "application/json")
+
+			// SCAN Redis for all device:status:* keys
+			type deviceStatusResponse struct {
+				DeviceCode     string                 `json:"deviceCode"`
+				Host           string                 `json:"host"`
+				Name           string                 `json:"name"`
+				Status         string                 `json:"status"`
+				ResponseTimeMs float64                `json:"responseTimeMs"`
+				LastPolledAt   string                 `json:"lastPolledAt"`
+				Metrics        map[string]interface{} `json:"metrics,omitempty"`
+			}
+
+			var cursor uint64
+			var keys []string
+			for {
+				ks, nextCursor, err := statusCache.ScanDeviceKeys(ctx, cursor)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					return
+				}
+				keys = append(keys, ks...)
+				cursor = nextCursor
+				if cursor == 0 {
+					break
+				}
+			}
+
+			var results []deviceStatusResponse
+			for _, deviceCode := range keys {
+				ds, err := statusCache.GetStatus(deviceCode)
+				if err != nil || ds == nil {
+					continue
+				}
+				resp := deviceStatusResponse{
+					DeviceCode:   ds.Code,
+					Host:         ds.Code, // Code is IP-based
+					Name:         ds.Code,
+					Status:       ds.Status,
+					LastPolledAt: ds.Timestamp.Format(time.RFC3339),
+					Metrics:      ds.Metrics,
+				}
+				// Extract responseTimeMs from metrics if available
+				if ds.Metrics != nil {
+					if rt, ok := ds.Metrics["response_time_ms"]; ok {
+						switch v := rt.(type) {
+						case float64:
+							resp.ResponseTimeMs = v
+						case int:
+							resp.ResponseTimeMs = float64(v)
+						}
+					}
+				}
+				// Try to find the human-readable name from cfg.Devices
+				for _, d := range cfg.Devices {
+					if d.Code == ds.Code {
+						resp.Host = d.IP
+						resp.Name = d.Code
+						break
+					}
+				}
+				results = append(results, resp)
+			}
+
+			if results == nil {
+				results = []deviceStatusResponse{}
+			}
+
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"success": true,
+				"data":    results,
 			})
 		})
 

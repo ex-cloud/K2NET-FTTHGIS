@@ -365,3 +365,136 @@ export async function getAuditEvents(): Promise<AuditEvent[]> {
   const payload = await res.json();
   return payload.data || [];
 }
+
+// ─────────────────────────────────────────────
+// 2A — OLT Gateway: GET /api/v1/olt
+// ─────────────────────────────────────────────
+
+export type OLTDevice = {
+  id: string;
+  tenantSlug: string;
+  name: string;
+  host: string;
+  port: number;
+  vendor: string;       // zte, huawei, fiberhome
+  community: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getOltDevices(): Promise<OLTDevice[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["olt"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/olt`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch OLT devices: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  // Gateway returns { data: OLTDevice[] } or OLTDevice[] directly
+  return Array.isArray(payload) ? payload : (payload.data || []);
+}
+
+// ─────────────────────────────────────────────
+// 2B — Export Gateway: GET /api/v1/export/jobs
+// ─────────────────────────────────────────────
+
+export type ExportJob = {
+  jobId: string;
+  tenantSlug: string;
+  type: string;         // invoice, billing, network, inventory, tickets, customer
+  status: string;       // queued, processing, done, failed
+  params: Record<string, unknown>;
+  downloadUrl?: string;
+  errorMsg?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getExportJobs(): Promise<ExportJob[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["export"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/export/jobs`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch export jobs: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return Array.isArray(payload) ? payload : (payload.data || []);
+}
+
+// ─────────────────────────────────────────────
+// 2C — Poller: GET /api/v1/devices/status
+// ─────────────────────────────────────────────
+
+export type PollerDeviceStatus = {
+  deviceCode: string;
+  host: string;
+  name: string;
+  status: string;           // up, down, timeout, unknown
+  responseTimeMs: number;
+  lastPolledAt: string;
+  uptimeSeconds?: number;
+};
+
+export async function getPollerDeviceStatus(): Promise<PollerDeviceStatus[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["poller"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/devices/status`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch poller device status: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return Array.isArray(payload) ? payload : (payload.data || []);
+}
+
+// ─────────────────────────────────────────────
+// 2D — Notification Gateway: GET /api/v1/notification/logs
+// ─────────────────────────────────────────────
+
+export type NotificationLog = {
+  id: string;
+  channel: string;      // sms, email, whatsapp
+  recipient: string;
+  subject?: string;
+  status: string;       // sent, failed
+  errorMessage?: string;
+  sentAt: string;
+};
+
+export async function getNotificationLogs(): Promise<NotificationLog[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["notification"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/notification/logs`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch notification logs: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return Array.isArray(payload) ? payload : (payload.data || []);
+}

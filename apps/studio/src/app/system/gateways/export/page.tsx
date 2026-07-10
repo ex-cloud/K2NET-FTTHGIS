@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getExportJobs, ExportJob } from "@/lib/actions/gateways";
 import { 
   Download, 
   Save, 
@@ -17,11 +17,26 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function ExportGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exportJobs, setExportJobs] = useState<ExportJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -49,8 +64,21 @@ export default function ExportGatewayPage() {
     }
   };
 
+  const fetchExportJobs = async () => {
+    try {
+      setJobsLoading(true);
+      const data = await getExportJobs();
+      setExportJobs(data.slice(0, 10));
+    } catch (err) {
+      console.error("Gagal memuat export jobs:", err);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchExportJobs();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -106,11 +134,7 @@ export default function ExportGatewayPage() {
     }
   };
 
-  const mockExports = [
-    { id: 1, name: "Laporan_Jaringan_ODP_Garut.xlsx", size: "4.2 MB", status: "Completed", time: "5 mnt lalu" },
-    { id: 2, name: "Tagihan_Tenant_Telkom_Juni.pdf", size: "1.8 MB", status: "Completed", time: "25 mnt lalu" },
-    { id: 3, name: "Peta_FTTH_SaaS_Backup.zip", size: "82.4 MB", status: "Processing", time: "1 mnt lalu" },
-  ];
+  // Export jobs loaded dynamically from getExportJobs()
 
   return (
     <GatewayPageWrapper>
@@ -275,28 +299,51 @@ export default function ExportGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Antrean Export Terkini</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Antrean Export Terkini
+                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockExports.map((exp) => (
-                    <div key={exp.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200 truncate max-w-[150px]">{exp.name}</span>
-                        <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                          exp.status === "Completed"
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                        }`}>
-                          {exp.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
-                        <span>Ukuran: {exp.size}</span>
-                        <span>{exp.time}</span>
-                      </div>
+                  {jobsLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : exportJobs.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat export.</p>
+                  ) : (
+                    exportJobs.map((exp) => (
+                      <div key={exp.jobId} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[150px] capitalize">
+                            {exp.type} Export
+                          </span>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                            exp.status === "done"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : exp.status === "failed"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : exp.status === "processing"
+                              ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                              : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                          }`}>
+                            {exp.status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span>Tenant: {exp.tenantSlug}</span>
+                          <span>{formatRelativeTime(exp.createdAt)}</span>
+                        </div>
+                        {exp.downloadUrl && exp.status === "done" && (
+                          <div className="text-[9px] text-emerald-600 truncate">
+                            ↓ {exp.downloadUrl.split("/").pop()}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
@@ -309,9 +356,15 @@ export default function ExportGatewayPage() {
                     <span className="text-zinc-400">MinIO connection</span>
                     <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Connected</Badge>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
                     <span className="text-zinc-400">Worker Status</span>
                     <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Ready</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">Jobs Dalam Antrean</span>
+                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                      {jobsLoading ? "..." : exportJobs.filter(j => j.status === "queued" || j.status === "processing").length}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

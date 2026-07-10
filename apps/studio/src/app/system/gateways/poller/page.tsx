@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getPollerDeviceStatus, PollerDeviceStatus } from "@/lib/actions/gateways";
 import { 
   Activity, 
   Save, 
@@ -16,11 +16,26 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function PollerGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pollerDevices, setPollerDevices] = useState<PollerDeviceStatus[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -48,8 +63,21 @@ export default function PollerGatewayPage() {
     }
   };
 
+  const fetchPollerDevices = async () => {
+    try {
+      setDevicesLoading(true);
+      const data = await getPollerDeviceStatus();
+      setPollerDevices(data);
+    } catch (err) {
+      console.error("Gagal memuat poller device status:", err);
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchPollerDevices();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -101,11 +129,7 @@ export default function PollerGatewayPage() {
     }
   };
 
-  const mockPollerStats = [
-    { id: 1, metric: "Active OLT Polls", value: "2 devices" },
-    { id: 2, metric: "Last Poll Cycle Duration", value: "1.4s" },
-    { id: 3, metric: "Polling Errors (24h)", value: "0" },
-  ];
+  // Poller devices loaded dynamically from getPollerDeviceStatus()
 
   return (
     <GatewayPageWrapper>
@@ -208,17 +232,42 @@ export default function PollerGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Metrik Polling Real-Time</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Device Status Live
+                    {devicesLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockPollerStats.map((stat) => (
-                    <div key={stat.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-zinc-400">{stat.metric}</span>
-                        <span className="font-mono text-zinc-200 font-semibold">{stat.value}</span>
-                      </div>
+                  {devicesLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : pollerDevices.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada device status tercatat.</p>
+                  ) : (
+                    pollerDevices.map((dev) => (
+                      <div key={dev.deviceCode} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200">{dev.name || dev.host}</span>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                            dev.status === "up"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : dev.status === "down"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          }`}>
+                            {dev.status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span>{dev.host} · {dev.responseTimeMs}ms</span>
+                          <span>{formatRelativeTime(dev.lastPolledAt)}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
@@ -228,12 +277,27 @@ export default function PollerGatewayPage() {
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                    <span className="text-zinc-400">Status Daemon</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Active</Badge>
+                    <span className="text-zinc-400">Active Devices</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">
+                      {devicesLoading ? "..." : pollerDevices.filter(d => d.status === "up").length}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                    <span className="text-zinc-400">Down Devices</span>
+                    <Badge className={`text-[9px] ${
+                      !devicesLoading && pollerDevices.filter(d => d.status === "down").length > 0
+                        ? "bg-red-500/10 text-red-500 border-red-500/20"
+                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                    }`}>
+                      {devicesLoading ? "..." : pollerDevices.filter(d => d.status === "down").length}
+                    </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Scheduler Hook</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Connected</Badge>
+                    <span className="text-zinc-400">Avg Response</span>
+                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                      {devicesLoading || pollerDevices.length === 0 ? "..." :
+                        `${Math.round(pollerDevices.reduce((s, d) => s + d.responseTimeMs, 0) / pollerDevices.length)}ms`}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

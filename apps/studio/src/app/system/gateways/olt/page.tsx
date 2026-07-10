@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getOltDevices, OLTDevice } from "@/lib/actions/gateways";
 import { 
   Network, 
   Save, 
@@ -25,6 +25,8 @@ export default function OltGatewayPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showOltKey, setShowOltKey] = useState(false);
+  const [oltDevices, setOltDevices] = useState<OLTDevice[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -54,6 +56,7 @@ export default function OltGatewayPage() {
 
   useEffect(() => {
     fetchConfig();
+    fetchOltDevices();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -108,11 +111,20 @@ export default function OltGatewayPage() {
     }
   };
 
-  const mockDevices = [
-    { id: 1, host: "10.200.10.2", vendor: "ZTE C320", status: "Connected", responseTime: "14ms" },
-    { id: 2, host: "10.200.10.5", vendor: "Huawei MA5608T", status: "Connected", responseTime: "18ms" },
-    { id: 3, host: "10.200.12.10", vendor: "ZTE C300", status: "Timeout", responseTime: "-" },
-  ];
+  const fetchOltDevices = async () => {
+    try {
+      setDevicesLoading(true);
+      const data = await getOltDevices();
+      setOltDevices(data);
+
+    } catch (err) {
+      console.error("Gagal memuat OLT devices:", err);
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
+  // OLT devices loaded dynamically from getOltDevices()
 
   return (
     <GatewayPageWrapper>
@@ -275,28 +287,56 @@ export default function OltGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">OLT Node State</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    OLT Node State
+                    {devicesLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockDevices.map((dev) => (
-                    <div key={dev.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200">{dev.host}</span>
-                        <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                          dev.status === "Connected"
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-500 border-red-500/20"
-                        }`}>
-                          {dev.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
-                        <span>{dev.vendor}</span>
-                        <span>{dev.responseTime}</span>
-                      </div>
+                  {devicesLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : oltDevices.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada perangkat OLT terdaftar.</p>
+                  ) : (
+                    oltDevices.map((dev) => (
+                      <div key={dev.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200">{dev.name || dev.host}</span>
+                          <Badge className="bg-zinc-500/10 text-zinc-400 border-zinc-500/20 text-[9px] px-1.5 py-0.5 border capitalize">
+                            {dev.vendor}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span>{dev.host}:{dev.port || 161}</span>
+                          <span className="text-zinc-600">{new Date(dev.updatedAt).toLocaleDateString("id-ID")}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Perangkat</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                    <span className="text-zinc-400">Total OLT Terdaftar</span>
+                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                      {devicesLoading ? "..." : oltDevices.length}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">Vendor Unik</span>
+                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[9px]">
+                      {devicesLoading ? "..." : new Set(oltDevices.map(d => d.vendor)).size}
+                    </Badge>
+                  </div>
                 </CardContent>
               </Card>
             </div>
