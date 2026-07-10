@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getAuditEvents, AuditEvent } from "@/lib/actions/gateways";
 import { 
   FileText, 
   Save, 
@@ -17,11 +17,26 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function AuditGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditEvent[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -49,8 +64,21 @@ export default function AuditGatewayPage() {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const data = await getAuditEvents();
+      setAuditLogs(data.slice(0, 10));
+    } catch (err) {
+      console.error("Gagal memuat audit logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchAuditLogs();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -101,11 +129,7 @@ export default function AuditGatewayPage() {
     }
   };
 
-  const mockAuditLogs = [
-    { id: 1, action: "USER_LOGIN", user: "xsuperadmin", status: "Success", time: "2 mnt lalu" },
-    { id: 2, action: "UPDATE_CONFIG", user: "xsuperadmin", status: "Success", time: "12 mnt lalu" },
-    { id: 3, action: "TENANT_DELETE", user: "system-admin", status: "Denied", time: "1 jam lalu" },
-  ];
+  // Audit logs loaded dynamically from getAuditEvents()
 
   return (
     <GatewayPageWrapper>
@@ -208,28 +232,45 @@ export default function AuditGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Aktivitas Audit Terkini</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Aktivitas Audit Terkini
+                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockAuditLogs.map((log) => (
-                    <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200">{log.action}</span>
-                        <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                          log.status === "Success"
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-500 border-red-500/20"
-                        }`}>
-                          {log.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
-                        <span>User: {log.user}</span>
-                        <span>{log.time}</span>
-                      </div>
+                  {logsLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-8 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : auditLogs.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log audit tercatat.</p>
+                  ) : (
+                    auditLogs.map((log) => (
+                      <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200 font-mono">{log.action}</span>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                            log.status === "success"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : log.status === "denied"
+                              ? "bg-red-500/10 text-red-500 border-red-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          }`}>
+                            {log.status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span>@{log.username || log.userId}</span>
+                          <span>{formatRelativeTime(log.createdAt)}</span>
+                        </div>
+                        {log.target && (
+                          <div className="text-[9px] text-zinc-600 truncate">Target: {log.target}</div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>

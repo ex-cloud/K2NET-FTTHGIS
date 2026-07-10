@@ -303,3 +303,65 @@ export async function updateGatewayConfigByKey(
 
   return res.json();
 }
+
+export type SchedulerJob = {
+  id: string;
+  tenantSlug: string;
+  name: string;
+  description: string;
+  cronExpr: string;
+  jobType: string;
+  isActive: boolean;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+};
+
+export async function getSchedulerJobs(): Promise<SchedulerJob[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["scheduler"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/scheduler/jobs`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch scheduler jobs: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return payload.data || [];
+}
+
+export type AuditEvent = {
+  id: string;
+  tenantSlug: string;
+  action: string;
+  target: string;
+  status: string;
+  userId: string;
+  username: string;
+  clientIp: string;
+  userAgent: string;
+  errorMessage: string;
+  createdAt: string;
+};
+
+export async function getAuditEvents(): Promise<AuditEvent[]> {
+  await verifySuperAdmin();
+
+  const baseUrl = GATEWAY_URL_MAP["audit"];
+  const token = getGatewayToken();
+  const res = await fetch(`${baseUrl}/api/v1/audit/events`, {
+    headers: { "X-Gateway-Token": token },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch audit events: ${res.statusText}`);
+  }
+
+  const payload = await res.json();
+  return payload.data || [];
+}

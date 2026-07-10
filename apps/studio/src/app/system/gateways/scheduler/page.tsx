@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getSchedulerJobs, SchedulerJob } from "@/lib/actions/gateways";
 import { 
   Clock, 
   Save, 
@@ -17,11 +17,43 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "Belum pernah";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  
+  // Jika tanggal di masa depan (nextRunAt)
+  if (diffMs < 0) {
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} menit lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 export default function SchedulerGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [jobs, setJobs] = useState<SchedulerJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -49,8 +81,21 @@ export default function SchedulerGatewayPage() {
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      setJobsLoading(true);
+      const data = await getSchedulerJobs();
+      setJobs(data);
+    } catch (err) {
+      console.error("Gagal memuat job:", err);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchJobs();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -103,12 +148,7 @@ export default function SchedulerGatewayPage() {
     }
   };
 
-  const mockJobs = [
-    { id: 1, name: "Database Backup", cron: "0 0 * * *", status: "Success", run: "Hari ini, 00:00" },
-    { id: 2, name: "MinIO Sync", cron: "0 1 * * *", status: "Success", run: "Hari ini, 01:00" },
-    { id: 3, name: "Code Archive", cron: "0 2 * * *", status: "Success", run: "Hari ini, 02:00" },
-    { id: 4, name: "Telemetry Report", cron: "0 */6 * * *", status: "Success", run: "3 jam lalu" },
-  ];
+  // Jobs data loaded dynamically from getSchedulerJobs()
 
   return (
     <GatewayPageWrapper>
@@ -235,24 +275,45 @@ export default function SchedulerGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Daftar Cron Job Aktif</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Daftar Cron Job Aktif
+                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockJobs.map((job) => (
-                    <div key={job.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200">{job.name}</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px] px-1.5 py-0.5 border">
-                          {job.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
-                        <span>Cron: {job.cron}</span>
-                        <span>{job.run}</span>
-                      </div>
+                  {jobsLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-8 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : jobs.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada cron job terdaftar.</p>
+                  ) : (
+                    jobs.map((job) => (
+                      <div key={job.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200">{job.name}</span>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                            job.isActive
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                          }`}>
+                            {job.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span>Cron: {job.cronExpr}</span>
+                          <span>{formatRelativeTime(job.lastRunAt)}</span>
+                        </div>
+                        {job.nextRunAt && (
+                          <div className="text-[9px] text-zinc-600">
+                            Next: {formatRelativeTime(job.nextRunAt)}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
@@ -265,9 +326,15 @@ export default function SchedulerGatewayPage() {
                     <span className="text-zinc-400">Daemon Worker</span>
                     <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Running</Badge>
                   </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                    <span className="text-zinc-400">Total Jobs Terdaftar</span>
+                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">{jobsLoading ? "..." : jobs.length}</Badge>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Queue Latency</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">0ms</Badge>
+                    <span className="text-zinc-400">Jobs Aktif</span>
+                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">
+                      {jobsLoading ? "..." : jobs.filter(j => j.isActive).length}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
