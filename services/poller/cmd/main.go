@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"context"
@@ -17,6 +18,10 @@ import (
 	"strconv"
 	"time"
 )
+
+func splitLines(s string) []string {
+	return strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+}
 
 func main() {
 	startTime := time.Now()
@@ -128,6 +133,69 @@ func main() {
 			fmt.Fprintf(w, "# HELP ftth_poller_uptime_seconds Seconds since the poller service started\n")
 			fmt.Fprintf(w, "# TYPE ftth_poller_uptime_seconds gauge\n")
 			fmt.Fprintf(w, "ftth_poller_uptime_seconds %.0f\n", time.Since(startTime).Seconds())
+		})
+
+		http.HandleFunc("/api/v1/config", func(w http.ResponseWriter, r *http.Request) {
+			gatewayToken := os.Getenv("GATEWAY_TOKEN")
+			authHeader := r.Header.Get("Authorization")
+			if authHeader != "Bearer "+gatewayToken {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"error":"Unauthorized"}`))
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			envPath := os.Getenv("ENV_FILE_PATH")
+			if envPath == "" {
+				envPath = "/opt/project5/services/.env"
+			}
+			data, err := os.ReadFile(envPath)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"error":"Failed to read config"}`))
+				return
+			}
+			// Parse and return as structured sections
+			type entry struct {
+				Key      string `json:"key"`
+				Censored string `json:"censored"`
+				Section  string `json:"section"`
+			}
+			sections := map[string][]entry{}
+			currentSection := "General"
+			sensitiveWords := []string{"TOKEN", "SECRET", "PASSWORD", "AUTH_TOKEN", "API_KEY", "WEBHOOK_KEY", "ACCESS_KEY"}
+			for _, line := range splitLines(string(data)) {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "# ---") && strings.HasSuffix(line, "---") {
+					currentSection = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, "# ---"), "---"))
+					continue
+				}
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) != 2 {
+					continue
+				}
+				k := strings.TrimSpace(parts[0])
+				v := strings.TrimSpace(parts[1])
+				censored := v
+				for _, sw := range sensitiveWords {
+					if strings.Contains(strings.ToUpper(k), sw) {
+						if len(v) <= 8 {
+							censored = "••••••••"
+						} else {
+							censored = v[:4] + "••••••••" + v[len(v)-4:]
+						}
+						break
+					}
+				}
+				sections[currentSection] = append(sections[currentSection], entry{Key: k, Censored: censored, Section: currentSection})
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"status":   "ok",
+				"sections": sections,
+			})
 		})
 
 		log.Printf("📡 Health Check and Metrics server started on port %d", healthPort)

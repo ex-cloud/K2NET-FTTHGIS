@@ -12,6 +12,7 @@ import (
 	"gateways/notification-gateway/internal/delivery"
 	"gateways/notification-gateway/internal/provider"
 	"gateways/notification-gateway/internal/service"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -63,14 +64,14 @@ func main() {
 		})
 	})
 
-	configHandler := delivery.NewConfigHandler()
+	cfgHandler := confighandler.NewConfigHandler("notification-gateway")
 
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
-		api.GET("/config", configHandler.GetConfig)
-		api.POST("/config", configHandler.UpdateConfig)
-		api.GET("/gateway-status", configHandler.GetGatewayStatus)
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 	}
 
 	notifyGroup := api.Group("")

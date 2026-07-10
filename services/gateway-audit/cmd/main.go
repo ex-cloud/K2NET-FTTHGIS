@@ -12,6 +12,7 @@ import (
 	"gateways/gateway-audit/internal/config"
 	"gateways/gateway-audit/internal/delivery"
 	"gateways/gateway-audit/internal/audit"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -107,9 +108,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("audit-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.POST("/audit/events", handler.CreateAuditEvent)
 		api.GET("/audit/events", handler.GetAuditEvents)
 		api.GET("/audit/events/:id", handler.GetAuditEvent)

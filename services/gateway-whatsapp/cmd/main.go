@@ -11,6 +11,7 @@ import (
 	"gateways/gateway-whatsapp/internal/config"
 	"gateways/gateway-whatsapp/internal/delivery"
 	"gateways/gateway-whatsapp/internal/whatsapp"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -68,9 +69,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("whatsapp-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.POST("/wa/send/single", handler.SendSingle)
 		api.POST("/wa/send/blast", handler.SendBlast)
 		api.POST("/wa/send/otp", handler.SendOTP)

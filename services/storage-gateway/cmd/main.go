@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -46,9 +47,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("storage-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		router.MaxMultipartMemory = 150 << 20 // Max size 150MB untuk database backup
 
 		api.POST("/upload", func(c *gin.Context) {

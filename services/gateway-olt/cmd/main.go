@@ -11,6 +11,7 @@ import (
 	"gateways/gateway-olt/internal/config"
 	"gateways/gateway-olt/internal/delivery"
 	"gateways/gateway-olt/internal/olt"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -72,9 +73,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("olt-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.GET("/olt", handler.GetOlts)
 		api.POST("/olt", handler.CreateOlt)
 		api.GET("/olt/:id/status", handler.GetOltStatus)

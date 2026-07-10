@@ -11,6 +11,7 @@ import (
 	"gateways/gateway-scheduler/internal/config"
 	"gateways/gateway-scheduler/internal/delivery"
 	"gateways/gateway-scheduler/internal/scheduler"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -88,9 +89,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("scheduler-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.POST("/scheduler/jobs", handler.CreateJob)
 		api.GET("/scheduler/jobs", handler.GetJobs)
 		api.GET("/scheduler/jobs/tenant/:slug", handler.GetTenantJobs)

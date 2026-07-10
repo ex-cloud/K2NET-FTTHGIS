@@ -10,6 +10,7 @@ import (
 
 	"gateways/map-gateway/internal/config"
 	"gateways/map-gateway/internal/service"
+	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
 	"gateways/shared/telemetry"
@@ -56,9 +57,14 @@ func main() {
 		})
 	})
 
+	cfgHandler := confighandler.NewConfigHandler("map-gateway")
+
 	api := router.Group("/api/v1")
 	api.Use(middleware.InternalAuthMiddleware())
 	{
+		api.GET("/config", cfgHandler.GetConfig)
+		api.POST("/config", cfgHandler.UpdateConfig)
+		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.GET("/geocode", func(c *gin.Context) {
 			address := c.Query("address")
 			if address == "" {
