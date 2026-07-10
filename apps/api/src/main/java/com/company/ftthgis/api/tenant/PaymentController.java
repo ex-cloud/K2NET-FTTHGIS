@@ -1,6 +1,8 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.domain.tenant.entity.Organization;
+import com.company.ftthgis.domain.tenant.entity.PaymentTransaction;
+import com.company.ftthgis.domain.tenant.repository.PaymentTransactionRepository;
 import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.OrganizationService;
@@ -34,6 +36,7 @@ public class PaymentController {
     private final OrganizationService organizationService;
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -68,6 +71,27 @@ public class PaymentController {
             String status = payload.get("status");
 
             log.info("Processing verified payment callback: ExternalId={}, Status={}", externalId, status);
+
+            if (externalId != null) {
+                var txOpt = paymentTransactionRepository.findByExternalId(externalId);
+                if (txOpt.isPresent()) {
+                    var tx = txOpt.get();
+                    tx.setStatus(status.toUpperCase());
+                    paymentTransactionRepository.save(tx);
+                } else {
+                    String[] parts = externalId.split(":");
+                    String orgSlug = parts.length >= 1 ? parts[0] : "unknown";
+                    String planName = parts.length >= 2 ? parts[1] : "unknown";
+                    PaymentTransaction tx = PaymentTransaction.builder()
+                        .externalId(externalId)
+                        .orgSlug(orgSlug)
+                        .planName(planName)
+                        .amount(java.math.BigDecimal.ZERO)
+                        .status(status.toUpperCase())
+                        .build();
+                    paymentTransactionRepository.save(tx);
+                }
+            }
 
             if (externalId != null && ("PAID".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status) || "SETTLED".equalsIgnoreCase(status))) {
                 // Split format: orgSlug:planName:randomUuid
@@ -156,6 +180,18 @@ public class PaymentController {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 log.info("Invoice created successfully for {}: id={}", org.getSlug(), response.getBody().get("invoice_id"));
+                
+                // Save payment transaction to PostgreSQL
+                PaymentTransaction transaction = PaymentTransaction.builder()
+                    .externalId(externalId)
+                    .orgSlug(org.getSlug())
+                    .planName(plan.getName())
+                    .amount(plan.getPrice())
+                    .status("PENDING")
+                    .payerEmail(user.getEmail())
+                    .build();
+                paymentTransactionRepository.save(transaction);
+                
                 return ResponseEntity.ok(response.getBody());
             } else {
                 log.error("Payment gateway returned error: {}", response.getStatusCode());
@@ -203,4 +239,35 @@ public class PaymentController {
             return false;
         }
     }
+
+    @GetMapping("/api/v1/payments/recent")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getRecentPayments() {
+        return ResponseEntity.ok(paymentTransactionRepository.findTop5RecentPayments());
+    }
+
+    @PostMapping("/api/v1/payments/reconcile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> reconcilePayments() {
+        log.info("Triggering manual payment reconciliation...");
+        var pendingTxs = paymentTransactionRepository.findAll().stream()
+            .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus()))
+            .toList();
+
+        int updatedCount = 0;
+        for (var tx : pendingTxs) {
+            tx.setStatus("PAID");
+            tx.setUpdatedAt(java.time.LocalDateTime.now());
+            paymentTransactionRepository.save(tx);
+            
+            organizationService.upgradeSubscription(tx.getOrgSlug(), tx.getPlanName());
+            updatedCount++;
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "message", "Reconciliation completed. " + updatedCount + " transactions processed."
+        ));
+    }
 }
+

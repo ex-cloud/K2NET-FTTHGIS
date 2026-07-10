@@ -498,3 +498,68 @@ export async function getNotificationLogs(): Promise<NotificationLog[]> {
   const payload = await res.json();
   return Array.isArray(payload) ? payload : (payload.data || []);
 }
+
+// ─────────────────────────────────────────────
+// 2E — Payment Gateway: GET /api/v1/payments/recent
+// ─────────────────────────────────────────────
+
+export type PaymentTransaction = {
+  id: string;
+  externalId: string;
+  orgSlug: string;
+  planName: string;
+  amount: number;
+  status: string;
+  payerEmail?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getRecentPayments(): Promise<PaymentTransaction[]> {
+  await verifySuperAdmin();
+
+  const session = await auth();
+  const token = session?.accessToken as string | undefined;
+  if (!token) {
+    throw new Error("Unauthorized: Access token missing");
+  }
+
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9090/api/v1";
+  const res = await fetch(`${backendUrl}/payments/recent`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch recent payments: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function triggerPaymentReconciliation(): Promise<{ success: boolean; message: string }> {
+  await verifySuperAdmin();
+
+  const session = await auth();
+  const token = session?.accessToken as string | undefined;
+  if (!token) {
+    throw new Error("Unauthorized: Access token missing");
+  }
+
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9090/api/v1";
+  const res = await fetch(`${backendUrl}/payments/reconcile`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to trigger payment reconciliation: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+

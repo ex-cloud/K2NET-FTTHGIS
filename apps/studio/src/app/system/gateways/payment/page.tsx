@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getRecentPayments, triggerPaymentReconciliation, PaymentTransaction } from "@/lib/actions/gateways";
 import { 
   CreditCard, 
   Save, 
@@ -12,14 +12,29 @@ import {
   Lock,
   RefreshCw,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
+
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
 
 export default function PaymentGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -29,6 +44,8 @@ export default function PaymentGatewayPage() {
   const [reconciling, setReconciling] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [showWebhookKey, setShowWebhookKey] = useState(false);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -56,8 +73,21 @@ export default function PaymentGatewayPage() {
     }
   };
 
+  const fetchTransactions = async () => {
+    try {
+      setTxLoading(true);
+      const data = await getRecentPayments();
+      setTransactions(data);
+    } catch (err) {
+      console.error("Gagal memuat transaksi:", err);
+    } finally {
+      setTxLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchTransactions();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -109,21 +139,26 @@ export default function PaymentGatewayPage() {
     }
   };
 
-  const handleReconciliation = () => {
-    setReconciling(true);
-    setTimeout(() => {
+  const handleReconciliation = async () => {
+    try {
+      setReconciling(true);
+      const res = await triggerPaymentReconciliation();
+      if (res.success) {
+        toast.success(res.message || "Sinkronisasi rekonsiliasi manual selesai!");
+        await fetchTransactions();
+      } else {
+        toast.error("Gagal melakukan rekonsiliasi");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error rekonsiliasi: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
       setReconciling(false);
-      toast.success("Mesin rekonsiliasi manual berhasil dipicu! Memverifikasi transaksi pending...");
-    }, 2000);
+    }
   };
 
-  // Mock Transactions for Payment Activities
-  const mockTransactions = [
-    { id: 1, inv: "INV-2026-0091", amount: "Rp 150.000", status: "Success", type: "VA Mandiri", date: "5 mnt lalu" },
-    { id: 2, inv: "INV-2026-0090", amount: "Rp 320.000", status: "Success", type: "E-Wallet ShopeePay", date: "1 jam lalu" },
-    { id: 3, inv: "INV-2026-0089", amount: "Rp 150.000", status: "Pending", type: "VA BCA", date: "3 jam lalu" },
-    { id: 4, inv: "INV-2026-0088", amount: "Rp 2.400.000", status: "Success", type: "Qris", date: "5 jam lalu" },
-  ];
+  // Live transactions loaded from database
+
 
   return (
     <GatewayPageWrapper>
@@ -292,25 +327,50 @@ export default function PaymentGatewayPage() {
               {/* Transactions list */}
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Transaksi Terkini</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Transaksi Terkini
+                    {txLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockTransactions.map((tx) => (
-                    <div key={tx.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200">{tx.inv}</span>
-                        <span className="text-xs text-zinc-400">{tx.amount}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500">
-                        <span>{tx.type}</span>
-                        <div className="flex items-center gap-1 font-mono">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          <span>{tx.date}</span>
+                  {txLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
+                    </div>
+                  ) : transactions.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat transaksi.</p>
+                  ) : (
+                    transactions.map((tx) => (
+                      <div key={tx.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px] font-mono">
+                            {tx.externalId.split(":").pop()?.slice(0, 12)}
+                          </span>
+                          <span className="text-xs text-zinc-400 font-mono">
+                            Rp {tx.amount.toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500">
+                          <span>Org: {tx.orgSlug} ({tx.planName})</span>
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={`text-[8px] px-1 py-0 border ${
+                              tx.status === "PAID" || tx.status === "SUCCESS"
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                : tx.status === "PENDING"
+                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-500/20"
+                            }`}>
+                              {tx.status}
+                            </Badge>
+                            <span>{formatRelativeTime(tx.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>
