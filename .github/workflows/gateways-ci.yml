@@ -14,6 +14,7 @@ on:
       - 'services/gateway-export/**'
       - 'services/gateway-olt/**'
       - 'services/gateway-audit/**'
+      - 'services/poller/**'
       - 'services/shared/**'
       - 'services/go.work'
       - '.github/workflows/gateways-ci.yml'
@@ -34,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit]
+        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
