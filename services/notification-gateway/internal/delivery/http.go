@@ -92,14 +92,14 @@ func (h *HTTPHandler) SendNotification(c *gin.Context) {
 	
 	if err := h.worker.Enqueue(ctx, payload); err != nil {
 		// Log failed notification to Redis
-		h.appendNotificationLog(ctx, payload, "failed", err.Error())
+		h.appendNotificationLog(c, payload, "failed", err.Error())
 		logger.Error(ctx, "Failed to enqueue notification task", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Log successful notification to Redis
-	h.appendNotificationLog(ctx, payload, "sent", "")
+	h.appendNotificationLog(c, payload, "sent", "")
 	
 	c.JSON(http.StatusAccepted, gin.H{
 		"status": "Accepted",
@@ -122,9 +122,9 @@ func (h *HTTPHandler) appendNotificationLog(c *gin.Context, payload provider.Not
 
 	entry := logEntry{
 		ID:           fmt.Sprintf("%d", time.Now().UnixNano()),
-		Channel:      string(payload.Channel),
-		Recipient:    payload.Recipient,
-		Subject:      payload.Subject,
+		Channel:      string(payload.Type),
+		Recipient:    payload.To,
+		Subject:      payload.Body,
 		Status:       status,
 		ErrorMessage: errMsg,
 		SentAt:       time.Now().UTC().Format(time.RFC3339),
