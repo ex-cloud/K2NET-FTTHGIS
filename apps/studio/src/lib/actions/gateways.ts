@@ -37,7 +37,7 @@ const GATEWAY_BASE_URL = process.env.NOTIFICATION_GATEWAY_URL || "http://127.0.0
  * Map of gateway identifiers to their backend URL environment variables.
  * Each gateway has its own /api/v1/config endpoint.
  */
-export const GATEWAY_URL_MAP: Record<string, string> = {
+const GATEWAY_URL_MAP: Record<string, string> = {
   notification: process.env.NOTIFICATION_GATEWAY_URL || "http://127.0.0.1:5001",
   payment:      process.env.PAYMENT_GATEWAY_URL      || "http://127.0.0.1:5002",
   map:          process.env.MAP_GATEWAY_URL           || "http://127.0.0.1:5003",
