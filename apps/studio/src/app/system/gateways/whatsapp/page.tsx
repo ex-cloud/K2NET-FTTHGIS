@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getNotificationLogs, NotificationLog } from "@/lib/actions/gateways";
 import { 
   MessageCircle, 
   Save, 
@@ -18,6 +18,19 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Baru saja";
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 export default function WhatsappGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
@@ -25,6 +38,8 @@ export default function WhatsappGatewayPage() {
   const [saving, setSaving] = useState(false);
   const [showVerifyToken, setShowVerifyToken] = useState(false);
   const [showAccessToken, setShowAccessToken] = useState(false);
+  const [waLogs, setWaLogs] = useState<NotificationLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   const fetchConfig = async () => {
     try {
@@ -52,8 +67,22 @@ export default function WhatsappGatewayPage() {
     }
   };
 
+  const fetchWaLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const all = await getNotificationLogs();
+      // Filter for whatsapp channel only
+      setWaLogs(all.filter(l => l.channel === "whatsapp"));
+    } catch (err) {
+      console.error("Gagal memuat WhatsApp logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
+    fetchWaLogs();
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -106,11 +135,7 @@ export default function WhatsappGatewayPage() {
     }
   };
 
-  const mockLogs = [
-    { id: 1, recipient: "+6281234567890", status: "Delivered", time: "2 mnt lalu", type: "Template (Billing)" },
-    { id: 2, recipient: "+6285678901234", status: "Read", time: "10 mnt lalu", type: "Template (Alert)" },
-    { id: 3, recipient: "+628999888777", status: "Sent", time: "1 jam lalu", type: "Interactive Button" },
-  ];
+  // WA logs loaded dynamically from getNotificationLogs() (filtered channel=whatsapp)
 
   return (
     <GatewayPageWrapper>
@@ -245,24 +270,40 @@ export default function WhatsappGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Metrik Delivery WA</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    Metrik Delivery WA
+                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockLogs.map((log) => (
-                    <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-zinc-200">{log.recipient}</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px] px-1.5 py-0.5 border">
-                          {log.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
-                        <span>{log.type}</span>
-                        <span>{log.time}</span>
-                      </div>
+                  {logsLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                      ))}
                     </div>
-                  ))}
+                  ) : waLogs.length === 0 ? (
+                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log WhatsApp tersimpan.</p>
+                  ) : (
+                    waLogs.map((log) => (
+                      <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px]">{log.recipient}</span>
+                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                            log.status === "sent"
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-red-500/10 text-red-500 border-red-500/20"
+                          }`}>
+                            {log.status}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                          <span className="truncate max-w-[120px]">{log.subject || "WA Notification"}</span>
+                          <span>{formatRelativeTime(log.sentAt)}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
@@ -275,9 +316,15 @@ export default function WhatsappGatewayPage() {
                     <span className="text-zinc-400">Meta API Status</span>
                     <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Normal</Badge>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
                     <span className="text-zinc-400">Webhook Connection</span>
                     <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Receiving Active</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">WA Terkirim (log)</span>
+                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                      {logsLoading ? "..." : waLogs.filter(l => l.status === "sent").length}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
