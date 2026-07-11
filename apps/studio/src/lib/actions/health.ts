@@ -82,14 +82,23 @@ export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
       "node-exporter": "Node Exporter",
     };
 
-    const gateways: GatewayStatus[] = upResult.map((r: any) => {
+    const gatewayMap: Record<string, GatewayStatus> = {};
+    upResult.forEach((r: any) => {
       const job = r.metric?.job ?? r.metric?.instance ?? "unknown";
-      return {
-        name: labelMap[job] ?? job,
-        job,
-        up: r.value[1] === "1",
-      };
+      const isUp = r.value[1] === "1";
+      const name = labelMap[job] ?? job;
+
+      // Group by job, prioritize active (ONLINE) status if there are duplicate series/instances
+      if (!gatewayMap[job] || isUp) {
+        gatewayMap[job] = {
+          name,
+          job,
+          up: isUp,
+        };
+      }
     });
+
+    const gateways = Object.values(gatewayMap);
 
     const onlineCount = gateways.filter((g) => g.up).length;
 
