@@ -6,6 +6,45 @@
 
 set -euo pipefail
 
+# --- Fungsi Notifikasi Telegram ---
+send_telegram() {
+  local status="$1"
+  local detail="${2:-}"
+  local env_file="/opt/project5/.env"
+  local bot_token=$(grep -E "^TELEGRAM_BOT_TOKEN=" "$env_file" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+  local chat_id=$(grep -E "^TELEGRAM_CHAT_ID=" "$env_file" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+
+  if [ -n "$bot_token" ] && [ -n "$chat_id" ]; then
+    local text=""
+    if [ "$status" = "SUCCESS" ]; then
+      text="☁️ *FTTH GIS — Offsite Sync Nextcloud Sukses*
+
+📅 $(date +"%d %b %Y, %H:%M") WIB
+✅ Status: Semua berkas cadangan database, kode, Docker volumes, dan secrets berhasil disinkronisasikan ke cloud Nextcloud."
+    else
+      text="⚠️ *FTTH GIS — Offsite Sync Nextcloud GAGAL!*
+
+📅 $(date +"%d %b %Y, %H:%M") WIB
+❌ Detail: $detail"
+    fi
+
+    local payload=$(printf '{"chat_id": "%s", "parse_mode": "Markdown", "text": "%s"}' \
+      "$chat_id" \
+      "$(echo "$text" | sed 's/"/\\"/g')")
+
+    curl -s -o /dev/null -w "%{http_code}" \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -d "$payload" \
+      "https://api.telegram.org/bot${bot_token}/sendMessage" \
+      2>/dev/null || true
+  fi
+}
+
+# Pasang trap untuk mendeteksi error
+trap 'send_telegram "FAILED" "Proses rclone sync ke Nextcloud terputus/gagal!"' ERR
+
+
 BACKUP_BASE="/opt/project5/backups"
 REMOTE="nextcloud"
 REMOTE_BASE="FTTH-GIS-Backups"
@@ -106,3 +145,6 @@ else
 fi
 
 echo "=== Sinkronisasi ke Nextcloud Selesai [$(date '+%Y-%m-%d %H:%M:%S')] ==="
+
+# Kirim notifikasi sukses ke Telegram
+send_telegram "SUCCESS"

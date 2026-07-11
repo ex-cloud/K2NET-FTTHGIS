@@ -4,6 +4,44 @@ BACKUP_DIR="/opt/project5/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/ftth_gis_backup_$TIMESTAMP.sql"
 
+# --- Fungsi Notifikasi Telegram ---
+send_telegram() {
+  local status="$1"
+  local detail="${2:-}"
+  local env_file="/opt/project5/.env"
+  local bot_token=$(grep -E "^TELEGRAM_BOT_TOKEN=" "$env_file" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+  local chat_id=$(grep -E "^TELEGRAM_CHAT_ID=" "$env_file" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || echo "")
+
+  if [ -n "$bot_token" ] && [ -n "$chat_id" ]; then
+    local text=""
+    if [ "$status" = "SUCCESS" ]; then
+      text="💾 *FTTH GIS — Backup Database Sukses*
+
+📅 $(date +"%d %b %Y, %H:%M") WIB
+🗄️ Database: ftth_gis & keycloak_db
+📁 Berkas: $(basename $BACKUP_FILE).gz
+🔑 Keycloak: $(basename ${KC_BACKUP_FILE:-none}).gz"
+    else
+      text="⚠️ *FTTH GIS — Backup Database GAGAL!*
+
+📅 $(date +"%d %b %Y, %H:%M") WIB
+❌ Status: $detail"
+    fi
+
+    local payload=$(printf '{"chat_id": "%s", "parse_mode": "Markdown", "text": "%s"}' \
+      "$chat_id" \
+      "$(echo "$text" | sed 's/"/\\"/g')")
+
+    curl -s -o /dev/null -w "%{http_code}" \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -d "$payload" \
+      "https://api.telegram.org/bot${bot_token}/sendMessage" \
+      2>/dev/null || true
+  fi
+}
+
+
 # Buat folder jika belum ada
 mkdir -p $BACKUP_DIR
 
@@ -29,19 +67,19 @@ if [ $PG_STATUS -eq 0 ]; then
         -F "file=@$BACKUP_FILE.gz" \
         -F "bucket=db-backups" \
         http://127.0.0.1:5004/api/v1/upload > /dev/null &
-    else
-      echo "Warning: GATEWAY_TOKEN tidak ditemukan di gateways/.env. Unggah ke MinIO dilewati."
     fi
   else
     # Catat gagal kompres ke DB
     docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "INSERT INTO database_backups (backup_time, status, success, backup_file) VALUES (NOW(), 'FAILED', false, '');"
     echo "Error: Kompresi backup gagal"
+    send_telegram "FAILED" "Kompresi backup ftth_gis gagal!"
     exit 1
   fi
 else
   # Catat gagal dump ke DB
   docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "INSERT INTO database_backups (backup_time, status, success, backup_file) VALUES (NOW(), 'FAILED', false, '');"
   echo "Error: pg_dump gagal"
+  send_telegram "FAILED" "pg_dump database ftth_gis gagal!"
   exit 1
 fi
 
@@ -73,9 +111,13 @@ if [ $KC_STATUS -eq 0 ]; then
     fi
   else
     echo "Error: Kompresi backup Keycloak gagal"
+    send_telegram "FAILED" "Kompresi backup database keycloak_db gagal!"
+    exit 1
   fi
 else
   echo "Error: pg_dump Keycloak gagal"
+  send_telegram "FAILED" "pg_dump database keycloak_db gagal!"
+  exit 1
 fi
 
 # 🚀 TINGKAT KEAMANAN TINGGI (Offsite Backup):
@@ -94,6 +136,9 @@ if which rclone >/dev/null 2>&1 && rclone listremotes | grep -q "^cloudflare-r2:
 else
   echo "Warning: Rclone belum terinstal atau remote 'cloudflare-r2' belum dikonfigurasi. Backup database offsite dilewati."
 fi
+
+# Kirim notifikasi sukses ke Telegram
+send_telegram "SUCCESS"
 
 # Hapus backup lokal yang lebih tua dari 3 hari agar disk AlmaLinux tidak penuh
 find $BACKUP_DIR -type f -name "*.gz" -mtime +3 -delete
