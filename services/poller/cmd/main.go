@@ -164,6 +164,7 @@ func main() {
 			sections := map[string][]entry{}
 			currentSection := "General"
 			sensitiveWords := []string{"TOKEN", "SECRET", "PASSWORD", "AUTH_TOKEN", "API_KEY", "WEBHOOK_KEY", "ACCESS_KEY"}
+			var hasDatabaseURL bool
 			for _, line := range splitLines(string(data)) {
 				line = strings.TrimSpace(line)
 				if strings.HasPrefix(line, "# ---") && strings.HasSuffix(line, "---") {
@@ -179,6 +180,9 @@ func main() {
 				}
 				k := strings.TrimSpace(parts[0])
 				v := strings.TrimSpace(parts[1])
+				if k == "DATABASE_URL" {
+					hasDatabaseURL = true
+				}
 				censored := v
 				for _, sw := range sensitiveWords {
 					if strings.Contains(strings.ToUpper(k), sw) {
@@ -192,6 +196,39 @@ func main() {
 				}
 				sections[currentSection] = append(sections[currentSection], entry{Key: k, Censored: censored, Section: currentSection})
 			}
+
+			if !hasDatabaseURL {
+				dbUrl := os.Getenv("DATABASE_URL")
+				if dbUrl != "" {
+					censored := dbUrl
+					if strings.HasPrefix(dbUrl, "postgres://") {
+						parts := strings.SplitN(dbUrl, "@", 2)
+						if len(parts) == 2 {
+							left := parts[0]
+							right := parts[1]
+							leftParts := strings.SplitN(left, "://", 2)
+							if len(leftParts) == 2 {
+								scheme := leftParts[0]
+								creds := leftParts[1]
+								credParts := strings.SplitN(creds, ":", 2)
+								if len(credParts) == 2 {
+									censored = fmt.Sprintf("%s://%s:••••••••@%s", scheme, credParts[0], right)
+								}
+							}
+						}
+					} else {
+						censored = "••••••••"
+					}
+					// Add to "Connection & Core Settings" or General
+					sectionName := "Connection & Core Settings"
+					sections[sectionName] = append(sections[sectionName], entry{
+						Key:      "DATABASE_URL",
+						Censored: censored,
+						Section:  sectionName,
+					})
+				}
+			}
+
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"status":   "ok",
 				"sections": sections,

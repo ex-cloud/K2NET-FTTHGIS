@@ -40,6 +40,25 @@ func censorValue(key, value string) string {
 	if value == "" {
 		return ""
 	}
+	if strings.Contains(strings.ToUpper(key), "DATABASE_URL") || strings.HasPrefix(value, "postgres://") {
+		if strings.HasPrefix(value, "postgres://") {
+			parts := strings.SplitN(value, "@", 2)
+			if len(parts) == 2 {
+				left := parts[0]
+				right := parts[1]
+				leftParts := strings.SplitN(left, "://", 2)
+				if len(leftParts) == 2 {
+					scheme := leftParts[0]
+					creds := leftParts[1]
+					credParts := strings.SplitN(creds, ":", 2)
+					if len(credParts) == 2 {
+						return fmt.Sprintf("%s://%s:••••••••@%s", scheme, credParts[0], right)
+					}
+				}
+			}
+		}
+		return "••••••••"
+	}
 	sensitiveKeys := []string{
 		"TOKEN", "SECRET", "PASSWORD", "AUTH_TOKEN",
 		"API_KEY", "WEBHOOK_KEY", "ACCESS_KEY",
@@ -80,6 +99,7 @@ func (h *ConfigHandler) parseEnvFile() ([]configEntry, error) {
 	defer file.Close()
 
 	var entries []configEntry
+	var hasDatabaseURL bool
 	currentSection := "General"
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -104,12 +124,32 @@ func (h *ConfigHandler) parseEnvFile() ([]configEntry, error) {
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
+		if key == "DATABASE_URL" {
+			hasDatabaseURL = true
+		}
+
 		entries = append(entries, configEntry{
 			Key:      key,
 			Value:    value,
 			Censored: censorValue(key, value),
 			Section:  currentSection,
 		})
+	}
+
+	if !hasDatabaseURL {
+		dbUrl := os.Getenv("DATABASE_URL")
+		if dbUrl != "" {
+			sectionName := "General"
+			if len(entries) > 0 {
+				sectionName = entries[len(entries)-1].Section
+			}
+			entries = append(entries, configEntry{
+				Key:      "DATABASE_URL",
+				Value:    dbUrl,
+				Censored: censorValue("DATABASE_URL", dbUrl),
+				Section:  sectionName,
+			})
+		}
 	}
 
 	return entries, scanner.Err()
@@ -196,6 +236,7 @@ func (h *ConfigHandler) GetConfig(c *gin.Context) {
 
 // allowedKeys is the global whitelist of config keys that can be updated via the API
 var allowedKeys = map[string]bool{
+	"DATABASE_URL":                  true,
 	"GATEWAY_TOKEN":                  true,
 	"REDIS_ADDR":                     true,
 	"TWILIO_ACCOUNT_SID":             true,

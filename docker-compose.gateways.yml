@@ -35,6 +35,9 @@ services:
       - PORT=5002
       - REDIS_ADDR=redis:6379
       - CORE_API_URL=http://backend:9090
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5002:5002"
     deploy:
@@ -54,6 +57,9 @@ services:
     environment:
       - PORT=5003
       - REDIS_ADDR=redis:6379
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5003:5003"
     deploy:
@@ -74,6 +80,9 @@ services:
       - PORT=5004
       - REDIS_ADDR=redis:6379
       - AWS_ENDPOINT=http://minio:9000
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5004:5004"
     deploy:
@@ -94,6 +103,9 @@ services:
       - PORT=5010
       - REDIS_ADDR=redis:6379
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     deploy:
       resources:
         limits:
@@ -111,6 +123,9 @@ services:
     environment:
       - PORT=5005
       - REDIS_ADDR=redis:6379
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5005:5005"
     deploy:
@@ -131,6 +146,9 @@ services:
       - PORT=5006
       - REDIS_ADDR=redis:6379
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5006:5006"
     deploy:
@@ -151,6 +169,9 @@ services:
       - PORT=5007
       - REDIS_ADDR=redis:6379
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5007:5007"
     deploy:
@@ -171,6 +192,9 @@ services:
       - PORT=5008
       - REDIS_ADDR=redis:6379
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5008:5008"
     deploy:
@@ -190,6 +214,9 @@ services:
     environment:
       - PORT=5009
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
     ports:
       - "127.0.0.1:5009:5009"
     deploy:

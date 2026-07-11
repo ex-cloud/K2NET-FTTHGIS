@@ -191,7 +191,7 @@ export default function ExportGatewayPage() {
                     <Label htmlFor="DATABASE_URL" className="text-xs text-zinc-400">Database Connection URL</Label>
                     <Input
                       id="DATABASE_URL"
-                      type="password"
+                      type="text"
                       value={config.DATABASE_URL || ""}
                       onChange={(e) => handleInputChange("DATABASE_URL", e.target.value)}
                       placeholder="postgres://..."
