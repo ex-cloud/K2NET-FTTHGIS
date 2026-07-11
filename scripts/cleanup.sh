@@ -82,11 +82,11 @@ elif [ "$DRY_RUN" = true ]; then
 fi
 
 # 1c. Hapus Docker build cache — pertahankan 2GB terbaru agar build tetap cepat
-BUILD_CACHE_BEFORE=$(timeout 5 docker system df --format '{{.BuildCacheSize}}' 2>/dev/null || echo "N/A")
+BUILD_CACHE_BEFORE=$(timeout 15 docker system df --format '{{.BuildCacheSize}}' 2>/dev/null || echo "N/A")
 log "🗑️  Docker build cache saat ini: $BUILD_CACHE_BEFORE"
 if [ "$DRY_RUN" = false ]; then
   log "   Membersihkan build cache (menjaga ${BUILDX_KEEP_STORAGE} terbaru)..."
-  timeout 10 docker buildx prune --keep-storage="$BUILDX_KEEP_STORAGE" -f >> "$LOG_FILE" 2>&1 || log "   ⚠️  Docker buildx prune timed out."
+  timeout 180 docker buildx prune --keep-storage="$BUILDX_KEEP_STORAGE" -f >> "$LOG_FILE" 2>&1 || log "   ⚠️  Docker buildx prune timed out."
   log "   ✅ Build cache dibersihkan."
 elif [ "$DRY_RUN" = true ]; then
   log "   [DRY RUN] Akan prune build cache (keep: $BUILDX_KEEP_STORAGE)."
