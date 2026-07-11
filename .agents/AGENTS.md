@@ -36,6 +36,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 4. **Aturan Infrastruktur (Kong & Traefik Proxy)**: [rules/infrastructure.md](file:///opt/project5/.agents/rules/infrastructure.md)
    *Membahas: Routing Kong/Traefik, SSL termination, Keycloak local bypass, MinIO Tailscale connection.*
 
+5. **Aturan Gaya UI & Konsistensi Tema**: [rules/styles.md](file:///opt/project5/.agents/rules/styles.md)
+   *Membahas: Sistem warna global (Tailwind v4), style card, button, typografi, serta perbedaan aksen portal utama vs portal tenant.*
+
 ---
 
 ## 🧠 Pembelajaran Masalah Terselesaikan (Knowledge Base)
