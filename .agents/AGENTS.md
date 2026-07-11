@@ -30,8 +30,11 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 2. **Aturan Backend (Spring Boot & DB)**: [rules/backend.md](file:///opt/project5/.agents/rules/backend.md)
    *Membahas: Spring Security PreAuthorize, Hibernate PostGIS audit, snake_case.*
 
-3. **Aturan Microservices (Go & Infrastructure)**: [rules/microservices.md](file:///opt/project5/.agents/rules/microservices.md)
+3. **Aturan Microservices (Go & Gateways)**: [rules/microservices.md](file:///opt/project5/.agents/rules/microservices.md)
    *Membahas: Port map internal, X-Tenant-ID header, go.work workspace compilation.*
+
+4. **Aturan Infrastruktur (Kong & Traefik Proxy)**: [rules/infrastructure.md](file:///opt/project5/.agents/rules/infrastructure.md)
+   *Membahas: Routing Kong/Traefik, SSL termination, Keycloak local bypass, MinIO Tailscale connection.*
 
 ---
 
