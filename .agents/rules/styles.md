@@ -65,3 +65,47 @@ Meskipun menggunakan tema global yang sama, terdapat aksen visual yang membedaka
 * **Tujuan**: Monitoring perangkat FTTH pelanggan, peta spasial, dan billing tenant.
 * **Aksen Warna**: Dominan **Biru Langit (`sky`)** atau **Violet (`violet`)** untuk membedakan ruang operasional kerja tenant.
 * **Background Utama**: Sesuai dengan tema standard `bg-background` (#1c1c1c).
+
+---
+
+## 🔄 4. Arsitektur Tema Dinamis (Dynamic & Multi-Theme shadcn/ui Style)
+
+Untuk mendukung penggantian tema secara langsung (real-time) melalui UI baik di portal utama maupun portal tenant, platform ini menggunakan arsitektur **injeksi class tema dinamis pada root element (`<html>` atau `<body>`)** dengan memanfaatkan variabel HSL CSS.
+
+### A. Alur Kerja Tema Dinamis
+1. **Pilihan Tema**: User memilih tema dari UI (contoh: *Supabase Classic*, *Monochrome Slate*, *Cyberpunk Violet*, *Forest Emerald*).
+2. **Penyimpanan**: Pilihan tema disimpan di `localStorage` (untuk persistensi client-side cepat) dan di database profil user/tenant (untuk persistensi multi-device).
+3. **Penerapan**: Next.js Theme Provider menyuntikkan kelas tema ke tag `<html>` (misal `<html class="theme-monochrome">`).
+
+### B. Struktur CSS Variable untuk Tema Tambahan di `globals.css`
+Saat mendesain tema baru, ikuti pola pendefinisian variabel di [`globals.css`](file:///opt/project5/apps/studio/src/app/globals.css) berikut:
+
+```css
+/* 1. Tema Default (Supabase Classic) */
+:root {
+  --background: hsl(0 0% 11%); /* #1c1c1c */
+  --foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 18%);
+  --primary: hsl(153 60% 53%); /* Emerald Green */
+}
+
+/* 2. Tema Monochrome (Shadcn Slate Style) */
+.theme-monochrome {
+  --background: hsl(240 10% 3.9%); /* Deep black slate */
+  --foreground: hsl(0 0% 98%);
+  --border: hsl(240 5.9% 10%);
+  --primary: hsl(0 0% 98%); /* Pure white/black contrast */
+}
+
+/* 3. Tema Cyberpunk (Violet Neon Style) */
+.theme-cyberpunk {
+  --background: hsl(270 20% 6%); /* Dark purple */
+  --foreground: hsl(180 100% 90%);
+  --border: hsl(280 40% 15%);
+  --primary: hsl(290 100% 60%); /* Neon Magenta/Violet */
+}
+```
+
+### C. Implementasi Theme Switcher di UI
+Semua state dropdown/pilihan tema harus membaca theme dari hooks custom global `useTheme()` (atau helper provider serupa) dan merubah class root `document.documentElement.className` secara bersih untuk menghindari flash warna tidak seragam.
+
