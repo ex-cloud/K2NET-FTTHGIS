@@ -21,7 +21,7 @@ scrape_configs:
   - job_name: "go-poller"
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["ftth-poller:9091"]
+      - targets: ["ftth-poller:5010"]
         labels:
           application: "ftth-poller"
 
