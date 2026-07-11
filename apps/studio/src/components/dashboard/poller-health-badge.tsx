@@ -99,7 +99,7 @@ export function PollerHealthBadge() {
               </>
             )}
             <div className="pt-1.5 mt-1.5 border-t border-white/5 text-[9px] text-zinc-600 font-medium italic">
-              Endpoint: localhost:9091/healthz
+              Endpoint: localhost:5010/healthz
             </div>
           </div>
         </TooltipContent>

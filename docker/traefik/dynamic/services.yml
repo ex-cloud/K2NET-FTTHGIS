@@ -28,7 +28,7 @@ http:
     poller-service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:9091"
+          - url: "http://ftth-poller:5010"
     sms-webhook-service:
       loadBalancer:
         servers:
