@@ -18,6 +18,16 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
+import { z } from "zod";
+
+const oltSchema = z.object({
+  DATABASE_URL: z.string().url("Format URL database tidak valid").startsWith("postgres://", "Database harus berupa URL PostgreSQL (postgres://)"),
+  REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, "Format Redis Address harus host:port (contoh: redis:6379)"),
+  OLT_ENCRYPTION_KEY: z.string().min(16, "Encryption Key minimal 16 karakter"),
+  SNMP_TIMEOUT_SECONDS: z.coerce.number().int("SNMP Timeout harus berupa angka bulat").min(1, "SNMP Timeout minimal 1 detik").max(60, "SNMP Timeout maksimal 60 detik"),
+  SSH_TIMEOUT_SECONDS: z.coerce.number().int("SSH Timeout harus berupa angka bulat").min(1, "SSH Timeout minimal 1 detik").max(60, "SSH Timeout maksimal 60 detik"),
+  MAX_CONCURRENT_OLT_CONNECTIONS: z.coerce.number().int("Max concurrent connections harus berupa angka bulat").min(1, "Max concurrent connections minimal 1").max(1000, "Max concurrent connections maksimal 1000")
+});
 
 export default function OltGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -68,34 +78,48 @@ export default function OltGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "REDIS_ADDR",
-        "DATABASE_URL",
-        "OLT_ENCRYPTION_KEY",
-        "SNMP_TIMEOUT_SECONDS",
-        "SSH_TIMEOUT_SECONDS",
-        "MAX_CONCURRENT_OLT_CONNECTIONS"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "REDIS_ADDR",
+      "DATABASE_URL",
+      "OLT_ENCRYPTION_KEY",
+      "SNMP_TIMEOUT_SECONDS",
+      "SSH_TIMEOUT_SECONDS",
+      "MAX_CONCURRENT_OLT_CONNECTIONS"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = oltSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("olt", updates);
       toast.success(res.message || "Konfigurasi OLT Gateway berhasil disimpan!");
       

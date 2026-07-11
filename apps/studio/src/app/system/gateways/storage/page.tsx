@@ -39,6 +39,16 @@ function formatCount(count: number): string {
   return count.toString();
 }
 
+import { z } from "zod";
+
+const storageSchema = z.object({
+  AWS_REGION: z.string().min(2, "AWS Region minimal 2 karakter"),
+  AWS_ENDPOINT: z.string().url("Format AWS Endpoint tidak valid"),
+  AWS_ACCESS_KEY_ID: z.string().min(8, "AWS Access Key minimal 8 karakter"),
+  AWS_SECRET_ACCESS_KEY: z.string().min(8, "AWS Secret Key minimal 8 karakter"),
+  AWS_BUCKET_NAME: z.string().min(3, "Bucket Name minimal 3 karakter")
+});
+
 export default function StorageGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
@@ -104,33 +114,47 @@ export default function StorageGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "AWS_REGION",
-        "AWS_ENDPOINT",
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_BUCKET_NAME"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "AWS_REGION",
+      "AWS_ENDPOINT",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_BUCKET_NAME"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = storageSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("storage", updates);
       toast.success(res.message || "Konfigurasi storage berhasil disimpan!");
       

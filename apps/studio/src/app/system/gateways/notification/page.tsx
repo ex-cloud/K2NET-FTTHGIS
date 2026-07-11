@@ -20,6 +20,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const notificationSchema = z.object({
+  GATEWAY_TOKEN: z.string().min(16, "Gateway Token minimal 16 karakter"),
+  REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, "Format Redis Address harus host:port (contoh: redis:6379)"),
+  TWILIO_ACCOUNT_SID: z.string().startsWith("AC", "Twilio Account SID harus diawali dengan 'AC'").length(34, "Account SID harus tepat 34 karakter"),
+  TWILIO_AUTH_TOKEN: z.string().min(16, "Twilio Auth Token minimal 16 karakter"),
+  TWILIO_FROM_NUMBER: z.string().min(3, "Twilio Sender ID / Number minimal 3 karakter")
+});
+
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -96,38 +106,50 @@ export default function NotificationGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    
+    const keysToUpdate = [
+      "GATEWAY_TOKEN",
+      "REDIS_ADDR",
+      "TWILIO_ACCOUNT_SID",
+      "TWILIO_AUTH_TOKEN",
+      "TWILIO_FROM_NUMBER"
+    ];
+
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
       
-      // Select keys that have been modified (i.e. different from initial censored state)
-      // and do not send the censored representation back
-      const keysToUpdate = [
-        "GATEWAY_TOKEN",
-        "REDIS_ADDR",
-        "TWILIO_ACCOUNT_SID",
-        "TWILIO_AUTH_TOKEN",
-        "TWILIO_FROM_NUMBER"
-      ];
-
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        // If user deleted the value, send empty string.
-        // If value has changed and doesn't contain bullet points (censored symbols), send it.
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+      // If user deleted the value, send empty string.
+      // If value has changed and doesn't contain bullet points (censored symbols), send it.
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = notificationSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("notification", updates);
       toast.success(res.message || "Konfigurasi berhasil disimpan! Layanan sedang memuat ulang...");
       

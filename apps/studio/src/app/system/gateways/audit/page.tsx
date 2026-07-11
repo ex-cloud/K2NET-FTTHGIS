@@ -17,6 +17,13 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const auditSchema = z.object({
+  DATABASE_URL: z.string().url("Format URL database tidak valid").startsWith("postgres://", "Database harus berupa URL PostgreSQL (postgres://)"),
+  RETENTION_DAYS: z.coerce.number().int("Retention period harus berupa angka bulat").min(1, "Retention period minimal 1 hari").max(3650, "Retention period maksimal 3650 hari (10 tahun)")
+});
+
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -90,30 +97,44 @@ export default function AuditGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "DATABASE_URL",
-        "RETENTION_DAYS"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "DATABASE_URL",
+      "RETENTION_DAYS"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = auditSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("audit", updates);
       toast.success(res.message || "Konfigurasi Audit Gateway berhasil disimpan!");
       

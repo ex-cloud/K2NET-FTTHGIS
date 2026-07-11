@@ -17,6 +17,15 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const schedulerSchema = z.object({
+  DATABASE_URL: z.string().url("Format URL database tidak valid").startsWith("postgres://", "Database harus berupa URL PostgreSQL (postgres://)"),
+  REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, "Format Redis Address harus host:port (contoh: redis:6379)"),
+  TIMEZONE: z.string().min(1, "Timezone tidak boleh kosong"),
+  MAX_CONCURRENT_JOBS: z.coerce.number().int("Max concurrent jobs harus berupa angka bulat").min(1, "Max concurrent jobs minimal 1").max(1000, "Max concurrent jobs maksimal 1000")
+});
+
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "Belum pernah";
   const date = new Date(dateStr);
@@ -107,32 +116,46 @@ export default function SchedulerGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "REDIS_ADDR",
-        "DATABASE_URL",
-        "TIMEZONE",
-        "MAX_CONCURRENT_JOBS"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "REDIS_ADDR",
+      "DATABASE_URL",
+      "TIMEZONE",
+      "MAX_CONCURRENT_JOBS"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = schedulerSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("scheduler", updates);
       toast.success(res.message || "Konfigurasi Scheduler berhasil disimpan!");
       

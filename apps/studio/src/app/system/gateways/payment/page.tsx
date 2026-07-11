@@ -22,6 +22,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
+import { z } from "zod";
+
+const paymentSchema = z.object({
+  XENDIT_API_KEY: z.string().startsWith("xnd_", "API Key Xendit harus diawali dengan 'xnd_'").min(16, "Xendit API Key minimal 16 karakter"),
+  XENDIT_WEBHOOK_KEY: z.string().min(16, "Xendit Webhook Key minimal 16 karakter"),
+  CORE_API_URL: z.string().url("Format URL Core API tidak valid")
+});
 
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
@@ -99,31 +106,45 @@ export default function PaymentGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "XENDIT_API_KEY",
-        "XENDIT_WEBHOOK_KEY",
-        "CORE_API_URL"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "XENDIT_API_KEY",
+      "XENDIT_WEBHOOK_KEY",
+      "CORE_API_URL"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = paymentSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("payment", updates);
       toast.success(res.message || "Konfigurasi payment berhasil disimpan!");
       

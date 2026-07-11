@@ -18,6 +18,15 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const whatsappSchema = z.object({
+  WA_API_URL: z.string().url("Format WhatsApp API URL tidak valid"),
+  WA_ACCESS_TOKEN: z.string().min(10, "Access Token minimal 10 karakter"),
+  WA_VERIFY_TOKEN: z.string().min(8, "Verify Token minimal 8 karakter"),
+  WA_PHONE_NUMBER_ID: z.string().regex(/^\d+$/, "Phone Number ID harus berupa angka").min(10, "Phone Number ID minimal 10 digit")
+});
+
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -94,32 +103,46 @@ export default function WhatsappGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "WA_API_URL",
-        "WA_ACCESS_TOKEN",
-        "WA_VERIFY_TOKEN",
-        "WA_PHONE_NUMBER_ID"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "WA_API_URL",
+      "WA_ACCESS_TOKEN",
+      "WA_VERIFY_TOKEN",
+      "WA_PHONE_NUMBER_ID"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = whatsappSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("whatsapp", updates);
       toast.success(res.message || "Konfigurasi WhatsApp berhasil disimpan!");
       

@@ -21,6 +21,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const mapSchema = z.object({
+  GOOGLE_MAPS_API_KEY: z.string().min(10, "Google Maps API Key minimal 10 karakter"),
+  HERE_MAPS_API_KEY: z.string().min(10, "HERE Maps API Key minimal 10 karakter")
+});
+
 export default function MapGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
@@ -68,30 +75,44 @@ export default function MapGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "GOOGLE_MAPS_API_KEY",
-        "HERE_MAPS_API_KEY"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "GOOGLE_MAPS_API_KEY",
+      "HERE_MAPS_API_KEY"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = mapSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("map", updates);
       toast.success(res.message || "Konfigurasi peta berhasil disimpan!");
       

@@ -17,6 +17,18 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
+import { z } from "zod";
+
+const exportSchema = z.object({
+  REDIS_ADDR: z.string().regex(/^[^:]+:\d+$/, "Format Redis Address harus host:port (contoh: redis:6379)"),
+  DATABASE_URL: z.string().url("Format URL database tidak valid").startsWith("postgres://", "Database harus berupa URL PostgreSQL (postgres://)"),
+  STORAGE_GATEWAY_URL: z.string().url("Format URL Storage Gateway tidak valid"),
+  JOB_TIMEOUT_MINUTES: z.coerce.number().int("Job timeout harus berupa angka bulat").min(1, "Job timeout minimal 1 menit").max(1440, "Job timeout maksimal 1440 menit (24 jam)"),
+  MAX_CONCURRENT_EXPORTS: z.coerce.number().int("Max concurrent exports harus berupa angka bulat").min(1, "Max concurrent exports minimal 1").max(100, "Max concurrent exports maksimal 100"),
+  FONT_DIR: z.string().min(1, "Font directory tidak boleh kosong"),
+  TEMPLATE_DIR: z.string().min(1, "Template directory tidak boleh kosong")
+});
+
 function formatRelativeTime(dateStr: string | null | undefined): string {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -68,7 +80,7 @@ export default function ExportGatewayPage() {
     try {
       setJobsLoading(true);
       const data = await getExportJobs();
-      setExportJobs(data.slice(0, 10));
+      setExportJobs(data);
     } catch (err) {
       console.error("Gagal memuat export jobs:", err);
     } finally {
@@ -90,35 +102,49 @@ export default function ExportGatewayPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
 
-    try {
-      const updates: Record<string, string> = {};
-      const keysToUpdate = [
-        "REDIS_ADDR",
-        "DATABASE_URL",
-        "STORAGE_GATEWAY_URL",
-        "JOB_TIMEOUT_MINUTES",
-        "MAX_CONCURRENT_EXPORTS",
-        "FONT_DIR",
-        "TEMPLATE_DIR"
-      ];
+    const updates: Record<string, string> = {};
+    const validationData: Record<string, any> = {};
+    const keysToUpdate = [
+      "REDIS_ADDR",
+      "DATABASE_URL",
+      "STORAGE_GATEWAY_URL",
+      "JOB_TIMEOUT_MINUTES",
+      "MAX_CONCURRENT_EXPORTS",
+      "FONT_DIR",
+      "TEMPLATE_DIR"
+    ];
 
-      keysToUpdate.forEach(k => {
-        const currentValue = config[k] || "";
-        const censoredValue = censored[k] || "";
-        
-        if (currentValue !== censoredValue && !currentValue.includes("••")) {
-          updates[k] = currentValue;
-        }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
-        setSaving(false);
-        return;
+    keysToUpdate.forEach(k => {
+      const currentValue = config[k] || "";
+      const censoredValue = censored[k] || "";
+      
+      if (currentValue !== censoredValue && !currentValue.includes("••")) {
+        updates[k] = currentValue;
+        validationData[k] = currentValue;
       }
+    });
 
+    if (Object.keys(updates).length === 0) {
+      toast.info("Tidak ada perubahan konfigurasi yang terdeteksi.");
+      return;
+    }
+
+    // Run partial validation using Zod
+    try {
+      const partialSchema = exportSchema.partial();
+      partialSchema.parse(validationData);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(`Validasi Gagal: ${err.issues[0].message}`);
+      } else {
+        toast.error("Terjadi kesalahan validasi.");
+      }
+      return;
+    }
+
+    setSaving(true);
+    try {
       const res = await updateGatewayConfigByKey("export", updates);
       toast.success(res.message || "Konfigurasi Export Gateway berhasil disimpan!");
       
@@ -133,8 +159,6 @@ export default function ExportGatewayPage() {
       setSaving(false);
     }
   };
-
-  // Export jobs loaded dynamically from getExportJobs()
 
   return (
     <GatewayPageWrapper>
