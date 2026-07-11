@@ -8,13 +8,18 @@ Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style 
 
 Aplikasi ini menggunakan tema **Dark Mode by default (Supabase Style)** yang diatur oleh CSS Variables di [`globals.css`](file:///opt/project5/apps/studio/src/app/globals.css):
 
-| Token UI | HSL Value | Deskripsi | Class Tailwind |
-|---|---|---|---|
-| `--background` | `0 0% 11%` | Latar belakang halaman | `bg-background` (#1c1c1c) |
-| `--card` | `0 0% 11%` | Latar belakang kartu/kontainer | `bg-card` |
-| `--border` | `0 0% 18%` | Warna garis batas tipis | `border-border` (#2e2e2e) |
-| `--muted` | `240 5% 64.9%`| Teks deskripsi / sekunder | `text-muted-foreground` |
-| `--sidebar-background`| `0 0% 9%` | Background panel samping | `bg-sidebar` (#171717) |
+### 🎨 Palet Warna Supabase (Hex / HSL)
+
+| Kategori | Token Warna | Nilai HSL | Nilai Hex | Penggunaan di Code |
+|---|---|---|---|---|
+| **Brand Accent** | Emerald Green | `hsl(153 60% 53%)` | `#3ecf8e` | `text-[#3ecf8e]` (Untuk tombol utama, sukses, status online) |
+| **Backgrounds** | Deep Background | `hsl(0 0% 11%)` | `#1c1c1c` | `bg-background` (Latar belakang dasar/kanvas) |
+| **Sidebar** | Panel Sidebar | `hsl(0 0% 9%)` | `#171717` | `bg-sidebar` (Latar belakang navigasi samping) |
+| **Borders** | Subtle Borders | `hsl(0 0% 18%)` | `#2e2e2e` | `border-border` (Garis batas antar panel/kontainer) |
+| **Teks Muted** | Neutral Grey | `hsl(240 5% 65%)` | `#8a8a93` | `text-muted-foreground` (Teks sekunder/penjelas) |
+
+> [!TIP]
+> Prioritaskan menggunakan class utilitas Tailwind bawaan (`bg-background`, `border-border`, `bg-sidebar`) daripada hex manual. Jika butuh warna aksen brand hijau Supabase secara eksplisit di luar class Tailwind, gunakan `#3ecf8e`.
 
 ---
 
