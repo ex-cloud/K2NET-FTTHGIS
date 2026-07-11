@@ -19,6 +19,7 @@ import {
   XCircle,
   Server,
 } from "lucide-react";
+import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -235,6 +236,7 @@ export default function SystemHealthPage() {
   const diskPct = data ? pct(data.diskUsedBytes, data.diskTotalBytes) : 0;
 
   return (
+    <SystemHealthWrapper>
     <div className="flex flex-col gap-6 p-6 min-h-screen">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
@@ -424,5 +426,6 @@ export default function SystemHealthPage() {
         </CardContent>
       </Card>
     </div>
+    </SystemHealthWrapper>
   );
 }
