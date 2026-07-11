@@ -19,7 +19,7 @@ export function usePermissions() {
 
   const roles: string[] = session?.user?.roles ?? [];
   const permissions: string[] = session?.user?.permissions ?? [];
-  const isSuperAdmin = roles.includes("super_admin");
+  const isSuperAdmin = roles.includes("super_admin") || roles.includes("ROLE_SUPER_ADMIN");
 
   /**
    * Check if the current user can access a given permission code.
