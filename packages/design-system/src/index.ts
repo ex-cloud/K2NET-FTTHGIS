@@ -1,13 +1,13 @@
 export const DESIGN_TOKENS = {
   colors: {
     brand: {
-      primary: "#139BE7",
-      primaryHover: "#0f7fbf",
-      primaryActive: "#40b3ed",
-      slateDark: "#1E293B",
+      primary: "#10b981",       // Neon Green
+      primaryHover: "#059669",  // Green Hover
+      primaryActive: "#34d399",
+      slateDark: "#2e2e2e",
     },
     semantic: {
-      up: "#10b981",       // Green for Operational
+      up: "#00D26A",       // Green for Operational
       warning: "#f59e0b",  // Amber for Degraded
       down: "#f87171",     // Red for Alert/Down
       broken: "#ef4444",   // Crimson for Critical
@@ -21,12 +21,12 @@ export const DESIGN_TOKENS = {
       textMuted: "#a1a1aa",
     },
     light: {
-      background: "#F8FAFC",
-      sidebar: "#F1F5F9",
-      card: "#FFFFFF",
-      border: "#E2E8F0",
-      text: "#0F172A",
-      textMuted: "#64748B",
+      background: "#fafafa",
+      sidebar: "#f5f5f5",
+      card: "#ffffff",
+      border: "#e5e5e5",
+      text: "#1c1c1c",
+      textMuted: "#737373",
     }
   },
   breakpoints: {
