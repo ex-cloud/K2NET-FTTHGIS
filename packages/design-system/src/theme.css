@@ -43,6 +43,27 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ==========================================
+   🎨 Brand Styles (Dynamic Selectors)
+   ========================================== */
+.brand-green {
+  --primary: hsl(142.1 76.2% 45.3%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --ring: hsl(142.1 76.2% 50%);
+  --sidebar-primary: hsl(142.1 76.2% 45.3%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-ring: hsl(142.1 76.2% 50%);
+}
+
+.brand-blue {
+  --primary: hsl(201 85% 49%);
+  --primary-foreground: hsl(0 0% 98%);
+  --ring: hsl(201 85% 60%);
+  --sidebar-primary: hsl(201 85% 49%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-ring: hsl(201 85% 60%);
+}
+
 :root {
   /* ==========================================
      🌑 Dark Mode by Default (v1.0 Green Theme)

@@ -29,6 +29,7 @@ export function UserNav() {
   );
 
   const [isMono, setIsMono] = React.useState(false);
+  const [brandTheme, setBrandTheme] = React.useState<"green" | "blue">("green");
   const user = session?.user;
 
   const isSystemSubdomain = React.useMemo(() => {
@@ -45,11 +46,17 @@ export function UserNav() {
     const savedMono = localStorage.getItem("theme-mono") === "true";
     setIsMono(savedMono);
 
+    const savedBrand = (localStorage.getItem("brand-theme") as "green" | "blue") || "green";
+    setBrandTheme(savedBrand);
+
     if (savedMono) {
       document.documentElement.classList.add("mono");
     } else {
       document.documentElement.classList.remove("mono");
     }
+
+    document.documentElement.classList.remove("brand-green", "brand-blue");
+    document.documentElement.classList.add(`brand-${savedBrand}`);
   }, [mounted]);
 
   // Sync subsequent changes
@@ -62,11 +69,24 @@ export function UserNav() {
     }
   }, [isMono, mounted]);
 
+  React.useEffect(() => {
+    if (!mounted) return;
+    document.documentElement.classList.remove("brand-green", "brand-blue");
+    document.documentElement.classList.add(`brand-${brandTheme}`);
+  }, [brandTheme, mounted]);
+
   const toggleMono = () => {
     const newState = !isMono;
     setIsMono(newState);
     if (typeof window !== "undefined") {
       localStorage.setItem("theme-mono", newState.toString());
+    }
+  };
+
+  const handleBrandChange = (newBrand: "green" | "blue") => {
+    setBrandTheme(newBrand);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("brand-theme", newBrand);
     }
   };
 
@@ -168,6 +188,38 @@ export function UserNav() {
           </>
         )}
         
+        <DropdownMenuSeparator className="bg-border" />
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
+          Brand Style
+        </DropdownMenuLabel>
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
+          onClick={() => handleBrandChange("green")}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-3.5 w-3.5 items-center justify-center">
+              {brandTheme === "green" && (
+                <Dot className="size-8 text-primary" />
+              )}
+            </div>
+            <span>Version 1 (Green)</span>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-xs focus:bg-accent focus:text-accent-foreground cursor-pointer font-medium"
+          onClick={() => handleBrandChange("blue")}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-3.5 w-3.5 items-center justify-center">
+              {brandTheme === "blue" && (
+                <Dot className="size-8 text-primary" />
+              )}
+            </div>
+            <span>Version 2 (Blue)</span>
+          </div>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="bg-border" />
         <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold tracking-tight">
           Theme
         </DropdownMenuLabel>
