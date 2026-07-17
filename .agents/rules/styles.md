@@ -6,13 +6,13 @@ Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style 
 
 ## 🎨 1. Sistem Warna Global (Tailwind v4 & CSS Variables)
 
-Aplikasi ini menggunakan tema **K2 Blue & Charcoal Dark Mode** secara default (Supabase Style) yang dikonfigurasi melalui `@theme inline` di package terpusat `@k2net/design-system` (`packages/design-system/src/theme.css`):
+Aplikasi ini menggunakan tema **Emerald Green & Charcoal Dark Mode** secara default (Supabase Style) yang dikonfigurasi melalui `@theme inline` di package terpusat `@k2net/design-system` (`packages/design-system/src/theme.css`):
 
-### 🎨 Palet Warna Utama (K2 Blue & Charcoal)
+### 🎨 Palet Warna Utama (Green Theme v1.0)
 
 | Kategori | Token Warna | Nilai HSL | Nilai Hex | Penggunaan di Code |
 |---|---|---|---|---|
-| **Brand Accent** | K2 Blue | `hsl(201 85% 49%)` | `#139BE7` | `text-[#139BE7]` atau `bg-primary` (Tombol utama, aksen link, fokus) |
+| **Brand Accent** | Emerald Green | `hsl(142.1 76.2% 45.3%)` | `#10b981` | `text-[#10b981]` atau `bg-primary` (Tombol utama, aksen link, fokus) |
 | **Backgrounds (Dark)** | Charcoal Background | `hsl(0 0% 11%)` | `#1c1c1c` | `bg-background` (Latar belakang kanvas/card default) |
 | **Sidebar (Dark)** | Panel Sidebar | `hsl(0 0% 9%)` | `#171717` | `bg-sidebar` (Latar belakang navigasi samping) |
 | **Borders (Dark)** | Subtle Borders | `hsl(0 0% 18%)` | `#2e2e2e` | `border-border` (Garis pemisah antar kontainer) |
@@ -33,12 +33,12 @@ Menggunakan warna dasar arang pekat (Charcoal) default:
 * **Text Primary**: `#fafafa` / **Text Muted**: `#a1a1aa`
 
 ### ☀️ B. Light Mode
-Menggunakan warna dasar abu-abu/putih bersih untuk visibilitas luar ruangan/lapangan:
-* **Page Background**: `#F8FAFC` (`hsl(210 40% 98%)`) (Slate-50)
-* **Card & Dialog Background**: `#FFFFFF` (`hsl(0 0% 100%)`)
-* **Sidebar Background**: `#F1F5F9` (`hsl(210 40% 96.1%)`) (Slate-100)
-* **Border & Input Stroke**: `#E2E8F0` (`hsl(214.3 31.8% 91.4%)`) (Slate-200)
-* **Text Primary**: `#0F172A` / **Text Muted**: `#64748B`
+Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapangan:
+* **Page Background**: `#fafafa` (`hsl(0 0% 98%)`)
+* **Card & Dialog Background**: `#ffffff` (`hsl(0 0% 100%)`)
+* **Sidebar Background**: `#f5f5f5` (`hsl(0 0% 96%)`)
+* **Border & Input Stroke**: `#e5e5e5` (`hsl(0 0% 89%)`)
+* **Text Primary**: `#1c1c1c` / **Text Muted**: `#737373`
 
 ---
 
@@ -85,4 +85,4 @@ Mulai versi Tailwind CSS v4, konfigurasi tema tidak lagi menggunakan file JavaSc
 }
 ```
 
-*Catatan: Semua agen wajib mengacu pada spesifikasi desain terpusat di [docs/Server/UI/theme/design_tokens_spec_v2.md](file:///opt/project5/docs/Server/UI/theme/design_tokens_spec_v2.md) untuk implementasi komponen UI.*
+*Catatan: Semua agen wajib mengacu pada spesifikasi desain terpusat di [docs/Server/UI/theme/design_tokens_spec.md](file:///opt/project5/docs/Server/UI/theme/design_tokens_spec.md) untuk implementasi komponen UI.*
