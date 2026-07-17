@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@k2net/types": ["../../packages/types/src"],
+      "@k2net/ui": ["../../packages/ui/src"]
     }
   },
   "include": [
