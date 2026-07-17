@@ -6,6 +6,9 @@ on:
       - develop
     paths:
       - 'apps/studio/**'
+      - 'packages/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/studio-ci.yml'
   workflow_dispatch:
     inputs:
@@ -36,18 +39,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'apps/studio/pnpm-lock.yaml'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Install Dependencies
-        run: |
-          cd apps/studio
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Lint and Build
         run: |
-          cd apps/studio
-          pnpm run lint || true
-          pnpm run build
+          pnpm --filter @k2net/studio run lint || true
+          pnpm --filter @k2net/studio build
 
   deploy:
     name: Deploy to Server
