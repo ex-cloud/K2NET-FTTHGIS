@@ -80,7 +80,7 @@ export default async function UserManagementPage(props: {
             <span>Access Control</span>
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground flex items-center gap-2">
-              <Shield className="w-3 h-3 text-emerald-500" />
+              <Shield className="w-3 h-3 text-primary" />
               User Management
             </span>
           </nav>
@@ -92,7 +92,7 @@ export default async function UserManagementPage(props: {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] font-bold text-xs uppercase tracking-tight h-9">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(16,185,129,0.3)] font-bold text-xs uppercase tracking-tight h-9">
               <UserPlus className="w-4 h-4 mr-2" />
               Add New User
             </Button>

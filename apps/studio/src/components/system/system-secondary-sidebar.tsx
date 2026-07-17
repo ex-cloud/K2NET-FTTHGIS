@@ -110,11 +110,11 @@ export function SystemSecondarySidebar() {
                       href={item.url}
                       className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
                         isActive
-                          ? "bg-emerald-500/10 text-emerald-500 font-medium border border-emerald-500/20"
+                          ? "bg-primary/10 text-primary font-medium border border-primary/20"
                           : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                       }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-emerald-500" : "text-zinc-500"}`} />
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-zinc-500"}`} />
                       {item.title}
                     </Link>
                   );

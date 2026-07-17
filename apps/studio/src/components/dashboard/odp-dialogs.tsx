@@ -82,7 +82,7 @@ export function OdpDialog({
                   setFormData({ ...formData, code: e.target.value });
                   if (formErrors.code) setFormErrors({...formErrors, code: ""});
                 }}
-                className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
+                className={cn("bg-zinc-900 border-border focus:border-blue-500/50 h-11 rounded-xl font-bold text-xs", formErrors.code && "border-red-500 focus:ring-red-500")}
                 required
               />
               {formErrors.code && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.code}</p>}
@@ -100,7 +100,7 @@ export function OdpDialog({
                   setFormData({ ...formData, status: val })
                 }
               >
-                <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50 h-11 rounded-xl font-bold text-xs">
+                <SelectTrigger className="bg-zinc-900 border-border focus:ring-primary/50 h-11 rounded-xl font-bold text-xs">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-950 border-white/10 text-white">
@@ -127,11 +127,11 @@ export function OdpDialog({
                 setFormData({ ...formData, healthStatus: val })
               }
             >
-              <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-blue-500/50 h-11 rounded-xl font-bold text-xs">
+              <SelectTrigger className="bg-zinc-900 border-border focus:ring-blue-500/50 h-11 rounded-xl font-bold text-xs">
                 <SelectValue placeholder="Select health" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-950 border-white/10 text-white">
-                <SelectItem value="UP" className="text-emerald-500 font-bold">UP - Normal Signal</SelectItem>
+                <SelectItem value="UP" className="text-primary font-bold">UP - Normal Signal</SelectItem>
                 <SelectItem value="DEGRADED" className="text-orange-500 font-bold">DEGRADED - Warning</SelectItem>
                 <SelectItem value="DOWN" className="text-red-500 font-bold">DOWN - Offline</SelectItem>
                 <SelectItem value="BROKEN" className="text-red-700 font-black">BROKEN - Damage</SelectItem>
@@ -154,7 +154,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, totalPort: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+                className="bg-zinc-900 border-border focus:border-primary/50"
                 required
               />
             </div>
@@ -172,7 +172,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, usedPort: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50"
+                className="bg-zinc-900 border-border focus:border-primary/50"
                 required
               />
             </div>
@@ -190,7 +190,7 @@ export function OdpDialog({
               value={formData.odcId}
               onValueChange={(val) => setFormData({ ...formData, odcId: val })}
             >
-              <SelectTrigger className="bg-zinc-900 border-white/5 focus:ring-emerald-500/50">
+              <SelectTrigger className="bg-zinc-900 border-border focus:ring-primary/50">
                 <SelectValue placeholder="Select Parent ODC" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-950 border-white/10 text-white max-h-60 overflow-y-auto">
@@ -232,7 +232,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, lat: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
+                className="bg-zinc-900 border-border focus:border-primary/50 font-mono text-[11px]"
                 required
               />
             </div>
@@ -250,7 +250,7 @@ export function OdpDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, lng: e.target.value })
                 }
-                className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 font-mono text-[11px]"
+                className="bg-zinc-900 border-border focus:border-primary/50 font-mono text-[11px]"
                 required
               />
             </div>
@@ -270,7 +270,7 @@ export function OdpDialog({
               onChange={(e) =>
                 setFormData({ ...formData, address: e.target.value })
               }
-              className="bg-zinc-900 border-white/5 focus:border-emerald-500/50 text-xs italic"
+              className="bg-zinc-900 border-border focus:border-primary/50 text-xs italic"
             />
           </div>
 
@@ -297,13 +297,13 @@ export function OdpDialog({
                 setFormData({ ...formData, lastNote: e.target.value });
                 if (formErrors.lastNote) setFormErrors({...formErrors, lastNote: ""});
               }}
-              className={cn("bg-zinc-900 border-white/5 focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
+              className={cn("bg-zinc-900 border-border focus:border-blue-500/50 min-h-[80px] rounded-xl text-xs resize-none", formErrors.lastNote && "border-red-500 focus:ring-red-500")}
               required={formData.status !== "ACTIVE" && formData.status !== "PLAN"}
             />
             {formErrors.lastNote && <p className="text-[10px] font-medium text-red-500 ml-1">{formErrors.lastNote}</p>}
           </div>
 
-          <DialogFooter className="pt-4 border-t border-white/5">
+          <DialogFooter className="pt-4 border-t border-border">
             <Button
               type="button"
               variant="ghost"
@@ -315,7 +315,7 @@ export function OdpDialog({
             <Button
               type="submit"
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px]"
+              className="bg-primary hover:bg-primary/90 text-white min-w-[100px]"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEdit ? "Save Changes" : "Create ODP"}

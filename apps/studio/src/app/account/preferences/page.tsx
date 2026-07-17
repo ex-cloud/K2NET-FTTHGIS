@@ -478,9 +478,9 @@ export default function PreferencesPage() {
   ) as string[];
 
   // Dynamic buttons & outline colors matching system / tenant scheme
-  const themeAccentColor = subdomain === "system" ? "text-emerald-500" : "text-primary";
-  const themeAccentBg = subdomain === "system" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-primary hover:bg-primary/90";
-  const themeAccentBorder = subdomain === "system" ? "focus:border-emerald-500/50" : "focus:border-primary/50";
+  const themeAccentColor = subdomain === "system" ? "text-primary" : "text-primary";
+  const themeAccentBg = subdomain === "system" ? "bg-primary hover:bg-primary/90" : "bg-primary hover:bg-primary/90";
+  const themeAccentBorder = subdomain === "system" ? "focus:border-primary/50" : "focus:border-primary/50";
 
   if (isLoading) {
     return (

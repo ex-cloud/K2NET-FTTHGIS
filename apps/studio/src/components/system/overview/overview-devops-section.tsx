@@ -73,11 +73,11 @@ export function OverviewDevopsSection({
               : "Some services may be degraded. Review the infrastructure map for impact details."
           }
           icon={CheckCircle2}
-          iconClassName="group-hover:text-emerald-500"
-          accentClassName="text-emerald-400"
+          iconClassName="group-hover:text-primary"
+          accentClassName="text-primary"
           href="/health"
           actionLabel="View Health Center"
-          actionClassName="text-emerald-400 hover:text-emerald-300"
+          actionClassName="text-primary hover:text-emerald-300"
         />
 
         {/* Compute */}
@@ -155,9 +155,9 @@ export function OverviewDevopsSection({
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  className="font-mono text-zinc-400 hover:text-primary transition-colors flex items-center gap-1.5"
                 >
-                  <GitBranch className="w-3 h-3 text-emerald-500/80" />
+                  <GitBranch className="w-3 h-3 text-primary/80" />
                   {devopsStats?.git?.branch || "main"} @ {devopsStats?.git?.commitShort || "..."}
                 </a>
               </div>
@@ -171,9 +171,9 @@ export function OverviewDevopsSection({
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  className="font-mono text-zinc-400 hover:text-primary transition-colors flex items-center gap-1.5"
                 >
-                  <GitBranch className="w-3 h-3 text-emerald-500/80" />
+                  <GitBranch className="w-3 h-3 text-primary/80" />
                   {frontendGitBranch} @ {frontendGitCommitShort}
                 </a>
               </div>
@@ -206,11 +206,11 @@ export function OverviewDevopsSection({
           }
           description="Real-time performance indicators for active connections, Redis cache store hit ratios, and GIS extensions."
           icon={Database}
-          iconClassName="group-hover:text-emerald-500"
-          accentClassName="text-emerald-400"
+          iconClassName="group-hover:text-primary"
+          accentClassName="text-primary"
           href="/health"
           actionLabel="View System Health"
-          actionClassName="text-emerald-400 hover:text-emerald-300"
+          actionClassName="text-primary hover:text-emerald-300"
         >
           <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
             <div className="flex items-center justify-between">
@@ -258,7 +258,7 @@ export function OverviewDevopsSection({
               <span className="text-zinc-500">Not Configured</span>
             ) : devopsStats?.lastBackup?.success ? (
               <span className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5 text-emerald-500" /> {devopsStats.lastBackup.lastBackupTime}
+                <Clock className="h-3.5 w-3.5 text-primary" /> {devopsStats.lastBackup.lastBackupTime}
               </span>
             ) : (
               <span className="text-amber-500">Check Status</span>

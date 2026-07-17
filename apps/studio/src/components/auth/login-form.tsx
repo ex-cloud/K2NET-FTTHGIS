@@ -235,7 +235,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
               onClick={handleSSOLogin}
               className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
             >
-              <Key className="w-4 h-4 text-emerald-500" />
+              <Key className="w-4 h-4 text-primary" />
               Continue with SSO Keycloak
             </Button>
           ) : (

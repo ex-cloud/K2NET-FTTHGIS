@@ -50,7 +50,7 @@ export function OverviewMetricCardsRow({
         value={
           <span className="flex items-baseline gap-2">
             {loadingOrgs ? "..." : totalOrgs}
-            <span className="text-xs text-emerald-500">{loadingOrgs ? "" : `${activeOrgs} Active`}</span>
+            <span className="text-xs text-primary">{loadingOrgs ? "" : `${activeOrgs} Active`}</span>
           </span>
         }
         helper={<span>Trialing: {trialOrgs}</span>}
@@ -80,7 +80,7 @@ export function OverviewMetricCardsRow({
         value={
           <span className="flex items-baseline gap-2">
             {loadingGateways ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
-            <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-emerald-500" : "text-amber-500")}>
+            <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-primary" : "text-amber-500")}>
               {allGatewaysHealthy ? "Healthy" : "Degraded"}
             </span>
           </span>

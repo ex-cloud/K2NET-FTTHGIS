@@ -24,7 +24,7 @@ export function SystemHeader() {
     <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border bg-background px-4 z-50 py-2">
       <div className="flex items-center gap-x-1">
         <Link href="/system" className="flex items-center cursor-pointer mr-1">
-          <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group overflow-hidden"}>
+          <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group overflow-hidden"}>
             {logoUrl ? (
               <Image
                 src={getLogoUrl(logoUrl)}
@@ -35,14 +35,14 @@ export function SystemHeader() {
                 unoptimized
               />
             ) : (
-              <ShieldCheck className="h-3 w-3 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <ShieldCheck className="h-3 w-3 text-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
             )}
           </div>
         </Link>
         <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/40" />
         
         <div className="flex items-center px-2 gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
             {appName}
           </span>
           <Separator orientation="vertical" className="mx-0.5 h-3 bg-border/40 -rotate-12" />

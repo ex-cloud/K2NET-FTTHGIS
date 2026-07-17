@@ -152,7 +152,7 @@ export default function SystemAuthPage() {
         <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
           <div className="space-y-1">
             <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
-              <ShieldCheck className="w-8 h-8 text-emerald-500" /> Authentication Control
+              <ShieldCheck className="w-8 h-8 text-primary" /> Authentication Control
             </h1>
             <p className="text-xs text-zinc-400">
               Manage SSO providers, enforce global registration policies, and monitor active single sign-on user sessions dynamically.
@@ -166,7 +166,7 @@ export default function SystemAuthPage() {
           <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-zinc-800/40">
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-500" /> Global Realm Security
+                <Lock className="w-4 h-4 text-primary" /> Global Realm Security
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 Configure basic registration permissions and credential checks on the Keycloak master domain.
@@ -187,7 +187,7 @@ export default function SystemAuthPage() {
                 <Switch
                   checked={regAllowed}
                   onCheckedChange={setRegAllowed}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
 
@@ -206,7 +206,7 @@ export default function SystemAuthPage() {
                 <Switch
                   checked={emailVerify}
                   onCheckedChange={setEmailVerify}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export default function SystemAuthPage() {
                 <Switch
                   checked={resetAllowed}
                   onCheckedChange={setResetAllowed}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
 
@@ -234,7 +234,7 @@ export default function SystemAuthPage() {
               <Button
                 onClick={handleSaveRealmConfig}
                 disabled={isUpdatingRealmConfig || !isConfigChanged}
-                className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
               >
                 {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null} Save Security Policies
               </Button>
@@ -245,7 +245,7 @@ export default function SystemAuthPage() {
           <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-zinc-800/40">
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <Fingerprint className="w-4 h-4 text-emerald-500" /> Identity Providers (SSO)
+                <Fingerprint className="w-4 h-4 text-primary" /> Identity Providers (SSO)
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 Activate Google, Microsoft, GitHub, or LinkedIn single sign-on buttons.
@@ -266,7 +266,7 @@ export default function SystemAuthPage() {
                       }}
                       className={`p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${
                         selectedProvider === provider
-                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                          ? "border-emerald-500 bg-primary/10 text-primary"
                           : configured?.enabled
                           ? "border-zinc-800 bg-zinc-900/30 text-zinc-100 hover:border-zinc-700"
                           : "border-zinc-800/50 bg-zinc-950/20 text-zinc-500 hover:border-zinc-800"
@@ -275,7 +275,7 @@ export default function SystemAuthPage() {
                       <Globe className="w-5 h-5" />
                       <span className="text-xs capitalize font-medium">{provider.replace("-openid", "")}</span>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                        configured?.enabled ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-600"
+                        configured?.enabled ? "bg-emerald-500/20 text-primary" : "bg-zinc-800 text-zinc-600"
                       }`}>
                         {configured?.enabled ? "Active" : "Not Configured"}
                       </span>
@@ -287,7 +287,7 @@ export default function SystemAuthPage() {
               {selectedProvider && (
                 <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-semibold capitalize text-emerald-400">Configure {selectedProvider.replace("-openid", "")} SSO</h4>
+                    <h4 className="text-xs font-semibold capitalize text-primary">Configure {selectedProvider.replace("-openid", "")} SSO</h4>
                     <button onClick={() => setSelectedProvider(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300">Cancel</button>
                   </div>
                   <div className="space-y-3">
@@ -315,7 +315,7 @@ export default function SystemAuthPage() {
                     <Button
                       onClick={() => handleSaveSso(selectedProvider)}
                       disabled={isUpdatingSsoProvider}
-                      className="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-8 font-medium transition-all"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 font-medium transition-all"
                     >
                       {isUpdatingSsoProvider ? "Connecting..." : "Enable Provider"}
                     </Button>
@@ -333,13 +333,13 @@ export default function SystemAuthPage() {
           <CardHeader className="border-b border-zinc-800/40 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <History className="w-4 h-4 text-emerald-500" /> Active SSO Sessions
+                <History className="w-4 h-4 text-primary" /> Active SSO Sessions
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 Real-time active single sign-on sessions on your tenant database and OAuth gateways.
               </CardDescription>
             </div>
-            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-1 rounded-full font-mono font-medium">
+            <span className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-1 rounded-full font-mono font-medium">
               {sessions.length} Active Sessions
             </span>
           </CardHeader>

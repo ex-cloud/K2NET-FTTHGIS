@@ -19,7 +19,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
   const maxHits = Math.max(...data.map((d) => d.hits), 1);
 
   return (
-    <Card className="border-white/5 bg-[#0b0b0b]/40 p-6">
+    <Card className="border-border bg-[#0b0b0b]/40 p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h4 className="text-sm font-semibold text-zinc-200">Combined System Throughput</h4>
@@ -28,7 +28,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
           </p>
         </div>
         {hoveredBarIndex !== null && data[hoveredBarIndex] ? (
-          <Badge className="border-emerald-500/20 bg-emerald-500/10 text-[10px] font-mono text-emerald-500">
+          <Badge className="border-primary/20 bg-primary/10 text-[10px] font-mono text-primary">
             {data[hoveredBarIndex].hour} ➔ {data[hoveredBarIndex].hits} Requests
           </Badge>
         ) : (
@@ -38,7 +38,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
         )}
       </div>
 
-      <div className="relative flex h-28 items-end gap-1.5 border-b border-white/5 px-2 pb-2">
+      <div className="relative flex h-28 items-end gap-1.5 border-b border-border px-2 pb-2">
         {data.map((d, idx) => (
           <div
             key={idx}

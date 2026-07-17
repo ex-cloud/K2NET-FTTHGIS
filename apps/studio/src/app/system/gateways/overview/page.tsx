@@ -81,19 +81,19 @@ export default function GatewaysOverviewPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+              <Badge className="bg-primary/10 text-primary hover:bg-emerald-500/20 border-primary/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
                 System Integration
               </Badge>
             </div>
             <h1 className="text-3xl font-light text-zinc-100 tracking-tight flex items-center gap-3">
-              Gateways Control Panel <Sparkles className="w-5 h-5 text-emerald-500 animate-pulse" />
+              Gateways Control Panel <Sparkles className="w-5 h-5 text-primary animate-pulse" />
             </h1>
             <p className="text-xs text-zinc-500">
               Oversight and dynamic microservice orchestration for payment, messaging, maps, and WebP storage.
@@ -104,9 +104,9 @@ export default function GatewaysOverviewPage() {
             onClick={() => fetchStatus(true)} 
             disabled={refreshing || loading}
             variant="outline"
-            className="border-white/10 hover:border-emerald-500/30 bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all"
+            className="border-white/10 hover:border-primary/30 bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-emerald-500" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
             Refresh Status
           </Button>
         </div>
@@ -116,17 +116,17 @@ export default function GatewaysOverviewPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-28 rounded-xl border border-white/5 bg-zinc-950/20 animate-pulse" />
+                <div key={i} className="h-28 rounded-xl border border-border bg-zinc-950/20 animate-pulse" />
               ))}
             </div>
-            <div className="h-96 rounded-xl border border-white/5 bg-zinc-950/20 animate-pulse" />
+            <div className="h-96 rounded-xl border border-border bg-zinc-950/20 animate-pulse" />
           </div>
         ) : (
           <>
             {/* Top Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Card 1: Global Health */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md shadow-xl hover:border-emerald-500/20 transition-all group duration-300">
+              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
                 <CardHeader className="pb-2">
                   <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Service Health</CardDescription>
                   <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
@@ -144,7 +144,7 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 2: Avg Latency */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md shadow-xl hover:border-emerald-500/20 transition-all group duration-300">
+              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
                 <CardHeader className="pb-2">
                   <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Avg Latency</CardDescription>
                   <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
@@ -152,15 +152,15 @@ export default function GatewaysOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
-                    <Activity className="w-3 h-3 text-emerald-500" />
+                  <div className="flex items-center gap-1.5 text-[10px] text-primary">
+                    <Activity className="w-3 h-3 text-primary" />
                     <span>Performa sangat stabil (Optimal)</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Card 3: Cache Hit Ratio */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md shadow-xl hover:border-emerald-500/20 transition-all group duration-300">
+              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
                 <CardHeader className="pb-2">
                   <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Cache Efficiency</CardDescription>
                   <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
@@ -176,7 +176,7 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 4: Compression Rate */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md shadow-xl hover:border-emerald-500/20 transition-all group duration-300">
+              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
                 <CardHeader className="pb-2">
                   <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Storage Optimization</CardDescription>
                   <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
@@ -184,8 +184,8 @@ export default function GatewaysOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
-                    <HardDrive className="w-3 h-3 text-emerald-500" />
+                  <div className="flex items-center gap-1.5 text-[10px] text-primary">
+                    <HardDrive className="w-3 h-3 text-primary" />
                     <span>Kompresi otomatis WebP</span>
                   </div>
                 </CardContent>
@@ -193,7 +193,7 @@ export default function GatewaysOverviewPage() {
             </div>
 
             {/* Sparkline chart visual simulation */}
-            <Card className="bg-[#0b0b0b]/40 border-white/5 backdrop-blur-md p-6">
+            <Card className="bg-[#0b0b0b]/40 border-border backdrop-blur-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h4 className="text-sm font-semibold text-zinc-200">Throughput & Gateway Load</h4>
@@ -212,7 +212,7 @@ export default function GatewaysOverviewPage() {
               </div>
               
               {/* Synthetic CSS/SVG Graph */}
-              <div className="h-28 w-full flex items-end gap-1.5 px-2 relative border-b border-white/5 pb-2">
+              <div className="h-28 w-full flex items-end gap-1.5 px-2 relative border-b border-border pb-2">
                 {/* Visualizing 24 bars for 24h load */}
                 {[
                   30, 45, 35, 60, 80, 50, 40, 70, 95, 110, 
@@ -249,12 +249,12 @@ export default function GatewaysOverviewPage() {
                   return (
                     <div 
                       key={svc.name} 
-                      className="bg-[#0b0b0b]/60 border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+                      className="bg-card/60 border border-border rounded-xl p-5 hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
                     >
                       {/* Name & Status */}
                       <div className="flex items-center gap-4 min-w-[250px]">
-                        <div className={`w-10 h-10 rounded-lg bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-400 group`}>
-                          <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-emerald-500" : "text-zinc-600"}`} />
+                        <div className={`w-10 h-10 rounded-lg bg-zinc-900 border border-border flex items-center justify-center text-zinc-400 group`}>
+                          <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-primary" : "text-zinc-600"}`} />
                         </div>
                         <div>
                           <h3 className="text-sm font-medium text-zinc-200 capitalize">{nameClean} Gateway</h3>
@@ -303,7 +303,7 @@ export default function GatewaysOverviewPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-zinc-400 hover:text-emerald-500 hover:bg-emerald-500/5 group text-xs gap-1.5 transition-all"
+                            className="text-zinc-400 hover:text-primary hover:bg-emerald-500/5 group text-xs gap-1.5 transition-all"
                           >
                             Configure
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />

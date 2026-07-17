@@ -110,7 +110,7 @@ export default function PasswordPolicyPage() {
         <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
           <div className="space-y-1">
             <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
-              <ScrollText className="w-8 h-8 text-emerald-500" /> Password Security Policies
+              <ScrollText className="w-8 h-8 text-primary" /> Password Security Policies
             </h1>
             <p className="text-xs text-zinc-400">
               Configure corporate credential rules, complexity parameters, rotation timelines, and key history protections.
@@ -123,7 +123,7 @@ export default function PasswordPolicyPage() {
           <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-zinc-800/40">
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-500" /> Complexity & Validation Constraints
+                <Lock className="w-4 h-4 text-primary" /> Complexity & Validation Constraints
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 These rules will be enforced across both local logins and tenant portal invites automatically.
@@ -138,7 +138,7 @@ export default function PasswordPolicyPage() {
                     <Label className="text-zinc-200 text-sm font-medium">Minimum Password Length</Label>
                     <p className="text-xs text-zinc-400">Specify the minimum number of characters required for any new password.</p>
                   </div>
-                  <span className="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-sm font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                     {minLength} characters
                   </span>
                 </div>
@@ -166,7 +166,7 @@ export default function PasswordPolicyPage() {
                   <Switch
                     checked={requireSymbols}
                     onCheckedChange={setRequireSymbols}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -179,7 +179,7 @@ export default function PasswordPolicyPage() {
                   <Switch
                     checked={requireNumbers}
                     onCheckedChange={setRequireNumbers}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -192,7 +192,7 @@ export default function PasswordPolicyPage() {
                   <Switch
                     checked={requireUppercase}
                     onCheckedChange={setRequireUppercase}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -244,7 +244,7 @@ export default function PasswordPolicyPage() {
               <Button
                 onClick={handleSavePolicies}
                 disabled={isUpdating || !isChanged()}
-                className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                 Apply Password Policies
@@ -255,34 +255,34 @@ export default function PasswordPolicyPage() {
           {/* Policy Preview Visual Simulator Card */}
           <Card className="bg-zinc-900/10 border-zinc-800/40">
             <CardContent className="p-6 flex items-start gap-4">
-              <KeyRound className="w-8 h-8 text-emerald-500/80 shrink-0 mt-0.5" />
+              <KeyRound className="w-8 h-8 text-primary/80 shrink-0 mt-0.5" />
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-white">Rule Evaluation Matrix</h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
                   Based on the rules selected above, any secure password in your database will need to fulfill the following evaluation mask:
                 </p>
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Length &gt;= {minLength}
+                  <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                    <CheckCircle2 className="w-3 h-3 text-primary" /> Length &gt;= {minLength}
                   </span>
                   {requireSymbols && (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Char class [!@#$%^&amp;*]
+                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> Char class [!@#$%^&amp;*]
                     </span>
                   )}
                   {requireNumbers && (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Numeric [0-9]
+                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> Numeric [0-9]
                     </span>
                   )}
                   {requireUppercase && (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Case [A-Z]
+                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> Case [A-Z]
                     </span>
                   )}
                   {historyLimit > 0 && (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> History Limit [{historyLimit}]
+                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> History Limit [{historyLimit}]
                     </span>
                   )}
                   {expiryDays > 0 ? (
@@ -290,8 +290,8 @@ export default function PasswordPolicyPage() {
                       <AlertCircle className="w-3 h-3 text-amber-400" /> Expiry Days [{expiryDays}]
                     </span>
                   ) : (
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Infinite Expiration
+                    <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded flex items-center gap-1 font-mono">
+                      <CheckCircle2 className="w-3 h-3 text-primary" /> Infinite Expiration
                     </span>
                   )}
                 </div>

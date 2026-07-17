@@ -190,7 +190,7 @@ export default function AdminOrganizationsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for an organization" 
-              className="bg-muted/30 border-border pl-10 h-9 text-xs text-muted-foreground focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+              className="bg-muted/30 border-border pl-10 h-9 text-xs text-muted-foreground focus:ring-primary/50 focus:border-primary/50 transition-all"
             />
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function AdminOrganizationsPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => setViewMode("grid")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "grid" ? "bg-background text-emerald-500 shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
             <LayoutGrid className="h-3.5 w-3.5" />
           </Button>
@@ -208,7 +208,7 @@ export default function AdminOrganizationsPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => setViewMode("list")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "list" ? "bg-background text-emerald-500 shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
             <ListIcon className="h-3.5 w-3.5" />
           </Button>
@@ -216,7 +216,7 @@ export default function AdminOrganizationsPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => setViewMode("table")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "table" ? "bg-background text-emerald-500 shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "table" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
             <TableIcon className="h-3.5 w-3.5" />
           </Button>
@@ -265,7 +265,7 @@ export default function AdminOrganizationsPage() {
                       <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
                         <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
                           <Building2 className={cn("h-3.5 w-3.5 transition-colors", 
-                            org.status === 'SUSPENDED' ? "text-amber-500" : "text-muted-foreground group-hover:text-emerald-500"
+                            org.status === 'SUSPENDED' ? "text-amber-500" : "text-muted-foreground group-hover:text-primary"
                           )} />
                         </div>
                       </div>
@@ -273,7 +273,7 @@ export default function AdminOrganizationsPage() {
                       <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-8">
                         <div className="flex items-center gap-2">
                           <span className={cn("font-medium transition-colors", 
-                             org.status === 'SUSPENDED' ? "text-muted-foreground" : "text-foreground group-hover:text-emerald-500"
+                             org.status === 'SUSPENDED' ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
                           )}>
                             {org.name}
                           </span>
@@ -291,7 +291,7 @@ export default function AdminOrganizationsPage() {
                       </div>
 
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <ArrowRight className="h-4 w-4 text-emerald-500" />
+                         <ArrowRight className="h-4 w-4 text-primary" />
                       </div>
                     </div>
 
@@ -347,7 +347,7 @@ export default function AdminOrganizationsPage() {
                   </div>
                   
                   <div className="flex items-center gap-6">
-                    <div className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", org.status === 'ACTIVE' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
+                    <div className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", org.status === 'ACTIVE' ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500")}>
                       {org.status || 'ACTIVE'}
                     </div>
                     <DropdownMenu>
@@ -440,7 +440,7 @@ export default function AdminOrganizationsPage() {
           <div className="p-6 space-y-6">
             {loadingProjects ? (
               <div className="flex flex-col items-center justify-center py-6 gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <p className="text-xs text-muted-foreground">Loading associated projects...</p>
               </div>
             ) : projects.length > 0 ? (
@@ -459,7 +459,7 @@ export default function AdminOrganizationsPage() {
                               [project.id]: !!checked
                             }));
                           }}
-                          className="border-zinc-700 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                          className="border-zinc-700 data-[state=checked]:bg-primary data-[state=checked]:border-emerald-500"
                         />
                         <Label htmlFor={`project-${project.id}`} className="text-sm font-medium text-zinc-200 cursor-pointer">
                           {project.name}

@@ -86,7 +86,7 @@ export function ProfileSettingsCard({
               <select
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`h-9 w-full sm:max-w-xs bg-zinc-950/50 border border-zinc-800 rounded-md px-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/30 ${themeAccentBorder} cursor-pointer`}
+                className={`h-9 w-full sm:max-w-xs bg-zinc-950/50 border border-zinc-800 rounded-md px-3 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary/30 ${themeAccentBorder} cursor-pointer`}
               >
                 {emailOptions.map((opt) => (
                   <option key={opt} value={opt} className="bg-zinc-950 text-white text-xs">
@@ -96,7 +96,7 @@ export function ProfileSettingsCard({
               </select>
               {secondaryEmail && (
                 <div className="mt-3 p-3 rounded-lg border border-zinc-800 bg-zinc-950/20 max-w-sm">
-                  <span className="text-[10px] text-emerald-500 uppercase tracking-wider block font-semibold">Secondary Email (Backup)</span>
+                  <span className="text-[10px] text-primary uppercase tracking-wider block font-semibold">Secondary Email (Backup)</span>
                   <span className="text-xs text-zinc-300 font-mono mt-1 block">{secondaryEmail}</span>
                   <p className="text-[9px] text-zinc-550 mt-1 leading-normal">
                     Email awal ini akan otomatis digunakan kembali jika Anda memutuskan tautan akun sosial Google/GitHub.

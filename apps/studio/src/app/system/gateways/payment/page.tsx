@@ -183,12 +183,12 @@ export default function PaymentGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
@@ -203,7 +203,7 @@ export default function PaymentGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi payment gateway...</p>
           </div>
         ) : (
@@ -213,10 +213,10 @@ export default function PaymentGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Xendit Keys */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> Kredensial Provider Xendit
+                    <Lock className="w-4 h-4 text-primary" /> Kredensial Provider Xendit
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Kredensial API Key dan Token Webhook dari Dashboard Xendit untuk memvalidasi callback pembayaran.
@@ -241,7 +241,7 @@ export default function PaymentGatewayPage() {
                       value={config.XENDIT_API_KEY || ""}
                       onChange={(e) => handleInputChange("XENDIT_API_KEY", e.target.value)}
                       placeholder="xnd_development_xxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -263,17 +263,17 @@ export default function PaymentGatewayPage() {
                       value={config.XENDIT_WEBHOOK_KEY || ""}
                       onChange={(e) => handleInputChange("XENDIT_WEBHOOK_KEY", e.target.value)}
                       placeholder="Webhook Verification Token..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Core System Integration */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-emerald-500" /> Integrasi Core System
+                    <Server className="w-4 h-4 text-primary" /> Integrasi Core System
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Endpoint API Core System (Spring Boot) yang digunakan untuk sinkronisasi status tagihan setelah pembayaran sukses.
@@ -288,7 +288,7 @@ export default function PaymentGatewayPage() {
                       value={config.CORE_API_URL || ""}
                       onChange={(e) => handleInputChange("CORE_API_URL", e.target.value)}
                       placeholder="http://127.0.0.1:9090"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -307,7 +307,7 @@ export default function PaymentGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -320,7 +320,7 @@ export default function PaymentGatewayPage() {
             <div className="space-y-6">
               
               {/* Reconciliation Panel */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
@@ -333,9 +333,9 @@ export default function PaymentGatewayPage() {
                     onClick={handleReconciliation}
                     disabled={reconciling}
                     variant="outline"
-                    className="w-full border-white/10 hover:border-emerald-500/30 bg-zinc-950 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all py-5"
+                    className="w-full border-white/10 hover:border-primary/30 bg-zinc-950 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all py-5"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-emerald-500" : ""}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-primary" : ""}`} />
                     Trigger Reconciliation
                   </Button>
                   <div className="flex items-center gap-2 text-[9px] text-zinc-500">
@@ -346,7 +346,7 @@ export default function PaymentGatewayPage() {
               </Card>
 
               {/* Transactions list */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Transaksi Terkini
@@ -364,7 +364,7 @@ export default function PaymentGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat transaksi.</p>
                   ) : (
                     transactions.map((tx) => (
-                      <div key={tx.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={tx.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px] font-mono">
                             {tx.externalId.split(":").pop()?.slice(0, 12)}
@@ -379,7 +379,7 @@ export default function PaymentGatewayPage() {
                           <div className="flex items-center gap-1.5">
                             <Badge className={`text-[8px] px-1 py-0 border ${
                               tx.status === "PAID" || tx.status === "SUCCESS"
-                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                ? "bg-primary/10 text-primary border-primary/20"
                                 : tx.status === "PENDING"
                                 ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                 : "bg-red-500/10 text-red-500 border-red-500/20"

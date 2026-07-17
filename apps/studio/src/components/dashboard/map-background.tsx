@@ -27,7 +27,7 @@ export function MapBackground() {
               fill="none"
               stroke="currentColor"
               strokeWidth="0.5"
-              className="text-emerald-500/5"
+              className="text-primary/5"
             />
           </pattern>
         </defs>
@@ -64,7 +64,7 @@ export function MapBackground() {
           className="opacity-20"
         />
 
-        <g className="text-emerald-500">
+        <g className="text-primary">
           <line
             className="drop-shadow-[0_0_4px_currentColor]"
             stroke="currentColor"
@@ -134,7 +134,7 @@ export function MapBackground() {
         </g>
 
         <circle
-          className="text-emerald-500 animate-pulse"
+          className="text-primary animate-pulse"
           cx="800"
           cy="200"
           fill="currentColor"
@@ -148,7 +148,7 @@ export function MapBackground() {
           r="6"
         />
         <circle
-          className="text-emerald-500 animate-pulse"
+          className="text-primary animate-pulse"
           cx="600"
           cy="850"
           fill="currentColor"
@@ -162,7 +162,7 @@ export function MapBackground() {
           r="6"
         />
         <circle
-          className="text-emerald-500"
+          className="text-primary"
           cx="500"
           cy="500"
           fill="currentColor"

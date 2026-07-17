@@ -129,7 +129,7 @@ export default function CustomerListPage() {
         accessorKey: "code",
         header: "CUST ID",
         cell: ({ row }) => (
-          <span className="font-bold text-emerald-500 truncate block max-w-[150px]" title={row.getValue("code")}>
+          <span className="font-bold text-primary truncate block max-w-[150px]" title={row.getValue("code")}>
             {row.getValue("code")}
           </span>
         ),
@@ -249,7 +249,7 @@ export default function CustomerListPage() {
         <div className="flex items-center gap-3">
           <Button
             onClick={handleCreate}
-            className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 shadow-sm"
+            className="h-9 bg-primary hover:bg-primary/90 text-white font-bold px-4 shadow-sm"
           >
             <Plus className="mr-2 h-4 w-4" /> New Customer
           </Button>

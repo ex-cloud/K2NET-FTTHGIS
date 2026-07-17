@@ -132,24 +132,24 @@ export default function ImportPage() {
         <div className="lg:col-span-4 space-y-4">
           {/* Stepper Header */}
           <div className="flex items-center gap-4 mb-8">
-            <div className={`flex items-center gap-2 ${step >= 1 ? "text-emerald-500" : "text-muted-foreground"}`}>
-              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 1 ? "border-emerald-500 bg-emerald-500/10" : "border-muted"}`}>1</div>
+            <div className={`flex items-center gap-2 ${step >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 1 ? "border-emerald-500 bg-primary/10" : "border-muted"}`}>1</div>
               <span className="text-sm font-medium">Upload</span>
             </div>
             <div className="h-px w-8 bg-muted" />
-            <div className={`flex items-center gap-2 ${step >= 2 ? "text-emerald-500" : "text-muted-foreground"}`}>
-              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 2 ? "border-emerald-500 bg-emerald-500/10" : "border-muted"}`}>2</div>
+            <div className={`flex items-center gap-2 ${step >= 2 ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 2 ? "border-emerald-500 bg-primary/10" : "border-muted"}`}>2</div>
               <span className="text-sm font-medium">Mapping</span>
             </div>
             <div className="h-px w-8 bg-muted" />
-            <div className={`flex items-center gap-2 ${step >= 3 ? "text-emerald-500" : "text-muted-foreground"}`}>
-              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 3 ? "border-emerald-500 bg-emerald-500/10" : "border-muted"}`}>3</div>
+            <div className={`flex items-center gap-2 ${step >= 3 ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`size-8 rounded-full border-2 flex items-center justify-center font-bold ${step >= 3 ? "border-emerald-500 bg-primary/10" : "border-muted"}`}>3</div>
               <span className="text-sm font-medium">Confirm</span>
             </div>
           </div>
 
           {step === 1 && (
-            <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+            <Card className="border-border bg-black/40 backdrop-blur-md">
               <CardHeader>
                 <CardTitle>Select Design File</CardTitle>
                 <CardDescription>
@@ -167,7 +167,7 @@ export default function ImportPage() {
                 >
                   <input {...getInputProps()} />
                   <div className="flex flex-col items-center gap-4">
-                    <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                    <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                       <FileUp className="size-8" />
                     </div>
                     {file ? (
@@ -202,7 +202,7 @@ export default function ImportPage() {
 
                 {validationResult && (
                   <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-500">
-                    <Alert className="bg-emerald-500/5 border-emerald-500/20 text-emerald-500">
+                    <Alert className="bg-emerald-500/5 border-primary/20 text-primary">
                       <CheckCircle2 className="h-4 w-4" />
                       <AlertTitle>Validation Success</AlertTitle>
                       <AlertDescription>
@@ -212,14 +212,14 @@ export default function ImportPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-between border-t border-white/5 pt-6">
+              <CardFooter className="flex justify-between border-t border-border pt-6">
                 <Button variant="ghost" onClick={() => setFile(null)} disabled={!file || isUploading}>
                   Clear
                 </Button>
                 <Button 
                   onClick={() => setStep(2)} 
                   disabled={!validationResult || isUploading}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+                  className="bg-primary hover:bg-primary/90 text-white gap-2"
                 >
                   {isUploading ? "Analyzing..." : "Review & Resolve"}
                   <ChevronRight className="size-4" />
@@ -229,13 +229,13 @@ export default function ImportPage() {
           )}
 
           {step === 3 && (
-            <Card className="border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md animate-in zoom-in duration-300">
+            <Card className="border-primary/20 bg-emerald-500/5 backdrop-blur-md animate-in zoom-in duration-300">
                <CardContent className="pt-12 pb-12 text-center space-y-6">
-                  <div className="size-20 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 border border-emerald-500/30 mx-auto">
+                  <div className="size-20 rounded-full bg-emerald-500/20 flex items-center justify-center text-primary border border-primary/30 mx-auto">
                     <CheckCircle2 className="size-10" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-emerald-500">Import Completed!</h3>
+                    <h3 className="text-2xl font-bold text-primary">Import Completed!</h3>
                     <p className="text-muted-foreground">Your network assets have been successfully synced to the database.</p>
                   </div>
                   <div className="flex justify-center gap-4 pt-4">
@@ -252,10 +252,10 @@ export default function ImportPage() {
 
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-              <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+              <Card className="border-border bg-black/40 backdrop-blur-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className={`size-5 ${conflictCount > 0 ? "text-amber-500" : "text-emerald-500"}`} />
+                    <AlertCircle className={`size-5 ${conflictCount > 0 ? "text-amber-500" : "text-primary"}`} />
                     Conflict Review
                   </CardTitle>
                   <CardDescription>
@@ -284,7 +284,7 @@ export default function ImportPage() {
                               <td className="px-4 py-4 text-xs text-amber-500/80 italic">{conflict.message}</td>
                               <td className="px-4 py-4">
                                 <select 
-                                  className="bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] outline-hidden focus:ring-1 focus:ring-emerald-500"
+                                  className="bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] outline-hidden focus:ring-1 focus:ring-primary"
                                   value={resolutions[conflict.code] || "SKIP"}
                                   onChange={(e) => setResolutions({ ...resolutions, [conflict.code]: e.target.value })}
                                 >
@@ -299,19 +299,19 @@ export default function ImportPage() {
                     </div>
                   ) : (
                     <div className="py-12 text-center">
-                       <CheckCircle2 className="size-12 text-emerald-500 mx-auto mb-4" />
+                       <CheckCircle2 className="size-12 text-primary mx-auto mb-4" />
                        <p className="text-sm font-medium">All systems clear!</p>
                        <p className="text-xs text-muted-foreground mt-1">Ready to sync {validationResult?.nodes} assets.</p>
                     </div>
                   )}
                 </CardContent>
-                <CardFooter className="flex justify-between border-t border-white/5 pt-6">
+                <CardFooter className="flex justify-between border-t border-border pt-6">
                   <Button variant="ghost" onClick={() => setStep(1)}>
                     Back to Upload
                   </Button>
                   <Button 
                     onClick={handleImport}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+                    className="bg-primary hover:bg-primary/90 text-white gap-2"
                   >
                     Confirm & Sync Data
                     <ChevronRight className="size-4" />
@@ -323,10 +323,10 @@ export default function ImportPage() {
         </div>
 
         <div className="lg:col-span-3 space-y-4">
-          <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+          <Card className="border-border bg-black/40 backdrop-blur-md">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <AlertCircle className="size-4 text-emerald-500" />
+                <AlertCircle className="size-4 text-primary" />
                 Import Guidelines
               </CardTitle>
             </CardHeader>
@@ -347,15 +347,15 @@ export default function ImportPage() {
             </CardContent>
           </Card>
           
-          <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+          <Card className="border-border bg-black/40 backdrop-blur-md">
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <MapIcon className="size-4 text-emerald-500" />
+                <MapIcon className="size-4 text-primary" />
                 Data Preview
               </CardTitle>
             </CardHeader>
             <CardContent>
-               <div className="aspect-square rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-muted-foreground">
+               <div className="aspect-square rounded-lg bg-white/5 border border-border flex items-center justify-center text-muted-foreground">
                   <p className="text-[10px] text-center px-6">
                     A map preview will appear here after field mapping is complete.
                   </p>

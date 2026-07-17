@@ -73,7 +73,7 @@ export function AssetFormSidebar() {
             <div className="flex justify-between items-center">
               <Label htmlFor="code">Asset Code</Label>
               {codeStatus === 'checking' && <span className="text-xs text-yellow-500 font-medium flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> Checking...</span>}
-              {codeStatus === 'available' && <span className="text-xs text-emerald-500 font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Available</span>}
+              {codeStatus === 'available' && <span className="text-xs text-primary font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Available</span>}
               {codeStatus === 'exists' && <span className="text-xs text-red-500 font-medium flex items-center gap-1"><XCircle className="w-3 h-3"/> Already exists</span>}
             </div>
             <Input 

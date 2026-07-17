@@ -26,7 +26,7 @@ export function SystemHealthChart({
           SYSTEM HEALTH
         </h3>
         {loading && (
-          <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
         )}
       </div>
 
@@ -91,7 +91,7 @@ export function SystemHealthChart({
       ) : (
         <div className="h-[260px] flex items-center justify-center">
           <div className="text-center space-y-2">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Loading health data...
             </p>

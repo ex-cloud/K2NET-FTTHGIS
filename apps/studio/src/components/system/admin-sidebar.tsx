@@ -115,7 +115,7 @@ export function AdminSidebar() {
           zIndex: 50,
           boxShadow: isHovering ? "4px 0 24px rgba(0,0,0,0.3)" : "none",
         } : undefined}
-        className={`border-r border-white/5 flex flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`border-r border-border flex flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
           isFloating ? "" : "z-50"
         } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
@@ -128,7 +128,7 @@ export function AdminSidebar() {
                   <div
                     className={`flex items-center gap-3 rounded-lg px-2 h-8 cursor-pointer transition-all duration-200 group ${
                       item.isActive
-                        ? "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20"
+                        ? "text-primary bg-primary/10 hover:bg-emerald-500/20"
                         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
                   >

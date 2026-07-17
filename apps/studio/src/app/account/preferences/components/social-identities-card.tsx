@@ -62,7 +62,7 @@ export function SocialIdentitiesCard({
             <div>
               {googleConnected ? (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold uppercase tracking-wider">
+                  <div className="flex items-center gap-1 text-[10px] text-primary font-semibold uppercase tracking-wider">
                     <Check className="w-3 h-3" />
                     Connected as
                   </div>
@@ -107,7 +107,7 @@ export function SocialIdentitiesCard({
             <div>
               {githubConnected ? (
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold uppercase tracking-wider">
+                  <div className="flex items-center gap-1 text-[10px] text-primary font-semibold uppercase tracking-wider">
                     <Check className="w-3 h-3" />
                     Connected as
                   </div>
@@ -140,7 +140,7 @@ export function SocialIdentitiesCard({
 
       {/* Footer info box */}
       <div className="px-6 py-3.5 bg-zinc-900/30 border-t border-zinc-800 flex items-center gap-2 text-[10px] text-zinc-500">
-        <Info className="h-4 w-4 text-emerald-500 shrink-0" />
+        <Info className="h-4 w-4 text-primary shrink-0" />
         <span>Autentikasi sosial ditangani secara langsung oleh federasi identitas Keycloak Broker.</span>
       </div>
     </div>

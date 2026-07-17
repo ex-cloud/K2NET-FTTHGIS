@@ -111,7 +111,7 @@ export function NavOrgSwitcher() {
           {currentOrg?.logoUrl && currentOrg.logoUrl.trim() !== "" ? (
             <AvatarImage src={getLogoUrl(currentOrg.logoUrl)} />
           ) : null}
-          <AvatarFallback className="bg-emerald-600/10 text-emerald-500 rounded flex items-center justify-center">
+          <AvatarFallback className="bg-emerald-600/10 text-primary rounded flex items-center justify-center">
             <Boxes className="size-3.5" strokeWidth={1.5} />
           </AvatarFallback>
         </Avatar>
@@ -195,7 +195,7 @@ export function NavOrgSwitcher() {
                     </span>
                   </div>
                   {org.slug === activeSlug && (
-                    <Check className="size-3.5 text-emerald-500" />
+                    <Check className="size-3.5 text-primary" />
                   )}
                 </DropdownMenuItem>
               ))

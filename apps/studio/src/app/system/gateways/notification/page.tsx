@@ -170,12 +170,12 @@ export default function NotificationGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <MessageSquare className="w-6 h-6" />
           </div>
           <div>
@@ -190,7 +190,7 @@ export default function NotificationGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi notification gateway...</p>
           </div>
         ) : (
@@ -200,10 +200,10 @@ export default function NotificationGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Internal Auth Details */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> Keamanan & Akses Internal
+                    <Lock className="w-4 h-4 text-primary" /> Keamanan & Akses Internal
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Token static yang digunakan untuk autentikasi komunikasi antar microservice.
@@ -228,17 +228,17 @@ export default function NotificationGatewayPage() {
                       value={config.GATEWAY_TOKEN || ""}
                       onChange={(e) => handleInputChange("GATEWAY_TOKEN", e.target.value)}
                       placeholder="Masukkan Token Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Redis Connection Details */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-emerald-500" /> Broker Antrean (Redis)
+                    <Server className="w-4 h-4 text-primary" /> Broker Antrean (Redis)
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Alamat koneksi Redis untuk asynq queue worker pengiriman WhatsApp/SMS.
@@ -253,17 +253,17 @@ export default function NotificationGatewayPage() {
                       value={config.REDIS_ADDR || ""}
                       onChange={(e) => handleInputChange("REDIS_ADDR", e.target.value)}
                       placeholder="127.0.0.1:6379"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Twilio Credentials */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-emerald-500" /> Twilio Provider Credentials
+                    <MessageCircle className="w-4 h-4 text-primary" /> Twilio Provider Credentials
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Kredensial akun Twilio Anda untuk mengaktifkan modul SMS & WhatsApp Business API.
@@ -278,7 +278,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_ACCOUNT_SID || ""}
                       onChange={(e) => handleInputChange("TWILIO_ACCOUNT_SID", e.target.value)}
                       placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -300,7 +300,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_AUTH_TOKEN || ""}
                       onChange={(e) => handleInputChange("TWILIO_AUTH_TOKEN", e.target.value)}
                       placeholder="Auth Token Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -312,7 +312,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_FROM_NUMBER || ""}
                       onChange={(e) => handleInputChange("TWILIO_FROM_NUMBER", e.target.value)}
                       placeholder="whatsapp:+14155238886"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -331,7 +331,7 @@ export default function NotificationGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -342,7 +342,7 @@ export default function NotificationGatewayPage() {
 
             {/* Live Logs / Info Column */}
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Antrean Pesan Terakhir
@@ -360,12 +360,12 @@ export default function NotificationGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log pengiriman tersimpan.</p>
                   ) : (
                     notifLogs.map((log) => (
-                      <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px]">{log.recipient}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             log.status === "sent"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              ? "bg-primary/10 text-primary border-primary/20"
                               : "bg-red-500/10 text-red-500 border-red-500/20"
                           }`}>
                             {log.status}
@@ -384,14 +384,14 @@ export default function NotificationGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Pengiriman</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Total Dikirim</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">
                       {logsLoading ? "..." : notifLogs.filter(l => l.status === "sent").length}
                     </Badge>
                   </div>

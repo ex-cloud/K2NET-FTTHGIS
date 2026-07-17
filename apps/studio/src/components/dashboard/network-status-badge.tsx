@@ -36,11 +36,11 @@ export function NetworkStatusBadge({
       case 'DEPLOYING':
         return { label: 'DEPLOYING', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Rocket };
       case 'ACTIVE':
-        return { label: 'ACTIVE', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 };
+        return { label: 'ACTIVE', color: 'bg-primary/10 text-primary border-primary/20', icon: CheckCircle2 };
       case 'MAINTENANCE':
         return { label: 'MAINTENANCE', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Construction };
       case 'RETIRED':
-        return { label: 'RETIRED', color: 'bg-zinc-900 text-zinc-400 border-white/5', icon: PowerOff };
+        return { label: 'RETIRED', color: 'bg-zinc-900 text-zinc-400 border-border', icon: PowerOff };
       default:
         return { label: s || 'UNKNOWN', color: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20', icon: Activity };
     }

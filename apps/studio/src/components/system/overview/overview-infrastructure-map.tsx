@@ -313,7 +313,7 @@ export function OverviewInfrastructureMap({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card
-        className="flex flex-col justify-start border-white/5 bg-[#0b0b0b]/40 p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[460px]"
+        className="flex flex-col justify-start border-border bg-[#0b0b0b]/40 p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[460px]"
         ref={containerRef}
       >
         {/* Header + Controls */}
@@ -326,7 +326,7 @@ export function OverviewInfrastructureMap({
           </div>
 
           {/* Unified zoom + collapse controls */}
-          <div className="flex items-center gap-1 bg-zinc-900/90 border border-white/5 rounded-lg p-1 pointer-events-auto shadow-xl">
+          <div className="flex items-center gap-1 bg-zinc-900/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
             <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
               onClick={() => setZoom((z) => Math.min(z + 0.1, 1.6))} title="Zoom In">
               <ZoomIn className="h-3.5 w-3.5" />
@@ -510,14 +510,14 @@ export function OverviewInfrastructureMap({
                     isCluster ? "min-w-[90px]" : "min-w-[76px]",
                     isSelected
                       ? "border-emerald-400 bg-emerald-950/20 shadow-[0_0_20px_rgba(52,211,153,0.25)] ring-1 ring-emerald-500/20 scale-105 z-20"
-                      : "border-white/5 hover:border-white/20",
+                      : "border-border hover:border-white/20",
                     dimmed ? "opacity-25" : "opacity-100"
                   )}
                 >
                   {isCluster && (
                     <span className={cn(
                       "absolute -top-2.5 -right-2 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] font-mono font-bold shadow-lg whitespace-nowrap",
-                      clusterStatus === "healthy" ? "border-emerald-500/30 bg-zinc-900 text-emerald-400"
+                      clusterStatus === "healthy" ? "border-primary/30 bg-zinc-900 text-primary"
                         : clusterStatus === "warning" ? "border-amber-500/30 bg-zinc-900 text-amber-400"
                         : "border-red-500/30 bg-zinc-900 text-red-400"
                     )}>
@@ -530,7 +530,7 @@ export function OverviewInfrastructureMap({
                     "mb-1.5 flex items-center justify-center rounded-lg border p-1.5 transition-colors",
                     isSelected
                       ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
-                      : "border-white/5 bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
+                      : "border-border bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
                   )}>
                     <Icon className={cn("h-4 w-4", isCluster && "h-5 w-5")} />
                   </div>
@@ -585,7 +585,7 @@ export function OverviewInfrastructureMap({
                   <OrbitIcon className={cn("h-3 w-3", isActive ? "text-emerald-300" : "text-zinc-500 group-hover:text-zinc-300")} />
                   <span className={cn(
                     "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] font-mono whitespace-nowrap",
-                    isActive ? "text-emerald-400" : "text-zinc-600"
+                    isActive ? "text-primary" : "text-zinc-600"
                   )}>
                     {gw.name}
                   </span>
@@ -611,10 +611,10 @@ export function OverviewInfrastructureMap({
                       top:  `calc(${pc.y}% + ${sub.yOffset}px)`,
                       transform: "translate(-50%, -50%)",
                     }}
-                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-950/90 px-2 py-1 shadow-lg backdrop-blur-sm animate-fade-in hover:border-emerald-500/40 transition-all"
+                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-emerald-950/90 px-2 py-1 shadow-lg backdrop-blur-sm animate-fade-in hover:border-emerald-500/40 transition-all"
                     title={sub.details}
                   >
-                    <div className="flex items-center justify-center text-emerald-400">
+                    <div className="flex items-center justify-center text-primary">
                       <SubIcon className="h-3 w-3" />
                     </div>
                     <span className="text-[7.5px] font-mono font-bold text-zinc-300 tracking-wider uppercase select-none">

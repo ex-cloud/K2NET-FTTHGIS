@@ -53,7 +53,7 @@ export function MapTooltip({ feature }: MapTooltipProps) {
           {/* Health Status (Operation) */}
           <div className="flex items-center justify-between gap-3">
             <span className="text-[9px] font-bold text-zinc-400 uppercase">Health</span>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-border">
               <div
                 className={`w-1.5 h-1.5 rounded-full ${hStatus === 'DOWN' || hStatus === 'BROKEN' ? 'animate-pulse' : ''}`}
                 style={{ backgroundColor: healthColor }}
@@ -67,7 +67,7 @@ export function MapTooltip({ feature }: MapTooltipProps) {
           {/* Lifecycle Status (Admin) */}
           <div className="flex items-center justify-between gap-3">
             <span className="text-[9px] font-bold text-zinc-400 uppercase">Status</span>
-            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-white/5 border border-white/5" style={{ color: lifecycleColor }}>
+            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-white/5 border border-border" style={{ color: lifecycleColor }}>
               {lStatus}
             </span>
           </div>

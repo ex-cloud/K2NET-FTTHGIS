@@ -52,14 +52,14 @@ export default function BillingPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-emerald-500" />
+            <CreditCard className="w-6 h-6 text-primary" />
             Billing & Plans
           </h1>
           <p className="text-zinc-500 mt-1">
             Manage your subscription and feature quotas.
           </p>
         </div>
-        <Badge variant="outline" className="border-emerald-500/20 text-emerald-500 bg-emerald-500/5 px-4 py-1">
+        <Badge variant="outline" className="border-primary/20 text-primary bg-emerald-500/5 px-4 py-1">
           Current Plan: FREE
         </Badge>
       </div>
@@ -68,7 +68,7 @@ export default function BillingPage() {
         {plans.map((plan) => (
           <Card key={plan.name} className={`
             bg-[#0c0c0c] border-zinc-800/50 flex flex-col relative
-            ${plan.popular ? 'border-emerald-500/30 ring-1 ring-emerald-500/20' : ''}
+            ${plan.popular ? 'border-primary/30 ring-1 ring-emerald-500/20' : ''}
           `}>
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-500 text-black text-[10px] font-bold rounded-full">
@@ -77,7 +77,7 @@ export default function BillingPage() {
             )}
             <CardHeader>
               <div className="p-2 w-fit rounded-lg bg-zinc-900 mb-4">
-                <plan.icon className="w-5 h-5 text-emerald-500" />
+                <plan.icon className="w-5 h-5 text-primary" />
               </div>
               <CardTitle className="text-zinc-100">{plan.name}</CardTitle>
               <CardDescription className="text-zinc-500">{plan.description}</CardDescription>
@@ -90,7 +90,7 @@ export default function BillingPage() {
               <div className="space-y-3">
                 {plan.features.map((feature) => (
                   <div key={feature} className="flex items-center gap-2 text-xs text-zinc-400">
-                    <Check className="w-3 h-3 text-emerald-500" />
+                    <Check className="w-3 h-3 text-primary" />
                     {feature}
                   </div>
                 ))}
@@ -102,7 +102,7 @@ export default function BillingPage() {
                   Current Plan
                 </Button>
               ) : (
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white group">
+                <Button className="w-full bg-primary hover:bg-primary/90 text-white group">
                   Upgrade Now
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>

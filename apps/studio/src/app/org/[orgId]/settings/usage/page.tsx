@@ -51,7 +51,7 @@ export default function UsagePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function UsagePage() {
       title: "ODC Units", 
       value: stats?.odcCount || 0, 
       icon: MapPin, 
-      color: "text-emerald-500", 
+      color: "text-primary", 
       limit: 50,
       description: "Optical Distribution Cabinets"
     },
@@ -96,7 +96,7 @@ export default function UsagePage() {
     <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-emerald-500" />
+          <BarChart3 className="w-6 h-6 text-primary" />
           Resource Usage
         </h1>
         <p className="text-zinc-500 mt-1">
@@ -125,7 +125,7 @@ export default function UsagePage() {
         <Card className="lg:col-span-2 bg-[#0c0c0c] border-zinc-800/50">
           <CardHeader>
             <CardTitle className="text-zinc-100 flex items-center gap-2 text-lg">
-              <HardDrive className="w-5 h-5 text-emerald-500" />
+              <HardDrive className="w-5 h-5 text-primary" />
               Quota Management
             </CardTitle>
             <CardDescription className="text-zinc-500">
@@ -142,7 +142,7 @@ export default function UsagePage() {
                       {card.value} of {card.limit} used
                     </p>
                   </div>
-                  <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20">
+                  <Badge variant="outline" className="bg-emerald-500/5 text-primary border-primary/20">
                     {Math.round((card.value / card.limit) * 100)}%
                   </Badge>
                 </div>

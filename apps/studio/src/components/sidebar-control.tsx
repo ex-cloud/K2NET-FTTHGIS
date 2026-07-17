@@ -37,7 +37,7 @@ export function SidebarControl() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-zinc-500 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all duration-200 rounded-md"
+            className="h-6 w-6 text-zinc-500 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
           >
             <PanelLeftDashed
               className="h-3.5 w-3.5"
@@ -59,7 +59,7 @@ export function SidebarControl() {
             <DropdownMenuSeparator className="bg-white/5" />
             <DropdownMenuItem
               onClick={() => handleModeChange("expanded")}
-              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-primary/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
                 className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "expanded" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
@@ -68,13 +68,13 @@ export function SidebarControl() {
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </div>
-              <span className={`text-xs font-semibold ${sidebarMode === "expanded" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
+              <span className={`text-xs font-semibold ${sidebarMode === "expanded" ? "text-primary" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                 Expanded
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleModeChange("collapsed")}
-              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-primary/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
                 className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "collapsed" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
@@ -83,13 +83,13 @@ export function SidebarControl() {
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                 )}
               </div>
-              <span className={`text-xs font-semibold ${sidebarMode === "collapsed" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
+              <span className={`text-xs font-semibold ${sidebarMode === "collapsed" ? "text-primary" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                 Collapsed
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleModeChange("hover")}
-              className="flex items-center gap-3 px-2 py-2.5 focus:bg-emerald-500/10 cursor-pointer rounded-sm group transition-colors"
+              className="flex items-center gap-3 px-2 py-2.5 focus:bg-primary/10 cursor-pointer rounded-sm group transition-colors"
             >
               <div
                 className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${sidebarMode === "hover" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-800 bg-transparent"}`}
@@ -99,7 +99,7 @@ export function SidebarControl() {
                 )}
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className={`text-xs font-semibold ${sidebarMode === "hover" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-200"}`}>
+                <span className={`text-xs font-semibold ${sidebarMode === "hover" ? "text-primary" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                   Expand on Hover
                 </span>
                 <span className="text-[9px] text-zinc-600 font-medium">Reveals on mouse enter</span>

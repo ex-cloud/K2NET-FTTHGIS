@@ -162,7 +162,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
       <DialogContent className="sm:max-w-[425px] bg-[#0c0c0c] border border-zinc-800/60 text-zinc-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-emerald-500" />
+            <Key className="w-5 h-5 text-primary" />
             Reset Password
           </DialogTitle>
           <DialogDescription className="text-zinc-400">

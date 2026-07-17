@@ -771,7 +771,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
         </Button>
         <Button
           size="icon"
-          className="h-10 w-10 rounded-lg shadow-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-all transform active:scale-95"
+          className="h-10 w-10 rounded-lg shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all transform active:scale-95"
           onClick={handleResetView}
           title="Reset View"
         >
@@ -813,7 +813,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
                 onClick={() => startDrawing("OLT", "draw_point")}
                 title="Add OLT"
               >
-                <Layers className="h-4 w-4 text-emerald-500" />
+                <Layers className="h-4 w-4 text-primary" />
               </Button>
               <Button
                 variant={drawingAssetType === "ODC" ? "secondary" : "ghost"}
@@ -831,7 +831,7 @@ export function NetworkMap({ allowEditing = false }: NetworkMapProps = {}) {
                 onClick={() => startDrawing("ODP", "draw_point")}
                 title="Add ODP"
               >
-                <GitCommit className="h-4 w-4 text-emerald-400" />
+                <GitCommit className="h-4 w-4 text-primary" />
               </Button>
               <Button
                 variant={drawingAssetType === "CABLE" ? "secondary" : "ghost"}

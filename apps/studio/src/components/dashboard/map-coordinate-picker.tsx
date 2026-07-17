@@ -165,8 +165,8 @@ export function MapCoordinatePicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-zinc-950 border-white/5 rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
-        <DialogHeader className="p-6 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5 z-10">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-zinc-950 border-border rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
+        <DialogHeader className="p-6 bg-zinc-900/80 backdrop-blur-xl border-b border-border z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
@@ -181,7 +181,7 @@ export function MapCoordinatePicker({
             </div>
 
             {/* Map Style Toggle */}
-            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-white/5">
+            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-border">
                 <Button 
                     variant="ghost" 
                     size="sm"
@@ -235,7 +235,7 @@ export function MapCoordinatePicker({
 
             {/* Address Indicator Overlay */}
             <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
-              <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/5 p-4 rounded-2xl shadow-2xl flex items-start gap-4">
+              <div className="bg-zinc-950/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
                   isFetchingAddress ? "bg-blue-500/10" : "bg-blue-500/20 shadow-lg shadow-blue-500/10"
@@ -295,11 +295,11 @@ export function MapCoordinatePicker({
           </Map>
         </div>
 
-        <DialogFooter className="p-6 bg-zinc-900/80 backdrop-blur-xl border-t border-white/5 flex sm:justify-between items-center gap-4">
+        <DialogFooter className="p-6 bg-zinc-900/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-4">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="h-12 px-6 rounded-2xl border border-white/5 hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px] transition-all"
+            className="h-12 px-6 rounded-2xl border border-border hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px] transition-all"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel

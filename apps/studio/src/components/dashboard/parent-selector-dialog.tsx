@@ -72,7 +72,7 @@ export function ParentSelectorDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[500px] p-0 overflow-hidden rounded-3xl gap-0 shadow-2xl">
-        <DialogHeader className="p-6 bg-zinc-900/50 border-b border-white/5">
+        <DialogHeader className="p-6 bg-zinc-900/50 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
               <MapPin className="w-5 h-5 text-blue-500" />
@@ -111,7 +111,7 @@ export function ParentSelectorDialog({
                     onSelect(asset);
                     onOpenChange(false);
                   }}
-                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-blue-500/30 transition-all group text-left"
+                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-border hover:bg-white/10 hover:border-blue-500/30 transition-all group text-left"
                 >
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{asset.code}</span>
@@ -124,7 +124,7 @@ export function ParentSelectorDialog({
               ))
             ) : searchQuery.length >= 2 ? (
               <div className="py-12 text-center flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-border flex items-center justify-center">
                   <Search className="w-5 h-5 text-zinc-700" />
                 </div>
                 <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest italic">No matching {parentType} found</p>
@@ -137,7 +137,7 @@ export function ParentSelectorDialog({
           </div>
         </div>
 
-        <div className="p-4 bg-zinc-900/50 border-t border-white/5 flex justify-end">
+        <div className="p-4 bg-zinc-900/50 border-t border-border flex justify-end">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}

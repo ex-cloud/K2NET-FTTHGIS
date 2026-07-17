@@ -152,11 +152,11 @@ export default function OltGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Network className="w-6 h-6" />
           </div>
           <div>
@@ -171,7 +171,7 @@ export default function OltGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi OLT gateway...</p>
           </div>
         ) : (
@@ -179,10 +179,10 @@ export default function OltGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-emerald-500" /> Infrastructure Connections
+                    <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Koneksi database PostgreSQL dan broker Redis OLT polling worker.
@@ -197,7 +197,7 @@ export default function OltGatewayPage() {
                       value={config.REDIS_ADDR || ""}
                       onChange={(e) => handleInputChange("REDIS_ADDR", e.target.value)}
                       placeholder="redis:6379"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -209,16 +209,16 @@ export default function OltGatewayPage() {
                       value={config.DATABASE_URL || ""}
                       onChange={(e) => handleInputChange("DATABASE_URL", e.target.value)}
                       placeholder="postgres://..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> Security & Performance Settings
+                    <Lock className="w-4 h-4 text-primary" /> Security & Performance Settings
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Key enkripsi data kredensial perangkat OLT dan limitasi konkurensi hardware polling.
@@ -243,7 +243,7 @@ export default function OltGatewayPage() {
                       value={config.OLT_ENCRYPTION_KEY || ""}
                       onChange={(e) => handleInputChange("OLT_ENCRYPTION_KEY", e.target.value)}
                       placeholder="AES-256 hex key..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -256,7 +256,7 @@ export default function OltGatewayPage() {
                         value={config.SNMP_TIMEOUT_SECONDS || ""}
                         onChange={(e) => handleInputChange("SNMP_TIMEOUT_SECONDS", e.target.value)}
                         placeholder="5"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -268,7 +268,7 @@ export default function OltGatewayPage() {
                         value={config.SSH_TIMEOUT_SECONDS || ""}
                         onChange={(e) => handleInputChange("SSH_TIMEOUT_SECONDS", e.target.value)}
                         placeholder="10"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -280,7 +280,7 @@ export default function OltGatewayPage() {
                         value={config.MAX_CONCURRENT_OLT_CONNECTIONS || ""}
                         onChange={(e) => handleInputChange("MAX_CONCURRENT_OLT_CONNECTIONS", e.target.value)}
                         placeholder="20"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export default function OltGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -309,7 +309,7 @@ export default function OltGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     OLT Node State
@@ -327,7 +327,7 @@ export default function OltGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada perangkat OLT terdaftar.</p>
                   ) : (
                     oltDevices.map((dev) => (
-                      <div key={dev.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={dev.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200">{dev.name || dev.host}</span>
                           <Badge className="bg-zinc-500/10 text-zinc-400 border-zinc-500/20 text-[9px] px-1.5 py-0.5 border capitalize">
@@ -344,12 +344,12 @@ export default function OltGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Perangkat</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Total OLT Terdaftar</span>
                     <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
                       {devicesLoading ? "..." : oltDevices.length}

@@ -130,7 +130,7 @@ export function StatsPanel() {
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div className="bg-background/50 backdrop-blur-sm p-3 rounded-lg border border-border/40 shadow-inner flex flex-col justify-center transition-colors hover:bg-muted/50">
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
-                <Zap className="w-3 h-3 text-emerald-500" /> Cable
+                <Zap className="w-3 h-3 text-primary" /> Cable
               </div>
               <div className="text-sm font-bold font-mono tracking-tight text-foreground/90">
                 {stats.totalCableLengthKm.toFixed(1)} <span className="text-[10px] text-muted-foreground font-sans font-normal">KM</span>
@@ -140,7 +140,7 @@ export function StatsPanel() {
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
                 <Users className="w-3 h-3 text-sky-500" /> Users
               </div>
-              <div className="text-sm font-bold font-mono tracking-tight text-emerald-500 shadow-emerald-500/10 text-shadow-sm">
+              <div className="text-sm font-bold font-mono tracking-tight text-primary shadow-emerald-500/10 text-shadow-sm">
                 {stats.totalUsers.toLocaleString()}
               </div>
             </div>
@@ -156,7 +156,7 @@ export function StatsPanel() {
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
                 <TrendingUp className="w-3 h-3 text-muted-foreground" /> Growth
               </div>
-              <div className="text-sm font-bold font-mono tracking-tight text-emerald-500 shadow-emerald-500/10 text-shadow-sm">
+              <div className="text-sm font-bold font-mono tracking-tight text-primary shadow-emerald-500/10 text-shadow-sm">
                 +{stats.growthPercentage}%
               </div>
             </div>
@@ -172,7 +172,7 @@ export function StatsPanel() {
                     {item.label}
                   </span>
                   <span
-                    className={`${item.percentage > 70 ? "text-emerald-500" : "text-sky-500"} font-bold shrink-0`}
+                    className={`${item.percentage > 70 ? "text-primary" : "text-sky-500"} font-bold shrink-0`}
                   >
                     {Math.round(item.percentage)}%
                   </span>
@@ -219,8 +219,8 @@ export function StatsPanel() {
               );
             })}
             {(!stats.activeMaintenances || stats.activeMaintenances.length === 0) && (
-               <div className="text-[10px] font-medium text-emerald-500/80 bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/20 text-center flex flex-col items-center justify-center gap-1.5">
-                 <Zap className="w-4 h-4 text-emerald-500/80" />
+               <div className="text-[10px] font-medium text-primary/80 bg-primary/10 p-4 rounded-lg border border-primary/20 text-center flex flex-col items-center justify-center gap-1.5">
+                 <Zap className="w-4 h-4 text-primary/80" />
                  All systems optimal.
                </div>
             )}

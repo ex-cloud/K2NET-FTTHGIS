@@ -6,16 +6,16 @@ import Link from "next/link";
 
 export default function AdminLoginPage() {
   return (
-    <div className="min-h-screen w-full flex bg-[#030303] text-zinc-200 antialiased selection:bg-emerald-500/20 selection:text-emerald-300">
+    <div className="min-h-screen w-full flex bg-background text-zinc-200 antialiased selection:bg-primary/20 selection:text-primary">
       
       {/* LEFT COLUMN: Login Form (Supabase Style) */}
-      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-[#09090b]">
+      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-sidebar border-r border-border">
         
         {/* Top Header Row */}
         <div className="flex items-center justify-between w-full z-20">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-emerald-600/10 border border-emerald-500/20">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/10 border border-primary/20">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
             </div>
             <span className="text-xs font-semibold tracking-wider uppercase text-zinc-100 font-mono">
               FTTH GIS Portal
@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
             <LoginForm isAdmin={true} />
           </div>
           
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/10 bg-emerald-500/5 p-3 text-[10px] text-emerald-400 leading-normal">
+          <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/5 p-3 text-[10px] text-primary leading-normal">
             <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
             <span>Authorized access only. All actions are logged and audited in accordance with global compliance standards.</span>
           </div>
@@ -68,10 +68,10 @@ export default function AdminLoginPage() {
       </div>
 
       {/* RIGHT COLUMN: Testimonial & Glowing Ambient Background */}
-      <div className="hidden lg:flex flex-1 bg-black border-l border-zinc-900 flex-col items-center justify-center p-16 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-center p-16 relative overflow-hidden">
         
         {/* Subtle Ambient Glowing Spots */}
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-zinc-800/10 rounded-full blur-3xl" />
 
         {/* Grid pattern background overlay */}
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
 
         {/* Testimonial Quote Container */}
         <div className="max-w-md w-full z-10 space-y-6">
-          <Quote className="h-8 w-8 text-emerald-500/80 transform rotate-180" />
+          <Quote className="h-8 w-8 text-primary/80 transform rotate-180" />
           
           <blockquote className="text-xl font-light text-zinc-100 leading-relaxed font-sans">
             &ldquo;Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.&rdquo;

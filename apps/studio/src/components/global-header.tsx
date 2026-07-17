@@ -35,7 +35,7 @@ export function GlobalHeader() {
           }}
           className="flex items-center cursor-pointer mr-1"
         >
-          <div className={systemLogo ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group"}>
+          <div className={systemLogo ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group"}>
             {systemLogo ? (
               <Image
                 src={systemLogo}

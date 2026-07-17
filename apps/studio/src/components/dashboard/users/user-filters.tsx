@@ -85,7 +85,7 @@ export function UserFilters() {
           {/* Organization Filter */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <Building2 className="w-3 h-3 text-emerald-500" /> Organization Name / Slug
+              <Building2 className="w-3 h-3 text-primary" /> Organization Name / Slug
             </Label>
             <div className="flex gap-2">
               <Input
@@ -98,13 +98,13 @@ export function UserFilters() {
               <Button 
                 onClick={handleOrgSearch}
                 size="sm"
-                className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3"
+                className="h-9 bg-primary hover:bg-primary/90 text-white text-xs px-3"
               >
                 Apply
               </Button>
             </div>
             {currentOrg && (
-              <div className="flex items-center justify-between p-1.5 px-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-[11px] text-emerald-400">
+              <div className="flex items-center justify-between p-1.5 px-2 bg-primary/10 border border-primary/20 rounded text-[11px] text-primary">
                 <span>Active: <strong>{currentOrg}</strong></span>
                 <X className="w-3.5 h-3.5 cursor-pointer hover:text-white" onClick={() => updateParam("org", "all")} />
               </div>
@@ -114,7 +114,7 @@ export function UserFilters() {
           {/* Global Role */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <Shield className="w-3 h-3 text-emerald-500" /> Global Role
+              <Shield className="w-3 h-3 text-primary" /> Global Role
             </Label>
             <div className="grid grid-cols-1 gap-1.5">
               {roles.map((r) => (
@@ -124,7 +124,7 @@ export function UserFilters() {
                   className={cn(
                     "p-2 text-left rounded text-xs font-medium transition-all flex items-center justify-between border",
                     currentRole === r.id
-                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold"
+                      ? "bg-primary/10 border-emerald-500 text-primary font-bold"
                       : "bg-muted/20 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
@@ -138,7 +138,7 @@ export function UserFilters() {
           {/* Account Status */}
           <div className="space-y-3">
             <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <UserCheck className="w-3 h-3 text-emerald-500" /> Account Status
+              <UserCheck className="w-3 h-3 text-primary" /> Account Status
             </Label>
             <Select value={currentStatus} onValueChange={(val) => updateParam("status", val)}>
               <SelectTrigger className="w-full bg-muted/40 border-border/40 text-xs h-9">

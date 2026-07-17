@@ -130,12 +130,12 @@ export default function MapGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Map className="w-6 h-6" />
           </div>
           <div>
@@ -150,7 +150,7 @@ export default function MapGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi map gateway...</p>
           </div>
         ) : (
@@ -160,10 +160,10 @@ export default function MapGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Google Maps API Keys */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-500" /> Google Maps API
+                    <Globe className="w-4 h-4 text-primary" /> Google Maps API
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Kredensial Google Maps API untuk Forward & Reverse Geocoding alamat pelanggan FTTH.
@@ -188,17 +188,17 @@ export default function MapGatewayPage() {
                       value={config.GOOGLE_MAPS_API_KEY || ""}
                       onChange={(e) => handleInputChange("GOOGLE_MAPS_API_KEY", e.target.value)}
                       placeholder="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* HERE Maps API Keys (Failover) */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-emerald-500" /> HERE Maps API (Failover Provider)
+                    <Compass className="w-4 h-4 text-primary" /> HERE Maps API (Failover Provider)
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Provider alternatif yang digunakan otomatis jika Google Maps mengalami API limit quota atau timeout.
@@ -223,7 +223,7 @@ export default function MapGatewayPage() {
                       value={config.HERE_MAPS_API_KEY || ""}
                       onChange={(e) => handleInputChange("HERE_MAPS_API_KEY", e.target.value)}
                       placeholder="HERE API Key..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -242,7 +242,7 @@ export default function MapGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -255,7 +255,7 @@ export default function MapGatewayPage() {
             <div className="space-y-6">
               
               {/* Cache Hit Ratio Circular Progress Indicator */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Redis Cache Performance</CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
@@ -268,9 +268,9 @@ export default function MapGatewayPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs">
                       <span className="text-zinc-400">Cache Hit Ratio</span>
-                      <span className="font-semibold text-emerald-400">94.2%</span>
+                      <span className="font-semibold text-primary">94.2%</span>
                     </div>
-                    <Progress value={94.2} className="h-2 bg-zinc-900 border border-white/5" />
+                    <Progress value={94.2} className="h-2 bg-zinc-900 border border-border" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-xs pt-2">
@@ -286,12 +286,12 @@ export default function MapGatewayPage() {
 
                   {/* Savings Calculator Card */}
                   <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-3 flex items-start gap-2.5">
-                    <div className="p-1 rounded bg-emerald-500/10 text-emerald-500 mt-0.5">
+                    <div className="p-1 rounded bg-primary/10 text-primary mt-0.5">
                       <DollarSign className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="text-[10px] text-zinc-400 font-semibold">Estimasi Penghematan Biaya</p>
-                      <p className="text-xs font-bold text-emerald-400 font-mono mt-0.5">$710.20 USD</p>
+                      <p className="text-xs font-bold text-primary font-mono mt-0.5">$710.20 USD</p>
                       <p className="text-[8px] text-zinc-500 mt-0.5">*Berdasarkan standar harga Google Maps Geocoding API ($5/1000 hits)</p>
                     </div>
                   </div>
@@ -300,22 +300,22 @@ export default function MapGatewayPage() {
               </Card>
 
               {/* Provider Health */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status Provider</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Google Maps Geocoding</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Active (Primary)</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Active (Primary)</Badge>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">HERE Maps API</span>
-                    <Badge className="bg-zinc-950 text-zinc-400 border-white/5 text-[9px]">Standby (Failover)</Badge>
+                    <Badge className="bg-zinc-950 text-zinc-400 border-border text-[9px]">Standby (Failover)</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-400">Redis Cache Instance</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Connected</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Connected</Badge>
                   </div>
                 </CardContent>
               </Card>

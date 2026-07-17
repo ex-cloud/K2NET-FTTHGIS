@@ -278,7 +278,7 @@ export default function OrganizationTeamPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${
                         member.status === 'ACTIVE' 
-                          ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                          ? 'bg-primary/10 text-primary border-primary/20' 
                           : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                       }`}>
                         {member.status}

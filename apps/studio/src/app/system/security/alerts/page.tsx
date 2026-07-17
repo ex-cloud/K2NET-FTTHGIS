@@ -218,9 +218,9 @@ export default function SecurityAlertsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-zinc-400 font-medium">Global Threats Status</p>
-                <Radio className={`w-4 h-4 ${criticalCount > 0 ? "text-rose-500 animate-pulse" : "text-emerald-500"}`} />
+                <Radio className={`w-4 h-4 ${criticalCount > 0 ? "text-rose-500 animate-pulse" : "text-primary"}`} />
               </div>
-              <p className={`text-2xl font-light mt-2 ${criticalCount > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+              <p className={`text-2xl font-light mt-2 ${criticalCount > 0 ? "text-rose-400" : "text-primary"}`}>
                 {criticalCount > 0 ? "Under Cyber Threat" : "Secured & Plausible"}
               </p>
             </CardContent>
@@ -247,9 +247,9 @@ export default function SecurityAlertsPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-zinc-400 font-medium">Blocked IP/CIDR Rules</p>
-                <ShieldIcon className="w-4 h-4 text-emerald-500" />
+                <ShieldIcon className="w-4 h-4 text-primary" />
               </div>
-              <p className="text-2xl font-light mt-2 text-emerald-400 font-mono">{blockedIps.length}</p>
+              <p className="text-2xl font-light mt-2 text-primary font-mono">{blockedIps.length}</p>
             </CardContent>
           </Card>
         </div>
@@ -262,7 +262,7 @@ export default function SecurityAlertsPage() {
             <Card className="bg-zinc-900/30 border-zinc-800/80 shadow-xl backdrop-blur-sm">
               <CardHeader className="border-b border-zinc-850">
                 <CardTitle className="text-zinc-100 text-sm font-semibold flex items-center gap-2">
-                  <ShieldIcon className="w-4 h-4 text-emerald-400" /> Firewall Block List
+                  <ShieldIcon className="w-4 h-4 text-primary" /> Firewall Block List
                 </CardTitle>
                 <CardDescription className="text-zinc-400 text-xs">
                   Create high-performance low-level IP/CIDR filters to deny network handshake early.
@@ -488,7 +488,7 @@ export default function SecurityAlertsPage() {
             <Card className="bg-zinc-900/30 border-zinc-800/80 shadow-xl backdrop-blur-sm">
               <CardHeader className="border-b border-zinc-850">
                 <CardTitle className="text-zinc-100 text-sm font-semibold flex items-center gap-2">
-                  <Play className="w-4 h-4 text-emerald-400" /> Incident Simulator
+                  <Play className="w-4 h-4 text-primary" /> Incident Simulator
                 </CardTitle>
                 <CardDescription className="text-zinc-400 text-xs">
                   Generate mock login events to test the alert feed, email verification, and firewall blocks.

@@ -64,7 +64,7 @@ export default function OrgsPage() {
               disabled={!canCreateMore && !isSuperAdmin}
               className={cn(
                 (canCreateMore || isSuperAdmin)
-                  ? "bg-emerald-600 hover:bg-emerald-500" 
+                  ? "bg-primary hover:bg-primary/90" 
                   : "bg-muted text-muted-foreground cursor-not-allowed",
                 "text-white gap-2 font-medium h-9 px-4 text-xs transition-colors"
               )}
@@ -87,7 +87,7 @@ export default function OrgsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search for an organization"
-                className="bg-muted/30 border-border pl-10 h-9 text-xs text-muted-foreground focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                className="bg-muted/30 border-border pl-10 h-9 text-xs text-muted-foreground focus:ring-primary/50 focus:border-primary/50 transition-all"
               />
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function OrgsPage() {
                         <LayoutGrid className={`h-3.5 w-3.5 transition-colors ${
                           org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
                             ? 'text-amber-500'
-                            : 'text-muted-foreground group-hover:text-emerald-500'
+                            : 'text-muted-foreground group-hover:text-primary'
                         }`} />
                       </div>
                     </div>
@@ -142,7 +142,7 @@ export default function OrgsPage() {
                         <span className={`font-medium transition-colors ${
                           org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
                             ? 'text-zinc-400'
-                            : 'text-foreground group-hover:text-emerald-500'
+                            : 'text-foreground group-hover:text-primary'
                         }`}>
                           {org.name}
                         </span>
@@ -154,7 +154,7 @@ export default function OrgsPage() {
                           </span>
                         )}
                         {org.status === 'ACTIVE' && org.subscriptionPlan?.name?.toUpperCase() === "FREE" && (
-                          <span className="text-[9px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase tracking-wider">
+                          <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-wider">
                             Free
                           </span>
                         )}

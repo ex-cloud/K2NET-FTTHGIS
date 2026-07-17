@@ -33,7 +33,7 @@ export function OverviewDevOpsCard({
   isExternal = false,
 }: OverviewDevOpsCardProps) {
   const content = (
-    <Card className="group h-full bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md transition-all duration-300 hover:shadow-[0_0_20px_rgba(16,185,129,0.08)]">
+    <Card className="group h-full bg-card/60 border-border backdrop-blur-md transition-all duration-300 hover:shadow-[0_0_20px_rgba(16,185,129,0.08)]">
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-zinc-500">
           <span>{eyebrow}</span>
@@ -76,7 +76,7 @@ export function OverviewStatusBadge({ children, tone = "neutral" }: { children: 
     <Badge
       className={cn(
         "border text-[9px] font-mono px-1.5 py-0",
-        tone === "success" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        tone === "success" && "bg-primary/10 text-primary border-primary/20",
         tone === "warning" && "bg-amber-500/10 text-amber-400 border-amber-500/20",
         tone === "danger" && "bg-red-500/10 text-red-400 border-red-500/20",
         tone === "neutral" && "bg-zinc-800 text-zinc-400 border-zinc-700"

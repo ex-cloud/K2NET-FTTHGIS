@@ -115,11 +115,11 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
         </div>
 
         <DialogHeader className="p-6 pb-2">
-          <div className="flex items-center gap-2 text-emerald-500 mb-2">
-            <div className="size-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center gap-2 text-primary mb-2">
+            <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-sm">
               {step}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 3</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Step {step} of 3</span>
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight">
             {step === 1 && "New Network Project"}
@@ -144,7 +144,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                   value={formData.name}
                   onChange={handleNameChange}
                   placeholder="e.g. FTTH GIS BANDUNG" 
-                  className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
+                  className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                 />
               </div>
 
@@ -156,7 +156,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                   value={formData.code}
                   onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                   placeholder="e.g. BDG-01" 
-                  className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
+                  className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                 />
                 <p className="text-[10px] text-zinc-500 uppercase tracking-tight">Used as prefix for assets (ODC, ODP, etc.)</p>
               </div>
@@ -173,7 +173,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                    defaultValue={formData.region}
                    onValueChange={(val: string) => setFormData(prev => ({ ...prev, region: val }))}
                 >
-                  <SelectTrigger className="bg-[#141414] border-[#2a2a2a] h-10 text-sm focus:ring-emerald-500/20 focus:border-emerald-500/50">
+                  <SelectTrigger className="bg-[#141414] border-[#2a2a2a] h-10 text-sm focus:ring-primary/20 focus:border-primary/50">
                     <SelectValue placeholder="Select Region" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0c0c0c] border-[#1f1f1f] text-zinc-100">
@@ -193,7 +193,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Brief overview of the coverage area..." 
-                  className="bg-[#141414] border-[#2a2a2a] text-sm min-h-[100px] resize-none focus:border-emerald-500/50 focus:ring-0"
+                  className="bg-[#141414] border-[#2a2a2a] text-sm min-h-[100px] resize-none focus:border-primary/50 focus:ring-0"
                 />
               </div>
             </div>
@@ -203,8 +203,8 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
             <div className="space-y-4 animate-in zoom-in-95 duration-300">
               <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-3">
                 <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500">Project Blueprint</span>
-                  <Check className="size-3 text-emerald-500" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-primary">Project Blueprint</span>
+                  <Check className="size-3 text-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-y-3 text-xs">
                   <div>
@@ -213,11 +213,11 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                   </div>
                   <div>
                     <p className="text-zinc-500 mb-0.5">Code</p>
-                    <p className="font-medium font-mono text-emerald-400">{formData.code}</p>
+                    <p className="font-medium font-mono text-primary">{formData.code}</p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-zinc-500 mb-0.5">Infrastructure</p>
-                    <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase">
+                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-bold uppercase">
                       {formData.region}
                     </span>
                   </div>
@@ -231,8 +231,8 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
                 </div>
               )}
 
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-zinc-300">
-                <Zap className="size-5 text-emerald-500 shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-primary/20 text-xs text-zinc-300">
+                <Zap className="size-5 text-primary shrink-0" />
                 <p>Clicking build will initialize the GIS map layers and database for this project.</p>
               </div>
             </div>
@@ -265,7 +265,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
               <Button 
                 onClick={nextStep}
                 disabled={!formData.name || !formData.code}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 Continue <ChevronRight className="size-4 ml-1" />
               </Button>
@@ -273,7 +273,7 @@ export function ProjectCreateWizard({ open, onOpenChange, onSuccess }: WizardPro
               <Button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 {isSubmitting ? (
                   <>

@@ -27,7 +27,7 @@ export function MapFilterControl() {
       id: "OLT",
       label: "Backbone (OLT)",
       icon: Zap,
-      color: "text-emerald-500",
+      color: "text-primary",
     },
     {
       id: "ODC",

@@ -97,7 +97,7 @@ export function UserNav() {
     }
   };
 
-  if (!mounted) return <div className="h-8 w-8 rounded-full bg-zinc-900/50 animate-pulse border border-white/5" />;
+  if (!mounted) return <div className="h-8 w-8 rounded-full bg-zinc-900/50 animate-pulse border border-border" />;
 
   return (
     <DropdownMenu>
@@ -178,7 +178,7 @@ export function UserNav() {
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
               {theme === "system" && (
-                <Dot className="size-8 text-emerald-500" />
+                <Dot className="size-8 text-primary" />
               )}
             </div>
             <span>System</span>
@@ -190,7 +190,7 @@ export function UserNav() {
         >
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {theme === "dark" && <Dot className="size-8 text-emerald-500" />}
+              {theme === "dark" && <Dot className="size-8 text-primary" />}
             </div>
             <span>Dark</span>
           </div>
@@ -201,7 +201,7 @@ export function UserNav() {
         >
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {theme === "light" && <Dot className="size-8 text-emerald-500" />}
+              {theme === "light" && <Dot className="size-8 text-primary" />}
             </div>
             <span>Light</span>
           </div>
@@ -216,7 +216,7 @@ export function UserNav() {
         >
           <div className="flex items-center gap-2">
             <div className="flex h-3.5 w-3.5 items-center justify-center">
-              {isMono && <Dot className="size-8 text-emerald-500" />}
+              {isMono && <Dot className="size-8 text-primary" />}
             </div>
             <span>Mono</span>
           </div>

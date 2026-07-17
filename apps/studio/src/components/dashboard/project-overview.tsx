@@ -69,7 +69,7 @@ function MetricBox({
   color = "emerald",
 }: MetricBoxProps) {
   const colorMap: Record<string, string> = {
-    emerald: "text-emerald-500",
+    emerald: "text-primary",
     blue: "text-blue-500",
     violet: "text-violet-500",
     amber: "text-amber-500",
@@ -90,7 +90,7 @@ function MetricBox({
         </span>
         {trend !== undefined && (
           <div
-            className={`flex items-center gap-1 text-xs font-medium ${trend >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+            className={`flex items-center gap-1 text-xs font-medium ${trend >= 0 ? "text-primary" : "text-rose-500"}`}
           >
             <ArrowUpRight
               className={`w-3 h-3 ${trend < 0 ? "rotate-180" : ""}`}
@@ -171,7 +171,7 @@ function AdvisorCard({
     <div className="border border-border rounded-xl bg-card overflow-hidden h-full flex flex-col">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-emerald-500" />
+          <Shield className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground italic uppercase tracking-tight">
             Network Intelligence Advisor
           </h3>
@@ -184,8 +184,8 @@ function AdvisorCard({
       <div className="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
         {!issues || issues.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-emerald-500 opacity-80" />
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-primary opacity-80" />
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">
@@ -277,7 +277,7 @@ function AdvisorCard({
         </span>
         <div className="flex items-center gap-1">
           <div className="w-1 h-1 rounded-full bg-emerald-500" />
-          <span className="text-[9px] font-bold text-emerald-500 uppercase">
+          <span className="text-[9px] font-bold text-primary uppercase">
             Live Monitoring
           </span>
         </div>
@@ -295,7 +295,7 @@ function DatabaseInfoCard({ projectId }: { projectId: string }) {
         <h3 className="text-sm font-semibold text-foreground">
           Project Infrastructure
         </h3>
-        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase tracking-wide">
+        <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wide">
           Active
         </span>
       </div>
@@ -372,7 +372,7 @@ function StatusCard({
 }) {
   const statusColor =
     status === "ok"
-      ? "text-emerald-500"
+      ? "text-primary"
       : status === "warn"
         ? "text-amber-500"
         : "text-muted-foreground";

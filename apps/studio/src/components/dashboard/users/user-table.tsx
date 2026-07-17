@@ -163,7 +163,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                         className={cn(
                           "rounded-md font-bold text-[10px]",
                           user.roleName === "super_admin" &&
-                            "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                            "bg-primary/10 text-primary border-primary/20",
                           user.roleName === "admin" &&
                             "bg-sky-500/10 text-sky-500 border-sky-500/20",
                           user.roleName === "technician" &&
@@ -180,7 +180,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                         <div className="text-[12px] text-zinc-400 flex items-center gap-2">
                           <Building2 className="w-3.5 h-3.5 text-zinc-500" />
                           {user.organizationId ? (
-                            <Link href={`/org/${user.organizationId}`} className="hover:text-emerald-400 hover:underline font-medium transition-colors">
+                            <Link href={`/org/${user.organizationId}`} className="hover:text-primary hover:underline font-medium transition-colors">
                               {user.organizationName}
                             </Link>
                           ) : (
@@ -238,7 +238,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
         </div>
 
         {/* Pagination */}
-        <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-[#080808]">
+        <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-background">
           <span className="text-[12px] text-zinc-500">
             Showing {totalElements === 0 ? 0 : startParam} to {endParam} of{" "}
             {totalElements} results
@@ -258,7 +258,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
 
             <Button
               size="sm"
-              className="h-8 bg-emerald-500/20 text-emerald-500 border border-emerald-500 hover:bg-emerald-500/30 font-bold text-xs"
+              className="h-8 bg-emerald-500/20 text-primary border border-emerald-500 hover:bg-emerald-500/30 font-bold text-xs"
             >
               {currentPage + 1}
             </Button>

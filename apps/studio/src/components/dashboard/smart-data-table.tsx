@@ -109,7 +109,7 @@ export function SmartDataTable<TData, TValue>({
           }
           onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-emerald-500"
         />
       ),
       cell: ({ row }) => (
@@ -118,7 +118,7 @@ export function SmartDataTable<TData, TValue>({
           onCheckedChange={(value: boolean | "indeterminate") => row.toggleSelected(!!value)}
           aria-label="Select row"
           onClick={(e: React.MouseEvent) => e.stopPropagation()} // Prevent opening detail panel on checkbox click
-          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+          className="translate-y-[2px] border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-emerald-500"
         />
       ),
       enableSorting: false,
@@ -157,10 +157,10 @@ export function SmartDataTable<TData, TValue>({
       <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/40 p-4 rounded-2xl border border-border/50 backdrop-blur-sm shadow-sm overflow-hidden">
         {/* Bulk Actions Overlay */}
         {table.getSelectedRowModel().rows.length > 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-between bg-zinc-900/90 backdrop-blur-xl px-6 animate-in slide-in-from-top-4 duration-300 border-b border-emerald-500/20">
+          <div className="absolute inset-0 z-10 flex items-center justify-between bg-zinc-900/90 backdrop-blur-xl px-6 animate-in slide-in-from-top-4 duration-300 border-b border-primary/20">
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                <span className="text-[10px] font-black text-emerald-500">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 border border-primary/30">
+                <span className="text-[10px] font-black text-primary">
                   {table.getSelectedRowModel().rows.length}
                 </span>
               </div>
@@ -194,7 +194,7 @@ export function SmartDataTable<TData, TValue>({
                     variant={buttonVariant}
                     className={cn(
                       "h-8 font-black text-[9px] tracking-widest rounded-lg px-4 transition-all uppercase",
-                      isEmerald && "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20",
+                      isEmerald && "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-emerald-500/20",
                       isBlue && "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20",
                       isOrange && "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-500/20",
                       !isEmerald && !isBlue && !isOrange && !isDestructive && "border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
@@ -211,7 +211,7 @@ export function SmartDataTable<TData, TValue>({
         )}
 
         <div className="relative w-full sm:max-w-xs group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Quick search indexed records..."
             onChange={(event) => onSearchChange?.(event.target.value)}
@@ -226,7 +226,7 @@ export function SmartDataTable<TData, TValue>({
               size="sm"
               onClick={onExport}
               disabled={loading || data.length === 0}
-              className="h-10 px-3.5 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/5 hover:text-emerald-400 font-bold rounded-xl transition-all shadow-sm"
+              className="h-10 px-3.5 border-primary/20 text-primary hover:bg-emerald-500/5 hover:text-primary font-bold rounded-xl transition-all shadow-sm"
             >
               <Download className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline font-black tracking-widest text-[10px] uppercase">Export</span>
@@ -254,7 +254,7 @@ export function SmartDataTable<TData, TValue>({
                   return (
                     <DropdownMenuCheckboxItem
                       key={column.id}
-                      className="capitalize text-xs cursor-pointer focus:bg-emerald-500/10 focus:text-emerald-500"
+                      className="capitalize text-xs cursor-pointer focus:bg-primary/10 focus:text-primary"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
@@ -277,7 +277,7 @@ export function SmartDataTable<TData, TValue>({
                 });
               }}
               disabled={loading}
-              className="h-10 w-10 border-border text-muted-foreground hover:text-emerald-500 hover:border-emerald-500/30 rounded-xl transition-all shadow-sm relative z-20"
+              className="h-10 w-10 border-border text-muted-foreground hover:text-primary hover:border-primary/30 rounded-xl transition-all shadow-sm relative z-20"
             >
               <RefreshCcw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -288,7 +288,7 @@ export function SmartDataTable<TData, TValue>({
       </div>
 
       {/* Main Table Area */}
-      <div className="relative group bg-card/30 rounded-2xl border border-border/50 shadow-lg overflow-hidden transition-all hover:border-emerald-500/20">
+      <div className="relative group bg-card/30 rounded-2xl border border-border/50 shadow-lg overflow-hidden transition-all hover:border-primary/20">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/40 backdrop-blur-md">
@@ -305,7 +305,7 @@ export function SmartDataTable<TData, TValue>({
                       <div className="flex flex-col gap-2">
                         {header.isPlaceholder ? null : (
                           <div 
-                            className={`flex items-center gap-2 ${header.column.getCanSort() ? "cursor-pointer hover:text-emerald-500 transition-colors" : ""}`}
+                            className={`flex items-center gap-2 ${header.column.getCanSort() ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(
@@ -315,9 +315,9 @@ export function SmartDataTable<TData, TValue>({
                             {header.column.getCanSort() && (
                               <div className="w-3">
                                 {header.column.getIsSorted() === "asc" ? (
-                                  <ChevronLeft className="w-3 h-3 rotate-90 text-emerald-500" />
+                                  <ChevronLeft className="w-3 h-3 rotate-90 text-primary" />
                                 ) : header.column.getIsSorted() === "desc" ? (
-                                  <ChevronLeft className="w-3 h-3 -rotate-90 text-emerald-500" />
+                                  <ChevronLeft className="w-3 h-3 -rotate-90 text-primary" />
                                 ) : (
                                   <div className="w-3 h-3 opacity-20 group-hover:opacity-100">
                                     <RefreshCcw className="w-3 h-3" />
@@ -336,7 +336,7 @@ export function SmartDataTable<TData, TValue>({
                               onChange={(event) =>
                                 header.column.setFilterValue(event.target.value)
                               }
-                              className="h-7 text-[9px] bg-background/30 border-border/20 focus:border-emerald-500/30 rounded-lg placeholder:opacity-50 font-medium"
+                              className="h-7 text-[9px] bg-background/30 border-border/20 focus:border-primary/30 rounded-lg placeholder:opacity-50 font-medium"
                             />
                           </div>
                         )}
@@ -424,7 +424,7 @@ export function SmartDataTable<TData, TValue>({
             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] border-r border-border/50 pr-4">
               Inventory State
             </div>
-            <div className="text-xs font-bold bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">
+            <div className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
               <span className="opacity-70 mr-1">{pagination.pageSize}</span> 
               Per Page
             </div>
@@ -437,7 +437,7 @@ export function SmartDataTable<TData, TValue>({
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground bg-background/50 px-3 py-1.5 rounded-xl border border-border/50">
-              <span className="text-emerald-500 font-black">
+              <span className="text-primary font-black">
                 {String(pagination.pageIndex + 1).padStart(2, '0')}
               </span>
               <span className="opacity-30">/</span>
@@ -452,7 +452,7 @@ export function SmartDataTable<TData, TValue>({
                 size="icon"
                 onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
                 disabled={loading || pagination.pageIndex === 0}
-                className="h-10 w-10 border border-border/50 hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-500 transition-all rounded-xl disabled:opacity-20"
+                className="h-10 w-10 border border-border/50 hover:bg-primary/10 hover:border-primary/20 hover:text-primary transition-all rounded-xl disabled:opacity-20"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -461,7 +461,7 @@ export function SmartDataTable<TData, TValue>({
                 size="icon"
                 onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
                 disabled={loading || pagination.pageIndex >= pagination.pageCount - 1}
-                className="h-10 w-10 border border-border/50 hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-500 transition-all rounded-xl disabled:opacity-20"
+                className="h-10 w-10 border border-border/50 hover:bg-primary/10 hover:border-primary/20 hover:text-primary transition-all rounded-xl disabled:opacity-20"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>

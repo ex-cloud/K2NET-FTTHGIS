@@ -57,19 +57,19 @@ export default function SystemOverviewPage() {
 
   return (
     <SystemOverviewWrapper>
-      <div className="flex h-full flex-1 flex-col overflow-y-auto bg-[#080808] px-8 pt-16">
+      <div className="flex h-full flex-1 flex-col overflow-y-auto bg-background px-8 pt-16">
         <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-20">
 
           {/* Page header */}
-          <div className="flex flex-col justify-between gap-4 border-b border-white/5 pb-5 md:flex-row md:items-center">
+          <div className="flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge className="border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500 hover:bg-emerald-500/20">
+                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-emerald-500/20">
                   Admin Platform Control
                 </Badge>
               </div>
               <h1 className="flex items-center gap-3 text-3xl font-light tracking-tight text-zinc-100">
-                System Overview <Sparkles className="h-5 w-5 animate-pulse text-emerald-500" />
+                System Overview <Sparkles className="h-5 w-5 animate-pulse text-primary" />
               </h1>
               <p className="text-xs text-zinc-500">
                 Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
@@ -79,9 +79,9 @@ export default function SystemOverviewPage() {
               onClick={() => data.loadData(true)}
               disabled={data.refreshing || data.loadingOrgs || data.loadingStats}
               variant="outline"
-              className="gap-2 border-white/10 bg-zinc-950/80 text-xs text-zinc-300 transition-all hover:border-emerald-500/30 hover:bg-zinc-900 hover:text-zinc-100"
+              className="gap-2 border-white/10 bg-zinc-950/80 text-xs text-zinc-300 transition-all hover:border-primary/30 hover:bg-zinc-900 hover:text-zinc-100"
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-emerald-500")} />
+              <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
               Refresh Dashboard
             </Button>
           </div>

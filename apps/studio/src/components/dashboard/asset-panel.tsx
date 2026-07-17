@@ -195,7 +195,7 @@ export function AssetPanel() {
         {(loading || diagnosing) && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm z-50">
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <span className="text-[10px] font-bold tracking-tighter animate-pulse text-foreground">
                 {diagnosing ? "ANALYZING SIGNAL..." : "SYNCING DATA..."}
               </span>
@@ -232,7 +232,7 @@ export function AssetPanel() {
                     return (
                       <span
                         key={label}
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-black w-fit ${isRed ? "bg-red-500/20 text-red-500 border border-red-500/20" : "bg-emerald-500/20 text-emerald-500 border border-emerald-500/20"}`}
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-black w-fit ${isRed ? "bg-red-500/20 text-red-500 border border-red-500/20" : "bg-emerald-500/20 text-primary border border-primary/20"}`}
                       >
                         {l}
                       </span>
@@ -269,15 +269,15 @@ export function AssetPanel() {
 
             {/* Live Diagnostics Section */}
             {diagResult && (
-              <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30 mb-6 animate-in fade-in zoom-in-95 duration-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 mb-2">
+              <div className="p-4 bg-primary/10 rounded-xl border border-primary/30 mb-6 animate-in fade-in zoom-in-95 duration-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-primary mb-2">
                   <Activity className="w-3 h-3 animate-pulse" /> LIVE SIGNAL ANALYSIS
                 </div>
                 <div className="flex justify-between items-end mb-2">
                   <span className="text-3xl font-black font-mono tracking-tighter text-foreground">
                     {diagResult.signal}
                   </span>
-                  <span className="text-[10px] font-bold mb-1 ml-1 text-emerald-500/70">
+                  <span className="text-[10px] font-bold mb-1 ml-1 text-primary/70">
                     dBm
                   </span>
                   <span
@@ -286,7 +286,7 @@ export function AssetPanel() {
                     {diagResult.health}
                   </span>
                 </div>
-                <p className="text-[9px] font-medium leading-tight text-emerald-500/80 italic normal-case">
+                <p className="text-[9px] font-medium leading-tight text-primary/80 italic normal-case">
                   &quot;{diagResult.message}&quot;
                 </p>
               </div>
@@ -300,7 +300,7 @@ export function AssetPanel() {
                 </div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px] text-foreground/70">OPTIMAL</span>
-                  <span className="text-[10px] text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">
+                  <span className="text-[10px] text-primary drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">
                     98.2%
                   </span>
                 </div>
@@ -344,7 +344,7 @@ export function AssetPanel() {
               {details && ["ODC", "ODP"].includes(details.type) && (
                 <Button
                   variant="outline"
-                  className="w-full rounded-xl h-10 font-bold tracking-wide border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                  className="w-full rounded-xl h-10 font-bold tracking-wide border-primary/30 text-primary hover:bg-primary/10"
                   onClick={async () => {
                     const path = await fetchTraceUpstream(details.id);
                     if (path) {
@@ -394,7 +394,7 @@ export function AssetPanel() {
                         ? "text-red-500 bg-red-500"
                         : entry.status?.toUpperCase() === "MAINTENANCE"
                           ? "text-amber-500 bg-amber-500"
-                          : "text-emerald-500 bg-emerald-500";
+                          : "text-primary bg-emerald-500";
                       const dotColor = statusColor.split(" ")[1];
                       const textColor = statusColor.split(" ")[0];
                       const date = new Date(entry.revisionTimestamp);

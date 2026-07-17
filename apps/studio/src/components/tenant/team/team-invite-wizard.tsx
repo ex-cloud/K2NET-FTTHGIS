@@ -184,11 +184,11 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
         </div>
 
         <DialogHeader className="p-6 pb-2">
-          <div className="flex items-center gap-2 text-emerald-500 mb-2">
-            <div className="size-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center gap-2 text-primary mb-2">
+            <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-sm">
               {step}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 4</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Step {step} of 4</span>
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight">
             {step === 1 && (formData.creationMode === "DIRECT" ? "Create New User Directly" : "Invite New Member")}
@@ -207,7 +207,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
         <div className="p-6 space-y-5 max-h-[450px] overflow-y-auto custom-scrollbar">
           {isLoading ? (
             <div className="h-40 flex flex-col items-center justify-center gap-3 text-zinc-500">
-              <Loader2 className="size-6 animate-spin text-emerald-500" />
+              <Loader2 className="size-6 animate-spin text-primary" />
               <p className="text-xs">Fetching configuration...</p>
             </div>
           ) : (
@@ -222,7 +222,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       className={cn(
                         "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
                         formData.creationMode === "INVITE"
-                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 shadow-sm"
+                          ? "bg-primary/10 text-primary border border-primary/30 shadow-sm"
                           : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
@@ -235,7 +235,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       className={cn(
                         "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
                         formData.creationMode === "DIRECT"
-                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 shadow-sm"
+                          ? "bg-primary/10 text-primary border border-primary/30 shadow-sm"
                           : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
@@ -273,7 +273,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       value={formData.fullName}
                       onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                       placeholder="e.g. Dodi Darsono" 
-                      className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
+                      className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                     />
                   </div>
 
@@ -285,7 +285,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder={formData.creationMode === "DIRECT" ? "e.g. dodi@teknisi.local or dodi@example.com" : "e.g. dodi@example.com"} 
-                      className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
+                      className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                     />
                   </div>
 
@@ -299,7 +299,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                         value={formData.customPassword}
                         onChange={(e) => setFormData(prev => ({ ...prev, customPassword: e.target.value }))}
                         placeholder="e.g. TeknisiJaya2026!" 
-                        className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10 font-mono"
+                        className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10 font-mono"
                       />
                       <p className="text-[10px] text-zinc-500">User will be forced to change this password upon first login.</p>
                     </div>
@@ -317,11 +317,11 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       className={cn(
                         "p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-3",
                         formData.globalRole === String(role.id) 
-                          ? "bg-emerald-500/10 border-emerald-500 text-emerald-500" 
+                          ? "bg-primary/10 border-emerald-500 text-primary" 
                           : "bg-[#141414] border-[#2a2a2a] text-zinc-400 hover:border-zinc-700"
                       )}
                     >
-                      <Shield className={cn("size-4", formData.globalRole === String(role.id) ? "text-emerald-500" : "text-zinc-600")} />
+                      <Shield className={cn("size-4", formData.globalRole === String(role.id) ? "text-primary" : "text-zinc-600")} />
                       <div className="flex-1">
                         <p className="text-xs font-bold">{role.name}</p>
                         <p className="text-[10px] opacity-70 leading-tight">Access to {role.name.toLowerCase()} modules & reporting.</p>
@@ -346,11 +346,11 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                     projects.map((project) => (
                       <div key={project.id} className="p-3 bg-[#141414] border border-[#2a2a2a] rounded-lg flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Briefcase className="size-4 text-emerald-500/50" />
+                          <Briefcase className="size-4 text-primary/50" />
                           <span className="text-xs font-medium text-zinc-300">{project.name}</span>
                         </div>
                         <select 
-                          className="bg-[#0c0c0c] border-[#2a2a2a] text-[10px] rounded px-2 py-1 outline-none focus:border-emerald-500/50"
+                          className="bg-[#0c0c0c] border-[#2a2a2a] text-[10px] rounded px-2 py-1 outline-none focus:border-primary/50"
                           value={projectRoles[project.id] || ""}
                           onChange={(e) => setProjectRoles(prev => ({ ...prev, [project.id]: e.target.value }))}
                         >
@@ -369,12 +369,12 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                 <div className="space-y-4 animate-in zoom-in-95 duration-300">
                   <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-4">
                     <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
-                      <span className="text-[11px] text-emerald-500 font-bold uppercase tracking-widest">{formData.creationMode === "DIRECT" ? "Creation Summary" : "Invitation Summary"}</span>
-                      <ShieldCheck className="size-4 text-emerald-500" />
+                      <span className="text-[11px] text-primary font-bold uppercase tracking-widest">{formData.creationMode === "DIRECT" ? "Creation Summary" : "Invitation Summary"}</span>
+                      <ShieldCheck className="size-4 text-primary" />
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-xs">
                       <div className="col-span-2 flex items-center gap-3 p-2 bg-[#0c0c0c] rounded border border-[#1f1f1f]">
-                         <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold">
+                         <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
                             {formData.fullName[0]?.toUpperCase()}
                          </div>
                          <div>
@@ -384,7 +384,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       </div>
                       <div>
                         <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Global Permission</p>
-                        <p className="font-bold text-emerald-400">{globalRoles.find(r => String(r.id) === formData.globalRole)?.name}</p>
+                        <p className="font-bold text-primary">{globalRoles.find(r => String(r.id) === formData.globalRole)?.name}</p>
                       </div>
                       <div>
                         <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Project Access</p>
@@ -399,8 +399,8 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-[11px] text-zinc-400">
-                    <Mail className="size-4 text-emerald-500 shrink-0" />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-primary/20 text-[11px] text-zinc-400">
+                    <Mail className="size-4 text-primary shrink-0" />
                     <p>{formData.creationMode === "DIRECT" ? "Account will be created instantly. Provide the temporary password directly to the user." : "An invitation email will be sent to the user with secure login instructions."}</p>
                   </div>
                 </div>
@@ -437,7 +437,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
               <Button 
                 onClick={nextStep}
                 disabled={isLoading || (step === 1 && (!formData.fullName || !formData.email || (formData.creationMode === "DIRECT" && !formData.customPassword))) || (step === 2 && !formData.globalRole)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 Continue <ChevronRight className="size-4 ml-1" />
               </Button>
@@ -445,7 +445,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
               <Button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[140px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-white min-w-[140px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 {isSubmitting ? (
                   <>

@@ -172,12 +172,12 @@ export default function StorageGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Database className="w-6 h-6" />
           </div>
           <div>
@@ -192,7 +192,7 @@ export default function StorageGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi storage gateway...</p>
           </div>
         ) : (
@@ -202,10 +202,10 @@ export default function StorageGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* S3/R2 Bucket Connection Details */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Cloud className="w-4 h-4 text-emerald-500" /> Koneksi Bucket S3 / Cloudflare R2
+                    <Cloud className="w-4 h-4 text-primary" /> Koneksi Bucket S3 / Cloudflare R2
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Konfigurasi parameter region, custom API endpoint, dan nama bucket untuk menyimpan berkas media.
@@ -221,7 +221,7 @@ export default function StorageGatewayPage() {
                         value={config.AWS_REGION || ""}
                         onChange={(e) => handleInputChange("AWS_REGION", e.target.value)}
                         placeholder="auto / ap-southeast-1"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -233,7 +233,7 @@ export default function StorageGatewayPage() {
                         value={config.AWS_BUCKET_NAME || ""}
                         onChange={(e) => handleInputChange("AWS_BUCKET_NAME", e.target.value)}
                         placeholder="my-bucket-name"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -246,17 +246,17 @@ export default function StorageGatewayPage() {
                       value={config.AWS_ENDPOINT || ""}
                       onChange={(e) => handleInputChange("AWS_ENDPOINT", e.target.value)}
                       placeholder="https://<account-id>.r2.cloudflarestorage.com"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* AWS / R2 Credentials */}
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> AWS Credentials / Access Keys
+                    <Lock className="w-4 h-4 text-primary" /> AWS Credentials / Access Keys
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Kunci akses aman yang digunakan untuk memberikan otorisasi penulisan/pengunggahan file ke bucket S3.
@@ -281,7 +281,7 @@ export default function StorageGatewayPage() {
                       value={config.AWS_ACCESS_KEY_ID || ""}
                       onChange={(e) => handleInputChange("AWS_ACCESS_KEY_ID", e.target.value)}
                       placeholder="Access Key ID Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -303,7 +303,7 @@ export default function StorageGatewayPage() {
                       value={config.AWS_SECRET_ACCESS_KEY || ""}
                       onChange={(e) => handleInputChange("AWS_SECRET_ACCESS_KEY", e.target.value)}
                       placeholder="Secret Access Key Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -322,7 +322,7 @@ export default function StorageGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -335,7 +335,7 @@ export default function StorageGatewayPage() {
             <div className="space-y-6">
               
               {/* Storage Space Saved Card - Real Data */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">WebP Image Optimizer</CardTitle>
@@ -362,7 +362,7 @@ export default function StorageGatewayPage() {
                     </div>
                   ) : statsLoading ? (
                     <div className="flex flex-col items-center py-6 gap-2">
-                      <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
                       <p className="text-[10px] text-zinc-600">Memuat statistik...</p>
                     </div>
                   ) : stats ? (
@@ -371,38 +371,38 @@ export default function StorageGatewayPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                           <span className="text-zinc-400">Ruang Penyimpanan Dihemat</span>
-                          <span className="font-semibold text-emerald-400">
+                          <span className="font-semibold text-primary">
                             {stats.space_saved_percent.toFixed(1)}% Saved
                           </span>
                         </div>
-                        <Progress value={Math.max(0, Math.min(100, stats.space_saved_percent))} className="h-2 bg-zinc-900 border border-white/5" />
+                        <Progress value={Math.max(0, Math.min(100, stats.space_saved_percent))} className="h-2 bg-zinc-900 border border-border" />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-xs pt-2">
                         <div>
                           <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Total File Diproses</p>
                           <p className="text-sm font-semibold font-mono text-zinc-200 mt-0.5 flex items-center gap-1">
-                            <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
+                            <FileCheck2 className="w-3.5 h-3.5 text-primary" />
                             {formatCount(stats.total_files)}
                           </p>
                         </div>
                         <div>
                           <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Tingkat Kegagalan</p>
-                          <p className={`text-sm font-semibold font-mono mt-0.5 ${stats.failure_rate_percent > 1 ? "text-red-400" : "text-emerald-400"}`}>
+                          <p className={`text-sm font-semibold font-mono mt-0.5 ${stats.failure_rate_percent > 1 ? "text-red-400" : "text-primary"}`}>
                             {stats.failure_rate_percent.toFixed(2)}%
                           </p>
                         </div>
                       </div>
 
                       {/* Byte savings comparison card */}
-                      <div className="bg-[#0b0b0b] border border-white/5 rounded-lg p-3.5 space-y-3">
-                        <div className="flex justify-between text-xs border-b border-white/5 pb-2">
+                      <div className="bg-[#0b0b0b] border border-border rounded-lg p-3.5 space-y-3">
+                        <div className="flex justify-between text-xs border-b border-border pb-2">
                           <span className="text-zinc-500 flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Ukuran Asli:</span>
                           <span className="font-mono text-zinc-300">{formatBytes(stats.total_original_size)}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-zinc-500 flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-emerald-500" /> Hasil WebP:</span>
-                          <span className="font-mono text-emerald-400 font-bold">{formatBytes(stats.total_compressed_size)}</span>
+                          <span className="text-zinc-500 flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-primary" /> Hasil WebP:</span>
+                          <span className="font-mono text-primary font-bold">{formatBytes(stats.total_compressed_size)}</span>
                         </div>
                       </div>
                     </>
@@ -412,26 +412,26 @@ export default function StorageGatewayPage() {
               </Card>
 
               {/* Bucket details */}
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Informasi Layanan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Library Kompresi</span>
-                    <Badge className="bg-zinc-900 text-zinc-300 border-white/5 text-[9px]">chai2010/webp</Badge>
+                    <Badge className="bg-zinc-900 text-zinc-300 border-border text-[9px]">chai2010/webp</Badge>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Format Output</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">WebP Only</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">WebP Only</Badge>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Batas Gambar</span>
-                    <Badge className="bg-zinc-950 text-zinc-400 border-white/5 text-[9px]">Max 10 MB</Badge>
+                    <Badge className="bg-zinc-950 text-zinc-400 border-border text-[9px]">Max 10 MB</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-400">Batas Non-Gambar</span>
-                    <Badge className="bg-zinc-950 text-zinc-400 border-white/5 text-[9px]">Max 150 MB</Badge>
+                    <Badge className="bg-zinc-950 text-zinc-400 border-border text-[9px]">Max 150 MB</Badge>
                   </div>
                 </CardContent>
               </Card>

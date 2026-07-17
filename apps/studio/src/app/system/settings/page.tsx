@@ -172,7 +172,7 @@ export default function SystemSettingsPage() {
         <ServerCrash className="w-16 h-16 text-rose-500 mb-4" />
         <h2 className="text-xl font-semibold mb-2">Failed to Load Settings</h2>
         <p className="text-zinc-400 text-sm mb-6 max-w-md text-center">{error}</p>
-        <Button onClick={() => refresh()} className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2">
+        <Button onClick={() => refresh()} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
           <RefreshCw className="w-4 h-4" /> Retry
         </Button>
       </div>
@@ -188,7 +188,7 @@ export default function SystemSettingsPage() {
         <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
           <div className="space-y-1">
             <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
-              <Settings className="w-8 h-8 text-emerald-500 animate-[spin_8s_linear_infinite]" /> Global Settings
+              <Settings className="w-8 h-8 text-primary animate-[spin_8s_linear_infinite]" /> Global Settings
             </h1>
             <p className="text-xs text-zinc-400">
               System-wide configurations, default quotas, SMTP mail server routing, branding, and GIS policies.
@@ -208,37 +208,37 @@ export default function SystemSettingsPage() {
           <TabsList className="bg-zinc-900 border border-zinc-800 p-1 rounded-lg gap-1">
             <TabsTrigger
               value="general"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Settings className="w-3.5 h-3.5" /> General
             </TabsTrigger>
             <TabsTrigger
               value="smtp"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Mail className="w-3.5 h-3.5" /> SMTP Mail
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Lock className="w-3.5 h-3.5" /> Security Policies
             </TabsTrigger>
             <TabsTrigger
               value="gis"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Map className="w-3.5 h-3.5" /> GIS Map
             </TabsTrigger>
             <TabsTrigger
               value="branding"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Sparkles className="w-3.5 h-3.5" /> Branding & Whitelabel
             </TabsTrigger>
             <TabsTrigger
               value="integrations"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-emerald-500 text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Blocks className="w-3.5 h-3.5" /> Integrations
             </TabsTrigger>
@@ -271,7 +271,7 @@ export default function SystemSettingsPage() {
                     value={getValue("default_storage_quota", "10")}
                     onChange={(e) => handleInputChange("default_storage_quota", e.target.value)}
                     placeholder="e.g. 10"
-                    className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                    className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
                   />
                   <p className="text-[11px] text-zinc-400 italic">
                     The default file storage limit automatically allocated for newly registered organizations/tenants.
@@ -299,7 +299,7 @@ export default function SystemSettingsPage() {
                     id="system_maintenance_mode"
                     checked={getValue("system_maintenance_mode", "false") === "true"}
                     onCheckedChange={(checked) => handleSwitchChange("system_maintenance_mode", checked)}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -308,7 +308,7 @@ export default function SystemSettingsPage() {
                 <Button
                   onClick={() => handleSave("GENERAL")}
                   disabled={isUpdating}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save General Settings
                 </Button>
@@ -342,7 +342,7 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_host", "")}
                       onChange={(e) => handleInputChange("smtp_host", e.target.value)}
                       placeholder="e.g. smtp.mailtrap.io"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -357,7 +357,7 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_port", "")}
                       onChange={(e) => handleInputChange("smtp_port", e.target.value)}
                       placeholder="e.g. 2525, 465, or 587"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -372,7 +372,7 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_username", "")}
                       onChange={(e) => handleInputChange("smtp_username", e.target.value)}
                       placeholder="e.g. smtp_user"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -388,7 +388,7 @@ export default function SystemSettingsPage() {
                         value={getValue("smtp_password", "")}
                         onChange={(e) => handleInputChange("smtp_password", e.target.value)}
                         placeholder="********"
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs pr-10 focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs pr-10 focus:border-primary/50 focus:ring-primary/50"
                       />
                       <button
                         type="button"
@@ -411,7 +411,7 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_from", "")}
                       onChange={(e) => handleInputChange("smtp_from", e.target.value)}
                       placeholder="e.g. noreply@ftthgis.com"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -422,7 +422,7 @@ export default function SystemSettingsPage() {
                 {/* SMTP Connection Testing area */}
                 <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-950/40 space-y-4 max-w-3xl">
                   <h4 className="text-xs font-semibold text-zinc-300 flex items-center gap-2">
-                    <Play className="w-3.5 h-3.5 text-emerald-500" /> Interactive Connection Test
+                    <Play className="w-3.5 h-3.5 text-primary" /> Interactive Connection Test
                   </h4>
                   <p className="text-[11px] text-zinc-400">
                     Test your current input settings instantly by connecting directly to the SMTP host. Sockets will test connection times and verify security.
@@ -443,7 +443,7 @@ export default function SystemSettingsPage() {
                     {smtpTestResult && (
                       <div className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded border ${
                         smtpTestResult.success 
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+                          ? "bg-primary/10 text-primary border-primary/20" 
                           : "bg-rose-500/10 text-rose-400 border-rose-500/20"
                       }`}>
                         {smtpTestResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
@@ -458,7 +458,7 @@ export default function SystemSettingsPage() {
                 <Button
                   onClick={() => handleSave("SMTP")}
                   disabled={isUpdating}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save SMTP Settings
                 </Button>
@@ -498,7 +498,7 @@ export default function SystemSettingsPage() {
                     id="allow_self_registration"
                     checked={getValue("allow_self_registration", "false") === "true"}
                     onCheckedChange={(checked) => handleSwitchChange("allow_self_registration", checked)}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -523,7 +523,7 @@ export default function SystemSettingsPage() {
                     id="enforce_mfa"
                     checked={getValue("enforce_mfa", "false") === "true"}
                     onCheckedChange={(checked) => handleSwitchChange("enforce_mfa", checked)}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -532,7 +532,7 @@ export default function SystemSettingsPage() {
                 <Button
                   onClick={() => handleSave("SECURITY")}
                   disabled={isUpdating}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Security Policies
                 </Button>
@@ -566,7 +566,7 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_lat", "")}
                       onChange={(e) => handleInputChange("default_map_lat", e.target.value)}
                       placeholder="e.g. -6.9175"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -581,7 +581,7 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_lng", "")}
                       onChange={(e) => handleInputChange("default_map_lng", e.target.value)}
                       placeholder="e.g. 107.6191"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -596,7 +596,7 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_address", "")}
                       onChange={(e) => handleInputChange("default_map_address", e.target.value)}
                       placeholder="Resolved address will be filled here automatically"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                     <p className="text-[10px] text-zinc-400 italic">
                       The resolved textual address matching the default center coordinate. Automatically geocoded via OSM when using the Map Picker.
@@ -616,7 +616,7 @@ export default function SystemSettingsPage() {
                       placeholder="e.g. 12"
                       min={0}
                       max={24}
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
@@ -635,7 +635,7 @@ export default function SystemSettingsPage() {
                         onClick={() => setMapPickerOpen(true)}
                         className="border-zinc-800 hover:bg-zinc-800 hover:text-white text-zinc-300 text-xs h-9 px-4 gap-2 transition-all"
                       >
-                        <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
                         Open Interactive Map Picker
                       </Button>
                     </div>
@@ -652,7 +652,7 @@ export default function SystemSettingsPage() {
                       value={getValue("vector_tile_source", "")}
                       onChange={(e) => handleInputChange("vector_tile_source", e.target.value)}
                       placeholder="http://localhost:3001/tiles/{z}/{x}/{y}.pbf"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                     <p className="text-[10px] text-zinc-400 italic">
                       The dynamic URL endpoint structure used by Mapbox/Maplibre to load PostGIS vectorized network node clusters.
@@ -666,7 +666,7 @@ export default function SystemSettingsPage() {
                 <Button
                   onClick={() => handleSave("GIS")}
                   disabled={isUpdating}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save GIS Configuration
                 </Button>
@@ -702,7 +702,7 @@ export default function SystemSettingsPage() {
                         value={getValue("app_name", "")}
                         onChange={(e) => handleInputChange("app_name", e.target.value)}
                         placeholder="e.g. FTTH GIS Platform"
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                       />
                     </div>
 
@@ -717,7 +717,7 @@ export default function SystemSettingsPage() {
                         value={getValue("logo_url", "")}
                         onChange={(e) => handleInputChange("logo_url", e.target.value)}
                         placeholder="e.g. /next.svg or data:image/png;base64,..."
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                       />
                     </div>
 
@@ -732,7 +732,7 @@ export default function SystemSettingsPage() {
                         onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files?.[0]) handleLogoFile(e.dataTransfer.files[0]); }}
                         className={`border-2 border-dashed rounded-xl p-5 text-center transition-all cursor-pointer ${
                           dragActive 
-                            ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" 
+                            ? "border-emerald-500 bg-primary/10 text-primary" 
                             : "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:border-zinc-700/80"
                         }`}
                         onClick={() => document.getElementById("logo-file-input")?.click()}
@@ -745,7 +745,7 @@ export default function SystemSettingsPage() {
                           onChange={(e) => { if (e.target.files?.[0]) handleLogoFile(e.target.files[0]); }}
                         />
                         <Upload className="w-5 h-5 mx-auto mb-2 text-zinc-500" />
-                        <p className="text-xs font-medium text-zinc-300">Drag & drop logo here, or <span className="text-emerald-500 underline">browse</span></p>
+                        <p className="text-xs font-medium text-zinc-300">Drag & drop logo here, or <span className="text-primary underline">browse</span></p>
                         <p className="text-[10px] text-zinc-500 mt-1">Supports PNG, JPG, SVG, or WEBP (Max 1MB)</p>
                       </div>
                     </div>
@@ -763,7 +763,7 @@ export default function SystemSettingsPage() {
                         <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Simulated Portal Header</span>
                         <div className="flex h-12 w-full items-center justify-between border border-zinc-800 bg-[#0c0c0c] px-4 py-2 rounded-xl shadow-md">
                           <div className="flex items-center gap-x-2">
-                            <div className={getValue("logo_url") ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-emerald-500/30 group overflow-hidden"}>
+                            <div className={getValue("logo_url") ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group overflow-hidden"}>
                               {getValue("logo_url") ? (
                                 <Image
                                   src={getValue("logo_url")}
@@ -774,11 +774,11 @@ export default function SystemSettingsPage() {
                                   unoptimized
                                 />
                               ) : (
-                                <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                                <ShieldCheck className="h-3 w-3 text-primary" />
                               )}
                             </div>
                             <Separator orientation="vertical" className="mx-0.5 h-4 bg-zinc-800" />
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 truncate max-w-[150px]">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-primary truncate max-w-[150px]">
                               {getValue("app_name") || "System Admin"}
                             </span>
                           </div>
@@ -838,7 +838,7 @@ export default function SystemSettingsPage() {
                 <Button
                   onClick={() => handleSave("BRANDING")}
                   disabled={isUpdating}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                 >
                   {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Branding Settings
                 </Button>

@@ -251,7 +251,7 @@ export default function IntegrationsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -261,7 +261,7 @@ export default function IntegrationsPage() {
     <div className="p-8 space-y-8 w-full">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-          <Blocks className="w-6 h-6 text-emerald-500" />
+          <Blocks className="w-6 h-6 text-primary" />
           Integrations Marketplace
         </h1>
         <p className="text-zinc-500 mt-1">
@@ -272,7 +272,7 @@ export default function IntegrationsPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
         <Input 
-          className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50"
+          className="pl-10 bg-zinc-900/50 border-zinc-800 focus:border-primary/50"
           placeholder="Search integrations..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -281,15 +281,15 @@ export default function IntegrationsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6" key={configs?.length}>
         {filteredIntegrations.map((integration) => (
-          <Card key={integration.id} className="bg-[#0c0c0c] border-zinc-800/50 hover:border-emerald-500/30 transition-all flex flex-col group">
+          <Card key={integration.id} className="bg-[#0c0c0c] border-zinc-800/50 hover:border-primary/30 transition-all flex flex-col group">
             <CardHeader className="space-y-4">
               <div className="flex items-start justify-between">
-                <div className="p-3 rounded-xl bg-zinc-900 group-hover:bg-emerald-500/10 transition-colors">
-                  <integration.icon className="w-6 h-6 text-zinc-400 group-hover:text-emerald-500" />
+                <div className="p-3 rounded-xl bg-zinc-900 group-hover:bg-primary/10 transition-colors">
+                  <integration.icon className="w-6 h-6 text-zinc-400 group-hover:text-primary" />
                 </div>
                 <Badge variant="outline" className={`
                   ${integration.status === "Connected" || integration.status === "Active" 
-                    ? "border-emerald-500/20 text-emerald-500 bg-emerald-500/5" 
+                    ? "border-primary/20 text-primary bg-emerald-500/5" 
                     : "border-zinc-800 text-zinc-500"}
                 `}>
                   {integration.status}
@@ -340,7 +340,7 @@ export default function IntegrationsPage() {
                         "text-sm h-9",
                         integration.id === 'ldap' && getConfigValue('ldap_enabled') !== 'true'
                           ? "bg-zinc-950/50 border-zinc-900/50 text-zinc-600 cursor-not-allowed"
-                          : "bg-zinc-950 focus:border-emerald-500/30",
+                          : "bg-zinc-950 focus:border-primary/30",
                         integration.id === 'ldap' && hasFieldError(field.key, document.querySelector<HTMLInputElement>(`input[name="${field.key}"]`)?.value || getConfigValue(field.key), getFieldValidator(field.key))
                           ? "border-red-500/50"
                           : "border-zinc-900"
@@ -390,8 +390,8 @@ export default function IntegrationsPage() {
                     className={cn(
                       "w-full gap-2 transition-all",
                       ldapTestPassed
-                        ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15"
-                        : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"
+                        ? "text-primary border-emerald-500/40 bg-primary/10 hover:bg-emerald-500/15"
+                        : "text-primary border-primary/20 hover:bg-primary/10"
                     )}
                     onClick={handleTestLdap}
                     disabled={testingLdap || getConfigValue('ldap_enabled') !== 'true' || !isLdapRequiredFieldsValid()}
@@ -407,7 +407,7 @@ export default function IntegrationsPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full text-zinc-500 hover:text-emerald-500 hover:bg-emerald-500/5 gap-2"
+                  className="w-full text-zinc-500 hover:text-primary hover:bg-emerald-500/5 gap-2"
                   disabled={integration.status === "Coming Soon"}
                 >
                   <Settings2 className="w-4 h-4" />
@@ -421,11 +421,11 @@ export default function IntegrationsPage() {
 
       <Card className="bg-emerald-500/5 border-emerald-500/10">
         <CardContent className="p-4 flex items-start gap-4">
-          <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500">
+          <div className="p-2 rounded-full bg-primary/10 text-primary">
             <Info className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-emerald-500">Need a custom integration?</h4>
+            <h4 className="text-sm font-semibold text-primary">Need a custom integration?</h4>
             <p className="text-xs text-zinc-500 mt-1">
               Our enterprise plans support custom webhooks and dedicated poller instances. Contact your account manager for more details.
             </p>

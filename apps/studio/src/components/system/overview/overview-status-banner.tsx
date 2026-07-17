@@ -19,12 +19,12 @@ export function OverviewStatusBanner({
 
   if (globalHealthState === "operational") {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 transition-all duration-300">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-emerald-500/5 p-4 transition-all duration-300">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <CheckCircle2 className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h4 className="text-xs font-semibold text-emerald-400">All Core Services Operational</h4>
+          <h4 className="text-xs font-semibold text-primary">All Core Services Operational</h4>
           <p className="mt-0.5 text-[10px] text-zinc-400">
             Tenant routing, authentication, and GIS services are currently operating within normal parameters.
           </p>

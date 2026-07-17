@@ -256,7 +256,7 @@ export function DetailSlidePanel() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "OLT":
-        return "text-emerald-500 border-emerald-500/20 bg-emerald-500/5";
+        return "text-primary border-primary/20 bg-emerald-500/5";
       case "ODC":
         return "text-amber-500 border-amber-500/20 bg-amber-500/5";
       case "ODP":
@@ -311,7 +311,7 @@ export function DetailSlidePanel() {
               <div className="absolute inset-0 bg-emerald-500/5 blur-2xl animate-pulse" />
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/70">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/70">
                 Establish Signal
               </span>
               <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest italic">
@@ -346,7 +346,7 @@ export function DetailSlidePanel() {
           details && (
             <>
               {/* Premium Header */}
-              <div className="relative p-8 pt-16 overflow-hidden border-b border-white/5">
+              <div className="relative p-8 pt-16 overflow-hidden border-b border-border">
                 <div className="absolute inset-0 bg-linear-to-br from-emerald-500/20 via-transparent to-transparent opacity-40" />
 
                 <div className="relative space-y-6">
@@ -358,7 +358,7 @@ export function DetailSlidePanel() {
                       >
                         {details.type}
                       </Badge>
-                      <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
+                      <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-full border border-border shadow-inner">
                         <div
                           className={`w-2 h-2 rounded-full ${getStatusColor(details.status)} shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse`}
                         />
@@ -393,7 +393,7 @@ export function DetailSlidePanel() {
                       {details.code}
                     </h1>
                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.25em] flex items-center">
-                      <MapPin className="w-3 h-3 mr-2 text-emerald-500/50" />
+                      <MapPin className="w-3 h-3 mr-2 text-primary/50" />
                       Layer Grid Identifier: {details.id}
                     </p>
                   </div>
@@ -428,10 +428,10 @@ export function DetailSlidePanel() {
                     <div className="p-8 space-y-10 pb-24">
                       {/* Visual Stats Row */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-emerald-500/20 transition-all shadow-inner">
+                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-border space-y-2 group hover:border-primary/20 transition-all shadow-inner">
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-primary transition-colors">
                               Reliability
                             </span>
                           </div>
@@ -439,7 +439,7 @@ export function DetailSlidePanel() {
                             99.8%
                           </div>
                         </div>
-                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-2 group hover:border-blue-500/20 transition-all shadow-inner">
+                        <div className="p-5 rounded-3xl bg-zinc-900/50 border border-border space-y-2 group hover:border-blue-500/20 transition-all shadow-inner">
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest group-hover:text-blue-500 transition-colors">
@@ -454,8 +454,8 @@ export function DetailSlidePanel() {
 
                       {/* Technical Overview Section */}
                       <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-900/80 w-fit px-3 py-1.5 rounded-lg border border-white/5">
-                          <Layers className="w-3.5 h-3.5 text-emerald-500" />{" "}
+                        <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-900/80 w-fit px-3 py-1.5 rounded-lg border border-border">
+                          <Layers className="w-3.5 h-3.5 text-primary" />{" "}
                           Infrastructure Attributes
                         </div>
                         <div className="space-y-4">
@@ -479,7 +479,7 @@ export function DetailSlidePanel() {
                       </div>
 
                       {/* Operations Section */}
-                      <div className="space-y-4 pt-10 border-t border-white/5">
+                      <div className="space-y-4 pt-10 border-t border-border">
                         <div className="flex items-center gap-2 text-[10px] font-black text-red-500/50 uppercase tracking-widest">
                           <Settings className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform duration-700" />{" "}
                           Danger Zone
@@ -587,21 +587,21 @@ export function DetailSlidePanel() {
                   <div className="p-8 space-y-8 relative">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/80">
+                        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/80">
                           Diagnostic Pulse
                         </div>
                         <DialogTitle className="text-3xl font-black tracking-tighter">
                           NETWORK REPORT
                         </DialogTitle>
                       </div>
-                      <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                        <Zap className="w-8 h-8 text-emerald-500 animate-pulse" />
+                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                        <Zap className="w-8 h-8 text-primary animate-pulse" />
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       {/* Health Meter */}
-                      <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 shadow-inner space-y-4">
+                      <div className="bg-zinc-900/50 p-6 rounded-3xl border border-border shadow-inner space-y-4">
                         <div className="flex justify-between items-end">
                           <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                             Health Score
@@ -610,7 +610,7 @@ export function DetailSlidePanel() {
                             {diagnosticResult?.overallHealth || 100}%
                           </span>
                         </div>
-                        <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-white/5">
+                        <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden border border-border">
                           <div
                             className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)] transition-all duration-1000"
                             style={{
@@ -622,7 +622,7 @@ export function DetailSlidePanel() {
 
                       {/* Report Data */}
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2 border-b border-white/5">
+                        <div className="flex items-center justify-between py-2 border-b border-border">
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                             Asset Code
                           </span>
@@ -630,13 +630,13 @@ export function DetailSlidePanel() {
                             {details.code}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between py-2 border-b border-white/5">
+                        <div className="flex items-center justify-between py-2 border-b border-border">
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                             Signal Status
                           </span>
                           <Badge
                             variant="outline"
-                            className="border-emerald-500/30 text-emerald-500 bg-emerald-500/5 font-black uppercase text-[10px] tracking-widest"
+                            className="border-primary/30 text-primary bg-emerald-500/5 font-black uppercase text-[10px] tracking-widest"
                           >
                             {diagnosticResult?.status || "OPTIMAL"}
                           </Badge>
@@ -645,7 +645,7 @@ export function DetailSlidePanel() {
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                             Technical Notes
                           </span>
-                          <p className="text-xs text-zinc-400 leading-relaxed font-medium bg-zinc-900 p-4 rounded-2xl border border-white/5 italic">
+                          <p className="text-xs text-zinc-400 leading-relaxed font-medium bg-zinc-900 p-4 rounded-2xl border border-border italic">
                             &quot;
                             {diagnosticResult?.notes ||
                               "Signal harmony detected. No interference in the local grid segment. All physical connectors are reporting optimal impedance."}
@@ -666,13 +666,13 @@ export function DetailSlidePanel() {
               </Dialog>
 
               {/* Bottom Insight Bar */}
-              <div className="p-8 bg-zinc-950 border-t border-white/5 backdrop-blur-3xl shadow-[0_-10px_25px_-12px_rgba(0,0,0,0.5)]">
+              <div className="p-8 bg-zinc-950 border-t border-border backdrop-blur-3xl shadow-[0_-10px_25px_-12px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-inner group">
-                    <Activity className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner group">
+                    <Activity className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-0.5">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-0.5">
                       Performance Harmony
                     </div>
                     <div className="text-sm font-bold text-zinc-200 uppercase tracking-tight">

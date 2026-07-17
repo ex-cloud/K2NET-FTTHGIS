@@ -162,11 +162,11 @@ export default function ExportGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Download className="w-6 h-6" />
           </div>
           <div>
@@ -181,7 +181,7 @@ export default function ExportGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi export gateway...</p>
           </div>
         ) : (
@@ -189,10 +189,10 @@ export default function ExportGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-emerald-500" /> Infrastructure Connections
+                    <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Koneksi database PostgreSQL, Redis Queue, dan Storage Gateway S3.
@@ -207,7 +207,7 @@ export default function ExportGatewayPage() {
                       value={config.REDIS_ADDR || ""}
                       onChange={(e) => handleInputChange("REDIS_ADDR", e.target.value)}
                       placeholder="redis:6379"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -219,7 +219,7 @@ export default function ExportGatewayPage() {
                       value={config.DATABASE_URL || ""}
                       onChange={(e) => handleInputChange("DATABASE_URL", e.target.value)}
                       placeholder="postgres://..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -231,16 +231,16 @@ export default function ExportGatewayPage() {
                       value={config.STORAGE_GATEWAY_URL || ""}
                       onChange={(e) => handleInputChange("STORAGE_GATEWAY_URL", e.target.value)}
                       placeholder="http://ftth-storage-gateway:5004"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> Export System Resources
+                    <Lock className="w-4 h-4 text-primary" /> Export System Resources
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Konfigurasi batasan proses pembuatan file Excel/PDF dan direktori template.
@@ -256,7 +256,7 @@ export default function ExportGatewayPage() {
                         value={config.JOB_TIMEOUT_MINUTES || ""}
                         onChange={(e) => handleInputChange("JOB_TIMEOUT_MINUTES", e.target.value)}
                         placeholder="10"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -268,7 +268,7 @@ export default function ExportGatewayPage() {
                         value={config.MAX_CONCURRENT_EXPORTS || ""}
                         onChange={(e) => handleInputChange("MAX_CONCURRENT_EXPORTS", e.target.value)}
                         placeholder="5"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -281,7 +281,7 @@ export default function ExportGatewayPage() {
                       value={config.FONT_DIR || ""}
                       onChange={(e) => handleInputChange("FONT_DIR", e.target.value)}
                       placeholder="/usr/share/fonts"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -293,7 +293,7 @@ export default function ExportGatewayPage() {
                       value={config.TEMPLATE_DIR || ""}
                       onChange={(e) => handleInputChange("TEMPLATE_DIR", e.target.value)}
                       placeholder="/app/templates"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -311,7 +311,7 @@ export default function ExportGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -321,7 +321,7 @@ export default function ExportGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Antrean Export Terkini
@@ -339,14 +339,14 @@ export default function ExportGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat export.</p>
                   ) : (
                     exportJobs.map((exp) => (
-                      <div key={exp.jobId} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={exp.jobId} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200 truncate max-w-[150px] capitalize">
                             {exp.type} Export
                           </span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             exp.status === "done"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              ? "bg-primary/10 text-primary border-primary/20"
                               : exp.status === "failed"
                               ? "bg-red-500/10 text-red-500 border-red-500/20"
                               : exp.status === "processing"
@@ -361,7 +361,7 @@ export default function ExportGatewayPage() {
                           <span>{formatRelativeTime(exp.createdAt)}</span>
                         </div>
                         {exp.downloadUrl && exp.status === "done" && (
-                          <div className="text-[9px] text-emerald-600 truncate">
+                          <div className="text-[9px] text-primary truncate">
                             ↓ {exp.downloadUrl.split("/").pop()}
                           </div>
                         )}
@@ -371,18 +371,18 @@ export default function ExportGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Storage Integration</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">MinIO connection</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Connected</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Connected</Badge>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Worker Status</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Ready</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Ready</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-400">Jobs Dalam Antrean</span>

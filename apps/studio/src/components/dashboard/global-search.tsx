@@ -80,12 +80,12 @@ export function GlobalSearch() {
     <div className="relative w-full max-w-md group" ref={containerRef}>
       <Search className={cn(
         "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200",
-        loading ? "text-emerald-500" : "text-zinc-400 dark:text-zinc-500 group-focus-within:text-emerald-500"
+        loading ? "text-primary" : "text-zinc-400 dark:text-zinc-500 group-focus-within:text-primary"
       )} />
       
       <Input
         placeholder="Cari ODP, ODC, atau Kode Alat..."
-        className="w-full bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-600 h-9 rounded-lg pl-10 pr-10 transition-all"
+        className="w-full bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:border-primary/50 focus:ring-primary/20 text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-600 h-9 rounded-lg pl-10 pr-10 transition-all"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query.length >= 2 && setShowResults(true)}
@@ -93,7 +93,7 @@ export function GlobalSearch() {
 
       {loading && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
         </div>
       )}
 
@@ -112,19 +112,19 @@ export function GlobalSearch() {
                   result.type === "ODC" ? "bg-sky-500/10 text-sky-500 border border-sky-500/20" :
                   result.type === "ODP" ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" :
                   result.type === "OLT" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-                  "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                  "bg-primary/10 text-primary border border-primary/20"
                 )}>
                   {result.type}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold font-mono text-zinc-900 dark:text-zinc-100 truncate group-hover:text-emerald-500 transition-colors">
+                    <span className="text-sm font-bold font-mono text-zinc-900 dark:text-zinc-100 truncate group-hover:text-primary transition-colors">
                       {result.code}
                     </span>
                     <span className={cn(
                         "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider",
-                        result.status === "ACTIVE" || result.status === "UP" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                        result.status === "ACTIVE" || result.status === "UP" ? "bg-primary/10 text-primary" : "bg-rose-500/10 text-rose-500"
                     )}>
                         {result.status}
                     </span>

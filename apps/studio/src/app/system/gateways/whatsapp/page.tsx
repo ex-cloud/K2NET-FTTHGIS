@@ -162,11 +162,11 @@ export default function WhatsappGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <MessageCircle className="w-6 h-6" />
           </div>
           <div>
@@ -181,7 +181,7 @@ export default function WhatsappGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi WhatsApp gateway...</p>
           </div>
         ) : (
@@ -189,10 +189,10 @@ export default function WhatsappGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> WhatsApp Cloud API Credentials
+                    <Lock className="w-4 h-4 text-primary" /> WhatsApp Cloud API Credentials
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Kredensial resmi dari Meta Developer Console untuk modul pengiriman WhatsApp API.
@@ -207,7 +207,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_API_URL || ""}
                       onChange={(e) => handleInputChange("WA_API_URL", e.target.value)}
                       placeholder="https://graph.facebook.com/v21.0"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -219,7 +219,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_PHONE_NUMBER_ID || ""}
                       onChange={(e) => handleInputChange("WA_PHONE_NUMBER_ID", e.target.value)}
                       placeholder="e.g. 109384738291039"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -241,7 +241,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_ACCESS_TOKEN || ""}
                       onChange={(e) => handleInputChange("WA_ACCESS_TOKEN", e.target.value)}
                       placeholder="EAAGxxxxxxxxxxxxxxxxxxxxxxxxxxx..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -263,7 +263,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_VERIFY_TOKEN || ""}
                       onChange={(e) => handleInputChange("WA_VERIFY_TOKEN", e.target.value)}
                       placeholder="Verify Token string..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -281,7 +281,7 @@ export default function WhatsappGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -291,7 +291,7 @@ export default function WhatsappGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Metrik Delivery WA
@@ -309,12 +309,12 @@ export default function WhatsappGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log WhatsApp tersimpan.</p>
                   ) : (
                     waLogs.map((log) => (
-                      <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px]">{log.recipient}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             log.status === "sent"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              ? "bg-primary/10 text-primary border-primary/20"
                               : "bg-red-500/10 text-red-500 border-red-500/20"
                           }`}>
                             {log.status}
@@ -330,18 +330,18 @@ export default function WhatsappGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status API Meta</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Meta API Status</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Normal</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Normal</Badge>
                   </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
                     <span className="text-zinc-400">Webhook Connection</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[9px]">Receiving Active</Badge>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Receiving Active</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-400">WA Terkirim (log)</span>

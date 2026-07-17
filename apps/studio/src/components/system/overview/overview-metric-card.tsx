@@ -16,11 +16,11 @@ export function OverviewMetricCard({
   footerLinkLabel,
 }: OverviewMetricCardProps) {
   return (
-    <Card className="group h-full bg-[#0b0b0b]/60 border-white/5 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/20">
+    <Card className="group h-full bg-card/60 border-border backdrop-blur-md transition-all duration-300 hover:border-primary/20">
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-zinc-500">
           <span>{eyebrow}</span>
-          <Icon className={cn("w-3.5 h-3.5 text-zinc-600 transition-colors group-hover:text-emerald-500", iconClassName)} />
+          <Icon className={cn("w-3.5 h-3.5 text-zinc-600 transition-colors group-hover:text-primary", iconClassName)} />
         </CardDescription>
         <CardTitle className={cn("mt-1 text-2xl font-light text-zinc-200", accentClassName)}>{value}</CardTitle>
       </CardHeader>
@@ -29,7 +29,7 @@ export function OverviewMetricCard({
         <div className="mt-3 flex items-center justify-between text-[10px] text-zinc-500">
           <span>{footer}</span>
           {footerLinkHref ? (
-            <Link href={footerLinkHref} className="flex items-center gap-0.5 transition-colors hover:text-emerald-500">
+            <Link href={footerLinkHref} className="flex items-center gap-0.5 transition-colors hover:text-primary">
               {footerLinkLabel} <ArrowRight className="h-3 w-3" />
             </Link>
           ) : null}

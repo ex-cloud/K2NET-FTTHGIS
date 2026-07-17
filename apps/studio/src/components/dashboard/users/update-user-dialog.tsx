@@ -108,7 +108,7 @@ export function UpdateUserDialog({
                 variant={status === "ACTIVE" ? "default" : "outline"}
                 className={
                   status === "ACTIVE"
-                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    ? "bg-primary hover:bg-primary/90"
                     : ""
                 }
                 onClick={() => setStatus("ACTIVE")}
@@ -154,7 +154,7 @@ export function UpdateUserDialog({
           <Button
             onClick={handleSave}
             disabled={loading || !isValid}
-            className="bg-emerald-500 hover:bg-emerald-600"
+            className="bg-primary hover:bg-primary/90"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Save Changes

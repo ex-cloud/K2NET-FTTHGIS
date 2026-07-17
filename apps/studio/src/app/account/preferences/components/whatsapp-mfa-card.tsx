@@ -47,7 +47,7 @@ export function WhatsAppMfaCard({
                 id="whatsAppEnabledCheck"
                 checked={whatsAppEnabled}
                 onChange={(e) => setWhatsAppEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-zinc-800 text-emerald-500 bg-zinc-950 focus:ring-emerald-500/20 accent-emerald-500 cursor-pointer"
+                className="w-4 h-4 rounded border-zinc-800 text-primary bg-zinc-950 focus:ring-primary/20 accent-emerald-500 cursor-pointer"
               />
               <label htmlFor="whatsAppEnabledCheck" className="ml-2.5 text-xs text-zinc-300 cursor-pointer">
                 Aktifkan Verifikasi OTP WhatsApp

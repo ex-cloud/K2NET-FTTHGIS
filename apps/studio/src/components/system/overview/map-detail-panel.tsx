@@ -16,12 +16,12 @@ interface MapDetailPanelProps {
 
 export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPanelProps) {
   return (
-    <Card className="flex h-full flex-col justify-between border-white/5 bg-[#0b0b0b]/60 p-6 z-10">
+    <Card className="flex h-full flex-col justify-between border-border bg-card/60 p-6 z-10">
       {activeNodeData ? (
         <div className="flex h-full flex-col justify-between gap-6">
           <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <h4 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Service Details</h4>
               {activeNodeData.port ? (
                 <Badge variant="outline" className="border-white/10 text-[9px] font-mono text-zinc-500 bg-black/40">
@@ -63,7 +63,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
 
             {/* Sub-components */}
             {activeSubNodes.length > 0 && (
-              <div className="space-y-2.5 pt-3 border-t border-white/5">
+              <div className="space-y-2.5 pt-3 border-t border-border">
                 <h5 className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">
                   Sub Components ({activeSubNodes.length})
                 </h5>
@@ -75,7 +75,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
                         key={sub.id}
                         className="flex gap-2 p-1.5 rounded-lg bg-emerald-950/10 border border-emerald-500/5 items-start"
                       >
-                        <SubIcon className="h-3.5 w-3.5 text-emerald-400 mt-0.5" />
+                        <SubIcon className="h-3.5 w-3.5 text-primary mt-0.5" />
                         <div>
                           <div className="text-[9px] font-bold text-zinc-300 font-mono">{sub.name}</div>
                           <div className="text-[8.5px] text-zinc-500 leading-snug">{sub.details}</div>
@@ -89,13 +89,13 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
           </div>
 
           {/* Footer action */}
-          <div className="border-t border-white/5 pt-4">
+          <div className="border-t border-border pt-4">
             {activeNodeData.id.startsWith("gw-") ? (
               <Link href="/gateways/overview" className="w-full">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full gap-1.5 border-white/10 text-[10px] transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400"
+                  className="w-full gap-1.5 border-white/10 text-[10px] transition-all hover:border-primary/30 hover:bg-emerald-500/5 hover:text-primary"
                 >
                   Open Gateway Settings <ExternalLink className="h-3 w-3" />
                 </Button>
@@ -105,7 +105,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full gap-1.5 border-white/10 text-[10px] transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400"
+                  className="w-full gap-1.5 border-white/10 text-[10px] transition-all hover:border-primary/30 hover:bg-emerald-500/5 hover:text-primary"
                 >
                   Manage IAM Policies <ExternalLink className="h-3 w-3" />
                 </Button>

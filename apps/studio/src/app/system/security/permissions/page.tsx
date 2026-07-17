@@ -243,7 +243,7 @@ export default function PermissionsPage() {
             { label: "Total Permission", value: permissions.length, color: "text-white" },
             { label: "Module Aktif", value: Object.keys(groupByModule(permissions)).length, color: "text-sky-400" },
             { label: "Scope SYSTEM", value: permissions.filter(p => p.scope === "SYSTEM").length, color: "text-violet-400" },
-            { label: "Scope TENANT", value: permissions.filter(p => p.scope === "TENANT").length, color: "text-emerald-400" },
+            { label: "Scope TENANT", value: permissions.filter(p => p.scope === "TENANT").length, color: "text-primary" },
           ].map((stat) => (
             <div
               key={stat.label}

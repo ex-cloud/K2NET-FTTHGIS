@@ -201,7 +201,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
           variant="outline"
           className={cn(
             integrationStatus.connected || githubConfig.connected
-              ? "border-emerald-500/20 text-emerald-500 bg-emerald-500/5"
+              ? "border-primary/20 text-primary bg-emerald-500/5"
               : "border-zinc-800 text-zinc-500"
           )}
         >
@@ -227,7 +227,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
             <div className="space-y-2 text-xs text-zinc-400">
               <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
                 <span>Status</span>
-                <span className={cn("font-medium", integrationStatus.connected ? "text-emerald-400" : "text-zinc-400")}>{statusLabel}</span>
+                <span className={cn("font-medium", integrationStatus.connected ? "text-primary" : "text-zinc-400")}>{statusLabel}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
                 <span>Organization</span>
@@ -274,7 +274,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
             className="gap-2 border-zinc-800 hover:bg-zinc-850 hover:text-white text-zinc-300 text-xs h-9"
           >
             {connectingGithub ? (
-              <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
             ) : (
               <Github className="w-4 h-4" />
             )}

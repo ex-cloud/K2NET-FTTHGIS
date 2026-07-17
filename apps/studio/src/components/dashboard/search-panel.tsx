@@ -99,7 +99,7 @@ export function SearchPanel({
       />
       {loading && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
         </div>
       )}
 
@@ -130,13 +130,13 @@ export function SearchPanel({
                     setShowResults(false);
                     setQuery("");
                   }}
-                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-emerald-500/10 rounded-lg transition-colors group border-b border-border/20 mb-1"
+                  className="w-full flex items-center gap-3 p-3 text-left hover:bg-primary/10 rounded-lg transition-colors group border-b border-border/20 mb-1"
                 >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-bold text-emerald-500">
+                    <div className="text-sm font-bold text-primary">
                       Go to Coordinates
                     </div>
                     <div className="text-[10px] text-muted-foreground font-mono">
@@ -160,13 +160,13 @@ export function SearchPanel({
                           ? "bg-rose-500/10 text-rose-500"
                           : result.type === "OLT"
                             ? "bg-amber-500/10 text-amber-500"
-                            : "bg-emerald-500/10 text-emerald-500" // CUSTOMER
+                            : "bg-primary/10 text-primary" // CUSTOMER
                     }`}
                   >
                     {result.type === "CUSTOMER" ? "CUST" : result.type}
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-bold font-mono group-hover:text-emerald-500 transition-colors">
+                    <div className="text-sm font-bold font-mono group-hover:text-primary transition-colors">
                       {result.code}
                     </div>
                     <div className="text-[10px] text-muted-foreground flex items-center gap-1">

@@ -100,7 +100,7 @@ export default function AccountLayout({
       <div className="flex flex-1 overflow-hidden relative">
         
         {/* Sidebar Navigasi Kiri */}
-        <aside className="w-64 border-r border-white/5 bg-sidebar shrink-0 hidden md:flex flex-col">
+        <aside className="w-64 border-r border-border bg-sidebar shrink-0 hidden md:flex flex-col">
           {/* Back Link */}
           <div className="px-4 py-4">
             <Link
@@ -143,7 +143,7 @@ export default function AccountLayout({
                     className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
                       isActive
                         ? subdomain === "system"
-                          ? "bg-emerald-500/10 text-emerald-500 font-semibold"
+                          ? "bg-primary/10 text-primary font-semibold"
                           : "bg-primary/10 text-primary font-semibold"
                         : "text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
@@ -184,7 +184,7 @@ export default function AccountLayout({
                     className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
                       isActive
                         ? subdomain === "system"
-                          ? "bg-emerald-500/10 text-emerald-500 font-semibold"
+                          ? "bg-primary/10 text-primary font-semibold"
                           : "bg-primary/10 text-primary font-semibold"
                         : "text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
@@ -201,7 +201,7 @@ export default function AccountLayout({
         {/* Content Container */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Content Body */}
-          <main className="flex-1 overflow-y-auto bg-[#080808] p-6 md:p-8">
+          <main className="flex-1 overflow-y-auto bg-background p-6 md:p-8">
             <div className="max-w-4xl mx-auto">
               {children}
             </div>

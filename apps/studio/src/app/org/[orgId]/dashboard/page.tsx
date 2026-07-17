@@ -81,7 +81,7 @@ export default function OrgDashboardPage({
               </Button>
             </div>
             <Button 
-              className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-medium h-8 px-3 text-xs"
+              className="bg-primary hover:bg-primary/90 text-white gap-2 font-medium h-8 px-3 text-xs"
               onClick={() => setIsWizardOpen(true)}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -95,7 +95,7 @@ export default function OrgDashboardPage({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search for a project"
-              className="bg-muted/30 border-border pl-10 h-9 text-xs text-foreground focus:ring-emerald-500 focus:border-emerald-500"
+              className="bg-muted/30 border-border pl-10 h-9 text-xs text-foreground focus:ring-primary focus:border-emerald-500"
             />
           </div>
           <Button
@@ -137,14 +137,14 @@ export default function OrgDashboardPage({
                 <div className="group flex flex-col p-6 rounded-xl border border-border bg-card hover:border-border/80 hover:bg-accent/50 transition-all cursor-pointer h-full border-b-2 border-b-emerald-600/50">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-1">
-                      <h3 className="font-semibold text-foreground group-hover:text-emerald-500 transition-colors">
+                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                         {project.name}
                       </h3>
                       <div className="text-xs text-muted-foreground font-medium">
                         AWS | ap-southeast-1
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-tight">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-tight">
                       Active
                     </div>
                   </div>

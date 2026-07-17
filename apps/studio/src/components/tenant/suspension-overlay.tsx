@@ -76,7 +76,7 @@ export function SuspensionOverlay() {
                   {/* FREE PLAN */}
                   <div className="rounded-xl border border-zinc-800 bg-transparent p-5 flex flex-col">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-sm font-bold text-emerald-500">FREE</h3>
+                      <h3 className="text-sm font-bold text-primary">FREE</h3>
                       <span className="text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">Current plan</span>
                     </div>
                     <div className="mb-4">
@@ -88,13 +88,13 @@ export function SuspensionOverlay() {
                     </div>
                     
                     <div className="space-y-3 mt-2">
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Unlimited API requests</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 50,000 monthly active users</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">500 MB database size<br/><span className="text-zinc-500 text-[10px]">Shared CPU • 500 MB RAM</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 5 GB egress</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 5 GB cached egress</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 1 GB file storage</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Community support</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Unlimited API requests</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 50,000 monthly active users</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">500 MB database size<br/><span className="text-zinc-500 text-[10px]">Shared CPU • 500 MB RAM</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 5 GB egress</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 5 GB cached egress</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 1 GB file storage</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Community support</div>
                     </div>
 
                     <div className="mt-8 pt-4 border-t border-zinc-800 text-[10px] text-zinc-500 leading-relaxed">
@@ -103,11 +103,11 @@ export function SuspensionOverlay() {
                   </div>
 
                   {/* PRO PLAN */}
-                  <div className="rounded-xl border border-emerald-500/30 bg-transparent p-5 flex flex-col relative overflow-hidden">
+                  <div className="rounded-xl border border-primary/30 bg-transparent p-5 flex flex-col relative overflow-hidden">
                     <div className="absolute top-0 inset-x-0 h-1 bg-emerald-500" />
                     <div className="flex items-center gap-2 mb-2 mt-1">
-                      <h3 className="text-sm font-bold text-emerald-500">PRO</h3>
-                      <span className="text-[10px] font-medium text-emerald-400">Most Popular</span>
+                      <h3 className="text-sm font-bold text-primary">PRO</h3>
+                      <span className="text-[10px] font-medium text-primary">Most Popular</span>
                     </div>
                     <div className="mb-4">
                       <span className="text-zinc-400 text-xs mr-1">From</span>
@@ -122,15 +122,15 @@ export function SuspensionOverlay() {
                     </button>
                     
                     <div className="space-y-3 mt-2">
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">100,000 monthly active users<br/><span className="text-zinc-500 text-[10px]">then $0.00325 per MAU</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">8 GB disk size per project<br/><span className="text-zinc-500 text-[10px]">then $0.125 per GB</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">250 GB egress<br/><span className="text-zinc-500 text-[10px]">then $0.09 per GB</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">250 GB cached egress<br/><span className="text-zinc-500 text-[10px]">then $0.03 per GB</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">100 GB file storage<br/><span className="text-zinc-500 text-[10px]">then $0.021 per GB</span></span></div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Email support</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Daily backups stored for 7 days</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 7-day log retention</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> <span className="leading-relaxed">Add Log Drains<br/><span className="text-zinc-500 text-[10px]">additional $60 per drain, per project</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">100,000 monthly active users<br/><span className="text-zinc-500 text-[10px]">then $0.00325 per MAU</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">8 GB disk size per project<br/><span className="text-zinc-500 text-[10px]">then $0.125 per GB</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">250 GB egress<br/><span className="text-zinc-500 text-[10px]">then $0.09 per GB</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">250 GB cached egress<br/><span className="text-zinc-500 text-[10px]">then $0.03 per GB</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">100 GB file storage<br/><span className="text-zinc-500 text-[10px]">then $0.021 per GB</span></span></div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Email support</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Daily backups stored for 7 days</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 7-day log retention</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> <span className="leading-relaxed">Add Log Drains<br/><span className="text-zinc-500 text-[10px]">additional $60 per drain, per project</span></span></div>
                     </div>
                   </div>
 
@@ -152,13 +152,13 @@ export function SuspensionOverlay() {
                     </button>
                     
                     <div className="space-y-3 mt-2">
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> SOC2 & ISO 27001</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Project-scoped and read-only access</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> HIPAA available as paid add-on</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> SSO for Dashboard</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Priority email support & SLAs</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> Daily backups stored for 14 days</div>
-                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-emerald-500 mt-0.5 shrink-0" /> 28-day log retention</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> SOC2 & ISO 27001</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Project-scoped and read-only access</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> HIPAA available as paid add-on</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> SSO for Dashboard</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Priority email support & SLAs</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> Daily backups stored for 14 days</div>
+                      <div className="flex items-start gap-2 text-[11px] text-zinc-300"><Check className="size-3.5 text-primary mt-0.5 shrink-0" /> 28-day log retention</div>
                     </div>
                   </div>
 
@@ -167,7 +167,7 @@ export function SuspensionOverlay() {
                 {/* ENTERPRISE PLAN - Full Width */}
                 <div className="rounded-xl border border-zinc-800 bg-transparent p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex-1 max-w-xs">
-                    <h3 className="text-sm font-bold text-emerald-500 mb-2">ENTERPRISE</h3>
+                    <h3 className="text-sm font-bold text-primary mb-2">ENTERPRISE</h3>
                     <p className="text-xs font-medium text-white mb-4 leading-relaxed">
                       For large-scale applications running Internet scale workloads.
                     </p>
@@ -177,12 +177,12 @@ export function SuspensionOverlay() {
                   </div>
                   
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-4">
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> Designated Support manager</div>
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> Uptime SLAs</div>
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> BYO Cloud supported</div>
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> 24x7x365 premium enterprise support</div>
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> Private Slack channel</div>
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-emerald-500 shrink-0" /> Custom Security Questionnaires</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> Designated Support manager</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> Uptime SLAs</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> BYO Cloud supported</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> 24x7x365 premium enterprise support</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> Private Slack channel</div>
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-white"><Check className="size-3.5 text-primary shrink-0" /> Custom Security Questionnaires</div>
                   </div>
                 </div>
 

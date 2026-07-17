@@ -68,7 +68,7 @@ export function NavProjectSwitcher() {
             {displayName}
           </span>
           {currentProject?.status && (
-            <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 px-1.5 rounded-full text-emerald-500 font-bold uppercase tracking-tight">
+            <span className="text-[9px] bg-primary/10 border border-primary/20 px-1.5 rounded-full text-primary font-bold uppercase tracking-tight">
               {currentProject.status}
             </span>
           )}
@@ -132,7 +132,7 @@ export function NavProjectSwitcher() {
                 >
                   <Link href={`${linkPrefix}/project/${project.id}`}>
                     <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/50">
-                      <span className="font-bold text-xs group-hover:text-emerald-500">
+                      <span className="font-bold text-xs group-hover:text-primary">
                         {project.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -140,12 +140,12 @@ export function NavProjectSwitcher() {
                       <span className="text-xs font-medium">
                         {project.name}
                       </span>
-                      <span className="text-[9px] text-emerald-500 uppercase">
+                      <span className="text-[9px] text-primary uppercase">
                         {project.status || 'Active'}
                       </span>
                     </div>
                     {project.id === projectId && (
-                      <Check className="size-3.5 text-emerald-500" />
+                      <Check className="size-3.5 text-primary" />
                     )}
                   </Link>
                 </DropdownMenuItem>

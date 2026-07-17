@@ -326,7 +326,7 @@ export default function GeneralSettingsPage() {
               </div>
               {uploading && (
                 <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-                  <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 </div>
               )}
             </div>
@@ -340,7 +340,7 @@ export default function GeneralSettingsPage() {
                     id="logoUrl" 
                     value={logoUrl}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogoUrl(e.target.value)}
-                    className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-300 h-9"
+                    className="bg-zinc-900/50 border-zinc-800 focus:border-primary/50 text-zinc-300 h-9"
                     placeholder="https://example.com/logo.png"
                   />
                   <Button 
@@ -396,7 +396,7 @@ export default function GeneralSettingsPage() {
                   id="orgName" 
                   value={name} 
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 focus:ring-emerald-500/20 text-zinc-200"
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-primary/50 focus:ring-primary/20 text-zinc-200"
                   placeholder="Enter organization name"
                 />
               </div>
@@ -424,9 +424,9 @@ export default function GeneralSettingsPage() {
                   <button 
                     onClick={copyToClipboard}
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-emerald-500 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-primary transition-colors"
                   >
-                    {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
                   </button>
                 </div>
                 <Button 
@@ -468,7 +468,7 @@ export default function GeneralSettingsPage() {
                   id="orgWebsite" 
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-primary/50 text-zinc-200"
                   placeholder="https://company.com"
                 />
               </div>
@@ -484,7 +484,7 @@ export default function GeneralSettingsPage() {
                   id="orgAddress" 
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="bg-zinc-900/50 border-zinc-800 focus:border-emerald-500/50 text-zinc-200"
+                  className="bg-zinc-900/50 border-zinc-800 focus:border-primary/50 text-zinc-200"
                   placeholder="123 Street, City, Country"
                 />
               </div>
@@ -518,7 +518,7 @@ export default function GeneralSettingsPage() {
               <Button 
                 onClick={handleSave}
                 disabled={!hasChanges || updateMutation.isPending || uploading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)] h-9 min-w-[100px]"
+                className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)] h-9 min-w-[100px]"
               >
                 {(updateMutation.isPending || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </Button>
@@ -538,7 +538,7 @@ export default function GeneralSettingsPage() {
           </DialogHeader>
           <div className="py-4 space-y-4">
             <p className="text-sm text-zinc-300 leading-relaxed">
-              Changing your organization slug from <span className="font-mono text-white font-bold bg-zinc-800 px-1 rounded">{orgData?.slug}</span> to <span className="font-mono text-emerald-400 font-bold bg-zinc-800 px-1 rounded">{slug}</span> will:
+              Changing your organization slug from <span className="font-mono text-white font-bold bg-zinc-800 px-1 rounded">{orgData?.slug}</span> to <span className="font-mono text-primary font-bold bg-zinc-800 px-1 rounded">{slug}</span> will:
             </p>
             <ul className="text-xs text-zinc-500 space-y-2 list-disc list-inside">
               <li>Change your dashboard URL instantly.</li>
@@ -635,7 +635,7 @@ export default function GeneralSettingsPage() {
                                       [project.id]: !!checked
                                     }));
                                   }}
-                                  className="border-zinc-700 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                                  className="border-zinc-700 data-[state=checked]:bg-primary data-[state=checked]:border-emerald-500"
                                 />
                                 <Label htmlFor={`project-${project.id}`} className="text-sm font-medium text-zinc-200 cursor-pointer">
                                   {project.name}

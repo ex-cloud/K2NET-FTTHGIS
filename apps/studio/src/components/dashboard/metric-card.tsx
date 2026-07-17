@@ -24,7 +24,7 @@ export function MetricCard({
   color = "emerald",
 }: MetricCardProps) {
   const colorMap: Record<string, string> = {
-    emerald: "text-emerald-500 bg-emerald-500/10",
+    emerald: "text-primary bg-primary/10",
     blue: "text-blue-500 bg-blue-500/10",
     amber: "text-amber-500 bg-amber-500/10",
     rose: "text-rose-500 bg-rose-500/10",
@@ -34,7 +34,7 @@ export function MetricCard({
   const selectedColor = colorMap[color] || colorMap.emerald;
 
   return (
-    <Card className="bg-white/60 dark:bg-zinc-950/40 border-zinc-200/60 dark:border-zinc-800/50 backdrop-blur-xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-300 shadow-sm dark:shadow-none">
+    <Card className="bg-white/60 dark:bg-zinc-950/40 border-zinc-200/60 dark:border-zinc-800/50 backdrop-blur-xl overflow-hidden group hover:border-primary/30 transition-all duration-300 shadow-sm dark:shadow-none">
       <CardContent className="p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <div className="space-y-1">
@@ -42,14 +42,14 @@ export function MetricCard({
               {title}
             </p>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-black text-zinc-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
+              <h3 className="text-2xl font-black text-zinc-900 dark:text-white group-hover:text-primary dark:group-hover:text-primary transition-colors">
                 {value}
               </h3>
               {trend && (
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                     trend.isUp
-                      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-500"
+                      ? "bg-emerald-500/20 text-primary dark:text-primary"
                       : "bg-rose-500/20 text-rose-600 dark:text-rose-500"
                   }`}
                 >

@@ -275,11 +275,11 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         </div>
 
         <DialogHeader className="p-6 pb-2">
-          <div className="flex items-center gap-2 text-emerald-500 mb-2">
-            <div className="size-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-sm">
+          <div className="flex items-center gap-2 text-primary mb-2">
+            <div className="size-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-sm">
               {step}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500/70">Step {step} of 4</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Step {step} of 4</span>
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight">
             {step === 1 && "Start your journey"}
@@ -308,7 +308,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   value={formData.name}
                   onChange={handleNameChange}
                   placeholder="e.g. Acme Corporation" 
-                  className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10"
+                  className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                 />
               </div>
 
@@ -321,7 +321,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   <Input 
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                    className="bg-[#141414] border-[#2a2a2a] focus:border-emerald-500/50 focus:ring-emerald-500/20 text-sm h-10 pl-[62px]"
+                    className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10 pl-[62px]"
                   />
                 </div>
                 {slugError && <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1"><AlertCircle className="size-3" /> {slugError}</p>}
@@ -395,7 +395,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     formData.plan === "FREE" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-[#1f1f1f] grayscale"
                   )}
                 >
-                  <Zap className={cn("size-4", formData.plan === "FREE" ? "text-emerald-500" : "text-zinc-500")} />
+                  <Zap className={cn("size-4", formData.plan === "FREE" ? "text-primary" : "text-zinc-500")} />
                   <div>
                     <p className="text-xs font-bold">Free Plan</p>
                     <p className="text-[10px] text-zinc-500">Perfect for exploration.</p>
@@ -424,13 +424,13 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 onClick={() => setFormData(prev => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
                 className={cn(
                   "p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between",
-                  formData.ldapEnabled ? "bg-emerald-500/10 border-emerald-500" : "bg-muted/10 border-[#1f1f1f]"
+                  formData.ldapEnabled ? "bg-primary/10 border-emerald-500" : "bg-muted/10 border-[#1f1f1f]"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "size-10 rounded-full flex items-center justify-center",
-                    formData.ldapEnabled ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-800 text-zinc-500"
+                    formData.ldapEnabled ? "bg-emerald-500/20 text-primary" : "bg-zinc-800 text-zinc-500"
                   )}>
                     <Network className="size-5" />
                   </div>
@@ -519,8 +519,8 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     className={cn(
                       "w-full mt-2 gap-2 h-9 text-xs font-semibold transition-all",
                       ldapTestPassed 
-                        ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15" 
-                        : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"
+                        ? "text-primary border-emerald-500/40 bg-primary/10 hover:bg-emerald-500/15" 
+                        : "text-primary border-primary/20 hover:bg-primary/10"
                     )}
                     onClick={handleTestLdap}
                     disabled={testingLdap || !isLdapFormComplete || !isLdapFormatValid}
@@ -545,7 +545,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-3">
                 <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
                   <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Review Configuration</span>
-                  <Check className="size-3 text-emerald-500" />
+                  <Check className="size-3 text-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-y-3 text-xs">
                   <div>
@@ -554,32 +554,32 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   </div>
                   <div>
                     <p className="text-zinc-500 mb-0.5">Slug</p>
-                    <p className="font-medium font-mono text-emerald-400">/{formData.slug}</p>
+                    <p className="font-medium font-mono text-primary">/{formData.slug}</p>
                   </div>
                   <div>
                     <p className="text-zinc-500 mb-0.5">LDAP Status</p>
                     <span className={cn(
                       "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
-                      formData.ldapEnabled ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-500"
+                      formData.ldapEnabled ? "bg-primary/10 text-primary" : "bg-zinc-800 text-zinc-500"
                     )}>
                       {formData.ldapEnabled ? "Enabled" : "Disabled"}
                     </span>
                   </div>
                   <div>
                     <p className="text-zinc-500 mb-0.5">Plan</p>
-                    <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[10px] font-bold uppercase">
+                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-bold uppercase">
                       {formData.plan} PLAN
                     </span>
                   </div>
                   <div>
                     <p className="text-zinc-500 mb-0.5">Admin Account</p>
-                    <p className="font-medium text-emerald-400">{formData.adminEmail}</p>
+                    <p className="font-medium text-primary">{formData.adminEmail}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-zinc-300">
-                <ShieldCheck className="size-5 text-emerald-500 shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-primary/20 text-xs text-zinc-300">
+                <ShieldCheck className="size-5 text-primary shrink-0" />
                 <p>Infrastructure deployment will start immediately after confirmation.</p>
               </div>
             </div>
@@ -589,27 +589,27 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             <div className="space-y-6 animate-in zoom-in-95 duration-500 py-4">
               <div className="flex flex-col items-center text-center space-y-2">
                 <div className="size-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
-                  <Check className="size-8 text-emerald-500" />
+                  <Check className="size-8 text-primary" />
                 </div>
                 <h3 className="text-lg font-bold text-white">System Online</h3>
-                <p className="text-zinc-500 text-sm">Infrastructure for <span className="text-emerald-400">/{deployedData.slug}</span> has been provisioned.</p>
+                <p className="text-zinc-500 text-sm">Infrastructure for <span className="text-primary">/{deployedData.slug}</span> has been provisioned.</p>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-primary/20 space-y-4">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Admin Username</p>
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Admin Username</p>
                     <p className="text-sm font-mono text-zinc-200">{deployedData.adminUsername}</p>
                   </div>
                   
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Initial Password</p>
-                    <div className="flex items-center justify-between bg-[#080808] border border-[#1f1f1f] rounded-lg p-3">
-                      <code className="text-emerald-400 font-mono text-sm">{deployedData.adminPassword}</code>
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Initial Password</p>
+                    <div className="flex items-center justify-between bg-background border border-[#1f1f1f] rounded-lg p-3">
+                      <code className="text-primary font-mono text-sm">{deployedData.adminPassword}</code>
                       <Button 
                         size="sm" 
                         variant="ghost" 
-                        className="h-8 size-8 p-0 text-zinc-400 hover:text-emerald-400"
+                        className="h-8 size-8 p-0 text-zinc-400 hover:text-primary"
                         onClick={() => copyToClipboard(deployedData.adminPassword || "")}
                       >
                         {copied ? <Check className="size-4" /> : <Key className="size-4" />}
@@ -664,7 +664,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       "text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10",
                       (step === 3 && formData.ldapEnabled && !ldapTestPassed)
                         ? "bg-zinc-700 hover:bg-zinc-600 cursor-not-allowed"
-                        : "bg-emerald-600 hover:bg-emerald-500"
+                        : "bg-primary hover:bg-primary/90"
                     )}
                   >
                     Continue <ChevronRight className="size-4 ml-1" />
@@ -673,7 +673,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   <Button 
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
+                    className="bg-primary hover:bg-primary/90 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
                   >
                     {isSubmitting ? (
                       <>
@@ -688,7 +688,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             ) : (
               <Button 
                 onClick={closeWizard}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white min-w-[150px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-white min-w-[150px] h-9 shadow-lg shadow-emerald-900/10"
               >
                 Go to Dashboard <ChevronRight className="size-4 ml-1" />
               </Button>

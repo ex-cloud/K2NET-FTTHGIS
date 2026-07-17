@@ -172,7 +172,7 @@ export function GithubAppConfigCard() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <CardTitle className="text-zinc-100 flex items-center gap-2">
-              <Github className="w-4 h-4 text-emerald-500" /> GitHub App Configuration
+              <Github className="w-4 h-4 text-primary" /> GitHub App Configuration
             </CardTitle>
             <CardDescription className="text-zinc-400 text-xs">
               System-level GitHub App settings for secure private repository access.
@@ -180,7 +180,7 @@ export function GithubAppConfigCard() {
           </div>
           <Badge
             variant="outline"
-            className="border-emerald-500/20 text-emerald-500 bg-emerald-500/5"
+            className="border-primary/20 text-primary bg-emerald-500/5"
           >
             System Panel
           </Badge>
@@ -219,7 +219,7 @@ export function GithubAppConfigCard() {
                   value={configValues[item.key] || ""}
                   onChange={(event) => handleChange(item.key, event.target.value)}
                   placeholder={item.placeholder}
-                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs font-mono focus:border-emerald-500/50 focus:ring-emerald-500/50 resize-y"
+                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs font-mono focus:border-primary/50 focus:ring-primary/50 resize-y"
                 />
               ) : (
                 <Input
@@ -228,7 +228,7 @@ export function GithubAppConfigCard() {
                   value={configValues[item.key] || ""}
                   onChange={(event) => handleChange(item.key, event.target.value)}
                   placeholder={item.placeholder}
-                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-emerald-500/50 focus:ring-emerald-500/50"
+                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
                 />
               )}
               <p className="text-[11px] text-zinc-500">{item.description}</p>
@@ -261,7 +261,7 @@ export function GithubAppConfigCard() {
         <Button
           onClick={handleSave}
           disabled={!hasChanges || saving}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-9 px-4 gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 gap-2"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save GitHub App Config
         </Button>

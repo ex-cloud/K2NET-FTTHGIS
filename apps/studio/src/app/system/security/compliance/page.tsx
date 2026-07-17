@@ -126,7 +126,7 @@ export default function SecurityCompliancePage() {
         <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
           <div className="space-y-1">
             <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
-              <FileText className="w-8 h-8 text-emerald-500" /> Security & Compliance Policies
+              <FileText className="w-8 h-8 text-primary" /> Security & Compliance Policies
             </h1>
             <p className="text-xs text-zinc-400">
               Manage automatic session timeouts, dynamic map locks, WhatsApp OTP compliance gateway parameters, and MFA enforcement.
@@ -140,7 +140,7 @@ export default function SecurityCompliancePage() {
           <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-zinc-800/40">
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-500" /> Timeout & Inactivity Rules
+                <Clock className="w-4 h-4 text-primary" /> Timeout & Inactivity Rules
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 Prevent unauthorized access from left-behind or inactive developer/editor workstations.
@@ -155,7 +155,7 @@ export default function SecurityCompliancePage() {
                     <Label className="text-zinc-200 text-sm font-medium">Session Idle Logout</Label>
                     <p className="text-xs text-zinc-400 font-normal">Terminate inactive SSO sessions and force user re-auth.</p>
                   </div>
-                  <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                     {sessionTimeout} minutes
                   </span>
                 </div>
@@ -179,7 +179,7 @@ export default function SecurityCompliancePage() {
                     <Label className="text-zinc-200 text-sm font-medium">Map Canvas Lock</Label>
                     <p className="text-xs text-zinc-400 font-normal">Automatically blur and lock active FTTH GIS map screens.</p>
                   </div>
-                  <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                     {mapLockDuration} minutes
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export default function SecurityCompliancePage() {
                   <Switch
                     checked={mfaEnforced}
                     onCheckedChange={setMfaEnforced}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -221,7 +221,7 @@ export default function SecurityCompliancePage() {
                   <Switch
                     checked={waOtpEnabled}
                     onCheckedChange={setWaOtpEnabled}
-                    className="data-[state=checked]:bg-emerald-500"
+                    className="data-[state=checked]:bg-primary"
                   />
                 </div>
 
@@ -234,7 +234,7 @@ export default function SecurityCompliancePage() {
           <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-zinc-800/40">
               <CardTitle className="text-zinc-100 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-emerald-500" /> WhatsApp API Gateway Config
+                <MessageSquare className="w-4 h-4 text-primary" /> WhatsApp API Gateway Config
               </CardTitle>
               <CardDescription className="text-zinc-400 text-xs">
                 Integrate external messaging APIs (e.g. Fonnte, RuangWA) to broadcast alarms and verify OTPs.
@@ -251,7 +251,7 @@ export default function SecurityCompliancePage() {
                 <Switch
                   checked={waEnabled}
                   onCheckedChange={setWaEnabled}
-                  className="data-[state=checked]:bg-emerald-500"
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
 
@@ -308,7 +308,7 @@ export default function SecurityCompliancePage() {
               <Button
                 onClick={handleSaveCompliance}
                 disabled={isUpdating || !isChanged()}
-                className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                 Apply Configuration Settings

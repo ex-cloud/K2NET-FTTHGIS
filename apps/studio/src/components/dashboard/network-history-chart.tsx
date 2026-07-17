@@ -134,7 +134,7 @@ function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
               <span
                 className={`text-[10px] font-bold ${
                   ["UP", "ACTIVE", "RECOVERY"].includes(det.newStatus)
-                    ? "text-emerald-500"
+                    ? "text-primary"
                     : ["DOWN", "FIBERCUT", "BROKEN"].includes(det.newStatus)
                       ? "text-rose-500"
                       : "text-amber-500"
@@ -248,7 +248,7 @@ export function NetworkHistoryChart({
       {/* Header with controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
         <h3 className="text-sm font-bold uppercase tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-          <Activity className="w-4 h-4 text-emerald-500" />
+          <Activity className="w-4 h-4 text-primary" />
           NODE STATUS HISTORY
         </h3>
 
@@ -295,7 +295,7 @@ export function NetworkHistoryChart({
                       type="date"
                       value={calendarFrom}
                       onChange={(e) => setCalendarFrom(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   <div>
@@ -306,7 +306,7 @@ export function NetworkHistoryChart({
                       type="date"
                       value={calendarTo}
                       onChange={(e) => setCalendarTo(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   <button
@@ -381,7 +381,7 @@ export function NetworkHistoryChart({
       >
         {historyLoading ? (
           <div className="h-full flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : historyData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">

@@ -118,7 +118,7 @@ export default function BOQPage() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="default" size="sm" className="bg-emerald-600 hover:bg-emerald-500">
+              <Button variant="default" size="sm" className="bg-primary hover:bg-primary/90">
                 <Download className="mr-2 h-4 w-4" />
                 Export Report
                 <ChevronDown className="ml-2 h-4 w-4" />
@@ -126,7 +126,7 @@ export default function BOQPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px] bg-zinc-900 border-white/10 text-white">
               <DropdownMenuItem onClick={exportToExcel} className="cursor-pointer hover:bg-white/5">
-                <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-primary" />
                 Export as Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer hover:bg-white/5">
@@ -139,10 +139,10 @@ export default function BOQPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+        <Card className="border-border bg-black/40 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Valuation</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data ? formatCurrency(data.grandTotal) : "---"}</div>
@@ -151,10 +151,10 @@ export default function BOQPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="border-white/5 bg-black/40 backdrop-blur-md">
+        <Card className="border-border bg-black/40 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Material Items</CardTitle>
-            <Package className="h-4 w-4 text-emerald-500" />
+            <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.items?.length || 0}</div>
@@ -165,7 +165,7 @@ export default function BOQPage() {
         </Card>
       </div>
 
-      <Card className="border-white/5 bg-black/40 backdrop-blur-md overflow-hidden">
+      <Card className="border-border bg-black/40 backdrop-blur-md overflow-hidden">
         <CardHeader className="bg-white/5">
           <CardTitle>Bill of Quantities Detail</CardTitle>
           <CardDescription>
@@ -175,7 +175,7 @@ export default function BOQPage() {
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-white/5">
-              <TableRow className="border-white/5 hover:bg-transparent">
+              <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="w-[40%] text-white">Description</TableHead>
                 <TableHead className="text-white">Quantity</TableHead>
                 <TableHead className="text-white">Unit</TableHead>
@@ -186,13 +186,13 @@ export default function BOQPage() {
             <TableBody>
               {loading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <TableRow key={i} className="border-white/5">
+                  <TableRow key={i} className="border-border">
                     <TableCell colSpan={5} className="h-12 animate-pulse bg-white/5" />
                   </TableRow>
                 ))
               ) : (
                 data?.items?.map((item, index: number) => (
-                  <TableRow key={index} className="border-white/5 hover:bg-white/5">
+                  <TableRow key={index} className="border-border hover:bg-white/5">
                     <TableCell className="font-medium">{item.description}</TableCell>
                     <TableCell>{item.quantity.toFixed(2)}</TableCell>
                     <TableCell>
@@ -201,7 +201,7 @@ export default function BOQPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
-                    <TableCell className="text-right font-bold text-emerald-500">
+                    <TableCell className="text-right font-bold text-primary">
                       {formatCurrency(item.totalPrice)}
                     </TableCell>
                   </TableRow>
@@ -215,7 +215,7 @@ export default function BOQPage() {
       <div className="flex justify-end pt-4">
           <div className="text-right space-y-1">
              <p className="text-sm text-muted-foreground">Estimated Grand Total</p>
-             <h3 className="text-4xl font-bold text-emerald-500">
+             <h3 className="text-4xl font-bold text-primary">
                 {data ? formatCurrency(data.grandTotal) : "---"}
              </h3>
           </div>

@@ -129,7 +129,7 @@ export default function OdpListPage() {
         accessorKey: "code",
         header: "Code",
         cell: ({ row }) => (
-          <span className="font-bold text-emerald-500 truncate block max-w-[200px]" title={row.getValue("code")}>
+          <span className="font-bold text-primary truncate block max-w-[200px]" title={row.getValue("code")}>
             {row.getValue("code")}
           </span>
         ),
@@ -158,9 +158,9 @@ export default function OdpListPage() {
             <div className="flex flex-col gap-1.5 min-w-[120px]">
               <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
                 <span className="text-muted-foreground">{used} / {total} Ports</span>
-                <span className={pct > 80 ? "text-amber-500 font-black" : "text-emerald-500"}>{pct}%</span>
+                <span className={pct > 80 ? "text-amber-500 font-black" : "text-primary"}>{pct}%</span>
               </div>
-              <div className="h-1.5 w-full bg-zinc-800/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
+              <div className="h-1.5 w-full bg-zinc-800/50 rounded-full overflow-hidden border border-border shadow-inner">
                 <div
                   className={`h-full transition-all duration-700 ease-out ${
                     pct > 90 ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]" : 
@@ -259,7 +259,7 @@ export default function OdpListPage() {
         <div className="flex items-center gap-3">
           <Button
             onClick={handleCreate}
-            className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 shadow-sm"
+            className="h-9 bg-primary hover:bg-primary/90 text-white font-bold px-4 shadow-sm"
           >
             <Plus className="mr-2 h-4 w-4" /> New ODP
           </Button>

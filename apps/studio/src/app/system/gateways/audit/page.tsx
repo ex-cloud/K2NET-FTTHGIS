@@ -154,11 +154,11 @@ export default function AuditGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#080808] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+        <div className="flex items-center gap-4 border-b border-border pb-6">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -173,7 +173,7 @@ export default function AuditGatewayPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-xs text-zinc-500">Memuat konfigurasi audit gateway...</p>
           </div>
         ) : (
@@ -181,10 +181,10 @@ export default function AuditGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-emerald-500" /> Database Connection
+                    <Server className="w-4 h-4 text-primary" /> Database Connection
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Koneksi PostgreSQL database untuk penyimpanan log kepatuhan audit.
@@ -199,16 +199,16 @@ export default function AuditGatewayPage() {
                       value={config.DATABASE_URL || ""}
                       onChange={(e) => handleInputChange("DATABASE_URL", e.target.value)}
                       placeholder="postgres://..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/60 border-white/5 shadow-xl">
+              <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-emerald-500" /> Retention & Compliance
+                    <Lock className="w-4 h-4 text-primary" /> Retention & Compliance
                   </CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
                     Aturan pembersihan otomatis dan batas waktu penyimpanan log.
@@ -223,7 +223,7 @@ export default function AuditGatewayPage() {
                       value={config.RETENTION_DAYS || ""}
                       onChange={(e) => handleInputChange("RETENTION_DAYS", e.target.value)}
                       placeholder="365"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-emerald-500/50"
+                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -241,7 +241,7 @@ export default function AuditGatewayPage() {
                 <Button 
                   type="submit" 
                   disabled={saving}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save Configuration
@@ -251,7 +251,7 @@ export default function AuditGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-white/5 shadow-xl">
+              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Aktivitas Audit Terkini
@@ -269,12 +269,12 @@ export default function AuditGatewayPage() {
                     <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log audit tercatat.</p>
                   ) : (
                     auditLogs.map((log) => (
-                      <div key={log.id} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0 space-y-1">
+                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-medium text-zinc-200 font-mono">{log.action}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             log.status === "success"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              ? "bg-primary/10 text-primary border-primary/20"
                               : log.status === "denied"
                               ? "bg-red-500/10 text-red-500 border-red-500/20"
                               : "bg-amber-500/10 text-amber-400 border-amber-500/20"
