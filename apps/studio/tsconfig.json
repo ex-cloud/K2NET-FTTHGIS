@@ -21,7 +21,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "@k2net/types": ["../../packages/types/src"],
-      "@k2net/ui": ["../../packages/ui/src"]
+      "@k2net/ui": ["../../packages/ui/src"],
+      "@k2net/design-system": ["../../packages/design-system/src/index.ts"],
+      "@k2net/design-system/*": ["../../packages/design-system/*"]
     }
   },
   "include": [

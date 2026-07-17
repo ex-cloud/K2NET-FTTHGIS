@@ -1,111 +1,88 @@
 # Global UI Style & Theme Consistency Rules
 
-Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style warna, card, button, typografi, dsb.) antara **Portal Utama (System)** dan **Portal Tenant (Organization/Dashboard)**.
+Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style warna, card, button, tipografi, dsb.) di seluruh platform **K2NET-FTTHGIS**, baik untuk Portal Utama (System Admin) maupun Portal Tenant (Organization/Dashboard).
 
 ---
 
 ## 🎨 1. Sistem Warna Global (Tailwind v4 & CSS Variables)
 
-Aplikasi ini menggunakan tema **Dark Mode by default (Supabase Style)** yang diatur oleh CSS Variables di [`globals.css`](file:///opt/project5/apps/studio/src/app/globals.css):
+Aplikasi ini menggunakan tema **K2 Blue & Charcoal Dark Mode** secara default (Supabase Style) yang dikonfigurasi melalui `@theme inline` di package terpusat `@k2net/design-system` (`packages/design-system/src/theme.css`):
 
-### 🎨 Palet Warna Supabase (Hex / HSL)
+### 🎨 Palet Warna Utama (K2 Blue & Charcoal)
 
 | Kategori | Token Warna | Nilai HSL | Nilai Hex | Penggunaan di Code |
 |---|---|---|---|---|
-| **Brand Accent** | Emerald Green | `hsl(153 60% 53%)` | `#3ecf8e` | `text-[#3ecf8e]` (Untuk tombol utama, sukses, status online) |
-| **Backgrounds** | Deep Background | `hsl(0 0% 11%)` | `#1c1c1c` | `bg-background` (Latar belakang dasar/kanvas) |
-| **Sidebar** | Panel Sidebar | `hsl(0 0% 9%)` | `#171717` | `bg-sidebar` (Latar belakang navigasi samping) |
-| **Borders** | Subtle Borders | `hsl(0 0% 18%)` | `#2e2e2e` | `border-border` (Garis batas antar panel/kontainer) |
-| **Teks Muted** | Neutral Grey | `hsl(240 5% 65%)` | `#8a8a93` | `text-muted-foreground` (Teks sekunder/penjelas) |
-
-> [!TIP]
-> Prioritaskan menggunakan class utilitas Tailwind bawaan (`bg-background`, `border-border`, `bg-sidebar`) daripada hex manual. Jika butuh warna aksen brand hijau Supabase secara eksplisit di luar class Tailwind, gunakan `#3ecf8e`.
+| **Brand Accent** | K2 Blue | `hsl(201 85% 49%)` | `#139BE7` | `text-[#139BE7]` atau `bg-primary` (Tombol utama, aksen link, fokus) |
+| **Backgrounds (Dark)** | Charcoal Background | `hsl(0 0% 11%)` | `#1c1c1c` | `bg-background` (Latar belakang kanvas/card default) |
+| **Sidebar (Dark)** | Panel Sidebar | `hsl(0 0% 9%)` | `#171717` | `bg-sidebar` (Latar belakang navigasi samping) |
+| **Borders (Dark)** | Subtle Borders | `hsl(0 0% 18%)` | `#2e2e2e` | `border-border` (Garis pemisah antar kontainer) |
+| **Text Primary (Dark)** | Slate/White | `hsl(0 0% 98%)` | `#fafafa` | `text-foreground` (Teks putih cerah) |
+| **Text Muted (Dark)** | Neutral Grey | `hsl(240 5% 65%)` | `#a1a1aa` | `text-muted-foreground` (Teks sekunder/penjelas) |
 
 ---
 
-## 📦 2. Panduan Desain Komponen (Component Styling)
+## 🌓 2. Spesifikasi Tema Visual (Dark vs Light)
 
-Untuk menjaga keseragaman total, semua komponen baru harus mengikuti struktur visual berikut:
+Untuk menjaga konsistensi, semua komponen visual wajib mendukung pertukaran tema menggunakan kelas `.dark` pada root element (`<html>`):
+
+### 🌑 A. Dark Mode
+Menggunakan warna dasar arang pekat (Charcoal) default:
+* **Background Page & Card**: `#1c1c1c` (`hsl(0 0% 11%)`)
+* **Background Sidebar**: `#171717` (`hsl(0 0% 9%)`)
+* **Borders / Input Stroke**: `#2e2e2e` (`hsl(0 0% 18%)`)
+* **Text Primary**: `#fafafa` / **Text Muted**: `#a1a1aa`
+
+### ☀️ B. Light Mode
+Menggunakan warna dasar abu-abu/putih bersih untuk visibilitas luar ruangan/lapangan:
+* **Page Background**: `#F8FAFC` (`hsl(210 40% 98%)`) (Slate-50)
+* **Card & Dialog Background**: `#FFFFFF` (`hsl(0 0% 100%)`)
+* **Sidebar Background**: `#F1F5F9` (`hsl(210 40% 96.1%)`) (Slate-100)
+* **Border & Input Stroke**: `#E2E8F0` (`hsl(214.3 31.8% 91.4%)`) (Slate-200)
+* **Text Primary**: `#0F172A` / **Text Muted**: `#64748B`
+
+---
+
+## 📦 3. Panduan Desain Komponen (Component Styling)
 
 ### A. Kartu & Panel (Cards)
-* **Warna & Border**: Gunakan background gelap transparan dengan border putih transparan tipis.
+* **Warna & Border**: Gunakan background gelap transparan dengan border putih transparan tipis atau variable card.
   * *Class*: `bg-white/3 border-white/8 backdrop-blur-xl` atau `bg-card border-border`.
-* **Radius Sudut (Rounded)**: Selalu gunakan `rounded-xl` (12px) atau `rounded-2xl` (16px) untuk card besar.
+* **Radius Sudut (Rounded)**: Selalu gunakan `rounded-xl` (12px) untuk Card Utama, dan `rounded-md` (6px) untuk komponen kecil.
 * **Pulsing Dot**: Untuk indikator status ONLINE, gunakan dot kecil dengan pulse:
-  * *Class*: `h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse`
+  * *Class*: `h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse`
 
 ### B. Tombol & Badge (Buttons & Badges)
-* **Tombol Aksi**: Gunakan variant `outline` dengan warna teks muted untuk aksi sekunder, dan variant `default` untuk aksi utama.
-  * *Class*: `Button variant="outline" className="border-white/10 hover:border-white/20 text-white/70 hover:text-white"`
-* **Badge Status**:
-  * **ONLINE / Operational**: `bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px]`
-  * **OFFLINE / Alert**: `bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px]`
-  * **WARNING / Pending**: `bg-amber-500/15 text-amber-400 border-amber-500/30 text-[11px]`
+* **Tombol Aksi**: Gunakan `@k2net/ui` `<Button />` dengan class variants.
+* **Badge Status Semantik**:
+  * **ONLINE / Operational (Green)**: `bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px]`
+  * **OFFLINE / Alert (Red)**: `bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px]`
+  * **WARNING / Pending (Amber)**: `bg-amber-500/15 text-amber-400 border-amber-500/30 text-[11px]`
 
 ### C. Tipografi (Typography)
 * **Header Halaman (H1)**: Gunakan font tipis/light dengan tracking ketat.
   * *Class*: `text-3xl font-light text-zinc-100 tracking-tight`
 * **Sub-header / Card Title**: Gunakan semibold/medium berukuran kecil.
   * *Class*: `text-sm font-medium text-white/80`
-* **Deskripsi / Info**: Gunakan ukuran ekstra kecil berwarna abu-abu.
-  * *Class*: `text-xs text-zinc-500` atau `text-white/40`
+* **Data Teknis (Mono)**: Gunakan class `font-mono` atau font `Fira Code` untuk menampilkan IP Address, koordinat, redaman, dan kode OLT/ODP.
 
 ---
 
-## 🏛️ 3. Perbedaan Portal Utama vs Portal Tenant
+## 🔄 4. Arsitektur Tema Dinamis (Tailwind v4 CSS-First Style)
 
-Meskipun menggunakan tema global yang sama, terdapat aksen visual yang membedakan lingkup kerja user:
-
-### A. Portal Utama (System / Admin Platform Control)
-* **Tujuan**: Mengelola organisasi, kesehatan server global, dan database.
-* **Aksen Warna**: Dominan **Hijau Emerald (`emerald`)** untuk melambangkan stabilitas operasional.
-* **Background Utama**: `bg-[#080808] px-8 pt-16` (untuk layout kontrol admin).
-
-### B. Portal Tenant (Operational Dashboard)
-* **Tujuan**: Monitoring perangkat FTTH pelanggan, peta spasial, dan billing tenant.
-* **Aksen Warna**: Dominan **Biru Langit (`sky`)** atau **Violet (`violet`)** untuk membedakan ruang operasional kerja tenant.
-* **Background Utama**: Sesuai dengan tema standard `bg-background` (#1c1c1c).
-
----
-
-## 🔄 4. Arsitektur Tema Dinamis (Dynamic & Multi-Theme shadcn/ui Style)
-
-Untuk mendukung penggantian tema secara langsung (real-time) melalui UI baik di portal utama maupun portal tenant, platform ini menggunakan arsitektur **injeksi class tema dinamis pada root element (`<html>` atau `<body>`)** dengan memanfaatkan variabel HSL CSS.
-
-### A. Alur Kerja Tema Dinamis
-1. **Pilihan Tema**: User memilih tema dari UI (contoh: *Supabase Classic*, *Monochrome Slate*, *Cyberpunk Violet*, *Forest Emerald*).
-2. **Penyimpanan**: Pilihan tema disimpan di `localStorage` (untuk persistensi client-side cepat) dan di database profil user/tenant (untuk persistensi multi-device).
-3. **Penerapan**: Next.js Theme Provider menyuntikkan kelas tema ke tag `<html>` (misal `<html class="theme-monochrome">`).
-
-### B. Struktur CSS Variable untuk Tema Tambahan di `globals.css`
-Saat mendesain tema baru, ikuti pola pendefinisian variabel di [`globals.css`](file:///opt/project5/apps/studio/src/app/globals.css) berikut:
+Mulai versi Tailwind CSS v4, konfigurasi tema tidak lagi menggunakan file JavaScript (`tailwind.config.js`), melainkan dikelola langsung melalui file CSS (`packages/design-system/src/theme.css`) menggunakan teknik **`@theme inline`** agar pemetaan CSS variables ter-update secara dinamis di runtime:
 
 ```css
-/* 1. Tema Default (Supabase Classic) */
-:root {
-  --background: hsl(0 0% 11%); /* #1c1c1c */
-  --foreground: hsl(0 0% 98%);
-  --border: hsl(0 0% 18%);
-  --primary: hsl(153 60% 53%); /* Emerald Green */
-}
-
-/* 2. Tema Monochrome (Shadcn Slate Style) */
-.theme-monochrome {
-  --background: hsl(240 10% 3.9%); /* Deep black slate */
-  --foreground: hsl(0 0% 98%);
-  --border: hsl(240 5.9% 10%);
-  --primary: hsl(0 0% 98%); /* Pure white/black contrast */
-}
-
-/* 3. Tema Cyberpunk (Violet Neon Style) */
-.theme-cyberpunk {
-  --background: hsl(270 20% 6%); /* Dark purple */
-  --foreground: hsl(180 100% 90%);
-  --border: hsl(280 40% 15%);
-  --primary: hsl(290 100% 60%); /* Neon Magenta/Violet */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 ```
 
-### C. Implementasi Theme Switcher di UI
-Semua state dropdown/pilihan tema harus membaca theme dari hooks custom global `useTheme()` (atau helper provider serupa) dan merubah class root `document.documentElement.className` secara bersih untuk menghindari flash warna tidak seragam.
-
+*Catatan: Semua agen wajib mengacu pada spesifikasi desain terpusat di [docs/Server/UI/theme/design_tokens_spec_v2.md](file:///opt/project5/docs/Server/UI/theme/design_tokens_spec_v2.md) untuk implementasi komponen UI.*
