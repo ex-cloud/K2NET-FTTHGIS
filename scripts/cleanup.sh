@@ -187,7 +187,16 @@ if [ "$DRY_RUN" = false ] && [ "$OLD_TMP" -gt 0 ]; then
   log "   ✅ Old /tmp dirs dihapus."
 fi
 
-# 3c. Bersihkan systemd journal log (simpan 7 hari terakhir)
+# 3c. Bersihkan arsip backup lokal (.gz) di /opt/project5/backups agar tidak menumpuk
+BACKUP_PARENT="/opt/project5/backups"
+OLD_BACKUP_FILES=$(find "$BACKUP_PARENT" -type f -name "*.gz" 2>/dev/null | wc -l)
+log "🗑️  Arsip backup lokal ditemukan: $OLD_BACKUP_FILES berkas (.gz)"
+if [ "$DRY_RUN" = false ] && [ "$OLD_BACKUP_FILES" -gt 0 ]; then
+  find "$BACKUP_PARENT" -type f -name "*.gz" -delete
+  log "   ✅ Semua berkas arsip backup lokal dibersihkan."
+fi
+
+# 3d. Bersihkan systemd journal log (simpan 7 hari terakhir)
 if command -v journalctl &>/dev/null; then
   JOURNAL_SIZE=$(journalctl --disk-usage 2>/dev/null | grep -oP '[\d.]+[A-Z]+' || echo "N/A")
   log "🗑️  Systemd journal: $JOURNAL_SIZE"
@@ -274,7 +283,8 @@ if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
 📅 $(date +"%d %b %Y, %H:%M") WIB
 💾 Sebelum : $DISK_BEFORE
 ✅ Sesudah  : $DISK_AFTER
-📂 Tersedia : $DISK_AVAIL"
+📂 Tersedia : $DISK_AVAIL
+🧹 Lokal Backup: $OLD_BACKUP_FILES berkas (.gz) dibersihkan"
   TG_PAYLOAD=$(printf '{"chat_id": "%s", "parse_mode": "Markdown", "text": "%s"}' \
     "$TELEGRAM_CHAT_ID" \
     "$(echo "$TELEGRAM_TEXT" | sed 's/"/\\"/g')")
