@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { HelpCircle, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@k2net/ui";
+import { Separator } from "@k2net/ui";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { UserNav } from "./user-nav";
 import { HealthBadge } from "./health-badge";

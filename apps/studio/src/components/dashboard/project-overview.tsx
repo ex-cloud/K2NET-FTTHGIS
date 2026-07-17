@@ -24,7 +24,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { httpClient } from "@/lib/httpClient";
 import { useMapStore } from "@/store/map-store";
 import { useSelectionStore } from "@/store/selection-store";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

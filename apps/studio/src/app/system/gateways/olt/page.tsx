@@ -11,12 +11,12 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Label } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { z } from "zod";
 

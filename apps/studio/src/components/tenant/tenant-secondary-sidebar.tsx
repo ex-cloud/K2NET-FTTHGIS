@@ -34,7 +34,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@k2net/ui";
 import { TENANT_SIDEBAR_NAVIGATION } from "@/config/tenant-sidebar-navigation";
 import { getCurrentOrgSlug } from "@/lib/domain";
 

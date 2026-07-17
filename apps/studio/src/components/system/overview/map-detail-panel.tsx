@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Card } from "@k2net/ui";
 import { ExternalLink, Server } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

@@ -31,7 +31,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@k2net/ui";
 import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 
 const ICON_MAP: Record<string, React.ElementType> = {

@@ -16,14 +16,14 @@ import {
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
 import axios from "axios";
 import { toast } from "sonner";
 

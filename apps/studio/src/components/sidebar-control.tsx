@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { PanelLeftDashed } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useSidebarMode,

@@ -17,16 +17,16 @@ import {
   Lock,
   Network
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Textarea } from "@k2net/ui";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle,
   DialogDescription
-} from "@/components/ui/dialog";
+} from "@k2net/ui";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

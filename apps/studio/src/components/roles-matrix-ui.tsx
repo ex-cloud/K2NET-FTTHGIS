@@ -14,8 +14,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
 
 type Permission = {
   id: number;

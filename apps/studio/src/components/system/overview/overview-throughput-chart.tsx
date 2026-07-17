@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@k2net/ui";
+import { Card } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 
 interface ThroughputDataPoint {

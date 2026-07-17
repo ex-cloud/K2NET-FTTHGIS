@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { ArrowRight, ExternalLink, type LucideIcon } from "lucide-react";
 import Link from "next/link";

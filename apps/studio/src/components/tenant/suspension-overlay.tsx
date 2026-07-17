@@ -3,14 +3,14 @@
 import React from "react";
 import { useUIStore } from "@/store/ui-store";
 import { ShieldAlert, Check, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import { useParams } from "next/navigation";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@k2net/ui";
 
 export function SuspensionOverlay() {
   const { organizationSuspended } = useUIStore();

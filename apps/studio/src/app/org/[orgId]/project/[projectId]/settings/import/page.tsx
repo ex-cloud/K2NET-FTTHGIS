@@ -4,10 +4,10 @@ import React, { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { FileUp, AlertCircle, CheckCircle2, ChevronRight, Map as MapIcon } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
+import { Progress } from "@k2net/ui";
+import { Alert, AlertDescription, AlertTitle } from "@k2net/ui";
 import { toast } from "sonner";
 import axios from "axios";
 

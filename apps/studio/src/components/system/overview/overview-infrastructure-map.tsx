@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@k2net/ui";
+import { Card } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import {
   Activity,

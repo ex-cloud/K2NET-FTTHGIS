@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@k2net/ui";
 import { useSelectionStore } from "@/store/selection-store";
 import {
   Activity,
@@ -17,20 +17,20 @@ import {
 } from "lucide-react";
 import { useAssetEdit } from "@/hooks/use-asset-edit";
 import { DrawAssetType } from "@/store/map-store";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
+import { ScrollArea } from "@k2net/ui";
 import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from "@k2net/ui";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@k2net/ui";
 import { AuditTimeline } from "./audit-timeline";
 import { usePathname, useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -42,8 +42,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@k2net/ui";
+import { Label } from "@k2net/ui";
 import { toast } from "sonner";
 
 interface AssetDetails {

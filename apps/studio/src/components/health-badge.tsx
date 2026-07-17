@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@k2net/ui";
 
 type ServiceStatus = "checking" | "up" | "down";
 

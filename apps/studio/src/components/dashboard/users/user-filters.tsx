@@ -1,16 +1,16 @@
 "use client";
 
 import { RefreshCw, Shield, UserCheck, Building2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+} from "@k2net/ui";
+import { Label } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";

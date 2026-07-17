@@ -16,11 +16,11 @@ import {
   X,
   Radio,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { Skeleton } from "@k2net/ui";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 

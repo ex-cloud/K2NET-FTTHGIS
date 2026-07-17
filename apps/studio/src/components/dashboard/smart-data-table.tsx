@@ -21,10 +21,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Checkbox } from "@k2net/ui";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -41,7 +41,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import { toast } from "sonner";
 
 interface SmartDataTableProps<TData, TValue> {

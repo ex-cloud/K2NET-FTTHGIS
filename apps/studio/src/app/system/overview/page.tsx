@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@k2net/ui";
+import { Button } from "@k2net/ui";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { throughputData } from "@/lib/system-overview-data";

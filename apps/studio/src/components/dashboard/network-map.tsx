@@ -37,7 +37,7 @@ import {
   Box,
   Layers,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import { useMapNotifications } from "@/hooks/use-map-notifications";
 import { MapDrawControl } from "@/components/map/map-draw-control";
 import { MapFilterControl } from "@/components/dashboard/map-filter-control";

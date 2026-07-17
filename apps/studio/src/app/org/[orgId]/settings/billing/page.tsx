@@ -11,9 +11,9 @@ import {
   ArrowRight,
   Info
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
 import { BillingPageWrapper } from "@/components/page-guards/billing-page-wrapper";
 
 export default function BillingPage() {

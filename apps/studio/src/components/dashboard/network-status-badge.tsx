@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { 
   Activity, 

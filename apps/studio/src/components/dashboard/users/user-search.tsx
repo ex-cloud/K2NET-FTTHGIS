@@ -2,7 +2,7 @@
 
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@k2net/ui";
 import { useEffect, useState } from "react";
 
 export function UserSearch({ placeholder }: { placeholder: string }) {

@@ -5,10 +5,10 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
-} from "@/components/ui/breadcrumb";
+} from "@k2net/ui";
 import { usePathname } from "next/navigation";
 import { Plug2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 
 export function BreadcrumbNav() {
   const pathname = usePathname();

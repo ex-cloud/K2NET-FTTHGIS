@@ -4,7 +4,7 @@ import { MainSidebar } from "@/components/tenant/main-sidebar";
 import { TenantSecondarySidebar } from "@/components/tenant/tenant-secondary-sidebar";
 import { RealTimeNotificationClient } from "@/components/real-time-notification-client";
 import { DetailSlidePanel } from "@/components/dashboard/detail-slide-panel";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@k2net/ui";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useUIStore } from "@/store/ui-store";

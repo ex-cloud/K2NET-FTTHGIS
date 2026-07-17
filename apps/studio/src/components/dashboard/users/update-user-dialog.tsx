@@ -8,17 +8,17 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Label } from "@k2net/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@k2net/ui";
+import { Textarea } from "@k2net/ui";
 import { User } from "@/types/user";
 import { useSession } from "next-auth/react";
 import { updateUser } from "@/lib/api/users";

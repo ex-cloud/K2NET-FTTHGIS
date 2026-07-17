@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@k2net/ui";
 
 interface UserStatsProps {
   stats: {

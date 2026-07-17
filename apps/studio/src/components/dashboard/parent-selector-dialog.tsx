@@ -6,9 +6,9 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogDescription
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { Search, MapPin, Loader2, Check } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { networkApi } from "@/lib/api/network";

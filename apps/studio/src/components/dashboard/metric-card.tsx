@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@k2net/ui";
 import { LucideIcon } from "lucide-react";
 
 interface MetricCardProps {

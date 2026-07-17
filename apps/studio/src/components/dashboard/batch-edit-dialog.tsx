@@ -8,18 +8,18 @@ import {
   DialogTitle, 
   DialogFooter,
   DialogDescription
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Label } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Textarea } from "@k2net/ui";
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";
+} from "@k2net/ui";
 import { Loader2, AlertCircle, CheckCircle2, Layers, RefreshCw } from "lucide-react";
 import { ParentSelectorDialog } from "./parent-selector-dialog";
 import { cn } from "@/lib/utils";

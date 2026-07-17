@@ -8,17 +8,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Label } from "@k2net/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@k2net/ui";
 import { ODC, OLT } from "@/types/network";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
@@ -28,7 +28,7 @@ import { odcSchema } from "@/lib/validations/network";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, MapPin, Settings2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@k2net/ui";
 import { MapCoordinatePicker } from "./map-coordinate-picker";
 
 interface OdcDialogProps {

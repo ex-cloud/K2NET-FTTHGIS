@@ -20,9 +20,9 @@ import {
   Server,
 } from "lucide-react";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
+import { Button } from "@k2net/ui";
 import {
   LineChart,
   Line,

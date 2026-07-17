@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
   Shield,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import { auth } from "@/auth";
 import { getTenantUsers, getTenantUserStats } from "@/lib/api/users";
 

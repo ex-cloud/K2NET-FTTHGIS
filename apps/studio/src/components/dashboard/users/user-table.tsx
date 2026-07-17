@@ -15,10 +15,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
 import { PaginatedResponse, User } from "@/types/user";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

@@ -9,11 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Label } from "@k2net/ui";
+import { Checkbox } from "@k2net/ui";
 import { Key, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 

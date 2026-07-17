@@ -1,7 +1,7 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Separator } from "@k2net/ui";
 import { Loader2, Save } from "lucide-react";
 
 interface WhatsAppMfaCardProps {

@@ -15,9 +15,9 @@ import {
 import { getCurrentOrgSlug } from "@/lib/domain";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { Progress } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
 import { UsagePageWrapper } from "@/components/page-guards/usage-page-wrapper";
 
 interface Stats {

@@ -3,8 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { Plus, Search, LayoutGrid, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { OrganizationWizard } from "@/components/tenant/organization-wizard";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "next-auth/react";

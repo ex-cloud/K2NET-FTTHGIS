@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Loader2, MapPin, Building2, Package } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@k2net/ui";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { networkApi, type AssetSearchResult } from "@/lib/api/network";

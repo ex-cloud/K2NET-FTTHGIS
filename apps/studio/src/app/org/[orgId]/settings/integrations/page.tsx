@@ -17,12 +17,12 @@ import {
 import { useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Label } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
+import { Switch } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { SecurityChallengeModal } from "@/components/auth/security-challenge-modal";
 import { getCurrentOrgSlug } from "@/lib/domain";

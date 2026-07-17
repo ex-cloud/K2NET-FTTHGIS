@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@k2net/ui";
+import { Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { Building2, ArrowRight } from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";

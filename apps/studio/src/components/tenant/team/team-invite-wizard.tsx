@@ -12,22 +12,22 @@ import {
   ShieldCheck, 
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle,
   DialogDescription
-} from "@/components/ui/dialog";
+} from "@k2net/ui";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@k2net/ui";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import axios from "axios";

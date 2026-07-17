@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@k2net/ui";
+import { Button } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
 import { Github, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBackendBaseUrl } from "@/lib/api-config";

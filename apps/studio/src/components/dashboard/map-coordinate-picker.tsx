@@ -10,8 +10,8 @@ import {
   DialogTitle, 
   DialogFooter,
   DialogDescription
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@k2net/ui";
+import { Button } from "@k2net/ui";
 import { useTheme } from "next-themes";
 import { Crosshair, MapPin, Check, X, Plus, Minus, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";

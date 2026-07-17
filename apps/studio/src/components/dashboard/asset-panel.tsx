@@ -1,8 +1,8 @@
 "use client";
 
 import { X, PlayCircle, Loader2, Activity, Cable, History, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@k2net/ui";
+import { Card } from "@k2net/ui";
 import { useSelectionStore } from "@/store/selection-store";
 import { useMapStore } from "@/store/map-store";
 import { useTracePath } from "@/hooks/use-trace-path";
@@ -16,7 +16,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@k2net/ui";
 
 interface AssetDetails {
   id: string;

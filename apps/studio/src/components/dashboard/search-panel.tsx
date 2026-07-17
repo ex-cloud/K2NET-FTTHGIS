@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Loader2, MapPin } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@k2net/ui";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSelectionStore } from "@/store/selection-store";

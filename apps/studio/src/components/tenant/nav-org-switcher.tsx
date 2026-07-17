@@ -9,13 +9,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { useSession } from "next-auth/react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@k2net/ui";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { OrganizationWizard } from "./organization-wizard";
 import { getTenantUrl, getCurrentOrgSlug, getLogoUrl } from "@/lib/domain";

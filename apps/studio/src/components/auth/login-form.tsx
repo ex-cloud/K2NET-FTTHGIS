@@ -8,9 +8,9 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
+import { Checkbox } from "@k2net/ui";
 import Link from "next/link";
 import {
   Form,
@@ -19,7 +19,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@k2net/ui";
 
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { authenticate, type LoginState } from "@/lib/actions/auth";

@@ -11,13 +11,13 @@ import {
   Users,
   ChevronDown,
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Switch } from "@k2net/ui";
+import { Label } from "@k2net/ui";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@k2net/ui";
 
 export function MapFilterControl() {
   const { layerVisibility, setLayerVisibility } = useMapStore();

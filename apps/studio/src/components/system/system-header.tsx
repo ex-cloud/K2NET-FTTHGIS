@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HelpCircle, MessageSquare, ShieldCheck, ArrowLeftRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@k2net/ui";
+import { Separator } from "@k2net/ui";
 import { UserNav } from "../user-nav";
 
 import { getLogoUrl, getTenantUrl } from "@/lib/domain";

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Plus, Search, Filter, LayoutGrid, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import Link from "next/link";
 import { use, useState, useEffect, useCallback } from "react";
 import { httpClient } from "@/lib/httpClient";

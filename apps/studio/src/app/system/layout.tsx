@@ -3,7 +3,7 @@
 import { SystemHeader } from "@/components/system/system-header";
 import { AdminSidebar } from "@/components/system/admin-sidebar";
 import { SidebarModeProvider, useSidebarMode } from "@/components/sidebar-mode-context";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@k2net/ui";
 import { usePathname } from "next/navigation";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 

@@ -12,7 +12,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@k2net/ui";
 import { type AssetHistory } from "@/lib/api/network";
 
 

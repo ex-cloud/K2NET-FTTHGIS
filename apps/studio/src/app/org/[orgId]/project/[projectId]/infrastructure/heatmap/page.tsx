@@ -7,7 +7,7 @@ import {
   Share2,
   Printer,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 
 export default async function HeatmapPage() {
   const session = await auth();

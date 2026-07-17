@@ -9,11 +9,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import Link from "next/link";
 import { usePathname, useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCreateWizard } from "@/components/tenant/project/project-create-wizard";
 import { getCurrentOrgSlug } from "@/lib/domain";

@@ -10,8 +10,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@k2net/ui";
+import { Skeleton } from "@k2net/ui";
 import { useNetworkStats } from "@/hooks/queries/useNetworkStats";
 
 import { ReactNode } from "react";

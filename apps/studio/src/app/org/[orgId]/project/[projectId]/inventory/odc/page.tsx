@@ -7,7 +7,7 @@ import { useOdcData } from "@/hooks/use-odc-data";
 import { ODC } from "@/types/network";
 import { useSelectionStore } from "@/store/selection-store";
 import { NetworkStatusBadge } from "@/components/dashboard/network-status-badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import { MoreHorizontal, Plus, MapPin, Layers, RefreshCw, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@k2net/ui";
 import { useRouter, useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -29,7 +29,7 @@ const BatchEditDialog = dynamic(() => import("@/components/dashboard/batch-edit-
   ssr: false,
   loading: () => null
 });
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@k2net/ui";
 import { toast } from "sonner";
 import { networkApi } from "@/lib/api/network";
 import { useSession } from "next-auth/react";
@@ -40,8 +40,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@k2net/ui";
+import { Label } from "@k2net/ui";
 
 export default function OdcListPage() {
   const router = useRouter();

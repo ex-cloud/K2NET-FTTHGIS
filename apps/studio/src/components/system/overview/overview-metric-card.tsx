@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { OverviewMetricCardProps } from "./overview-types";

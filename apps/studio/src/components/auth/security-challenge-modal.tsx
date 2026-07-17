@@ -7,8 +7,8 @@ import {
   Loader2, 
   AlertCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 import { 
   Dialog, 
   DialogContent, 
@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter
-} from "@/components/ui/dialog";
+} from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

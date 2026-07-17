@@ -7,8 +7,8 @@ import {
   Lock, Phone, Mail, KeyRound, Loader2, AlertCircle, CheckCircle, 
   ArrowLeft, ShieldCheck, Laptop, Fingerprint 
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@k2net/ui";
+import { Input } from "@k2net/ui";
 
 // Browser detection helpers
 function getBrowserName(userAgent: string) {

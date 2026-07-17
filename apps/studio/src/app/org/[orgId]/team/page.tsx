@@ -8,7 +8,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { getCurrentOrgSlug } from "@/lib/domain";
 import { toast } from "sonner";
 import { Users, Plus, Search, Shield, Building2, Briefcase, Mail, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { TeamInviteWizard } from "@/components/tenant/team/team-invite-wizard";
@@ -19,7 +19,7 @@ import {
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";
+} from "@k2net/ui";
 
 interface UserData {
   id: string;

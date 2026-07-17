@@ -1,6 +1,6 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@k2net/ui";
+import { Separator } from "@k2net/ui";
 import { Check, Info } from "lucide-react";
 
 interface SocialIdentity {

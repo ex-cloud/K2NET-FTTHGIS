@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@k2net/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
