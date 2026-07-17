@@ -31,14 +31,11 @@ AGENTS.md
 # =============================================
 # 🟡 DEPENDENCIES & BUILD OUTPUT
 # =============================================
-# Frontend
-apps/studio/node_modules/
+node_modules/
+dist/
+.turbo/
 apps/studio/.next/
-apps/www/node_modules/
 apps/www/.next/
-apps/docs/node_modules/
-packages/ui/node_modules/
-packages/design-system/node_modules/
 
 # Backend Java
 apps/api/target/
