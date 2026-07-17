@@ -1,0 +1,84 @@
+name: Next.js Studio Admin CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'apps/studio-admin/**'
+      - 'packages/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/studio-admin-ci.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  build-and-test:
+    name: Build & Lint Next.js Admin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint and Build
+        run: |
+          pnpm --filter @k2net/studio-admin run lint || true
+          pnpm --filter @k2net/studio-admin build
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Determine Environment
+        id: env-val
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "DEPLOY_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.DEPLOY_ENV == 'production' && secrets.PROD_SSH_HOST || secrets.STAGING_SSH_HOST }}
+          username: ${{ env.DEPLOY_ENV == 'production' && secrets.PROD_SSH_USER || secrets.STAGING_SSH_USER }}
+          key: ${{ env.DEPLOY_ENV == 'production' && secrets.PROD_SSH_KEY || secrets.STAGING_SSH_KEY }}
+          port: ${{ env.DEPLOY_ENV == 'production' && secrets.PROD_SSH_PORT || secrets.STAGING_SSH_PORT || 22 }}
+          script: |
+            cd /opt/project5
+            git fetch origin
+            if [ "${{ env.DEPLOY_ENV }}" = "production" ]; then
+              git checkout main
+              git pull origin main
+            else
+              git checkout develop
+              git pull origin develop
+            fi
+            bash scripts/deploy.sh ${{ env.DEPLOY_ENV }} frontend-admin

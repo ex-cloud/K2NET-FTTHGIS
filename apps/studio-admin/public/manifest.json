@@ -1,0 +1,17 @@
+{
+  "name": "FTTH GIS Network Manager",
+  "short_name": "FTTH GIS",
+  "description": "Geographical Information System for FTTH Fiber Network Management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    {
+      "src": "/icons/odp.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

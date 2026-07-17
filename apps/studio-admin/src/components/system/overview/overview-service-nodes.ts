@@ -1,0 +1,174 @@
+import { useMemo } from "react";
+import type { GatewayServiceStatus } from "@/lib/actions/gateways";
+import type { ServiceNode } from "./overview-types";
+
+interface BuildServiceNodesParams {
+  postgresStatus: string;
+  redisStatus: string;
+  keycloakStatus: string;
+  gateways: GatewayServiceStatus[];
+  allGatewaysHealthy: boolean;
+  totalOrgs: number;
+  postgresConns: number;
+  redisCacheHit: number;
+  redisKeysCached: number;
+}
+
+function getGwActive(gateways: GatewayServiceStatus[], name: string): boolean {
+  return gateways.find((g) => g.name === name)?.active ?? false;
+}
+
+function getGwMetric(gateways: GatewayServiceStatus[], name: string, field: "throughput" | "latency"): number {
+  return gateways.find((g) => g.name === name)?.[field] ?? 0;
+}
+
+export function buildServiceNodes({
+  postgresStatus,
+  redisStatus,
+  keycloakStatus,
+  gateways,
+  allGatewaysHealthy,
+  totalOrgs,
+  postgresConns,
+  redisCacheHit,
+  redisKeysCached,
+}: BuildServiceNodesParams): ServiceNode[] {
+  const postgresActive = postgresStatus === "healthy";
+  const redisActive = redisStatus === "healthy";
+  const keycloakActive = keycloakStatus === "healthy";
+
+  // All 9 gateway names tracked in the cluster
+  const ALL_GATEWAY_NAMES = [
+    "ftth-notification-gateway",
+    "ftth-payment-gateway",
+    "ftth-map-gateway",
+    "ftth-storage-gateway",
+    "ftth-whatsapp-gateway",
+    "ftth-scheduler-gateway",
+    "ftth-export-gateway",
+    "ftth-olt-gateway",
+    "ftth-audit-gateway",
+  ];
+
+  const onlineGateways = ALL_GATEWAY_NAMES.filter((name) =>
+    getGwActive(gateways, name)
+  ).length;
+  const totalGateways = ALL_GATEWAY_NAMES.length;
+
+  const avgLatency = ALL_GATEWAY_NAMES.reduce(
+    (sum, name) => sum + getGwMetric(gateways, name, "latency"),
+    0
+  ) / totalGateways;
+
+  const totalThroughput = ALL_GATEWAY_NAMES.reduce(
+    (sum, name) => sum + getGwMetric(gateways, name, "throughput"),
+    0
+  );
+
+  const clusterStatus: ServiceNode["status"] =
+    onlineGateways === totalGateways
+      ? "healthy"
+      : onlineGateways === 0
+      ? "error"
+      : "warning";
+
+  return [
+    {
+      id: "core-router",
+      name: "Kong API Gateway",
+      type: "core",
+      status: allGatewaysHealthy ? "healthy" : "warning",
+      port: 8000,
+      details: "Edge router and request decorator. Validates Keycloak JWTs, handles global rate limiting, and enforces IP restrictions.",
+      metrics: {
+        "Global Rate Limit": "Active (100 req/min)",
+        "IP Restriction": "WhatsApp Webhook CIDR Enforced",
+        "JWT Validation": "Active (Globally Enforced)",
+        "Routing Rules": "Active (DB-less Declarative)",
+      },
+      x: 6,
+      y: 1,
+    },
+    {
+      id: "auth-keycloak",
+      name: "Keycloak IAM",
+      type: "auth",
+      status: keycloakActive ? "healthy" : "error",
+      port: 8081,
+      details: "Centralized security gateway. Manages dynamic realm provisioning, MFA, and SSO integrations.",
+      metrics: {
+        "Realms Provisioned": `${totalOrgs} Active Realms`,
+        Protocol: "OpenID Connect / SAML",
+        "Session Limits": "Enforced",
+      },
+      x: 2,
+      y: 3,
+    },
+    {
+      id: "db-postgres",
+      name: "PostgreSQL Spasial",
+      type: "db",
+      status: postgresActive ? "healthy" : "error",
+      port: 5432,
+      details: "Primary database storing platform schemas, billing history, and geographical spatial tables.",
+      metrics: {
+        "Db Name": "ftth_gis",
+        Connections: `${postgresConns} active`,
+        Extensions: "PostGIS, Topology",
+      },
+      x: 10,
+      y: 3,
+    },
+    {
+      id: "cache-redis",
+      name: "Redis Cache Store",
+      type: "cache",
+      status: redisActive ? "healthy" : "error",
+      port: 6379,
+      details: "Distributed cache layer to lower database overhead, store maps geocoding data, and session timeouts.",
+      metrics: {
+        "Hit Ratio": `${redisCacheHit}%`,
+        "Keys Cached": `${redisKeysCached} active`,
+        "Eviction Policy": "volatile-lru",
+      },
+      x: 4,
+      y: 6,
+    },
+    {
+      id: "gw-cluster",
+      name: "Go Gateways",
+      type: "gateway",
+      status: clusterStatus,
+      port: 0,
+      details: `Cluster of ${totalGateways} Go microservice gateways. Handles notifications, payments, map tiles, storage, WhatsApp, OLT monitoring, audit logging, scheduling, and exports.`,
+      metrics: {
+        "Online": `${onlineGateways} / ${totalGateways}`,
+        "Avg Latency": `${Math.round(avgLatency)} ms`,
+        "Total Throughput": `${totalThroughput} req/min`,
+      },
+      x: 9,
+      y: 6,
+    },
+  ];
+}
+
+/**
+ * React hook wrapper around buildServiceNodes for easy use with useMemo.
+ */
+export function useServiceNodes(params: BuildServiceNodesParams): ServiceNode[] {
+  return useMemo(
+    () => buildServiceNodes(params),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      params.postgresStatus,
+      params.redisStatus,
+      params.keycloakStatus,
+      params.gateways,
+      params.allGatewaysHealthy,
+      params.totalOrgs,
+      params.postgresConns,
+      params.redisCacheHit,
+      params.redisKeysCached,
+    ]
+  );
+}

@@ -97,11 +97,25 @@ if $BUILD_CMD; then
       # Now check frontend
       echo "Checking health of frontend..."
       if [ "$ENV" = "production" ]; then
-        # Get internal container IP for production since port 3000 is not exposed to host
-        CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ftth-frontend 2>/dev/null || echo "127.0.0.1")
-        FRONTEND_URL="http://$CONTAINER_IP:3000"
+        CONTAINER_NAME="ftth-frontend"
+        CONTAINER_PORT="3000"
+        if [ "$TARGET_SERVICE" = "frontend-admin" ] || [ "$TARGET_SERVICE" = "studio-admin" ]; then
+          CONTAINER_NAME="ftth-frontend-admin"
+          CONTAINER_PORT="3001"
+        elif [ "$TARGET_SERVICE" = "frontend-tenant" ] || [ "$TARGET_SERVICE" = "studio-tenant" ]; then
+          CONTAINER_NAME="ftth-frontend-tenant"
+          CONTAINER_PORT="3002"
+        fi
+        CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME" 2>/dev/null || echo "127.0.0.1")
+        FRONTEND_URL="http://$CONTAINER_IP:$CONTAINER_PORT"
       else
-        FRONTEND_URL="http://127.0.0.1:$PORT_FRONTEND"
+        CHECK_PORT=$PORT_FRONTEND
+        if [ "$TARGET_SERVICE" = "frontend-admin" ] || [ "$TARGET_SERVICE" = "studio-admin" ]; then
+          CHECK_PORT=13001
+        elif [ "$TARGET_SERVICE" = "frontend-tenant" ] || [ "$TARGET_SERVICE" = "studio-tenant" ]; then
+          CHECK_PORT=13002
+        fi
+        FRONTEND_URL="http://127.0.0.1:$CHECK_PORT"
       fi
 
       if curl -sI "$FRONTEND_URL" | grep -q -E "HTTP/1\.[01] [23][0-9][0-9]|HTTP/2 [23][0-9][0-9]"; then
