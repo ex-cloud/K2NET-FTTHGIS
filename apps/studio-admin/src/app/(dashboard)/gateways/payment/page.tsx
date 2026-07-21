@@ -183,7 +183,7 @@ export default function PaymentGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
@@ -241,7 +241,7 @@ export default function PaymentGatewayPage() {
                       value={config.XENDIT_API_KEY || ""}
                       onChange={(e) => handleInputChange("XENDIT_API_KEY", e.target.value)}
                       placeholder="xnd_development_xxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -263,7 +263,7 @@ export default function PaymentGatewayPage() {
                       value={config.XENDIT_WEBHOOK_KEY || ""}
                       onChange={(e) => handleInputChange("XENDIT_WEBHOOK_KEY", e.target.value)}
                       placeholder="Webhook Verification Token..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -288,7 +288,7 @@ export default function PaymentGatewayPage() {
                       value={config.CORE_API_URL || ""}
                       onChange={(e) => handleInputChange("CORE_API_URL", e.target.value)}
                       placeholder="http://127.0.0.1:9090"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -300,7 +300,7 @@ export default function PaymentGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -320,7 +320,7 @@ export default function PaymentGatewayPage() {
             <div className="space-y-6">
               
               {/* Reconciliation Panel */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
@@ -346,7 +346,7 @@ export default function PaymentGatewayPage() {
               </Card>
 
               {/* Transactions list */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Transaksi Terkini
@@ -357,7 +357,7 @@ export default function PaymentGatewayPage() {
                   {txLoading ? (
                     <div className="space-y-3">
                       {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
                       ))}
                     </div>
                   ) : transactions.length === 0 ? (

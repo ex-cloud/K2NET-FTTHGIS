@@ -130,7 +130,7 @@ export default function MapGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
@@ -188,7 +188,7 @@ export default function MapGatewayPage() {
                       value={config.GOOGLE_MAPS_API_KEY || ""}
                       onChange={(e) => handleInputChange("GOOGLE_MAPS_API_KEY", e.target.value)}
                       placeholder="AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -223,7 +223,7 @@ export default function MapGatewayPage() {
                       value={config.HERE_MAPS_API_KEY || ""}
                       onChange={(e) => handleInputChange("HERE_MAPS_API_KEY", e.target.value)}
                       placeholder="HERE API Key..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -235,7 +235,7 @@ export default function MapGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -255,7 +255,7 @@ export default function MapGatewayPage() {
             <div className="space-y-6">
               
               {/* Cache Hit Ratio Circular Progress Indicator */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Redis Cache Performance</CardTitle>
                   <CardDescription className="text-[10px] text-zinc-500">
@@ -300,7 +300,7 @@ export default function MapGatewayPage() {
               </Card>
 
               {/* Provider Health */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status Provider</CardTitle>
                 </CardHeader>

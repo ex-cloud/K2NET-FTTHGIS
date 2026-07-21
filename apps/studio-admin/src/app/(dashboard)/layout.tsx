@@ -3,7 +3,6 @@
 import { SystemHeader } from "@/components/system/system-header";
 import { AdminSidebar } from "@/components/system/admin-sidebar";
 import { SidebarModeProvider, useSidebarMode } from "@/components/sidebar-mode-context";
-import { SidebarProvider } from "@k2net/ui";
 import { usePathname } from "next/navigation";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 
@@ -13,7 +12,7 @@ import { getLogoUrl } from "@/lib/domain";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { open, setOpen } = useSidebarMode();
+  const { open, setOpen, sidebarMode } = useSidebarMode();
   const { settings = [] } = useSystemSettings();
 
   // Due to subdomain rewrite, pathname might be just '/login' on the client side
@@ -52,16 +51,12 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 overflow-hidden relative">
         <AdminSidebar />
         <div className="flex-1 flex min-w-0 overflow-hidden">
-          <SidebarProvider open={open} onOpenChange={setOpen} className="min-h-0 h-full flex-1 w-full">
-            <div className="flex flex-1 h-full overflow-hidden w-full min-h-0">
-              <SystemSecondarySidebar />
-              <div className="flex-1 flex flex-col min-w-0 w-0 overflow-hidden relative">
-                <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 bg-[#080808]">
-                  {children}
-                </main>
-              </div>
-            </div>
-          </SidebarProvider>
+          <SystemSecondarySidebar />
+          <div className="flex-1 flex flex-col min-w-0 w-0 overflow-hidden relative">
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 bg-background">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
     </div>

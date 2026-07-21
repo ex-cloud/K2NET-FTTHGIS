@@ -103,7 +103,7 @@ export default function SecurityCompliancePage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] min-h-screen text-zinc-100 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background min-h-screen text-foreground overflow-y-auto">
         <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
           <div className="space-y-2">
             <Skeleton className="h-9 w-64 bg-zinc-800" />
@@ -119,7 +119,7 @@ export default function SecurityCompliancePage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] h-full overflow-y-auto custom-scrollbar select-none text-zinc-100">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto custom-scrollbar select-none text-foreground">
       <div className="w-full max-w-5xl mx-auto space-y-10 pb-20">
         
         {/* Header section */}

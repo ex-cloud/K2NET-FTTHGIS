@@ -20,9 +20,7 @@ import {
   Server,
 } from "lucide-react";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
-import { Card, CardContent, CardHeader, CardTitle } from "@k2net/ui";
-import { Badge } from "@k2net/ui";
-import { Button } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
 import {
   LineChart,
   Line,
@@ -67,29 +65,29 @@ function MetricCard({
 }) {
   const colorMap: Record<string, { ring: string; bar: string; icon: string }> = {
     emerald: {
-      ring: "ring-emerald-500/20",
+      ring: "ring-emerald-500/10 dark:ring-emerald-500/20",
       bar: "bg-emerald-500",
-      icon: "text-emerald-400",
+      icon: "text-emerald-600 dark:text-emerald-400",
     },
     sky: {
-      ring: "ring-sky-500/20",
+      ring: "ring-sky-500/10 dark:ring-sky-500/20",
       bar: "bg-sky-500",
-      icon: "text-sky-400",
+      icon: "text-sky-600 dark:text-sky-400",
     },
     violet: {
-      ring: "ring-violet-500/20",
+      ring: "ring-violet-500/10 dark:ring-violet-500/20",
       bar: "bg-violet-500",
-      icon: "text-violet-400",
+      icon: "text-violet-600 dark:text-violet-400",
     },
     amber: {
-      ring: "ring-amber-500/20",
+      ring: "ring-amber-500/10 dark:ring-amber-500/20",
       bar: "bg-amber-500",
-      icon: "text-amber-400",
+      icon: "text-amber-600 dark:text-amber-400",
     },
     rose: {
-      ring: "ring-rose-500/20",
+      ring: "ring-rose-500/10 dark:ring-rose-500/20",
       bar: "bg-rose-500",
-      icon: "text-rose-400",
+      icon: "text-rose-600 dark:text-rose-400",
     },
   };
 
@@ -99,10 +97,10 @@ function MetricCard({
 
   return (
     <div
-      className={`bg-white/3 border border-white/8 rounded-xl p-5 ring-1 ${c.ring} flex flex-col gap-3`}
+      className={`bg-card border border-border rounded-xl p-5 flex flex-col gap-3`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs text-white/50 font-medium tracking-wider uppercase">
+        <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
           {label}
         </span>
         <span className={`${c.icon}`}>
@@ -110,16 +108,16 @@ function MetricCard({
         </span>
       </div>
       <div>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-xs text-white/40 mt-0.5">{sub}</p>
+        <p className="text-2xl font-bold text-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground/80 mt-0.5">{sub}</p>
       </div>
       {/* Progress bar */}
       <div>
-        <div className="flex justify-between text-xs text-white/40 mb-1">
+        <div className="flex justify-between text-xs text-muted-foreground/80 mb-1">
           <span>Utilization</span>
           <span>{percent}%</span>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full ${barColor} rounded-full transition-all duration-700`}
             style={{ width: `${Math.min(percent, 100)}%` }}
@@ -152,23 +150,23 @@ function ServiceCard({ name, job, up }: { name: string; job: string; up: boolean
     <div
       className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
         up
-          ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10"
-          : "border-rose-500/25 bg-rose-500/8 hover:bg-rose-500/12"
+          ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 dark:border-emerald-500/20 dark:bg-emerald-500/5"
+          : "border-rose-500/25 bg-rose-500/8 hover:bg-rose-500/12 dark:border-rose-500/25 dark:bg-rose-500/8"
       }`}
     >
       {/* Status dot */}
       <span
         className={`absolute top-3 right-3 h-2 w-2 rounded-full ${
-          up ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-rose-400"
+          up ? "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_#10b981]" : "bg-rose-500 dark:bg-rose-400"
         } ${up ? "animate-pulse" : ""}`}
       />
 
       <span className="text-lg leading-none select-none">{emoji}</span>
       <div className="flex flex-col min-w-0">
-        <span className="text-sm font-medium text-white leading-tight truncate">
+        <span className="text-sm font-semibold text-foreground leading-tight truncate">
           {name}
         </span>
-        <span className={`text-[11px] font-semibold ${up ? "text-emerald-400" : "text-rose-400"}`}>
+        <span className={`text-[11px] font-bold ${up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
           {up ? "ONLINE" : "OFFLINE"}
         </span>
       </div>
@@ -237,33 +235,33 @@ export default function SystemHealthPage() {
 
   return (
     <SystemHealthWrapper>
-    <div className="flex flex-col gap-6 p-6 min-h-screen">
+      <PageLayout variant="dashboard" spaceY="space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Activity className="h-5 w-5 text-emerald-400" />
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
             System Health
           </h1>
-          <p className="text-sm text-white/40 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Monitoring real-time server &amp; layanan
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-white/40 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 border border-border rounded-lg px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Auto-refresh dalam</span>
-            <span className="font-mono font-bold text-white/70">{countdown}s</span>
+            <span className="font-mono font-bold text-foreground/80">{countdown}s</span>
           </div>
           {lastUpdated && (
-            <span className="text-xs text-white/30">Update: {lastUpdated}</span>
+            <span className="text-xs text-muted-foreground/60">Update: {lastUpdated}</span>
           )}
           <Button
             variant="outline"
             size="sm"
             onClick={refresh}
             disabled={loading}
-            className="border-white/10 hover:border-white/20 text-white/70 hover:text-white gap-1.5"
+            className="border-border text-foreground hover:bg-accent hover:text-accent-foreground gap-1.5"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -306,27 +304,27 @@ export default function SystemHealthPage() {
           color="violet"
         />
         {/* Services card */}
-        <div className="bg-white/3 border border-white/8 rounded-xl p-5 ring-1 ring-white/10 flex flex-col gap-3">
+        <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/50 font-medium tracking-wider uppercase">
+            <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
               Services
             </span>
-            <Server className="h-4 w-4 text-white/40" />
+            <Server className="h-4 w-4 text-muted-foreground/60" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-foreground">
               {loading ? "—" : `${data?.onlineCount} / ${data?.totalCount}`}
             </p>
-            <p className="text-xs text-white/40 mt-0.5">services online</p>
+            <p className="text-xs text-muted-foreground mt-0.5">services online</p>
           </div>
           <div className="flex items-center gap-2 mt-auto">
             {data?.onlineCount === data?.totalCount ? (
-              <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px] gap-1">
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] gap-1 font-bold">
                 <CheckCircle2 className="h-3 w-3" />
                 All Systems Operational
               </Badge>
             ) : (
-              <Badge className="bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px] gap-1">
+              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-[11px] gap-1 font-bold">
                 <XCircle className="h-3 w-3" />
                 {(data?.totalCount ?? 0) - (data?.onlineCount ?? 0)} Service Offline
               </Badge>
@@ -336,12 +334,12 @@ export default function SystemHealthPage() {
       </div>
 
       {/* ── Gateway Status Grid ───────────────────────────────────────────────── */}
-      <Card className="bg-white/3 border-white/8">
+      <Card className="bg-card border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-white/80 flex items-center gap-2">
-            <Wifi className="h-4 w-4 text-emerald-400" />
+          <CardTitle className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+            <Wifi className="h-4 w-4 text-primary" />
             Status Layanan
-            <span className="ml-auto text-xs text-white/30 font-normal">
+            <span className="ml-auto text-xs text-muted-foreground/60 font-normal">
               {data?.onlineCount ?? "—"} online · {(data?.totalCount ?? 0) - (data?.onlineCount ?? 0)} offline
             </span>
           </CardTitle>
@@ -352,7 +350,7 @@ export default function SystemHealthPage() {
               {Array.from({ length: 12 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-[62px] rounded-xl bg-white/5 animate-pulse"
+                  className="h-[62px] rounded-xl bg-muted animate-pulse"
                 />
               ))}
             </div>
@@ -367,19 +365,19 @@ export default function SystemHealthPage() {
       </Card>
 
       {/* ── Throughput Chart ─────────────────────────────────────────────────── */}
-      <Card className="bg-white/3 border-white/8">
+      <Card className="bg-card border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-white/80 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-sky-400" />
+          <CardTitle className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
             HTTP Request Rate — 30 Menit Terakhir
-            <span className="ml-auto text-xs text-white/30 font-normal">
+            <span className="ml-auto text-xs text-muted-foreground/60 font-normal">
               req/s (sum all gateways)
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {throughput.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-white/30 text-sm">
+            <div className="flex items-center justify-center h-48 text-muted-foreground/60 text-sm">
               <WifiOff className="h-4 w-4 mr-2" />
               Data throughput tidak tersedia (metric http_requests_total belum diexpose gateway)
             </div>
@@ -389,43 +387,43 @@ export default function SystemHealthPage() {
                 data={throughput}
                 margin={{ top: 4, right: 8, left: -24, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
                   dataKey="time"
-                  tick={{ fontSize: 11, fill: "rgba(255,255,255,0.3)" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "rgba(255,255,255,0.3)" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "rgba(15,23,42,0.9)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
                     fontSize: "12px",
-                    color: "#fff",
+                    color: "var(--popover-foreground)",
                   }}
-                  labelStyle={{ color: "rgba(255,255,255,0.5)" }}
+                  labelStyle={{ color: "var(--muted-foreground)" }}
                   formatter={(val: any) => [`${val} req/s`, "Request Rate"]}
                 />
                 <Line
                   type="monotone"
                   dataKey="requests"
-                  stroke="#38bdf8"
+                  stroke="var(--primary)"
                   strokeWidth={2}
-                  dot={{ r: 3, fill: "#38bdf8", strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: "#38bdf8" }}
+                  dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: "var(--primary)" }}
                 />
               </LineChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
-    </div>
+      </PageLayout>
     </SystemHealthWrapper>
   );
 }

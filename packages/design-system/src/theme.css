@@ -43,66 +43,62 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ==========================================
-   🎨 Brand Styles (Dynamic Selectors)
-   ========================================== */
-.brand-green {
-  --primary: hsl(142.1 76.2% 45.3%);
-  --primary-foreground: hsl(240 5.9% 10%);
-  --ring: hsl(142.1 76.2% 50%);
-  --sidebar-primary: hsl(142.1 76.2% 45.3%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-ring: hsl(142.1 76.2% 50%);
-}
 
-.brand-blue {
-  --primary: hsl(201 85% 49%);
-  --primary-foreground: hsl(0 0% 98%);
-  --ring: hsl(201 85% 60%);
-  --sidebar-primary: hsl(201 85% 49%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-ring: hsl(201 85% 60%);
-}
 
 :root {
   /* ==========================================
-     🌑 Dark Mode by Default (v1.0 Green Theme)
+     🌑 Dark Mode by Default (v1.0 — Unified Flat Charcoal Theme)
+     Menggunakan #0c0c0c (hsl(0 0% 4.7%)) sebagai warna background tunggal
      ========================================== */
-  --background: hsl(0 0% 11%); /* #1c1c1c */
-  --foreground: hsl(0 0% 98%); /* #fafafa */
-  --card: hsl(0 0% 11%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(0 0% 11%);
-  --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(142.1 76.2% 45.3%); /* Neon Green (#10b981) */
-  --primary-foreground: hsl(240 5.9% 10%); /* Dark text on primary button */
-  --secondary: hsl(0 0% 14.9%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(0 0% 14.9%);
-  --muted-foreground: hsl(240 5% 64.9%);
-  --accent: hsl(0 0% 14.9%);
-  --accent-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
+  --background: hsl(0 0% 4.7%);
+  /* #0c0c0c - Base page background */
+  --foreground: hsl(0 0% 94%);
+  /* Near white text */
+  --card: hsl(0 0% 9%);
+  /* #171717 - Card elevation background */
+  --card-foreground: hsl(0 0% 94%);
+  --popover: hsl(0 0% 9%);
+  /* #171717 */
+  --popover-foreground: hsl(0 0% 94%);
+  --primary: hsl(153 60% 53%);
+  /* #3ecf8e - Supabase Green */
+  --primary-foreground: hsl(240 5.9% 10%);
+  --secondary: hsl(0 0% 12%);
+  /* #1f1f1f */
+  --secondary-foreground: hsl(0 0% 94%);
+  --muted: hsl(0 0% 12%);
+  /* #1f1f1f */
+  --muted-foreground: hsl(0 0% 64%);
+  /* #a3a3a3 */
+  --accent: hsl(0 0% 12%);
+  /* #1f1f1f */
+  --accent-foreground: hsl(0 0% 94%);
+  --destructive: hsl(0 72% 51%);
   --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(0 0% 18%); /* #2e2e2e */
-  --input: hsl(0 0% 18%);
-  --ring: hsl(142.1 76.2% 50%); /* Green ring focus */
+  --border: hsl(0 0% 12%);
+  /* #1f1f1f - Card/Panel border */
+  --input: hsl(0 0% 12%);
+  --ring: hsl(153 60% 53%);
+  /* #3ecf8e */
   --chart-1: hsl(220 70% 50%);
   --chart-2: hsl(160 60% 45%);
   --chart-3: hsl(30 80% 55%);
   --chart-4: hsl(280 65% 60%);
   --chart-5: hsl(340 75% 55%);
-  --sidebar-background: hsl(0 0% 9%); /* #171717 */
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(142.1 76.2% 45.3%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(0 0% 14.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(0 0% 18%);
-  --sidebar-ring: hsl(142.1 76.2% 50%);
-  --tooltip-bg: oklch(0.145 0 0);
-  --tooltip-border: oklch(1 0 0 / 10%);
-  --tooltip-text: oklch(0.985 0 0);
+  --sidebar-background: hsl(0 0% 4.7%);
+  /* #0c0c0c - Sidebar background (Sama dengan background utama) */
+  --sidebar-foreground: hsl(0 0% 90%);
+  --sidebar-primary: hsl(153 60% 53%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-accent: hsl(0 0% 9%);
+  /* #171717 */
+  --sidebar-accent-foreground: hsl(0 0% 94%);
+  --sidebar-border: hsl(0 0% 9%);
+  /* #171717 */
+  --sidebar-ring: hsl(153 60% 53%);
+  --tooltip-bg: hsl(0 0% 4.7%);
+  --tooltip-border: hsl(0 0% 94% / 10%);
+  --tooltip-text: hsl(0 0% 94%);
   --radius: 0.5rem;
 
   /* Font Families */
@@ -110,6 +106,49 @@
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
+}
+
+/* ============================================================
+   🌑 Explicit .dark class — for next-themes class attribute mode
+   Nilai identik dengan :root agar switching dark mode explicit
+   dari dropdown (setTheme("dark")) menghasilkan tampilan yang sama
+   ============================================================ */
+.dark {
+  --background: hsl(0 0% 4.7%);
+  --foreground: hsl(0 0% 94%);
+  --card: hsl(0 0% 9%);
+  --card-foreground: hsl(0 0% 94%);
+  --popover: hsl(0 0% 9%);
+  --popover-foreground: hsl(0 0% 94%);
+  --primary: hsl(153 60% 53%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --secondary: hsl(0 0% 12%);
+  --secondary-foreground: hsl(0 0% 94%);
+  --muted: hsl(0 0% 12%);
+  --muted-foreground: hsl(0 0% 64%);
+  --accent: hsl(0 0% 12%);
+  --accent-foreground: hsl(0 0% 94%);
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 12%);
+  --input: hsl(0 0% 12%);
+  --ring: hsl(153 60% 53%);
+  --chart-1: hsl(220 70% 50%);
+  --chart-2: hsl(160 60% 45%);
+  --chart-3: hsl(30 80% 55%);
+  --chart-4: hsl(280 65% 60%);
+  --chart-5: hsl(340 75% 55%);
+  --sidebar-background: hsl(0 0% 4.7%);
+  --sidebar-foreground: hsl(0 0% 90%);
+  --sidebar-primary: hsl(153 60% 53%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-accent: hsl(0 0% 9%);
+  --sidebar-accent-foreground: hsl(0 0% 94%);
+  --sidebar-border: hsl(0 0% 9%);
+  --sidebar-ring: hsl(153 60% 53%);
+  --tooltip-bg: hsl(0 0% 4.7%);
+  --tooltip-border: hsl(0 0% 94% / 10%);
+  --tooltip-text: hsl(0 0% 94%);
 }
 
 .mono {
@@ -120,23 +159,23 @@
   /* ==========================================
      ☀️ Light Mode (v1.0 Green Theme)
      ========================================== */
-  --background: hsl(0 0% 98%); /* #fafafa */
-  --foreground: hsl(0 0% 11%); /* #1c1c1c */
-  --card: hsl(0 0% 100%); /* #ffffff */
-  --card-foreground: hsl(0 0% 11%);
+  --background: hsl(0 0% 100%); /* Pure white matching Supabase */
+  --foreground: hsl(0 0% 9%); /* High contrast dark text */
+  --card: hsl(0 0% 100%); /* Pure white */
+  --card-foreground: hsl(0 0% 9%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 11%);
-  --primary: hsl(142.1 76.2% 45.3%); /* Neon Green (#10b981) */
-  --primary-foreground: hsl(0 0% 98%);
-  --secondary: hsl(0 0% 96%); /* #f5f5f5 */
-  --secondary-foreground: hsl(0 0% 11%);
-  --muted: hsl(0 0% 96%);
-  --muted-foreground: hsl(0 0% 45%); /* #737373 */
+  --popover-foreground: hsl(0 0% 9%);
+  --primary: hsl(142.1 76.2% 45.3%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --secondary: hsl(0 0% 97.5%); /* Very light gray */
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 97.5%);
+  --muted-foreground: hsl(0 0% 45%);
   --accent: hsl(0 0% 96%);
-  --accent-foreground: hsl(0 0% 11%);
+  --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 84.2% 60.2%);
   --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(0 0% 89%); /* #e5e5e5 */
+  --border: hsl(0 0% 89%); /* Defined border */
   --input: hsl(0 0% 89%);
   --ring: hsl(142.1 76.2% 50%);
   --chart-1: hsl(12 76% 61%);
@@ -145,12 +184,44 @@
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(27 87% 67%);
   --radius: 0.5rem;
-  --sidebar-background: hsl(0 0% 96%);
-  --sidebar-foreground: hsl(0 0% 11%);
+  --sidebar-background: hsl(0 0% 100%); /* Pure white matching the main page */
+  --sidebar-foreground: hsl(0 0% 9%);
   --sidebar-primary: hsl(142.1 76.2% 45.3%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(0 0% 96%);
-  --sidebar-accent-foreground: hsl(0 0% 11%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-accent: hsl(0 0% 96%); /* Light gray hover */
+  --sidebar-accent-foreground: hsl(0 0% 9%);
   --sidebar-border: hsl(0 0% 89%);
   --sidebar-ring: hsl(142.1 76.2% 50%);
+  --tooltip-bg: hsl(0 0% 9%);
+  --tooltip-border: hsl(0 0% 9% / 10%);
+  --tooltip-text: hsl(0 0% 98%);
+}
+
+.page-layout-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 95rem;
+  /* 1760px */
+}
+
+/* ==========================================
+   🎨 Brand Styles (Dynamic Selectors - End of file for override specificity)
+   ========================================== */
+.brand-green {
+  --primary: hsl(153 60% 53%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --ring: hsl(153 60% 53%);
+  --sidebar-primary: hsl(153 60% 53%);
+  --sidebar-primary-foreground: hsl(240 5.9% 10%);
+  --sidebar-ring: hsl(153 60% 53%);
+}
+
+.brand-blue {
+  --primary: hsl(199 89% 54%); /* Sky blue vibrant */
+  --primary-foreground: hsl(0 0% 98%);
+  --ring: hsl(199 89% 54%);
+  --sidebar-primary: hsl(199 89% 54%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-ring: hsl(199 89% 54%);
 }

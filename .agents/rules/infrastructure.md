@@ -41,3 +41,10 @@ Keycloak mengelola otentikasi pengguna global dan tenant.
 
 * **Endpoints**: MinIO API menggunakan port `9005` (API) dan `9006` (Console).
 * **PENTING**: Koneksi API MinIO wajib diikat ke Tailscale IP `100.110.205.109:9005`. Jangan gunakan localhost/127.0.0.1 dalam script/config server untuk menjamin konektivitas lintas node.
+
+---
+
+## 🚀 6. Prosedur Rebuild & Hot-reload Container
+
+* **Pembersihan Cache NPM/PNPM**: Saat melakukan pembaruan pada paket `@k2net/design-system` atau `@k2net/ui`, proses build Docker **wajib** menyertakan argumen `--no-cache` pada container frontend bersangkutan (contoh: `docker compose build --no-cache frontend-admin` atau `docker compose build --no-cache frontend-tenant`).
+* **Siklus Dependensi Kontainer**: Saat kontainer frontend diperbarui, pastikan reverse proxy **Traefik** dan **Kong API Gateway** dalam kondisi aktif terlebih dahulu untuk menghindari kegagalan otentikasi NextAuth saat kontainer baru melakukan booting awal.

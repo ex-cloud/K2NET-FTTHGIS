@@ -23,6 +23,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  PageLayout,
 } from "@k2net/ui";
 import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -161,8 +162,7 @@ export default function AdminOrganizationsPage() {
 
   return (
     <OrganizationPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
-      <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
+      <PageLayout variant="dashboard" spaceY="space-y-12">
       {/* Header section */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -429,7 +429,7 @@ export default function AdminOrganizationsPage() {
 
       {/* Delete Organization Confirmation Dialog */}
       <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && setOrgToDelete(null)}>
-        <DialogContent className="bg-[#0f0f0f] border-zinc-800 sm:max-w-[450px] p-0 overflow-hidden shadow-2xl text-zinc-300">
+        <DialogContent className="bg-card border-zinc-800 sm:max-w-[450px] p-0 overflow-hidden shadow-2xl text-zinc-300">
           <DialogHeader className="p-6 pb-2 text-zinc-100">
             <DialogTitle className="text-xl font-semibold flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-red-500" />
@@ -480,7 +480,7 @@ export default function AdminOrganizationsPage() {
                 <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200 h-10 focus:ring-red-500/20">
                   <SelectValue placeholder="Select a reason" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f0f0f] border-zinc-800 text-zinc-200">
+                <SelectContent className="bg-card border-zinc-800 text-zinc-200">
                   <SelectItem value="moving-to-another-platform">Moving to another platform</SelectItem>
                   <SelectItem value="temporary-project-ended">Temporary project ended</SelectItem>
                   <SelectItem value="costs-are-too-high">Costs are too high</SelectItem>
@@ -530,8 +530,7 @@ export default function AdminOrganizationsPage() {
       </Dialog>
     </>
       )}
-      </div>
-    </div>
+      </PageLayout>
     </OrganizationPageWrapper>
   );
 }

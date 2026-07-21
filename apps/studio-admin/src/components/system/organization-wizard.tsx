@@ -228,13 +228,13 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   if (isLimitReached) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[450px] bg-[#0c0c0c] border-[#1f1f1f] text-zinc-100 p-6 outline-none">
+        <DialogContent className="sm:max-w-[450px] bg-background border-border text-foreground p-6 outline-none">
           <div className="flex flex-col items-center text-center space-y-4 py-4">
             <div className="size-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-2">
               <Zap className="size-6" />
             </div>
-            <h3 className="text-lg font-semibold text-white">Upgrade to Create More</h3>
-            <p className="text-zinc-400 text-sm max-w-sm">
+            <h3 className="text-lg font-bold text-foreground">Upgrade to Create More</h3>
+            <p className="text-muted-foreground text-sm max-w-sm">
               Your active tenant is on the <strong className="text-amber-500 font-medium">FREE</strong> plan, which is limited to 1 organization. 
               Please upgrade your plan to unlock unlimited organizations and premium features.
             </p>
@@ -242,7 +242,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               <Button 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
-                className="flex-1 bg-transparent border-[#2a2a2a] text-zinc-400 hover:text-white hover:bg-zinc-900 cursor-pointer h-9 text-xs"
+                className="flex-1 border-border text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer h-9 text-xs"
               >
                 Close
               </Button>
@@ -264,10 +264,10 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0c0c0c] border-[#1f1f1f] text-zinc-100 p-0 overflow-hidden outline-none">
+      <DialogContent className="sm:max-w-[500px] bg-background border-border text-foreground p-0 overflow-hidden outline-none">
         
         {/* Progress Bar */}
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-[#1f1f1f]">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-border">
           <div 
             className="h-full bg-emerald-500 transition-all duration-500 ease-in-out" 
             style={{ width: `${(step / 4) * 100}%` }}
@@ -308,7 +308,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   value={formData.name}
                   onChange={handleNameChange}
                   placeholder="e.g. Acme Corporation" 
-                  className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
+                  className="bg-muted/30 border-border focus:border-primary/50 focus:ring-primary/20 text-sm h-10"
                 />
               </div>
 
@@ -321,7 +321,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   <Input 
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                    className="bg-[#141414] border-[#2a2a2a] focus:border-primary/50 focus:ring-primary/20 text-sm h-10 pl-[62px]"
+                    className="bg-muted/30 border-border focus:border-primary/50 focus:ring-primary/20 text-sm h-10 pl-[62px]"
                   />
                 </div>
                 {slugError && <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1"><AlertCircle className="size-3" /> {slugError}</p>}
@@ -336,7 +336,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     value={formData.adminEmail}
                     onChange={(e) => setFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
                     placeholder="boss@company.com" 
-                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    className="bg-muted/30 border-border text-xs h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -345,7 +345,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     value={formData.adminUsername}
                     onChange={(e) => setFormData(prev => ({ ...prev, adminUsername: e.target.value }))}
                     placeholder="Leave blank for email" 
-                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    className="bg-muted/30 border-border text-xs h-9"
                   />
                 </div>
               </div>
@@ -357,7 +357,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     value={formData.website}
                     onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                     placeholder="https://" 
-                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    className="bg-muted/30 border-border text-xs h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -366,7 +366,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="City, Country" 
-                    className="bg-[#141414] border-[#2a2a2a] text-xs h-9"
+                    className="bg-muted/30 border-border text-xs h-9"
                   />
                 </div>
               </div>
@@ -383,7 +383,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Tell us about your organization..." 
-                  className="bg-[#141414] border-[#2a2a2a] text-sm min-h-[100px] resize-none"
+                  className="bg-muted/30 border-border text-sm min-h-[100px] resize-none"
                 />
               </div>
 
@@ -392,7 +392,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   onClick={() => setFormData(prev => ({ ...prev, plan: "FREE" }))}
                   className={cn(
                     "p-3 rounded-lg border cursor-pointer transition-all space-y-2",
-                    formData.plan === "FREE" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-[#1f1f1f] grayscale"
+                    formData.plan === "FREE" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-border grayscale"
                   )}
                 >
                   <Zap className={cn("size-4", formData.plan === "FREE" ? "text-primary" : "text-zinc-500")} />
@@ -405,7 +405,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   onClick={() => setFormData(prev => ({ ...prev, plan: "PRO" }))}
                   className={cn(
                     "p-3 rounded-lg border cursor-pointer transition-all space-y-2 opacity-60",
-                    formData.plan === "PRO" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-[#1f1f1f]"
+                    formData.plan === "PRO" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-border"
                   )}
                 >
                   <ShieldCheck className="size-4 text-zinc-500" />
@@ -424,7 +424,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 onClick={() => setFormData(prev => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
                 className={cn(
                   "p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between",
-                  formData.ldapEnabled ? "bg-primary/10 border-emerald-500" : "bg-muted/10 border-[#1f1f1f]"
+                  formData.ldapEnabled ? "bg-primary/10 border-emerald-500" : "bg-muted/10 border-border"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -458,7 +458,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       onChange={(e) => updateLdapField('ldapUrl', e.target.value)}
                       onBlur={() => markTouched('ldapUrl')}
                       placeholder="ldap://your-server:389" 
-                      className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapUrl', formData.ldapUrl, isValidLdapUrl) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                      className={cn("bg-muted/30 text-xs h-9", hasFieldError('ldapUrl', formData.ldapUrl, isValidLdapUrl) ? "border-red-500/50" : "border-border")}
                     />
                     {touchedFields['ldapUrl'] && formData.ldapUrl.trim() && !isValidLdapUrl(formData.ldapUrl) && (
                       <p className="text-[9px] text-red-400">URL must start with ldap:// or ldaps://</p>
@@ -475,7 +475,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                         onChange={(e) => updateLdapField('ldapBaseDn', e.target.value)}
                         onBlur={() => markTouched('ldapBaseDn')}
                         placeholder="dc=example,dc=com" 
-                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBaseDn', formData.ldapBaseDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                        className={cn("bg-muted/30 text-xs h-9", hasFieldError('ldapBaseDn', formData.ldapBaseDn, isValidDn) ? "border-red-500/50" : "border-border")}
                       />
                       {touchedFields['ldapBaseDn'] && formData.ldapBaseDn.trim() && !isValidDn(formData.ldapBaseDn) && (
                         <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
@@ -490,7 +490,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                         onChange={(e) => updateLdapField('ldapBindDn', e.target.value)}
                         onBlur={() => markTouched('ldapBindDn')}
                         placeholder="cn=admin,dc=com" 
-                        className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBindDn', formData.ldapBindDn, isValidDn) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                        className={cn("bg-muted/30 text-xs h-9", hasFieldError('ldapBindDn', formData.ldapBindDn, isValidDn) ? "border-red-500/50" : "border-border")}
                       />
                       {touchedFields['ldapBindDn'] && formData.ldapBindDn.trim() && !isValidDn(formData.ldapBindDn) && (
                         <p className="text-[9px] text-red-400">Invalid DN format (must contain &apos;=&apos;)</p>
@@ -508,7 +508,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       onChange={(e) => updateLdapField('ldapBindPassword', e.target.value)}
                       onBlur={() => markTouched('ldapBindPassword')}
                       placeholder="••••••••" 
-                      className={cn("bg-[#141414] text-xs h-9", hasFieldError('ldapBindPassword', formData.ldapBindPassword) ? "border-red-500/50" : "border-[#2a2a2a]")}
+                      className={cn("bg-muted/30 text-xs h-9", hasFieldError('ldapBindPassword', formData.ldapBindPassword) ? "border-red-500/50" : "border-border")}
                     />
                   </div>
 
@@ -542,8 +542,8 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
           {step === 4 && (
             <div className="space-y-4 animate-in zoom-in-95 duration-300">
-              <div className="rounded-lg bg-[#141414] border border-[#1f1f1f] p-4 space-y-3">
-                <div className="flex justify-between items-center border-b border-[#1f1f1f] pb-2">
+              <div className="rounded-lg bg-muted/30 border border-border p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-border pb-2">
                   <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Review Configuration</span>
                   <Check className="size-3 text-primary" />
                 </div>
@@ -604,7 +604,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Initial Password</p>
-                    <div className="flex items-center justify-between bg-background border border-[#1f1f1f] rounded-lg p-3">
+                    <div className="flex items-center justify-between bg-background border border-border rounded-lg p-3">
                       <code className="text-primary font-mono text-sm">{deployedData.adminPassword}</code>
                       <Button 
                         size="sm" 
@@ -629,7 +629,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           )}
         </div>
 
-        <div className="p-6 bg-[#111111] border-t border-[#1f1f1f] flex items-center justify-between">
+        <div className="p-6 bg-muted/30 border-t border-border flex items-center justify-between">
           {step > 1 && step < 5 ? (
             <Button 
               variant="ghost" 

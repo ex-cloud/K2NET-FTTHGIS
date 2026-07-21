@@ -72,17 +72,17 @@ export function SecurityChallengeModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-[#0c0c0c] border-[#1f1f1f] text-zinc-100 p-0 overflow-hidden outline-none shadow-2xl shadow-emerald-500/5">
+      <DialogContent className="sm:max-w-[400px] bg-background border-border text-foreground p-0 overflow-hidden outline-none shadow-2xl">
         <DialogHeader className="p-6 pb-2">
           <div className="flex items-center gap-3 text-amber-500 mb-2">
             <div className="size-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
               <ShieldAlert className="size-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-medium tracking-tight text-zinc-100">
+              <DialogTitle className="text-lg font-medium tracking-tight text-foreground">
                 {title}
               </DialogTitle>
-              <DialogDescription className="text-zinc-500 text-xs mt-0.5">
+              <DialogDescription className="text-muted-foreground text-xs mt-0.5">
                 {description}
               </DialogDescription>
             </div>
@@ -100,7 +100,7 @@ export function SecurityChallengeModal({
                 placeholder="Enter your password"
                 autoFocus
                 className={cn(
-                  "bg-[#141414] border-[#2a2a2a] focus:border-amber-500/50 focus:ring-amber-500/20 text-sm h-11 pl-10",
+                  "bg-muted/30 border-border focus:border-amber-500/50 focus:ring-amber-500/20 text-sm h-11 pl-10",
                   error && "border-red-500/50 focus:border-red-500/50 focus:ring-red-500/10"
                 )}
               />

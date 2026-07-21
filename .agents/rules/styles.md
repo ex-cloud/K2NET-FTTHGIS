@@ -1,23 +1,23 @@
 # Global UI Style & Theme Consistency Rules
 
-Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style warna, card, button, tipografi, dsb.) di seluruh platform **K2NET-FTTHGIS**, baik untuk Portal Utama (System Admin) maupun Portal Tenant (Organization/Dashboard).
+Halaman ini mendefinisikan aturan wajib untuk menjaga keseragaman visual (style warna, card, button, tipografi, dsb.) di seluruh platform **K2NET-FTTHGIS**, baik untuk Portal Utama (System Admin) maupun Portal Tenant (Organization/Dashboard). Aturan ini harus dipatuhi secara ketat untuk menjamin kecocokan di mode **Light/Dark** dan pilihan **Brand Style (Green/Blue)**.
 
 ---
 
 ## 🎨 1. Sistem Warna Global (Tailwind v4 & CSS Variables)
 
-Aplikasi ini menggunakan tema **Emerald Green & Charcoal Dark Mode** secara default (Supabase Style) yang dikonfigurasi melalui `@theme inline` di package terpusat `@k2net/design-system` (`packages/design-system/src/theme.css`):
+Aplikasi ini mendukung tema warna dinamis (**Version 1 - Green** dan **Version 2 - Blue**) yang dikonfigurasi melalui `@theme inline` di package terpusat `@k2net/design-system` (`packages/design-system/src/theme.css`):
 
-### 🎨 Palet Warna Utama (Green Theme v1.0)
+### 🎨 Palet Warna Utama (Dynamic Brand System)
 
-| Kategori | Token Warna | Nilai HSL | Nilai Hex | Penggunaan di Code |
+| Kategori | Token Warna | Nilai HSL (Green v1) | Nilai HSL (Blue v2) | Penggunaan di Code |
 |---|---|---|---|---|
-| **Brand Accent** | Emerald Green | `hsl(142.1 76.2% 45.3%)` | `#10b981` | `text-[#10b981]` atau `bg-primary` (Tombol utama, aksen link, fokus) |
-| **Backgrounds (Dark)** | Charcoal Background | `hsl(0 0% 11%)` | `#1c1c1c` | `bg-background` (Latar belakang kanvas/card default) |
-| **Sidebar (Dark)** | Panel Sidebar | `hsl(0 0% 9%)` | `#171717` | `bg-sidebar` (Latar belakang navigasi samping) |
-| **Borders (Dark)** | Subtle Borders | `hsl(0 0% 18%)` | `#2e2e2e` | `border-border` (Garis pemisah antar kontainer) |
-| **Text Primary (Dark)** | Slate/White | `hsl(0 0% 98%)` | `#fafafa` | `text-foreground` (Teks putih cerah) |
-| **Text Muted (Dark)** | Neutral Grey | `hsl(240 5% 65%)` | `#a1a1aa` | `text-muted-foreground` (Teks sekunder/penjelas) |
+| **Brand Accent** | Dynamic Primary | `hsl(153 60% 53%)` | `hsl(199 89% 54%)` | **`bg-primary`** atau **`text-primary`** (Dilarang keras memakai hardcoded emerald/blue) |
+| **Backgrounds (Dark)** | Charcoal Background | `hsl(0 0% 4.7%)` | `hsl(0 0% 4.7%)` | `bg-background` (Latar belakang kanvas/card default) |
+| **Sidebar (Dark)** | Panel Sidebar | `hsl(0 0% 4.7%)` | `hsl(0 0% 4.7%)` | `bg-sidebar` (Latar belakang navigasi samping) |
+| **Borders (Dark)** | Subtle Borders | `hsl(0 0% 12%)` | `hsl(0 0% 12%)` | `border-border` (Garis pemisah antar kontainer) |
+| **Text Primary (Dark)** | Slate/White | `hsl(0 0% 94%)` | `hsl(0 0% 94%)` | `text-foreground` (Teks putih cerah / hitam pekat di light mode) |
+| **Text Muted (Dark)** | Neutral Grey | `hsl(0 0% 64%)` | `hsl(0 0% 64%)` | `text-muted-foreground` (Teks sekunder/penjelas) |
 
 ---
 
@@ -27,17 +27,17 @@ Untuk menjaga konsistensi, semua komponen visual wajib mendukung pertukaran tema
 
 ### 🌑 A. Dark Mode
 Menggunakan warna dasar arang pekat (Charcoal) default:
-* **Background Page & Card**: `#1c1c1c` (`hsl(0 0% 11%)`)
-* **Background Sidebar**: `#171717` (`hsl(0 0% 9%)`)
-* **Borders / Input Stroke**: `#2e2e2e` (`hsl(0 0% 18%)`)
-* **Text Primary**: `#fafafa` / **Text Muted**: `#a1a1aa`
+* **Background Page & Card**: `#1c1c1c` / `#0c0c0c`
+* **Background Sidebar**: `#0c0c0c`
+* **Borders / Input Stroke**: `#1f1f1f` (`border-border`)
+* **Text Primary**: `#f0f0f0` (`text-foreground`) / **Text Muted**: `#a3a3a3` (`text-muted-foreground`)
 
 ### ☀️ B. Light Mode
 Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapangan:
-* **Page Background**: `#fafafa` (`hsl(0 0% 98%)`)
-* **Card & Dialog Background**: `#ffffff` (`hsl(0 0% 100%)`)
-* **Sidebar Background**: `#f5f5f5` (`hsl(0 0% 96%)`)
-* **Border & Input Stroke**: `#e5e5e5` (`hsl(0 0% 89%)`)
+* **Page Background**: `#fafafa` (`bg-background`)
+* **Card & Dialog Background**: `#ffffff` (`bg-card`)
+* **Sidebar Background**: `#f5f5f5` (`bg-sidebar`)
+* **Border & Input Stroke**: `#e5e5e5` (`border-border`)
 * **Text Primary**: `#1c1c1c` / **Text Muted**: `#737373`
 
 ---
@@ -45,24 +45,25 @@ Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapa
 ## 📦 3. Panduan Desain Komponen (Component Styling)
 
 ### A. Kartu & Panel (Cards)
-* **Warna & Border**: Gunakan background gelap transparan dengan border putih transparan tipis atau variable card.
-  * *Class*: `bg-white/3 border-white/8 backdrop-blur-xl` atau `bg-card border-border`.
+* **Warna & Border**: Gunakan background semantik dengan border yang adaptif.
+  * **Wajib**: Gunakan `bg-card border-border` sebagai pengganti `bg-zinc-950` / `border-zinc-800`.
+  * **Larangan Glassmorphism Putih**: Hindari penggunaan `bg-white/3 border-white/8` secara mentah karena akan membuat tulisan atau panel tidak terlihat (putih di atas putih) saat berada di Light Mode. Gunakan `bg-muted/50` atau overlay semantik `bg-foreground/[0.04]`.
 * **Radius Sudut (Rounded)**: Selalu gunakan `rounded-xl` (12px) untuk Card Utama, dan `rounded-md` (6px) untuk komponen kecil.
-* **Pulsing Dot**: Untuk indikator status ONLINE, gunakan dot kecil dengan pulse:
-  * *Class*: `h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] animate-pulse`
+* **Pulsing Dot**: Untuk indikator status ONLINE, gunakan dot kecil dengan pulse menggunakan primary token:
+  * *Class*: `h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_var(--primary)] animate-pulse`
 
 ### B. Tombol & Badge (Buttons & Badges)
 * **Tombol Aksi**: Gunakan `@k2net/ui` `<Button />` dengan class variants.
 * **Badge Status Semantik**:
-  * **ONLINE / Operational (Green)**: `bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[11px]`
+  * **ONLINE / Operational (Dynamic)**: `bg-primary/10 text-primary border-primary/20 text-[11px]` (atau gunakan status semantik hijau jika bermakna positif/OK dan bukan aksen brand: `bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20`)
   * **OFFLINE / Alert (Red)**: `bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px]`
   * **WARNING / Pending (Amber)**: `bg-amber-500/15 text-amber-400 border-amber-500/30 text-[11px]`
 
 ### C. Tipografi (Typography)
-* **Header Halaman (H1)**: Gunakan font tipis/light dengan tracking ketat.
-  * *Class*: `text-3xl font-light text-zinc-100 tracking-tight`
+* **Header Halaman (H1)**: Gunakan font tipis/light dengan tracking ketat dan warna dinamis.
+  * *Class*: `text-3xl font-light text-foreground tracking-tight` (Hindari `text-zinc-100` atau `text-white`)
 * **Sub-header / Card Title**: Gunakan semibold/medium berukuran kecil.
-  * *Class*: `text-sm font-medium text-white/80`
+  * *Class*: `text-sm font-medium text-foreground/80` atau `text-muted-foreground`
 * **Data Teknis (Mono)**: Gunakan class `font-mono` atau font `Fira Code` untuk menampilkan IP Address, koordinat, redaman, dan kode OLT/ODP.
 
 ---

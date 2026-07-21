@@ -313,40 +313,40 @@ export function OverviewInfrastructureMap({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card
-        className="flex flex-col justify-start border-border bg-[#0b0b0b]/40 p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[460px]"
+        className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[460px]"
         ref={containerRef}
       >
         {/* Header + Controls */}
         <div className="flex justify-between items-start z-20 pointer-events-none">
           <div>
-            <h4 className="text-sm font-semibold text-zinc-200 pointer-events-auto">Infrastructure Dependency Map</h4>
-            <p className="mt-0.5 text-[10px] text-zinc-500 pointer-events-auto">
+            <h4 className="text-sm font-semibold text-foreground pointer-events-auto">Infrastructure Dependency Map</h4>
+            <p className="mt-0.5 text-[10px] text-muted-foreground pointer-events-auto">
               Interactive canvas. Pan with drag, zoom with wheel, click node to highlight. Drag nodes to reposition.
             </p>
           </div>
 
           {/* Unified zoom + collapse controls */}
-          <div className="flex items-center gap-1 bg-zinc-900/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+          <div className="flex items-center gap-1 bg-popover/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-accent"
               onClick={() => setZoom((z) => Math.min(z + 0.1, 1.6))} title="Zoom In">
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
-            <span className="text-[9px] font-mono font-bold text-zinc-500 px-1 select-none">
+            <span className="text-[9px] font-mono font-bold text-muted-foreground px-1 select-none">
               {Math.round(zoom * 100)}%
             </span>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-accent"
               onClick={() => setZoom((z) => Math.max(z - 0.1, 0.6))} title="Zoom Out">
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
-            <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+            <div className="w-[1px] h-3 bg-border mx-0.5" />
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-accent"
               onClick={resetViewport} title="Reset View">
               <RefreshCw className="h-3 w-3" />
             </Button>
-            <div className="w-[1px] h-3 bg-white/10 mx-0.5" />
+            <div className="w-[1px] h-3 bg-border mx-0.5" />
             <Button
               variant="ghost"
-              className="h-6 px-2 text-[9px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 gap-1 flex items-center"
+              className="h-6 px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent gap-1 flex items-center"
               onClick={handleCollapseAll}
               title="Collapse All"
             >
@@ -412,7 +412,7 @@ export function OverviewInfrastructureMap({
                     <line
                       x1={`${start.x}%`} y1={`${start.y}%`}
                       x2={`${end.x}%`}   y2={`${end.y}%`}
-                      stroke={isHealthy ? (isHighlighted ? "#34d399" : "#10b981") : "#f97316"}
+                      stroke={isHealthy ? "var(--primary)" : "#f97316"}
                       strokeWidth={isHighlighted ? 2.2 : 1.2}
                       strokeDasharray={conn.dashed ? "4 4" : undefined}
                       filter={isHighlighted && isHealthy ? "url(#glow)" : undefined}
@@ -422,7 +422,7 @@ export function OverviewInfrastructureMap({
                       <line
                         x1={`${start.x}%`} y1={`${start.y}%`}
                         x2={`${end.x}%`}   y2={`${end.y}%`}
-                        stroke="#ffffff" strokeWidth={1.5}
+                        stroke="var(--background)" strokeWidth={1.5}
                         strokeDasharray="5 15"
                         style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.8 }}
                       />
@@ -431,9 +431,9 @@ export function OverviewInfrastructureMap({
                       <line
                         x1={`${start.x}%`} y1={`${start.y}%`}
                         x2={`${end.x}%`}   y2={`${end.y}%`}
-                        stroke="#ffffff" strokeWidth={1.2}
+                        stroke="var(--background)" strokeWidth={1.2}
                         strokeDasharray="5 15"
-                        style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.12 }}
+                        style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.2 }}
                       />
                     )}
                   </g>
@@ -449,7 +449,7 @@ export function OverviewInfrastructureMap({
                   <line key={`spoke-${gw.id}`}
                     x1={`${cluster.x}%`} y1={`${cluster.y}%`}
                     x2={`${orbit.x}%`}   y2={`${orbit.y}%`}
-                    stroke="#10b981"
+                    stroke="var(--primary)"
                     strokeWidth={isAct ? 1.5 : 0.8}
                     strokeDasharray="2 4"
                     opacity={isAct ? 0.7 : 0.3}
@@ -470,13 +470,13 @@ export function OverviewInfrastructureMap({
                       <line
                         x1={`${op.x}%`} y1={`${op.y}%`}
                         x2={`${tp.x}%`} y2={`${tp.y}%`}
-                        stroke="#34d399" strokeWidth={2} strokeDasharray="5 5"
+                        stroke="var(--primary)" strokeWidth={2} strokeDasharray="5 5"
                         filter="url(#glow)" opacity={0.85}
                       />
                       <line
                         x1={`${op.x}%`} y1={`${op.y}%`}
                         x2={`${tp.x}%`} y2={`${tp.y}%`}
-                        stroke="#ffffff" strokeWidth={1.2} strokeDasharray="5 15"
+                        stroke="var(--background)" strokeWidth={1.2} strokeDasharray="5 15"
                         style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.7 }}
                       />
                     </g>
@@ -506,20 +506,20 @@ export function OverviewInfrastructureMap({
                     cursor: "grab",
                   }}
                   className={cn(
-                    "absolute z-10 flex flex-col items-center justify-center rounded-xl border bg-black/90 p-3 shadow-2xl transition-all duration-300 group",
+                    "absolute z-10 flex flex-col items-center justify-center rounded-xl border bg-card p-3 shadow-2xl transition-all duration-300 group",
                     isCluster ? "min-w-[90px]" : "min-w-[76px]",
                     isSelected
-                      ? "border-emerald-400 bg-emerald-950/20 shadow-[0_0_20px_rgba(52,211,153,0.25)] ring-1 ring-emerald-500/20 scale-105 z-20"
-                      : "border-border hover:border-white/20",
+                      ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.25)] ring-1 ring-primary/20 scale-105 z-20"
+                      : "border-border hover:border-foreground/20",
                     dimmed ? "opacity-25" : "opacity-100"
                   )}
                 >
                   {isCluster && (
                     <span className={cn(
                       "absolute -top-2.5 -right-2 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] font-mono font-bold shadow-lg whitespace-nowrap",
-                      clusterStatus === "healthy" ? "border-primary/30 bg-zinc-900 text-primary"
-                        : clusterStatus === "warning" ? "border-amber-500/30 bg-zinc-900 text-amber-400"
-                        : "border-red-500/30 bg-zinc-900 text-red-400"
+                      clusterStatus === "healthy" ? "border-primary/30 bg-muted text-primary"
+                        : clusterStatus === "warning" ? "border-amber-500/30 bg-muted text-amber-500"
+                        : "border-red-500/30 bg-muted text-red-500"
                     )}>
                       <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", getStatusColor(clusterStatus))} />
                       {clusterOnlineText}
@@ -529,8 +529,8 @@ export function OverviewInfrastructureMap({
                   <div className={cn(
                     "mb-1.5 flex items-center justify-center rounded-lg border p-1.5 transition-colors",
                     isSelected
-                      ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
-                      : "border-border bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
+                      ? "border-primary/40 bg-primary/20 text-primary"
+                      : "border-border bg-muted/60 text-muted-foreground group-hover:text-foreground"
                   )}>
                     <Icon className={cn("h-4 w-4", isCluster && "h-5 w-5")} />
                   </div>
@@ -541,13 +541,13 @@ export function OverviewInfrastructureMap({
                       getStatusColor(node.status),
                       node.status === "healthy" ? "animate-pulse" : node.status === "error" ? "animate-ping" : ""
                     )} />
-                    <span className="max-w-[70px] truncate text-[8px] font-mono font-bold uppercase text-zinc-300">
+                    <span className="max-w-[70px] truncate text-[8px] font-mono font-bold uppercase text-foreground">
                       {isCluster ? "Go Gateways" : node.name.split(" ")[0]}
                     </span>
                   </div>
 
                   {isCluster && (
-                    <span className="mt-0.5 text-[7px] text-zinc-600">
+                    <span className="mt-0.5 text-[7px] text-muted-foreground">
                       {isClusterExpanded ? "▲ collapse" : "▼ expand"}
                     </span>
                   )}
@@ -576,21 +576,21 @@ export function OverviewInfrastructureMap({
                     "absolute z-30 flex flex-col items-center justify-center rounded-full border shadow-lg transition-all duration-200 animate-fade-in group",
                     "w-8 h-8",
                     isActive
-                      ? "border-emerald-400/60 bg-emerald-950/80 shadow-[0_0_10px_rgba(52,211,153,0.2)] scale-125 z-40"
-                      : "border-white/8 bg-zinc-900/90 hover:border-white/20 hover:scale-110",
+                      ? "border-primary/60 bg-primary/20 shadow-[0_0_10px_var(--primary)] scale-125 z-40"
+                      : "border-border bg-card/90 hover:border-foreground/20 hover:scale-110",
                     otherActive ? "opacity-40" : "opacity-100"
                   )}
                   title={`${gw.name} Gateway — Port ${gw.port}`}
                 >
-                  <OrbitIcon className={cn("h-3 w-3", isActive ? "text-emerald-300" : "text-zinc-500 group-hover:text-zinc-300")} />
+                  <OrbitIcon className={cn("h-3 w-3", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
                   <span className={cn(
                     "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] font-mono whitespace-nowrap",
-                    isActive ? "text-primary" : "text-zinc-600"
+                    isActive ? "text-primary" : "text-muted-foreground/80"
                   )}>
                     {gw.name}
                   </span>
                   <span className={cn(
-                    "absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-zinc-900",
+                    "absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-background",
                     getStatusColor(status),
                     status === "healthy" ? "animate-pulse" : ""
                   )} />
@@ -611,13 +611,13 @@ export function OverviewInfrastructureMap({
                       top:  `calc(${pc.y}% + ${sub.yOffset}px)`,
                       transform: "translate(-50%, -50%)",
                     }}
-                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-emerald-950/90 px-2 py-1 shadow-lg backdrop-blur-sm animate-fade-in hover:border-emerald-500/40 transition-all"
+                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-card px-2 py-1 shadow-lg backdrop-blur-sm animate-fade-in hover:border-primary/40 transition-all"
                     title={sub.details}
                   >
                     <div className="flex items-center justify-center text-primary">
                       <SubIcon className="h-3 w-3" />
                     </div>
-                    <span className="text-[7.5px] font-mono font-bold text-zinc-300 tracking-wider uppercase select-none">
+                    <span className="text-[7.5px] font-mono font-bold text-foreground tracking-wider uppercase select-none">
                       {sub.name}
                     </span>
                   </div>

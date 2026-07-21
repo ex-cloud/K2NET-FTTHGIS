@@ -187,7 +187,7 @@ export default function SecurityAlertsPage() {
   if (!mounted) return null;
 
   return (
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] h-full overflow-y-auto custom-scrollbar select-none text-zinc-100">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-4 md:px-8 bg-background h-full overflow-y-auto custom-scrollbar select-none text-foreground">
       <div className="w-full max-w-7xl mx-auto space-y-8 pb-20">
         
         {/* Header */}

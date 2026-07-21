@@ -152,7 +152,7 @@ export default function OltGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         <div className="flex items-center gap-4 border-b border-border pb-6">
@@ -197,7 +197,7 @@ export default function OltGatewayPage() {
                       value={config.REDIS_ADDR || ""}
                       onChange={(e) => handleInputChange("REDIS_ADDR", e.target.value)}
                       placeholder="redis:6379"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -209,7 +209,7 @@ export default function OltGatewayPage() {
                       value={config.DATABASE_URL || ""}
                       onChange={(e) => handleInputChange("DATABASE_URL", e.target.value)}
                       placeholder="postgres://..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -243,7 +243,7 @@ export default function OltGatewayPage() {
                       value={config.OLT_ENCRYPTION_KEY || ""}
                       onChange={(e) => handleInputChange("OLT_ENCRYPTION_KEY", e.target.value)}
                       placeholder="AES-256 hex key..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -256,7 +256,7 @@ export default function OltGatewayPage() {
                         value={config.SNMP_TIMEOUT_SECONDS || ""}
                         onChange={(e) => handleInputChange("SNMP_TIMEOUT_SECONDS", e.target.value)}
                         placeholder="5"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -268,7 +268,7 @@ export default function OltGatewayPage() {
                         value={config.SSH_TIMEOUT_SECONDS || ""}
                         onChange={(e) => handleInputChange("SSH_TIMEOUT_SECONDS", e.target.value)}
                         placeholder="10"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -280,7 +280,7 @@ export default function OltGatewayPage() {
                         value={config.MAX_CONCURRENT_OLT_CONNECTIONS || ""}
                         onChange={(e) => handleInputChange("MAX_CONCURRENT_OLT_CONNECTIONS", e.target.value)}
                         placeholder="20"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -292,7 +292,7 @@ export default function OltGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -309,7 +309,7 @@ export default function OltGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     OLT Node State
@@ -320,7 +320,7 @@ export default function OltGatewayPage() {
                   {devicesLoading ? (
                     <div className="space-y-3">
                       {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
                       ))}
                     </div>
                   ) : oltDevices.length === 0 ? (
@@ -344,7 +344,7 @@ export default function OltGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Perangkat</CardTitle>
                 </CardHeader>

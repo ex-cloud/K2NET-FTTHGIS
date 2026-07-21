@@ -170,7 +170,7 @@ export default function NotificationGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
@@ -228,7 +228,7 @@ export default function NotificationGatewayPage() {
                       value={config.GATEWAY_TOKEN || ""}
                       onChange={(e) => handleInputChange("GATEWAY_TOKEN", e.target.value)}
                       placeholder="Masukkan Token Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -253,7 +253,7 @@ export default function NotificationGatewayPage() {
                       value={config.REDIS_ADDR || ""}
                       onChange={(e) => handleInputChange("REDIS_ADDR", e.target.value)}
                       placeholder="127.0.0.1:6379"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -278,7 +278,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_ACCOUNT_SID || ""}
                       onChange={(e) => handleInputChange("TWILIO_ACCOUNT_SID", e.target.value)}
                       placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -300,7 +300,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_AUTH_TOKEN || ""}
                       onChange={(e) => handleInputChange("TWILIO_AUTH_TOKEN", e.target.value)}
                       placeholder="Auth Token Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -312,7 +312,7 @@ export default function NotificationGatewayPage() {
                       value={config.TWILIO_FROM_NUMBER || ""}
                       onChange={(e) => handleInputChange("TWILIO_FROM_NUMBER", e.target.value)}
                       placeholder="whatsapp:+14155238886"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -324,7 +324,7 @@ export default function NotificationGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -342,7 +342,7 @@ export default function NotificationGatewayPage() {
 
             {/* Live Logs / Info Column */}
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Antrean Pesan Terakhir
@@ -353,7 +353,7 @@ export default function NotificationGatewayPage() {
                   {logsLoading ? (
                     <div className="space-y-3">
                       {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
                       ))}
                     </div>
                   ) : notifLogs.length === 0 ? (
@@ -384,7 +384,7 @@ export default function NotificationGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Pengiriman</CardTitle>
                 </CardHeader>

@@ -19,20 +19,20 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
   const maxHits = Math.max(...data.map((d) => d.hits), 1);
 
   return (
-    <Card className="border-border bg-[#0b0b0b]/40 p-6">
+    <Card className="border-border bg-card p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-semibold text-zinc-200">Combined System Throughput</h4>
-          <p className="mt-0.5 text-[10px] text-zinc-500">
+          <h4 className="text-sm font-semibold text-foreground">Combined System Throughput</h4>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
             Aggregated API request load and geocoding activity across all microservices over the last 24 hours.
           </p>
         </div>
         {hoveredBarIndex !== null && data[hoveredBarIndex] ? (
-          <Badge className="border-primary/20 bg-primary/10 text-[10px] font-mono text-primary">
+          <Badge className="border-primary/20 bg-primary/10 text-[10px] font-mono text-primary font-bold">
             {data[hoveredBarIndex].hour} ➔ {data[hoveredBarIndex].hits} Requests
           </Badge>
         ) : (
-          <Badge variant="outline" className="border-white/10 text-[10px] font-mono text-zinc-500">
+          <Badge variant="outline" className="border-border text-[10px] font-mono text-muted-foreground font-bold">
             Peak load: {maxHits} req/min
           </Badge>
         )}
@@ -51,15 +51,15 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
               className={cn(
                 "w-full rounded-t transition-all duration-200",
                 hoveredBarIndex === idx
-                  ? "cursor-pointer bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]"
-                  : "cursor-pointer bg-gradient-to-t from-emerald-500/20 to-emerald-500/60"
+                  ? "cursor-pointer bg-primary shadow-[0_0_10px_var(--primary)]"
+                  : "cursor-pointer bg-gradient-to-t from-primary/20 to-primary/60"
               )}
             />
           </div>
         ))}
       </div>
 
-      <div className="mt-2.5 flex justify-between px-1 text-[9px] font-mono text-zinc-500">
+      <div className="mt-2.5 flex justify-between px-1 text-[9px] font-mono text-muted-foreground">
         <span>24 Jam Lalu</span>
         <span>12 Jam Lalu</span>
         <span>Sekarang (Real-Time)</span>

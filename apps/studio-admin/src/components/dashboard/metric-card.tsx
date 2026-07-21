@@ -49,7 +49,7 @@ export function MetricCard({
                 <span
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                     trend.isUp
-                      ? "bg-emerald-500/20 text-primary dark:text-primary"
+                      ? "bg-primary/20 text-primary dark:text-primary"
                       : "bg-rose-500/20 text-rose-600 dark:text-rose-500"
                   }`}
                 >
@@ -72,7 +72,7 @@ export function MetricCard({
             </div>
             <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 transition-all duration-1000"
+                className="h-full bg-primary transition-all duration-1000"
                 style={{ width: `${progress}%` }}
               />
             </div>

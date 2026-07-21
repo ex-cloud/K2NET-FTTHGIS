@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge } from "@k2net/ui";
-import { Button } from "@k2net/ui";
+import { Badge, Button, PageLayout } from "@k2net/ui";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { throughputData } from "@/lib/system-overview-data";
@@ -57,21 +56,20 @@ export default function SystemOverviewPage() {
 
   return (
     <SystemOverviewWrapper>
-      <div className="flex h-full flex-1 flex-col overflow-y-auto bg-background px-8 pt-16">
-        <div className="mx-auto w-full max-w-[1600px] space-y-8 pb-20">
+      <PageLayout variant="dashboard">
 
           {/* Page header */}
           <div className="flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-emerald-500/20">
+                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20">
                   Admin Platform Control
                 </Badge>
               </div>
-              <h1 className="flex items-center gap-3 text-3xl font-light tracking-tight text-zinc-100">
+              <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground">
                 System Overview <Sparkles className="h-5 w-5 animate-pulse text-primary" />
               </h1>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
               </p>
             </div>
@@ -79,7 +77,7 @@ export default function SystemOverviewPage() {
               onClick={() => data.loadData(true)}
               disabled={data.refreshing || data.loadingOrgs || data.loadingStats}
               variant="outline"
-              className="gap-2 border-white/10 bg-zinc-950/80 text-xs text-zinc-300 transition-all hover:border-primary/30 hover:bg-zinc-900 hover:text-zinc-100"
+              className="gap-2 border-border text-foreground hover:bg-accent hover:text-accent-foreground text-xs"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
               Refresh Dashboard
@@ -142,8 +140,7 @@ export default function SystemOverviewPage() {
 
           {/* Activity feed */}
           <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />
-        </div>
-      </div>
+      </PageLayout>
     </SystemOverviewWrapper>
   );
 }

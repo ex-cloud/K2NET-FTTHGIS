@@ -30,3 +30,142 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+/* ============================================================
+   🎨 Global Page Consistency — semua halaman pakai bg-background
+   Menggantikan hardcoded bg-[#0c0c0c] / bg-[#080808] di page files
+   ============================================================ */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans-family);
+}
+
+/* Override for page-level divs using dark hardcoded values.
+   Using utility class anchored to design token. */
+.page-bg {
+  background-color: var(--background);
+}
+
+/* ============================================================
+   🖱️ Custom Scrollbar — consistent across all pages
+   ============================================================ */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ============================================================
+   ☀️ Light Mode Global CSS Safety Net
+   Memastikan seluruh utility class zinc-* & white/* yang
+   di-hardcode di komponen tetap terbaca di light mode
+   tanpa perlu menyentuh setiap file satu per satu.
+   ============================================================ */
+.light {
+  /* === Zinc Color Inversion ===
+     Dark Mode:  zinc-50=sangat terang, zinc-950=sangat gelap
+     Light Mode: kebalikannya — zinc-50=sangat gelap, zinc-950=sangat terang */
+  --color-zinc-50:  #09090b;  /* text-zinc-50  → hitam pekat          */
+  --color-zinc-100: #18181b;  /* text-zinc-100 → hitam sangat gelap   */
+  --color-zinc-200: #27272a;  /* text-zinc-200 → abu sangat gelap     */
+  --color-zinc-300: #3f3f46;  /* text-zinc-300 → abu gelap            */
+  --color-zinc-400: #71717a;  /* text-zinc-400 → abu medium (readable)*/
+  --color-zinc-500: #71717a;  /* text-zinc-500 → abu medium           */
+  --color-zinc-600: #52525b;  /* text-zinc-600 → abu lebih gelap      */
+  --color-zinc-700: #e4e4e7;  /* border-zinc-700 → abu sangat terang  */
+  --color-zinc-800: #f4f4f5;  /* bg-zinc-800 → hampir putih           */
+  --color-zinc-900: #f9f9f9;  /* bg-zinc-900 → putih sangat terang    */
+  --color-zinc-950: #ffffff;  /* bg-zinc-950 → putih murni            */
+
+  /* === Panel Input Safety Net ===
+     Komponen yang pakai bg-zinc-900/950 sebagai "dark card" akan
+     menjadi putih/abu terang di light mode secara otomatis.
+     Ini sudah di-handle oleh zinc-900/950 override di atas. */
+
+  /* === Text White Override ===
+     text-white dan teks putih hardcoded di tombol tidak terlihat
+     di light mode. Override ini memaksa mereka menjadi readable. */
+  --tw-text-opacity: 1;
+}
+
+/* Extra safety: input/card bg yang menggunakan opacity white overlay */
+.light .bg-zinc-950\/80,
+.light .bg-zinc-950\/60,
+.light .bg-zinc-950\/40 {
+  background-color: hsl(0 0% 100%) !important;
+}
+
+.light .bg-zinc-900\/90,
+.light .bg-zinc-900\/80,
+.light .bg-zinc-900\/60,
+.light .bg-zinc-900\/40,
+.light .bg-zinc-900\/30 {
+  background-color: hsl(0 0% 97%) !important;
+}
+
+/* border-white/* menjadi border-border di light mode */
+.light .border-white\/10,
+.light .border-white\/8,
+.light .border-white\/5 {
+  border-color: hsl(0 0% 89%) !important;
+}
+
+/* bg-white/* overlay di light mode */
+.light .bg-white\/3,
+.light .bg-white\/4,
+.light .bg-white\/5,
+.light .bg-white\/6,
+.light .bg-white\/8 {
+  background-color: hsl(0 0% 96%) !important;
+}
+
+/* hover:bg-white/* → hover:bg-accent */
+.light .hover\:bg-white\/5:hover,
+.light .hover\:bg-white\/3:hover {
+  background-color: hsl(0 0% 92%) !important;
+}
+
+/* hover:bg-zinc-900 → hover:bg-accent */
+.light .hover\:bg-zinc-900:hover {
+  background-color: hsl(0 0% 92%) !important;
+}
+
+/* hover:bg-zinc-800 → hover:bg-muted */
+.light .hover\:bg-zinc-800:hover {
+  background-color: hsl(0 0% 94%) !important;
+}
+
+/* hover:text-zinc-100, hover:text-white, hover:text-zinc-200 → dark text */
+.light .hover\:text-zinc-100:hover,
+.light .hover\:text-zinc-200:hover,
+.light .hover\:text-white:hover {
+  color: hsl(0 0% 9%) !important;
+}
+
+/* Button outline styling in light mode to provide more definition (penegas) */
+.light button[data-variant="outline"],
+.light .border-border[role="button"],
+.light button.border,
+.light a.border {
+  background-color: hsl(0 0% 100%) !important;
+  border-color: hsl(0 0% 80%) !important; /* Defined, clear border */
+  color: hsl(0 0% 9%) !important;
+}
+
+.light button[data-variant="outline"]:hover,
+.light button.border:hover,
+.light a.border:hover {
+  background-color: hsl(0 0% 96%) !important;
+  border-color: hsl(0 0% 70%) !important;
+}
+

@@ -22,12 +22,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { SidebarControl } from "@/components/sidebar-control";
+import { cn } from "@/lib/utils";
 
-type NavItem = {
+export type NavItem = {
   title: string;
   icon: React.ElementType;
-  href: string | null;
-  isActive?: boolean;
+  href: string;
+};
+
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  { title: "Overview", icon: LayoutDashboard, href: "/overview" },
+  { title: "Organizations", icon: Building2, href: "/organizations" },
+  { title: "Global Users", icon: Users, href: "/users" },
+  { title: "System Health", icon: Activity, href: "/health" },
+  { title: "Usage Metrics", icon: BarChart3, href: "/metrics" },
+  { title: "Audit Logs", icon: History, href: "/logs" },
+  { title: "Security", icon: Lock, href: "/security" },
+  { title: "Gateways", icon: Cpu, href: "/gateways/overview" },
+  { title: "Settings", icon: Settings, href: "/settings" },
+];
+
+export const checkIsActive = (href: string, pathname: string) => {
+  if (href === "/overview") return pathname === "/overview";
+  if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
+  return pathname === href || pathname.startsWith(href);
 };
 
 export function AdminSidebar() {
@@ -41,67 +59,10 @@ export function AdminSidebar() {
 
   const isFloating = sidebarMode === "hover";
 
-  const adminNavItems: NavItem[] = [
-    {
-      title: "Overview",
-      icon: LayoutDashboard,
-      href: "/overview",
-      isActive: pathname === "/overview" || pathname === "/overview",
-    },
-    {
-      title: "Organizations",
-      icon: Building2,
-      href: "/organizations",
-      isActive: pathname === "/organizations" || pathname === "/organizations",
-    },
-    {
-      title: "Global Users",
-      icon: Users,
-      href: "/users",
-      isActive: pathname === "/users" || pathname === "/users" || pathname?.startsWith("/users"),
-    },
-    {
-      title: "System Health",
-      icon: Activity,
-      href: "/health",
-      isActive: pathname === "/health" || pathname === "/health" || pathname?.startsWith("/health"),
-    },
-    {
-      title: "Usage Metrics",
-      icon: BarChart3,
-      href: "/metrics",
-      isActive: pathname === "/metrics" || pathname === "/system/metrics" || pathname?.startsWith("/metrics"),
-    },
-    {
-      title: "Audit Logs",
-      icon: History,
-      href: "/logs",
-      isActive: pathname === "/logs" || pathname === "/system/logs" || pathname?.startsWith("/logs"),
-    },
-    {
-      title: "Security",
-      icon: Lock,
-      href: "/security",
-      isActive: pathname === "/security" || pathname === "/security" || pathname?.startsWith("/security"),
-    },
-    {
-      title: "Gateways",
-      icon: Cpu,
-      href: "/gateways/overview",
-      isActive: pathname?.startsWith("/gateways") || pathname?.startsWith("/gateways"),
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      href: "/settings",
-      isActive: pathname === "/settings" || pathname === "/settings" || pathname?.startsWith("/settings"),
-    },
-  ];
-
   return (
     <>
       {isFloating && (
-        <div className="w-[50px] shrink-0 h-full" />
+        <div className="hidden md:block w-[50px] shrink-0 h-full" />
       )}
 
       <aside
@@ -113,44 +74,43 @@ export function AdminSidebar() {
           top: 0,
           bottom: 0,
           zIndex: 50,
-          boxShadow: isHovering ? "4px 0 24px rgba(0,0,0,0.3)" : "none",
+          boxShadow: "none",
         } : undefined}
-        className={`border-r border-border flex flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`hidden md:flex border-r border-border flex-col bg-sidebar shrink-0 h-full transition-all duration-300 ease-in-out overflow-hidden ${
           isFloating ? "" : "z-50"
         } ${isExpanded ? "w-[200px]" : "w-[50px]"}`}
       >
         <div className="flex flex-col h-full py-4">
           <TooltipProvider delayDuration={0}>
             <nav className="flex flex-col gap-1 px-2">
-              {adminNavItems.map((item) => {
+              {ADMIN_NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
+                const isActive = checkIsActive(item.href, pathname);
                 const button = (
                   <div
-                    className={`flex items-center gap-3 rounded-lg px-2 h-8 cursor-pointer transition-all duration-200 group ${
-                      item.isActive
-                        ? "text-primary bg-primary/10 hover:bg-emerald-500/20"
+                    className={cn(
+                      "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group",
+                      isActive
+                        ? "text-primary bg-primary/10 hover:bg-primary/20"
                         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}
+                    )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span
-                      className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-                        isExpanded
-                          ? "opacity-100 w-auto"
-                          : "opacity-0 w-0 overflow-hidden"
-                      }`}
+                      className={cn(
+                        "text-sm font-medium whitespace-nowrap transition-all duration-300",
+                        isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
+                      )}
                     >
                       {item.title}
                     </span>
                   </div>
                 );
 
-                const wrapped = item.href ? (
+                const wrapped = (
                   <Link key={item.title} href={item.href}>
                     {button}
                   </Link>
-                ) : (
-                  <div key={item.title}>{button}</div>
                 );
 
                 if (!isExpanded) {
@@ -172,8 +132,8 @@ export function AdminSidebar() {
           <div className="flex-1" />
 
           <div className="flex flex-col gap-2 px-2">
-            <div className={`flex ${isExpanded ? "px-0.5" : "justify-center"}`}>
-              <SidebarControl />
+            <div className="flex items-center rounded-lg h-8 w-full pl-[5px] pr-2.5 justify-start">
+              <SidebarControl isExpanded={isExpanded} />
             </div>
           </div>
         </div>

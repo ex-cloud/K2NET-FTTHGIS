@@ -159,14 +159,14 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-[#0c0c0c] border border-zinc-800/60 text-zinc-100">
+      <DialogContent className="sm:max-w-[425px] bg-background border border-border text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Key className="w-5 h-5 text-primary" />
             Reset Password
           </DialogTitle>
-          <DialogDescription className="text-zinc-400">
-            Set a new password for <strong className="text-zinc-200">{user.email}</strong>.
+          <DialogDescription className="text-muted-foreground">
+            Set a new password for <strong className="text-foreground">{user.email}</strong>.
           </DialogDescription>
         </DialogHeader>
 

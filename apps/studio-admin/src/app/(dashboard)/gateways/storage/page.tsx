@@ -172,7 +172,7 @@ export default function StorageGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         {/* Header */}
@@ -221,7 +221,7 @@ export default function StorageGatewayPage() {
                         value={config.AWS_REGION || ""}
                         onChange={(e) => handleInputChange("AWS_REGION", e.target.value)}
                         placeholder="auto / ap-southeast-1"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
 
@@ -233,7 +233,7 @@ export default function StorageGatewayPage() {
                         value={config.AWS_BUCKET_NAME || ""}
                         onChange={(e) => handleInputChange("AWS_BUCKET_NAME", e.target.value)}
                         placeholder="my-bucket-name"
-                        className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export default function StorageGatewayPage() {
                       value={config.AWS_ENDPOINT || ""}
                       onChange={(e) => handleInputChange("AWS_ENDPOINT", e.target.value)}
                       placeholder="https://<account-id>.r2.cloudflarestorage.com"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -281,7 +281,7 @@ export default function StorageGatewayPage() {
                       value={config.AWS_ACCESS_KEY_ID || ""}
                       onChange={(e) => handleInputChange("AWS_ACCESS_KEY_ID", e.target.value)}
                       placeholder="Access Key ID Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -303,7 +303,7 @@ export default function StorageGatewayPage() {
                       value={config.AWS_SECRET_ACCESS_KEY || ""}
                       onChange={(e) => handleInputChange("AWS_SECRET_ACCESS_KEY", e.target.value)}
                       placeholder="Secret Access Key Baru..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -315,7 +315,7 @@ export default function StorageGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -335,7 +335,7 @@ export default function StorageGatewayPage() {
             <div className="space-y-6">
               
               {/* Storage Space Saved Card - Real Data */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">WebP Image Optimizer</CardTitle>
@@ -395,7 +395,7 @@ export default function StorageGatewayPage() {
                       </div>
 
                       {/* Byte savings comparison card */}
-                      <div className="bg-[#0b0b0b] border border-border rounded-lg p-3.5 space-y-3">
+                      <div className="bg-muted/50 border border-border rounded-lg p-3.5 space-y-3">
                         <div className="flex justify-between text-xs border-b border-border pb-2">
                           <span className="text-zinc-500 flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Ukuran Asli:</span>
                           <span className="font-mono text-zinc-300">{formatBytes(stats.total_original_size)}</span>
@@ -412,7 +412,7 @@ export default function StorageGatewayPage() {
               </Card>
 
               {/* Bucket details */}
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Informasi Layanan</CardTitle>
                 </CardHeader>

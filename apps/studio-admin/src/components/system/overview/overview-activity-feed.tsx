@@ -63,7 +63,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
             );
           })
         ) : (
-          <div className="rounded-xl border border-border bg-[#0b0b0b]/40 p-8 text-center text-xs text-zinc-500">
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-xs text-zinc-500">
             No organizations have been registered on this platform yet.
           </div>
         )}

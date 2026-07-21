@@ -25,9 +25,7 @@ import {
   ShieldCheck,
   Blocks
 } from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Button, Input, Label, PageLayout } from "@k2net/ui";
 import { Switch } from "@k2net/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@k2net/ui";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
@@ -149,18 +147,18 @@ export default function SystemSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] min-h-screen text-zinc-100 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background min-h-screen text-foreground overflow-y-auto">
         <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
           <div className="space-y-2">
-            <Skeleton className="h-9 w-48 bg-zinc-800" />
-            <Skeleton className="h-4 w-96 bg-zinc-800" />
+            <Skeleton className="h-9 w-48 bg-muted" />
+            <Skeleton className="h-4 w-96 bg-muted" />
           </div>
           <div className="flex gap-4">
-            <Skeleton className="h-10 w-24 bg-zinc-800" />
-            <Skeleton className="h-10 w-24 bg-zinc-800" />
-            <Skeleton className="h-10 w-24 bg-zinc-800" />
+            <Skeleton className="h-10 w-24 bg-muted" />
+            <Skeleton className="h-10 w-24 bg-muted" />
+            <Skeleton className="h-10 w-24 bg-muted" />
           </div>
-          <Skeleton className="h-[400px] w-full bg-zinc-800/50 rounded-lg" />
+          <Skeleton className="h-[400px] w-full bg-muted/50 rounded-lg" />
         </div>
       </div>
     );
@@ -168,7 +166,7 @@ export default function SystemSettingsPage() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0c0c0c] text-zinc-200">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background text-foreground">
         <ServerCrash className="w-16 h-16 text-rose-500 mb-4" />
         <h2 className="text-xl font-semibold mb-2">Failed to Load Settings</h2>
         <p className="text-zinc-400 text-sm mb-6 max-w-md text-center">{error}</p>
@@ -181,64 +179,63 @@ export default function SystemSettingsPage() {
 
   return (
     <SystemSettingsWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-[#0c0c0c] h-full overflow-y-auto custom-scrollbar select-none text-zinc-100">
-      <div className="w-full max-w-5xl mx-auto space-y-10 pb-20">
+      <PageLayout variant="dashboard" spaceY="space-y-10">
         
         {/* Header section */}
-        <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
+        <div className="flex items-center justify-between border-b border-border pb-6 shrink-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
               <Settings className="w-8 h-8 text-primary animate-[spin_8s_linear_infinite]" /> Global Settings
             </h1>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               System-wide configurations, default quotas, SMTP mail server routing, branding, and GIS policies.
             </p>
           </div>
           <Button
             variant="outline"
             onClick={() => refresh()}
-            className="border-zinc-800 hover:bg-zinc-800/60 hover:text-white text-zinc-300 gap-2 h-9 px-3 text-xs"
+            className="border-border hover:bg-accent hover:text-accent-foreground text-muted-foreground gap-2 h-9 px-3 text-xs"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Reload Settings
           </Button>
         </div>
 
         {/* Settings Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-          <TabsList className="bg-zinc-900 border border-zinc-800 p-1 rounded-lg gap-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-col space-y-6">
+          <TabsList className="bg-muted border border-border p-1 rounded-lg gap-1">
             <TabsTrigger
               value="general"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Settings className="w-3.5 h-3.5" /> General
             </TabsTrigger>
             <TabsTrigger
               value="smtp"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Mail className="w-3.5 h-3.5" /> SMTP Mail
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Lock className="w-3.5 h-3.5" /> Security Policies
             </TabsTrigger>
             <TabsTrigger
               value="gis"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Map className="w-3.5 h-3.5" /> GIS Map
             </TabsTrigger>
             <TabsTrigger
               value="branding"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Sparkles className="w-3.5 h-3.5" /> Branding & Whitelabel
             </TabsTrigger>
             <TabsTrigger
               value="integrations"
-              className="data-[state=active]:bg-zinc-800 data-[state=active]:text-primary text-zinc-400 text-xs px-4 py-2 gap-2 transition-all rounded-md"
+              className="data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground text-xs px-4 py-2 gap-2 transition-all rounded-md"
             >
               <Blocks className="w-3.5 h-3.5" /> Integrations
             </TabsTrigger>
@@ -761,7 +758,7 @@ export default function SystemSettingsPage() {
                       {/* Real-time Sidebar/Header Simulation */}
                       <div className="space-y-2">
                         <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Simulated Portal Header</span>
-                        <div className="flex h-12 w-full items-center justify-between border border-zinc-800 bg-[#0c0c0c] px-4 py-2 rounded-xl shadow-md">
+                        <div className="flex h-12 w-full items-center justify-between border border-zinc-800 bg-card px-4 py-2 rounded-xl shadow-md">
                           <div className="flex items-center gap-x-2">
                             <div className={getValue("logo_url") ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group overflow-hidden"}>
                               {getValue("logo_url") ? (
@@ -859,7 +856,7 @@ export default function SystemSettingsPage() {
 
         </Tabs>
 
-      </div>
+
 
       {/* Embedded Map Picker Modal */}
       <MapCoordinatePicker
@@ -878,7 +875,7 @@ export default function SystemSettingsPage() {
         title="Select Default Platform Coordinates"
       />
 
-    </div>
+      </PageLayout>
     </SystemSettingsWrapper>
   );
 }

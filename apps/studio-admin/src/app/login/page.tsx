@@ -3,10 +3,11 @@
 import { LoginForm } from "@/components/auth/login-form";
 import { ShieldAlert, BookOpen, Quote, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function AdminLoginPage() {
   return (
-    <div className="min-h-screen w-full flex bg-background text-zinc-200 antialiased selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
       
       {/* LEFT COLUMN: Login Form (Supabase Style) */}
       <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-sidebar border-r border-border">
@@ -21,29 +22,32 @@ export default function AdminLoginPage() {
               FTTH GIS Portal
             </span>
           </div>
-          <Link
-            href="/gateways/overview"
-            target="_blank"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/40 hover:bg-zinc-800/60 hover:text-white transition-all text-[10px] font-medium text-zinc-400"
-          >
-            <BookOpen className="h-3 w-3" />
-            System Docs
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/gateways/overview"
+              target="_blank"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-secondary hover:bg-accent hover:text-foreground transition-all text-[10px] font-medium text-muted-foreground"
+            >
+              <BookOpen className="h-3 w-3" />
+              System Docs
+            </Link>
+            <ModeToggle />
+          </div>
         </div>
 
         {/* Center Card */}
         <div className="w-full max-w-sm mx-auto my-auto py-12 z-20 space-y-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               Welcome back
             </h1>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               Sign in to your system administrator account.
             </p>
           </div>
 
           {/* Form wrapper */}
-          <div className="bg-zinc-950/40 border border-zinc-800/30 rounded-xl p-6 shadow-2xl backdrop-blur-xs">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-2xl backdrop-blur-xs">
             <LoginForm isAdmin={true} />
           </div>
           

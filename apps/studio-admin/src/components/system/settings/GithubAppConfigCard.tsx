@@ -167,8 +167,8 @@ export function GithubAppConfigCard() {
   };
 
   return (
-    <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-      <CardHeader className="border-b border-zinc-800/40">
+    <Card className="bg-card border-border shadow-sm backdrop-blur-sm">
+      <CardHeader className="border-b border-border">
         <div className="flex items-center justify-between gap-4">
           <div>
             <CardTitle className="text-zinc-100 flex items-center gap-2">
@@ -208,7 +208,7 @@ export function GithubAppConfigCard() {
                     </Button>
                   )}
                 </div>
-                <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
+                <span className="text-[9px] font-mono text-muted-foreground bg-muted border border-border px-1 py-0.5 rounded">
                   {item.key}
                 </span>
               </div>
@@ -219,7 +219,7 @@ export function GithubAppConfigCard() {
                   value={configValues[item.key] || ""}
                   onChange={(event) => handleChange(item.key, event.target.value)}
                   placeholder={item.placeholder}
-                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs font-mono focus:border-primary/50 focus:ring-primary/50 resize-y"
+                  className="bg-input border-border text-foreground text-xs font-mono focus:border-primary/50 focus:ring-primary/50 resize-y"
                 />
               ) : (
                 <Input
@@ -228,7 +228,7 @@ export function GithubAppConfigCard() {
                   value={configValues[item.key] || ""}
                   onChange={(event) => handleChange(item.key, event.target.value)}
                   placeholder={item.placeholder}
-                  className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                  className="bg-input border-border text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                 />
               )}
               <p className="text-[11px] text-zinc-500">{item.description}</p>
@@ -236,9 +236,9 @@ export function GithubAppConfigCard() {
           ))}
         </div>
 
-        <Separator className="border-zinc-800/40" />
+        <Separator className="bg-border" />
 
-        <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/50 p-4 text-xs text-zinc-400 space-y-2">
+        <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-2">
           <p>
             Manage the GitHub App installation parameters for the system panel. These values are used to authenticate webhooks, request installation tokens, and determine the default branch for deployments.
           </p>
@@ -248,12 +248,12 @@ export function GithubAppConfigCard() {
         </div>
       </CardContent>
 
-      <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end gap-2">
+      <CardFooter className="border-t border-border pt-4 flex justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={() => void handleTestConnection()}
-          className="border-zinc-800 text-zinc-300 hover:bg-zinc-800/60 hover:text-white text-xs h-9 gap-2"
+          className="border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground text-xs h-9 gap-2"
           disabled={saving || loading || testingConnection}
         >
           {testingConnection ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />} Test Connection

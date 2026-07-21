@@ -56,6 +56,7 @@ export function OverviewMetricCardsRow({
         helper={<span>Trialing: {trialOrgs}</span>}
         footer="Platform coverage"
         icon={Building2}
+        accentClassName="text-primary"
         footerLinkHref="/organizations"
         footerLinkLabel="Manage Orgs"
       />
@@ -65,12 +66,13 @@ export function OverviewMetricCardsRow({
         value={
           <span className="flex items-baseline gap-2">
             {loadingUsers ? "..." : totalUsers}
-            <span className="text-xs text-zinc-500">{loadingUsers ? "" : `${activeUsers} Verified`}</span>
+            <span className="text-xs text-primary">{loadingUsers ? "" : `${activeUsers} Verified`}</span>
           </span>
         }
         helper={<span>Pending Invites: {loadingUsers ? "..." : pendingRequests}</span>}
         footer="Identity administration"
         icon={Users}
+        accentClassName="text-primary"
         footerLinkHref="/users"
         footerLinkLabel="Manage Users"
       />
@@ -80,7 +82,7 @@ export function OverviewMetricCardsRow({
         value={
           <span className="flex items-baseline gap-2">
             {loadingGateways ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
-            <span className={cn("text-xs font-medium", allGatewaysHealthy ? "text-primary" : "text-amber-500")}>
+            <span className={cn("text-xs font-medium text-primary", !allGatewaysHealthy && "text-amber-500")}>
               {allGatewaysHealthy ? "Healthy" : "Degraded"}
             </span>
           </span>
@@ -88,6 +90,7 @@ export function OverviewMetricCardsRow({
         helper={<span>Avg Latency: {loadingGateways ? "..." : avgLatency}</span>}
         footer="Service routing"
         icon={Zap}
+        accentClassName="text-primary"
         footerLinkHref="/gateways/overview"
         footerLinkLabel="Gateways Panel"
       />
@@ -97,13 +100,14 @@ export function OverviewMetricCardsRow({
         value={
           <span className="flex items-baseline gap-2">
             {loadingHealth ? "..." : `${cpu}%`}
-            <span className="text-xs text-zinc-500">{loadingHealth ? "" : "CPU"}</span>
-            {loadingHealth ? null : <span className="text-xs text-zinc-500">/ {memory}% RAM</span>}
+            <span className="text-xs text-sky-400">{loadingHealth ? "" : "CPU"}</span>
+            {loadingHealth ? null : <span className="text-xs text-sky-400">/ {memory}% RAM</span>}
           </span>
         }
         helper={<span>RAM Used: {loadingHealth ? "..." : memoryUsed}</span>}
         footer="Infrastructure health"
         icon={Activity}
+        accentClassName="text-sky-400"
         footerLinkHref="/health"
         footerLinkLabel="System Stats"
       />

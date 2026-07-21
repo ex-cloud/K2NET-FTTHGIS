@@ -32,17 +32,29 @@ export function OverviewDevOpsCard({
   actionClassName,
   isExternal = false,
 }: OverviewDevOpsCardProps) {
+  const hoverBorderClass = accentClassName?.includes("text-primary") 
+    ? "hover:border-primary/25" 
+    : accentClassName?.includes("text-sky") 
+    ? "hover:border-sky-500/25" 
+    : accentClassName?.includes("text-violet") 
+    ? "hover:border-violet-500/25" 
+    : accentClassName?.includes("text-teal") 
+    ? "hover:border-teal-500/25" 
+    : accentClassName?.includes("text-rose") 
+    ? "hover:border-rose-500/25"
+    : "hover:border-zinc-500/25";
+
   const content = (
-    <Card className="group h-full bg-card/60 border-border backdrop-blur-md transition-all duration-300 hover:shadow-[0_0_20px_rgba(16,185,129,0.08)]">
+    <Card className={cn("group h-full bg-card border-border transition-all duration-300", hoverBorderClass)}>
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-zinc-500">
+        <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
           <span>{eyebrow}</span>
-          <Icon className={cn("h-3.5 w-3.5 text-zinc-600 transition-colors", iconClassName)} />
+          <Icon className={cn("h-3.5 w-3.5 text-muted-foreground/60 transition-colors", iconClassName)} />
         </CardDescription>
-        <CardTitle className={cn("mt-1 text-base font-light text-zinc-200", accentClassName)}>{title}</CardTitle>
+        <CardTitle className={cn("mt-1 text-base font-bold text-foreground", accentClassName)}>{title}</CardTitle>
       </CardHeader>
       <CardContent className="pb-4">
-        {description ? <div className="text-[10px] text-zinc-500">{description}</div> : null}
+        {description ? <div className="text-[10px] text-muted-foreground">{description}</div> : null}
         {children ? <div className="mt-3">{children}</div> : null}
         {actionLabel && href ? (
           <div className="mt-4">
@@ -75,11 +87,11 @@ export function OverviewStatusBadge({ children, tone = "neutral" }: { children: 
   return (
     <Badge
       className={cn(
-        "border text-[9px] font-mono px-1.5 py-0",
+        "border text-[9px] font-mono px-1.5 py-0 font-bold",
         tone === "success" && "bg-primary/10 text-primary border-primary/20",
-        tone === "warning" && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-        tone === "danger" && "bg-red-500/10 text-red-400 border-red-500/20",
-        tone === "neutral" && "bg-zinc-800 text-zinc-400 border-zinc-700"
+        tone === "warning" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+        tone === "danger" && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+        tone === "neutral" && "bg-muted text-muted-foreground border-border"
       )}
     >
       {children}

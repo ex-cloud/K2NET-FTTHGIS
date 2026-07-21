@@ -187,8 +187,8 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
 
 
   return (
-    <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-      <CardHeader className="border-b border-zinc-800/40 flex flex-row items-center justify-between gap-4">
+    <Card className="bg-card border-border shadow-sm backdrop-blur-sm">
+      <CardHeader className="border-b border-border flex flex-row items-center justify-between gap-4">
         <div>
           <CardTitle className="text-zinc-100 flex items-center gap-2">
             GitHub App Status
@@ -211,7 +211,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
 
       <CardContent className="space-y-6 pt-6">
         <div className="max-w-2xl mx-auto w-full">
-          <div className="border border-zinc-800/50 bg-[#0c0c0c]/80 rounded-xl p-5 space-y-4">
+          <div className="border border-zinc-800/50 bg-card rounded-xl p-5 space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-zinc-900 text-zinc-400">
                 <Github className="w-6 h-6" />
@@ -225,19 +225,19 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
             </div>
 
             <div className="space-y-2 text-xs text-zinc-400">
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Status</span>
                 <span className={cn("font-medium", integrationStatus.connected ? "text-primary" : "text-zinc-400")}>{statusLabel}</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Organization</span>
                 <span className="font-mono text-zinc-300">{organizationLabel}</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Installation target</span>
                 <span className="font-mono text-zinc-300">{installationTarget}</span>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-zinc-950/60 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Repositories</span>
                 <span className="font-mono text-zinc-300">{repoCount}</span>
               </div>
@@ -246,13 +246,13 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
         </div>
       </CardContent>
 
-      <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end gap-2">
+      <CardFooter className="border-t border-border pt-4 flex justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={() => void loadIntegrationStatus()}
           disabled={statusLoading || connectingGithub}
-          className="border-zinc-800 text-zinc-300 hover:bg-zinc-850 hover:text-white text-xs h-9 gap-2"
+          className="border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground text-xs h-9 gap-2"
         >
           {statusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Refresh Status
         </Button>
@@ -271,7 +271,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
             size="sm"
             onClick={handleConnectGithub}
             disabled={connectingGithub}
-            className="gap-2 border-zinc-800 hover:bg-zinc-850 hover:text-white text-zinc-300 text-xs h-9"
+            className="gap-2 border-border hover:bg-accent hover:text-accent-foreground text-muted-foreground text-xs h-9"
           >
             {connectingGithub ? (
               <Loader2 className="w-4 h-4 animate-spin text-primary" />

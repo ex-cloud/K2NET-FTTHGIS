@@ -162,7 +162,7 @@ export default function WhatsappGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
         
         <div className="flex items-center gap-4 border-b border-border pb-6">
@@ -207,7 +207,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_API_URL || ""}
                       onChange={(e) => handleInputChange("WA_API_URL", e.target.value)}
                       placeholder="https://graph.facebook.com/v21.0"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -219,7 +219,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_PHONE_NUMBER_ID || ""}
                       onChange={(e) => handleInputChange("WA_PHONE_NUMBER_ID", e.target.value)}
                       placeholder="e.g. 109384738291039"
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -241,7 +241,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_ACCESS_TOKEN || ""}
                       onChange={(e) => handleInputChange("WA_ACCESS_TOKEN", e.target.value)}
                       placeholder="EAAGxxxxxxxxxxxxxxxxxxxxxxxxxxx..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
@@ -263,7 +263,7 @@ export default function WhatsappGatewayPage() {
                       value={config.WA_VERIFY_TOKEN || ""}
                       onChange={(e) => handleInputChange("WA_VERIFY_TOKEN", e.target.value)}
                       placeholder="Verify Token string..."
-                      className="bg-zinc-950/80 border-white/10 text-xs focus:border-primary/50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
                 </CardContent>
@@ -274,7 +274,7 @@ export default function WhatsappGatewayPage() {
                   type="button" 
                   onClick={fetchConfig} 
                   variant="outline"
-                  className="border-white/10 bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 text-xs h-9 px-4"
+                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
                 >
                   Reset Form
                 </Button>
@@ -291,7 +291,7 @@ export default function WhatsappGatewayPage() {
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     Metrik Delivery WA
@@ -302,7 +302,7 @@ export default function WhatsappGatewayPage() {
                   {logsLoading ? (
                     <div className="space-y-3">
                       {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-zinc-800/40 rounded animate-pulse" />
+                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
                       ))}
                     </div>
                   ) : waLogs.length === 0 ? (
@@ -330,7 +330,7 @@ export default function WhatsappGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#0b0b0b]/40 border-border shadow-xl">
+              <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status API Meta</CardTitle>
                 </CardHeader>

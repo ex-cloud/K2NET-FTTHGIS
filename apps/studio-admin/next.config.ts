@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+const BACKEND_URL = process.env.BACKEND_API_URL || "http://localhost:9090";
+const NOTIFICATION_GW_URL = process.env.NOTIFICATION_GATEWAY_URL || "http://localhost:5001";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
@@ -13,15 +16,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/v1/:path*",
-        destination: "http://localhost:9090/api/v1/:path*",
+        destination: `${BACKEND_URL}/api/v1/:path*`,
       },
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:9090/uploads/:path*",
+        destination: `${BACKEND_URL}/uploads/:path*`,
       },
       {
         source: "/api/gateway/:path*",
-        destination: "http://localhost:5001/api/v1/:path*",
+        destination: `${NOTIFICATION_GW_URL}/api/v1/:path*`,
       },
     ];
   },

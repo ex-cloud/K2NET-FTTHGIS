@@ -242,25 +242,25 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
   }
 
   return (
-    <div className="w-full space-y-6 text-zinc-100">
+    <div className="w-full space-y-6">
       
       {/* HEADER CONTROL BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-border">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-100">Matrix Hak Akses Platform</h2>
-          <p className="text-sm text-zinc-400">Konfigurasi pemetaan permission granular secara terpusat.</p>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">Matrix Hak Akses Platform</h2>
+          <p className="text-sm text-muted-foreground">Konfigurasi pemetaan permission granular secara terpusat.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
           {/* Context Switcher (Hanya muncul jika diakses dari System/Control Plane) */}
           {context === "system" && (
-            <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+            <div className="flex bg-muted p-1 rounded-lg border border-border">
               <button
                 onClick={() => setSelectedScope("SYSTEM")}
                 className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                   selectedScope === "SYSTEM"
                     ? "bg-primary/10 text-primary border border-primary/20"
-                    : "text-zinc-400 hover:text-zinc-200 border border-transparent"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
                 }`}
               >
                 <Server className="w-3.5 h-3.5" />
@@ -271,7 +271,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                   selectedScope === "TENANT"
                     ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                    : "text-zinc-400 hover:text-zinc-200 border border-transparent"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -281,11 +281,11 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
           )}
 
           {/* View Mode Switcher */}
-          <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+          <div className="flex bg-muted p-1 rounded-lg border border-border">
             <button
               onClick={() => setViewMode("table")}
               className={`p-1.5 rounded-md transition-all ${
-                viewMode === "table" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                viewMode === "table" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
               title="Table View"
             >
@@ -294,7 +294,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
             <button
               onClick={() => setViewMode("grid")}
               className={`p-1.5 rounded-md transition-all ${
-                viewMode === "grid" ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+                viewMode === "grid" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
               title="Card Grid View"
             >
@@ -308,8 +308,8 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
             disabled={batchSaving || !hasAnyModifiedRoles || !canAccess('roles.update')}
             className={`flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg transition-all shadow-lg ${
               hasAnyModifiedRoles && canAccess('roles.update')
-                ? "bg-primary hover:bg-primary/90 text-white shadow-emerald-950/20 cursor-pointer"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none"
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+                : "bg-muted text-muted-foreground cursor-not-allowed shadow-none"
             }`}
           >
             {batchSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -320,18 +320,18 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
 
       {/* TAMPILAN UTAMA 1: MATRIX TABLE */}
       {viewMode === "table" && (
-        <div className="w-full overflow-auto rounded-xl border border-zinc-800 bg-zinc-950/50 backdrop-blur-md shadow-2xl max-h-[calc(100vh-280px)] custom-scrollbar relative">
+        <div className="w-full overflow-auto rounded-xl border border-border bg-card/50 backdrop-blur-md shadow-2xl max-h-[calc(100vh-280px)] custom-scrollbar relative">
           <table className="w-full border-collapse text-left text-sm border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="sticky left-0 top-0 z-40 bg-zinc-950 p-4 font-medium text-zinc-300 border-r border-b border-zinc-800 min-w-[280px] shadow-[2px_2px_5px_rgba(0,0,0,0.5)]">Modul & Hak Akses</th>
+              <tr className="border-b border-border">
+                <th className="sticky left-0 top-0 z-40 bg-card p-4 font-medium text-muted-foreground border-r border-b border-border min-w-[280px] shadow-[2px_2px_5px_rgba(0,0,0,0.08)]">Modul & Hak Akses</th>
                 {roles.map((role) => (
-                  <th key={role.id} className="sticky top-0 z-30 p-4 font-medium text-center min-w-[150px] border-b border-zinc-800 bg-zinc-950 shadow-[0_2px_3px_rgba(0,0,0,0.3)]">
-                    <span className="block text-zinc-200 font-semibold">{role.displayName || role.name}</span>
+                  <th key={role.id} className="sticky top-0 z-30 p-4 font-medium text-center min-w-[150px] border-b border-border bg-card shadow-[0_2px_3px_rgba(0,0,0,0.05)]">
+                    <span className="block text-foreground font-semibold">{role.displayName || role.name}</span>
                     <span className="block text-[10px] font-mono font-bold text-primary mt-1 bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 inline-block">
                       {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
                     </span>
-                    <span className="block text-[10px] text-zinc-500 font-mono mt-1">({role.name})</span>
+                    <span className="block text-[10px] text-muted-foreground font-mono mt-1">({role.name})</span>
                     
                     {/* Role Type Indicator Badge */}
                     <div className="mt-1 flex items-center justify-center gap-1">
@@ -356,25 +356,25 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-900">
+            <tbody className="divide-y divide-border">
               {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
                 <React.Fragment key={moduleName}>
                   {/* Row Header untuk Sub-Modul */}
-                  <tr className="bg-zinc-900/30 font-medium text-xs tracking-wider text-zinc-400">
-                    <td className="sticky left-0 z-20 bg-zinc-900/80 px-4 py-2 text-primary/90 font-mono uppercase border-r border-zinc-800">
+                  <tr className="bg-muted/30 font-medium text-xs tracking-wider text-muted-foreground">
+                    <td className="sticky left-0 z-20 bg-muted/80 px-4 py-2 text-primary font-mono uppercase border-r border-border">
                       📦 {moduleName}
                     </td>
-                    <td colSpan={roles.length} className="px-4 py-2 bg-zinc-900/40 border-y border-zinc-900" />
+                    <td colSpan={roles.length} className="px-4 py-2 bg-muted/40 border-y border-border" />
                   </tr>
                   
                   {/* Baris Item Permission */}
                   {perms.map((perm) => (
-                    <tr key={perm.id} className="hover:bg-zinc-900/40 transition-colors group">
-                      <td className="sticky left-0 z-10 bg-[#0c0c0c] p-4 border-r border-zinc-800 shadow-[2px_0_5px_rgba(0,0,0,0.3)] group-hover:bg-zinc-800 transition-colors">
-                        <div className="font-medium text-zinc-200 group-hover:text-white">
+                    <tr key={perm.id} className="hover:bg-accent/40 transition-colors group">
+                      <td className="sticky left-0 z-10 bg-card p-4 border-r border-border shadow-[2px_0_5px_rgba(0,0,0,0.1)] group-hover:bg-accent transition-colors">
+                        <div className="font-medium text-foreground">
                           {perm.description || perm.code}
                         </div>
-                        <div className="text-xs text-zinc-500 font-mono mt-0.5">{perm.code}</div>
+                        <div className="text-xs text-muted-foreground font-mono mt-0.5">{perm.code}</div>
                       </td>
                       {roles.map((role) => {
                         const isChecked = editedRoles[role.id]?.has(perm.id);
@@ -383,17 +383,17 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                           <td 
                             key={role.id} 
                             onClick={() => canEdit && togglePermission(role.id, perm.id)}
-                            className={`p-4 text-center border-l border-zinc-900/50 transition-all ${
+                            className={`p-4 text-center border-l border-border transition-all ${
                               canEdit
-                                ? "cursor-pointer hover:bg-zinc-800/20"
+                                ? "cursor-pointer hover:bg-accent/20"
                                 : "cursor-default"
                             }`}
                           >
                             <div className="flex items-center justify-center mx-auto">
                               <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                                 isChecked 
-                                  ? "bg-emerald-500 border-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/10" 
-                                  : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
+                                  ? "bg-primary border-primary text-primary-foreground shadow-md shadow-primary/10" 
+                                  : "border-border bg-muted hover:border-primary/50"
                               } ${!canEdit ? "opacity-60" : ""}`}>
                                 {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                               </div>
@@ -416,24 +416,24 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
           {roles.map((role) => (
             <div 
               key={role.id} 
-              className={`bg-zinc-950 border rounded-xl p-5 shadow-xl flex flex-col justify-between transition-all group ${
-                isRoleModified(role.id) ? "border-amber-500/50" : "border-zinc-800 hover:border-zinc-700"
+              className={`bg-card border rounded-xl p-5 shadow-sm flex flex-col justify-between transition-all group ${
+                isRoleModified(role.id) ? "border-amber-500/50" : "border-border hover:border-primary/30"
               }`}
             >
               <div>
-                <div className="flex items-start justify-between pb-3 border-b border-zinc-900">
+                <div className="flex items-start justify-between pb-3 border-b border-border">
                   <div>
-                    <h3 className="font-semibold text-zinc-100 text-base">{role.displayName || role.name}</h3>
+                    <h3 className="font-semibold text-foreground text-base">{role.displayName || role.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
                         {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
                       </span>
-                      <span className="text-xs font-mono text-zinc-500">({role.name})</span>
+                      <span className="text-xs font-mono text-muted-foreground">({role.name})</span>
                     </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-1">
-                    <div className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400">
+                    <div className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-muted border border-border text-muted-foreground">
                       {selectedScope} ROLE
                     </div>
                     {role.isSystemRole ? (
@@ -449,20 +449,20 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                 </div>
                 
                 {role.description && (
-                  <p className="text-xs text-zinc-400 mt-2.5 bg-zinc-900/50 p-2 rounded border border-zinc-900">
+                  <p className="text-xs text-muted-foreground mt-2.5 bg-muted/50 p-2 rounded border border-border">
                     {role.description}
                   </p>
                 )}
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase block">Daftar Hak Akses:</span>
+                    <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase block">Daftar Hak Akses:</span>
                     {isRoleModified(role.id) && (
                       <span className="text-[10px] text-amber-500 animate-pulse font-medium">Ada perubahan</span>
                     )}
                   </div>
                   
-                  <div className="max-h-[220px] overflow-y-auto pr-1 space-y-2 text-xs divide-y divide-zinc-900/50 custom-scrollbar">
+                  <div className="max-h-[220px] overflow-y-auto pr-1 space-y-2 text-xs divide-y divide-border custom-scrollbar">
                     {Object.entries(groupedPermissions).map(([moduleName, perms]) => (
                       <div key={moduleName} className="pt-2 first:pt-0">
                         <span className="text-[9px] text-primary/80 font-semibold tracking-wide uppercase block mb-1">
@@ -478,16 +478,16 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                               onClick={() => canEdit && togglePermission(role.id, perm.id)}
                               className={`flex items-center justify-between py-1.5 px-1 rounded transition-colors ${
                                 canEdit
-                                  ? "cursor-pointer hover:bg-zinc-900/40"
+                                  ? "cursor-pointer hover:bg-accent/40"
                                   : "cursor-default"
                               }`}
                             >
                               <div className="pr-2">
-                                <span className="block font-medium text-zinc-300">{perm.description || perm.code}</span>
-                                <span className="block text-[10px] text-zinc-500 font-mono">{perm.code}</span>
+                                <span className="block font-medium text-foreground">{perm.description || perm.code}</span>
+                                <span className="block text-[10px] text-muted-foreground font-mono">{perm.code}</span>
                               </div>
                               <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
-                                isChecked ? "bg-emerald-500 border-emerald-400 text-zinc-950" : "border-zinc-700 bg-zinc-900"
+                                isChecked ? "bg-primary border-primary text-primary-foreground" : "border-border bg-muted"
                               } ${!canEdit ? "opacity-60" : ""}`}>
                                 {isChecked && <Check className="w-3 h-3 text-black stroke-[3]" />}
                               </div>
@@ -502,7 +502,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
               
               {/* Individual Save Button for Card — only shown if user can update roles */}
               {isRoleModified(role.id) && canAccess('roles.update') && (
-                <div className="mt-4 pt-3 border-t border-zinc-900">
+                <div className="mt-4 pt-3 border-t border-border">
                   <button
                     onClick={() => {
                       if (role.isSystemRole && context !== "system") {
@@ -527,17 +527,17 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
 
       {/* Premium Confirmation Dialog for Hybrid RBAC Lazy Cloning */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-full bg-blue-500/10">
                 <AlertTriangle className="w-6 h-6 text-blue-400" />
               </div>
-              <DialogTitle className="text-xl font-bold tracking-tight">Standard Template</DialogTitle>
+              <DialogTitle className="text-xl font-bold tracking-tight text-foreground">Standard Template</DialogTitle>
             </div>
-            <DialogDescription className="text-zinc-400 text-base leading-relaxed">
+            <DialogDescription className="text-muted-foreground text-base leading-relaxed">
               Ini adalah template standar global untuk role <span className="text-blue-400 font-semibold uppercase">{pendingRoleToSave?.displayName || pendingRoleToSave?.name}</span>. 
-              Menyimpan perubahan akan membuat <span className="text-primary font-semibold underline decoration-emerald-500/30 underline-offset-4">versi kustom</span> khusus untuk organisasi Anda.
+              Menyimpan perubahan akan membuat <span className="text-primary font-semibold underline decoration-primary/30 underline-offset-4">versi kustom</span> khusus untuk organisasi Anda.
               <br /><br />
               Seluruh anggota tim yang memiliki role ini akan otomatis dimigrasikan ke versi kustom yang baru.
             </DialogDescription>
@@ -546,7 +546,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
             <Button 
               variant="outline" 
               onClick={() => setShowConfirmDialog(false)}
-              className="border-zinc-800 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-100 transition-all"
+              className="border-border hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
             >
               Cancel
             </Button>

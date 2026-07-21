@@ -81,7 +81,7 @@ export default function GatewaysOverviewPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-8 bg-background h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col pt-16 px-4 md:px-4 md:px-8 bg-background h-full overflow-y-auto">
       <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
         
         {/* Header Section */}
@@ -193,7 +193,7 @@ export default function GatewaysOverviewPage() {
             </div>
 
             {/* Sparkline chart visual simulation */}
-            <Card className="bg-[#0b0b0b]/40 border-border backdrop-blur-md p-6">
+            <Card className="bg-card border-border backdrop-blur-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h4 className="text-sm font-semibold text-zinc-200">Throughput & Gateway Load</h4>

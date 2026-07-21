@@ -77,7 +77,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
             <UserSearch placeholder="Filter users..." />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="h-9 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 hidden sm:flex">
+            <Button variant="outline" className="h-9 border-border text-foreground hover:bg-accent hover:text-accent-foreground hidden sm:flex">
               Docs
             </Button>
             {canInviteUsers && (
@@ -92,30 +92,30 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col bg-[#0c0c0c] rounded-md border border-zinc-800/60 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-card rounded-md border border-border overflow-hidden">
           {/* Table Content */}
         <div className="flex-1 overflow-auto">
           <Table>
-            <TableHeader className="bg-zinc-900/40 sticky top-0">
-              <TableRow className="hover:bg-transparent border-zinc-800/60">
-                <TableHead className="w-[300px] h-9 px-4 text-xs font-medium text-zinc-500">
+            <TableHeader className="bg-muted/40 sticky top-0">
+              <TableRow className="hover:bg-transparent border-border">
+                <TableHead className="w-[300px] h-9 px-4 text-xs font-medium text-muted-foreground">
                   User
                 </TableHead>
-                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
+                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
                   Role
                 </TableHead>
                 {isGlobalView && (
-                  <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
+                  <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
                     Organization
                   </TableHead>
                 )}
-                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
+                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
                   Status
                 </TableHead>
-                <TableHead className="h-9 px-4 text-xs font-medium text-zinc-500">
+                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
                   Created At
                 </TableHead>
-                <TableHead className="h-9 px-4 text-right text-xs font-medium text-zinc-500">
+                <TableHead className="h-9 px-4 text-right text-xs font-medium text-muted-foreground">
                   Actions
                 </TableHead>
               </TableRow>
@@ -134,11 +134,11 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                 users.map((user) => (
                   <TableRow
                     key={user.id}
-                    className="border-zinc-800/60 hover:bg-zinc-800/30 transition-colors group h-12"
+                    className="border-border hover:bg-accent/40 transition-colors group h-12"
                   >
                     <TableCell className="px-4 py-2">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-7 w-7 rounded-full border border-zinc-700">
+                        <Avatar className="h-7 w-7 rounded-full border border-border">
                           <AvatarImage
                             src={user.avatarUrl}
                             alt={user.fullName || "User"}
@@ -148,10 +148,10 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
-                          <span className="text-[13px] font-medium text-zinc-200 leading-tight">
+                          <span className="text-[13px] font-medium text-foreground leading-tight">
                             {user.fullName || user.username || user.email || "Unknown User"}
                           </span>
-                          <span className="text-[11px] text-zinc-500 leading-tight">
+                          <span className="text-[11px] text-muted-foreground leading-tight">
                             {user.email}
                           </span>
                         </div>
@@ -177,8 +177,8 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                     </TableCell>
                     {isGlobalView && (
                       <TableCell className="px-4 py-2">
-                        <div className="text-[12px] text-zinc-400 flex items-center gap-2">
-                          <Building2 className="w-3.5 h-3.5 text-zinc-500" />
+                        <div className="text-[12px] text-muted-foreground flex items-center gap-2">
+                          <Building2 className="w-3.5 h-3.5 text-muted-foreground/80" />
                           {user.organizationId ? (
                             <Link href={`/org/${user.organizationId}`} className="hover:text-primary hover:underline font-medium transition-colors">
                               {user.organizationName}
@@ -194,13 +194,13 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-500" : "bg-red-500"}`}
                         ></span>
-                        <span className="text-[12px] text-zinc-400 capitalize">
+                        <span className="text-[12px] text-muted-foreground capitalize">
                           {user.status.toLowerCase()}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      <div className="text-[12px] text-zinc-400">
+                      <div className="text-[12px] text-muted-foreground">
                         {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                       </div>
                     </TableCell>
@@ -210,7 +210,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             title="Edit user"
                             onClick={() => handleEdit(user)}
                           >
@@ -221,7 +221,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-zinc-500 hover:text-zinc-200"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             title="Reset password"
                             onClick={() => handleResetPassword(user)}
                           >
@@ -238,8 +238,8 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
         </div>
 
         {/* Pagination */}
-        <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-background">
-          <span className="text-[12px] text-zinc-500">
+        <div className="px-4 py-2 border-t border-border flex items-center justify-between bg-card">
+          <span className="text-[12px] text-muted-foreground">
             Showing {totalElements === 0 ? 0 : startParam} to {endParam} of{" "}
             {totalElements} results
           </span>
