@@ -98,15 +98,16 @@ export function UserFilters() {
               <Button 
                 onClick={handleOrgSearch}
                 size="sm"
-                className="h-9 bg-primary hover:bg-primary/90 text-white text-xs px-3"
+                variant="default"
+                className="h-9 px-3 text-xs"
               >
                 Apply
               </Button>
             </div>
             {currentOrg && (
-              <div className="flex items-center justify-between p-1.5 px-2 bg-primary/10 border border-primary/20 rounded text-[11px] text-primary">
+              <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary font-medium">
                 <span>Active: <strong>{currentOrg}</strong></span>
-                <X className="w-3.5 h-3.5 cursor-pointer hover:text-white" onClick={() => updateParam("org", "all")} />
+                <X className="w-3.5 h-3.5 cursor-pointer hover:text-foreground transition-colors" onClick={() => updateParam("org", "all")} />
               </div>
             )}
           </div>
@@ -122,14 +123,14 @@ export function UserFilters() {
                   key={r.id}
                   onClick={() => updateParam("role", r.id)}
                   className={cn(
-                    "p-2 text-left rounded text-xs font-medium transition-all flex items-center justify-between border",
+                    "p-2.5 text-left rounded-lg text-xs font-medium transition-all flex items-center justify-between border active:scale-[0.98]",
                     currentRole === r.id
-                      ? "bg-primary/10 border-emerald-500 text-primary font-bold"
-                      : "bg-muted/20 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
+                      ? "bg-primary/10 border-primary text-primary font-bold shadow-xs"
+                      : "bg-card/60 border-border/60 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   <span>{r.label}</span>
-                  {currentRole === r.id && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                  {currentRole === r.id && <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]" />}
                 </button>
               ))}
             </div>

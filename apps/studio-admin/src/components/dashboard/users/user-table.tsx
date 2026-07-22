@@ -94,30 +94,30 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col bg-card rounded-md border border-border overflow-hidden">
+        <div className="flex-1 flex flex-col bg-card/60 backdrop-blur-xl rounded-xl border border-border/80 overflow-hidden shadow-sm">
           {/* Table Content */}
         <div className="flex-1 overflow-auto">
           <Table>
-            <TableHeader className="bg-muted/40 sticky top-0">
+            <TableHeader className="bg-muted/60 backdrop-blur-md sticky top-0 border-b border-border z-10">
               <TableRow className="hover:bg-transparent border-border">
-                <TableHead className="w-[300px] h-9 px-4 text-xs font-medium text-muted-foreground">
+                <TableHead className="w-[300px] h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   User
                 </TableHead>
-                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
+                <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Role
                 </TableHead>
                 {isGlobalView && (
-                  <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
+                  <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Organization
                   </TableHead>
                 )}
-                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
+                <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Status
                 </TableHead>
-                <TableHead className="h-9 px-4 text-xs font-medium text-muted-foreground">
+                <TableHead className="h-9 px-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Created At
                 </TableHead>
-                <TableHead className="h-9 px-4 text-right text-xs font-medium text-muted-foreground">
+                <TableHead className="h-9 px-4 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Actions
                 </TableHead>
               </TableRow>

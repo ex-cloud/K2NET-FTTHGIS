@@ -19,14 +19,23 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        "group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/5",
+        "group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10",
         className
       )}
       {...props}
     >
-      {/* Rotating Conic Gradient Laser Beam on Hover */}
+      {/* Rotating Conic Gradient Laser Beam on Hover (1px Border Perimeter Only) */}
       {animatedBeam ? (
-        <div className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden p-[1px] z-10">
+        <div 
+          className="pointer-events-none absolute -inset-[1px] rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden z-10"
+          style={{
+            padding: "1.5px",
+            WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+            WebkitMaskComposite: "destination-out",
+            mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+            maskComposite: "exclude",
+          }}
+        >
           <div 
             className="absolute -inset-[150%] animate-border-spin"
             style={{
@@ -34,7 +43,6 @@ function Card({
               animationDuration: `${beamDuration}s`,
             }}
           />
-          <div className="h-full w-full rounded-[11px] bg-card/60 dark:bg-card/45 backdrop-blur-xl" />
         </div>
       ) : null}
 
