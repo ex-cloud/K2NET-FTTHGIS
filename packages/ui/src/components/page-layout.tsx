@@ -57,10 +57,17 @@ export function PageLayout({
 
   // Dashboard variant (scrollable, standard dashboard pages)
   return (
-    <div className="flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-16">
+    <div className="relative flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-16">
+      {/* Ambient Background Glow Mesh for Glassmorphism Backdrop Blur Contrast */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 opacity-40 dark:opacity-30">
+        <div className="absolute -top-[20%] left-[10%] h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px]" />
+        <div className="absolute top-[30%] right-[5%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-[140px]" />
+        <div className="absolute top-[60%] left-[20%] h-[400px] w-[400px] rounded-full bg-sky-500/10 blur-[120px]" />
+      </div>
+
       <div
         className={cn(
-          "w-full pb-20 mx-auto",
+          "relative z-10 w-full pb-20 mx-auto",
           spaceY || "space-y-8",
           maxWidth,
           className

@@ -24,29 +24,23 @@ function Card({
       )}
       {...props}
     >
-      {/* Rotating Conic Gradient Laser Beam on Hover (CSS Masked 1px Border) */}
+      {/* Rotating Conic Gradient Laser Beam on Hover */}
       {animatedBeam ? (
-        <div 
-          className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden"
-          style={{
-            padding: "1px",
-            maskImage: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            WebkitMaskImage: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-            maskComposite: "exclude",
-            WebkitMaskComposite: "xor",
-          }}
-        >
+        <div className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden p-[1px] z-10">
           <div 
             className="absolute -inset-[150%] animate-border-spin"
             style={{
-              background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 70%, ${beamColor} 88%, transparent 100%)`,
+              background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 65%, ${beamColor} 85%, transparent 100%)`,
               animationDuration: `${beamDuration}s`,
             }}
           />
+          <div className="h-full w-full rounded-[11px] bg-card/90 dark:bg-card/85 backdrop-blur-xl" />
         </div>
       ) : null}
 
-      {children}
+      <div className="relative z-20 flex flex-col justify-between h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }

@@ -43,7 +43,7 @@ export function OverviewDevOpsCard({
     : "#3ecf8e"; // Default Primary Green
 
   const content = (
-    <Card animatedBeam beamColor={beamColor}>
+    <Card animatedBeam beamColor={beamColor} className="h-full">
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
           <span>{eyebrow}</span>
@@ -51,12 +51,14 @@ export function OverviewDevOpsCard({
         </CardDescription>
         <CardTitle className={cn("mt-1 text-base font-bold text-foreground", accentClassName)}>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="pb-4">
-        {description ? <div className="text-[10px] text-muted-foreground">{description}</div> : null}
-        {children ? <div className="mt-3">{children}</div> : null}
+      <CardContent className="flex-1 flex flex-col justify-between pb-4">
+        <div>
+          {description ? <div className="text-[10px] text-muted-foreground">{description}</div> : null}
+          {children ? <div className="mt-3">{children}</div> : null}
+        </div>
         {actionLabel && href ? (
-          <div className="mt-4">
-            <div className={cn("inline-flex items-center gap-1 text-[10px] transition-colors", actionClassName)}>
+          <div className="mt-4 pt-2 border-t border-border/40">
+            <div className={cn("inline-flex items-center gap-1 text-[10px] font-semibold transition-colors", actionClassName)}>
               {actionLabel}
               {isExternal ? <ExternalLink className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
             </div>

@@ -1,0 +1,8 @@
+.next
+node_modules
+target
+.git
+dist
+.cache
+.turbo
+*.log
