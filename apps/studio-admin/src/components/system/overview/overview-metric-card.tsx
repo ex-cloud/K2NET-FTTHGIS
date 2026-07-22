@@ -16,18 +16,18 @@ export function OverviewMetricCard({
   footerLinkLabel,
 }: OverviewMetricCardProps) {
   const hoverBorderClass = accentClassName?.includes("text-primary") 
-    ? "hover:border-primary/25" 
+    ? "hover:border-primary/20" 
     : accentClassName?.includes("text-sky") 
-    ? "hover:border-sky-500/25" 
+    ? "hover:border-sky-500/20" 
     : accentClassName?.includes("text-violet") 
-    ? "hover:border-violet-500/25" 
+    ? "hover:border-violet-500/20" 
     : accentClassName?.includes("text-teal") 
-    ? "hover:border-teal-500/25" 
+    ? "hover:border-teal-500/20" 
     : accentClassName?.includes("text-rose") 
-    ? "hover:border-rose-500/25"
+    ? "hover:border-rose-500/20"
     : eyebrow.toLowerCase().includes("tenant") || eyebrow.toLowerCase().includes("gateway")
-    ? "hover:border-primary/25"
-    : "hover:border-zinc-500/25";
+    ? "hover:border-primary/20"
+    : "hover:border-zinc-500/20";
 
   return (
     <Card className={cn("group h-full bg-card border-border transition-all duration-300", hoverBorderClass)}>

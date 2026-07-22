@@ -170,28 +170,43 @@ body {
 }
 
 /* ============================================================
-   ✨ Glassmorphism Design System (Dark & Light Mode)
+   ✨ Glassmorphism Design System (Dark & Light Mode + Hover Glow)
    ============================================================ */
 
 /* Dark Mode Frosted Glass (Arang Transparan 60% + Blur 20px) */
 .dark .bg-card,
 .dark .bg-card\/80,
 .dark .bg-card\/60 {
-  background-color: hsl(0 0% 9% / 0.6) !important;
+  background-color: hsl(0 0% 9% / 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-color: hsl(0 0% 14%) !important;
+  border-color: hsl(0 0% 14%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .bg-card:hover,
+.dark .bg-card\/80:hover,
+.dark .bg-card\/60:hover {
+  background-color: hsl(0 0% 11% / 0.85);
 }
 
 /* Light Mode Frosted White Glass (Putih Transparan 85% + Blur 20px + Micro-shadow) */
 .light .bg-card,
 .light .bg-card\/80,
 .light .bg-card\/60 {
-  background-color: hsl(0 0% 100% / 0.85) !important;
+  background-color: hsl(0 0% 100% / 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-color: hsl(0 0% 89%) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+  border-color: hsl(0 0% 89%);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.light .bg-card:hover,
+.light .bg-card\/80:hover,
+.light .bg-card\/60:hover {
+  background-color: hsl(0 0% 100% / 0.98);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
 }
 
 
