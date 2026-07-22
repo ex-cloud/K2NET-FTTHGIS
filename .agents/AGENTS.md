@@ -20,6 +20,56 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 
 ---
 
+## 🧪 Aturan Baku Verifikasi Kode Sebelum Deploy (Pre-Deployment Checklist)
+
+Sebelum mengirimkan perubahan (*commit/push/deploy*) ke server, seluruh kode **WAJIB** melewati pengujian sintaks, linter, unit test, dan kompilasi per modul sebagai berikut:
+
+### 1. Frontend Next.js (`apps/studio-admin` & `apps/studio-tenant`)
+```bash
+pnpm --filter @k2net/ui build          # Memastikan paket UI terkompilasi
+pnpm --filter @k2net/studio-admin lint # Memeriksa standar penulisan kode linter
+pnpm --filter @k2net/studio-admin build# Memastikan Next.js terkompilasi 100% tanpa error
+```
+
+### 2. Backend Spring Boot (`apps/api`)
+```bash
+mvn clean test                         # Menjalankan seluruh pengujian unit backend Java
+mvn clean package -DskipTests=false    # Memastikan aplikasi Java terkompilasi & terkemas (.jar)
+```
+
+### 3. Go Microservices & Gateways (`services/*`)
+```bash
+go vet ./...                           # Static analysis memeriksa bug potensial Go
+go test ./...                          # Menjalankan unit test pada seluruh gateway Go
+go build ./...                         # Memastikan kompilasi workspace Go (go.work) sukses
+```
+
+### 4. API Gateway Kong (`docker/kong/kong.yml`)
+```bash
+kong config parse docker/kong/kong.yml # Memeriksa keabsahan deklaratif kong.yml
+```
+
+### 5. Reverse Proxy Traefik (`docker/traefik/dynamic/`)
+```bash
+# Validasi konfigurasi YAML dynamic router Traefik v3 sebelum direstart
+```
+
+### 8. Docker Engine & Network Inspection
+```bash
+docker compose config                  # Memeriksa keabsahan file compose
+docker network inspect project5_default | grep -E '"Name"|"IPv4Address"' # Verifikasi IP dinamis kontainer
+```
+
+---
+
+## 🌐 Aturan Komunikasi Jaringan & IP Docker (Docker IP Rules)
+
+1. **Dilarang Hardcode IP Internal (`172.18.0.x`)**: Seluruh inter-service communication wajib menggunakan **Container/Service Hostname** (`http://backend:9090`, `http://ftth-postgres:5432`, `http://keycloak:8081`, `http://ftth-poller:5010`). IP internal Docker bersifat dinamis dan dapat berubah setiap kali kontainer di-recreate.
+2. **Penggunaan CIDR Subnet Range**: Pada IP Whitelist (seperti `kong.yml`), wajib menggunakan range Subnet CIDR (`172.18.0.0/16`) alih-alih IP tunggal (`172.18.0.1`).
+3. **Pengecualian IP Tailscale**: Tailscale IP `100.110.205.109` digunakan khusus untuk MinIO S3 API (port 9005) dan Grafana (port 3002) untuk akses backup on-premise offsite.
+
+---
+
 ## 📋 Aturan Pengkodean per Bagian (Coding Rules)
 
 Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada tautan berikut sebelum mulai melakukan modifikasi:
