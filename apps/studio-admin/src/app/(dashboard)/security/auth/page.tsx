@@ -230,11 +230,12 @@ export default function SystemAuthPage() {
               </div>
 
             </CardContent>
-            <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+            <CardFooter className="border-t border-border pt-4 flex justify-end">
               <Button
                 onClick={handleSaveRealmConfig}
                 disabled={isUpdatingRealmConfig || !isConfigChanged}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                variant="default"
+                size="sm"
               >
                 {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null} Save Security Policies
               </Button>

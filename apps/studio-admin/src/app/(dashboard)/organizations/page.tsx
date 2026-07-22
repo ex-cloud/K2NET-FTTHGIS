@@ -174,7 +174,8 @@ export default function AdminOrganizationsPage() {
         </div>
         <Button 
           onClick={() => setWizardOpen(true)}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 h-9 px-4 text-xs font-medium transition-all shadow-sm"
+          variant="default"
+          size="sm"
         >
           <Plus className="h-4 w-4" /> New organization
         </Button>

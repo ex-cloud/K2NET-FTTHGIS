@@ -77,7 +77,7 @@ export default function SystemOverviewPage() {
               onClick={() => data.loadData(true)}
               disabled={data.refreshing || data.loadingOrgs || data.loadingStats}
               variant="outline"
-              className="gap-2 border-border text-foreground hover:bg-accent hover:text-accent-foreground text-xs"
+              size="sm"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
               Refresh Dashboard

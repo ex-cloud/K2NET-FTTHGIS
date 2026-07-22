@@ -58,7 +58,11 @@ Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapa
   * *Class*: `h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_var(--primary)] animate-pulse`
 
 ### B. Tombol & Badge (Buttons & Badges)
-* **Tombol Aksi**: Gunakan `@k2net/ui` `<Button />` dengan class variants.
+* **Standardisasi Tombol Terpusat (`@k2net/ui`)**:
+  * **Pemberlakuan Wajib**: Seluruh tombol di `studio-admin` dan `studio-tenant` wajib menggunakan komponen `<Button>` dari `@k2net/ui`. Dilarang menulis tag `<button>` mentah atau menyematkan kelas hardcoded.
+  * **Primary CTA (`variant="default"`)**: Gunakan hanya 1 Primary CTA per halaman (`bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] rounded-lg h-9`).
+  * **Secondary / Toolbar Control (`variant="outline"`)**: Gunakan varian ini untuk tombol kontrol ala Cloudflare seperti *Refresh*, *Filters*, *Import*, *Export*, *Docs* (`bg-card text-foreground border border-border hover:bg-muted active:scale-[0.98] rounded-lg h-9`).
+  * **Destructive (`variant="destructive"`)**: Gunakan varian berlatar merah lembut (`bg-rose-500/10 text-rose-500 border border-rose-500/20`) untuk aksi penghapusan berisiko.
 * **Badge Status Semantik**:
   * **ONLINE / Operational (Dynamic)**: `bg-primary/10 text-primary border-primary/20 text-[11px]` (atau gunakan status semantik hijau jika bermakna positif/OK dan bukan aksen brand: `bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20`)
   * **OFFLINE / Alert (Red)**: `bg-rose-500/15 text-rose-400 border-rose-500/30 text-[11px]`

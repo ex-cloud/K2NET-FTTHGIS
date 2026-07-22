@@ -77,15 +77,17 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
             <UserSearch placeholder="Filter users..." />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="h-9 border-border text-foreground hover:bg-accent hover:text-accent-foreground hidden sm:flex">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               Docs
             </Button>
             {canInviteUsers && (
               <Button 
                 onClick={() => setIsInviteWizardOpen(true)}
-                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium w-full sm:w-auto"
+                variant="default"
+                size="sm"
+                className="w-full sm:w-auto"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
+                <UserPlus className="w-4 h-4 mr-1.5" />
                 Add User
               </Button>
             )}
