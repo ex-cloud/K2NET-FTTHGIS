@@ -32,6 +32,13 @@ function getOSName(userAgent: string) {
   return "Unknown OS";
 }
 
+function getCookieSecureFlag() {
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    return "; Secure";
+  }
+  return "";
+}
+
 export default function OtpPage() {
   const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
@@ -79,8 +86,8 @@ export default function OtpPage() {
       }
       setFingerprint(fp);
       
-      // Set secure cookie so it is available to Next.js middleware / server-side
-      document.cookie = `device_fingerprint=${fp}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+      // Set cookie so it is available to Next.js middleware / server-side (only append Secure on HTTPS)
+      document.cookie = `device_fingerprint=${fp}; path=/; max-age=31536000; SameSite=Lax${getCookieSecureFlag()}`;
 
       const ua = navigator.userAgent;
       setBrowser(getBrowserName(ua));
@@ -138,7 +145,7 @@ export default function OtpPage() {
               const data = await res.json();
               if (data.verified) {
                 // Mark device verified via cookie and redirect to main page
-                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax; Secure`;
+                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
                 redirectToMain();
               }
             } catch (e) {
@@ -254,7 +261,7 @@ export default function OtpPage() {
       if (res.ok && data.success) {
         setInfoMessage("Verifikasi perangkat berhasil! Mengarahkan Anda...");
         // Set verify token cookie
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax; Secure`;
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
         }, 1500);
@@ -298,36 +305,42 @@ export default function OtpPage() {
       return;
     }
 
+    // Step 1: Try WebAuthn Biometrics ONLY if running in a Secure Context (HTTPS / localhost)
+    if (typeof window !== "undefined" && window.isSecureContext && navigator.credentials?.create) {
+      try {
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+
+        const userId = new TextEncoder().encode(session?.user?.email || "user");
+
+        await navigator.credentials.create({
+          publicKey: {
+            challenge,
+            rp: { name: "FTTH GIS Platform", id: window.location.hostname },
+            user: {
+              id: userId,
+              name: session?.user?.email || "user",
+              displayName: session?.user?.name || "User",
+            },
+            pubKeyCredParams: [
+              { alg: -7, type: "public-key" },   // ES256
+              { alg: -257, type: "public-key" },  // RS256
+            ],
+            authenticatorSelection: {
+              authenticatorAttachment: "platform", // Force Windows Hello / Touch ID
+              userVerification: "required",
+              residentKey: "discouraged",
+            },
+            timeout: 60000,
+          },
+        });
+      } catch (webauthnErr) {
+        console.warn("[WebAuthn] Biometrics skipped/failed (e.g. HTTP connection), proceeding with API device trust:", webauthnErr);
+      }
+    }
+
+    // Step 2: Register device trust in backend database via API
     try {
-      // Step 1: Trigger native WebAuthn / Windows Hello / Touch ID / Fingerprint
-      const challenge = new Uint8Array(32);
-      crypto.getRandomValues(challenge);
-
-      const userId = new TextEncoder().encode(session?.user?.email || "user");
-
-      await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: { name: "FTTH GIS Platform", id: window.location.hostname },
-          user: {
-            id: userId,
-            name: session?.user?.email || "user",
-            displayName: session?.user?.name || "User",
-          },
-          pubKeyCredParams: [
-            { alg: -7, type: "public-key" },   // ES256
-            { alg: -257, type: "public-key" },  // RS256
-          ],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform", // Force Windows Hello / Touch ID
-            userVerification: "required",
-            residentKey: "discouraged",
-          },
-          timeout: 60000,
-        },
-      });
-
-      // Step 2: WebAuthn succeeded! Now register this device as trusted in backend
       const res = await fetch("/api/v1/security/device/trust-current", {
         method: "POST",
         headers: {
@@ -342,7 +355,7 @@ export default function OtpPage() {
       });
 
       if (res.status === 401) {
-        setError("Akses ditolak: Akun Anda tidak terdaftar atau tidak memiliki akses.");
+        setError("Akses ditolak: Sesi Anda telah berakhir. Harap login kembali.");
         return;
       }
 
@@ -354,59 +367,17 @@ export default function OtpPage() {
       }
 
       if (res.ok && data.success) {
-        setInfoMessage("Perangkat berhasil dipercayai via biometrik! Mengarahkan...");
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax; Secure`;
+        setInfoMessage("Perangkat berhasil dipercayai! Mengarahkan...");
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
-        }, 1500);
+        }, 1200);
       } else {
         setError(data.message || "Gagal mempercayai perangkat ini.");
       }
     } catch (err: unknown) {
-      // Handle user cancellation vs actual errors
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setError("Verifikasi biometrik dibatalkan. Silakan coba lagi.");
-      } else if (err instanceof DOMException && err.name === "InvalidStateError") {
-        // Credential already exists - skip creation and just trust the device
-        try {
-          const res = await fetch("/api/v1/security/device/trust-current", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${currentAccessToken}`,
-            },
-            body: JSON.stringify({
-              deviceFingerprint: fingerprint,
-              browser: browser,
-              os: os,
-            }),
-          });
-          if (res.status === 401) {
-            setError("Akses ditolak: Akun Anda tidak terdaftar atau tidak memiliki akses.");
-            return;
-          }
-          let data;
-          try {
-            data = await res.json();
-          } catch {
-            data = { success: false, message: "Gagal memproses respon server." };
-          }
-          if (res.ok && data.success) {
-            setInfoMessage("Perangkat berhasil dipercayai! Mengarahkan...");
-            document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax; Secure`;
-            setTimeout(() => redirectToMain(), 1500);
-          } else {
-            setError(data.message || "Gagal mempercayai perangkat.");
-          }
-        } catch {
-          setError("Kesalahan jaringan saat memverifikasi perangkat.");
-        }
-      } else if (err instanceof DOMException && err.name === "NotSupportedError") {
-        setError("Peramban Anda tidak mendukung autentikasi biometrik. Gunakan verifikasi OTP.");
-      } else {
-        setError("Kesalahan saat memverifikasi kredensial perangkat.");
-        console.error(err);
-      }
+      console.error("Device trust API error:", err);
+      setError("Kesalahan jaringan saat memverifikasi perangkat.");
     } finally {
       setIsTrustingDevice(false);
     }

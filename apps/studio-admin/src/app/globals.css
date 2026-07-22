@@ -169,3 +169,29 @@ body {
   border-color: hsl(0 0% 70%) !important;
 }
 
+/* ============================================================
+   ✨ Glassmorphism Design System (Dark & Light Mode)
+   ============================================================ */
+
+/* Dark Mode Frosted Glass (Arang Transparan 60% + Blur 20px) */
+.dark .bg-card,
+.dark .bg-card\/80,
+.dark .bg-card\/60 {
+  background-color: hsl(0 0% 9% / 0.6) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: hsl(0 0% 14%) !important;
+}
+
+/* Light Mode Frosted White Glass (Putih Transparan 85% + Blur 20px + Micro-shadow) */
+.light .bg-card,
+.light .bg-card\/80,
+.light .bg-card\/60 {
+  background-color: hsl(0 0% 100% / 0.85) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: hsl(0 0% 89%) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+
