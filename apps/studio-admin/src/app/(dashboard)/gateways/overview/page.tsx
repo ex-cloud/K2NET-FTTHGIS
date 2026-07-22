@@ -126,17 +126,17 @@ export default function GatewaysOverviewPage() {
             {/* Top Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Card 1: Global Health */}
-              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
+              <Card animatedBeam beamColor="#3ecf8e">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Service Health</CardDescription>
-                  <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
-                    {activeServicesCount} <span className="text-xs text-zinc-500">/ {totalServices} Online</span>
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Service Health</CardDescription>
+                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                    {activeServicesCount} <span className="text-xs text-muted-foreground">/ {totalServices} Online</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${allActive ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 animate-pulse"}`} />
-                    <span className="text-[10px] text-zinc-400 font-medium">
+                    <div className={`w-2 h-2 rounded-full ${allActive ? "bg-primary shadow-[0_0_8px_var(--primary)]" : "bg-amber-500 animate-pulse"}`} />
+                    <span className="text-[10px] text-muted-foreground font-medium">
                       {allActive ? "Semua Gateway Berjalan" : "Ada layanan terhenti"}
                     </span>
                   </div>
@@ -144,11 +144,11 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 2: Avg Latency */}
-              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
+              <Card animatedBeam beamColor="#0ea5e9">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Avg Latency</CardDescription>
-                  <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
-                    42 <span className="text-xs text-zinc-500">ms</span>
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Avg Latency</CardDescription>
+                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                    42 <span className="text-xs text-muted-foreground">ms</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
@@ -160,27 +160,27 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 3: Cache Hit Ratio */}
-              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
+              <Card animatedBeam beamColor="#14b8a6">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Cache Efficiency</CardDescription>
-                  <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
-                    94.2 <span className="text-xs text-zinc-500">%</span>
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Cache Efficiency</CardDescription>
+                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                    94.2 <span className="text-xs text-muted-foreground">%</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                    <Database className="w-3 h-3 text-zinc-500" />
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <Database className="w-3 h-3 text-muted-foreground" />
                     <span>Geocoding Cache Redis Aktif</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Card 4: Compression Rate */}
-              <Card className="bg-card/60 border-border backdrop-blur-md shadow-xl hover:border-primary/20 transition-all group duration-300">
+              <Card animatedBeam beamColor="#14b8a6">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Storage Optimization</CardDescription>
-                  <CardTitle className="text-2xl font-light text-zinc-200 mt-1 flex items-baseline gap-2">
-                    68.5 <span className="text-xs text-zinc-500">% Saved</span>
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Storage Optimization</CardDescription>
+                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                    68.5 <span className="text-xs text-muted-foreground">% Saved</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
@@ -240,30 +240,32 @@ export default function GatewaysOverviewPage() {
 
             {/* Gateway Services List */}
             <div className="space-y-4">
-              <h2 className="text-lg font-light text-zinc-200 tracking-tight">Active Gateway Services</h2>
+              <h2 className="text-lg font-light text-foreground tracking-tight">Active Gateway Services</h2>
               <div className="grid grid-cols-1 gap-4">
                 {services.map((svc) => {
                   const nameClean = svc.name.replace("ftth-", "").replace("-gateway", "");
                   const metrics = getServiceMetrics(svc.name);
                   
                   return (
-                    <div 
+                    <Card 
                       key={svc.name} 
-                      className="bg-card/60 border border-border rounded-xl p-5 hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+                      animatedBeam 
+                      beamColor="#3ecf8e"
+                      className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6"
                     >
                       {/* Name & Status */}
                       <div className="flex items-center gap-4 min-w-[250px]">
-                        <div className={`w-10 h-10 rounded-lg bg-zinc-900 border border-border flex items-center justify-center text-zinc-400 group`}>
-                          <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-primary" : "text-zinc-600"}`} />
+                        <div className={`w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground group`}>
+                          <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-primary" : "text-muted-foreground/40"}`} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-medium text-zinc-200 capitalize">{nameClean} Gateway</h3>
+                          <h3 className="text-sm font-medium text-foreground capitalize">{nameClean} Gateway</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-zinc-500 font-mono">Port {svc.port}</span>
-                            <span className="text-zinc-700">•</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">Port {svc.port}</span>
+                            <span className="text-border">•</span>
                             <div className="flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${svc.active ? "bg-emerald-500" : "bg-red-500"}`} />
-                              <span className="text-[10px] text-zinc-400 capitalize">{svc.status}</span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${svc.active ? "bg-primary" : "bg-rose-500"}`} />
+                              <span className="text-[10px] text-muted-foreground capitalize">{svc.status}</span>
                             </div>
                           </div>
                         </div>
@@ -272,8 +274,8 @@ export default function GatewaysOverviewPage() {
                       {/* Performance Details */}
                       <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
                         <div>
-                          <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Throughput</p>
-                          <p className="text-xs font-mono text-zinc-300 mt-0.5">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Throughput</p>
+                          <p className="text-xs font-mono text-foreground mt-0.5">
                             {svc.active 
                               ? (svc.throughput !== undefined && svc.throughput > 0 
                                   ? `${svc.throughput} req/min` 
@@ -282,35 +284,29 @@ export default function GatewaysOverviewPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Latency</p>
-                          <p className="text-xs font-mono text-zinc-300 mt-0.5">
-                            {svc.active 
-                              ? (svc.latency !== undefined && svc.latency > 0 
-                                  ? `${svc.latency}ms` 
-                                  : metrics.latency) 
-                              : "-"}
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Latency</p>
+                          <p className="text-xs font-mono text-foreground mt-0.5">
+                            {svc.active ? metrics.latency : "-"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Telemetry State</p>
-                          <p className="text-xs text-zinc-400 truncate mt-0.5">{svc.active ? metrics.extra : "Offline"}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Telemetry State</p>
+                          <p className="text-xs font-mono text-foreground mt-0.5">
+                            {svc.active ? metrics.extra : "Offline"}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Config Button */}
-                      <div className="flex items-center justify-end">
-                        <Link href={`/gateways/${nameClean}`}>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-zinc-400 hover:text-primary hover:bg-emerald-500/5 group text-xs gap-1.5 transition-all"
-                          >
-                            Configure
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                          </Button>
+                      {/* Action */}
+                      <div className="flex items-center gap-3 border-t md:border-t-0 border-border pt-3 md:pt-0">
+                        <Link 
+                          href={`/gateways/${nameClean}`} 
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium"
+                        >
+                          Configure <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>

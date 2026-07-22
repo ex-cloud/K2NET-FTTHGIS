@@ -1,7 +1,50 @@
 import * as React from "react";
 import { cn } from "../utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+export interface CardProps extends React.ComponentProps<"div"> {
+  animatedBeam?: boolean;
+  beamColor?: string;
+  beamDuration?: number;
+}
+
+function Card({ 
+  className, 
+  animatedBeam = false, 
+  beamColor = "var(--primary, #3ecf8e)", 
+  beamDuration = 4,
+  children, 
+  ...props 
+}: CardProps) {
+  if (animatedBeam) {
+    return (
+      <div 
+        className="group relative h-full w-full overflow-hidden rounded-xl p-[1px] transition-all duration-300"
+        style={{
+          "--beam-duration": `${beamDuration}s`,
+        } as React.CSSProperties}
+      >
+        {/* Rotating Conic Gradient Beam on Hover */}
+        <div 
+          className="pointer-events-none absolute -inset-[150%] animate-border-spin opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          style={{
+            background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 75%, ${beamColor} 88%, transparent 100%)`,
+          }}
+        />
+
+        <div
+          data-slot="card"
+          className={cn(
+            "relative h-full w-full bg-card/80 dark:bg-card/60 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-[calc(var(--radius)-1px)] border border-border py-6 shadow-xs dark:shadow-none transition-all duration-300",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-slot="card"
@@ -10,7 +53,9 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 }
 

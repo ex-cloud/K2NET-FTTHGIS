@@ -32,20 +32,18 @@ export function OverviewDevOpsCard({
   actionClassName,
   isExternal = false,
 }: OverviewDevOpsCardProps) {
-  const hoverBorderClass = accentClassName?.includes("text-primary") 
-    ? "hover:border-primary/20" 
-    : accentClassName?.includes("text-sky") 
-    ? "hover:border-sky-500/20" 
+  const beamColor = accentClassName?.includes("text-sky") 
+    ? "#0ea5e9" 
     : accentClassName?.includes("text-violet") 
-    ? "hover:border-violet-500/20" 
+    ? "#8b5cf6" 
     : accentClassName?.includes("text-teal") 
-    ? "hover:border-teal-500/20" 
+    ? "#14b8a6" 
     : accentClassName?.includes("text-rose") 
-    ? "hover:border-rose-500/20"
-    : "hover:border-zinc-500/20";
+    ? "#f43f5e"
+    : "#3ecf8e"; // Default Primary Green
 
   const content = (
-    <Card className={cn("group h-full bg-card border-border transition-all duration-300", hoverBorderClass)}>
+    <Card animatedBeam beamColor={beamColor}>
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
           <span>{eyebrow}</span>

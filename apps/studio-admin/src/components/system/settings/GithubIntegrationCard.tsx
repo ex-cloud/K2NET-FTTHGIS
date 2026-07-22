@@ -187,13 +187,13 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
 
 
   return (
-    <Card className="bg-card border-border shadow-sm backdrop-blur-sm">
+    <Card animatedBeam beamColor="#3ecf8e">
       <CardHeader className="border-b border-border flex flex-row items-center justify-between gap-4">
         <div>
-          <CardTitle className="text-zinc-100 flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             GitHub App Status
           </CardTitle>
-          <CardDescription className="text-zinc-400 text-xs">
+          <CardDescription className="text-muted-foreground text-xs">
             Monitor GitHub App connectivity, installation health, and repository visibility from the system panel.
           </CardDescription>
         </div>

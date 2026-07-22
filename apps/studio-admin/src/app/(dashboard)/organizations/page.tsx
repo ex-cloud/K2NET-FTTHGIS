@@ -16,8 +16,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
+import { Button, Input, Card } from "@k2net/ui";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -254,13 +253,11 @@ export default function AdminOrganizationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredOrgs.map((org: Organization) => (
                   <div key={org.id} className="group relative">
-                    <div 
+                    <Card
+                      animatedBeam
+                      beamColor="#3ecf8e"
                       onClick={() => window.location.assign(getTenantUrl(org.slug))}
-                      className={`flex items-center gap-4 p-5 rounded-lg border bg-muted/30 hover:bg-accent transition-all cursor-pointer h-24 ${
-                        org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED'
-                          ? 'border-amber-500/30'
-                          : 'border-border'
-                      }`}
+                      className="flex flex-row items-center gap-4 p-5 cursor-pointer h-24"
                     >
                       <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
                         <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
@@ -293,7 +290,7 @@ export default function AdminOrganizationsPage() {
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                          <ArrowRight className="h-4 w-4 text-primary" />
                       </div>
-                    </div>
+                    </Card>
 
                     <div className="absolute top-2.5 right-2.5 z-10">
                       <DropdownMenu>

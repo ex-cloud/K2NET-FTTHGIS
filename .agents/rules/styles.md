@@ -45,9 +45,14 @@ Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapa
 ## 📦 3. Panduan Desain Komponen (Component Styling)
 
 ### A. Kartu & Panel (Cards)
-* **Warna & Border**: Gunakan background semantik dengan border yang adaptif.
-  * **Wajib**: Gunakan `bg-card border-border` sebagai pengganti `bg-zinc-950` / `border-zinc-800`.
-  * **Larangan Glassmorphism Putih**: Hindari penggunaan `bg-white/3 border-white/8` secara mentah karena akan membuat tulisan atau panel tidak terlihat (putih di atas putih) saat berada di Light Mode. Gunakan `bg-muted/50` atau overlay semantik `bg-foreground/[0.04]`.
+* **Standardisasi Komponen Card Global (`@k2net/ui`)**:
+  * **Wajib**: Gunakan komponen `<Card>` dari paket `@k2net/ui`. Seluruh logika visual glassmorphism (`bg-card/80 dark:bg-card/60 backdrop-blur-xl border border-border rounded-xl`) sudah dikemas terpusat di `@k2net/ui`.
+  * **Efek Animasi Border Beam Berjalan (*Hover*)**: Untuk kartu interaktif atau kartu matriks dashboard, gunakan prop `animatedBeam` dan `beamColor`:
+    * `<Card animatedBeam beamColor="#3ecf8e">` (Aksen Hijau Primary)
+    * `<Card animatedBeam beamColor="#0ea5e9">` (Aksen Biru Sky - CPU/RAM/Metriks)
+    * `<Card animatedBeam beamColor="#8b5cf6">` (Aksen Ungu Violet - Security/Auth)
+    * `<Card animatedBeam beamColor="#14b8a6">` (Aksen Toska Teal - Gateway/Storage)
+  * **Larangan Hardcode Style**: Dilarang membuat wrapper HTML/CSS kartu secara independen per halaman. Panggil komponen terpusat dari `@k2net/ui` agar berlaku konsisten di `studio-admin` maupun `studio-tenant`.
 * **Radius Sudut (Rounded)**: Selalu gunakan `rounded-xl` (12px) untuk Card Utama, dan `rounded-md` (6px) untuk komponen kecil.
 * **Pulsing Dot**: Untuk indikator status ONLINE, gunakan dot kecil dengan pulse menggunakan primary token:
   * *Class*: `h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_var(--primary)] animate-pulse`

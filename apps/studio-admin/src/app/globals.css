@@ -209,4 +209,20 @@ body {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
 }
 
+/* ============================================================
+   💫 Animated Traveling Border Beam (Hover Animation)
+   ============================================================ */
+@keyframes border-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-border-spin {
+  animation: border-rotate 4s linear infinite;
+}
+
 

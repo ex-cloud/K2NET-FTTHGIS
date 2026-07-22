@@ -95,10 +95,17 @@ function MetricCard({
   const barColor =
     percent > 90 ? colorMap["rose"].bar : percent > 75 ? colorMap["amber"].bar : c.bar;
 
+  const hexColorMap: Record<string, string> = {
+    emerald: "#3ecf8e",
+    sky: "#0ea5e9",
+    violet: "#8b5cf6",
+    amber: "#f59e0b",
+    rose: "#f43f5e",
+  };
+  const beamColor = hexColorMap[color] ?? "#3ecf8e";
+
   return (
-    <div
-      className={`bg-card border border-border rounded-xl p-5 flex flex-col gap-3`}
-    >
+    <Card animatedBeam beamColor={beamColor} className="p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
           {label}
@@ -124,7 +131,7 @@ function MetricCard({
           />
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -147,17 +154,15 @@ function ServiceCard({ name, job, up }: { name: string; job: string; up: boolean
   const emoji = jobIconMap[job] ?? "⚙️";
 
   return (
-    <div
-      className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
-        up
-          ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 dark:border-emerald-500/20 dark:bg-emerald-500/5"
-          : "border-rose-500/25 bg-rose-500/8 hover:bg-rose-500/12 dark:border-rose-500/25 dark:bg-rose-500/8"
-      }`}
+    <Card 
+      animatedBeam 
+      beamColor={up ? "#3ecf8e" : "#f43f5e"}
+      className="relative flex flex-row items-center gap-3 px-4 py-3"
     >
       {/* Status dot */}
       <span
         className={`absolute top-3 right-3 h-2 w-2 rounded-full ${
-          up ? "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_#10b981]" : "bg-rose-500 dark:bg-rose-400"
+          up ? "bg-primary shadow-[0_0_6px_var(--primary)]" : "bg-rose-500"
         } ${up ? "animate-pulse" : ""}`}
       />
 
@@ -166,11 +171,11 @@ function ServiceCard({ name, job, up }: { name: string; job: string; up: boolean
         <span className="text-sm font-semibold text-foreground leading-tight truncate">
           {name}
         </span>
-        <span className={`text-[11px] font-bold ${up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+        <span className={`text-[11px] font-bold ${up ? "text-primary" : "text-rose-500"}`}>
           {up ? "ONLINE" : "OFFLINE"}
         </span>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -304,7 +309,7 @@ export default function SystemHealthPage() {
           color="violet"
         />
         {/* Services card */}
-        <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3">
+        <Card animatedBeam beamColor="#3ecf8e" className="p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
               Services
@@ -330,7 +335,7 @@ export default function SystemHealthPage() {
               </Badge>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* ── Gateway Status Grid ───────────────────────────────────────────────── */}
