@@ -18,23 +18,23 @@ function Card({
   if (animatedBeam) {
     return (
       <div 
-        className="group relative h-full w-full overflow-hidden rounded-xl p-[1px] transition-all duration-300"
+        className="group relative h-full w-full overflow-hidden rounded-xl bg-border p-[1px] transition-all duration-300 hover:shadow-lg"
         style={{
           "--beam-duration": `${beamDuration}s`,
         } as React.CSSProperties}
       >
-        {/* Rotating Conic Gradient Beam on Hover */}
+        {/* Rotating Conic Gradient Laser Beam on Hover */}
         <div 
           className="pointer-events-none absolute -inset-[150%] animate-border-spin opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           style={{
-            background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 75%, ${beamColor} 88%, transparent 100%)`,
+            background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 70%, ${beamColor} 88%, transparent 100%)`,
           }}
         />
 
         <div
           data-slot="card"
           className={cn(
-            "relative h-full w-full bg-card/80 dark:bg-card/60 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-[calc(var(--radius)-1px)] border border-border py-6 shadow-xs dark:shadow-none transition-all duration-300",
+            "relative h-full w-full bg-card/90 dark:bg-card/85 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-[11px] py-6 shadow-xs dark:shadow-none transition-all duration-300",
             className
           )}
           {...props}
@@ -49,7 +49,7 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        "bg-card/80 dark:bg-card/60 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-xl border border-border py-6 shadow-xs dark:shadow-none transition-all duration-300",
+        "bg-card/90 dark:bg-card/85 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-xl border border-border hover:border-primary/50 py-6 shadow-xs dark:shadow-none transition-all duration-300",
         className
       )}
       {...props}

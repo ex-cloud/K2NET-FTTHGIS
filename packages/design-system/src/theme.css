@@ -205,6 +205,20 @@
   /* 1760px */
 }
 
+/* Animated Border Beam rotation keyframes */
+@keyframes border-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-border-spin {
+  animation: border-rotate var(--beam-duration, 4s) linear infinite;
+}
+
 /* ==========================================
    🎨 Brand Styles (Dynamic Selectors - End of file for override specificity)
    ========================================== */
