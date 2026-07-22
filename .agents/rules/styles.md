@@ -75,6 +75,12 @@ Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapa
   * *Class*: `text-sm font-medium text-foreground/80` atau `text-muted-foreground`
 * **Data Teknis (Mono)**: Gunakan class `font-mono` atau font `Fira Code` untuk menampilkan IP Address, koordinat, redaman, dan kode OLT/ODP.
 
+### D. Anatomi Form, Tabel & Modal
+* **Form Control & Input**: Tinggi seragam `h-9` (36px) dan `rounded-lg` (8px). Garis fokus `focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary`.
+* **Data Table**: Header terkunci `sticky top-0 bg-muted/60 backdrop-blur-md border-b border-border` dengan teks `text-[10px] font-bold uppercase tracking-wider text-muted-foreground`. Data teknis (IP/MAC/Lat/Lng) wajib `font-mono text-xs text-foreground`.
+* **Modal Dialog**: Latar `bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-xl p-6`. Footer tombol di kanan bawah (`Cancel` outline di kiri, `Save` default di kanan).
+* **Skeleton Loading State**: Gunakan `<Skeleton />` dengan bentuk mencerminkan layout Card/Table/Form (`bg-muted/50 animate-pulse rounded-lg`) untuk mencegah blank screen.
+
 ---
 
 ## 🔄 4. Arsitektur Tema Dinamis (Tailwind v4 CSS-First Style)
