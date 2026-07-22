@@ -30,15 +30,15 @@ function Card({
           <div 
             className="absolute -inset-[150%] animate-border-spin"
             style={{
-              background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 65%, ${beamColor} 85%, transparent 100%)`,
+              background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 60%, ${beamColor} 85%, transparent 100%)`,
               animationDuration: `${beamDuration}s`,
             }}
           />
-          <div className="h-full w-full rounded-[11px] bg-card/90 dark:bg-card/85 backdrop-blur-xl" />
+          <div className="h-full w-full rounded-[11px] bg-card/60 dark:bg-card/45 backdrop-blur-xl" />
         </div>
       ) : null}
 
-      <div className="relative z-20 flex flex-col justify-between h-full w-full">
+      <div className={cn("relative z-20 flex flex-col justify-between h-full w-full", className?.includes("flex-row") && "flex-row items-center")}>
         {children}
       </div>
     </div>

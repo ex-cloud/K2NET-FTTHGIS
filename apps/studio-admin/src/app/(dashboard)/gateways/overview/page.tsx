@@ -13,7 +13,7 @@ import {
   ServerCrash
 } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageLayout } from "@k2net/ui";
 import { Button } from "@k2net/ui";
 import { Badge } from "@k2net/ui";
 import { toast } from "sonner";
@@ -81,9 +81,7 @@ export default function GatewaysOverviewPage() {
 
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-4 md:px-4 md:px-8 bg-background h-full overflow-y-auto">
-      <div className="w-full max-w-5xl mx-auto space-y-12 pb-20">
-        
+      <PageLayout>
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
@@ -128,7 +126,10 @@ export default function GatewaysOverviewPage() {
               {/* Card 1: Global Health */}
               <Card animatedBeam beamColor="#3ecf8e">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Service Health</CardDescription>
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                    <span>Service Health</span>
+                    <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-emerald-300 transition-colors" />
+                  </CardDescription>
                   <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
                     {activeServicesCount} <span className="text-xs text-muted-foreground">/ {totalServices} Online</span>
                   </CardTitle>
@@ -146,7 +147,10 @@ export default function GatewaysOverviewPage() {
               {/* Card 2: Avg Latency */}
               <Card animatedBeam beamColor="#0ea5e9">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Avg Latency</CardDescription>
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                    <span>Avg Latency</span>
+                    <Activity className="w-3.5 h-3.5 text-sky-400 group-hover:text-sky-300 transition-colors" />
+                  </CardDescription>
                   <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
                     42 <span className="text-xs text-muted-foreground">ms</span>
                   </CardTitle>
@@ -162,7 +166,10 @@ export default function GatewaysOverviewPage() {
               {/* Card 3: Cache Hit Ratio */}
               <Card animatedBeam beamColor="#14b8a6">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Cache Efficiency</CardDescription>
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                    <span>Cache Efficiency</span>
+                    <Database className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                  </CardDescription>
                   <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
                     94.2 <span className="text-xs text-muted-foreground">%</span>
                   </CardTitle>
@@ -178,7 +185,10 @@ export default function GatewaysOverviewPage() {
               {/* Card 4: Compression Rate */}
               <Card animatedBeam beamColor="#14b8a6">
                 <CardHeader className="pb-2">
-                  <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Storage Optimization</CardDescription>
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                    <span>Storage Optimization</span>
+                    <HardDrive className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
+                  </CardDescription>
                   <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
                     68.5 <span className="text-xs text-muted-foreground">% Saved</span>
                   </CardTitle>
@@ -326,9 +336,7 @@ export default function GatewaysOverviewPage() {
             )}
           </>
         )}
-
-      </div>
-    </div>
+      </PageLayout>
     </GatewayPageWrapper>
   );
 }

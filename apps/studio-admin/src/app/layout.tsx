@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@k2net/design-system/theme.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { auth } from "@/auth";
