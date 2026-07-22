@@ -202,7 +202,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                      <div className="text-[12px] text-muted-foreground">
+                      <div className="text-[12px] font-mono text-muted-foreground">
                         {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                       </div>
                     </TableCell>
