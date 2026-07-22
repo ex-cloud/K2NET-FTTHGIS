@@ -51,8 +51,8 @@ public class RateLimitingConfiguration {
      */
     public Bucket getAuthBucket(String key) {
         return cache.computeIfAbsent(key, k -> {
-            Bandwidth minuteLimit = Bandwidth.classic(authRequestsPerMinute, Refill.intervally(authRequestsPerMinute, Duration.ofMinutes(1)));
-            Bandwidth hourLimit = Bandwidth.classic(authRequestsPerHour, Refill.intervally(authRequestsPerHour, Duration.ofHours(1)));
+            Bandwidth minuteLimit = Bandwidth.classic(authRequestsPerMinute, Refill.greedy(authRequestsPerMinute, Duration.ofMinutes(1)));
+            Bandwidth hourLimit = Bandwidth.classic(authRequestsPerHour, Refill.greedy(authRequestsPerHour, Duration.ofHours(1)));
             log.debug("🔐 Created auth rate limit bucket for key: {} ({} req/min, {} req/hour)", 
                      key, authRequestsPerMinute, authRequestsPerHour);
             return Bucket.builder()
@@ -64,14 +64,14 @@ public class RateLimitingConfiguration {
 
     /**
      * Get or create a rate limit bucket for admin endpoints
-     * Moderate: 30 requests/min
+     * Moderate: 60 requests/min
      * Protects against accidental/intentional abuse of system admin operations
      */
     public Bucket getAdminBucket(String key) {
         return cache.computeIfAbsent(key, k -> {
-            Bandwidth minuteLimit = Bandwidth.classic(adminRequestsPerMinute, Refill.intervally(adminRequestsPerMinute, Duration.ofMinutes(1)));
+            Bandwidth minuteLimit = Bandwidth.classic(Math.max(adminRequestsPerMinute, 60), Refill.greedy(Math.max(adminRequestsPerMinute, 60), Duration.ofMinutes(1)));
             log.debug("⚙️ Created admin rate limit bucket for key: {} ({} req/min)", 
-                     key, adminRequestsPerMinute);
+                     key, Math.max(adminRequestsPerMinute, 60));
             return Bucket.builder()
                     .addLimit(minuteLimit)
                     .build();
@@ -80,14 +80,14 @@ public class RateLimitingConfiguration {
 
     /**
      * Get or create a rate limit bucket for API endpoints
-     * Lenient: 100 requests/min
+     * Lenient: 120 requests/min
      * Standard rate limiting for normal API usage
      */
     public Bucket getApiBucket(String key) {
         return cache.computeIfAbsent(key, k -> {
-            Bandwidth minuteLimit = Bandwidth.classic(apiRequestsPerMinute, Refill.intervally(apiRequestsPerMinute, Duration.ofMinutes(1)));
+            Bandwidth minuteLimit = Bandwidth.classic(Math.max(apiRequestsPerMinute, 120), Refill.greedy(Math.max(apiRequestsPerMinute, 120), Duration.ofMinutes(1)));
             log.debug("📊 Created API rate limit bucket for key: {} ({} req/min)", 
-                     key, apiRequestsPerMinute);
+                     key, Math.max(apiRequestsPerMinute, 120));
             return Bucket.builder()
                     .addLimit(minuteLimit)
                     .build();

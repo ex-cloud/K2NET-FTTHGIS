@@ -65,8 +65,8 @@ public class RateLimitingFilter implements Filter {
         String uri = httpRequest.getRequestURI();
         String clientId = getClientIdentifier(httpRequest);
 
-        // Skip rate limiting for non-API and SSE endpoints
-        if (!uri.startsWith("/api/") || uri.endsWith("/map-updates")) {
+        // Skip rate limiting for non-API, SSE, device trust verification, and health check endpoints
+        if (!uri.startsWith("/api/") || uri.endsWith("/map-updates") || uri.contains("/security/device/") || uri.contains("/actuator/")) {
             chain.doFilter(request, response);
             return;
         }
