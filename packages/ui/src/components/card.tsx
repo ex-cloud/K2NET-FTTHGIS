@@ -10,50 +10,42 @@ export interface CardProps extends React.ComponentProps<"div"> {
 function Card({ 
   className, 
   animatedBeam = false, 
-  beamColor = "var(--primary, #3ecf8e)", 
+  beamColor = "#3ecf8e", 
   beamDuration = 4,
   children, 
   ...props 
 }: CardProps) {
-  if (animatedBeam) {
-    return (
-      <div 
-        className="group relative h-full w-full overflow-hidden rounded-xl bg-border p-[1px] transition-all duration-300 hover:shadow-lg"
-        style={{
-          "--beam-duration": `${beamDuration}s`,
-        } as React.CSSProperties}
-      >
-        {/* Rotating Conic Gradient Laser Beam on Hover */}
-        <div 
-          className="pointer-events-none absolute -inset-[150%] animate-border-spin opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-          style={{
-            background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 70%, ${beamColor} 88%, transparent 100%)`,
-          }}
-        />
-
-        <div
-          data-slot="card"
-          className={cn(
-            "relative h-full w-full bg-card/90 dark:bg-card/85 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-[11px] py-6 shadow-xs dark:shadow-none transition-all duration-300",
-            className
-          )}
-          {...props}
-        >
-          {children}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card/90 dark:bg-card/85 backdrop-blur-xl text-card-foreground flex flex-col gap-6 rounded-xl border border-border hover:border-primary/50 py-6 shadow-xs dark:shadow-none transition-all duration-300",
+        "group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/5",
         className
       )}
       {...props}
     >
+      {/* Rotating Conic Gradient Laser Beam on Hover (CSS Masked 1px Border) */}
+      {animatedBeam ? (
+        <div 
+          className="pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 overflow-hidden"
+          style={{
+            padding: "1px",
+            maskImage: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+            WebkitMaskImage: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+            maskComposite: "exclude",
+            WebkitMaskComposite: "xor",
+          }}
+        >
+          <div 
+            className="absolute -inset-[150%] animate-border-spin"
+            style={{
+              background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, transparent 70%, ${beamColor} 88%, transparent 100%)`,
+              animationDuration: `${beamDuration}s`,
+            }}
+          />
+        </div>
+      ) : null}
+
       {children}
     </div>
   );
