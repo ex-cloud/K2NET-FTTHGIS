@@ -122,7 +122,7 @@ function getNodeIcon(type: ServiceNode["type"]) {
 
 function getStatusColor(status: ServiceNode["status"]): string {
   switch (status) {
-    case "healthy": return "bg-emerald-500";
+    case "healthy": return "bg-primary";
     case "warning": return "bg-amber-500";
     default:        return "bg-red-500";
   }
@@ -359,7 +359,7 @@ export function OverviewInfrastructureMap({
         {/* Viewport */}
         <div
           ref={viewportRef}
-          className="relative mt-6 flex-1 w-full overflow-hidden rounded-xl border border-white/[0.03] bg-zinc-950/40 cursor-grab active:cursor-grabbing min-h-[380px]"
+          className="relative mt-6 flex-1 w-full overflow-hidden rounded-xl border border-border/40 bg-card/40 cursor-grab active:cursor-grabbing min-h-[380px]"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}

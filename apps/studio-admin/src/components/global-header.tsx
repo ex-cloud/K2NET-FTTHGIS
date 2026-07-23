@@ -26,7 +26,7 @@ export function GlobalHeader() {
           }}
           className="flex items-center cursor-pointer mr-1"
         >
-          <div className={systemLogo ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group"}>
+          <div className={systemLogo ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-primary/10 border border-primary/30 group"}>
             {systemLogo ? (
               <Image
                 src={systemLogo}
@@ -38,7 +38,7 @@ export function GlobalHeader() {
               />
             ) : (
               <div
-                className="h-2 w-2 bg-emerald-500 group-hover:scale-110 transition-transform shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+               className="h-2 w-2 bg-primary group-hover:scale-110 transition-transform shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_50%,transparent)]"
                 style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
               />
             )}

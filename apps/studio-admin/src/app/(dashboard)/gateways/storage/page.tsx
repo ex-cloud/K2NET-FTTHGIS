@@ -181,10 +181,10 @@ export default function StorageGatewayPage() {
             <Database className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Storage Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Urus bucket penyimpanan (S3/Cloudflare R2), kunci enkripsi, dan kompresi WebP otomatis untuk menghemat ruang penyimpanan.
             </p>
           </div>
@@ -193,7 +193,7 @@ export default function StorageGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi storage gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi storage gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -204,17 +204,17 @@ export default function StorageGatewayPage() {
               {/* S3/R2 Bucket Connection Details */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Cloud className="w-4 h-4 text-primary" /> Koneksi Bucket S3 / Cloudflare R2
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Konfigurasi parameter region, custom API endpoint, dan nama bucket untuk menyimpan berkas media.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="AWS_REGION" className="text-xs text-zinc-400">AWS / R2 Region</Label>
+                      <Label htmlFor="AWS_REGION" className="text-xs text-muted-foreground">AWS / R2 Region</Label>
                       <Input
                         id="AWS_REGION"
                         type="text"
@@ -226,7 +226,7 @@ export default function StorageGatewayPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="AWS_BUCKET_NAME" className="text-xs text-zinc-400">Bucket Name</Label>
+                      <Label htmlFor="AWS_BUCKET_NAME" className="text-xs text-muted-foreground">Bucket Name</Label>
                       <Input
                         id="AWS_BUCKET_NAME"
                         type="text"
@@ -239,7 +239,7 @@ export default function StorageGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="AWS_ENDPOINT" className="text-xs text-zinc-400">Custom S3 Endpoint (Cloudflare R2/MinIO URL)</Label>
+                    <Label htmlFor="AWS_ENDPOINT" className="text-xs text-muted-foreground">Custom S3 Endpoint (Cloudflare R2/MinIO URL)</Label>
                     <Input
                       id="AWS_ENDPOINT"
                       type="text"
@@ -255,21 +255,21 @@ export default function StorageGatewayPage() {
               {/* AWS / R2 Credentials */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> AWS Credentials / Access Keys
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Kunci akses aman yang digunakan untuk memberikan otorisasi penulisan/pengunggahan file ke bucket S3.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="AWS_ACCESS_KEY_ID" className="text-xs text-zinc-400">Access Key ID</Label>
+                      <Label htmlFor="AWS_ACCESS_KEY_ID" className="text-xs text-muted-foreground">Access Key ID</Label>
                       <button
                         type="button"
                         onClick={() => setShowAccessKey(!showAccessKey)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showAccessKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showAccessKey ? "Sembunyikan" : "Tampilkan"}
@@ -287,11 +287,11 @@ export default function StorageGatewayPage() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="AWS_SECRET_ACCESS_KEY" className="text-xs text-zinc-400">Secret Access Key</Label>
+                      <Label htmlFor="AWS_SECRET_ACCESS_KEY" className="text-xs text-muted-foreground">Secret Access Key</Label>
                       <button
                         type="button"
                         onClick={() => setShowSecretKey(!showSecretKey)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showSecretKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showSecretKey ? "Sembunyikan" : "Tampilkan"}
@@ -338,18 +338,18 @@ export default function StorageGatewayPage() {
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">WebP Image Optimizer</CardTitle>
+                    <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">WebP Image Optimizer</CardTitle>
                     <button
                       type="button"
                       onClick={fetchStats}
                       disabled={statsLoading}
-                      className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                      className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                       title="Refresh statistik"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${statsLoading ? "animate-spin" : ""}`} />
                     </button>
                   </div>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Layanan pemrosesan gambar mendeteksi tipe mime gambar secara otomatis, melakukan kompresi ke format WebP.
                   </CardDescription>
                 </CardHeader>
@@ -363,31 +363,31 @@ export default function StorageGatewayPage() {
                   ) : statsLoading ? (
                     <div className="flex flex-col items-center py-6 gap-2">
                       <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                      <p className="text-[10px] text-zinc-600">Memuat statistik...</p>
+                      <p className="text-[10px] text-muted-foreground/60">Memuat statistik...</p>
                     </div>
                   ) : stats ? (
                     <>
                       {/* Space saved visual progress */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs">
-                          <span className="text-zinc-400">Ruang Penyimpanan Dihemat</span>
+                          <span className="text-muted-foreground">Ruang Penyimpanan Dihemat</span>
                           <span className="font-semibold text-primary">
                             {stats.space_saved_percent.toFixed(1)}% Saved
                           </span>
                         </div>
-                        <Progress value={Math.max(0, Math.min(100, stats.space_saved_percent))} className="h-2 bg-zinc-900 border border-border" />
+                        <Progress value={Math.max(0, Math.min(100, stats.space_saved_percent))} className="h-2 bg-muted border border-border" />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-xs pt-2">
                         <div>
-                          <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Total File Diproses</p>
-                          <p className="text-sm font-semibold font-mono text-zinc-200 mt-0.5 flex items-center gap-1">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Total File Diproses</p>
+                          <p className="text-sm font-semibold font-mono text-foreground mt-0.5 flex items-center gap-1">
                             <FileCheck2 className="w-3.5 h-3.5 text-primary" />
                             {formatCount(stats.total_files)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Tingkat Kegagalan</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Tingkat Kegagalan</p>
                           <p className={`text-sm font-semibold font-mono mt-0.5 ${stats.failure_rate_percent > 1 ? "text-red-400" : "text-primary"}`}>
                             {stats.failure_rate_percent.toFixed(2)}%
                           </p>
@@ -397,11 +397,11 @@ export default function StorageGatewayPage() {
                       {/* Byte savings comparison card */}
                       <div className="bg-muted/50 border border-border rounded-lg p-3.5 space-y-3">
                         <div className="flex justify-between text-xs border-b border-border pb-2">
-                          <span className="text-zinc-500 flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Ukuran Asli:</span>
-                          <span className="font-mono text-zinc-300">{formatBytes(stats.total_original_size)}</span>
+                          <span className="text-muted-foreground flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Ukuran Asli:</span>
+                          <span className="font-mono text-muted-foreground">{formatBytes(stats.total_original_size)}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-zinc-500 flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-primary" /> Hasil WebP:</span>
+                          <span className="text-muted-foreground flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-primary" /> Hasil WebP:</span>
                           <span className="font-mono text-primary font-bold">{formatBytes(stats.total_compressed_size)}</span>
                         </div>
                       </div>
@@ -414,24 +414,24 @@ export default function StorageGatewayPage() {
               {/* Bucket details */}
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Informasi Layanan</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Informasi Layanan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Library Kompresi</span>
-                    <Badge className="bg-zinc-900 text-zinc-300 border-border text-[9px]">chai2010/webp</Badge>
+                    <span className="text-muted-foreground">Library Kompresi</span>
+                    <Badge className="bg-muted text-muted-foreground border-border text-[9px]">chai2010/webp</Badge>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Format Output</span>
+                    <span className="text-muted-foreground">Format Output</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">WebP Only</Badge>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Batas Gambar</span>
-                    <Badge className="bg-zinc-950 text-zinc-400 border-border text-[9px]">Max 10 MB</Badge>
+                    <span className="text-muted-foreground">Batas Gambar</span>
+                    <Badge className="bg-background text-muted-foreground border-border text-[9px]">Max 10 MB</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Batas Non-Gambar</span>
-                    <Badge className="bg-zinc-950 text-zinc-400 border-border text-[9px]">Max 150 MB</Badge>
+                    <span className="text-muted-foreground">Batas Non-Gambar</span>
+                    <Badge className="bg-background text-muted-foreground border-border text-[9px]">Max 150 MB</Badge>
                   </div>
                 </CardContent>
               </Card>

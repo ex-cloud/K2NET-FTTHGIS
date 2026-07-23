@@ -178,7 +178,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 w-full h-[2px] bg-border">
           <div 
-            className="h-full bg-emerald-500 transition-all duration-500 ease-in-out" 
+            className="h-full bg-primary transition-all duration-500 ease-in-out" 
             style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
@@ -206,7 +206,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
 
         <div className="p-6 space-y-5 max-h-[450px] overflow-y-auto custom-scrollbar">
           {isLoading ? (
-            <div className="h-40 flex flex-col items-center justify-center gap-3 text-zinc-500">
+            <div className="h-40 flex flex-col items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="size-6 animate-spin text-primary" />
               <p className="text-xs">Fetching configuration...</p>
             </div>
@@ -223,7 +223,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                         "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
                         formData.creationMode === "INVITE"
                           ? "bg-primary/10 text-primary border border-primary/30 shadow-sm"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <span>Mode 1: Email Invite</span>
@@ -236,7 +236,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                         "py-2 px-3 rounded-md text-xs font-bold transition-all flex flex-col items-center gap-1 text-center",
                         formData.creationMode === "DIRECT"
                           ? "bg-primary/10 text-primary border border-primary/30 shadow-sm"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <span>Mode 2: Direct Creation</span>
@@ -247,7 +247,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                   {/* Organization Selection for Global View */}
                   {(!organizationId && !params.orgId) && (
                     <div className="space-y-1.5 animate-in fade-in duration-200">
-                      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                         <Briefcase className="size-3" /> Target Organization
                       </label>
                       <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
@@ -266,7 +266,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                   )}
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <User className="size-3" /> Full Name
                     </label>
                     <Input 
@@ -278,7 +278,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Mail className="size-3" /> {formData.creationMode === "DIRECT" ? "Email / Username" : "Corporate Email"}
                     </label>
                     <Input 
@@ -291,8 +291,8 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
 
                   {formData.creationMode === "DIRECT" && (
                     <div className="space-y-1.5 animate-in fade-in zoom-in-95 duration-200">
-                      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                        <Shield className="size-3 text-emerald-50" /> Temporary Password
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Shield className="size-3 text-primary" /> Temporary Password
                       </label>
                       <Input 
                         type="text"
@@ -301,7 +301,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                         placeholder="e.g. TeknisiJaya2026!" 
                         className="bg-muted/30 border-border focus:border-primary/50 focus:ring-primary/20 text-sm h-10 font-mono"
                       />
-                      <p className="text-[10px] text-zinc-500">User will be forced to change this password upon first login.</p>
+                      <p className="text-[10px] text-muted-foreground">User will be forced to change this password upon first login.</p>
                     </div>
                   )}
                 </div>
@@ -309,7 +309,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
 
               {step === 2 && (
                 <div className="grid grid-cols-1 gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Select Global Role</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Select Global Role</label>
                   {globalRoles.map((role) => (
                     <div 
                       key={role.id}
@@ -317,11 +317,11 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                       className={cn(
                         "p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-3",
                         formData.globalRole === String(role.id) 
-                          ? "bg-primary/10 border-emerald-500 text-primary" 
-                          : "bg-muted/30 border-border text-zinc-400 hover:border-zinc-700"
+                          ? "bg-primary/10 border-primary text-primary" 
+                          : "bg-muted/30 border-border text-muted-foreground hover:border-border"
                       )}
                     >
-                      <Shield className={cn("size-4", formData.globalRole === String(role.id) ? "text-primary" : "text-zinc-600")} />
+                      <Shield className={cn("size-4", formData.globalRole === String(role.id) ? "text-primary" : "text-muted-foreground/60")} />
                       <div className="flex-1">
                         <p className="text-xs font-bold">{role.name}</p>
                         <p className="text-[10px] opacity-70 leading-tight">Access to {role.name.toLowerCase()} modules & reporting.</p>
@@ -335,8 +335,8 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
               {step === 3 && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Per-Project Overrides</label>
-                    <span className="text-[10px] text-zinc-500 italic">Optional</span>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Per-Project Overrides</label>
+                    <span className="text-[10px] text-muted-foreground italic">Optional</span>
                   </div>
                   {projects.length === 0 ? (
                     <div className="p-8 text-center bg-muted/30 rounded-lg border border-dashed border-border">
@@ -387,19 +387,19 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
                         <p className="font-bold text-primary">{globalRoles.find(r => String(r.id) === formData.globalRole)?.name}</p>
                       </div>
                       <div>
-                        <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Project Access</p>
-                        <p className="font-bold text-zinc-200">{Object.keys(projectRoles).filter(k => projectRoles[k] !== "").length} Projects</p>
+                        <p className="text-muted-foreground mb-0.5 uppercase tracking-tighter text-[9px]">Project Access</p>
+                        <p className="font-bold text-foreground">{Object.keys(projectRoles).filter(k => projectRoles[k] !== "").length} Projects</p>
                       </div>
                       {formData.creationMode === "DIRECT" && (
                         <div className="col-span-2 pt-2 border-t border-border">
-                          <p className="text-zinc-500 mb-0.5 uppercase tracking-tighter text-[9px]">Temporary Password</p>
+                          <p className="text-muted-foreground mb-0.5 uppercase tracking-tighter text-[9px]">Temporary Password</p>
                           <p className="font-mono font-bold text-amber-400">{formData.customPassword}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-primary/20 text-[11px] text-zinc-400">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
                     <Mail className="size-4 text-primary shrink-0" />
                     <p>{formData.creationMode === "DIRECT" ? "Account will be created instantly. Provide the temporary password directly to the user." : "An invitation email will be sent to the user with secure login instructions."}</p>
                   </div>
@@ -414,7 +414,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
             <Button 
               variant="ghost" 
               onClick={prevStep}
-              className="text-zinc-400 hover:text-zinc-100 hover:bg-transparent px-0"
+              className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0"
               disabled={isSubmitting}
             >
               <ArrowLeft className="size-4 mr-2" /> Back
@@ -427,7 +427,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
             <Button 
               variant="ghost" 
               onClick={() => onOpenChange(false)}
-              className="text-zinc-500 hover:text-zinc-100"
+              className="text-muted-foreground hover:text-foreground"
               disabled={isSubmitting}
             >
               Cancel
@@ -437,7 +437,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
               <Button 
                 onClick={nextStep}
                 disabled={isLoading || (step === 1 && (!formData.fullName || !formData.email || (formData.creationMode === "DIRECT" && !formData.customPassword))) || (step === 2 && !formData.globalRole)}
-                className="bg-primary hover:bg-primary/90 text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-foreground min-w-[100px] h-9 shadow-lg shadow-primary/10"
               >
                 Continue <ChevronRight className="size-4 ml-1" />
               </Button>
@@ -445,7 +445,7 @@ export function TeamInviteWizard({ open, onOpenChange, organizationId }: WizardP
               <Button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-primary hover:bg-primary/90 text-white min-w-[140px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-foreground min-w-[140px] h-9 shadow-lg shadow-primary/10"
               >
                 {isSubmitting ? (
                   <>

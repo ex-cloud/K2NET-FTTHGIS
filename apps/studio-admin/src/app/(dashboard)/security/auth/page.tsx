@@ -131,14 +131,14 @@ export default function SystemAuthPage() {
       <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background min-h-screen text-foreground overflow-y-auto">
         <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
           <div className="space-y-2">
-            <Skeleton className="h-9 w-64 bg-zinc-800" />
-            <Skeleton className="h-4 w-96 bg-zinc-800" />
+            <Skeleton className="h-9 w-64 bg-muted" />
+            <Skeleton className="h-4 w-96 bg-muted" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Skeleton className="h-[300px] w-full bg-zinc-800/50 rounded-lg" />
-            <Skeleton className="h-[300px] w-full bg-zinc-800/50 rounded-lg" />
+            <Skeleton className="h-[300px] w-full bg-muted/50 rounded-lg" />
+            <Skeleton className="h-[300px] w-full bg-muted/50 rounded-lg" />
           </div>
-          <Skeleton className="h-[250px] w-full bg-zinc-800/50 rounded-lg" />
+          <Skeleton className="h-[250px] w-full bg-muted/50 rounded-lg" />
         </div>
       </div>
     );
@@ -149,12 +149,12 @@ export default function SystemAuthPage() {
       <div className="w-full max-w-5xl mx-auto space-y-10 pb-20">
         
         {/* Header section */}
-        <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
+        <div className="flex items-center justify-between border-b border-border/40 pb-6 shrink-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
               <ShieldCheck className="w-8 h-8 text-primary" /> Authentication Control
             </h1>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               Manage SSO providers, enforce global registration policies, and monitor active single sign-on user sessions dynamically.
             </p>
           </div>
@@ -163,12 +163,12 @@ export default function SystemAuthPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Card 1: Keycloak Settings */}
-          <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-            <CardHeader className="border-b border-zinc-800/40">
-              <CardTitle className="text-zinc-100 flex items-center gap-2">
+          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+            <CardHeader className="border-b border-border/40">
+              <CardTitle className="text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" /> Global Realm Security
               </CardTitle>
-              <CardDescription className="text-zinc-400 text-xs">
+              <CardDescription className="text-muted-foreground text-xs">
                 Configure basic registration permissions and credential checks on the Keycloak master domain.
               </CardDescription>
             </CardHeader>
@@ -177,10 +177,10 @@ export default function SystemAuthPage() {
               {/* Registration Allowed */}
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <Label className="text-zinc-200 text-sm font-medium">
+                  <Label className="text-foreground text-sm font-medium">
                     Self-Registration
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Allow users to create accounts without admin invitation.
                   </p>
                 </div>
@@ -191,15 +191,15 @@ export default function SystemAuthPage() {
                 />
               </div>
 
-              <Separator className="bg-zinc-800/60" />
+              <Separator className="bg-muted/60" />
 
               {/* Verify Email */}
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <Label className="text-zinc-200 text-sm font-medium">
+                  <Label className="text-foreground text-sm font-medium">
                     Email Verification
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Require email verification before granting access.
                   </p>
                 </div>
@@ -210,15 +210,15 @@ export default function SystemAuthPage() {
                 />
               </div>
 
-              <Separator className="bg-zinc-800/60" />
+              <Separator className="bg-muted/60" />
 
               {/* Reset Password Allowed */}
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <Label className="text-zinc-200 text-sm font-medium">
+                  <Label className="text-foreground text-sm font-medium">
                     Self Reset Password
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Provide a &quot;Forgot Password&quot; link on the login page.
                   </p>
                 </div>
@@ -243,12 +243,12 @@ export default function SystemAuthPage() {
           </Card>
 
           {/* Card 2: Social SSO Providers */}
-          <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-            <CardHeader className="border-b border-zinc-800/40">
-              <CardTitle className="text-zinc-100 flex items-center gap-2">
+          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+            <CardHeader className="border-b border-border/40">
+              <CardTitle className="text-foreground flex items-center gap-2">
                 <Fingerprint className="w-4 h-4 text-primary" /> Identity Providers (SSO)
               </CardTitle>
-              <CardDescription className="text-zinc-400 text-xs">
+              <CardDescription className="text-muted-foreground text-xs">
                 Activate Google, Microsoft, GitHub, or LinkedIn single sign-on buttons.
               </CardDescription>
             </CardHeader>
@@ -267,16 +267,16 @@ export default function SystemAuthPage() {
                       }}
                       className={`p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all ${
                         selectedProvider === provider
-                          ? "border-emerald-500 bg-primary/10 text-primary"
+                          ? "border-primary bg-primary/10 text-primary"
                           : configured?.enabled
-                          ? "border-zinc-800 bg-zinc-900/30 text-zinc-100 hover:border-zinc-700"
-                          : "border-zinc-800/50 bg-zinc-950/20 text-zinc-500 hover:border-zinc-800"
+                          ? "border-border bg-card/30 text-foreground hover:border-border"
+                          : "border-border/50 bg-background/20 text-muted-foreground hover:border-border"
                       }`}
                     >
                       <Globe className="w-5 h-5" />
                       <span className="text-xs capitalize font-medium">{provider.replace("-openid", "")}</span>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                        configured?.enabled ? "bg-emerald-500/20 text-primary" : "bg-zinc-800 text-zinc-600"
+                        configured?.enabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground/60"
                       }`}>
                         {configured?.enabled ? "Active" : "Not Configured"}
                       </span>
@@ -286,31 +286,31 @@ export default function SystemAuthPage() {
               </div>
 
               {selectedProvider && (
-                <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 space-y-4">
+                <div className="p-4 rounded-xl border border-border bg-background/60 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-semibold capitalize text-primary">Configure {selectedProvider.replace("-openid", "")} SSO</h4>
-                    <button onClick={() => setSelectedProvider(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300">Cancel</button>
+                    <button onClick={() => setSelectedProvider(null)} className="text-[10px] text-muted-foreground hover:text-muted-foreground">Cancel</button>
                   </div>
                   <div className="space-y-3">
                     <div className="space-y-1">
-                      <Label htmlFor="sso_client_id" className="text-zinc-400 text-[10px]">Client ID</Label>
+                      <Label htmlFor="sso_client_id" className="text-muted-foreground text-[10px]">Client ID</Label>
                       <Input
                         id="sso_client_id"
                         value={clientIdInput}
                         onChange={(e) => setClientIdInput(e.target.value)}
                         placeholder="OAuth Client ID"
-                        className="bg-zinc-900/60 border-zinc-800 text-zinc-200 text-xs h-8"
+                        className="bg-muted/60 border-border text-foreground text-xs h-8"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="sso_client_secret" className="text-zinc-400 text-[10px]">Client Secret</Label>
+                      <Label htmlFor="sso_client_secret" className="text-muted-foreground text-[10px]">Client Secret</Label>
                       <Input
                         id="sso_client_secret"
                         type="password"
                         value={clientSecretInput}
                         onChange={(e) => setClientSecretInput(e.target.value)}
                         placeholder="OAuth Client Secret"
-                        className="bg-zinc-900/60 border-zinc-800 text-zinc-200 text-xs h-8"
+                        className="bg-muted/60 border-border text-foreground text-xs h-8"
                       />
                     </div>
                     <Button
@@ -330,13 +330,13 @@ export default function SystemAuthPage() {
         </div>
 
         {/* Card 3: Active User Sessions */}
-        <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-          <CardHeader className="border-b border-zinc-800/40 flex flex-row items-center justify-between">
+        <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <CardHeader className="border-b border-border/40 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-zinc-100 flex items-center gap-2">
+              <CardTitle className="text-foreground flex items-center gap-2">
                 <History className="w-4 h-4 text-primary" /> Active SSO Sessions
               </CardTitle>
-              <CardDescription className="text-zinc-400 text-xs">
+              <CardDescription className="text-muted-foreground text-xs">
                 Real-time active single sign-on sessions on your tenant database and OAuth gateways.
               </CardDescription>
             </div>
@@ -347,15 +347,15 @@ export default function SystemAuthPage() {
           <CardContent className="pt-6">
             
             {sessions.length === 0 ? (
-              <div className="p-8 text-center border border-zinc-800/60 rounded-xl bg-zinc-950/40 text-zinc-500 text-xs">
+              <div className="p-8 text-center border border-border/60 rounded-xl bg-background/40 text-muted-foreground text-xs">
                 No active SSO sessions found on this server.
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto border border-zinc-850 rounded-xl bg-zinc-950/30">
+                <div className="overflow-x-auto border border-border rounded-xl bg-background/30">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-800/80 bg-zinc-900/40 text-zinc-400 font-medium">
+                      <tr className="border-b border-border bg-card/40 text-muted-foreground font-medium">
                         <th className="p-4">User</th>
                         <th className="p-4">Tenant / Organization</th>
                         <th className="p-4">IP Address</th>
@@ -367,16 +367,16 @@ export default function SystemAuthPage() {
                     </thead>
                     <tbody>
                       {currentSessions.map((session) => (
-                        <tr key={session.id} className="border-b border-zinc-800/40 hover:bg-zinc-900/10 text-zinc-300">
+                        <tr key={session.id} className="border-b border-border/40 hover:bg-muted/10 text-muted-foreground">
                           <td className="p-4 font-medium flex items-center gap-2">
-                            <Monitor className="w-3.5 h-3.5 text-zinc-500" /> {session.username}
+                            <Monitor className="w-3.5 h-3.5 text-muted-foreground" /> {session.username}
                           </td>
                           <td className="p-4">
-                            <span className="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-300 font-medium font-sans">
+                            <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded text-muted-foreground font-medium font-sans">
                               {session.tenant || "System/Root"}
                             </span>
                           </td>
-                          <td className="p-4 font-mono text-zinc-400">{session.ipAddress}</td>
+                          <td className="p-4 font-mono text-muted-foreground">{session.ipAddress}</td>
                           <td className="p-4">
                             {new Date(session.start).toLocaleString("id-ID", { hour12: false })}
                           </td>
@@ -386,7 +386,7 @@ export default function SystemAuthPage() {
                           <td className="p-4">
                             <div className="flex flex-wrap gap-1">
                               {session.clients.map((client) => (
-                                <span key={client} className="text-[9px] bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded font-mono text-zinc-400">
+                                <span key={client} className="text-[9px] bg-muted border border-border px-1.5 py-0.5 rounded font-mono text-muted-foreground">
                                   {client}
                                 </span>
                               ))}
@@ -397,7 +397,7 @@ export default function SystemAuthPage() {
                               variant="destructive"
                               onClick={() => handleRevokeSession(session.id)}
                               disabled={isRevokingSession}
-                              className="bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
+                              className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
                             >
                               <Trash2 className="w-3 h-3 mr-1" /> Revoke
                             </Button>
@@ -410,7 +410,7 @@ export default function SystemAuthPage() {
 
                 {sessions.length > itemsPerPage && (
                   <div className="flex items-center justify-between mt-4 px-2">
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-muted-foreground">
                       Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sessions.length)} of {sessions.length} sessions
                     </span>
                     <div className="flex items-center gap-2">
@@ -419,11 +419,11 @@ export default function SystemAuthPage() {
                         size="sm"
                         onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
-                        className="h-8 w-8 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+                        className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
-                      <span className="text-xs text-zinc-300 px-2 font-medium">
+                      <span className="text-xs text-muted-foreground px-2 font-medium">
                         Page {currentPage} of {totalPages}
                       </span>
                       <Button
@@ -431,7 +431,7 @@ export default function SystemAuthPage() {
                         size="sm"
                         onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
-                        className="h-8 w-8 p-0 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 disabled:opacity-30"
+                        className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </Button>
@@ -445,7 +445,7 @@ export default function SystemAuthPage() {
               <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <h5 className="text-xs font-semibold text-rose-400">Security Precaution</h5>
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Revoking an active session will immediately invalidate the user&apos;s OIDC access tokens. They will be forced to log out and authenticate again upon their next client request. Use this tool only to neutralize compromised sessions or during security incidents.
                 </p>
               </div>

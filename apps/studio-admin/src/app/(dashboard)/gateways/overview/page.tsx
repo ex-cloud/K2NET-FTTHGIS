@@ -86,14 +86,14 @@ export default function GatewaysOverviewPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-primary/10 text-primary hover:bg-emerald-500/20 border-primary/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
                 System Integration
               </Badge>
             </div>
-            <h1 className="text-3xl font-light text-zinc-100 tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
               Gateways Control Panel <Sparkles className="w-5 h-5 text-primary animate-pulse" />
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Oversight and dynamic microservice orchestration for payment, messaging, maps, and WebP storage.
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function GatewaysOverviewPage() {
             onClick={() => fetchStatus(true)} 
             disabled={refreshing || loading}
             variant="outline"
-            className="border-white/10 hover:border-primary/30 bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all"
+            className="border-border/10 hover:border-primary/30 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground text-xs gap-2 transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
             Refresh Status
@@ -114,10 +114,10 @@ export default function GatewaysOverviewPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-28 rounded-xl border border-border bg-zinc-950/20 animate-pulse" />
+                <div key={i} className="h-28 rounded-xl border border-border bg-background/20 animate-pulse" />
               ))}
             </div>
-            <div className="h-96 rounded-xl border border-border bg-zinc-950/20 animate-pulse" />
+            <div className="h-96 rounded-xl border border-border bg-background/20 animate-pulse" />
           </div>
         ) : (
           <>
@@ -128,7 +128,7 @@ export default function GatewaysOverviewPage() {
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     <span>Service Health</span>
-                    <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-emerald-300 transition-colors" />
+                    <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
                   </CardDescription>
                   <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
                     {activeServicesCount} <span className="text-xs text-muted-foreground">/ {totalServices} Online</span>
@@ -206,17 +206,17 @@ export default function GatewaysOverviewPage() {
             <Card className="bg-card border-border backdrop-blur-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h4 className="text-sm font-semibold text-zinc-200">Throughput & Gateway Load</h4>
-                  <p className="text-[10px] text-zinc-500">Visualisasi beban request gabungan ke seluruh port gateway (5001 - 5004)</p>
+                  <h4 className="text-sm font-semibold text-foreground">Throughput & Gateway Load</h4>
+                  <p className="text-[10px] text-muted-foreground">Visualisasi beban request gabungan ke seluruh port gateway (5001 - 5004)</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/80" />
-                    <span className="text-zinc-400">Successful Hits</span>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-primary/80" />
+                    <span className="text-muted-foreground">Successful Hits</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/40" />
-                    <span className="text-zinc-400">Cached / Delayed</span>
+                    <span className="text-muted-foreground">Cached / Delayed</span>
                   </div>
                 </div>
               </div>
@@ -235,13 +235,13 @@ export default function GatewaysOverviewPage() {
                       className="w-full bg-gradient-to-t from-emerald-500/30 to-emerald-500/70 hover:to-emerald-400 rounded-t transition-all duration-300"
                     />
                     {/* Tooltip on Hover */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-zinc-950 border border-white/10 rounded px-1.5 py-0.5 text-[9px] text-zinc-200 opacity-0 pointer-events-none group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 font-mono">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-background border border-border/10 rounded px-1.5 py-0.5 text-[9px] text-foreground opacity-0 pointer-events-none group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 font-mono">
                       Hour {idx}: {val} reqs
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[9px] text-zinc-500 font-mono mt-2 px-1">
+              <div className="flex justify-between text-[9px] text-muted-foreground font-mono mt-2 px-1">
                 <span>24 Jam Lalu</span>
                 <span>12 Jam Lalu</span>
                 <span>Sekarang (Real-Time)</span>
@@ -327,8 +327,8 @@ export default function GatewaysOverviewPage() {
                 <ServerCrash className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="text-xs font-semibold text-red-400">Troubleshooting Alert</h4>
-                  <p className="text-[10px] text-zinc-400">
-                    Salah satu atau lebih layanan gateway terhenti. Mohon periksa log systemd via SSH dengan perintah: <code className="bg-zinc-950 px-1 py-0.5 rounded font-mono text-red-300 text-[9px]">journalctl -u ftth-[service-name] -f</code> untuk memeriksa penyebab error.
+                  <p className="text-[10px] text-muted-foreground">
+                    Salah satu atau lebih layanan gateway terhenti. Mohon periksa log systemd via SSH dengan perintah: <code className="bg-background px-1 py-0.5 rounded font-mono text-red-300 text-[9px]">journalctl -u ftth-[service-name] -f</code> untuk memeriksa penyebab error.
                   </p>
                 </div>
               </div>

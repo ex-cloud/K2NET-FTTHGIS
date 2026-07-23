@@ -30,7 +30,7 @@ export function SystemHeader() {
         <div className="flex md:hidden mr-2">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-200">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <Menu className="h-4.5 w-4.5" />
               </Button>
             </SheetTrigger>
@@ -50,7 +50,7 @@ export function SystemHeader() {
                           className={cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2 h-10 cursor-pointer transition-all duration-200",
                             isActive
-                              ? "text-primary bg-primary/10 hover:bg-emerald-500/20"
+                              ? "text-primary bg-primary/10 hover:bg-primary/20"
                               : "text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                           )}
                         >
@@ -67,7 +67,7 @@ export function SystemHeader() {
         </div>
 
         <Link href="/system" className="flex items-center cursor-pointer mr-1">
-          <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group overflow-hidden"}>
+          <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-primary/10 border border-primary/30 group overflow-hidden"}>
             {logoUrl ? (
               <Image
                 src={getLogoUrl(logoUrl)}

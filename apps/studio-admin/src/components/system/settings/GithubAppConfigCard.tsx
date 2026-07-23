@@ -180,7 +180,7 @@ export function GithubAppConfigCard() {
           </div>
           <Badge
             variant="outline"
-            className="border-primary/20 text-primary bg-emerald-500/5"
+            className="border-primary/20 text-primary bg-primary/5"
           >
             System Panel
           </Badge>
@@ -193,7 +193,7 @@ export function GithubAppConfigCard() {
             <div key={item.key} className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={item.key} className="text-zinc-200 text-xs font-medium">
+                  <Label htmlFor={item.key} className="text-foreground text-xs font-medium">
                     {item.label}
                   </Label>
                   {item.key === "github_app_private_key" && (
@@ -202,7 +202,7 @@ export function GithubAppConfigCard() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPrivateKey((prev) => !prev)}
-                      className="w-5 h-5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-sm"
+                      className="w-5 h-5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm"
                     >
                       {showPrivateKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     </Button>
@@ -231,7 +231,7 @@ export function GithubAppConfigCard() {
                   className="bg-input border-border text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                 />
               )}
-              <p className="text-[11px] text-zinc-500">{item.description}</p>
+              <p className="text-[11px] text-muted-foreground">{item.description}</p>
             </div>
           ))}
         </div>
@@ -243,7 +243,7 @@ export function GithubAppConfigCard() {
             Manage the GitHub App installation parameters for the system panel. These values are used to authenticate webhooks, request installation tokens, and determine the default branch for deployments.
           </p>
           <p>
-            After saving, make sure the GitHub App is installed on the target organization or repository and the webhook endpoint is configured to <code className="bg-zinc-900 px-1 py-0.5 rounded">/api/github/webhook</code>.
+            After saving, make sure the GitHub App is installed on the target organization or repository and the webhook endpoint is configured to <code className="bg-muted px-1 py-0.5 rounded">/api/github/webhook</code>.
           </p>
         </div>
       </CardContent>

@@ -39,9 +39,9 @@ export default function AccountLayout({
 
   if (status === "loading" || !mounted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-white">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-zinc-400 text-xs">Memuat Pengaturan Akun...</p>
+        <p className="mt-4 text-muted-foreground text-xs">Memuat Pengaturan Akun...</p>
       </div>
     );
   }
@@ -131,7 +131,7 @@ export default function AccountLayout({
                     >
                       <Icon className="w-4.5 h-4.5" />
                       <span>{item.label}</span>
-                      <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-white/5 text-sidebar-foreground/30 uppercase">Soon</span>
+                      <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-card/5 text-sidebar-foreground/30 uppercase">Soon</span>
                     </div>
                   );
                 }
@@ -172,7 +172,7 @@ export default function AccountLayout({
                     >
                       <Icon className="w-4.5 h-4.5" />
                       <span>{item.label}</span>
-                      <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-white/5 text-sidebar-foreground/30 uppercase">Soon</span>
+                      <span className="ml-auto text-[8px] px-1 py-0.5 rounded bg-card/5 text-sidebar-foreground/30 uppercase">Soon</span>
                     </div>
                   );
                 }

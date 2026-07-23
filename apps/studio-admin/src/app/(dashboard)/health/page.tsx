@@ -65,9 +65,9 @@ function MetricCard({
 }) {
   const colorMap: Record<string, { ring: string; bar: string; icon: string }> = {
     emerald: {
-      ring: "ring-emerald-500/10 dark:ring-emerald-500/20",
-      bar: "bg-emerald-500",
-      icon: "text-emerald-600 dark:text-emerald-400",
+      ring: "ring-primary/10 dark:ring-primary/20",
+      bar: "bg-primary",
+      icon: "text-primary",
     },
     sky: {
       ring: "ring-sky-500/10 dark:ring-sky-500/20",
@@ -253,7 +253,7 @@ export default function SystemHealthPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 border border-border rounded-lg px-3 py-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             <span>Auto-refresh dalam</span>
             <span className="font-mono font-bold text-foreground/80">{countdown}s</span>
           </div>
@@ -323,7 +323,7 @@ export default function SystemHealthPage() {
           </div>
           <div className="flex items-center gap-2 mt-auto">
             {data?.onlineCount === data?.totalCount ? (
-              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[11px] gap-1 font-bold">
+              <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] gap-1 font-bold">
                 <CheckCircle2 className="h-3 w-3" />
                 All Systems Operational
               </Badge>

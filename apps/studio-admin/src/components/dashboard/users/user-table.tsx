@@ -194,7 +194,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                     <TableCell className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-emerald-500" : "bg-red-500"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-red-500"}`}
                         ></span>
                         <span className="text-[12px] text-muted-foreground capitalize">
                           {user.status.toLowerCase()}
@@ -260,7 +260,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
 
             <Button
               size="sm"
-              className="h-8 bg-emerald-500/20 text-primary border border-emerald-500 hover:bg-emerald-500/30 font-bold text-xs"
+              className="h-8 bg-primary/20 text-primary border border-primary hover:bg-primary/30 font-bold text-xs"
             >
               {currentPage + 1}
             </Button>

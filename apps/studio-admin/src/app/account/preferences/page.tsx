@@ -484,7 +484,7 @@ export default function PreferencesPage() {
 
   if (isLoading) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-zinc-400">
+      <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
         <Loader2 className={`h-8 w-8 animate-spin ${themeAccentColor}`} />
         <p className="mt-4 text-xs font-medium">Memuat Preferensi Profil...</p>
       </div>
@@ -496,8 +496,8 @@ export default function PreferencesPage() {
       
       {/* Page Title */}
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Preferences</h1>
-        <p className="text-zinc-400 text-xs mt-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Preferences</h1>
+        <p className="text-muted-foreground text-xs mt-1">
           Manage your account profile, connections, and security settings.
         </p>
       </div>

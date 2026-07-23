@@ -179,10 +179,10 @@ export default function NotificationGatewayPage() {
             <MessageSquare className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Notification Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Konfigurasi broker pengiriman pesan WhatsApp dan SMS menggunakan provider Twilio.
             </p>
           </div>
@@ -191,7 +191,7 @@ export default function NotificationGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi notification gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi notification gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -202,21 +202,21 @@ export default function NotificationGatewayPage() {
               {/* Internal Auth Details */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Keamanan & Akses Internal
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Token static yang digunakan untuk autentikasi komunikasi antar microservice.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="GATEWAY_TOKEN" className="text-xs text-zinc-400">Gateway Static Token</Label>
+                      <Label htmlFor="GATEWAY_TOKEN" className="text-xs text-muted-foreground">Gateway Static Token</Label>
                       <button
                         type="button"
                         onClick={() => setShowAuthToken(!showAuthToken)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showAuthToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showAuthToken ? "Sembunyikan" : "Tampilkan"}
@@ -237,16 +237,16 @@ export default function NotificationGatewayPage() {
               {/* Redis Connection Details */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Broker Antrean (Redis)
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Alamat koneksi Redis untuk asynq queue worker pengiriman WhatsApp/SMS.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="REDIS_ADDR" className="text-xs text-zinc-400">Redis Connection Host</Label>
+                    <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">Redis Connection Host</Label>
                     <Input
                       id="REDIS_ADDR"
                       type="text"
@@ -262,16 +262,16 @@ export default function NotificationGatewayPage() {
               {/* Twilio Credentials */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-primary" /> Twilio Provider Credentials
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Kredensial akun Twilio Anda untuk mengaktifkan modul SMS & WhatsApp Business API.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="TWILIO_ACCOUNT_SID" className="text-xs text-zinc-400">Twilio Account SID</Label>
+                    <Label htmlFor="TWILIO_ACCOUNT_SID" className="text-xs text-muted-foreground">Twilio Account SID</Label>
                     <Input
                       id="TWILIO_ACCOUNT_SID"
                       type="text"
@@ -284,11 +284,11 @@ export default function NotificationGatewayPage() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="TWILIO_AUTH_TOKEN" className="text-xs text-zinc-400">Twilio Auth Token</Label>
+                      <Label htmlFor="TWILIO_AUTH_TOKEN" className="text-xs text-muted-foreground">Twilio Auth Token</Label>
                       <button
                         type="button"
                         onClick={() => setShowTwilioToken(!showTwilioToken)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showTwilioToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showTwilioToken ? "Sembunyikan" : "Tampilkan"}
@@ -305,7 +305,7 @@ export default function NotificationGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="TWILIO_FROM_NUMBER" className="text-xs text-zinc-400">Twilio From Number (WhatsApp/SMS Sender ID)</Label>
+                    <Label htmlFor="TWILIO_FROM_NUMBER" className="text-xs text-muted-foreground">Twilio From Number (WhatsApp/SMS Sender ID)</Label>
                     <Input
                       id="TWILIO_FROM_NUMBER"
                       type="text"
@@ -344,9 +344,9 @@ export default function NotificationGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Antrean Pesan Terakhir
-                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -357,12 +357,12 @@ export default function NotificationGatewayPage() {
                       ))}
                     </div>
                   ) : notifLogs.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log pengiriman tersimpan.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log pengiriman tersimpan.</p>
                   ) : (
                     notifLogs.map((log) => (
                       <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px]">{log.recipient}</span>
+                          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             log.status === "sent"
                               ? "bg-primary/10 text-primary border-primary/20"
@@ -371,7 +371,7 @@ export default function NotificationGatewayPage() {
                             {log.status}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
                           <span className="capitalize">{log.channel} • {log.id.slice(0, 8)}</span>
                           <span>{formatRelativeTime(log.sentAt)}</span>
                         </div>
@@ -386,21 +386,21 @@ export default function NotificationGatewayPage() {
 
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Statistik Pengiriman</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statistik Pengiriman</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Total Dikirim</span>
+                    <span className="text-muted-foreground">Total Dikirim</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">
                       {logsLoading ? "..." : notifLogs.filter(l => l.status === "sent").length}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Total Gagal</span>
+                    <span className="text-muted-foreground">Total Gagal</span>
                     <Badge className={`text-[9px] ${
                       !logsLoading && notifLogs.filter(l => l.status === "failed").length > 0
                         ? "bg-red-500/10 text-red-500 border-red-500/20"
-                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                        : "bg-muted/10 text-muted-foreground border-border"
                     }`}>
                       {logsLoading ? "..." : notifLogs.filter(l => l.status === "failed").length}
                     </Badge>

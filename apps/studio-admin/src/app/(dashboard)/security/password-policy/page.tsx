@@ -12,13 +12,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
-import { Switch } from "@k2net/ui";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
-import { Skeleton } from "@k2net/ui";
-import { Separator } from "@k2net/ui";
+import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam } from "@k2net/ui";
 
 export default function PasswordPolicyPage() {
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
@@ -93,10 +87,10 @@ export default function PasswordPolicyPage() {
       <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background min-h-screen text-foreground overflow-y-auto">
         <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
           <div className="space-y-2">
-            <Skeleton className="h-9 w-64 bg-zinc-800" />
-            <Skeleton className="h-4 w-96 bg-zinc-800" />
+            <Skeleton className="h-9 w-64 bg-muted" />
+            <Skeleton className="h-4 w-96 bg-muted" />
           </div>
-          <Skeleton className="h-[400px] w-full bg-zinc-800/50 rounded-lg" />
+          <Skeleton className="h-[400px] w-full bg-muted/50 rounded-lg" />
         </div>
       </div>
     );
@@ -107,25 +101,26 @@ export default function PasswordPolicyPage() {
       <div className="w-full max-w-4xl mx-auto space-y-10 pb-20">
         
         {/* Header section */}
-        <div className="flex items-center justify-between border-b border-zinc-800/40 pb-6 shrink-0">
+        <div className="flex items-center justify-between border-b border-border/40 pb-6 shrink-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-light text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
               <ScrollText className="w-8 h-8 text-primary" /> Password Security Policies
             </h1>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               Configure corporate credential rules, complexity parameters, rotation timelines, and key history protections.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8">
+        <TracingBeam className="pl-4 md:pl-10">
+          <div className="grid grid-cols-1 gap-8">
           
-          <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-            <CardHeader className="border-b border-zinc-800/40">
-              <CardTitle className="text-zinc-100 flex items-center gap-2">
+          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+            <CardHeader className="border-b border-border/40">
+              <CardTitle className="text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" /> Complexity & Validation Constraints
               </CardTitle>
-              <CardDescription className="text-zinc-400 text-xs">
+              <CardDescription className="text-muted-foreground text-xs">
                 These rules will be enforced across both local logins and tenant portal invites automatically.
               </CardDescription>
             </CardHeader>
@@ -135,8 +130,8 @@ export default function PasswordPolicyPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label className="text-zinc-200 text-sm font-medium">Minimum Password Length</Label>
-                    <p className="text-xs text-zinc-400">Specify the minimum number of characters required for any new password.</p>
+                    <Label className="text-foreground text-sm font-medium">Minimum Password Length</Label>
+                    <p className="text-xs text-muted-foreground">Specify the minimum number of characters required for any new password.</p>
                   </div>
                   <span className="text-sm font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                     {minLength} characters
@@ -148,20 +143,20 @@ export default function PasswordPolicyPage() {
                   max="32"
                   value={minLength}
                   onChange={(e) => setMinLength(parseInt(e.target.value))}
-                  className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
               </div>
 
-              <Separator className="bg-zinc-800/60" />
+              <Separator className="bg-muted/60" />
 
               {/* Toggles */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* Require Symbols */}
-                <div className="flex items-start justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/20">
+                <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-background/20">
                   <div className="space-y-1 pr-2">
-                    <Label className="text-zinc-200 text-xs font-semibold">Special Characters</Label>
-                    <p className="text-[10px] text-zinc-400">Require at least 1 symbol (@, #, $, etc.)</p>
+                    <Label className="text-foreground text-xs font-semibold">Special Characters</Label>
+                    <p className="text-[10px] text-muted-foreground">Require at least 1 symbol (@, #, $, etc.)</p>
                   </div>
                   <Switch
                     checked={requireSymbols}
@@ -171,10 +166,10 @@ export default function PasswordPolicyPage() {
                 </div>
 
                 {/* Require Numbers */}
-                <div className="flex items-start justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/20">
+                <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-background/20">
                   <div className="space-y-1 pr-2">
-                    <Label className="text-zinc-200 text-xs font-semibold">Numeric Digits</Label>
-                    <p className="text-[10px] text-zinc-400">Require at least 1 number (0-9)</p>
+                    <Label className="text-foreground text-xs font-semibold">Numeric Digits</Label>
+                    <p className="text-[10px] text-muted-foreground">Require at least 1 number (0-9)</p>
                   </div>
                   <Switch
                     checked={requireNumbers}
@@ -184,10 +179,10 @@ export default function PasswordPolicyPage() {
                 </div>
 
                 {/* Require Uppercase */}
-                <div className="flex items-start justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/20">
+                <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-background/20">
                   <div className="space-y-1 pr-2">
-                    <Label className="text-zinc-200 text-xs font-semibold">Uppercase Letters</Label>
-                    <p className="text-[10px] text-zinc-400">Require at least 1 uppercase letter (A-Z)</p>
+                    <Label className="text-foreground text-xs font-semibold">Uppercase Letters</Label>
+                    <p className="text-[10px] text-muted-foreground">Require at least 1 uppercase letter (A-Z)</p>
                   </div>
                   <Switch
                     checked={requireUppercase}
@@ -198,15 +193,15 @@ export default function PasswordPolicyPage() {
 
               </div>
 
-              <Separator className="bg-zinc-800/60" />
+              <Separator className="bg-muted/60" />
 
               {/* Password History & Expiry */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* History Limit */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-200 text-xs font-semibold">Password History Limit</Label>
-                  <p className="text-[10px] text-zinc-400 mb-2">Prevent reuse of previous passwords. Set to 0 to disable.</p>
+                  <Label className="text-foreground text-xs font-semibold">Password History Limit</Label>
+                  <p className="text-[10px] text-muted-foreground mb-2">Prevent reuse of previous passwords. Set to 0 to disable.</p>
                   <div className="flex items-center gap-3">
                     <Input
                       type="number"
@@ -214,16 +209,16 @@ export default function PasswordPolicyPage() {
                       max="24"
                       value={historyLimit}
                       onChange={(e) => setHistoryLimit(parseInt(e.target.value) || 0)}
-                      className="bg-zinc-900/60 border-zinc-800 text-zinc-200 text-xs h-9 w-24 font-mono text-center"
+                      className="bg-muted/60 border-border text-foreground text-xs h-9 w-24 font-mono text-center"
                     />
-                    <span className="text-xs text-zinc-400">historic password(s) remembered</span>
+                    <span className="text-xs text-muted-foreground">historic password(s) remembered</span>
                   </div>
                 </div>
 
                 {/* Expiry Days */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-200 text-xs font-semibold">Password Expiration Interval</Label>
-                  <p className="text-[10px] text-zinc-400 mb-2">Force users to rotate credentials periodically. Set to 0 for lifetime access.</p>
+                  <Label className="text-foreground text-xs font-semibold">Password Expiration Interval</Label>
+                  <p className="text-[10px] text-muted-foreground mb-2">Force users to rotate credentials periodically. Set to 0 for lifetime access.</p>
                   <div className="flex items-center gap-3">
                     <Input
                       type="number"
@@ -231,20 +226,20 @@ export default function PasswordPolicyPage() {
                       max="365"
                       value={expiryDays}
                       onChange={(e) => setExpiryDays(parseInt(e.target.value) || 0)}
-                      className="bg-zinc-900/60 border-zinc-800 text-zinc-200 text-xs h-9 w-24 font-mono text-center"
+                      className="bg-muted/60 border-border text-foreground text-xs h-9 w-24 font-mono text-center"
                     />
-                    <span className="text-xs text-zinc-400">days until password expires</span>
+                    <span className="text-xs text-muted-foreground">days until password expires</span>
                   </div>
                 </div>
 
               </div>
 
             </CardContent>
-            <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end gap-3">
+            <CardFooter className="border-t border-border/40 pt-4 flex justify-end gap-3">
               <Button
                 onClick={handleSavePolicies}
                 disabled={isUpdating || !isChanged()}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                 Apply Password Policies
@@ -253,12 +248,12 @@ export default function PasswordPolicyPage() {
           </Card>
 
           {/* Policy Preview Visual Simulator Card */}
-          <Card className="bg-zinc-900/10 border-zinc-800/40">
+          <Card className="bg-muted/10 border-border/40">
             <CardContent className="p-6 flex items-start gap-4">
               <KeyRound className="w-8 h-8 text-primary/80 shrink-0 mt-0.5" />
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-white">Rule Evaluation Matrix</h4>
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <h4 className="text-sm font-semibold text-foreground">Rule Evaluation Matrix</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Based on the rules selected above, any secure password in your database will need to fulfill the following evaluation mask:
                 </p>
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -299,7 +294,8 @@ export default function PasswordPolicyPage() {
             </CardContent>
           </Card>
 
-        </div>
+          </div>
+        </TracingBeam>
       </div>
     </div>
   );

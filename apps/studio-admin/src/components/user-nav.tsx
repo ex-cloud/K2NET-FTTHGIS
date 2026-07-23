@@ -117,7 +117,7 @@ export function UserNav() {
     }
   };
 
-  if (!mounted) return <div className="h-8 w-8 rounded-full bg-zinc-900/50 animate-pulse border border-border" />;
+  if (!mounted) return <div className="h-8 w-8 rounded-full bg-muted/50 animate-pulse border border-border" />;
 
   return (
     <DropdownMenu>

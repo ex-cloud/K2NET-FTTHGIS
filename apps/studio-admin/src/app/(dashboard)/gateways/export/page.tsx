@@ -170,10 +170,10 @@ export default function ExportGatewayPage() {
             <Download className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Export Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Konfigurasi generator laporan PDF/Excel, backup peta jaringan, font custom, dan media templates.
             </p>
           </div>
@@ -182,7 +182,7 @@ export default function ExportGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi export gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi export gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -191,16 +191,16 @@ export default function ExportGatewayPage() {
               
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Koneksi database PostgreSQL, Redis Queue, dan Storage Gateway S3.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="REDIS_ADDR" className="text-xs text-zinc-400">Redis Address</Label>
+                    <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">Redis Address</Label>
                     <Input
                       id="REDIS_ADDR"
                       type="text"
@@ -212,7 +212,7 @@ export default function ExportGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="DATABASE_URL" className="text-xs text-zinc-400">Database Connection URL</Label>
+                    <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">Database Connection URL</Label>
                     <Input
                       id="DATABASE_URL"
                       type="text"
@@ -224,7 +224,7 @@ export default function ExportGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="STORAGE_GATEWAY_URL" className="text-xs text-zinc-400">Storage Gateway API URL</Label>
+                    <Label htmlFor="STORAGE_GATEWAY_URL" className="text-xs text-muted-foreground">Storage Gateway API URL</Label>
                     <Input
                       id="STORAGE_GATEWAY_URL"
                       type="text"
@@ -239,17 +239,17 @@ export default function ExportGatewayPage() {
 
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Export System Resources
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Konfigurasi batasan proses pembuatan file Excel/PDF dan direktori template.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="JOB_TIMEOUT_MINUTES" className="text-xs text-zinc-400">Job Timeout (Minutes)</Label>
+                      <Label htmlFor="JOB_TIMEOUT_MINUTES" className="text-xs text-muted-foreground">Job Timeout (Minutes)</Label>
                       <Input
                         id="JOB_TIMEOUT_MINUTES"
                         type="number"
@@ -261,7 +261,7 @@ export default function ExportGatewayPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="MAX_CONCURRENT_EXPORTS" className="text-xs text-zinc-400">Max Concurrent Exports</Label>
+                      <Label htmlFor="MAX_CONCURRENT_EXPORTS" className="text-xs text-muted-foreground">Max Concurrent Exports</Label>
                       <Input
                         id="MAX_CONCURRENT_EXPORTS"
                         type="number"
@@ -274,7 +274,7 @@ export default function ExportGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="FONT_DIR" className="text-xs text-zinc-400">System Fonts Directory</Label>
+                    <Label htmlFor="FONT_DIR" className="text-xs text-muted-foreground">System Fonts Directory</Label>
                     <Input
                       id="FONT_DIR"
                       type="text"
@@ -286,7 +286,7 @@ export default function ExportGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="TEMPLATE_DIR" className="text-xs text-zinc-400">HTML Templates Directory</Label>
+                    <Label htmlFor="TEMPLATE_DIR" className="text-xs text-muted-foreground">HTML Templates Directory</Label>
                     <Input
                       id="TEMPLATE_DIR"
                       type="text"
@@ -323,9 +323,9 @@ export default function ExportGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Antrean Export Terkini
-                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -336,12 +336,12 @@ export default function ExportGatewayPage() {
                       ))}
                     </div>
                   ) : exportJobs.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat export.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada riwayat export.</p>
                   ) : (
                     exportJobs.map((exp) => (
                       <div key={exp.jobId} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[150px] capitalize">
+                          <span className="text-xs font-medium text-foreground truncate max-w-[150px] capitalize">
                             {exp.type} Export
                           </span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
@@ -351,12 +351,12 @@ export default function ExportGatewayPage() {
                               ? "bg-red-500/10 text-red-500 border-red-500/20"
                               : exp.status === "processing"
                               ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                              : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                              : "bg-muted/10 text-muted-foreground border-border"
                           }`}>
                             {exp.status}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
                           <span>Tenant: {exp.tenantSlug}</span>
                           <span>{formatRelativeTime(exp.createdAt)}</span>
                         </div>
@@ -373,20 +373,20 @@ export default function ExportGatewayPage() {
 
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Storage Integration</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Storage Integration</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">MinIO connection</span>
+                    <span className="text-muted-foreground">MinIO connection</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Connected</Badge>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Worker Status</span>
+                    <span className="text-muted-foreground">Worker Status</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Ready</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Jobs Dalam Antrean</span>
-                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                    <span className="text-muted-foreground">Jobs Dalam Antrean</span>
+                    <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px]">
                       {jobsLoading ? "..." : exportJobs.filter(j => j.status === "queued" || j.status === "processing").length}
                     </Badge>
                   </div>

@@ -33,7 +33,7 @@ export function UserSearch({ placeholder }: { placeholder: string }) {
     <div className="relative w-full group">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary transition-colors" />
       <Input
-        className="w-full bg-muted/40 border-border/40 rounded-lg pl-10 pr-4 h-9 text-sm focus-visible:ring-1 focus-visible:ring-emerald-500 focus-visible:border-emerald-500"
+        className="w-full bg-muted/40 border-border/40 rounded-lg pl-10 pr-4 h-9 text-sm focus-visible:ring-1 focus-visible:ring-emerald-500 focus-visible:border-primary"
         placeholder={placeholder}
         onChange={(e) => setSearchTerm(e.target.value)}
         value={searchTerm}

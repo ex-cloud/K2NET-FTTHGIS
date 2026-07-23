@@ -180,14 +180,14 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="bg-zinc-900 border-zinc-800 pr-20"
+                className="bg-muted border-border pr-20"
               />
               <div className="absolute right-1 top-1 flex items-center gap-1">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-zinc-400 hover:text-zinc-200"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
                   onClick={generateRandomPassword}
                   title="Generate Random"
                 >
@@ -197,7 +197,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-zinc-400 hover:text-zinc-200"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -208,31 +208,31 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
             {passwordPolicy && newPassword.length > 0 && (
               <div className="pt-1.5 space-y-1 text-[10px]">
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${newPassword.length >= passwordPolicy.minLength ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                  <span className={newPassword.length >= passwordPolicy.minLength ? 'text-zinc-450 line-through font-light' : 'text-zinc-300'}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${newPassword.length >= passwordPolicy.minLength ? 'bg-primary' : 'bg-red-500'}`} />
+                  <span className={newPassword.length >= passwordPolicy.minLength ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
                     Min. {passwordPolicy.minLength} characters
                   </span>
                 </div>
                 {passwordPolicy.requireUppercase && (
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(newPassword) ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className={/[A-Z]/.test(newPassword) ? 'text-zinc-450 line-through font-light' : 'text-zinc-300'}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
+                    <span className={/[A-Z]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
                       At least one uppercase letter (A-Z)
                     </span>
                   </div>
                 )}
                 {passwordPolicy.requireNumbers && (
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(newPassword) ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className={/[0-9]/.test(newPassword) ? 'text-zinc-450 line-through font-light' : 'text-zinc-300'}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
+                    <span className={/[0-9]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
                       At least one numeric digit (0-9)
                     </span>
                   </div>
                 )}
                 {passwordPolicy.requireSymbols && (
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className={/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'text-zinc-450 line-through font-light' : 'text-zinc-300'}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
+                    <span className={/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
                       At least one special character/symbol
                     </span>
                   </div>
@@ -246,7 +246,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
               id="temporary" 
               checked={temporary} 
               onCheckedChange={(checked) => setTemporary(checked === true)}
-              className="mt-1 border-zinc-700 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+              className="mt-1 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
             />
             <div className="grid gap-1.5 leading-none">
               <label
@@ -255,7 +255,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
               >
                 Temporary Password
               </label>
-              <p className="text-[12px] text-zinc-500">
+              <p className="text-[12px] text-muted-foreground">
                 User will be forced to change this password on their next login.
               </p>
             </div>
@@ -266,14 +266,14 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground"
             disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
             onClick={handleResetPassword}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={isSubmitting || !newPassword}
           >
             {isSubmitting ? "Resetting..." : "Reset Password"}

@@ -183,10 +183,10 @@ export default function SchedulerGatewayPage() {
             <Clock className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Scheduler Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Konfigurasi scheduler cron worker, backup otomatis, dan sinkronisasi data background jobs.
             </p>
           </div>
@@ -195,7 +195,7 @@ export default function SchedulerGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi scheduler gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi scheduler gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -204,16 +204,16 @@ export default function SchedulerGatewayPage() {
               
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Koneksi database dan antrean broker Redis untuk scheduler gateway.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="REDIS_ADDR" className="text-xs text-zinc-400">Redis Address</Label>
+                    <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">Redis Address</Label>
                     <Input
                       id="REDIS_ADDR"
                       type="text"
@@ -225,7 +225,7 @@ export default function SchedulerGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="DATABASE_URL" className="text-xs text-zinc-400">Database Connection URL</Label>
+                    <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">Database Connection URL</Label>
                     <Input
                       id="DATABASE_URL"
                       type="text"
@@ -240,16 +240,16 @@ export default function SchedulerGatewayPage() {
 
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Worker Settings
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Konfigurasi batasan beban eksekusi job dan zona waktu server.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="TIMEZONE" className="text-xs text-zinc-400">Timezone</Label>
+                    <Label htmlFor="TIMEZONE" className="text-xs text-muted-foreground">Timezone</Label>
                     <Input
                       id="TIMEZONE"
                       type="text"
@@ -261,7 +261,7 @@ export default function SchedulerGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="MAX_CONCURRENT_JOBS" className="text-xs text-zinc-400">Max Concurrent Jobs</Label>
+                    <Label htmlFor="MAX_CONCURRENT_JOBS" className="text-xs text-muted-foreground">Max Concurrent Jobs</Label>
                     <Input
                       id="MAX_CONCURRENT_JOBS"
                       type="number"
@@ -298,9 +298,9 @@ export default function SchedulerGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Daftar Cron Job Aktif
-                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {jobsLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -311,26 +311,26 @@ export default function SchedulerGatewayPage() {
                       ))}
                     </div>
                   ) : jobs.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada cron job terdaftar.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada cron job terdaftar.</p>
                   ) : (
                     jobs.map((job) => (
                       <div key={job.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200">{job.name}</span>
+                          <span className="text-xs font-medium text-foreground">{job.name}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             job.isActive
                               ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                              : "bg-muted/10 text-muted-foreground border-border"
                           }`}>
                             {job.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
                           <span>Cron: {job.cronExpr}</span>
                           <span>{formatRelativeTime(job.lastRunAt)}</span>
                         </div>
                         {job.nextRunAt && (
-                          <div className="text-[9px] text-zinc-600">
+                          <div className="text-[9px] text-muted-foreground/60">
                             Next: {formatRelativeTime(job.nextRunAt)}
                           </div>
                         )}
@@ -342,19 +342,19 @@ export default function SchedulerGatewayPage() {
 
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Status Task Scheduler</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status Task Scheduler</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Daemon Worker</span>
+                    <span className="text-muted-foreground">Daemon Worker</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Running</Badge>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Total Jobs Terdaftar</span>
-                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">{jobsLoading ? "..." : jobs.length}</Badge>
+                    <span className="text-muted-foreground">Total Jobs Terdaftar</span>
+                    <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px]">{jobsLoading ? "..." : jobs.length}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Jobs Aktif</span>
+                    <span className="text-muted-foreground">Jobs Aktif</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">
                       {jobsLoading ? "..." : jobs.filter(j => j.isActive).length}
                     </Badge>

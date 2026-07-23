@@ -37,7 +37,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
                   className={cn(
                     "h-2 w-2 rounded-full",
                     activeNodeData.status === "healthy"
-                      ? "bg-emerald-500"
+                      ? "bg-primary"
                       : activeNodeData.status === "warning"
                       ? "bg-amber-500"
                       : "bg-red-500"

@@ -269,7 +269,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 w-full h-[2px] bg-border">
           <div 
-            className="h-full bg-emerald-500 transition-all duration-500 ease-in-out" 
+            className="h-full bg-primary transition-all duration-500 ease-in-out" 
             style={{ width: `${(step / 4) * 100}%` }}
           />
         </div>
@@ -288,7 +288,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             {step === 4 && "Review & Deploy"}
             {step === 5 && "Deployment Success!"}
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogDescription className="text-muted-foreground text-sm">
             {step === 1 && "Give your organization a solid identity."}
             {step === 2 && "Set up how your organization operates."}
             {step === 3 && "Connect your existing identity provider."}
@@ -301,7 +301,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Building2 className="size-3" /> Organization Name
                 </label>
                 <Input 
@@ -313,11 +313,11 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Globe className="size-3" /> Organization Slug
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs">gis.com/</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">gis.com/</span>
                   <Input 
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
@@ -325,12 +325,12 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   />
                 </div>
                 {slugError && <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1"><AlertCircle className="size-3" /> {slugError}</p>}
-                <p className="text-[10px] text-zinc-500">Slug must be unique and used in your dashboard URL.</p>
+                <p className="text-[10px] text-muted-foreground">Slug must be unique and used in your dashboard URL.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Admin Email <span className="text-red-500">*</span></label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin Email <span className="text-red-500">*</span></label>
                   <Input 
                     type="email"
                     value={formData.adminEmail}
@@ -340,7 +340,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Admin Username</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin Username</label>
                   <Input 
                     value={formData.adminUsername}
                     onChange={(e) => setFormData(prev => ({ ...prev, adminUsername: e.target.value }))}
@@ -352,7 +352,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Website</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Website</label>
                   <Input 
                     value={formData.website}
                     onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
@@ -361,7 +361,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Office Location</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Office Location</label>
                   <Input 
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
@@ -376,7 +376,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   Description
                 </label>
                 <Textarea 
@@ -392,26 +392,26 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   onClick={() => setFormData(prev => ({ ...prev, plan: "FREE" }))}
                   className={cn(
                     "p-3 rounded-lg border cursor-pointer transition-all space-y-2",
-                    formData.plan === "FREE" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-border grayscale"
+                    formData.plan === "FREE" ? "bg-primary/5 border-primary" : "bg-muted/10 border-border grayscale"
                   )}
                 >
-                  <Zap className={cn("size-4", formData.plan === "FREE" ? "text-primary" : "text-zinc-500")} />
+                  <Zap className={cn("size-4", formData.plan === "FREE" ? "text-primary" : "text-muted-foreground")} />
                   <div>
                     <p className="text-xs font-bold">Free Plan</p>
-                    <p className="text-[10px] text-zinc-500">Perfect for exploration.</p>
+                    <p className="text-[10px] text-muted-foreground">Perfect for exploration.</p>
                   </div>
                 </div>
                 <div 
                   onClick={() => setFormData(prev => ({ ...prev, plan: "PRO" }))}
                   className={cn(
                     "p-3 rounded-lg border cursor-pointer transition-all space-y-2 opacity-60",
-                    formData.plan === "PRO" ? "bg-emerald-500/5 border-emerald-500" : "bg-muted/10 border-border"
+                    formData.plan === "PRO" ? "bg-primary/5 border-primary" : "bg-muted/10 border-border"
                   )}
                 >
-                  <ShieldCheck className="size-4 text-zinc-500" />
+                  <ShieldCheck className="size-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs font-bold font-mono">Enterprise</p>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Coming Soon</p>
+                    <p className="text-[10px] text-muted-foreground">Coming Soon</p>
                   </div>
                 </div>
               </div>
@@ -424,33 +424,33 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 onClick={() => setFormData(prev => ({ ...prev, ldapEnabled: !prev.ldapEnabled }))}
                 className={cn(
                   "p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between",
-                  formData.ldapEnabled ? "bg-primary/10 border-emerald-500" : "bg-muted/10 border-border"
+                  formData.ldapEnabled ? "bg-primary/10 border-primary" : "bg-muted/10 border-border"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "size-10 rounded-full flex items-center justify-center",
-                    formData.ldapEnabled ? "bg-emerald-500/20 text-primary" : "bg-zinc-800 text-zinc-500"
+                    formData.ldapEnabled ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                   )}>
                     <Network className="size-5" />
                   </div>
                   <div>
                     <p className="text-sm font-bold">Enable LDAP User Sync</p>
-                    <p className="text-[10px] text-zinc-500">Sync your enterprise users automatically.</p>
+                    <p className="text-[10px] text-muted-foreground">Sync your enterprise users automatically.</p>
                   </div>
                 </div>
                 <div className={cn(
                   "size-5 rounded-full border-2 flex items-center justify-center",
-                  formData.ldapEnabled ? "border-emerald-500 bg-emerald-500" : "border-zinc-700"
+                  formData.ldapEnabled ? "border-primary bg-primary" : "border-border"
                 )}>
-                  {formData.ldapEnabled && <Check className="size-3 text-white" />}
+                  {formData.ldapEnabled && <Check className="size-3 text-primary-foreground" />}
                 </div>
               </div>
 
               {formData.ldapEnabled && (
                 <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 duration-300">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                       <Server className="size-3" /> LDAP Server URL <span className="text-red-400">*</span>
                     </label>
                     <Input 
@@ -467,7 +467,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                         <Users className="size-3" /> Base DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
@@ -482,7 +482,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                         <Key className="size-3" /> Bind DN <span className="text-red-400">*</span>
                       </label>
                       <Input 
@@ -499,7 +499,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                       <Lock className="size-3" /> Bind Password <span className="text-red-400">*</span>
                     </label>
                     <Input 
@@ -519,7 +519,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     className={cn(
                       "w-full mt-2 gap-2 h-9 text-xs font-semibold transition-all",
                       ldapTestPassed 
-                        ? "text-primary border-emerald-500/40 bg-primary/10 hover:bg-emerald-500/15" 
+                        ? "text-primary border-primary/40 bg-primary/10 hover:bg-primary/15" 
                         : "text-primary border-primary/20 hover:bg-primary/10"
                     )}
                     onClick={handleTestLdap}
@@ -544,41 +544,41 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             <div className="space-y-4 animate-in zoom-in-95 duration-300">
               <div className="rounded-lg bg-muted/30 border border-border p-4 space-y-3">
                 <div className="flex justify-between items-center border-b border-border pb-2">
-                  <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">Review Configuration</span>
+                  <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">Review Configuration</span>
                   <Check className="size-3 text-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-y-3 text-xs">
                   <div>
-                    <p className="text-zinc-500 mb-0.5">Name</p>
+                    <p className="text-muted-foreground mb-0.5">Name</p>
                     <p className="font-medium">{formData.name}</p>
                   </div>
                   <div>
-                    <p className="text-zinc-500 mb-0.5">Slug</p>
+                    <p className="text-muted-foreground mb-0.5">Slug</p>
                     <p className="font-medium font-mono text-primary">/{formData.slug}</p>
                   </div>
                   <div>
-                    <p className="text-zinc-500 mb-0.5">LDAP Status</p>
+                    <p className="text-muted-foreground mb-0.5">LDAP Status</p>
                     <span className={cn(
                       "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
-                      formData.ldapEnabled ? "bg-primary/10 text-primary" : "bg-zinc-800 text-zinc-500"
+                      formData.ldapEnabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
                       {formData.ldapEnabled ? "Enabled" : "Disabled"}
                     </span>
                   </div>
                   <div>
-                    <p className="text-zinc-500 mb-0.5">Plan</p>
+                    <p className="text-muted-foreground mb-0.5">Plan</p>
                     <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-bold uppercase">
                       {formData.plan} PLAN
                     </span>
                   </div>
                   <div>
-                    <p className="text-zinc-500 mb-0.5">Admin Account</p>
+                    <p className="text-muted-foreground mb-0.5">Admin Account</p>
                     <p className="font-medium text-primary">{formData.adminEmail}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-primary/20 text-xs text-zinc-300">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
                 <ShieldCheck className="size-5 text-primary shrink-0" />
                 <p>Infrastructure deployment will start immediately after confirmation.</p>
               </div>
@@ -588,18 +588,18 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           {step === 5 && deployedData && (
             <div className="space-y-6 animate-in zoom-in-95 duration-500 py-4">
               <div className="flex flex-col items-center text-center space-y-2">
-                <div className="size-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-2">
+                <div className="size-16 rounded-full bg-primary/20 flex items-center justify-center mb-2">
                   <Check className="size-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-bold text-white">System Online</h3>
-                <p className="text-zinc-500 text-sm">Infrastructure for <span className="text-primary">/{deployedData.slug}</span> has been provisioned.</p>
+                <h3 className="text-lg font-bold text-foreground">System Online</h3>
+                <p className="text-muted-foreground text-sm">Infrastructure for <span className="text-primary">/{deployedData.slug}</span> has been provisioned.</p>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-emerald-500/5 border border-primary/20 space-y-4">
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Admin Username</p>
-                    <p className="text-sm font-mono text-zinc-200">{deployedData.adminUsername}</p>
+                    <p className="text-sm font-mono text-foreground">{deployedData.adminUsername}</p>
                   </div>
                   
                   <div className="space-y-1">
@@ -609,7 +609,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       <Button 
                         size="sm" 
                         variant="ghost" 
-                        className="h-8 size-8 p-0 text-zinc-400 hover:text-primary"
+                        className="h-8 size-8 p-0 text-muted-foreground hover:text-primary"
                         onClick={() => copyToClipboard(deployedData.adminPassword || "")}
                       >
                         {copied ? <Check className="size-4" /> : <Key className="size-4" />}
@@ -620,7 +620,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
                 <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg flex gap-3">
                   <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-muted-foreground">
                     <strong className="text-amber-500">Security Warning:</strong> This password will only be shown once. Please save it securely. You can change it later in the dashboard settings.
                   </p>
                 </div>
@@ -634,7 +634,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             <Button 
               variant="ghost" 
               onClick={prevStep}
-              className="text-zinc-400 hover:text-zinc-100 hover:bg-transparent px-0"
+              className="text-muted-foreground hover:text-foreground hover:bg-transparent px-0"
             >
               <ArrowLeft className="size-4 mr-2" /> Back
             </Button>
@@ -648,7 +648,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 <Button 
                   variant="ghost" 
                   onClick={() => onOpenChange(false)}
-                  className="text-zinc-500 hover:text-zinc-100"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   Cancel
                 </Button>
@@ -661,9 +661,9 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       (step === 3 && formData.ldapEnabled && !ldapTestPassed)
                     }
                     className={cn(
-                      "text-white min-w-[100px] h-9 shadow-lg shadow-emerald-900/10",
+                      "text-primary-foreground min-w-[100px] h-9 shadow-lg",
                       (step === 3 && formData.ldapEnabled && !ldapTestPassed)
-                        ? "bg-zinc-700 hover:bg-zinc-600 cursor-not-allowed"
+                        ? "bg-muted hover:bg-muted/80 cursor-not-allowed text-muted-foreground"
                         : "bg-primary hover:bg-primary/90"
                     )}
                   >
@@ -673,7 +673,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                   <Button 
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="bg-primary hover:bg-primary/90 text-white min-w-[120px] h-9 shadow-lg shadow-emerald-900/10"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[120px] h-9 shadow-lg"
                   >
                     {isSubmitting ? (
                       <>
@@ -688,7 +688,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
             ) : (
               <Button 
                 onClick={closeWizard}
-                className="bg-primary hover:bg-primary/90 text-white min-w-[150px] h-9 shadow-lg shadow-emerald-900/10"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[150px] h-9 shadow-lg"
               >
                 Go to Dashboard <ChevronRight className="size-4 ml-1" />
               </Button>

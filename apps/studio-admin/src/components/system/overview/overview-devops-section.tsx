@@ -37,7 +37,7 @@ export function OverviewDevopsSection({
     <OverviewShell
       title={
         <span className="flex items-center gap-2">
-          <Shield className="h-4.5 w-4.5 text-zinc-500" /> DevOps &amp; Deployment Status
+          <Shield className="h-4.5 w-4.5 text-muted-foreground" /> DevOps &amp; Deployment Status
         </span>
       }
       description="Operational indicators for deployment health, compute capacity, backup state, and GitHub integration."
@@ -52,7 +52,7 @@ export function OverviewDevopsSection({
                 className={cn(
                   "h-2 w-2 rounded-full animate-pulse",
                   globalHealthState === "operational"
-                    ? "bg-emerald-500"
+                    ? "bg-primary"
                     : globalHealthState === "warning"
                     ? "bg-amber-500"
                     : "bg-red-500"
@@ -77,7 +77,7 @@ export function OverviewDevopsSection({
           accentClassName="text-primary"
           href="/health"
           actionLabel="View Health Center"
-          actionClassName="text-primary hover:text-emerald-300"
+          actionClassName="text-primary hover:text-primary/70"
         />
 
         {/* Compute */}
@@ -90,16 +90,16 @@ export function OverviewDevopsSection({
           }
           description={
             <div className="space-y-1">
-              <div className="flex justify-between text-[10px] text-zinc-500">
+              <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>JVM Memory Used</span>
-                <span className="font-mono text-zinc-400">
+                <span className="font-mono text-foreground">
                   {devopsStats
                     ? `${devopsStats.compute.usedMemoryMb} MB / ${devopsStats.compute.totalMemoryMb} MB`
                     : "—"}
                 </span>
               </div>
               {devopsStats && (
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-500"
                     style={{
@@ -118,7 +118,7 @@ export function OverviewDevopsSection({
           actionClassName="text-sky-400 hover:text-sky-300"
         >
           {devopsStats ? (
-            <p className="mt-2 text-[9px] font-mono text-zinc-600">
+            <p className="mt-2 text-[9px] font-mono text-muted-foreground/60">
               Java {devopsStats.compute.javaVersion} • {devopsStats.compute.osInfo}
             </p>
           ) : null}
@@ -132,7 +132,7 @@ export function OverviewDevopsSection({
               <OverviewStatusBadge tone={githubIntegrationStatus.connected ? "success" : "neutral"}>
                 {githubIntegrationStatus.connected ? "Active" : "Offline"}
               </OverviewStatusBadge>
-              <span className="text-[10px] text-zinc-500">GitHub Sync</span>
+              <span className="text-[10px] text-muted-foreground">GitHub Sync</span>
             </div>
           }
           description="Platform repository branch and commit version state for both Backend and Frontend."
@@ -143,10 +143,10 @@ export function OverviewDevopsSection({
           actionLabel="Manage GitHub App"
           actionClassName="text-violet-400 hover:text-violet-300"
         >
-          <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
+          <div className="mt-3 space-y-2 text-[11px] border-t border-border/40 pt-2.5">
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500 font-semibold">Backend (API)</span>
+                <span className="text-muted-foreground font-semibold">Backend (API)</span>
                 <a
                   href={
                     devopsStats?.github?.backendRepo && devopsStats?.git?.commitFull
@@ -155,14 +155,14 @@ export function OverviewDevopsSection({
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-zinc-400 hover:text-primary transition-colors flex items-center gap-1.5"
+                  className="font-mono text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
                 >
                   <GitBranch className="w-3 h-3 text-primary/80" />
                   {devopsStats?.git?.branch || "main"} @ {devopsStats?.git?.commitShort || "..."}
                 </a>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500 font-semibold">Frontend (UI)</span>
+                <span className="text-muted-foreground font-semibold">Frontend (UI)</span>
                 <a
                   href={
                     frontendGitCommit !== "unknown"
@@ -171,7 +171,7 @@ export function OverviewDevopsSection({
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-zinc-400 hover:text-primary transition-colors flex items-center gap-1.5"
+                  className="font-mono text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5"
                 >
                   <GitBranch className="w-3 h-3 text-primary/80" />
                   {frontendGitBranch} @ {frontendGitCommitShort}
@@ -201,7 +201,7 @@ export function OverviewDevopsSection({
                   ? "Critical Outage"
                   : "Degraded"}
               </OverviewStatusBadge>
-              <span className="text-[10px] text-zinc-500">PostGIS &amp; Redis</span>
+              <span className="text-[10px] text-muted-foreground">PostGIS &amp; Redis</span>
             </div>
           }
           description="Real-time performance indicators for active connections, Redis cache store hit ratios, and GIS extensions."
@@ -210,16 +210,16 @@ export function OverviewDevopsSection({
           accentClassName="text-primary"
           href="/health"
           actionLabel="View System Health"
-          actionClassName="text-primary hover:text-emerald-300"
+          actionClassName="text-primary hover:text-primary/70"
         >
-          <div className="mt-3 space-y-2 text-[11px] border-t border-zinc-800/40 pt-2.5">
+          <div className="mt-3 space-y-2 text-[11px] border-t border-border/40 pt-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-zinc-500">DB Connections</span>
-              <span className="font-mono text-zinc-300 font-medium">{postgresConns} active</span>
+              <span className="text-muted-foreground">DB Connections</span>
+              <span className="font-mono text-foreground font-medium">{postgresConns} active</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Cache Hit Ratio</span>
-              <span className="font-mono text-zinc-300 font-medium">{redisCacheHit}%</span>
+              <span className="text-muted-foreground">Cache Hit Ratio</span>
+              <span className="font-mono text-foreground font-medium">{redisCacheHit}%</span>
             </div>
           </div>
         </OverviewDevOpsCard>
@@ -237,10 +237,10 @@ export function OverviewDevopsSection({
           }
           description={
             <div>
-              <p className="truncate font-mono text-[10px] text-zinc-500">
+              <p className="truncate font-mono text-[10px] text-muted-foreground">
                 {devopsStats?.lastMigration?.description || "—"}
               </p>
-              <p className="mt-1 text-[9px] font-mono text-zinc-600">
+              <p className="mt-1 text-[9px] font-mono text-muted-foreground/60">
                 Installed: {devopsStats?.lastMigration?.installedOn || "—"}
               </p>
             </div>
@@ -255,7 +255,7 @@ export function OverviewDevopsSection({
           eyebrow="Last Backup"
           title={
             devopsStats?.lastBackup?.status === "NOT_CONFIGURED" ? (
-              <span className="text-zinc-500">Not Configured</span>
+              <span className="text-muted-foreground">Not Configured</span>
             ) : devopsStats?.lastBackup?.success ? (
               <span className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-primary" /> {devopsStats.lastBackup.lastBackupTime}
@@ -277,7 +277,7 @@ export function OverviewDevopsSection({
               >
                 {devopsStats?.lastBackup?.status || "UNKNOWN"}
               </OverviewStatusBadge>
-              <span className="text-[9px] text-zinc-600">PostgreSQL pg_dump</span>
+              <span className="text-[9px] text-muted-foreground/50">PostgreSQL pg_dump</span>
             </div>
           }
           icon={DatabaseBackup}

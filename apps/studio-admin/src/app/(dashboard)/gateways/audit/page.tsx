@@ -162,10 +162,10 @@ export default function AuditGatewayPage() {
             <FileText className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Audit Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Konfigurasi pencatatan aktivitas, retensi kepatuhan log, dan perlindungan jejak audit sistem.
             </p>
           </div>
@@ -174,7 +174,7 @@ export default function AuditGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi audit gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi audit gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -183,16 +183,16 @@ export default function AuditGatewayPage() {
               
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Database Connection
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Koneksi PostgreSQL database untuk penyimpanan log kepatuhan audit.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="DATABASE_URL" className="text-xs text-zinc-400">Database Connection URL</Label>
+                    <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">Database Connection URL</Label>
                     <Input
                       id="DATABASE_URL"
                       type="text"
@@ -207,16 +207,16 @@ export default function AuditGatewayPage() {
 
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Retention & Compliance
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Aturan pembersihan otomatis dan batas waktu penyimpanan log.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="RETENTION_DAYS" className="text-xs text-zinc-400">Retention Period (Days)</Label>
+                    <Label htmlFor="RETENTION_DAYS" className="text-xs text-muted-foreground">Retention Period (Days)</Label>
                     <Input
                       id="RETENTION_DAYS"
                       type="number"
@@ -253,9 +253,9 @@ export default function AuditGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Aktivitas Audit Terkini
-                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -266,12 +266,12 @@ export default function AuditGatewayPage() {
                       ))}
                     </div>
                   ) : auditLogs.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada log audit tercatat.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log audit tercatat.</p>
                   ) : (
                     auditLogs.map((log) => (
                       <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200 font-mono">{log.action}</span>
+                          <span className="text-xs font-medium text-foreground font-mono">{log.action}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             log.status === "success"
                               ? "bg-primary/10 text-primary border-primary/20"
@@ -282,12 +282,12 @@ export default function AuditGatewayPage() {
                             {log.status}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
                           <span>@{log.username || log.userId}</span>
                           <span>{formatRelativeTime(log.createdAt)}</span>
                         </div>
                         {log.target && (
-                          <div className="text-[9px] text-zinc-600 truncate">Target: {log.target}</div>
+                          <div className="text-[9px] text-muted-foreground/60 truncate">Target: {log.target}</div>
                         )}
                       </div>
                     ))

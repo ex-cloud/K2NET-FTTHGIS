@@ -409,26 +409,26 @@ export default function OtpPage() {
         <div className="relative z-10 w-full max-w-md mx-4">
           <div className="backdrop-blur-xl bg-card border border-border rounded-2xl shadow-2xl p-8 animate-pulse">
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-800 mb-4" />
-              <div className="h-5 bg-zinc-800 rounded-lg w-48 mx-auto mb-2" />
-              <div className="h-3 bg-zinc-800/60 rounded w-64 mx-auto" />
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-muted mb-4" />
+              <div className="h-5 bg-muted rounded-lg w-48 mx-auto mb-2" />
+              <div className="h-3 bg-muted/60 rounded w-64 mx-auto" />
             </div>
-            <div className="rounded-lg bg-zinc-800/40 border border-zinc-700/20 p-3 mb-6">
+            <div className="rounded-lg bg-muted/40 border border-border/20 p-3 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 bg-zinc-700 rounded" />
+                <div className="w-5 h-5 bg-muted rounded" />
                 <div className="flex-1">
-                  <div className="h-3 bg-zinc-700 rounded w-24 mb-1.5" />
-                  <div className="h-2 bg-zinc-800 rounded w-32" />
+                  <div className="h-3 bg-muted rounded w-24 mb-1.5" />
+                  <div className="h-2 bg-muted rounded w-32" />
                 </div>
-                <div className="h-6 w-16 bg-zinc-700 rounded-md" />
+                <div className="h-6 w-16 bg-muted rounded-md" />
               </div>
             </div>
-            <div className="h-3 bg-zinc-800 rounded w-40 mx-auto mb-4" />
+            <div className="h-3 bg-muted rounded w-40 mx-auto mb-4" />
             <div className="grid grid-cols-2 gap-3 mb-5">
-              <div className="h-16 bg-zinc-800/60 rounded-xl" />
-              <div className="h-16 bg-zinc-800/60 rounded-xl" />
+              <div className="h-16 bg-muted/60 rounded-xl" />
+              <div className="h-16 bg-muted/60 rounded-xl" />
             </div>
-            <div className="h-10 bg-zinc-800/40 rounded-lg" />
+            <div className="h-10 bg-muted/40 rounded-lg" />
           </div>
         </div>
       </div>
@@ -455,7 +455,7 @@ export default function OtpPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-linear-to-br from-primary to-cyan-500 shadow-md shadow-primary/25 mb-4">
-              <Lock className="w-6 h-6 text-white" />
+              <Lock className="w-6 h-6 text-foreground" />
             </div>
             <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center justify-center gap-2">
               Verifikasi 2 Langkah <ShieldCheck className="h-5 w-5 text-primary" />
@@ -526,7 +526,7 @@ export default function OtpPage() {
           )}
 
           {infoMessage && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-400 mb-5">
+            <div className="flex items-start gap-2.5 rounded-lg border border-primary/30 bg-primary/10 p-3.5 text-xs text-primary mb-5">
               <CheckCircle className="h-4.5 w-4.5 shrink-0 mt-0.5" />
               <span>{infoMessage}</span>
             </div>
@@ -591,7 +591,7 @@ export default function OtpPage() {
               <Button
                 type="submit"
                 disabled={isSending}
-                className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/95 text-white transition-all shadow-lg"
+                className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/95 text-foreground transition-all shadow-lg"
               >
                 {isSending ? (
                   <>
@@ -646,7 +646,7 @@ export default function OtpPage() {
                 <Button
                   onClick={handleVerifyOtp}
                   disabled={isVerifying}
-                  className="w-full h-11 bg-linear-to-r from-primary to-primary/85 hover:from-primary/90 text-white transition-all shadow-lg font-semibold"
+                  className="w-full h-11 bg-linear-to-r from-primary to-primary/85 hover:from-primary/90 text-foreground transition-all shadow-lg font-semibold"
                 >
                   {isVerifying ? (
                     <>

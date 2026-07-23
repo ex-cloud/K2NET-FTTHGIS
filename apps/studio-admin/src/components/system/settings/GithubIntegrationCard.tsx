@@ -201,8 +201,8 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
           variant="outline"
           className={cn(
             integrationStatus.connected || githubConfig.connected
-              ? "border-primary/20 text-primary bg-emerald-500/5"
-              : "border-zinc-800 text-zinc-500"
+              ? "border-primary/20 text-primary bg-primary/5"
+              : "border-border text-muted-foreground"
           )}
         >
           {statusLabel}
@@ -211,35 +211,35 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
 
       <CardContent className="space-y-6 pt-6">
         <div className="max-w-2xl mx-auto w-full">
-          <div className="border border-zinc-800/50 bg-card rounded-xl p-5 space-y-4">
+          <div className="border border-border/50 bg-card rounded-xl p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-zinc-900 text-zinc-400">
+              <div className="p-2.5 rounded-lg bg-muted text-muted-foreground">
                 <Github className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-zinc-200">Connection Summary</h4>
-                <p className="text-[11px] text-zinc-500">
+                <h4 className="text-sm font-semibold text-foreground">Connection Summary</h4>
+                <p className="text-[11px] text-muted-foreground">
                   System-level status for GitHub App sync and repository access.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-2 text-xs text-zinc-400">
+            <div className="space-y-2 text-xs text-muted-foreground">
               <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Status</span>
-                <span className={cn("font-medium", integrationStatus.connected ? "text-primary" : "text-zinc-400")}>{statusLabel}</span>
+                <span className={cn("font-medium", integrationStatus.connected ? "text-primary" : "text-muted-foreground")}>{statusLabel}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Organization</span>
-                <span className="font-mono text-zinc-300">{organizationLabel}</span>
+                <span className="font-mono text-muted-foreground">{organizationLabel}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Installation target</span>
-                <span className="font-mono text-zinc-300">{installationTarget}</span>
+                <span className="font-mono text-muted-foreground">{installationTarget}</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-3 py-2">
                 <span>Repositories</span>
-                <span className="font-mono text-zinc-300">{repoCount}</span>
+                <span className="font-mono text-muted-foreground">{repoCount}</span>
               </div>
             </div>
           </div>
@@ -261,7 +261,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
             variant="ghost"
             size="sm"
             onClick={handleDisconnectGithub}
-            className="text-zinc-500 hover:text-rose-400 hover:bg-rose-500/5 text-xs h-9 gap-1.5"
+            className="text-muted-foreground hover:text-rose-400 hover:bg-rose-500/5 text-xs h-9 gap-1.5"
           >
             Disconnect GitHub App
           </Button>

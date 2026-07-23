@@ -209,10 +209,10 @@ export default function PermissionsPage() {
               <Shield className="w-5 h-5 text-violet-400" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-white">
+              <h1 className="text-xl font-semibold text-foreground">
                 Manajemen Permission
               </h1>
-              <p className="text-sm text-zinc-400 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Kelola seluruh kode hak akses yang tersedia di platform
               </p>
             </div>
@@ -221,7 +221,7 @@ export default function PermissionsPage() {
             <button
               onClick={() => fetchPermissions(true)}
               disabled={isRefreshing}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/5 border border-white/8 transition-all disabled:opacity-40"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-card/5 border border-border/8 transition-all disabled:opacity-40"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
@@ -229,7 +229,7 @@ export default function PermissionsPage() {
             <button
               id="btn-add-permission"
               onClick={() => setShowDialog(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-500/20"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-foreground transition-all shadow-lg shadow-violet-500/20"
             >
               <Plus className="w-4 h-4" />
               Tambah Permission
@@ -240,16 +240,16 @@ export default function PermissionsPage() {
         {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[
-            { label: "Total Permission", value: permissions.length, color: "text-white" },
+            { label: "Total Permission", value: permissions.length, color: "text-foreground" },
             { label: "Module Aktif", value: Object.keys(groupByModule(permissions)).length, color: "text-sky-400" },
             { label: "Scope SYSTEM", value: permissions.filter(p => p.scope === "SYSTEM").length, color: "text-violet-400" },
             { label: "Scope TENANT", value: permissions.filter(p => p.scope === "TENANT").length, color: "text-primary" },
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-xl border border-white/8 bg-white/3 p-4"
+              className="rounded-xl border border-border/8 bg-card/3 p-4"
             >
-              <p className="text-xs text-zinc-500 mb-1">{stat.label}</p>
+              <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
               <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
@@ -258,18 +258,18 @@ export default function PermissionsPage() {
         {/* Filter bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               id="input-permission-search"
               type="text"
               placeholder="Cari permission (code, name, module)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-white/10 bg-white/4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 focus:bg-white/6 transition-all"
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border/10 bg-card/4 text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:border-violet-500/60 focus:bg-card/6 transition-all"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-zinc-500 shrink-0" />
+            <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
             {["ALL", "SYSTEM", "TENANT"].map((s) => (
               <button
                 key={s}
@@ -277,8 +277,8 @@ export default function PermissionsPage() {
                 onClick={() => setScopeFilter(s)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   scopeFilter === s
-                    ? "bg-violet-600 text-white"
-                    : "border border-white/10 text-zinc-400 hover:text-white hover:border-white/20"
+                    ? "bg-violet-600 text-foreground"
+                    : "border border-border/10 text-muted-foreground hover:text-foreground hover:border-border/20"
                 }`}
               >
                 {s === "ALL" ? "Semua" : s}
@@ -349,33 +349,33 @@ function ModuleGroup({
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="rounded-xl border border-white/8 bg-white/2 overflow-hidden">
+    <div className="rounded-xl border border-border/8 bg-card/2 overflow-hidden">
       {/* Module header */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/3 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-card/3 transition-colors text-left"
       >
-        <Layers className="w-4 h-4 text-zinc-400 shrink-0" />
-        <span className="text-sm font-semibold text-white capitalize flex-1">
+        <Layers className="w-4 h-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-semibold text-foreground capitalize flex-1">
           {module}
         </span>
-        <span className="text-xs text-zinc-500 px-2 py-0.5 rounded-full bg-white/5 border border-white/8">
+        <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-card/5 border border-border/8">
           {permissions.length}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {/* Permission rows */}
       {open && (
-        <div className="border-t border-white/6 divide-y divide-white/4">
+        <div className="border-t border-border/6 divide-y divide-white/4">
           {permissions.map((p) => (
             <div
               key={p.id}
-              className="flex items-center gap-4 px-5 py-3 hover:bg-white/3 transition-colors group"
+              className="flex items-center gap-4 px-5 py-3 hover:bg-card/3 transition-colors group"
             >
-              <Code2 className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+              <Code2 className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="text-xs font-mono text-sky-300 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
@@ -387,9 +387,9 @@ function ModuleGroup({
                     {p.scope}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 mt-1 truncate">{p.name}</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">{p.name}</p>
                 {p.description && (
-                  <p className="text-[10px] text-zinc-600 mt-0.5 truncate">
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
                     {p.description}
                   </p>
                 )}
@@ -397,7 +397,7 @@ function ModuleGroup({
               <button
                 id={`btn-delete-perm-${p.id}`}
                 onClick={() => onDelete(p)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
                 title="Hapus permission"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -440,21 +440,21 @@ function CreatePermissionDialog({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 p-6">
+      <div className="relative w-full max-w-md bg-muted border border-border/10 rounded-2xl shadow-2xl shadow-black/50 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-violet-500/15 border border-violet-500/25">
             <Plus className="w-4 h-4 text-violet-400" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">Tambah Permission Baru</h2>
-            <p className="text-xs text-zinc-500">Isi detail permission yang ingin ditambahkan</p>
+            <h2 className="text-base font-semibold text-foreground">Tambah Permission Baru</h2>
+            <p className="text-xs text-muted-foreground">Isi detail permission yang ingin ditambahkan</p>
           </div>
         </div>
 
         <div className="space-y-4">
           {/* Module */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Module <span className="text-red-400">*</span>
             </label>
             <div className="relative">
@@ -465,7 +465,7 @@ function CreatePermissionDialog({
                 value={form.module}
                 onChange={(e) => handleField("module", e.target.value)}
                 placeholder="contoh: nodes, customers, billing"
-                className="w-full px-3 py-2.5 rounded-lg border border-white/10 bg-white/4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
+                className="w-full px-3 py-2.5 rounded-lg border border-border/10 bg-card/4 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
               />
               <datalist id="module-suggestions">
                 {MODULE_SUGGESTIONS.map((m) => (
@@ -477,7 +477,7 @@ function CreatePermissionDialog({
 
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Nama Permission <span className="text-red-400">*</span>
             </label>
             <input
@@ -487,13 +487,13 @@ function CreatePermissionDialog({
               onChange={(e) => handleField("name", e.target.value)}
               onBlur={autoCode}
               placeholder="contoh: Lihat Daftar Node"
-              className="w-full px-3 py-2.5 rounded-lg border border-white/10 bg-white/4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full px-3 py-2.5 rounded-lg border border-border/10 bg-card/4 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
             />
           </div>
 
           {/* Code */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Code (Unik) <span className="text-red-400">*</span>
             </label>
             <input
@@ -502,16 +502,16 @@ function CreatePermissionDialog({
               value={form.code}
               onChange={(e) => handleField("code", e.target.value.toLowerCase())}
               placeholder="contoh: nodes.view"
-              className="w-full px-3 py-2.5 rounded-lg border border-white/10 bg-white/4 text-sm font-mono text-sky-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
+              className="w-full px-3 py-2.5 rounded-lg border border-border/10 bg-card/4 text-sm font-mono text-sky-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all"
             />
-            <p className="text-[10px] text-zinc-600 mt-1">
+            <p className="text-[10px] text-muted-foreground/60 mt-1">
               Format: <code>module.aksi</code> — lowercase, tanpa spasi
             </p>
           </div>
 
           {/* Scope */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Scope</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Scope</label>
             <div className="flex gap-2">
               {SCOPE_OPTIONS.map((s) => (
                 <button
@@ -522,9 +522,9 @@ function CreatePermissionDialog({
                   className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
                     form.scope === s
                       ? s === "SYSTEM"
-                        ? "bg-violet-600/80 border-violet-500 text-white"
-                        : "bg-sky-600/80 border-sky-500 text-white"
-                      : "border-white/10 text-zinc-500 hover:text-white hover:border-white/20"
+                        ? "bg-violet-600/80 border-violet-500 text-foreground"
+                        : "bg-sky-600/80 border-sky-500 text-foreground"
+                      : "border-border/10 text-muted-foreground hover:text-foreground hover:border-border/20"
                   }`}
                 >
                   {s}
@@ -535,8 +535,8 @@ function CreatePermissionDialog({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-              Deskripsi <span className="text-zinc-600">(opsional)</span>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Deskripsi <span className="text-muted-foreground/60">(opsional)</span>
             </label>
             <textarea
               id="input-perm-description"
@@ -544,7 +544,7 @@ function CreatePermissionDialog({
               value={form.description}
               onChange={(e) => handleField("description", e.target.value)}
               placeholder="Jelaskan kegunaan permission ini…"
-              className="w-full px-3 py-2.5 rounded-lg border border-white/10 bg-white/4 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all resize-none"
+              className="w-full px-3 py-2.5 rounded-lg border border-border/10 bg-card/4 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-violet-500/60 transition-all resize-none"
             />
           </div>
         </div>
@@ -553,7 +553,7 @@ function CreatePermissionDialog({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 transition-all disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-border/10 text-muted-foreground hover:text-foreground hover:border-border/20 transition-all disabled:opacity-40"
           >
             Batal
           </button>
@@ -561,7 +561,7 @@ function CreatePermissionDialog({
             id="btn-submit-permission"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-foreground transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
           >
             {isSubmitting ? "Menyimpan…" : "Simpan Permission"}
           </button>
@@ -588,30 +588,30 @@ function DeleteConfirmDialog({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl shadow-black/50 p-6">
+      <div className="relative w-full max-w-sm bg-muted border border-border/10 rounded-2xl shadow-2xl shadow-black/50 p-6">
         <div className="flex flex-col items-center text-center gap-3 mb-5">
           <div className="p-3 rounded-full bg-red-500/15 border border-red-500/25">
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">Hapus Permission?</h2>
-            <p className="text-sm text-zinc-400 mt-1">
+            <h2 className="text-base font-semibold text-foreground">Hapus Permission?</h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Tindakan ini tidak dapat dibatalkan. Permission akan dihapus dari semua role yang terkait.
             </p>
           </div>
-          <div className="w-full rounded-lg border border-white/8 bg-white/3 p-3 text-left">
+          <div className="w-full rounded-lg border border-border/8 bg-card/3 p-3 text-left">
             <div className="flex items-center gap-2 flex-wrap">
-              <Tag className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <code className="text-xs font-mono text-sky-300">{permission.code}</code>
             </div>
-            <p className="text-xs text-zinc-500 mt-1">{permission.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">{permission.name}</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm border border-white/10 text-zinc-400 hover:text-white transition-all disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-lg text-sm border border-border/10 text-muted-foreground hover:text-foreground transition-all disabled:opacity-40"
           >
             Batal
           </button>
@@ -619,7 +619,7 @@ function DeleteConfirmDialog({
             id="btn-confirm-delete-permission"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-500 text-white transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-500 text-foreground transition-all disabled:opacity-50"
           >
             {isSubmitting ? "Menghapus…" : "Ya, Hapus"}
           </button>
@@ -635,17 +635,17 @@ function LoadingSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="rounded-xl border border-white/8 bg-white/2 p-4 animate-pulse"
+          className="rounded-xl border border-border/8 bg-card/2 p-4 animate-pulse"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-4 w-4 bg-white/8 rounded" />
-            <div className="h-4 w-24 bg-white/8 rounded" />
+            <div className="h-4 w-4 bg-card/8 rounded" />
+            <div className="h-4 w-24 bg-card/8 rounded" />
           </div>
           <div className="space-y-2.5 pl-7">
             {[1, 2, 3].map((j) => (
               <div key={j} className="flex items-center gap-3">
-                <div className="h-3 w-28 bg-white/6 rounded" />
-                <div className="h-3 w-40 bg-white/4 rounded" />
+                <div className="h-3 w-28 bg-card/6 rounded" />
+                <div className="h-3 w-40 bg-card/4 rounded" />
               </div>
             ))}
           </div>
@@ -658,16 +658,16 @@ function LoadingSkeleton() {
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="p-4 rounded-2xl bg-white/4 border border-white/8 mb-4">
-        <Shield className="w-8 h-8 text-zinc-500" />
+      <div className="p-4 rounded-2xl bg-card/4 border border-border/8 mb-4">
+        <Shield className="w-8 h-8 text-muted-foreground" />
       </div>
-      <p className="text-zinc-400 font-medium mb-1">Belum ada permission</p>
-      <p className="text-sm text-zinc-600 mb-6">
+      <p className="text-muted-foreground font-medium mb-1">Belum ada permission</p>
+      <p className="text-sm text-muted-foreground/60 mb-6">
         Mulai dengan menambahkan permission pertama untuk platform ini.
       </p>
       <button
         onClick={onAdd}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-500 text-foreground transition-all"
       >
         <Plus className="w-4 h-4" />
         Tambah Permission Pertama

@@ -25,7 +25,7 @@ import {
   ShieldCheck,
   Blocks
 } from "lucide-react";
-import { Button, Input, Label, PageLayout } from "@k2net/ui";
+import { Button, Input, Label, PageLayout, TracingBeam } from "@k2net/ui";
 import { Switch } from "@k2net/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@k2net/ui";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
@@ -169,7 +169,7 @@ export default function SystemSettingsPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background text-foreground">
         <ServerCrash className="w-16 h-16 text-rose-500 mb-4" />
         <h2 className="text-xl font-semibold mb-2">Failed to Load Settings</h2>
-        <p className="text-zinc-400 text-sm mb-6 max-w-md text-center">{error}</p>
+        <p className="text-muted-foreground text-sm mb-6 max-w-md text-center">{error}</p>
         <Button onClick={() => refresh()} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
           <RefreshCw className="w-4 h-4" /> Retry
         </Button>
@@ -241,14 +241,15 @@ export default function SystemSettingsPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* GENERAL TAB */}
-          <TabsContent value="general">
-            <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/40">
-                <CardTitle className="text-zinc-100 flex items-center gap-2">
+          <TracingBeam className="pl-4 md:pl-10">
+            {/* GENERAL TAB */}
+            <TabsContent value="general">
+            <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+              <CardHeader className="border-b border-border/40">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   General Platform Settings
                 </CardTitle>
-                <CardDescription className="text-zinc-400 text-xs">
+                <CardDescription className="text-muted-foreground text-xs">
                   Configure primary platform default variables and maintenance modes.
                 </CardDescription>
               </CardHeader>
@@ -257,10 +258,10 @@ export default function SystemSettingsPage() {
                 {/* Default Storage Quota */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <Label htmlFor="default_storage_quota" className="text-zinc-200 text-sm">
+                    <Label htmlFor="default_storage_quota" className="text-foreground text-sm">
                       Default Storage Quota (GB)
                     </Label>
-                    <span className="text-[10px] text-zinc-500">Key: default_storage_quota</span>
+                    <span className="text-[10px] text-muted-foreground">Key: default_storage_quota</span>
                   </div>
                   <Input
                     id="default_storage_quota"
@@ -268,27 +269,27 @@ export default function SystemSettingsPage() {
                     value={getValue("default_storage_quota", "10")}
                     onChange={(e) => handleInputChange("default_storage_quota", e.target.value)}
                     placeholder="e.g. 10"
-                    className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
+                    className="bg-background/60 border-border/85 text-foreground text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
                   />
-                  <p className="text-[11px] text-zinc-400 italic">
+                  <p className="text-[11px] text-muted-foreground italic">
                     The default file storage limit automatically allocated for newly registered organizations/tenants.
                   </p>
                 </div>
 
-                <div className="border-t border-zinc-800/40 my-6" />
+                <div className="border-t border-border/40 my-6" />
 
                 {/* System Maintenance Mode */}
                 <div className="flex items-start justify-between max-w-2xl gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="system_maintenance_mode" className="text-zinc-200 text-sm font-medium">
+                      <Label htmlFor="system_maintenance_mode" className="text-foreground text-sm font-medium">
                         System-wide Maintenance Mode
                       </Label>
-                      <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
+                      <span className="text-[9px] font-mono text-muted-foreground/60 bg-muted border border-border px-1 py-0.5 rounded">
                         system_maintenance_mode
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       When enabled, all global and tenant user portals will be locked with an elegant maintenance screen. Only Super Admins can bypass this lock.
                     </p>
                   </div>
@@ -301,7 +302,7 @@ export default function SystemSettingsPage() {
                 </div>
 
               </CardContent>
-              <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
                 <Button
                   onClick={() => handleSave("GENERAL")}
                   disabled={isUpdating}
@@ -315,12 +316,12 @@ export default function SystemSettingsPage() {
 
           {/* SMTP TAB */}
           <TabsContent value="smtp">
-            <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/40">
-                <CardTitle className="text-zinc-100 flex items-center gap-2">
+            <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+              <CardHeader className="border-b border-border/40">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   SMTP Mail Server Configuration
                 </CardTitle>
-                <CardDescription className="text-zinc-400 text-xs">
+                <CardDescription className="text-muted-foreground text-xs">
                   Routing and security settings for the platform&apos;s central outgoing email server.
                 </CardDescription>
               </CardHeader>
@@ -330,7 +331,7 @@ export default function SystemSettingsPage() {
                   
                   {/* SMTP Host */}
                   <div className="space-y-2">
-                    <Label htmlFor="smtp_host" className="text-zinc-200 text-xs">
+                    <Label htmlFor="smtp_host" className="text-foreground text-xs">
                       SMTP Host
                     </Label>
                     <Input
@@ -339,13 +340,13 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_host", "")}
                       onChange={(e) => handleInputChange("smtp_host", e.target.value)}
                       placeholder="e.g. smtp.mailtrap.io"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* SMTP Port */}
                   <div className="space-y-2">
-                    <Label htmlFor="smtp_port" className="text-zinc-200 text-xs">
+                    <Label htmlFor="smtp_port" className="text-foreground text-xs">
                       SMTP Port
                     </Label>
                     <Input
@@ -354,13 +355,13 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_port", "")}
                       onChange={(e) => handleInputChange("smtp_port", e.target.value)}
                       placeholder="e.g. 2525, 465, or 587"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* SMTP Username */}
                   <div className="space-y-2">
-                    <Label htmlFor="smtp_username" className="text-zinc-200 text-xs">
+                    <Label htmlFor="smtp_username" className="text-foreground text-xs">
                       SMTP Username
                     </Label>
                     <Input
@@ -369,13 +370,13 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_username", "")}
                       onChange={(e) => handleInputChange("smtp_username", e.target.value)}
                       placeholder="e.g. smtp_user"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* SMTP Password */}
                   <div className="space-y-2">
-                    <Label htmlFor="smtp_password" className="text-zinc-200 text-xs">
+                    <Label htmlFor="smtp_password" className="text-foreground text-xs">
                       SMTP Password
                     </Label>
                     <div className="relative">
@@ -385,12 +386,12 @@ export default function SystemSettingsPage() {
                         value={getValue("smtp_password", "")}
                         onChange={(e) => handleInputChange("smtp_password", e.target.value)}
                         placeholder="********"
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs pr-10 focus:border-primary/50 focus:ring-primary/50"
+                        className="bg-background/60 border-border/85 text-foreground text-xs pr-10 focus:border-primary/50 focus:ring-primary/50"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
@@ -399,7 +400,7 @@ export default function SystemSettingsPage() {
 
                   {/* SMTP From (Sender) */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="smtp_from" className="text-zinc-200 text-xs">
+                    <Label htmlFor="smtp_from" className="text-foreground text-xs">
                       Default Sender Email (&quot;From&quot; Address)
                     </Label>
                     <Input
@@ -408,20 +409,20 @@ export default function SystemSettingsPage() {
                       value={getValue("smtp_from", "")}
                       onChange={(e) => handleInputChange("smtp_from", e.target.value)}
                       placeholder="e.g. noreply@ftthgis.com"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                 </div>
 
-                <div className="border-t border-zinc-800/40 my-6" />
+                <div className="border-t border-border/40 my-6" />
 
                 {/* SMTP Connection Testing area */}
-                <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-950/40 space-y-4 max-w-3xl">
-                  <h4 className="text-xs font-semibold text-zinc-300 flex items-center gap-2">
+                <div className="p-5 rounded-lg border border-border bg-background/40 space-y-4 max-w-3xl">
+                  <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
                     <Play className="w-3.5 h-3.5 text-primary" /> Interactive Connection Test
                   </h4>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-muted-foreground">
                     Test your current input settings instantly by connecting directly to the SMTP host. Sockets will test connection times and verify security.
                   </p>
                   
@@ -431,7 +432,7 @@ export default function SystemSettingsPage() {
                       variant="outline"
                       onClick={handleTestSmtp}
                       disabled={isTestingEmail}
-                      className="border-zinc-800 hover:bg-zinc-800 hover:text-white text-zinc-300 text-xs h-9 px-3 gap-2"
+                      className="border-border hover:bg-muted hover:text-foreground text-muted-foreground text-xs h-9 px-3 gap-2"
                     >
                       {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                       Run Connection Test
@@ -451,7 +452,7 @@ export default function SystemSettingsPage() {
                 </div>
 
               </CardContent>
-              <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
                 <Button
                   onClick={() => handleSave("SMTP")}
                   disabled={isUpdating}
@@ -465,12 +466,12 @@ export default function SystemSettingsPage() {
 
           {/* SECURITY TAB */}
           <TabsContent value="security">
-            <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/40">
-                <CardTitle className="text-zinc-100 flex items-center gap-2">
+            <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+              <CardHeader className="border-b border-border/40">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   Central Security Policies
                 </CardTitle>
-                <CardDescription className="text-zinc-400 text-xs">
+                <CardDescription className="text-muted-foreground text-xs">
                   Enforce authentication guidelines and self-registration rights across the multi-tenant system.
                 </CardDescription>
               </CardHeader>
@@ -480,14 +481,14 @@ export default function SystemSettingsPage() {
                 <div className="flex items-start justify-between max-w-2xl gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="allow_self_registration" className="text-zinc-200 text-sm font-medium">
+                      <Label htmlFor="allow_self_registration" className="text-foreground text-sm font-medium">
                         Allow Global Self-Registration
                       </Label>
-                      <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
+                      <span className="text-[9px] font-mono text-muted-foreground/60 bg-muted border border-border px-1 py-0.5 rounded">
                         allow_self_registration
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       When enabled, the general user registration page is unlocked. Users can register their own organization/account directly. When disabled, users can only be invited by an Administrator.
                     </p>
                   </div>
@@ -499,20 +500,20 @@ export default function SystemSettingsPage() {
                   />
                 </div>
 
-                <div className="border-t border-zinc-800/40 my-6" />
+                <div className="border-t border-border/40 my-6" />
 
                 {/* Enforce MFA/2FA */}
                 <div className="flex items-start justify-between max-w-2xl gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="enforce_mfa" className="text-zinc-200 text-sm font-medium">
+                      <Label htmlFor="enforce_mfa" className="text-foreground text-sm font-medium">
                         Force Multi-Factor Authentication (MFA / 2FA)
                       </Label>
-                      <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
+                      <span className="text-[9px] font-mono text-muted-foreground/60 bg-muted border border-border px-1 py-0.5 rounded">
                         enforce_mfa
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-muted-foreground">
                       Enforce active 2FA using TOTP (Authenticator App) for all Super Administrators and tenant administrative personnel upon next login.
                     </p>
                   </div>
@@ -525,7 +526,7 @@ export default function SystemSettingsPage() {
                 </div>
 
               </CardContent>
-              <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
                 <Button
                   onClick={() => handleSave("SECURITY")}
                   disabled={isUpdating}
@@ -539,12 +540,12 @@ export default function SystemSettingsPage() {
 
           {/* GIS MAP CONFIGURATION TAB */}
           <TabsContent value="gis">
-            <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/40">
-                <CardTitle className="text-zinc-100 flex items-center gap-2">
+            <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+              <CardHeader className="border-b border-border/40">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   GIS Map Engine Configuration
                 </CardTitle>
-                <CardDescription className="text-zinc-400 text-xs">
+                <CardDescription className="text-muted-foreground text-xs">
                   Customize coordinates, zoom levels, and Martin vector tile URLs globally.
                 </CardDescription>
               </CardHeader>
@@ -554,7 +555,7 @@ export default function SystemSettingsPage() {
                   
                   {/* Default Latitude */}
                   <div className="space-y-2">
-                    <Label htmlFor="default_map_lat" className="text-zinc-200 text-xs">
+                    <Label htmlFor="default_map_lat" className="text-foreground text-xs">
                       Default Latitude
                     </Label>
                     <Input
@@ -563,13 +564,13 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_lat", "")}
                       onChange={(e) => handleInputChange("default_map_lat", e.target.value)}
                       placeholder="e.g. -6.9175"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* Default Longitude */}
                   <div className="space-y-2">
-                    <Label htmlFor="default_map_lng" className="text-zinc-200 text-xs">
+                    <Label htmlFor="default_map_lng" className="text-foreground text-xs">
                       Default Longitude
                     </Label>
                     <Input
@@ -578,13 +579,13 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_lng", "")}
                       onChange={(e) => handleInputChange("default_map_lng", e.target.value)}
                       placeholder="e.g. 107.6191"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* Default Map Address */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="default_map_address" className="text-zinc-200 text-xs">
+                    <Label htmlFor="default_map_address" className="text-foreground text-xs">
                       Default Map Center Address
                     </Label>
                     <Input
@@ -593,16 +594,16 @@ export default function SystemSettingsPage() {
                       value={getValue("default_map_address", "")}
                       onChange={(e) => handleInputChange("default_map_address", e.target.value)}
                       placeholder="Resolved address will be filled here automatically"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
-                    <p className="text-[10px] text-zinc-400 italic">
+                    <p className="text-[10px] text-muted-foreground italic">
                       The resolved textual address matching the default center coordinate. Automatically geocoded via OSM when using the Map Picker.
                     </p>
                   </div>
 
                   {/* Default Zoom Level */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="default_map_zoom" className="text-zinc-200 text-xs">
+                    <Label htmlFor="default_map_zoom" className="text-foreground text-xs">
                       Default Zoom Level
                     </Label>
                     <Input
@@ -613,24 +614,24 @@ export default function SystemSettingsPage() {
                       placeholder="e.g. 12"
                       min={0}
                       max={24}
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs max-w-md focus:border-primary/50 focus:ring-primary/50"
                     />
                   </div>
 
                   {/* Interactive Map Picker Trigger */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label className="text-zinc-200 text-xs">
+                    <Label className="text-foreground text-xs">
                       Visual Coordinates Settings
                     </Label>
-                    <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/50 space-y-3">
-                      <p className="text-[11px] text-zinc-400">
+                    <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                      <p className="text-[11px] text-muted-foreground">
                         Prefer selecting coordinates on an interactive map? Click the button below to pick your default center coordinate and automatically geocode the location.
                       </p>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setMapPickerOpen(true)}
-                        className="border-zinc-800 hover:bg-zinc-800 hover:text-white text-zinc-300 text-xs h-9 px-4 gap-2 transition-all"
+                        className="border-border hover:bg-muted hover:text-foreground text-muted-foreground text-xs h-9 px-4 gap-2 transition-all"
                       >
                         <MapPin className="w-3.5 h-3.5 text-primary" />
                         Open Interactive Map Picker
@@ -640,7 +641,7 @@ export default function SystemSettingsPage() {
 
                   {/* Vector Tile Source */}
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="vector_tile_source" className="text-zinc-200 text-xs">
+                    <Label htmlFor="vector_tile_source" className="text-foreground text-xs">
                       Martin Vector Tile Server Source Template
                     </Label>
                     <Input
@@ -649,9 +650,9 @@ export default function SystemSettingsPage() {
                       value={getValue("vector_tile_source", "")}
                       onChange={(e) => handleInputChange("vector_tile_source", e.target.value)}
                       placeholder="http://localhost:3001/tiles/{z}/{x}/{y}.pbf"
-                      className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                      className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                     />
-                    <p className="text-[10px] text-zinc-400 italic">
+                    <p className="text-[10px] text-muted-foreground italic">
                       The dynamic URL endpoint structure used by Mapbox/Maplibre to load PostGIS vectorized network node clusters.
                     </p>
                   </div>
@@ -659,7 +660,7 @@ export default function SystemSettingsPage() {
                 </div>
 
               </CardContent>
-              <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
                 <Button
                   onClick={() => handleSave("GIS")}
                   disabled={isUpdating}
@@ -673,12 +674,12 @@ export default function SystemSettingsPage() {
 
           {/* BRANDING TAB */}
           <TabsContent value="branding">
-            <Card className="bg-zinc-900/40 border-zinc-800/80 shadow-xl backdrop-blur-sm">
-              <CardHeader className="border-b border-zinc-800/40">
-                <CardTitle className="text-zinc-100 flex items-center gap-2">
+            <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+              <CardHeader className="border-b border-border/40">
+                <CardTitle className="text-foreground flex items-center gap-2">
                   Branding & Whitelabel Platform Settings
                 </CardTitle>
-                <CardDescription className="text-zinc-400 text-xs">
+                <CardDescription className="text-muted-foreground text-xs">
                   Personalize and custom-brand the title and primary logo globally across the entire platform.
                 </CardDescription>
               </CardHeader>
@@ -690,7 +691,7 @@ export default function SystemSettingsPage() {
                   <div className="space-y-5">
                     {/* Application Name */}
                     <div className="space-y-2">
-                      <Label htmlFor="app_name" className="text-zinc-200 text-xs">
+                      <Label htmlFor="app_name" className="text-foreground text-xs">
                         Application Name
                       </Label>
                       <Input
@@ -699,13 +700,13 @@ export default function SystemSettingsPage() {
                         value={getValue("app_name", "")}
                         onChange={(e) => handleInputChange("app_name", e.target.value)}
                         placeholder="e.g. FTTH GIS Platform"
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                        className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                       />
                     </div>
 
                     {/* Logo URL */}
                     <div className="space-y-2">
-                      <Label htmlFor="logo_url" className="text-zinc-200 text-xs">
+                      <Label htmlFor="logo_url" className="text-foreground text-xs">
                         System Logo URL / Base64 Data String
                       </Label>
                       <Input
@@ -714,13 +715,13 @@ export default function SystemSettingsPage() {
                         value={getValue("logo_url", "")}
                         onChange={(e) => handleInputChange("logo_url", e.target.value)}
                         placeholder="e.g. /next.svg or data:image/png;base64,..."
-                        className="bg-zinc-950/60 border-zinc-800/85 text-zinc-200 text-xs focus:border-primary/50 focus:ring-primary/50"
+                        className="bg-background/60 border-border/85 text-foreground text-xs focus:border-primary/50 focus:ring-primary/50"
                       />
                     </div>
 
                     {/* Drag & Drop File Upload Area */}
                     <div className="space-y-2">
-                      <Label className="text-zinc-200 text-xs">
+                      <Label className="text-foreground text-xs">
                         Upload or Import Logo Image
                       </Label>
                       <div
@@ -729,8 +730,8 @@ export default function SystemSettingsPage() {
                         onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files?.[0]) handleLogoFile(e.dataTransfer.files[0]); }}
                         className={`border-2 border-dashed rounded-xl p-5 text-center transition-all cursor-pointer ${
                           dragActive 
-                            ? "border-emerald-500 bg-primary/10 text-primary" 
-                            : "border-zinc-800 bg-zinc-950/40 text-zinc-400 hover:border-zinc-700/80"
+                            ? "border-primary bg-primary/10 text-primary" 
+                            : "border-border bg-background/40 text-muted-foreground hover:border-border/80"
                         }`}
                         onClick={() => document.getElementById("logo-file-input")?.click()}
                       >
@@ -741,26 +742,26 @@ export default function SystemSettingsPage() {
                           className="hidden"
                           onChange={(e) => { if (e.target.files?.[0]) handleLogoFile(e.target.files[0]); }}
                         />
-                        <Upload className="w-5 h-5 mx-auto mb-2 text-zinc-500" />
-                        <p className="text-xs font-medium text-zinc-300">Drag & drop logo here, or <span className="text-primary underline">browse</span></p>
-                        <p className="text-[10px] text-zinc-500 mt-1">Supports PNG, JPG, SVG, or WEBP (Max 1MB)</p>
+                        <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-xs font-medium text-muted-foreground">Drag & drop logo here, or <span className="text-primary underline">browse</span></p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Supports PNG, JPG, SVG, or WEBP (Max 1MB)</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Brand Live Preview and Review Panel */}
                   <div className="space-y-4">
-                    <Label className="text-zinc-200 text-xs">
+                    <Label className="text-foreground text-xs">
                       Live Branding Review & Preview
                     </Label>
-                    <div className="p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 flex flex-col justify-center gap-6 h-[278px]">
+                    <div className="p-6 rounded-2xl border border-border bg-background/60 flex flex-col justify-center gap-6 h-[278px]">
                       
                       {/* Real-time Sidebar/Header Simulation */}
                       <div className="space-y-2">
-                        <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Simulated Portal Header</span>
-                        <div className="flex h-12 w-full items-center justify-between border border-zinc-800 bg-card px-4 py-2 rounded-xl shadow-md">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Simulated Portal Header</span>
+                        <div className="flex h-12 w-full items-center justify-between border border-border bg-card px-4 py-2 rounded-xl shadow-md">
                           <div className="flex items-center gap-x-2">
-                            <div className={getValue("logo_url") ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-emerald-600/20 border border-primary/30 group overflow-hidden"}>
+                            <div className={getValue("logo_url") ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-primary/10 border border-primary/30 group overflow-hidden"}>
                               {getValue("logo_url") ? (
                                 <Image
                                   src={getValue("logo_url")}
@@ -774,21 +775,21 @@ export default function SystemSettingsPage() {
                                 <ShieldCheck className="h-3 w-3 text-primary" />
                               )}
                             </div>
-                            <Separator orientation="vertical" className="mx-0.5 h-4 bg-zinc-800" />
+                            <Separator orientation="vertical" className="mx-0.5 h-4 bg-muted" />
                             <span className="text-[11px] font-bold uppercase tracking-widest text-primary truncate max-w-[150px]">
                               {getValue("app_name") || "System Admin"}
                             </span>
                           </div>
                           <div className="flex gap-2">
-                            <div className="w-4 h-4 rounded-full bg-zinc-800/80" />
-                            <div className="w-4 h-4 rounded-full bg-zinc-800/80" />
+                            <div className="w-4 h-4 rounded-full bg-muted/80" />
+                            <div className="w-4 h-4 rounded-full bg-muted/80" />
                           </div>
                         </div>
                       </div>
 
                       {/* Large Brand Icon / Status area */}
-                      <div className="flex items-center gap-4 border border-zinc-800/40 p-4 rounded-xl bg-zinc-900/20">
-                        <div className="w-14 h-14 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="flex items-center gap-4 border border-border/40 p-4 rounded-xl bg-muted/20">
+                        <div className="w-14 h-14 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden shrink-0">
                           {getValue("logo_url") ? (
                             <Image
                               src={getValue("logo_url")}
@@ -799,17 +800,17 @@ export default function SystemSettingsPage() {
                               unoptimized
                             />
                           ) : (
-                            <div className="text-zinc-600 text-[10px] font-light">No Logo</div>
+                            <div className="text-muted-foreground/60 text-[10px] font-light">No Logo</div>
                           )}
                         </div>
                         <div className="space-y-1 overflow-hidden flex-1">
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-semibold text-zinc-200">Application Identity</h4>
+                            <h4 className="text-xs font-semibold text-foreground">Application Identity</h4>
                             {getValue("logo_url") !== (settings.find(s => s.key === "logo_url")?.value || "") && (
                               <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 rounded font-mono font-medium shrink-0">Unsaved changes</span>
                             )}
                           </div>
-                          <p className="text-[10px] text-zinc-400 font-mono truncate w-full">
+                          <p className="text-[10px] text-muted-foreground font-mono truncate w-full">
                             {getValue("logo_url") ? (getValue("logo_url").startsWith("data:") ? "Base64 Data String" : getValue("logo_url")) : "Default system icon active"}
                           </p>
                           {getValue("logo_url") && (
@@ -831,7 +832,7 @@ export default function SystemSettingsPage() {
                 </div>
 
               </CardContent>
-              <CardFooter className="border-t border-zinc-800/40 pt-4 flex justify-end">
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
                 <Button
                   onClick={() => handleSave("BRANDING")}
                   disabled={isUpdating}
@@ -852,7 +853,8 @@ export default function SystemSettingsPage() {
               />
               <GithubAppConfigCard />
             </div>
-          </TabsContent>
+            </TabsContent>
+          </TracingBeam>
 
         </Tabs>
 

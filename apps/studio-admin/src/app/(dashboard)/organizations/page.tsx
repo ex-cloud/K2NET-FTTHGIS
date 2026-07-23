@@ -393,7 +393,7 @@ export default function AdminOrganizationsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className={cn("size-1.5 rounded-full", org.status === 'ACTIVE' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500")} />
+                          <div className={cn("size-1.5 rounded-full", org.status === 'ACTIVE' ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_50%,transparent)]" : "bg-amber-500")} />
                           <span className="text-muted-foreground capitalize">{org.status?.toLowerCase() || 'active'}</span>
                         </div>
                       </td>
@@ -426,8 +426,8 @@ export default function AdminOrganizationsPage() {
 
       {/* Delete Organization Confirmation Dialog */}
       <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && setOrgToDelete(null)}>
-        <DialogContent className="bg-card border-zinc-800 sm:max-w-[450px] p-0 overflow-hidden shadow-2xl text-zinc-300">
-          <DialogHeader className="p-6 pb-2 text-zinc-100">
+        <DialogContent className="bg-card border-border sm:max-w-[450px] p-0 overflow-hidden shadow-2xl text-muted-foreground">
+          <DialogHeader className="p-6 pb-2 text-foreground">
             <DialogTitle className="text-xl font-semibold flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-red-500" />
               Delete organization
@@ -442,10 +442,10 @@ export default function AdminOrganizationsPage() {
               </div>
             ) : projects.length > 0 ? (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Acknowledge each project that will be deleted:</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Acknowledge each project that will be deleted:</p>
                 <div className="space-y-2 max-h-[160px] overflow-auto pr-2 custom-scrollbar">
                   {projects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-3 rounded-md bg-zinc-900/50 border border-zinc-800 group hover:border-zinc-700 transition-colors">
+                    <div key={project.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border border-border group hover:border-border transition-colors">
                       <div className="flex items-center gap-3">
                         <Checkbox 
                           id={`project-${project.id}`}
@@ -456,13 +456,13 @@ export default function AdminOrganizationsPage() {
                               [project.id]: !!checked
                             }));
                           }}
-                          className="border-zinc-700 data-[state=checked]:bg-primary data-[state=checked]:border-emerald-500"
+                          className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         />
-                        <Label htmlFor={`project-${project.id}`} className="text-sm font-medium text-zinc-200 cursor-pointer">
+                        <Label htmlFor={`project-${project.id}`} className="text-sm font-medium text-foreground cursor-pointer">
                           {project.name}
                         </Label>
                       </div>
-                      <span className="text-[10px] text-zinc-500 font-mono uppercase bg-zinc-800 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-muted-foreground font-mono uppercase bg-muted px-1.5 py-0.5 rounded">
                         {project.region || "ap-southeast-1"}
                       </span>
                     </div>
@@ -472,12 +472,12 @@ export default function AdminOrganizationsPage() {
             ) : null}
 
             <div className="space-y-3">
-              <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Reason for deleting:</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reason for deleting:</p>
               <Select onValueChange={setDeleteReason} value={deleteReason}>
-                <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200 h-10 focus:ring-red-500/20">
+                <SelectTrigger className="bg-background border-border text-foreground h-10 focus:ring-red-500/20">
                   <SelectValue placeholder="Select a reason" />
                 </SelectTrigger>
-                <SelectContent className="bg-card border-zinc-800 text-zinc-200">
+                <SelectContent className="bg-card border-border text-foreground">
                   <SelectItem value="moving-to-another-platform">Moving to another platform</SelectItem>
                   <SelectItem value="temporary-project-ended">Temporary project ended</SelectItem>
                   <SelectItem value="costs-are-too-high">Costs are too high</SelectItem>
@@ -488,26 +488,26 @@ export default function AdminOrganizationsPage() {
             </div>
 
             <div className="p-4 rounded-md bg-red-500/5 border border-red-500/10 space-y-2">
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                This action <span className="text-zinc-100 font-bold italic underline decoration-red-500/50">cannot</span> be undone. This will permanently delete the <span className="text-zinc-100 font-bold">{orgToDelete?.name}</span> organization and remove all of its projects, users, realms, databases, and assets.
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This action <span className="text-foreground font-bold italic underline decoration-red-500/50">cannot</span> be undone. This will permanently delete the <span className="text-foreground font-bold">{orgToDelete?.name}</span> organization and remove all of its projects, users, realms, databases, and assets.
               </p>
             </div>
 
             <div className="space-y-3 pt-2">
-              <p className="text-xs font-medium text-zinc-400">
-                Type <span className="text-zinc-100 font-mono font-bold bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-700">{orgToDelete?.slug}</span> to confirm.
+              <p className="text-xs font-medium text-muted-foreground">
+                Type <span className="text-foreground font-mono font-bold bg-muted px-1.5 py-0.5 rounded border border-border">{orgToDelete?.slug}</span> to confirm.
               </p>
               <Input 
                 value={deleteConfirmSlug}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmSlug(e.target.value)}
                 placeholder="Enter the string above"
-                className="bg-zinc-900 border-zinc-800 text-white h-11 focus:border-red-500/50 focus:ring-red-500/10 text-xs"
+                className="bg-background border-border text-foreground h-11 focus:border-red-500/50 focus:ring-red-500/10 text-xs"
               />
             </div>
           </div>
 
-          <div className="bg-zinc-900/30 p-4 border-t border-zinc-800/50 flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOrgToDelete(null)} className="text-zinc-400 hover:text-zinc-100 h-10 text-xs">
+          <div className="bg-background/30 p-4 border-t border-border flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setOrgToDelete(null)} className="text-muted-foreground hover:text-foreground h-10 text-xs">
               Cancel
             </Button>
             <Button 

@@ -163,10 +163,10 @@ export default function PollerGatewayPage() {
             <Activity className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Poller Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Konfigurasi service poller monitoring status port OLT secara real-time dan update cache status database.
             </p>
           </div>
@@ -175,7 +175,7 @@ export default function PollerGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi poller gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi poller gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -184,16 +184,16 @@ export default function PollerGatewayPage() {
               
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Connection & Core Settings
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Koneksi database PostgreSQL, Redis caching, dan konfigurasi port service.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="PORT" className="text-xs text-zinc-400">Service Port</Label>
+                    <Label htmlFor="PORT" className="text-xs text-muted-foreground">Service Port</Label>
                     <Input
                       id="PORT"
                       type="text"
@@ -205,7 +205,7 @@ export default function PollerGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="REDIS_ADDR" className="text-xs text-zinc-400">Redis Address</Label>
+                    <Label htmlFor="REDIS_ADDR" className="text-xs text-muted-foreground">Redis Address</Label>
                     <Input
                       id="REDIS_ADDR"
                       type="text"
@@ -217,7 +217,7 @@ export default function PollerGatewayPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="DATABASE_URL" className="text-xs text-zinc-400">Database Connection URL</Label>
+                    <Label htmlFor="DATABASE_URL" className="text-xs text-muted-foreground">Database Connection URL</Label>
                     <Input
                       id="DATABASE_URL"
                       type="text"
@@ -254,9 +254,9 @@ export default function PollerGatewayPage() {
             <div className="space-y-6">
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Device Status Live
-                    {devicesLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {devicesLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -267,12 +267,12 @@ export default function PollerGatewayPage() {
                       ))}
                     </div>
                   ) : pollerDevices.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada device status tercatat.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada device status tercatat.</p>
                   ) : (
                     pollerDevices.map((dev) => (
                       <div key={dev.deviceCode} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200">{dev.name || dev.host}</span>
+                          <span className="text-xs font-medium text-foreground">{dev.name || dev.host}</span>
                           <Badge className={`text-[9px] px-1.5 py-0.5 border ${
                             dev.status === "up"
                               ? "bg-primary/10 text-primary border-primary/20"
@@ -283,7 +283,7 @@ export default function PollerGatewayPage() {
                             {dev.status}
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
                           <span>{dev.host} · {dev.responseTimeMs}ms</span>
                           <span>{formatRelativeTime(dev.lastPolledAt)}</span>
                         </div>
@@ -295,28 +295,28 @@ export default function PollerGatewayPage() {
 
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Poller Engine Status</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Poller Engine Status</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Active Devices</span>
+                    <span className="text-muted-foreground">Active Devices</span>
                     <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">
                       {devicesLoading ? "..." : pollerDevices.filter(d => d.status === "up").length}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-zinc-400">Down Devices</span>
+                    <span className="text-muted-foreground">Down Devices</span>
                     <Badge className={`text-[9px] ${
                       !devicesLoading && pollerDevices.filter(d => d.status === "down").length > 0
                         ? "bg-red-500/10 text-red-500 border-red-500/20"
-                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                        : "bg-muted/10 text-muted-foreground border-border"
                     }`}>
                       {devicesLoading ? "..." : pollerDevices.filter(d => d.status === "down").length}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">Avg Response</span>
-                    <Badge className="bg-zinc-500/10 text-zinc-300 border-zinc-500/20 text-[9px]">
+                    <span className="text-muted-foreground">Avg Response</span>
+                    <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px]">
                       {devicesLoading || pollerDevices.length === 0 ? "..." :
                         `${Math.round(pollerDevices.reduce((s, d) => s + d.responseTimeMs, 0) / pollerDevices.length)}ms`}
                     </Badge>

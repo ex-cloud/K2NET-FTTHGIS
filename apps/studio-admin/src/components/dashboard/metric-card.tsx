@@ -34,15 +34,15 @@ export function MetricCard({
   const selectedColor = colorMap[color] || colorMap.emerald;
 
   return (
-    <Card className="bg-white/60 dark:bg-zinc-950/40 border-zinc-200/60 dark:border-zinc-800/50 backdrop-blur-xl overflow-hidden group hover:border-primary/30 transition-all duration-300 shadow-sm dark:shadow-none">
+    <Card className="bg-card/60 dark:bg-background/40 border-border/60 dark:border-border/50 backdrop-blur-xl overflow-hidden group hover:border-primary/30 transition-all duration-300 shadow-sm dark:shadow-none">
       <CardContent className="p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
               {title}
             </p>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-black text-zinc-900 dark:text-white group-hover:text-primary dark:group-hover:text-primary transition-colors">
+              <h3 className="text-2xl font-black text-muted-foreground/15 dark:text-foreground group-hover:text-primary dark:group-hover:text-primary transition-colors">
                 {value}
               </h3>
               {trend && (
@@ -66,11 +66,11 @@ export function MetricCard({
 
         {progress !== undefined ? (
           <div className="mt-4 space-y-2">
-            <div className="flex justify-between items-center text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">
+            <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground dark:text-muted-foreground uppercase">
               <span>Progress</span>
               <span>{progress}%</span>
             </div>
-            <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-muted dark:bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-1000"
                 style={{ width: `${progress}%` }}
@@ -78,7 +78,7 @@ export function MetricCard({
             </div>
           </div>
         ) : subValue ? (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">
             {subValue}
           </p>
         ) : null}

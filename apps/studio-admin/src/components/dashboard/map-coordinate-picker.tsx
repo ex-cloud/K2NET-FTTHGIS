@@ -165,30 +165,30 @@ export function MapCoordinatePicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-zinc-950 border-border rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
-        <DialogHeader className="p-6 bg-zinc-900/80 backdrop-blur-xl border-b border-border z-10">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-background border-border rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
+        <DialogHeader className="p-6 bg-muted/80 backdrop-blur-xl border-b border-border z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-blue-500" />
               </div>
               <div>
-                <DialogTitle className="text-white text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
-                <DialogDescription className="text-zinc-500 text-[10px] uppercase font-black tracking-tight mt-1">
+                <DialogTitle className="text-foreground text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-[10px] uppercase font-black tracking-tight mt-1">
                   Click on the map or drag to center the target location
                 </DialogDescription>
               </div>
             </div>
 
             {/* Map Style Toggle */}
-            <div className="flex items-center bg-zinc-800/50 p-1 rounded-xl border border-border">
+            <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border">
                 <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={() => setIsSatellite(false)}
                     className={cn(
                         "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                        !isSatellite ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"
+                        !isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                     )}
                 >
                     Standard
@@ -199,7 +199,7 @@ export function MapCoordinatePicker({
                     onClick={() => setIsSatellite(true)}
                     className={cn(
                         "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                        isSatellite ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"
+                        isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                     )}
                 >
                     Satellite
@@ -229,13 +229,13 @@ export function MapCoordinatePicker({
                 <div className="absolute h-10 w-[2px] bg-blue-500 -left-px top-[-20px]" />
                 <div className="absolute w-10 h-[2px] bg-blue-500 -top-px left-[-20px]" />
                 
-                <Crosshair className="relative w-8 h-8 text-white drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
+                <Crosshair className="relative w-8 h-8 text-foreground drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
               </div>
             </div>
 
             {/* Address Indicator Overlay */}
             <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
-              <div className="bg-zinc-950/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
+              <div className="bg-background/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
                   isFetchingAddress ? "bg-blue-500/10" : "bg-blue-500/20 shadow-lg shadow-blue-500/10"
@@ -249,26 +249,26 @@ export function MapCoordinatePicker({
                 <div className="flex flex-col gap-1 overflow-hidden">
                   <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Target Area Identity</span>
                   <p className={cn(
-                    "text-xs font-bold text-white truncate w-full transition-opacity duration-300",
+                    "text-xs font-bold text-foreground truncate w-full transition-opacity duration-300",
                     isFetchingAddress ? "opacity-50" : "opacity-100"
                   )}>
                     {address || "Locating coordinates..."}
                   </p>
                   <div className="flex items-center gap-3 mt-1 opacity-50">
-                    <span className="text-[9px] font-mono text-zinc-400">Precision Resolve Active</span>
+                    <span className="text-[9px] font-mono text-muted-foreground">Precision Resolve Active</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Coordinate Badge Overlay */}
-            <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-zinc-900/90 backdrop-blur-xl border border-white/10 shadow-2xl space-y-2">
+            <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-muted/90 backdrop-blur-xl border border-border/10 shadow-2xl space-y-2">
                 <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest w-8">Lat</span>
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lat</span>
                     <span className="text-xs font-mono text-blue-400 font-bold">{viewState.latitude.toFixed(10)}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest w-8">Lng</span>
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lng</span>
                     <span className="text-xs font-mono text-blue-400 font-bold">{viewState.longitude.toFixed(10)}</span>
                 </div>
             </div>
@@ -279,7 +279,7 @@ export function MapCoordinatePicker({
                     size="icon" 
                     variant="outline" 
                     onClick={() => mapRef.current?.zoomIn()}
-                    className="w-10 h-10 rounded-xl bg-zinc-900/90 backdrop-blur-xl border-white/10 text-white hover:bg-zinc-800"
+                    className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
                 >
                     <Plus className="w-5 h-5" />
                 </Button>
@@ -287,7 +287,7 @@ export function MapCoordinatePicker({
                     size="icon" 
                     variant="outline" 
                     onClick={() => mapRef.current?.zoomOut()}
-                    className="w-10 h-10 rounded-xl bg-zinc-900/90 backdrop-blur-xl border-white/10 text-white hover:bg-zinc-800"
+                    className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
                 >
                     <Minus className="w-5 h-5" />
                 </Button>
@@ -295,11 +295,11 @@ export function MapCoordinatePicker({
           </Map>
         </div>
 
-        <DialogFooter className="p-6 bg-zinc-900/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-4">
+        <DialogFooter className="p-6 bg-muted/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-4">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="h-12 px-6 rounded-2xl border border-border hover:bg-white/5 text-zinc-400 font-bold uppercase tracking-widest text-[10px] transition-all"
+            className="h-12 px-6 rounded-2xl border border-border hover:bg-card/5 text-muted-foreground font-bold uppercase tracking-widest text-[10px] transition-all"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel
@@ -307,7 +307,7 @@ export function MapCoordinatePicker({
           
           <Button 
             onClick={handleConfirm}
-            className="h-12 px-10 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/25 transition-all active:scale-95"
+            className="h-12 px-10 rounded-2xl bg-blue-600 hover:bg-blue-500 text-foreground font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/25 transition-all active:scale-95"
           >
             <Check className="w-4 h-4 mr-2" />
             Confirm Location

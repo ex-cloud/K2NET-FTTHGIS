@@ -192,10 +192,10 @@ export default function PaymentGatewayPage() {
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-zinc-100 tracking-tight">
+            <h1 className="text-2xl font-light text-foreground tracking-tight">
               Payment Gateway
             </h1>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               Urus integrasi pembayaran, kunci API Xendit, token webhook, serta sinkronisasi penagihan invoice.
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function PaymentGatewayPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-zinc-500">Memuat konfigurasi payment gateway...</p>
+            <p className="text-xs text-muted-foreground">Memuat konfigurasi payment gateway...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -215,21 +215,21 @@ export default function PaymentGatewayPage() {
               {/* Xendit Keys */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Kredensial Provider Xendit
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Kredensial API Key dan Token Webhook dari Dashboard Xendit untuk memvalidasi callback pembayaran.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="XENDIT_API_KEY" className="text-xs text-zinc-400">Xendit Secret API Key</Label>
+                      <Label htmlFor="XENDIT_API_KEY" className="text-xs text-muted-foreground">Xendit Secret API Key</Label>
                       <button
                         type="button"
                         onClick={() => setShowApiKey(!showApiKey)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showApiKey ? "Sembunyikan" : "Tampilkan"}
@@ -247,11 +247,11 @@ export default function PaymentGatewayPage() {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="XENDIT_WEBHOOK_KEY" className="text-xs text-zinc-400">Xendit Webhook Verification Key</Label>
+                      <Label htmlFor="XENDIT_WEBHOOK_KEY" className="text-xs text-muted-foreground">Xendit Webhook Verification Key</Label>
                       <button
                         type="button"
                         onClick={() => setShowWebhookKey(!showWebhookKey)}
-                        className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1"
+                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
                       >
                         {showWebhookKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         {showWebhookKey ? "Sembunyikan" : "Tampilkan"}
@@ -272,16 +272,16 @@ export default function PaymentGatewayPage() {
               {/* Core System Integration */}
               <Card className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Integrasi Core System
                   </CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Endpoint API Core System (Spring Boot) yang digunakan untuk sinkronisasi status tagihan setelah pembayaran sukses.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="CORE_API_URL" className="text-xs text-zinc-400">Core System Base URL</Label>
+                    <Label htmlFor="CORE_API_URL" className="text-xs text-muted-foreground">Core System Base URL</Label>
                     <Input
                       id="CORE_API_URL"
                       type="text"
@@ -322,8 +322,8 @@ export default function PaymentGatewayPage() {
               {/* Reconciliation Panel */}
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
-                  <CardDescription className="text-[10px] text-zinc-500">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
+                  <CardDescription className="text-[10px] text-muted-foreground">
                     Picunya peninjauan status manual ke API Xendit jika webhook tertunda atau terlewat.
                   </CardDescription>
                 </CardHeader>
@@ -333,12 +333,12 @@ export default function PaymentGatewayPage() {
                     onClick={handleReconciliation}
                     disabled={reconciling}
                     variant="outline"
-                    className="w-full border-white/10 hover:border-primary/30 bg-zinc-950 text-zinc-300 hover:text-zinc-100 text-xs gap-2 transition-all py-5"
+                    className="w-full border-border/10 hover:border-primary/30 bg-background text-muted-foreground hover:text-foreground text-xs gap-2 transition-all py-5"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-primary" : ""}`} />
                     Trigger Reconciliation
                   </Button>
-                  <div className="flex items-center gap-2 text-[9px] text-zinc-500">
+                  <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
                     <Clock className="w-3.5 h-3.5" />
                     <span>Terakhir berjalan otomatis: 15 menit yang lalu</span>
                   </div>
@@ -348,9 +348,9 @@ export default function PaymentGatewayPage() {
               {/* Transactions list */}
               <Card className="bg-card border-border shadow-xl">
                 <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Transaksi Terkini
-                    {txLoading && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                    {txLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -361,20 +361,20 @@ export default function PaymentGatewayPage() {
                       ))}
                     </div>
                   ) : transactions.length === 0 ? (
-                    <p className="text-[10px] text-zinc-600 text-center py-4">Belum ada riwayat transaksi.</p>
+                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada riwayat transaksi.</p>
                   ) : (
                     transactions.map((tx) => (
                       <div key={tx.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-zinc-200 truncate max-w-[140px] font-mono">
+                          <span className="text-xs font-medium text-foreground truncate max-w-[140px] font-mono">
                             {tx.externalId.split(":").pop()?.slice(0, 12)}
                           </span>
-                          <span className="text-xs text-zinc-400 font-mono">
+                          <span className="text-xs text-muted-foreground font-mono">
                             Rp {tx.amount.toLocaleString("id-ID")}
                           </span>
                         </div>
                         
-                        <div className="flex justify-between items-center text-[9px] text-zinc-500">
+                        <div className="flex justify-between items-center text-[9px] text-muted-foreground">
                           <span>Org: {tx.orgSlug} ({tx.planName})</span>
                           <div className="flex items-center gap-1.5">
                             <Badge className={`text-[8px] px-1 py-0 border ${

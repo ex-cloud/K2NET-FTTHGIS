@@ -35,7 +35,7 @@ export function UserStats({ stats }: UserStatsProps) {
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             <span>Active Now</span>
-            <UserCheck className="w-3.5 h-3.5 text-primary group-hover:text-emerald-300 transition-colors" />
+            <UserCheck className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
           </CardDescription>
           <CardTitle className="mt-1 text-2xl font-bold text-primary">
             {stats?.activeUsers.toLocaleString() || "0"}

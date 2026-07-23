@@ -159,8 +159,8 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
         <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-inner">
           <AlertCircle className="w-8 h-8 text-red-500 animate-pulse" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2.5">Halaman Login Ditangguhkan</h2>
-        <p className="text-xs text-zinc-400 leading-relaxed mb-8 max-w-sm mx-auto">
+        <h2 className="text-xl font-bold text-foreground mb-2.5">Halaman Login Ditangguhkan</h2>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-8 max-w-sm mx-auto">
           Terlalu banyak percobaan masuk yang tidak sah dari perangkat atau koneksi ini. Halaman login ditangguhkan sementara selama {hours} jam ke depan untuk alasan keamanan sistem.
         </p>
         <Button 
@@ -170,7 +170,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
               window.location.reload();
             }
           }} 
-          className="w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-white transition-all shadow-lg font-semibold"
+          className="w-full h-11 bg-muted hover:bg-muted/80 text-foreground transition-all shadow-lg font-semibold border border-border"
         >
           Coba Muat Ulang Halaman
         </Button>
@@ -186,8 +186,8 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
         <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-inner">
           <AlertCircle className="w-8 h-8 text-red-500 animate-pulse" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2.5">Akses Ditolak</h2>
-        <p className="text-xs text-zinc-400 leading-relaxed mb-8 max-w-sm mx-auto">
+        <h2 className="text-xl font-bold text-foreground mb-2.5">Akses Ditolak</h2>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-8 max-w-sm mx-auto">
           Akun Google Anda belum terdaftar di platform FTTH GIS. Silakan hubungi Administrator atau Owner organisasi Anda untuk mendapatkan undangan akses bergabung.
         </p>
         <Button 
@@ -198,7 +198,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
               window.location.href = keycloakLogoutUrl;
             }
           }} 
-          className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/95 text-white transition-all shadow-lg font-semibold"
+          className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/95 text-foreground transition-all shadow-lg font-semibold"
         >
           Kembali ke Halaman Login
         </Button>
@@ -233,7 +233,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
               type="button"
               variant="outline"
               onClick={handleSSOLogin}
-              className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+              className="w-full h-11 bg-muted border-border hover:bg-muted/80 text-foreground flex items-center justify-center gap-2 transition-all"
             >
               <Key className="w-4 h-4 text-primary" />
               Continue with SSO Keycloak
@@ -245,7 +245,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
                 type="button"
                 variant="outline"
                 onClick={() => handleSocialLogin("github")}
-                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+                className="w-full h-11 bg-muted border-border hover:bg-muted/80 text-foreground flex items-center justify-center gap-2 transition-all"
               >
                 <Github className="w-4 h-4" />
                 Continue with GitHub
@@ -255,9 +255,9 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
                 type="button"
                 variant="outline"
                 onClick={() => handleSocialLogin("google")}
-                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all"
+                className="w-full h-11 bg-muted border-border hover:bg-muted/80 text-foreground flex items-center justify-center gap-2 transition-all"
               >
-                <Chrome className="w-4 h-4 text-zinc-100" />
+                <Chrome className="w-4 h-4 text-foreground" />
                 Continue with Google
               </Button>
 
@@ -265,7 +265,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
                 type="button"
                 variant="outline"
                 onClick={handleSSOLogin}
-                className="w-full h-11 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-zinc-100 hover:text-white flex items-center justify-center gap-2 transition-all opacity-85"
+                className="w-full h-11 bg-muted border-border hover:bg-muted/80 text-foreground flex items-center justify-center gap-2 transition-all opacity-85"
               >
                 <Key className="w-4 h-4" />
                 Continue with SSO Keycloak
@@ -276,9 +276,9 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
 
         {/* Beautiful Or Divider */}
         <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-zinc-800/80"></div>
-          <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-wider font-bold">or</span>
-          <div className="flex-grow border-t border-zinc-800/80"></div>
+          <div className="flex-grow border-t border-border"></div>
+          <span className="flex-shrink mx-4 text-muted-foreground text-[10px] uppercase tracking-wider font-bold">or</span>
+          <div className="flex-grow border-t border-border"></div>
         </div>
 
         {!effectiveIsAdmin && !detectedSubdomain && (

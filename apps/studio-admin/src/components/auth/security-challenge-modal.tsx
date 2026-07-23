@@ -92,7 +92,7 @@ export function SecurityChallengeModal({
         <form onSubmit={handleVerify} className="p-6 pt-2 space-y-4">
           <div className="space-y-2">
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-600" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input 
                 type="password"
                 value={password}
@@ -117,14 +117,14 @@ export function SecurityChallengeModal({
               type="button"
               variant="ghost" 
               onClick={() => onOpenChange(false)}
-              className="flex-1 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-900 h-10"
+              className="flex-1 text-muted-foreground hover:text-foreground hover:bg-muted h-10"
             >
               Cancel
             </Button>
             <Button 
               type="submit"
               disabled={isVerifying || !password}
-              className="flex-1 bg-zinc-100 hover:bg-white text-black font-semibold h-10 shadow-lg shadow-white/5"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-10 shadow-lg"
             >
               {isVerifying ? (
                 <>

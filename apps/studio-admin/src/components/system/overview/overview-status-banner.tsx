@@ -19,13 +19,13 @@ export function OverviewStatusBanner({
 
   if (globalHealthState === "operational") {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-emerald-500/5 p-4 transition-all duration-300">
+      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 transition-all duration-300">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
           <CheckCircle2 className="h-5 w-5 text-primary" />
         </div>
         <div>
           <h4 className="text-xs font-semibold text-primary">All Core Services Operational</h4>
-          <p className="mt-0.5 text-[10px] text-zinc-400">
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
             Tenant routing, authentication, and GIS services are currently operating within normal parameters.
           </p>
         </div>
@@ -41,7 +41,7 @@ export function OverviewStatusBanner({
         </div>
         <div>
           <h4 className="text-xs font-semibold text-amber-400">Some Gateways Offline</h4>
-          <p className="mt-0.5 text-[10px] text-zinc-400">
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
             Only {activeGatewaysCount}/{totalGatewaysCount} gateways are currently responding. Certain platform services
             may be partially degraded.
           </p>
@@ -57,7 +57,7 @@ export function OverviewStatusBanner({
       </div>
       <div>
         <h4 className="text-xs font-semibold text-red-400">All Microservice Gateways Down</h4>
-        <p className="mt-0.5 text-[10px] text-zinc-400">
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
           The platform is currently reporting a critical gateway outage. Immediate infrastructure review is advised.
         </p>
       </div>

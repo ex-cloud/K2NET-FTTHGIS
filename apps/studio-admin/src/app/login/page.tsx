@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/10 border border-primary/20">
               <ShieldCheck className="h-3.5 w-3.5 text-primary" />
             </div>
-            <span className="text-xs font-semibold tracking-wider uppercase text-zinc-100 font-mono">
+            <span className="text-xs font-semibold tracking-wider uppercase text-foreground font-mono">
               FTTH GIS Portal
             </span>
           </div>
@@ -58,14 +58,14 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Bottom Footer Row */}
-        <div className="text-[10px] text-zinc-500 z-20 flex flex-col gap-2 border-t border-zinc-900 pt-6">
+        <div className="text-[10px] text-muted-foreground z-20 flex flex-col gap-2 border-t border-border pt-6">
           <p>
             By continuing, you agree to FTTH GIS&apos;s{" "}
-            <a href="#" className="underline hover:text-zinc-300">Terms of Service</a>{" "}
+            <a href="#" className="underline hover:text-muted-foreground">Terms of Service</a>{" "}
             and{" "}
-            <a href="#" className="underline hover:text-zinc-300">Privacy Policy</a>.
+            <a href="#" className="underline hover:text-muted-foreground">Privacy Policy</a>.
           </p>
-          <p className="font-mono text-[9px] text-zinc-600">
+          <p className="font-mono text-[9px] text-muted-foreground/60">
             © 2026 K2NET Enterprise SaaS Platform.
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
         
         {/* Subtle Ambient Glowing Spots */}
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-zinc-800/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-muted/10 rounded-full blur-3xl" />
 
         {/* Grid pattern background overlay */}
         <div
@@ -91,17 +91,17 @@ export default function AdminLoginPage() {
         <div className="max-w-md w-full z-10 space-y-6">
           <Quote className="h-8 w-8 text-primary/80 transform rotate-180" />
           
-          <blockquote className="text-xl font-light text-zinc-100 leading-relaxed font-sans">
+          <blockquote className="text-xl font-light text-foreground leading-relaxed font-sans">
             &ldquo;Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.&rdquo;
           </blockquote>
 
           <div className="flex items-center gap-3 pt-2">
-            <div className="relative h-9 w-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 font-bold font-mono text-xs shadow-md">
+            <div className="relative h-9 w-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground font-bold font-mono text-xs shadow-md">
               A
             </div>
             <div>
-              <p className="text-xs font-semibold text-zinc-200">Andiansyah</p>
-              <p className="text-[10px] text-zinc-500 font-mono">Chief Technology Officer, K2NET</p>
+              <p className="text-xs font-semibold text-foreground">Andiansyah</p>
+              <p className="text-[10px] text-muted-foreground font-mono">Chief Technology Officer, K2NET</p>
             </div>
           </div>
         </div>

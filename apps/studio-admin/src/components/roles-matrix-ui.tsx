@@ -235,7 +235,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 bg-zinc-950/20 rounded-xl border border-zinc-900">
+      <div className="flex items-center justify-center h-64 bg-card/20 rounded-xl border border-border">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -513,7 +513,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                       }
                     }}
                     disabled={saving === role.id}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded-lg transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-foreground text-xs font-semibold rounded-lg transition-all"
                   >
                     {saving === role.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Simpan Perubahan Role Ini
@@ -558,7 +558,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                   await fetchData();
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all font-semibold"
+              className="bg-blue-600 hover:bg-blue-500 text-foreground shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all font-semibold"
             >
               Continue & Save
             </Button>
