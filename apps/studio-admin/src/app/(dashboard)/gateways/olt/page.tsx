@@ -64,6 +64,18 @@ export default function OltGatewayPage() {
     }
   };
 
+  const fetchOltDevices = async () => {
+    try {
+      setDevicesLoading(true);
+      const data = await getOltDevices();
+      setOltDevices(data);
+    } catch (err) {
+      console.error("Gagal memuat OLT devices:", err);
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConfig();
     fetchOltDevices();
@@ -135,18 +147,7 @@ export default function OltGatewayPage() {
     }
   };
 
-  const fetchOltDevices = async () => {
-    try {
-      setDevicesLoading(true);
-      const data = await getOltDevices();
-      setOltDevices(data);
 
-    } catch (err) {
-      console.error("Gagal memuat OLT devices:", err);
-    } finally {
-      setDevicesLoading(false);
-    }
-  };
 
   // OLT devices loaded dynamically from getOltDevices()
 

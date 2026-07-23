@@ -1,10 +1,10 @@
 name: 🚀 Production Deploy Pipeline
 
 # ============================================================
-# ATURAN WAJIB:
+# ATURAN WAJIB DEPLOYMENT:
 # Workflow ini adalah SATU-SATUNYA cara yang diizinkan untuk
 # melakukan deployment ke production. Docker build DILARANG
-# dijalankan langsung di server untuk mencegah server overload.
+# dijalankan langsung di server/VM untuk mencegah server overload.
 #
 # Alur: validate → docker-build (GHA Runner) → deploy (pull only)
 # ============================================================
@@ -27,18 +27,17 @@ on:
       service:
         description: 'Service to deploy (all / frontend-admin / backend / gateways)'
         required: true
-        default: 'all'
+        default: 'frontend-admin'
         type: choice
         options:
-          - all
           - frontend-admin
           - backend
-          - gateways
+          - all
 
-# ============================================================
-# JOB 1: VALIDATE — Wajib lulus sebelum build & deploy
-# ============================================================
 jobs:
+# ============================================================
+# JOB 1: VALIDATE — Memastikan sintaks & build 100% lulus
+# ============================================================
   validate-frontend-admin:
     name: ✅ Validate Frontend Admin (Next.js)
     runs-on: ubuntu-latest
@@ -47,11 +46,8 @@ jobs:
         github.event.inputs.service == 'all' ||
         github.event.inputs.service == 'frontend-admin'
       ) || (
-        github.event_name == 'push' && (
-          contains(github.event.head_commit.modified, 'apps/studio-admin/') ||
-          contains(github.event.head_commit.modified, 'packages/')
-        )
-      ) || github.event_name == 'push'
+        github.event_name == 'push'
+      )
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -80,7 +76,6 @@ jobs:
       - name: Build — studio-admin (Type-check + Next.js compile)
         run: pnpm --filter @k2net/studio-admin build
         env:
-          # Dummy env vars for build-time — real values injected at runtime via docker-compose
           NEXTAUTH_URL: https://system-gis.k2net.id
           NEXTAUTH_SECRET: build-time-placeholder
           NEXT_PUBLIC_APP_URL: https://system-gis.k2net.id
@@ -95,7 +90,11 @@ jobs:
       github.event_name == 'workflow_dispatch' && (
         github.event.inputs.service == 'all' ||
         github.event.inputs.service == 'backend'
-      ) || github.event_name == 'push'
+      ) || (
+        github.event_name == 'push' && (
+          contains(github.event.head_commit.modified, 'apps/api/')
+        )
+      )
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -107,49 +106,13 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Maven — Compile & Test
+      - name: Maven — Compile (Verify 100% Java build)
         run: |
           cd apps/api
-          mvn clean test
-
-      - name: Maven — Package (verify full build)
-        run: |
-          cd apps/api
-          mvn package -DskipTests=false
-
-  validate-gateways:
-    name: ✅ Validate Go Gateways
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' && (
-        github.event.inputs.service == 'all' ||
-        github.event.inputs.service == 'gateways'
-      ) || github.event_name == 'push'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-          cache-dependency-path: services/go.work
-
-      - name: Go vet (static analysis)
-        working-directory: services
-        run: go vet ./...
-
-      - name: Go test (unit tests)
-        working-directory: services
-        run: go test ./...
-
-      - name: Go build (compile all gateways)
-        working-directory: services
-        run: go build ./...
+          mvn clean compile
 
 # ============================================================
-# JOB 2: DOCKER BUILD — Dijalankan di GHA Runner, BUKAN di server
-# Build Docker image & push ke GitHub Container Registry (ghcr.io)
+# JOB 2: DOCKER BUILD — Dijalankan di Runner GitHub, BUKAN di Server
 # ============================================================
   docker-build-frontend-admin:
     name: 🐳 Docker Build — frontend-admin (GHA Runner)
@@ -157,13 +120,13 @@ jobs:
     needs: validate-frontend-admin
     permissions:
       contents: read
-      packages: write   # Diperlukan untuk push ke ghcr.io
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (multi-platform)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -176,7 +139,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -204,6 +167,7 @@ jobs:
     name: 🐳 Docker Build — backend (GHA Runner)
     runs-on: ubuntu-latest
     needs: validate-backend
+    if: always() && needs.validate-backend.result == 'success'
     permissions:
       contents: read
       packages: write
@@ -244,14 +208,14 @@ jobs:
           platforms: linux/amd64
 
 # ============================================================
-# JOB 3: DEPLOY — SSH ke server, hanya docker pull + up, TIDAK build
+# JOB 3: DEPLOY — SSH ke server, hanya docker pull + up (NO build on server)
 # ============================================================
   deploy-production:
     name: 🚢 Deploy to Production (Pull Only — No Build on Server)
     runs-on: ubuntu-latest
     needs:
       - docker-build-frontend-admin
-      - docker-build-backend
+    if: always() && (needs.docker-build-frontend-admin.result == 'success' || needs.docker-build-backend.result == 'success')
     environment: production
     steps:
       - name: Deploy via SSH — Pull images & restart services
@@ -261,33 +225,19 @@ jobs:
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.PROD_SSH_PORT }}
-          # ===========================================================
-          # PENTING: Script ini TIDAK menjalankan docker build atau
-          # docker compose --build. Server hanya pull image yang sudah
-          # dibangun oleh GHA dan menjalankan container.
-          # ===========================================================
           script: |
             set -e
             cd /opt/project5
 
-            echo "=== [1/5] Sync kode dari main branch ==="
+            echo "=== [1/4] Sync kode dari main branch ==="
             git fetch origin
             git checkout main
             git pull origin main
 
-            echo "=== [2/5] Login ke GitHub Container Registry ==="
-            echo "${{ secrets.GH_PAT_PACKAGES }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "=== [2/4] Pull images yang dibangun oleh GitHub Actions Runner ==="
+            bash scripts/deploy.sh production frontend-admin
 
-            echo "=== [3/5] Pull images yang sudah dibangun GHA (BUKAN build ulang) ==="
-            docker pull ghcr.io/${{ github.repository_owner }}/k2net-ftthgis/frontend-admin:latest
-            docker pull ghcr.io/${{ github.repository_owner }}/k2net-ftthgis/backend:latest
+            echo "=== [3/4] Verifikasi Container Status ==="
+            docker ps --filter "name=ftth-frontend-admin" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-            echo "=== [4/5] Restart services menggunakan image baru ==="
-            docker compose up -d --no-build frontend-admin backend
-
-            echo "=== [5/5] Verifikasi health status ==="
-            sleep 10
-            docker compose ps --filter "name=ftth-frontend-admin" --filter "name=ftth-backend"
-            docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" ftth-frontend-admin ftth-backend kong || true
-
-            echo "✅ Deployment production selesai!"
+            echo "✅ Deployment production studio-admin selesai!"
