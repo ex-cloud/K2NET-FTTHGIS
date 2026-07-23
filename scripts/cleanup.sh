@@ -102,6 +102,62 @@ elif [ "$DRY_RUN" = true ]; then
   log "   [DRY RUN] Akan hapus $UNUSED_VOLUMES volume."
 fi
 
+# 1e. Truncate file log container Docker yang membengkak (> 10MB)
+log "🗑️  Memeriksa log container Docker yang membengkak (>10MB)..."
+LARGE_LOGS=$(find /var/lib/docker/containers -name "*-json.log" -size +10M 2>/dev/null || true)
+LARGE_LOG_COUNT=$(echo "$LARGE_LOGS" | grep -v '^$' | wc -l || echo 0)
+log "   Ditemukan $LARGE_LOG_COUNT container log file > 10MB"
+if [ "$DRY_RUN" = false ] && [ "$LARGE_LOG_COUNT" -gt 0 ]; then
+  for log_path in $LARGE_LOGS; do
+    log "   Truncating log: $log_path"
+    truncate -s 0 "$log_path" 2>/dev/null || true
+  done
+  log "   ✅ Log container besar telah di-truncate."
+elif [ "$DRY_RUN" = true ] && [ "$LARGE_LOG_COUNT" -gt 0 ]; then
+  log "   [DRY RUN] Akan truncate $LARGE_LOG_COUNT file log container > 10MB."
+fi
+
+# 1f. Kong Memory Guard — Flush memory jika RAM Kong > 450MB
+KONG_CONTAINER=$(docker ps -q --filter "name=kong" 2>/dev/null || true)
+if [ -n "$KONG_CONTAINER" ]; then
+  KONG_MEM_RAW=$(docker stats --no-stream --format "{{.MemUsage}}" kong 2>/dev/null | awk '{print $1}' || echo "0")
+  log "🛡️  Kong Memory Guard — Memori Kong saat ini: $KONG_MEM_RAW"
+  if [[ "$KONG_MEM_RAW" =~ ([0-9]+)(\.[0-9]+)?MiB ]] && [ "${BASH_REMATCH[1]}" -gt 420 ]; then
+    log "   ⚠️  Kong RAM di atas 420MiB — merekstrak restart untuk flush worker socket broker..."
+    if [ "$DRY_RUN" = false ]; then
+      docker restart kong >> "$LOG_FILE" 2>&1 || true
+      log "   ✅ Container Kong berhasil direstart & RAM ter-flush."
+    else
+      log "   [DRY RUN] Akan restart container Kong untuk flush RAM."
+    fi
+  fi
+fi
+
+# 1g. Zombie & Defunct Process Cleanup Guard
+ZOMBIE_COUNT=$(ps aux 2>/dev/null | awk '{if ($8 ~ /Z/) print $0}' | wc -l || echo 0)
+log "🧟 Zombie/Defunct processes di Host: $ZOMBIE_COUNT"
+if [ "$ZOMBIE_COUNT" -gt 3 ]; then
+  log "   ⚠️  Terdeteksi $ZOMBIE_COUNT zombie processes. Membersihkan zombie via Next.js container restart..."
+  if [ "$DRY_RUN" = false ]; then
+    docker restart ftth-frontend-admin ftth-frontend >> "$LOG_FILE" 2>&1 || true
+    log "   ✅ Next.js frontend containers restarted — zombie reaped."
+  fi
+fi
+
+# 1h. OS Memory Page Cache Release (jika RAM terpakai > 85%)
+FREE_MEM_PCT=$(free | awk '/Mem:/ {printf "%.0f", $3/$2 * 100}')
+log "💾 Total penggunaan RAM OS saat ini: ${FREE_MEM_PCT}%"
+if [ "$FREE_MEM_PCT" -gt 85 ]; then
+  log "   ⚠️  RAM OS > 85% — Melepas pagecache, dentries, & inodes..."
+  if [ "$DRY_RUN" = false ]; then
+    sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+    log "   ✅ OS PageCache dropped & RAM dilepas."
+  else
+    log "   [DRY RUN] Akan drop OS page cache (echo 3 > drop_caches)."
+  fi
+fi
+
+
 # ==============================================================================
 # BAGIAN 2: BUILD ARTIFACTS & CACHE DEVELOPMENT TOOLS
 # ==============================================================================

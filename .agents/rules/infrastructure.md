@@ -48,3 +48,28 @@ Keycloak mengelola otentikasi pengguna global dan tenant.
 
 * **Pembersihan Cache NPM/PNPM**: Saat melakukan pembaruan pada paket `@k2net/design-system` atau `@k2net/ui`, proses build Docker **wajib** menyertakan argumen `--no-cache` pada container frontend bersangkutan (contoh: `docker compose build --no-cache frontend-admin` atau `docker compose build --no-cache frontend-tenant`).
 * **Siklus Dependensi Kontainer**: Saat kontainer frontend diperbarui, pastikan reverse proxy **Traefik** dan **Kong API Gateway** dalam kondisi aktif terlebih dahulu untuk menghindari kegagalan otentikasi NextAuth saat kontainer baru melakukan booting awal.
+
+---
+
+## ⚡ 7. Aturan Mitigasi Server Overload & Pengelolaan Memori Host
+
+Untuk mencegah insiden CPU spike (`load average > 30`) dan RAM OOM (`8GB` limit), seluruh konfigurasi kontainer dan pemeliharaan server **wajib** mematuhi aturan berikut:
+
+1. **Kong API Gateway Resource Limit**:
+   - Limit RAM Kong **minimal 1024M** (1G). Batas `512M` terbukti menyebabkan *broker socket timeout* (`broker.lua:235`) dan *disk I/O thrashing* hingga 4.84TB.
+   - Script pemeliharaan `/opt/project5/scripts/cleanup.sh` memiliki **Kong Memory Guard** otomatis yang merekstrak restart Kong apabila pemakaian RAM melebihi 420MiB.
+
+2. **Mitigasi Zombie Processes (Docker Healthcheck)**:
+   - Dilarang keras menggunakan `CMD-SHELL` dengan `wget --spider` berfrekuensi tinggi (30s) pada container Next.js tanpa init process. Ini menyebabkan akumulasi child process `zombie` (`<defunct>`).
+   - Gunakan format array `["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/login"]` dengan interval minimal **60s**.
+
+3. **Keycloak Production vs Dev Mode**:
+   - Mode `start-dev` hanya untuk lokal dev. Di server produksi, Keycloak wajib dikonfigurasi dengan cache `local` dan level log `WARN` untuk menghindari overhead query DB berulang pada setiap refresh token NextAuth.
+
+4. **Docker Log Truncation & Cleanup Maintenance**:
+   - Pemeliharaan rutin via `/opt/project5/scripts/cleanup.sh` mencakup:
+     - **Truncation log container > 10MB**
+     - **Kong Memory Guard** (restart otomatis saat RAM > 420MB)
+     - **Reaping zombie process**
+     - **OS PageCache release** (`drop_caches`) saat RAM Host > 85%
+

@@ -92,6 +92,31 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 ---
 
 ## 🧠 Pembelajaran Masalah Terselesaikan (Knowledge Base)
+
+### Infrastruktur & Jaringan
 - **MinIO Connection**: Akses menggunakan Tailscale IP `100.110.205.109:9005`. Jangan gunakan `localhost:9005`.
 - **Prometheus Port go-poller**: Port scrape yang benar untuk poller metrics adalah `ftth-poller:5010` (bukan 9091).
 - **Traefik Proxy poller**: Routing `/poller` di Traefik dynamic service mengarah ke internal container `http://ftth-poller:5010` (bukan host.docker.internal).
+
+### UI Compliance — Hardcoded Color Refactoring (Juli 2026)
+- **Root Cause Bug Light Mode**: Penggunaan `text-zinc-*`, `bg-zinc-*`, `text-white`, dan `bg-emerald-*` di komponen menyebabkan teks tidak terbaca dan card tetap gelap di Light Mode. Solusi: migrasi 100% ke token semantik (`text-foreground`, `bg-card`, `text-primary`, `border-border`, dsb.).
+- **Cheat Sheet Migrasi**: Lihat [rules/styles.md](file:///opt/project5/.agents/rules/styles.md) Seksi 3 untuk tabel pemetaan lengkap semua class hardcoded ke token semantik.
+- **Perintah Audit**: `grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white\|bg-emerald-\|text-emerald-" apps/studio-admin/src --include="*.tsx" --include="*.ts" | wc -l` — Target: **0** sebelum commit.
+- **globals.css Safety Net**: File `apps/studio-admin/src/app/globals.css` mengandung selektor `.light` yang memetakan kelas `zinc-*` ke nilai Light Mode sebagai fallback terakhir. Ini **bukan** pengganti migrasi komponen.
+- **Scope Refactoring**: Sesi Juli 2026 berhasil memigrasi **918 pelanggaran** di 55+ file di `apps/studio-admin`. `apps/studio` (baseline tenant) tidak diubah.
+
+### UI Compliance — Skeleton Loading Architecture (Juli 2026)
+- **Pattern**: Seluruh komponen skeleton dibuat sebagai shared di `packages/ui/src/components/skeletons.tsx` — bukan hardcoded per-halaman. Setiap `loading.tsx` di route hanya menjadi thin wrapper 3 baris mengimpor dari `@k2net/ui`.
+- **Komponen tersedia**: `PageHeaderSkeleton`, `DashboardPageSkeleton`, `TablePageSkeleton`, `FormPageSkeleton`, `CardGridSkeleton` — semua diekspor dari `@k2net/ui`.
+- **Verifikasi coverage**: `find apps/studio-admin/src/app -name "loading.tsx" | wc -l` → harus ≥ 25.
+- **Reuse**: `studio-tenant` dapat mengimpor skeleton yang sama dari `@k2net/ui` di fase berikutnya tanpa duplikasi.
+
+### UI Compliance — TracingBeam (Juli 2026)
+- **Penggunaan**: Bungkus halaman berkonten panjang (settings, compliance, password-policy) dengan `<TracingBeam className="px-4">` dari `@k2net/ui`.
+- **Padding dalam**: Tambahkan `pl-4 md:pl-10` pada container dalam `<TracingBeam>` agar garis SVG beam tidak menimpa sisi kiri konten card/form.
+
+### Docker Build & Deployment
+- **Build Time**: `docker compose build --no-cache frontend-admin` memerlukan sekitar **5-6 menit** (328s pada mesin produksi). Gunakan `docker images project5-frontend-admin --format "table {{.CreatedAt}}"` untuk verifikasi image terbaru sudah terbuild.
+- **Server Restart Risk**: Background task Docker build **akan terpotong** jika server restart. Selalu verifikasi timestamp image setelah deployment: jika `CreatedAt` tidak sesuai waktu build terbaru, perlu build ulang.
+- **Deploy Command Urutan**: `docker compose build --no-cache frontend-admin` → `docker compose up -d frontend-admin` (jangan jalankan `up` sebelum `build` selesai).
+
