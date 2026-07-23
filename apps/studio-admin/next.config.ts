@@ -6,6 +6,12 @@ const NOTIFICATION_GW_URL = process.env.NOTIFICATION_GATEWAY_URL || "http://loca
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+  transpilePackages: [
+    "@k2net/ui",
+    "@k2net/design-system",
+    "@k2net/auth",
+    "@k2net/types",
+  ],
   allowedDevOrigins: [
     "system.lvh.me",
     "localhost",
