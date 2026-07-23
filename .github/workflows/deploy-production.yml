@@ -67,8 +67,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Shared UI Package
-        run: pnpm --filter @k2net/ui build
+      - name: Build Shared Workspace Packages (@k2net/*)
+        run: pnpm --filter "@k2net/*" build
 
       - name: Lint — studio-admin
         run: pnpm --filter @k2net/studio-admin lint
