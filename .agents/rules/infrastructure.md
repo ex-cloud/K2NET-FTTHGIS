@@ -73,3 +73,49 @@ Untuk mencegah insiden CPU spike (`load average > 30`) dan RAM OOM (`8GB` limit)
      - **Reaping zombie process**
      - **OS PageCache release** (`drop_caches`) saat RAM Host > 85%
 
+---
+
+## 🏗️ 8. Alur CI/CD Wajib & Larangan Docker Build di Server Produksi
+
+> ⚠️ **ATURAN MUTLAK LEVEL 1 (CRITICAL)**: Dilarang keras memicu perintah `docker compose build --no-cache` atau `docker build` secara langsung di server/VM produksi. Proses pengompilasian Docker image membutuhkan CPU/RAM tinggi dan memicu server crash/overload.
+
+### Alur Deployment Berantai (Sequential 3-Job Pipeline):
+
+```
+Push / Merge ke `main` branch
+    │
+    ▼
+┌──────────────────────────────────────────────┐
+│ 1. Validasi Kode & Audit (GHA Runner)        │
+│  - pnpm --filter @k2net/studio-admin lint    │
+│  - pnpm --filter @k2net/studio-admin build   │
+│  - Audit hardcoded color regression          │
+│  - mvn test / go test                        │
+│  (Jika gagal → PIPELINE STOP, TIDAK DEPLOY)  │
+└──────────────────────────────────────────────┘
+    │ success
+    ▼
+┌──────────────────────────────────────────────┐
+│ 2. Docker Build & Push (GHA Runner)          │
+│  - Build docker image di compute GitHub      │
+│  - Push image ke ghcr.io/ex-cloud/...        │
+│  - Tag: :latest + :sha                       │
+│  (Server produksi 0% CPU overhead)          │
+└──────────────────────────────────────────────┘
+    │ success
+    ▼
+┌──────────────────────────────────────────────┐
+│ 3. Production Deploy (Server SSH)            │
+│  - git pull origin main                      │
+│  - docker pull ghcr.io/ex-cloud/...:latest   │
+│  - docker compose up -d --no-build           │
+│  - Verification health check                 │
+└──────────────────────────────────────────────┘
+```
+
+* File workflow utama: [deploy-production.yml](file:///opt/project5/.github/workflows/deploy-production.yml)
+* Target portal mapping di `scripts/deploy.sh`:
+  - `studio-admin` / `frontend-admin` → Portal Utama System Admin (Port 3001)
+  - `studio-tenant` / `frontend-tenant` → Portal Tenant (Port 3002)
+
+

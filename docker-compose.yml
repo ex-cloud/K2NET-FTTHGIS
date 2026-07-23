@@ -257,6 +257,7 @@ services:
 
   # Backend App Core
   backend:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/backend:latest
     build:
       context: ./apps/api
       dockerfile: Dockerfile
@@ -368,6 +369,7 @@ services:
 
   # Frontend Portal Utama (System Admin)
   frontend-admin:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest
     build:
       context: .
       dockerfile: apps/studio-admin/Dockerfile

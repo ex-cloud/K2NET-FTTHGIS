@@ -62,6 +62,22 @@ docker network inspect project5_default | grep -E '"Name"|"IPv4Address"' # Verif
 
 ---
 
+## 🚫 ATURAN MUTLAK DEPLOYMENT — TERLARANG BUILD DI SERVER
+
+> 🛑 **DILARANG KERAS**: Meminta agent atau mengosongkan/menjalankan perintah `docker compose build --no-cache` atau `docker build` langsung di server/VM produksi. Build Docker **WAJIB** dilakukan oleh GitHub Actions Runner (compute eksternal) untuk mencegah insiden server overload (Load Avg > 30).
+
+### Alur Deployment Produksi Wajib:
+1. Jalankan **Pre-Deployment Checklist** di atas secara lokal / di sandbox environment.
+2. Push commit ke branch `main`.
+3. GitHub Actions (`.github/workflows/deploy-production.yml`) akan:
+   - **Job 1 (Validate)**: Linting, type-checking, test suite, dan audit anti-regression.
+   - **Job 2 (Docker Build)**: Build Docker image di runner GitHub dan push ke `ghcr.io`.
+   - **Job 3 (Deploy)**: Trigger SSH ke server untuk `docker pull` + `docker compose up -d --no-build`.
+
+---
+
+---
+
 ## 🌐 Aturan Komunikasi Jaringan & IP Docker (Docker IP Rules)
 
 1. **Dilarang Hardcode IP Internal (`172.18.0.x`)**: Seluruh inter-service communication wajib menggunakan **Container/Service Hostname** (`http://backend:9090`, `http://ftth-postgres:5432`, `http://keycloak:8081`, `http://ftth-poller:5010`). IP internal Docker bersifat dinamis dan dapat berubah setiap kali kontainer di-recreate.

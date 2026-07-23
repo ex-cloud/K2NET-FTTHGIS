@@ -51,11 +51,16 @@ echo "Git Commit: $NEXT_PUBLIC_GIT_COMMIT"
 # Build and start services
 echo "Rebuilding and restarting services..."
 
+# Target service mapping
 TARGET_SERVICE=""
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
     if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
       TARGET_SERVICE="backend-staging"
+    elif [ "$2" = "frontend-admin" ] || [ "$2" = "studio-admin" ]; then
+      TARGET_SERVICE="frontend-admin-staging"
+    elif [ "$2" = "frontend-tenant" ] || [ "$2" = "studio-tenant" ]; then
+      TARGET_SERVICE="frontend-tenant-staging"
     elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
       TARGET_SERVICE="frontend-staging"
     else
@@ -64,6 +69,10 @@ if [ -n "$2" ]; then
   else
     if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
       TARGET_SERVICE="backend"
+    elif [ "$2" = "frontend-admin" ] || [ "$2" = "studio-admin" ]; then
+      TARGET_SERVICE="frontend-admin"
+    elif [ "$2" = "frontend-tenant" ] || [ "$2" = "studio-tenant" ]; then
+      TARGET_SERVICE="frontend-tenant"
     elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
       TARGET_SERVICE="frontend"
     else
@@ -72,11 +81,30 @@ if [ -n "$2" ]; then
   fi
 fi
 
-if [ -n "$TARGET_SERVICE" ]; then
-  echo "Targeting service: $TARGET_SERVICE"
-  BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build $TARGET_SERVICE"
+if [ "$ENV" = "production" ]; then
+  echo "🔒 Production Mode: Pulling pre-built Docker images from ghcr.io (NO build on server)..."
+  if [ "$TARGET_SERVICE" = "frontend-admin" ]; then
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
+  elif [ "$TARGET_SERVICE" = "backend" ]; then
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
+  else
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
+  fi
+
+  if [ -n "$TARGET_SERVICE" ]; then
+    echo "Starting service: $TARGET_SERVICE"
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build $TARGET_SERVICE"
+  else
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build"
+  fi
 else
-  BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build"
+  if [ -n "$TARGET_SERVICE" ]; then
+    echo "Targeting service: $TARGET_SERVICE"
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build $TARGET_SERVICE"
+  else
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build"
+  fi
 fi
 
 if $BUILD_CMD; then
