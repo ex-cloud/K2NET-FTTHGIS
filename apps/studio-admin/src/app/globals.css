@@ -2,8 +2,8 @@
 @import "tw-animate-css";
 @import "@k2net/design-system/theme.css";
 
-@source "../../../packages/ui/src/**/*.{ts,tsx}";
-@source "../../../packages/design-system/src/**/*.{ts,tsx,css}";
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../packages/design-system/src/**/*.{ts,tsx,css}";
 
 @custom-variant dark (&:is(.dark *));
 
