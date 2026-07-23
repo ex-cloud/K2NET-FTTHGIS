@@ -46,12 +46,12 @@ Menggunakan warna dasar putih/abu-abu bersih untuk visibilitas luar ruangan/lapa
 
 ### A. Kartu & Panel (Cards)
 * **Standardisasi Komponen Card Global (`@k2net/ui`)**:
-  * **Wajib**: Gunakan komponen `<Card>` dari paket `@k2net/ui`. Seluruh logika visual glassmorphism (`bg-card/80 dark:bg-card/60 backdrop-blur-xl border border-border rounded-xl`) sudah dikemas terpusat di `@k2net/ui`.
-  * **Efek Animasi Border Beam Berjalan (*Hover*)**: Untuk kartu interaktif atau kartu matriks dashboard, gunakan prop `animatedBeam` dan `beamColor`:
-    * `<Card animatedBeam beamColor="#3ecf8e">` (Aksen Hijau Primary)
-    * `<Card animatedBeam beamColor="#0ea5e9">` (Aksen Biru Sky - CPU/RAM/Metriks)
-    * `<Card animatedBeam beamColor="#8b5cf6">` (Aksen Ungu Violet - Security/Auth)
-    * `<Card animatedBeam beamColor="#14b8a6">` (Aksen Toska Teal - Gateway/Storage)
+  * **Wajib**: Gunakan komponen `<Card>` dari paket `@k2net/ui`. Seluruh logika visual glassmorphism (`bg-card/60 dark:bg-card/45 backdrop-blur-xl border border-border rounded-xl`) sudah dikemas terpusat di `@k2net/ui`.
+  * **Efek GlowingEffect (Mouse-Tracking Cursor Glow)**: Untuk kartu interaktif atau kartu matriks dashboard, gunakan prop `glowingEffect` (⚠️ menggantikan `animatedBeam` yang sudah dihapus):
+    * `<Card glowingEffect>` — Mengaktifkan efek glow yang mengikuti posisi kursor via lerp rAF
+    * Prop `glowingEffect` secara otomatis **menonaktifkan** `hover:border-*` dan `hover:shadow-*` agar tidak terjadi double-efek
+    * **DILARANG**: `<Card animatedBeam>` atau `<Card beamColor="...">` — props ini sudah **dihapus total**
+  * **TracingBeam**: Untuk konten timeline/wizard panjang, gunakan `<TracingBeam>` dari `@k2net/ui` sebagai wrapper scroll-linked SVG beam.
   * **Larangan Hardcode Style**: Dilarang membuat wrapper HTML/CSS kartu secara independen per halaman. Panggil komponen terpusat dari `@k2net/ui` agar berlaku konsisten di `studio-admin` maupun `studio-tenant`.
 * **Radius Sudut (Rounded)**: Selalu gunakan `rounded-xl` (12px) untuk Card Utama, dan `rounded-md` (6px) untuk komponen kecil.
 * **Pulsing Dot**: Untuk indikator status ONLINE, gunakan dot kecil dengan pulse menggunakan primary token:
