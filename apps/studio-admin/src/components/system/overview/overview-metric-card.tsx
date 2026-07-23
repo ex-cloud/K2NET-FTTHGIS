@@ -26,7 +26,7 @@ export function OverviewMetricCard({
     : "#3ecf8e"; // Default Primary Green
 
   return (
-    <Card animatedBeam beamColor={beamColor}>
+    <Card glowingEffect>
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
           <span>{eyebrow}</span>

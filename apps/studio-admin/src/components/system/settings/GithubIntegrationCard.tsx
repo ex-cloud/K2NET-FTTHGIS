@@ -187,7 +187,7 @@ export function GithubIntegrationCard({ githubIntegrationValue, updateSettings }
 
 
   return (
-    <Card animatedBeam beamColor="#3ecf8e">
+    <Card glowingEffect>
       <CardHeader className="border-b border-border flex flex-row items-center justify-between gap-4">
         <div>
           <CardTitle className="text-foreground flex items-center gap-2">

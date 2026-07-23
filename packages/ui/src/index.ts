@@ -29,3 +29,5 @@ export * from "./components/tabs";
 export * from "./components/textarea";
 export * from "./components/tooltip";
 export * from "./components/page-layout";
+export * from "./components/glowing-effect";
+export * from "./components/tracing-beam";

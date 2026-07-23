@@ -124,7 +124,7 @@ export default function GatewaysOverviewPage() {
             {/* Top Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Card 1: Global Health */}
-              <Card animatedBeam beamColor="#3ecf8e">
+              <Card glowingEffect>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     <span>Service Health</span>
@@ -145,7 +145,7 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 2: Avg Latency */}
-              <Card animatedBeam beamColor="#0ea5e9">
+              <Card glowingEffect>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     <span>Avg Latency</span>
@@ -164,7 +164,7 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 3: Cache Hit Ratio */}
-              <Card animatedBeam beamColor="#14b8a6">
+              <Card glowingEffect>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     <span>Cache Efficiency</span>
@@ -183,7 +183,7 @@ export default function GatewaysOverviewPage() {
               </Card>
 
               {/* Card 4: Compression Rate */}
-              <Card animatedBeam beamColor="#14b8a6">
+              <Card glowingEffect>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     <span>Storage Optimization</span>
@@ -259,8 +259,7 @@ export default function GatewaysOverviewPage() {
                   return (
                     <Card 
                       key={svc.name} 
-                      animatedBeam 
-                      beamColor="#3ecf8e"
+                      glowingEffect 
                       className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6"
                     >
                       {/* Name & Status */}

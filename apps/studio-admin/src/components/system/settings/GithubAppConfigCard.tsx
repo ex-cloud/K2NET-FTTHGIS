@@ -167,7 +167,7 @@ export function GithubAppConfigCard() {
   };
 
   return (
-    <Card animatedBeam beamColor="#3ecf8e">
+    <Card glowingEffect>
       <CardHeader className="border-b border-border">
         <div className="flex items-center justify-between gap-4">
           <div>

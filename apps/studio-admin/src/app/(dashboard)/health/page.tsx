@@ -105,7 +105,7 @@ function MetricCard({
   const beamColor = hexColorMap[color] ?? "#3ecf8e";
 
   return (
-    <Card animatedBeam beamColor={beamColor} className="p-5 flex flex-col gap-3">
+    <Card glowingEffect className="p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
           {label}
@@ -155,8 +155,7 @@ function ServiceCard({ name, job, up }: { name: string; job: string; up: boolean
 
   return (
     <Card 
-      animatedBeam 
-      beamColor={up ? "#3ecf8e" : "#f43f5e"}
+      glowingEffect
       className="relative flex flex-row items-center gap-3 px-4 py-3"
     >
       {/* Status dot */}
@@ -309,7 +308,7 @@ export default function SystemHealthPage() {
           color="violet"
         />
         {/* Services card */}
-        <Card animatedBeam beamColor="#3ecf8e" className="p-5 flex flex-col gap-3">
+        <Card glowingEffect className="p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground font-bold tracking-wider uppercase">
               Services

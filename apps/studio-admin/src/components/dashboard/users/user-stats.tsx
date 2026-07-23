@@ -15,7 +15,7 @@ export function UserStats({ stats }: UserStatsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
       {/* Total Users */}
-      <Card animatedBeam beamColor="#8b5cf6">
+      <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             <span>Total Users</span>
@@ -31,7 +31,7 @@ export function UserStats({ stats }: UserStatsProps) {
       </Card>
 
       {/* Active Now */}
-      <Card animatedBeam beamColor="#3ecf8e">
+      <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             <span>Active Now</span>
@@ -47,7 +47,7 @@ export function UserStats({ stats }: UserStatsProps) {
       </Card>
 
       {/* Open Requests */}
-      <Card animatedBeam beamColor="#0ea5e9">
+      <Card glowingEffect>
         <CardHeader className="pb-2">
           <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             <span>Open Requests</span>

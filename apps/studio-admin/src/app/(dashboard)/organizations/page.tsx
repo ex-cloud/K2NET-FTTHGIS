@@ -255,8 +255,7 @@ export default function AdminOrganizationsPage() {
                 {filteredOrgs.map((org: Organization) => (
                   <div key={org.id} className="group relative">
                     <Card
-                      animatedBeam
-                      beamColor="#3ecf8e"
+                      glowingEffect
                       onClick={() => window.location.assign(getTenantUrl(org.slug))}
                       className="flex flex-row items-center gap-4 p-5 cursor-pointer h-24"
                     >

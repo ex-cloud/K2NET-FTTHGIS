@@ -43,7 +43,7 @@ export function OverviewDevOpsCard({
     : "#3ecf8e"; // Default Primary Green
 
   const content = (
-    <Card animatedBeam beamColor={beamColor} className="h-full">
+    <Card glowingEffect className="h-full">
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
           <span>{eyebrow}</span>
