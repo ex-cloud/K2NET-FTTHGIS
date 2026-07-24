@@ -37,40 +37,28 @@ const LogoWatermark = () => (
     strokeLinecap="round"
     className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[600px] md:h-[600px] z-0 opacity-[0.035] dark:opacity-[0.045] select-none text-foreground"
   >
-    {/* Outlined rounded box card contour */}
-    <rect
-      x="15"
-      y="15"
-      width="120"
-      height="120"
-      rx="28"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      className="opacity-40"
-    />
-    
     {/* Concentric WiFi waves originating from bottom-left dot */}
-    <circle cx="38" cy="112" r="5" fill="currentColor" className="opacity-70" />
+    <circle cx="38" cy="112" r="4" fill="currentColor" className="opacity-50" />
     
     <path
       d="M 38 84 A 28 28 0 0 1 66 112"
       stroke="currentColor"
-      strokeWidth="3"
-      className="opacity-75"
+      strokeWidth="1.5"
+      className="opacity-50"
     />
     
     <path
       d="M 38 56 A 56 56 0 0 1 94 112"
       stroke="currentColor"
-      strokeWidth="3.5"
-      className="opacity-55"
+      strokeWidth="2.0"
+      className="opacity-35"
     />
     
     <path
       d="M 38 28 A 84 84 0 0 1 122 112"
       stroke="currentColor"
-      strokeWidth="4"
-      className="opacity-35"
+      strokeWidth="2.5"
+      className="opacity-20"
     />
   </svg>
 );
