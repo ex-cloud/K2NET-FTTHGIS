@@ -161,7 +161,7 @@ export default function AdminOrganizationsPage() {
 
   return (
     <OrganizationPageWrapper>
-      <PageLayout variant="dashboard" spaceY="space-y-12">
+      <PageLayout variant="dashboard" spaceY="space-y-12" showLogoWatermark={true}>
       {/* Header section */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">

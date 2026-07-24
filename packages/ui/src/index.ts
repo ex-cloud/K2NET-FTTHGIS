@@ -32,3 +32,4 @@ export * from "./components/page-layout";
 export * from "./components/glowing-effect";
 export * from "./components/tracing-beam";
 export * from "./components/skeletons";
+export * from "./components/floating-banner";

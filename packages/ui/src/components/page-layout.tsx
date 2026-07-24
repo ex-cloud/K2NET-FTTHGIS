@@ -23,6 +23,10 @@ export interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
    * Defaults to "space-y-8" for dashboard, and "space-y-6" for workspace.
    */
   spaceY?: string;
+  /**
+   * Show a large, subtle, centered watermark pattern of the logo.
+   */
+  showLogoWatermark?: boolean;
 }
 
 export function PageLayout({
@@ -32,12 +36,24 @@ export function PageLayout({
   sidePanel,
   spaceY,
   className,
+  showLogoWatermark = false,
   ...props
 }: PageLayoutProps) {
   if (variant === "workspace") {
     return (
       <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-background relative">
-        <div className="flex-1 w-full min-w-0 px-6 md:px-12 xl:px-16 py-4 md:py-8 overflow-hidden">
+        {showLogoWatermark && (
+          <div 
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[500px] md:h-[500px] z-0 opacity-[0.02] dark:opacity-[0.035] select-none"
+            style={{
+              backgroundImage: "url('/logo-watermark.svg')",
+              backgroundSize: "contain",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+        )}
+        <div className="flex-1 w-full min-w-0 px-6 md:px-12 xl:px-16 py-4 md:py-8 overflow-hidden relative z-10">
           <div
             className={cn(
               "w-full pb-8 h-full flex flex-col mx-auto",
@@ -58,12 +74,17 @@ export function PageLayout({
   // Dashboard variant (scrollable, standard dashboard pages)
   return (
     <div className="relative flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-16">
-      {/* Ambient Background Glow Mesh for Glassmorphism Backdrop Blur Contrast */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0 opacity-40 dark:opacity-30">
-        <div className="absolute -top-[20%] left-[10%] h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute top-[30%] right-[5%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-[140px]" />
-        <div className="absolute top-[60%] left-[20%] h-[400px] w-[400px] rounded-full bg-sky-500/10 blur-[120px]" />
-      </div>
+      {showLogoWatermark && (
+        <div 
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[500px] md:h-[500px] z-0 opacity-[0.02] dark:opacity-[0.035] select-none"
+          style={{
+            backgroundImage: "url('/logo-watermark.svg')",
+            backgroundSize: "contain",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      )}
 
       <div
         className={cn(

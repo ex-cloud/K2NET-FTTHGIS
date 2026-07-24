@@ -91,7 +91,7 @@ export function AdminSidebar() {
                     className={cn(
                       "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group",
                       isActive
-                        ? "text-primary bg-primary/10 hover:bg-primary/20"
+                        ? "text-sidebar-foreground bg-sidebar-accent"
                         : "text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     )}
                   >
@@ -99,7 +99,7 @@ export function AdminSidebar() {
                     <span
                       className={cn(
                         "text-sm whitespace-nowrap transition-all duration-300",
-                        isActive ? "font-semibold text-primary" : "font-medium",
+                        isActive ? "font-semibold text-sidebar-foreground" : "font-medium",
                         isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                       )}
                     >
