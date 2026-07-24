@@ -19,7 +19,10 @@ RUN pnpm install --frozen-lockfile
 COPY packages/ ./packages/
 COPY apps/studio-admin/ ./apps/studio-admin/
 
-# Build the application
+# Build shared workspace packages first (generates dist/index.d.ts for types, auth, etc.)
+RUN pnpm --filter "@k2net/*" build
+
+# Build the studio-admin application
 ARG NEXT_PUBLIC_GIT_BRANCH
 ARG NEXT_PUBLIC_GIT_COMMIT
 ENV NEXT_PUBLIC_GIT_BRANCH=$NEXT_PUBLIC_GIT_BRANCH
