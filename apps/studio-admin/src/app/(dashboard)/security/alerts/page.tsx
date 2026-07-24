@@ -193,7 +193,7 @@ export default function SecurityAlertsPage() {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 pb-6 shrink-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
               <ShieldAlert className="w-8 h-8 text-rose-500" /> Threat Intelligence & Alerts
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -220,7 +220,7 @@ export default function SecurityAlertsPage() {
                 <p className="text-xs text-muted-foreground font-medium">Global Threats Status</p>
                 <Radio className={`w-4 h-4 ${criticalCount > 0 ? "text-rose-500 animate-pulse" : "text-primary"}`} />
               </div>
-              <p className={`text-2xl font-light mt-2 ${criticalCount > 0 ? "text-rose-400" : "text-primary"}`}>
+              <p className={`text-2xl font-bold mt-2 ${criticalCount > 0 ? "text-rose-400" : "text-primary"}`}>
                 {criticalCount > 0 ? "Under Cyber Threat" : "Secured & Plausible"}
               </p>
             </CardContent>
@@ -231,7 +231,7 @@ export default function SecurityAlertsPage() {
                 <p className="text-xs text-muted-foreground font-medium">Critical Alerts</p>
                 <Skull className="w-4 h-4 text-rose-500" />
               </div>
-              <p className="text-2xl font-light mt-2 text-rose-500 font-mono">{criticalCount}</p>
+              <p className="text-2xl font-bold mt-2 text-rose-500 font-mono">{criticalCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
@@ -240,7 +240,7 @@ export default function SecurityAlertsPage() {
                 <p className="text-xs text-muted-foreground font-medium">Warning Anomalies</p>
                 <AlertOctagon className="w-4 h-4 text-amber-500" />
               </div>
-              <p className="text-2xl font-light mt-2 text-amber-500 font-mono">{warningCount}</p>
+              <p className="text-2xl font-bold mt-2 text-amber-500 font-mono">{warningCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
@@ -249,7 +249,7 @@ export default function SecurityAlertsPage() {
                 <p className="text-xs text-muted-foreground font-medium">Blocked IP/CIDR Rules</p>
                 <ShieldIcon className="w-4 h-4 text-primary" />
               </div>
-              <p className="text-2xl font-light mt-2 text-primary font-mono">{blockedIps.length}</p>
+              <p className="text-2xl font-bold mt-2 text-primary font-mono">{blockedIps.length}</p>
             </CardContent>
           </Card>
         </div>

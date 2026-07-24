@@ -170,7 +170,7 @@
   --secondary: hsl(0 0% 97.5%); /* Very light gray */
   --secondary-foreground: hsl(0 0% 9%);
   --muted: hsl(0 0% 97.5%);
-  --muted-foreground: hsl(0 0% 45%);
+  --muted-foreground: hsl(0 0% 38%);
   --accent: hsl(0 0% 96%);
   --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 84.2% 60.2%);

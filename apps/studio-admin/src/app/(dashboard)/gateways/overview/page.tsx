@@ -90,7 +90,7 @@ export default function GatewaysOverviewPage() {
                 System Integration
               </Badge>
             </div>
-            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
               Gateways Control Panel <Sparkles className="w-5 h-5 text-primary animate-pulse" />
             </h1>
             <p className="text-xs text-muted-foreground">
@@ -130,7 +130,7 @@ export default function GatewaysOverviewPage() {
                     <span>Service Health</span>
                     <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
                   </CardDescription>
-                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                  <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
                     {activeServicesCount} <span className="text-xs text-muted-foreground">/ {totalServices} Online</span>
                   </CardTitle>
                 </CardHeader>
@@ -151,7 +151,7 @@ export default function GatewaysOverviewPage() {
                     <span>Avg Latency</span>
                     <Activity className="w-3.5 h-3.5 text-sky-400 group-hover:text-sky-300 transition-colors" />
                   </CardDescription>
-                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                  <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
                     42 <span className="text-xs text-muted-foreground">ms</span>
                   </CardTitle>
                 </CardHeader>
@@ -170,7 +170,7 @@ export default function GatewaysOverviewPage() {
                     <span>Cache Efficiency</span>
                     <Database className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
                   </CardDescription>
-                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                  <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
                     94.2 <span className="text-xs text-muted-foreground">%</span>
                   </CardTitle>
                 </CardHeader>
@@ -189,7 +189,7 @@ export default function GatewaysOverviewPage() {
                     <span>Storage Optimization</span>
                     <HardDrive className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
                   </CardDescription>
-                  <CardTitle className="text-2xl font-light text-foreground mt-1 flex items-baseline gap-2">
+                  <CardTitle className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
                     68.5 <span className="text-xs text-muted-foreground">% Saved</span>
                   </CardTitle>
                 </CardHeader>
@@ -250,7 +250,7 @@ export default function GatewaysOverviewPage() {
 
             {/* Gateway Services List */}
             <div className="space-y-4">
-              <h2 className="text-lg font-light text-foreground tracking-tight">Active Gateway Services</h2>
+              <h2 className="text-lg font-bold text-foreground tracking-tight">Active Gateway Services</h2>
               <div className="grid grid-cols-1 gap-4">
                 {services.map((svc) => {
                   const nameClean = svc.name.replace("ftth-", "").replace("-gateway", "");

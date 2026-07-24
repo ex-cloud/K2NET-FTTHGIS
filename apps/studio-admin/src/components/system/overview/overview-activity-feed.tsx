@@ -14,7 +14,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-2">
-        <h2 className="flex items-center gap-2 text-lg font-light tracking-tight text-foreground">
+        <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
           <Building2 className="h-4.5 w-4.5 text-muted-foreground" /> Recent Organizations
         </h2>
         <Button variant="link" className="gap-1.5 p-0 text-xs text-muted-foreground hover:text-primary">

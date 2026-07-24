@@ -170,7 +170,7 @@ export default function ExportGatewayPage() {
             <Download className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-foreground tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Export Gateway
             </h1>
             <p className="text-xs text-muted-foreground">

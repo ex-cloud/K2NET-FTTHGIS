@@ -192,7 +192,7 @@ export default function PaymentGatewayPage() {
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-foreground tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Payment Gateway
             </h1>
             <p className="text-xs text-muted-foreground">

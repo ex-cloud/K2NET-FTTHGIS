@@ -45,7 +45,7 @@ export function OverviewDevOpsCard({
   const content = (
     <Card glowingEffect className="h-full">
       <CardHeader className="pb-2">
-        <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+        <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-foreground/75 dark:text-muted-foreground">
           <span>{eyebrow}</span>
           <Icon className={cn("h-3.5 w-3.5 text-muted-foreground/60 transition-colors", iconClassName)} />
         </CardDescription>

@@ -119,7 +119,7 @@ export default function SecurityCompliancePage() {
         {/* Header section */}
         <div className="flex items-center justify-between border-b border-border/40 pb-6 shrink-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-light text-foreground tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
               <FileText className="w-8 h-8 text-primary" /> Security & Compliance Policies
             </h1>
             <p className="text-xs text-muted-foreground">
