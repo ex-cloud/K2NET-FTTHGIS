@@ -96,7 +96,7 @@ export function SystemSecondarySidebar() {
         <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 min-w-[240px]">
           {currentConfig.sections.map((section, sIdx) => (
             <Collapsible key={sIdx} defaultOpen className="w-full">
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-muted-foreground group">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
                 <span>{section.title}</span>
                 <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
@@ -110,11 +110,11 @@ export function SystemSecondarySidebar() {
                       href={item.url}
                       className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
                         isActive
-                          ? "bg-primary/10 text-primary font-medium border border-primary/20"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                          ? "bg-primary/10 text-primary font-semibold border border-primary/20"
+                          : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
                       }`}
                     >
-                      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : "text-foreground/70 dark:text-muted-foreground"}`} />
                       {item.title}
                     </Link>
                   );

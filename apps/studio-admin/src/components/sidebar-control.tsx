@@ -52,7 +52,7 @@ export function SidebarControl({ isExpanded = false }: { isExpanded?: boolean })
           sideOffset={10}
         >
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="px-2 py-2 text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+            <DropdownMenuLabel className="px-2 py-2 text-[9px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-[0.2em]">
               Display Mode
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border" />
@@ -67,7 +67,7 @@ export function SidebarControl({ isExpanded = false }: { isExpanded?: boolean })
                   <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_var(--primary)]" />
                 )}
               </div>
-              <span className={`text-xs font-semibold ${sidebarMode === "expanded" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}>
+              <span className={`text-xs font-semibold ${sidebarMode === "expanded" ? "text-primary" : "text-foreground/80 dark:text-muted-foreground group-hover:text-foreground"}`}>
                 Expanded
               </span>
             </DropdownMenuItem>
@@ -82,7 +82,7 @@ export function SidebarControl({ isExpanded = false }: { isExpanded?: boolean })
                   <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_var(--primary)]" />
                 )}
               </div>
-              <span className={`text-xs font-semibold ${sidebarMode === "collapsed" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}>
+              <span className={`text-xs font-semibold ${sidebarMode === "collapsed" ? "text-primary" : "text-foreground/80 dark:text-muted-foreground group-hover:text-foreground"}`}>
                 Collapsed
               </span>
             </DropdownMenuItem>
@@ -98,7 +98,7 @@ export function SidebarControl({ isExpanded = false }: { isExpanded?: boolean })
                 )}
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className={`text-xs font-semibold ${sidebarMode === "hover" ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}>
+                <span className={`text-xs font-semibold ${sidebarMode === "hover" ? "text-primary" : "text-foreground/80 dark:text-muted-foreground group-hover:text-foreground"}`}>
                   Expand on Hover
                 </span>
                 <span className="text-[9px] text-muted-foreground/60 font-medium">Reveals on mouse enter</span>

@@ -86,19 +86,20 @@ export function AdminSidebar() {
               {ADMIN_NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = checkIsActive(item.href, pathname);
-                const button = (
+                 const button = (
                   <div
                     className={cn(
                       "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group",
                       isActive
                         ? "text-primary bg-primary/10 hover:bg-primary/20"
-                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                        : "text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span
                       className={cn(
-                        "text-sm font-medium whitespace-nowrap transition-all duration-300",
+                        "text-sm whitespace-nowrap transition-all duration-300",
+                        isActive ? "font-semibold text-primary" : "font-medium",
                         isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                       )}
                     >
