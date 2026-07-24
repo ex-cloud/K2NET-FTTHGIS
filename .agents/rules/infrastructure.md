@@ -118,4 +118,17 @@ Push / Merge ke `main` branch
   - `studio-admin` / `frontend-admin` → Portal Utama System Admin (Port 3001)
   - `studio-tenant` / `frontend-tenant` → Portal Tenant (Port 3002)
 
+### 🛟 Alur Cadangan: Deployment Manual dari Dalam Server (Jika IP Publik / SSH Down)
+Jika GitHub Actions SSH timeout karena IP publik server mati, Anda dapat melakukan deployment manual secara aman langsung dari dalam server (0% overhead build):
+1. Pastikan Anda sudah login ke GitHub Packages registry di server:
+   ```bash
+   docker login ghcr.io -u ex-cloud
+   # Masukkan GitHub Personal Access Token (PAT) dengan scope read:packages
+   ```
+2. Tarik kode compose terbaru dan jalankan script deploy:
+   ```bash
+   git fetch origin && git checkout main && git pull origin main
+   bash scripts/deploy.sh production frontend-admin
+   ```
+
 
