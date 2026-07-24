@@ -29,6 +29,52 @@ export interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
   showLogoWatermark?: boolean;
 }
 
+const LogoWatermark = () => (
+  <svg
+    viewBox="0 0 150 150"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[600px] md:h-[600px] z-0 opacity-[0.035] dark:opacity-[0.045] select-none text-foreground"
+  >
+    {/* Outlined rounded box card contour */}
+    <rect
+      x="15"
+      y="15"
+      width="120"
+      height="120"
+      rx="28"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="opacity-40"
+    />
+    
+    {/* Concentric WiFi waves originating from bottom-left dot */}
+    <circle cx="38" cy="112" r="5" fill="currentColor" className="opacity-70" />
+    
+    <path
+      d="M 38 84 A 28 28 0 0 1 66 112"
+      stroke="currentColor"
+      strokeWidth="3"
+      className="opacity-75"
+    />
+    
+    <path
+      d="M 38 56 A 56 56 0 0 1 94 112"
+      stroke="currentColor"
+      strokeWidth="3.5"
+      className="opacity-55"
+    />
+    
+    <path
+      d="M 38 28 A 84 84 0 0 1 122 112"
+      stroke="currentColor"
+      strokeWidth="4"
+      className="opacity-35"
+    />
+  </svg>
+);
+
 export function PageLayout({
   children,
   variant = "dashboard",
@@ -42,17 +88,7 @@ export function PageLayout({
   if (variant === "workspace") {
     return (
       <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-background relative">
-        {showLogoWatermark && (
-          <div 
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[500px] md:h-[500px] z-0 opacity-[0.02] dark:opacity-[0.035] select-none"
-            style={{
-              backgroundImage: "url('/logo-watermark.svg')",
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-        )}
+        {showLogoWatermark && <LogoWatermark />}
         <div className="flex-1 w-full min-w-0 px-6 md:px-12 xl:px-16 py-4 md:py-8 overflow-hidden relative z-10">
           <div
             className={cn(
@@ -74,17 +110,7 @@ export function PageLayout({
   // Dashboard variant (scrollable, standard dashboard pages)
   return (
     <div className="relative flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-16">
-      {showLogoWatermark && (
-        <div 
-          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] md:w-[500px] md:h-[500px] z-0 opacity-[0.02] dark:opacity-[0.035] select-none"
-          style={{
-            backgroundImage: "url('/logo-watermark.svg')",
-            backgroundSize: "contain",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        />
-      )}
+      {showLogoWatermark && <LogoWatermark />}
 
       <div
         className={cn(
