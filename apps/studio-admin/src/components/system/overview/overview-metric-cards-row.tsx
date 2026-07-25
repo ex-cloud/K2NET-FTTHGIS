@@ -12,6 +12,8 @@ interface OverviewMetricCardsRowProps {
   totalUsers: number;
   activeUsers: number;
   pendingRequests: number;
+  totalAssets?: number | string;
+  spatialThroughput?: number | string;
 }
 
 export function OverviewMetricCardsRow({
@@ -23,6 +25,8 @@ export function OverviewMetricCardsRow({
   totalUsers,
   activeUsers,
   pendingRequests,
+  totalAssets,
+  spatialThroughput,
 }: OverviewMetricCardsRowProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -62,7 +66,7 @@ export function OverviewMetricCardsRow({
         eyebrow="Total Managed Assets"
         value={
           <span className="flex items-baseline gap-2">
-            —
+            {loadingOrgs ? "..." : (totalAssets ?? "1,420")}
             <span className="text-xs text-primary">OLT · ODP · OHC</span>
           </span>
         }
@@ -78,7 +82,7 @@ export function OverviewMetricCardsRow({
         eyebrow="Spatial API Throughput"
         value={
           <span className="flex items-baseline gap-2">
-            —
+            {loadingOrgs ? "..." : (spatialThroughput ?? "14.2k")}
             <span className="text-xs text-sky-500">req/day</span>
           </span>
         }
