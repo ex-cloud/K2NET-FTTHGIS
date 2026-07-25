@@ -91,9 +91,7 @@ jobs:
         github.event.inputs.service == 'all' ||
         github.event.inputs.service == 'backend'
       ) || (
-        github.event_name == 'push' && (
-          contains(github.event.head_commit.modified, 'apps/api/')
-        )
+        github.event_name == 'push'
       )
     steps:
       - name: Checkout repository
@@ -236,8 +234,9 @@ jobs:
 
             echo "=== [2/4] Pull images yang dibangun oleh GitHub Actions Runner ==="
             bash scripts/deploy.sh production frontend-admin
+            bash scripts/deploy.sh production backend
 
             echo "=== [3/4] Verifikasi Container Status ==="
-            docker ps --filter "name=ftth-frontend-admin" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            docker ps --filter "name=ftth-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-            echo "✅ Deployment production studio-admin selesai!"
+            echo "✅ Deployment production selesai!"
