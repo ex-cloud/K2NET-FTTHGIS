@@ -32,6 +32,10 @@ import {
   Server,
   Radio,
   Wrench,
+  Sliders,
+  MapPin,
+  Palette,
+  Mail,
 } from "lucide-react";
 import {
   Collapsible,
@@ -66,6 +70,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Server,
   Radio,
   Wrench,
+  Sliders,
+  MapPin,
+  Palette,
+  Mail,
 };
 
 export function SystemSecondarySidebar() {
@@ -82,6 +90,8 @@ export function SystemSecondarySidebar() {
     activeKey = "gateways";
   } else if (pathname?.includes("/observability")) {
     activeKey = "observability";
+  } else if (pathname?.includes("/settings")) {
+    activeKey = "settings";
   }
 
   if (!activeKey) return null;
