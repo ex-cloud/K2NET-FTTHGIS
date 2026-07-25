@@ -275,9 +275,3 @@ plugins:
       credentials: true
       max_age: 3600
 
-  # ─── Global Rate Limiting (1000 req/min per IP) ─────────────────────────────
-  - name: rate-limiting
-    config:
-      minute: 1000
-      policy: local
-      limit_by: ip

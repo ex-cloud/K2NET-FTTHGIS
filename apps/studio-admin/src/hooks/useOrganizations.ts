@@ -56,15 +56,7 @@ export function useOrganizations() {
       });
 
       if (!res.ok) {
-        // If we get a 403, httpClient already handles ORGANIZATION_SUSPENDED
-        // For other errors, log and return empty instead of throwing
         const errorText = await res.text().catch(() => 'Unknown error');
-        
-        // Don't throw on 401/403 - just return empty array
-        // This prevents React Query from retrying and flooding the console
-        if (res.status === 401 || res.status === 403) {
-          return [];
-        }
         throw new Error(`Failed to fetch organizations: ${res.status} - ${errorText}`);
       }
       
