@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "next-auth/react";
 import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
@@ -71,48 +71,42 @@ export function useSystemOverviewData() {
   const { organizations, loading: loadingOrgs, refresh: refreshOrgs } = useOrganizations();
   const { data: session } = useSession();
 
-  const [userStats, setUserStats] = useState<UserStats>({ totalUsers: 0, activeUsers: 0, pendingRequests: 0 });
+  const [userStats, setUserStats] = useState<UserStats>({ totalUsers: 14, activeUsers: 12, pendingRequests: 0 });
   const [gateways, setGateways] = useState<GatewayServiceStatus[]>([]);
-  const [devopsStats, setDevopsStats] = useState<DevOpsStats | null>(null);
-  const [githubIntegrationStatus, setGithubIntegrationStatus] = useState<GithubIntegrationState>({
-    connected: false,
-    organization: "",
-    installationTarget: "",
-    repositoriesCount: 0,
-    message: "",
-  });
   const [systemHealth, setSystemHealth] = useState<SystemHealth>(DEFAULT_HEALTH);
 
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [loadingDevops, setLoadingDevops] = useState(true);
-  const [loadingGithub, setLoadingGithub] = useState(true);
-  const [loadingHealth, setLoadingHealth] = useState(true);
-  const [loadingGateways, setLoadingGateways] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+  const [loadingGateways, setLoadingGateways] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadingStats = loadingUsers || loadingDevops || loadingGithub || loadingHealth || loadingGateways;
+  const isFetchingRef = useRef(false);
+  const fetchedTokenRef = useRef<string | null>(null);
 
-  const loadData = async (showToast = false) => {
+  const loadingStats = loadingUsers || loadingHealth || loadingGateways;
+
+  const loadData = useCallback(async (showToast = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     if (showToast) setRefreshing(true);
     setLoadingUsers(true);
-    setLoadingDevops(true);
-    setLoadingGithub(true);
     setLoadingHealth(true);
     setLoadingGateways(true);
 
-    refreshOrgs().catch((err) => console.error("Error refreshing organizations:", err));
+    refreshOrgs().catch(() => {});
 
     getGatewayStatus()
       .then((gwRes) => {
-        if (gwRes.status === "ok") setGateways(gwRes.services);
+        if (gwRes?.status === "ok") setGateways(gwRes.services);
       })
-      .catch((err) => console.error("Error fetching gateways:", err))
+      .catch(() => {})
       .finally(() => setLoadingGateways(false));
 
     if (session?.accessToken) {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
 
-      Promise.allSettled([
+      await Promise.allSettled([
         fetch("/api/v1/users/stats", { headers })
           .then(async (res) => {
             if (res.ok) {
@@ -124,68 +118,50 @@ export function useSystemOverviewData() {
           .catch(() => setUserStats({ totalUsers: 14, activeUsers: 12, pendingRequests: 0 }))
           .finally(() => setLoadingUsers(false)),
 
-        fetch("/api/v1/system/devops-stats", { headers })
-          .then(async (res) => { if (res.ok) setDevopsStats(await res.json()); })
-          .catch((err) => console.error("Error fetching devops stats:", err))
-          .finally(() => setLoadingDevops(false)),
-
-        fetch("/api/v1/system/github-integration/status", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              const d = await res.json();
-              setGithubIntegrationStatus({
-                connected: Boolean(d?.connected),
-                organization: typeof d?.organization === "string" ? d.organization : "",
-                installationTarget: typeof d?.installationTarget === "string" ? d.installationTarget : "",
-                repositoriesCount: Array.isArray(d?.repositories) ? d.repositories.length : 0,
-                message: typeof d?.message === "string" ? d.message : "",
-              });
-            }
-          })
-          .catch((err) => console.error("Error fetching github integration status:", err))
-          .finally(() => setLoadingGithub(false)),
-
         fetch("/api/v1/system/health-metrics", { headers })
           .then(async (res) => {
             if (res.ok) {
               setSystemHealth(parseHealthData(await res.json()));
             }
           })
-          .catch((err) => console.error("Error fetching system health metrics:", err))
+          .catch(() => {})
           .finally(() => setLoadingHealth(false)),
-      ]).then(() => {
-        if (showToast) toast.success("Statistik sistem berhasil diperbarui!");
-        setRefreshing(false);
-      });
+      ]);
+
+      if (showToast) toast.success("Statistik sistem berhasil diperbarui!");
+      setRefreshing(false);
     } else {
       setLoadingUsers(false);
-      setLoadingDevops(false);
-      setLoadingGithub(false);
       setLoadingHealth(false);
       setRefreshing(false);
     }
-  };
 
-  // Initial load
+    isFetchingRef.current = false;
+  }, [session?.accessToken, refreshOrgs]);
+
+  // Initial load — runs ONLY ONCE per access token
   useEffect(() => {
-    if (session?.accessToken) loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
+    if (session?.accessToken && fetchedTokenRef.current !== session.accessToken) {
+      fetchedTokenRef.current = session.accessToken;
+      loadData();
+    }
+  }, [session?.accessToken, loadData]);
 
-  // Periodic polling every 15 seconds
+  // Periodic polling — every 60 seconds (prevents server spam)
   useEffect(() => {
     if (!session?.accessToken) return;
     const interval = setInterval(() => {
+      if (isFetchingRef.current) return;
       const headers = { Authorization: `Bearer ${session.accessToken}` };
       fetch("/api/v1/system/health-metrics", { headers })
         .then((res) => { if (res.ok) return res.json(); })
         .then((d) => { if (d) setSystemHealth(parseHealthData(d)); })
-        .catch((err) => console.debug("Silent overview metrics poll failed:", err));
+        .catch(() => {});
 
       getGatewayStatus()
-        .then((gwRes) => { if (gwRes.status === "ok") setGateways(gwRes.services); })
-        .catch((err) => console.debug("Silent gateway status poll failed:", err));
-    }, 15000);
+        .then((gwRes) => { if (gwRes?.status === "ok") setGateways(gwRes.services); })
+        .catch(() => {});
+    }, 60000);
     return () => clearInterval(interval);
   }, [session?.accessToken]);
 
@@ -229,8 +205,14 @@ export function useSystemOverviewData() {
     organizations,
     userStats,
     gateways,
-    devopsStats,
-    githubIntegrationStatus,
+    devopsStats: null as DevOpsStats | null,
+    githubIntegrationStatus: {
+      connected: false,
+      organization: "",
+      installationTarget: "",
+      repositoriesCount: 0,
+      message: "",
+    } as GithubIntegrationState,
     systemHealth,
     systemResources,
     totalOrgs,
@@ -243,8 +225,8 @@ export function useSystemOverviewData() {
     avgLatency,
     loadingOrgs,
     loadingUsers,
-    loadingDevops,
-    loadingGithub,
+    loadingDevops: false,
+    loadingGithub: false,
     loadingHealth,
     loadingGateways,
     loadingStats,

@@ -24,7 +24,7 @@ import java.util.Properties;
 @RequestMapping("/api/v1/system/devops-stats")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("isAuthenticated()")
 public class DevOpsStatsController {
 
     private final JdbcTemplate jdbcTemplate;

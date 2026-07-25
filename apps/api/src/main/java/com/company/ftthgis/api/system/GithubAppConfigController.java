@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/system/github-app")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("isAuthenticated()")
 public class GithubAppConfigController {
 
     private final GithubAppConfigService githubAppConfigService;

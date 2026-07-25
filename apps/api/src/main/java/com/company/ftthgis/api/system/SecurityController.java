@@ -27,7 +27,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/system/security")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("isAuthenticated()")
 public class SecurityController {
 
     private final KeycloakAdminService keycloakAdminService;

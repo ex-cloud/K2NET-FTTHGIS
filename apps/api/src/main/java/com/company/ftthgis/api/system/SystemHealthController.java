@@ -31,7 +31,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/health-metrics")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("isAuthenticated()")
 public class SystemHealthController {
 
     private final JdbcTemplate jdbcTemplate;

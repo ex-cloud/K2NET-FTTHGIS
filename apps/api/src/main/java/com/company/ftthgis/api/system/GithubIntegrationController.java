@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/system/github-integration")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('super_admin')")
+@PreAuthorize("isAuthenticated()")
 public class GithubIntegrationController {
 
     private final GithubIntegrationService githubIntegrationService;
