@@ -122,6 +122,11 @@ if $BUILD_CMD; then
     if curl -s "http://127.0.0.1:$PORT_BACKEND/actuator/health" | grep -q "UP"; then
       echo "Backend is healthy!"
       
+      if [ "$TARGET_SERVICE" = "backend" ]; then
+        HEALTHY=true
+        break
+      fi
+
       # Now check frontend
       echo "Checking health of frontend..."
       if [ "$ENV" = "production" ]; then
