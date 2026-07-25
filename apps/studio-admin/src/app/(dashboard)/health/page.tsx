@@ -165,7 +165,9 @@ function ServiceCard({ name, job, up }: { name: string; job: string; up: boolean
         } ${up ? "animate-pulse" : ""}`}
       />
 
-      <span className="text-lg leading-none select-none">{emoji}</span>
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border/30 text-base select-none">
+        {emoji}
+      </div>
       <div className="flex flex-col min-w-0">
         <span className="text-sm font-semibold text-foreground leading-tight truncate">
           {name}

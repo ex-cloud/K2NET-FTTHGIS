@@ -12,6 +12,10 @@ function Card({
   children, 
   ...props 
 }: CardProps) {
+  const isFlexRow = className?.includes("flex-row");
+  const gapClass = className?.split(" ").find((c) => c.startsWith("gap-")) || "";
+  const justifyClass = className?.split(" ").find((c) => c.startsWith("justify-")) || "";
+
   return (
     <div
       data-slot="card"
@@ -33,7 +37,14 @@ function Card({
         />
       ) : null}
 
-      <div className={cn("relative z-20 flex flex-col justify-between h-full w-full", className?.includes("flex-row") && "flex-row items-center")}>
+      <div 
+        className={cn(
+          "relative z-20 h-full w-full",
+          isFlexRow 
+            ? cn("flex flex-row items-center", gapClass || "gap-4", justifyClass)
+            : "flex flex-col justify-between"
+        )}
+      >
         {children}
       </div>
     </div>
