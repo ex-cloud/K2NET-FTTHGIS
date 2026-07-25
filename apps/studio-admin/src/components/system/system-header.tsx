@@ -66,7 +66,7 @@ export function SystemHeader() {
           </Sheet>
         </div>
 
-        <Link href="/system" className="flex items-center cursor-pointer mr-1">
+        <Link href="/overview" className="flex items-center cursor-pointer mr-1">
           <div className={logoUrl ? "flex h-5 w-5 items-center justify-center rounded overflow-hidden" : "flex h-5 w-5 items-center justify-center rounded bg-primary/10 border border-primary/30 group overflow-hidden"}>
             {logoUrl ? (
               <Image

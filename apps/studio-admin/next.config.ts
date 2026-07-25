@@ -41,6 +41,21 @@ const nextConfig: NextConfig = {
         destination: "/observability/compute",
         permanent: true,
       },
+      {
+        source: "/system",
+        destination: "/overview",
+        permanent: true,
+      },
+      {
+        source: "/metrics",
+        destination: "/observability/api-gateway",
+        permanent: true,
+      },
+      {
+        source: "/logs",
+        destination: "/observability/operations",
+        permanent: true,
+      },
     ];
   },
 };

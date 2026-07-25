@@ -61,7 +61,7 @@ export function useOrganizations() {
       }
       
       const data = await res.json();
-      return data;
+      return Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
     },
     enabled: status === 'authenticated' && !!session?.accessToken,
     staleTime: 30 * 1000, // Reduced to 30 seconds for faster updates during testing
