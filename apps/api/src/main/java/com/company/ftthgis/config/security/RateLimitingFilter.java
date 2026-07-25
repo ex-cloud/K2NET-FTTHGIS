@@ -119,6 +119,12 @@ public class RateLimitingFilter implements Filter {
         } catch (Exception e) {
             log.debug("Could not extract user from principal", e);
         }
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return "token:" + Integer.toHexString(authHeader.hashCode());
+        }
+
         return "ip:" + getClientIP(request);
     }
 

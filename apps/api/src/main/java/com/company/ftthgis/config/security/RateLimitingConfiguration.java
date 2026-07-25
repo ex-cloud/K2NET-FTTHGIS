@@ -23,16 +23,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RateLimitingConfiguration {
 
-    @Value("${app.rate-limiting.auth.requests-per-minute:5}")
+    @Value("${app.rate-limiting.auth.requests-per-minute:30}")
     private int authRequestsPerMinute;
 
-    @Value("${app.rate-limiting.auth.requests-per-hour:50}")
+    @Value("${app.rate-limiting.auth.requests-per-hour:300}")
     private int authRequestsPerHour;
 
-    @Value("${app.rate-limiting.admin.requests-per-minute:30}")
+    @Value("${app.rate-limiting.admin.requests-per-minute:300}")
     private int adminRequestsPerMinute;
 
-    @Value("${app.rate-limiting.api.requests-per-minute:100}")
+    @Value("${app.rate-limiting.api.requests-per-minute:600}")
     private int apiRequestsPerMinute;
 
     @Value("${app.rate-limiting.enabled:true}")
