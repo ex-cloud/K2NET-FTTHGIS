@@ -1,47 +1,28 @@
 "use client";
 
-import { Activity, Building2, Users, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Building2, Users, MapPin, Globe } from "lucide-react";
 import { OverviewMetricCard } from "./overview-metric-card";
 
 interface OverviewMetricCardsRowProps {
   loadingOrgs: boolean;
   loadingUsers: boolean;
-  loadingGateways: boolean;
-  loadingHealth: boolean;
   totalOrgs: number;
   activeOrgs: number;
   trialOrgs: number;
   totalUsers: number;
   activeUsers: number;
   pendingRequests: number;
-  activeGatewaysCount: number;
-  totalGatewaysCount: number;
-  allGatewaysHealthy: boolean;
-  avgLatency: string;
-  cpu: number;
-  memory: number;
-  memoryUsed: string;
 }
 
 export function OverviewMetricCardsRow({
   loadingOrgs,
   loadingUsers,
-  loadingGateways,
-  loadingHealth,
   totalOrgs,
   activeOrgs,
   trialOrgs,
   totalUsers,
   activeUsers,
   pendingRequests,
-  activeGatewaysCount,
-  totalGatewaysCount,
-  allGatewaysHealthy,
-  avgLatency,
-  cpu,
-  memory,
-  memoryUsed,
 }: OverviewMetricCardsRowProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -78,38 +59,35 @@ export function OverviewMetricCardsRow({
       />
 
       <OverviewMetricCard
-        eyebrow="Active Gateways"
+        eyebrow="Total Managed Assets"
         value={
           <span className="flex items-baseline gap-2">
-            {loadingGateways ? "..." : `${activeGatewaysCount} / ${totalGatewaysCount}`}
-            <span className={cn("text-xs font-medium text-primary", !allGatewaysHealthy && "text-amber-500")}>
-              {allGatewaysHealthy ? "Healthy" : "Degraded"}
-            </span>
+            —
+            <span className="text-xs text-primary">OLT · ODP · OHC</span>
           </span>
         }
-        helper={<span>Avg Latency: {loadingGateways ? "..." : avgLatency}</span>}
-        footer="Service routing"
-        icon={Zap}
+        helper={<span>Network assets across all tenants</span>}
+        footer="Asset telemetry"
+        icon={MapPin}
         accentClassName="text-primary"
-        footerLinkHref="/gateways/overview"
-        footerLinkLabel="Gateways Panel"
+        footerLinkHref="/observability/olt-poller"
+        footerLinkLabel="OLT Telemetry"
       />
 
       <OverviewMetricCard
-        eyebrow="CPU / RAM Load"
+        eyebrow="Spatial API Throughput"
         value={
           <span className="flex items-baseline gap-2">
-            {loadingHealth ? "..." : `${cpu}%`}
-            <span className="text-xs text-sky-400">{loadingHealth ? "" : "CPU"}</span>
-            {loadingHealth ? null : <span className="text-xs text-sky-400">/ {memory}% RAM</span>}
+            —
+            <span className="text-xs text-sky-500">req/day</span>
           </span>
         }
-        helper={<span>RAM Used: {loadingHealth ? "..." : memoryUsed}</span>}
-        footer="Infrastructure health"
-        icon={Activity}
-        accentClassName="text-sky-400"
-        footerLinkHref="/health"
-        footerLinkLabel="System Stats"
+        helper={<span>Map &amp; geocoding requests today</span>}
+        footer="Map observability"
+        icon={Globe}
+        accentClassName="text-sky-500 dark:text-sky-400"
+        footerLinkHref="/observability/spatial-map"
+        footerLinkLabel="Map Gateway"
       />
     </div>
   );

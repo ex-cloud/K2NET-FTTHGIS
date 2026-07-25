@@ -26,6 +26,12 @@ import {
   Download,
   Network,
   Activity,
+  LayoutDashboard,
+  DatabaseZap,
+  Globe,
+  Server,
+  Radio,
+  Wrench,
 } from "lucide-react";
 import {
   Collapsible,
@@ -54,6 +60,12 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Download,
   Network,
   Activity,
+  LayoutDashboard,
+  DatabaseZap,
+  Globe,
+  Server,
+  Radio,
+  Wrench,
 };
 
 export function SystemSecondarySidebar() {
@@ -68,6 +80,8 @@ export function SystemSecondarySidebar() {
     activeKey = "security";
   } else if (pathname?.includes("/gateways")) {
     activeKey = "gateways";
+  } else if (pathname?.includes("/observability")) {
+    activeKey = "observability";
   }
 
   if (!activeKey) return null;

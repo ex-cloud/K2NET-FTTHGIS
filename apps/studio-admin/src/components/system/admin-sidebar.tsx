@@ -6,7 +6,7 @@ import {
   Building2,
   Users,
   BarChart3,
-  Activity,
+  ScanLine,
   History,
   Lock,
   Cpu,
@@ -34,7 +34,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
   { title: "Organizations", icon: Building2, href: "/organizations" },
   { title: "Global Users", icon: Users, href: "/users" },
-  { title: "System Health", icon: Activity, href: "/health" },
+  { title: "Observability", icon: ScanLine, href: "/observability" },
   { title: "Usage Metrics", icon: BarChart3, href: "/metrics" },
   { title: "Audit Logs", icon: History, href: "/logs" },
   { title: "Security", icon: Lock, href: "/security" },
@@ -45,6 +45,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
   if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
+  if (href === "/observability") return pathname.startsWith("/observability");
   return pathname === href || pathname.startsWith(href);
 };
 

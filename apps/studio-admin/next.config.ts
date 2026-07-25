@@ -34,6 +34,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/health",
+        destination: "/observability/compute",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

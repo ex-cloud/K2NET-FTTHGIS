@@ -99,4 +99,34 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  observability: {
+    title: "Observability",
+    sections: [
+      {
+        title: "General",
+        items: [
+          { title: "Overview", url: "/observability/overview", icon: "LayoutDashboard" },
+          { title: "Query Performance", url: "/observability/query-performance", icon: "DatabaseZap" },
+          { title: "API Gateway", url: "/observability/api-gateway", icon: "Globe" },
+        ],
+      },
+      {
+        title: "Infrastructure & Core",
+        items: [
+          { title: "Compute & Host", url: "/observability/compute", icon: "Server" },
+          { title: "Database & Cache", url: "/observability/database", icon: "Database" },
+          { title: "Identity (Auth)", url: "/observability/identity", icon: "KeyRound" },
+        ],
+      },
+      {
+        title: "Go Gateways",
+        items: [
+          { title: "OLT & Poller", url: "/observability/olt-poller", icon: "Radio" },
+          { title: "Spatial Map", url: "/observability/spatial-map", icon: "Map" },
+          { title: "Messaging", url: "/observability/messaging", icon: "MessageSquare" },
+          { title: "Operations", url: "/observability/operations", icon: "Wrench" },
+        ],
+      },
+    ],
+  },
 };

@@ -8,20 +8,15 @@ import { throughputData } from "@/lib/system-overview-data";
 import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
 import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import {
-  OverviewActivityFeed,
-  OverviewDevopsSection,
   OverviewInfrastructureMap,
   OverviewMetricCardsRow,
   OverviewStatusBanner,
   OverviewThroughputChart,
+  OverviewActivityFeed,
 } from "@/components/system/overview";
 import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
 import type { ServiceNode } from "@/components/system/overview/overview-types";
 
-const FRONTEND_GIT_BRANCH = process.env.NEXT_PUBLIC_GIT_BRANCH || "main";
-const FRONTEND_GIT_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT || "unknown";
-const FRONTEND_GIT_COMMIT_SHORT =
-  FRONTEND_GIT_COMMIT.length > 7 ? FRONTEND_GIT_COMMIT.substring(0, 7) : FRONTEND_GIT_COMMIT;
 
 export default function SystemOverviewPage() {
   const data = useSystemOverviewData();
@@ -84,47 +79,28 @@ export default function SystemOverviewPage() {
             </Button>
           </div>
 
-          {/* Status banner */}
-          <OverviewStatusBanner
-            globalHealthState={globalHealthState}
-            activeGatewaysCount={data.activeGatewaysCount}
-            totalGatewaysCount={data.totalGatewaysCount}
-          />
+          {/* Status banner — only visible when there are issues */}
+          {globalHealthState !== "operational" && globalHealthState !== "loading" && (
+            <OverviewStatusBanner
+              globalHealthState={globalHealthState}
+              activeGatewaysCount={data.activeGatewaysCount}
+              totalGatewaysCount={data.totalGatewaysCount}
+            />
+          )}
 
-          {/* 4 KPI metric cards */}
+          {/* 4 Business KPI Cards */}
           <OverviewMetricCardsRow
             loadingOrgs={data.loadingOrgs}
             loadingUsers={data.loadingUsers}
-            loadingGateways={data.loadingGateways}
-            loadingHealth={data.loadingHealth}
             totalOrgs={data.totalOrgs}
             activeOrgs={data.activeOrgs}
             trialOrgs={data.trialOrgs}
             totalUsers={data.userStats.totalUsers}
             activeUsers={data.userStats.activeUsers}
             pendingRequests={data.userStats.pendingRequests}
-            activeGatewaysCount={data.activeGatewaysCount}
-            totalGatewaysCount={data.totalGatewaysCount}
-            allGatewaysHealthy={data.allGatewaysHealthy}
-            avgLatency={data.avgLatency}
-            cpu={data.systemResources.cpu}
-            memory={data.systemResources.memory}
-            memoryUsed={data.systemResources.memoryUsed}
           />
 
-          {/* DevOps section */}
-          <OverviewDevopsSection
-            devopsStats={data.devopsStats}
-            githubIntegrationStatus={data.githubIntegrationStatus}
-            postgresStatus={data.systemHealth.postgresStatus}
-            redisStatus={data.systemHealth.redisStatus}
-            postgresConns={data.systemResources.postgresConns}
-            redisCacheHit={data.systemResources.redisCacheHit}
-            globalHealthState={globalHealthState}
-            frontendGitBranch={FRONTEND_GIT_BRANCH}
-            frontendGitCommit={FRONTEND_GIT_COMMIT}
-            frontendGitCommitShort={FRONTEND_GIT_COMMIT_SHORT}
-          />
+
 
           {/* Interactive infrastructure map */}
           <OverviewInfrastructureMap
