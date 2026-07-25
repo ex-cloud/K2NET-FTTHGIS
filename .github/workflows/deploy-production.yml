@@ -6,7 +6,7 @@ name: 🚀 Production Deploy Pipeline
 # melakukan deployment ke production. Docker build DILARANG
 # dijalankan langsung di server/VM untuk mencegah server overload.
 #
-# Alur: validate → docker-build (GHA Runner) → deploy (pull only)
+# Alur: detect-changes → validate → docker-build (GHA Runner) → deploy (pull only)
 # ============================================================
 
 on:
@@ -36,17 +36,46 @@ on:
 
 jobs:
 # ============================================================
+# JOB 0: DETECT CHANGES — Mendeteksi file mana yang berubah
+# ============================================================
+  changes:
+    name: 🔍 Detect Changed Components
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'apps/studio-admin/**'
+              - 'packages/**'
+              - 'pnpm-workspace.yaml'
+              - 'pnpm-lock.yaml'
+              - '.github/workflows/deploy-production.yml'
+            backend:
+              - 'apps/api/**'
+              - '.github/workflows/deploy-production.yml'
+
+# ============================================================
 # JOB 1: VALIDATE — Memastikan sintaks & build 100% lulus
 # ============================================================
   validate-frontend-admin:
     name: ✅ Validate Frontend Admin (Next.js)
     runs-on: ubuntu-latest
+    needs: changes
     if: |
       github.event_name == 'workflow_dispatch' && (
         github.event.inputs.service == 'all' ||
         github.event.inputs.service == 'frontend-admin'
       ) || (
-        github.event_name == 'push'
+        github.event_name == 'push' && needs.changes.outputs.frontend == 'true'
       )
     steps:
       - name: Checkout repository
@@ -86,12 +115,13 @@ jobs:
   validate-backend:
     name: ✅ Validate Backend (Spring Boot / Maven)
     runs-on: ubuntu-latest
+    needs: changes
     if: |
       github.event_name == 'workflow_dispatch' && (
         github.event.inputs.service == 'all' ||
         github.event.inputs.service == 'backend'
       ) || (
-        github.event_name == 'push'
+        github.event_name == 'push' && needs.changes.outputs.backend == 'true'
       )
     steps:
       - name: Checkout repository
@@ -115,7 +145,8 @@ jobs:
   docker-build-frontend-admin:
     name: 🐳 Docker Build — frontend-admin (GHA Runner)
     runs-on: ubuntu-latest
-    needs: validate-frontend-admin
+    needs: [changes, validate-frontend-admin]
+    if: always() && needs.validate-frontend-admin.result == 'success'
     permissions:
       contents: read
       packages: write
@@ -164,7 +195,7 @@ jobs:
   docker-build-backend:
     name: 🐳 Docker Build — backend (GHA Runner)
     runs-on: ubuntu-latest
-    needs: validate-backend
+    needs: [changes, validate-backend]
     if: always() && needs.validate-backend.result == 'success'
     permissions:
       contents: read
@@ -212,7 +243,9 @@ jobs:
     name: 🚢 Deploy to Production (Pull Only — No Build on Server)
     runs-on: ubuntu-latest
     needs:
+      - changes
       - docker-build-frontend-admin
+      - docker-build-backend
     if: always() && (needs.docker-build-frontend-admin.result == 'success' || needs.docker-build-backend.result == 'success')
     environment: production
     steps:
@@ -227,16 +260,23 @@ jobs:
             set -e
             cd /opt/project5
 
-            echo "=== [1/4] Sync kode dari main branch ==="
+            echo "=== [1/3] Sync kode dari main branch ==="
             git fetch origin
             git checkout main
             git pull origin main
 
-            echo "=== [2/4] Pull images yang dibangun oleh GitHub Actions Runner ==="
-            bash scripts/deploy.sh production frontend-admin
-            bash scripts/deploy.sh production backend
+            echo "=== [2/3] Pull & restart updated services ==="
+            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-admin" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+              echo "Pulling frontend-admin..."
+              bash scripts/deploy.sh production frontend-admin
+            fi
 
-            echo "=== [3/4] Verifikasi Container Status ==="
+            if [ "${{ needs.changes.outputs.backend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "backend" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+              echo "Pulling backend..."
+              bash scripts/deploy.sh production backend
+            fi
+
+            echo "=== [3/3] Verifikasi Container Status ==="
             docker ps --filter "name=ftth-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
             echo "✅ Deployment production selesai!"
