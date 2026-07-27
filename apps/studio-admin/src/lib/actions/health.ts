@@ -103,7 +103,7 @@ export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
     const onlineCount = gateways.filter((g) => g.up).length;
 
     return {
-      cpu: isNaN(cpu) ? 0 : cpu,
+      cpu: isNaN(cpu) ? 0 : Math.round(cpu * 100) / 100,
       memUsedBytes: memTotal - memAvail,
       memTotalBytes: memTotal,
       diskUsedBytes: diskTotal - diskAvail,
