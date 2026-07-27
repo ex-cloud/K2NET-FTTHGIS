@@ -1,9 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, Badge, PageLayout } from "@k2net/ui";
-import { Map, Layers, Globe } from "lucide-react";
+import { Map as MapIcon, Layers, Globe } from "lucide-react";
 import { mapTileRpsMock } from "@/lib/mock-data/observability-mock";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { SpatialDiagnosticsMap } from "@/components/map/spatial-diagnostics-map";
 
 export default function SpatialMapPage() {
   const avgCacheHit = Math.round(mapTileRpsMock.reduce((a, b) => a + b.cacheHit, 0) / mapTileRpsMock.length);
@@ -15,7 +16,7 @@ export default function SpatialMapPage() {
       <div className="flex items-center justify-between border-b border-border pb-5">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-            <Map className="h-5 w-5 text-primary" />
+            <MapIcon className="h-5 w-5 text-primary" />
             Spatial Map Gateway
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -115,6 +116,9 @@ export default function SpatialMapPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Global Spatial Explorer MapLibre Canvas Section */}
+      <SpatialDiagnosticsMap />
     </PageLayout>
   );
 }

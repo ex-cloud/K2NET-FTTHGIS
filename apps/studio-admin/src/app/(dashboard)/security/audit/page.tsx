@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge, Button, Input, PageLayout } from "@k2net/ui";
 import { History, Save, RefreshCw, Database, Clock, Play, CheckCircle2, XCircle } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useAuditLogStream, AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 import { SystemSecurityWrapper } from "@/components/page-guards/system-security-wrapper";
 import { SettingsSection } from "../../settings/components/settings-section";
 import { SettingsFormRow } from "../../settings/components/settings-form-row";
@@ -245,8 +246,105 @@ export default function SecurityAuditLogsPage() {
             )}
           </div>
 
+          {/* Section 5: Real-Time Live Log Stream (SSE Feed) */}
+          <LiveLogStreamSection />
+
         </div>
       </PageLayout>
     </SystemSecurityWrapper>
   );
 }
+
+function LiveLogStreamSection() {
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const { logs, totalCount, status, clearLogs } = useAuditLogStream(categoryFilter);
+
+  const categoryFilters = [
+    { key: "all", label: "All Events" },
+    { key: "olt", label: "🚨 OLT Loss" },
+    { key: "auth", label: "🔐 Auth Failures" },
+    { key: "postgis", label: "🗺️ Slow PostGIS" },
+    { key: "general", label: "⚙️ System" },
+  ];
+
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm space-y-0 font-mono text-xs">
+      {/* Terminal Bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+          </div>
+          <span className="font-bold text-foreground tracking-wide flex items-center gap-2">
+            Real-Time Audit Log Feed <Badge className="text-[9px] font-mono border-primary/20 bg-primary/10 text-primary">SSE LIVE</Badge>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${status === "live" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+            <span className="text-[10px] text-muted-foreground uppercase font-semibold">{status}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearLogs}
+            className="h-7 text-[10px] text-muted-foreground hover:text-foreground px-2"
+          >
+            Clear Feed
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1 px-4 py-2 border-b border-border/60 bg-muted/10 overflow-x-auto">
+        {categoryFilters.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setCategoryFilter(tab.key)}
+            className={`px-2.5 py-1 rounded text-[11px] transition-colors whitespace-nowrap font-medium ${
+              categoryFilter === tab.key
+                ? "bg-primary/15 text-primary border border-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <span className="ml-auto text-[10px] text-muted-foreground/80 shrink-0">
+          Showing {logs.length} of {totalCount} events
+        </span>
+      </div>
+
+      {/* Monospace Log Viewer */}
+      <div className="h-64 overflow-y-auto p-4 space-y-2 bg-background/60 font-mono text-[11px]">
+        {logs.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-muted-foreground text-xs italic">
+            Waiting for real-time audit log stream events...
+          </div>
+        ) : (
+          logs.map((log: AuditStreamEntry) => (
+            <div key={log.id} className="flex items-start gap-3 text-muted-foreground hover:text-foreground transition-colors group">
+              <span className="text-muted-foreground/60 shrink-0 font-mono text-[10px] select-none">{log.timestamp}</span>
+              <Badge
+                className={`text-[9px] px-1.5 py-0 font-mono uppercase shrink-0 ${
+                  log.severity === "WARN" || log.severity === "CRITICAL"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-primary/10 text-primary border-primary/20"
+                }`}
+              >
+                {log.severity}
+              </Badge>
+              <span className="text-foreground font-medium shrink-0">[{log.action}]</span>
+              <span className="truncate text-muted-foreground group-hover:text-foreground">{log.message}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground/50 shrink-0">actor: {log.actor}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
