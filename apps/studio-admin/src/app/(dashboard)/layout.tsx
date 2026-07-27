@@ -64,6 +64,8 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { LogsFilterProvider } from "@/components/logs/logs-filter-context";
+
 export default function SystemLayout({
   children,
 }: {
@@ -72,7 +74,9 @@ export default function SystemLayout({
   return (
     <SidebarModeProvider>
       <CommandPaletteProvider>
-        <SystemLayoutContent>{children}</SystemLayoutContent>
+        <LogsFilterProvider>
+          <SystemLayoutContent>{children}</SystemLayoutContent>
+        </LogsFilterProvider>
       </CommandPaletteProvider>
     </SidebarModeProvider>
   );
