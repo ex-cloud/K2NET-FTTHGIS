@@ -51,11 +51,6 @@ const nextConfig: NextConfig = {
         destination: "/observability/api-gateway",
         permanent: true,
       },
-      {
-        source: "/logs",
-        destination: "/observability/operations",
-        permanent: true,
-      },
     ];
   },
 };
