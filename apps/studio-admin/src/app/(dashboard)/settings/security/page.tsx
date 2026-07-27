@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout, Switch, TracingBeam } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout, Switch } from "@k2net/ui";
 import { ShieldCheck, Save, RefreshCw } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
@@ -86,95 +86,93 @@ export default function SettingsSecurityPage() {
           </div>
         </div>
 
-        {/* Content with TracingBeam */}
-        <TracingBeam className="px-4">
-          <div className="pl-4 md:pl-10 space-y-8 pb-16">
-            
-            {/* Section 1: Keycloak IAM & JWT */}
-            <SettingsSection
-              title="Keycloak IAM & JWT Token Validation"
-              description="URL realm issuer dan algoritma tanda tangan digital untuk validasi token akses pengguna."
+        {/* Form Content */}
+        <div className="space-y-8 pb-16">
+          
+          {/* Section 1: Keycloak IAM & JWT */}
+          <SettingsSection
+            title="Keycloak IAM & JWT Token Validation"
+            description="URL realm issuer dan algoritma tanda tangan digital untuk validasi token akses pengguna."
+          >
+            <SettingsFormRow
+              label="Keycloak Realm Issuer URL"
+              description="Endpoint publik realm Keycloak 26 yang digunakan Kong API Gateway dan NextAuth untuk memverifikasi JWT."
             >
-              <SettingsFormRow
-                label="Keycloak Realm Issuer URL"
-                description="Endpoint publik realm Keycloak 26 yang digunakan Kong API Gateway dan NextAuth untuk memverifikasi JWT."
-              >
-                <Input
-                  type="text"
-                  value={getValue("keycloak_issuer_url", "https://auth-gis.k2net.id/realms/ftth-realm")}
-                  onChange={(e) => handleInputChange("keycloak_issuer_url", e.target.value)}
-                  placeholder="https://auth-gis.k2net.id/realms/ftth-realm"
-                  className="bg-background/80 border-border text-foreground text-xs w-full max-w-md font-mono focus:border-primary"
-                />
-              </SettingsFormRow>
+              <Input
+                type="text"
+                value={getValue("keycloak_issuer_url", "https://auth-gis.k2net.id/realms/ftth-realm")}
+                onChange={(e) => handleInputChange("keycloak_issuer_url", e.target.value)}
+                placeholder="https://auth-gis.k2net.id/realms/ftth-realm"
+                className="bg-background/80 border-border text-foreground text-xs w-full max-w-md font-mono focus:border-primary"
+              />
+            </SettingsFormRow>
 
-              <SettingsFormRow
-                label="JWT Signing Algorithm"
-                description="Algoritma kriptografi standar untuk menandatangani dan memverifikasi token JWT."
-                divider={false}
-              >
-                <select
-                  value={getValue("jwt_algorithm", "RS256")}
-                  onChange={(e) => handleInputChange("jwt_algorithm", e.target.value)}
-                  className="bg-background border border-border text-foreground text-xs rounded-md px-3 py-1.5 focus:border-primary w-40 font-mono"
-                >
-                  <option value="RS256">RS256 (Asymmetric PKI)</option>
-                  <option value="HS256">HS256 (Symmetric HMAC)</option>
-                </select>
-              </SettingsFormRow>
-            </SettingsSection>
-
-            {/* Section 2: Policies */}
-            <SettingsSection
-              title="Access & Registration Policies"
-              description="Kebijakan pendaftaran mandiri pengguna dan pemaksaan autentikasi dua faktor (MFA/2FA)."
+            <SettingsFormRow
+              label="JWT Signing Algorithm"
+              description="Algoritma kriptografi standar untuk menandatangani dan memverifikasi token JWT."
+              divider={false}
             >
-              <SettingsFormRow
-                label="Allow Global Self-Registration"
-                description="Saat diaktifkan, halaman pendaftaran akun terbuka untuk publik. Pengguna dapat mendaftarkan organisasi secara mandiri."
+              <select
+                value={getValue("jwt_algorithm", "RS256")}
+                onChange={(e) => handleInputChange("jwt_algorithm", e.target.value)}
+                className="bg-background border border-border text-foreground text-xs rounded-md px-3 py-1.5 focus:border-primary w-40 font-mono"
               >
-                <Switch
-                  checked={getValue("allow_self_registration", "false") === "true"}
-                  onCheckedChange={(checked) => handleSwitchChange("allow_self_registration", checked)}
-                  className="data-[state=checked]:bg-primary"
-                />
-              </SettingsFormRow>
+                <option value="RS256">RS256 (Asymmetric PKI)</option>
+                <option value="HS256">HS256 (Symmetric HMAC)</option>
+              </select>
+            </SettingsFormRow>
+          </SettingsSection>
 
-              <SettingsFormRow
-                label="Force Multi-Factor Authentication (MFA / 2FA)"
-                description="Wajibkan penggunaan aplikasi otentikator TOTP untuk seluruh Super Admin dan Administrator tenant."
-                divider={false}
-              >
-                <Switch
-                  checked={getValue("enforce_mfa", "false") === "true"}
-                  onCheckedChange={(checked) => handleSwitchChange("enforce_mfa", checked)}
-                  className="data-[state=checked]:bg-primary"
-                />
-              </SettingsFormRow>
-            </SettingsSection>
-
-            {/* Section 3: CORS Allowed Origins */}
-            <SettingsSection
-              title="Cross-Origin Resource Sharing (CORS)"
-              description="Domain publik yang diizinkan melakukan panggilan API lintas domain ke Kong API Gateway."
+          {/* Section 2: Policies */}
+          <SettingsSection
+            title="Access & Registration Policies"
+            description="Kebijakan pendaftaran mandiri pengguna dan pemaksaan autentikasi dua faktor (MFA/2FA)."
+          >
+            <SettingsFormRow
+              label="Allow Global Self-Registration"
+              description="Saat diaktifkan, halaman pendaftaran akun terbuka untuk publik. Pengguna dapat mendaftarkan organisasi secara mandiri."
             >
-              <SettingsFormRow
-                label="Allowed Origins List (Comma Separated)"
-                description="Daftar origin HTTP/HTTPS yang diperbolehkan mengakses API backend."
-                divider={false}
-              >
-                <Input
-                  type="text"
-                  value={getValue("cors_allowed_origins", "https://system-gis.k2net.id,https://gis.k2net.id")}
-                  onChange={(e) => handleInputChange("cors_allowed_origins", e.target.value)}
-                  placeholder="e.g. https://system-gis.k2net.id,https://gis.k2net.id"
-                  className="bg-background/80 border-border text-foreground text-xs w-full max-w-md font-mono focus:border-primary"
-                />
-              </SettingsFormRow>
-            </SettingsSection>
+              <Switch
+                checked={getValue("allow_self_registration", "false") === "true"}
+                onCheckedChange={(checked) => handleSwitchChange("allow_self_registration", checked)}
+                className="data-[state=checked]:bg-primary"
+              />
+            </SettingsFormRow>
 
-          </div>
-        </TracingBeam>
+            <SettingsFormRow
+              label="Force Multi-Factor Authentication (MFA / 2FA)"
+              description="Wajibkan penggunaan aplikasi otentikator TOTP untuk seluruh Super Admin dan Administrator tenant."
+              divider={false}
+            >
+              <Switch
+                checked={getValue("enforce_mfa", "false") === "true"}
+                onCheckedChange={(checked) => handleSwitchChange("enforce_mfa", checked)}
+                className="data-[state=checked]:bg-primary"
+              />
+            </SettingsFormRow>
+          </SettingsSection>
+
+          {/* Section 3: CORS Allowed Origins */}
+          <SettingsSection
+            title="Cross-Origin Resource Sharing (CORS)"
+            description="Domain publik yang diizinkan melakukan panggilan API lintas domain ke Kong API Gateway."
+          >
+            <SettingsFormRow
+              label="Allowed Origins List (Comma Separated)"
+              description="Daftar origin HTTP/HTTPS yang diperbolehkan mengakses API backend."
+              divider={false}
+            >
+              <Input
+                type="text"
+                value={getValue("cors_allowed_origins", "https://system-gis.k2net.id,https://gis.k2net.id")}
+                onChange={(e) => handleInputChange("cors_allowed_origins", e.target.value)}
+                placeholder="e.g. https://system-gis.k2net.id,https://gis.k2net.id"
+                className="bg-background/80 border-border text-foreground text-xs w-full max-w-md font-mono focus:border-primary"
+              />
+            </SettingsFormRow>
+          </SettingsSection>
+
+        </div>
       </PageLayout>
     </SystemSettingsWrapper>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout, TracingBeam } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout } from "@k2net/ui";
 import { History, Save, RefreshCw, Database, Clock } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
@@ -80,73 +80,71 @@ export default function SettingsAuditLogsPage() {
           </div>
         </div>
 
-        {/* Content with TracingBeam */}
-        <TracingBeam className="px-4">
-          <div className="pl-4 md:pl-10 space-y-8 pb-16">
-            
-            {/* Section 1: Retention Policy */}
-            <SettingsSection
-              title="Audit Log Retention Policy"
-              description="Masa simpan catatan aktivitas sistem sebelum diarsipkan atau dibersihkan otomatis."
+        {/* Form Content */}
+        <div className="space-y-8 pb-16">
+          
+          {/* Section 1: Retention Policy */}
+          <SettingsSection
+            title="Audit Log Retention Policy"
+            description="Masa simpan catatan aktivitas sistem sebelum diarsipkan atau dibersihkan otomatis."
+          >
+            <SettingsFormRow
+              label="Masa Retensi Audit Log (Hari)"
+              description="Jumlah hari catatan log audit disimpan aktif di basis data PostgreSQL sebelum diarsipkan."
+              divider={false}
             >
-              <SettingsFormRow
-                label="Masa Retensi Audit Log (Hari)"
-                description="Jumlah hari catatan log audit disimpan aktif di basis data PostgreSQL sebelum diarsipkan."
-                divider={false}
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary shrink-0" />
-                  <Input
-                    type="number"
-                    min={7}
-                    max={365}
-                    value={getValue("audit_log_retention_days", "90")}
-                    onChange={(e) => handleInputChange("audit_log_retention_days", e.target.value)}
-                    className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
-                  />
-                  <span className="text-xs text-muted-foreground font-medium">Hari</span>
-                </div>
-              </SettingsFormRow>
-            </SettingsSection>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary shrink-0" />
+                <Input
+                  type="number"
+                  min={7}
+                  max={365}
+                  value={getValue("audit_log_retention_days", "90")}
+                  onChange={(e) => handleInputChange("audit_log_retention_days", e.target.value)}
+                  className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
+                />
+                <span className="text-xs text-muted-foreground font-medium">Hari</span>
+              </div>
+            </SettingsFormRow>
+          </SettingsSection>
 
-            {/* Section 2: Storage Drains & Archival */}
-            <SettingsSection
-              title="MinIO S3 Log Drain Target"
-              description="Eksportasi dan pengarsipan otomatis catatan audit log ke penyimpanan objek MinIO S3."
+          {/* Section 2: Storage Drains & Archival */}
+          <SettingsSection
+            title="MinIO S3 Log Drain Target"
+            description="Eksportasi dan pengarsipan otomatis catatan audit log ke penyimpanan objek MinIO S3."
+          >
+            <SettingsFormRow
+              label="Target Bucket MinIO S3"
+              description="Nama bucket MinIO S3 tempat penyimpanan arsip berkala file kompresi log."
             >
-              <SettingsFormRow
-                label="Target Bucket MinIO S3"
-                description="Nama bucket MinIO S3 tempat penyimpanan arsip berkala file kompresi log."
-              >
-                <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-primary shrink-0" />
-                  <Input
-                    type="text"
-                    value={getValue("minio_log_drain_bucket", "db-backups")}
-                    onChange={(e) => handleInputChange("minio_log_drain_bucket", e.target.value)}
-                    placeholder="db-backups"
-                    className="bg-background/80 border-border text-foreground text-xs w-48 font-mono focus:border-primary"
-                  />
-                </div>
-              </SettingsFormRow>
-
-              <SettingsFormRow
-                label="Jadwal Cron Pengarsipan Log"
-                description="Ekspresi cron waktu pengarsipan dan rotasi log otomatis oleh worker backend."
-                divider={false}
-              >
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-primary shrink-0" />
                 <Input
                   type="text"
-                  value={getValue("log_archival_cron", "0 0 * * *")}
-                  onChange={(e) => handleInputChange("log_archival_cron", e.target.value)}
-                  placeholder="0 0 * * *"
-                  className="bg-background/80 border-border text-foreground text-xs w-40 font-mono focus:border-primary"
+                  value={getValue("minio_log_drain_bucket", "db-backups")}
+                  onChange={(e) => handleInputChange("minio_log_drain_bucket", e.target.value)}
+                  placeholder="db-backups"
+                  className="bg-background/80 border-border text-foreground text-xs w-48 font-mono focus:border-primary"
                 />
-              </SettingsFormRow>
-            </SettingsSection>
+              </div>
+            </SettingsFormRow>
 
-          </div>
-        </TracingBeam>
+            <SettingsFormRow
+              label="Jadwal Cron Pengarsipan Log"
+              description="Ekspresi cron waktu pengarsipan dan rotasi log otomatis oleh worker backend."
+              divider={false}
+            >
+              <Input
+                type="text"
+                value={getValue("log_archival_cron", "0 0 * * *")}
+                onChange={(e) => handleInputChange("log_archival_cron", e.target.value)}
+                placeholder="0 0 * * *"
+                className="bg-background/80 border-border text-foreground text-xs w-40 font-mono focus:border-primary"
+              />
+            </SettingsFormRow>
+          </SettingsSection>
+
+        </div>
       </PageLayout>
     </SystemSettingsWrapper>
   );

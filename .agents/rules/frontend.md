@@ -116,4 +116,8 @@ Seluruh halaman baru **wajib** menggunakan komponen `<PageLayout>` dari `@k2net/
   * `/health`
 * **Perilaku Scroll**: Menggunakan `overflow-y-auto` pada kanvas utama dengan margin terpusat `max-w-[95rem]` (`.page-layout-container`).
 
+### C. Kebijakan Komponen TracingBeam (Anti-Inkonsistensi Layout)
+* **Dilarang Gunakan pada Form Standar**: Komponen `TracingBeam` **dilarang keras** dipasang pada halaman form standar (termasuk seluruh rute `/settings/*`).
+* **Penggunaan Terbatas**: `TracingBeam` hanya digunakan khusus untuk halaman dokumentasi bertingkat panjang, log audit timeline, atau wizard pendaftaran multi-step agar estetika antarmuka tetap bersih dan konsisten dengan rute workspace lainnya.
+
 

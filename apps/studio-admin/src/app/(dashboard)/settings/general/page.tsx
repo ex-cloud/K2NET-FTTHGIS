@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout, Switch, TracingBeam } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout, Switch } from "@k2net/ui";
 import { Sliders, Save, RefreshCw, HardDrive } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
@@ -85,102 +85,100 @@ export default function SettingsGeneralPage() {
           </div>
         </div>
 
-        {/* Content with TracingBeam */}
-        <TracingBeam className="px-4">
-          <div className="pl-4 md:pl-10 space-y-8 pb-16">
-            
-            {/* Section 1: Platform Identity */}
-            <SettingsSection
-              title="Platform Identity & Instance"
-              description="Informasi identitas dasar yang ditampilkan di seluruh portal admin & header sistem."
+        {/* Form Content */}
+        <div className="space-y-8 pb-16">
+          
+          {/* Section 1: Platform Identity */}
+          <SettingsSection
+            title="Platform Identity & Instance"
+            description="Informasi identitas dasar yang ditampilkan di seluruh portal admin & header sistem."
+          >
+            <SettingsFormRow
+              label="Nama Platform Global"
+              description="Nama resmi platform yang akan muncul pada title bar browser, email notifikasi, dan header aplikasi."
             >
-              <SettingsFormRow
-                label="Nama Platform Global"
-                description="Nama resmi platform yang akan muncul pada title bar browser, email notifikasi, dan header aplikasi."
-              >
+              <Input
+                type="text"
+                value={getValue("app_name", "K2NET FTTH GIS Platform")}
+                onChange={(e) => handleInputChange("app_name", e.target.value)}
+                placeholder="e.g. K2NET FTTH GIS Platform"
+                className="bg-background/80 border-border text-foreground text-xs max-w-xs focus:border-primary"
+              />
+            </SettingsFormRow>
+
+            <SettingsFormRow
+              label="Instance System ID"
+              description="Kode identifikasi unik instance backend yang terdaftar pada klaster enterprise."
+              divider={false}
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs text-muted-foreground bg-muted/60 border border-border px-3 py-1.5 rounded-md">
+                  k2net-prod-cluster-01
+                </span>
+                <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
+                  ACTIVE
+                </Badge>
+              </div>
+            </SettingsFormRow>
+          </SettingsSection>
+
+          {/* Section 2: Default Storage Quota */}
+          <SettingsSection
+            title="Global Storage Allocation"
+            description="Batasan kuota penyimpanan default untuk tenant/organisasi baru yang terdaftar di platform."
+          >
+            <SettingsFormRow
+              label="Default Storage Quota per Tenant (GB)"
+              description="Batas kapasitas penyimpanan MinIO S3 yang diberikan secara otomatis saat tenant baru diaktifkan."
+              divider={false}
+            >
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-primary shrink-0" />
                 <Input
-                  type="text"
-                  value={getValue("app_name", "K2NET FTTH GIS Platform")}
-                  onChange={(e) => handleInputChange("app_name", e.target.value)}
-                  placeholder="e.g. K2NET FTTH GIS Platform"
-                  className="bg-background/80 border-border text-foreground text-xs max-w-xs focus:border-primary"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={getValue("default_storage_quota", "10")}
+                  onChange={(e) => handleInputChange("default_storage_quota", e.target.value)}
+                  className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
                 />
-              </SettingsFormRow>
+                <span className="text-xs text-muted-foreground font-medium">GB</span>
+              </div>
+            </SettingsFormRow>
+          </SettingsSection>
 
-              <SettingsFormRow
-                label="Instance System ID"
-                description="Kode identifikasi unik instance backend yang terdaftar pada klaster enterprise."
-                divider={false}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground bg-muted/60 border border-border px-3 py-1.5 rounded-md">
-                    k2net-prod-cluster-01
-                  </span>
-                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 text-[10px]">
-                    ACTIVE
-                  </Badge>
-                </div>
-              </SettingsFormRow>
-            </SettingsSection>
-
-            {/* Section 2: Default Storage Quota */}
-            <SettingsSection
-              title="Global Storage Allocation"
-              description="Batasan kuota penyimpanan default untuk tenant/organisasi baru yang terdaftar di platform."
+          {/* Section 3: System Maintenance Mode */}
+          <SettingsSection
+            title="System Maintenance Lock"
+            description="Kunci pemeliharaan darurat untuk menutup akses seluruh pengguna non-Super Admin."
+          >
+            <SettingsFormRow
+              label="System-wide Maintenance Mode"
+              description="Saat diaktifkan, seluruh portal tenant dan pengguna publik akan dikunci dengan layar pemeliharaan. Hanya Super Admin yang dapat mengakses sistem."
             >
-              <SettingsFormRow
-                label="Default Storage Quota per Tenant (GB)"
-                description="Batas kapasitas penyimpanan MinIO S3 yang diberikan secara otomatis saat tenant baru diaktifkan."
-                divider={false}
-              >
-                <div className="flex items-center gap-2">
-                  <HardDrive className="w-4 h-4 text-primary shrink-0" />
-                  <Input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    value={getValue("default_storage_quota", "10")}
-                    onChange={(e) => handleInputChange("default_storage_quota", e.target.value)}
-                    className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
-                  />
-                  <span className="text-xs text-muted-foreground font-medium">GB</span>
-                </div>
-              </SettingsFormRow>
-            </SettingsSection>
+              <Switch
+                checked={getValue("system_maintenance_mode", "false") === "true"}
+                onCheckedChange={(checked) => handleSwitchChange("system_maintenance_mode", checked)}
+                className="data-[state=checked]:bg-rose-500"
+              />
+            </SettingsFormRow>
 
-            {/* Section 3: System Maintenance Mode */}
-            <SettingsSection
-              title="System Maintenance Lock"
-              description="Kunci pemeliharaan darurat untuk menutup akses seluruh pengguna non-Super Admin."
+            <SettingsFormRow
+              label="Pesan Banner Pemeliharaan"
+              description="Pesan kustom yang akan ditampilkan kepada pengguna saat mode pemeliharaan aktif."
+              divider={false}
             >
-              <SettingsFormRow
-                label="System-wide Maintenance Mode"
-                description="Saat diaktifkan, seluruh portal tenant dan pengguna publik akan dikunci dengan layar pemeliharaan. Hanya Super Admin yang dapat mengakses sistem."
-              >
-                <Switch
-                  checked={getValue("system_maintenance_mode", "false") === "true"}
-                  onCheckedChange={(checked) => handleSwitchChange("system_maintenance_mode", checked)}
-                  className="data-[state=checked]:bg-rose-500"
-                />
-              </SettingsFormRow>
+              <Input
+                type="text"
+                value={getValue("maintenance_message", "Sistem sedang dalam pemeliharaan rutin.")}
+                onChange={(e) => handleInputChange("maintenance_message", e.target.value)}
+                placeholder="e.g. Sistem sedang dalam peningkatan performa."
+                className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm focus:border-primary"
+              />
+            </SettingsFormRow>
+          </SettingsSection>
 
-              <SettingsFormRow
-                label="Pesan Banner Pemeliharaan"
-                description="Pesan kustom yang akan ditampilkan kepada pengguna saat mode pemeliharaan aktif."
-                divider={false}
-              >
-                <Input
-                  type="text"
-                  value={getValue("maintenance_message", "Sistem sedang dalam pemeliharaan rutin.")}
-                  onChange={(e) => handleInputChange("maintenance_message", e.target.value)}
-                  placeholder="e.g. Sistem sedang dalam peningkatan performa."
-                  className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm focus:border-primary"
-                />
-              </SettingsFormRow>
-            </SettingsSection>
-
-          </div>
-        </TracingBeam>
+        </div>
       </PageLayout>
     </SystemSettingsWrapper>
   );

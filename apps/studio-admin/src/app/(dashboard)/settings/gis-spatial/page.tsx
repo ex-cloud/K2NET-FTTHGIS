@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout, TracingBeam } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout } from "@k2net/ui";
 import { MapPin, Save, RefreshCw, Map as MapIcon } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
@@ -85,104 +85,102 @@ export default function SettingsGisPage() {
           </div>
         </div>
 
-        {/* Content with TracingBeam */}
-        <TracingBeam className="px-4">
-          <div className="pl-4 md:pl-10 space-y-8 pb-16">
-            
-            {/* Section 1: Projection & Coordinates */}
-            <SettingsSection
-              title="Spatial Projection & Map Center"
-              description="Sistem referensi spasial (SRID/EPSG) dan titik koordinat tengah peta bawaan platform."
+        {/* Form Content */}
+        <div className="space-y-8 pb-16">
+          
+          {/* Section 1: Projection & Coordinates */}
+          <SettingsSection
+            title="Spatial Projection & Map Center"
+            description="Sistem referensi spasial (SRID/EPSG) dan titik koordinat tengah peta bawaan platform."
+          >
+            <SettingsFormRow
+              label="Spatial Coordinate Reference System"
+              description="Standar proyeksi geospasial yang digunakan oleh PostGIS dan komponen Mapbox/MapLibre."
             >
-              <SettingsFormRow
-                label="Spatial Coordinate Reference System"
-                description="Standar proyeksi geospasial yang digunakan oleh PostGIS dan komponen Mapbox/MapLibre."
+              <select
+                value={getValue("default_epsg_code", "EPSG:4326")}
+                onChange={(e) => handleInputChange("default_epsg_code", e.target.value)}
+                className="bg-background border border-border text-foreground text-xs rounded-md px-3 py-1.5 focus:border-primary w-48"
               >
-                <select
-                  value={getValue("default_epsg_code", "EPSG:4326")}
-                  onChange={(e) => handleInputChange("default_epsg_code", e.target.value)}
-                  className="bg-background border border-border text-foreground text-xs rounded-md px-3 py-1.5 focus:border-primary w-48"
-                >
-                  <option value="EPSG:4326">EPSG:4326 (WGS 84 - Lat/Lng)</option>
-                  <option value="EPSG:3857">EPSG:3857 (Web Mercator)</option>
-                </select>
-              </SettingsFormRow>
+                <option value="EPSG:4326">EPSG:4326 (WGS 84 - Lat/Lng)</option>
+                <option value="EPSG:3857">EPSG:3857 (Web Mercator)</option>
+              </select>
+            </SettingsFormRow>
 
-              <SettingsFormRow
-                label="Titik Koordinat Pusat (Lat / Lng)"
-                description="Koordinat geografis default saat peta pertama kali dimuat oleh pengguna."
-              >
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={getValue("default_map_lat", "-6.9175")}
-                    onChange={(e) => handleInputChange("default_map_lat", e.target.value)}
-                    placeholder="Latitude"
-                    className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
-                  />
-                  <span className="text-xs text-muted-foreground font-mono">,</span>
-                  <Input
-                    type="text"
-                    value={getValue("default_map_lng", "107.6191")}
-                    onChange={(e) => handleInputChange("default_map_lng", e.target.value)}
-                    placeholder="Longitude"
-                    className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
-                  />
-                </div>
-              </SettingsFormRow>
-
-              <SettingsFormRow
-                label="Interactive Map Coordinate Picker"
-                description="Gunakan peta interaktif visual untuk menentukan lokasi pusat dan mendapatkan alamat otomatis."
-                divider={false}
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setMapPickerOpen(true)}
-                  className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
-                >
-                  <MapIcon className="w-3.5 h-3.5 text-primary" /> Pick Center Location
-                </Button>
-              </SettingsFormRow>
-            </SettingsSection>
-
-            {/* Section 2: Zoom & Tiles */}
-            <SettingsSection
-              title="Tile Engine & Zoom Level"
-              description="Konfigurasi tingkat perbesaran peta dan URL server Martin vector tile (PostGIS pbf)."
+            <SettingsFormRow
+              label="Titik Koordinat Pusat (Lat / Lng)"
+              description="Koordinat geografis default saat peta pertama kali dimuat oleh pengguna."
             >
-              <SettingsFormRow
-                label="Default Zoom Level (0 - 22)"
-                description="Tingkat perbesaran awal saat peta diinisialisasi di dashboard."
-              >
-                <Input
-                  type="number"
-                  min={1}
-                  max={22}
-                  value={getValue("default_map_zoom", "12")}
-                  onChange={(e) => handleInputChange("default_map_zoom", e.target.value)}
-                  className="bg-background/80 border-border text-foreground text-xs w-24 text-right focus:border-primary"
-                />
-              </SettingsFormRow>
-
-              <SettingsFormRow
-                label="Martin Vector Tile Server Endpoint"
-                description="URL endpoint template server Martin (Rust PostGIS MVT) untuk merender aset jaringan fiber optik."
-                divider={false}
-              >
+              <div className="flex items-center gap-2">
                 <Input
                   type="text"
-                  value={getValue("vector_tile_source", "http://localhost:3001/tiles/{z}/{x}/{y}.pbf")}
-                  onChange={(e) => handleInputChange("vector_tile_source", e.target.value)}
-                  placeholder="http://localhost:3001/tiles/{z}/{x}/{y}.pbf"
-                  className="bg-background/80 border-border text-foreground text-xs w-full max-w-md focus:border-primary font-mono"
+                  value={getValue("default_map_lat", "-6.9175")}
+                  onChange={(e) => handleInputChange("default_map_lat", e.target.value)}
+                  placeholder="Latitude"
+                  className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
                 />
-              </SettingsFormRow>
-            </SettingsSection>
+                <span className="text-xs text-muted-foreground font-mono">,</span>
+                <Input
+                  type="text"
+                  value={getValue("default_map_lng", "107.6191")}
+                  onChange={(e) => handleInputChange("default_map_lng", e.target.value)}
+                  placeholder="Longitude"
+                  className="bg-background/80 border-border text-foreground text-xs w-28 text-right focus:border-primary"
+                />
+              </div>
+            </SettingsFormRow>
 
-          </div>
-        </TracingBeam>
+            <SettingsFormRow
+              label="Interactive Map Coordinate Picker"
+              description="Gunakan peta interaktif visual untuk menentukan lokasi pusat dan mendapatkan alamat otomatis."
+              divider={false}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMapPickerOpen(true)}
+                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
+              >
+                <MapIcon className="w-3.5 h-3.5 text-primary" /> Pick Center Location
+              </Button>
+            </SettingsFormRow>
+          </SettingsSection>
+
+          {/* Section 2: Zoom & Tiles */}
+          <SettingsSection
+            title="Tile Engine & Zoom Level"
+            description="Konfigurasi tingkat perbesaran peta dan URL server Martin vector tile (PostGIS pbf)."
+          >
+            <SettingsFormRow
+              label="Default Zoom Level (0 - 22)"
+              description="Tingkat perbesaran awal saat peta diinisialisasi di dashboard."
+            >
+              <Input
+                type="number"
+                min={1}
+                max={22}
+                value={getValue("default_map_zoom", "12")}
+                onChange={(e) => handleInputChange("default_map_zoom", e.target.value)}
+                className="bg-background/80 border-border text-foreground text-xs w-24 text-right focus:border-primary"
+              />
+            </SettingsFormRow>
+
+            <SettingsFormRow
+              label="Martin Vector Tile Server Endpoint"
+              description="URL endpoint template server Martin (Rust PostGIS MVT) untuk merender aset jaringan fiber optik."
+              divider={false}
+            >
+              <Input
+                type="text"
+                value={getValue("vector_tile_source", "http://localhost:3001/tiles/{z}/{x}/{y}.pbf")}
+                onChange={(e) => handleInputChange("vector_tile_source", e.target.value)}
+                placeholder="http://localhost:3001/tiles/{z}/{x}/{y}.pbf"
+                className="bg-background/80 border-border text-foreground text-xs w-full max-w-md focus:border-primary font-mono"
+              />
+            </SettingsFormRow>
+          </SettingsSection>
+
+        </div>
 
         {/* Map Picker Modal */}
         <MapCoordinatePicker
