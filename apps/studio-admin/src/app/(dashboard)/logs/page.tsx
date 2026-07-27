@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuditLogStream, AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
 import { toast } from "sonner";
 
 export default function GlobalLogsPage() {
@@ -80,34 +81,32 @@ export default function GlobalLogsPage() {
   };
 
   return (
-    <PageLayout variant="workspace" spaceY="space-y-0" showLogoWatermark={false}>
-      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden font-sans">
+    <SystemHealthWrapper>
+      <PageLayout variant="workspace" spaceY="space-y-6">
         
-        {/* Top Header Bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-card/60 backdrop-blur-md shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
-              <Terminal className="h-5 w-5" />
+        {/* Workspace Standard Header */}
+        <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                Monitoring
+              </Badge>
+              <span className="text-xs text-muted-foreground">• Forensics & Real-time Log Stream</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-foreground tracking-tight">Logs Explorer</h1>
-                <Badge className="text-[9px] font-mono border-primary/20 bg-primary/10 text-primary">
-                  SUPABASE STYLE
-                </Badge>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Centralized real-time event streaming and forensics across all platform microservices.
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <Terminal className="w-6 h-6 text-primary" /> Global Logs Explorer
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Centralized real-time event streaming and forensics across all platform microservices.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsLivePaused(!isLivePaused)}
-              className={`h-8 text-xs font-mono gap-1.5 border-border ${
+              className={`h-9 text-xs font-mono gap-1.5 border-border ${
                 isLivePaused ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-card text-foreground"
               }`}
             >
@@ -119,7 +118,7 @@ export default function GlobalLogsPage() {
               variant="outline"
               size="sm"
               onClick={handleExportJson}
-              className="h-8 text-xs font-mono gap-1.5 border-border hover:bg-muted text-foreground"
+              className="h-9 text-xs font-mono gap-1.5 border-border hover:bg-muted text-foreground"
             >
               <Download className="w-3.5 h-3.5" /> Export JSON
             </Button>
@@ -128,18 +127,18 @@ export default function GlobalLogsPage() {
               variant="ghost"
               size="sm"
               onClick={clearLogs}
-              className="h-8 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
+              className="h-9 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
             >
               <Trash2 className="w-3.5 h-3.5" /> Clear
             </Button>
           </div>
         </div>
 
-        {/* 2-Column Supabase Studio Layout */}
-        <div className="flex flex-1 min-h-0 divide-x divide-border overflow-hidden">
+        {/* Workspace Unified Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 pb-12">
           
-          {/* LEFT FILTER PANE (Supabase Style 240px Sidebar) */}
-          <div className="w-64 bg-card/40 backdrop-blur-md p-4 flex flex-col gap-5 overflow-y-auto shrink-0 font-sans text-xs">
+          {/* LEFT FILTER CONTROLS PANE (1/4 column) */}
+          <div className="bg-card/60 backdrop-blur-md p-4 rounded-xl border border-border flex flex-col gap-5 shrink-0 font-sans text-xs shadow-xs h-fit">
             
             {/* Search Input */}
             <div className="space-y-1.5">
@@ -183,11 +182,11 @@ export default function GlobalLogsPage() {
               </label>
               <div className="space-y-1.5 font-mono text-[11px]">
                 {[
-                  { key: "api_gateway", label: "API Gateway", count: 71, icon: Layers },
-                  { key: "postgis_db", label: "PostGIS & DB", count: 15, icon: Database },
-                  { key: "spring_boot", label: "Spring Boot Core", count: 8, icon: Building2 },
-                  { key: "keycloak_auth", label: "Keycloak Auth", count: 3, icon: KeyRound },
-                  { key: "go_gateways", label: "Go Gateways", count: 42, icon: Cpu },
+                  { key: "api_gateway", label: "API Gateway", count: 71 },
+                  { key: "postgis_db", label: "PostGIS & DB", count: 15 },
+                  { key: "spring_boot", label: "Spring Boot Core", count: 8 },
+                  { key: "keycloak_auth", label: "Keycloak Auth", count: 3 },
+                  { key: "go_gateways", label: "Go Gateways", count: 42 },
                 ].map((type) => (
                   <label
                     key={type.key}
@@ -238,7 +237,7 @@ export default function GlobalLogsPage() {
             </div>
 
             {/* Footer Connection Status */}
-            <div className="mt-auto pt-4 border-t border-border/50 space-y-1 font-mono text-[10px]">
+            <div className="pt-3 border-t border-border/50 space-y-1 font-mono text-[10px]">
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>SSE Stream Status:</span>
                 <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
@@ -253,11 +252,11 @@ export default function GlobalLogsPage() {
 
           </div>
 
-          {/* MAIN TERMINAL LOG STREAM CANVAS */}
-          <div className="flex-1 bg-background flex flex-col min-w-0 font-mono text-xs overflow-hidden">
+          {/* MAIN TERMINAL LOG STREAM CANVAS (3/4 column) */}
+          <div className="lg:col-span-3 bg-card/60 backdrop-blur-md rounded-xl border border-border flex flex-col font-mono text-xs overflow-hidden shadow-xs h-[600px]">
             
             {/* Table Header Bar */}
-            <div className="flex items-center px-4 py-2 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none shrink-0">
+            <div className="flex items-center px-4 py-2.5 bg-muted/40 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none shrink-0">
               <div className="w-36 shrink-0">Timestamp</div>
               <div className="w-20 shrink-0">Level</div>
               <div className="w-40 shrink-0">Event / Action</div>
@@ -340,7 +339,7 @@ export default function GlobalLogsPage() {
 
         </div>
 
-      </div>
-    </PageLayout>
+      </PageLayout>
+    </SystemHealthWrapper>
   );
 }

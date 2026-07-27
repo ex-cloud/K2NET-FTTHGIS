@@ -92,6 +92,8 @@ export function SystemSecondarySidebar() {
     activeKey = "observability";
   } else if (pathname?.includes("/settings")) {
     activeKey = "settings";
+  } else if (pathname?.includes("/logs")) {
+    activeKey = "logs";
   }
 
   if (!activeKey) return null;
