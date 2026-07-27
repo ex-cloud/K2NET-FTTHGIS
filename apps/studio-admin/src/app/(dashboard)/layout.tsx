@@ -5,6 +5,7 @@ import { AdminSidebar } from "@/components/system/admin-sidebar";
 import { SidebarModeProvider, useSidebarMode } from "@/components/sidebar-mode-context";
 import { usePathname } from "next/navigation";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
+import { CommandPaletteProvider } from "@/components/command-palette/command-palette-provider";
 
 import * as React from "react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -70,7 +71,9 @@ export default function SystemLayout({
 }) {
   return (
     <SidebarModeProvider>
-      <SystemLayoutContent>{children}</SystemLayoutContent>
+      <CommandPaletteProvider>
+        <SystemLayoutContent>{children}</SystemLayoutContent>
+      </CommandPaletteProvider>
     </SidebarModeProvider>
   );
 }

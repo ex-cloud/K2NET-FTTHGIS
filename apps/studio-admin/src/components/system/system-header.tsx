@@ -3,13 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HelpCircle, MessageSquare, ShieldCheck, ArrowLeftRight, Menu } from "lucide-react";
+import { HelpCircle, MessageSquare, ShieldCheck, ArrowLeftRight, Menu, Search } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { Separator } from "@k2net/ui";
 import { Sheet, SheetContent, SheetTrigger } from "@k2net/ui";
 import { UserNav } from "../user-nav";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEMS, checkIsActive } from "./admin-sidebar";
+import { useCommandPalette } from "../command-palette/command-palette-provider";
 
 import { getLogoUrl, getTenantUrl } from "@/lib/domain";
 
@@ -19,6 +20,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 export function SystemHeader() {
   const pathname = usePathname();
   const { settings = [] } = useSystemSettings();
+  const { openCommandPalette } = useCommandPalette();
 
   const appName = settings.find((s) => s.key === "app_name")?.value || "System Admin";
   const logoUrl = settings.find((s) => s.key === "logo_url")?.value || "";
@@ -95,12 +97,32 @@ export function SystemHeader() {
         </div>
       </div>
 
+      {/* Global Command Palette Trigger Button (Fake Search Input) */}
+      <button
+        onClick={() => openCommandPalette()}
+        className="hidden md:flex items-center justify-between w-64 lg:w-80 px-3 py-1.5 text-xs rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">Search or jump to...</span>
+        </div>
+        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground shrink-0">
+          ⌘K
+        </kbd>
+      </button>
+
       <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="sm"
           className="hidden text-muted-foreground hover:text-foreground md:flex text-[11px] font-medium h-8 px-2 gap-2"
-          onClick={() => window.location.assign(getTenantUrl("system"))}
+          onClick={() => {
+            document.cookie = "k2net_impersonation=true; path=/; domain=.k2net.id; max-age=3600";
+            document.cookie = "k2net_impersonation=true; path=/; max-age=3600";
+            document.cookie = "k2net_impersonation_org=" + encodeURIComponent(appName) + "; path=/; domain=.k2net.id; max-age=3600";
+            document.cookie = "k2net_impersonation_org=" + encodeURIComponent(appName) + "; path=/; max-age=3600";
+            window.location.assign(getTenantUrl("system"));
+          }}
         >
           <ArrowLeftRight className="h-3.5 w-3.5" />
           Switch to Tenant

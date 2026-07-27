@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { auth } from "@/auth";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 
 export const metadata: Metadata = {
   title: "FTTH GIS",
@@ -52,7 +53,10 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased font-sans">
-        <Providers session={session}>{children}</Providers>
+        <Providers session={session}>
+          <ImpersonationBanner />
+          {children}
+        </Providers>
       </body>
     </html>
   );
