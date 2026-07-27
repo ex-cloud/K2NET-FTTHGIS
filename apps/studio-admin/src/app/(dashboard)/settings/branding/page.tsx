@@ -204,6 +204,109 @@ export default function SettingsBrandingPage() {
             </SettingsFormRow>
           </SettingsSection>
 
+          {/* Section 3: Linear-Style Interface & Theme Customizer */}
+          <SettingsSection
+            title="Interface and Theme (Linear Style)"
+            description="Kustomisasi tampilan antarmuka, opsi kursor, ukuran font, dan skema warna preferensi pengguna."
+          >
+            {/* App Sidebar Customization */}
+            <SettingsFormRow
+              label="App Sidebar"
+              description="Atur visibilitas item sidebar, urutan menu, dan gaya lencana status."
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border hover:bg-muted text-foreground text-xs h-8 px-3"
+                onClick={() => toast.info("Modifikasi tata letak sidebar aktif.")}
+              >
+                Customize
+              </Button>
+            </SettingsFormRow>
+
+            {/* Font Size Selector */}
+            <SettingsFormRow
+              label="Font Size"
+              description="Sesuaikan ukuran teks standar di seluruh antarmuka aplikasi."
+            >
+              <select
+                value={getValue("interface_font_size", "default")}
+                onChange={(e) => handleInputChange("interface_font_size", e.target.value)}
+                className="bg-background border border-border text-foreground text-xs rounded-lg px-3 py-1.5 focus:border-primary outline-none"
+              >
+                <option value="default">Default (14px)</option>
+                <option value="compact">Compact (13px)</option>
+                <option value="large">Large (15px)</option>
+              </select>
+            </SettingsFormRow>
+
+            {/* Use Pointer Cursors Toggle */}
+            <SettingsFormRow
+              label="Use Pointer Cursors"
+              description="Ubah penunjuk kursor menjadi pointer saat melayang di atas elemen interaktif."
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pointer-cursors-toggle"
+                  checked={getValue("use_pointer_cursors", "true") === "true"}
+                  onChange={(e) => handleInputChange("use_pointer_cursors", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+                />
+                <label htmlFor="pointer-cursors-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                  {getValue("use_pointer_cursors", "true") === "true" ? "Enabled" : "Disabled"}
+                </label>
+              </div>
+            </SettingsFormRow>
+
+            {/* Underline Links Toggle */}
+            <SettingsFormRow
+              label="Underline Links"
+              description="Selalu tampilkan garis bawah pada tautan teks di dalam konten."
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="underline-links-toggle"
+                  checked={getValue("underline_links", "false") === "true"}
+                  onChange={(e) => handleInputChange("underline_links", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer"
+                />
+                <label htmlFor="underline-links-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                  {getValue("underline_links", "false") === "true" ? "Always Underline" : "Default"}
+                </label>
+              </div>
+            </SettingsFormRow>
+
+            {/* Interface Theme Presets Selector */}
+            <SettingsFormRow
+              label="Interface Theme"
+              description="Pilih atau kustomisasi skema warna antarmuka portal Anda."
+              divider={false}
+            >
+              <select
+                value={getValue("interface_theme_preset", "dark")}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleInputChange("interface_theme_preset", val);
+                  if (val === "magic_blue") handleInputChange("brand_accent_color", "#3b82f6");
+                  else if (val === "dark") handleInputChange("brand_accent_color", "#10b981");
+                  else if (val === "classic_dark") handleInputChange("brand_accent_color", "#6366f1");
+                  toast.success(`Skema tema diubah ke ${val}`);
+                }}
+                className="bg-card border border-border text-foreground text-xs rounded-lg px-3 py-2 font-medium focus:border-primary outline-none max-w-xs cursor-pointer shadow-sm"
+              >
+                <option value="system">Aa  System preference</option>
+                <option value="light">Aa  Light</option>
+                <option value="pure_light">Aa  Pure Light</option>
+                <option value="dark">Aa  Dark (Default K2NET)</option>
+                <option value="magic_blue">Aa  Magic Blue</option>
+                <option value="classic_dark">Aa  Classic Dark</option>
+                <option value="custom">Aa  Custom</option>
+              </select>
+            </SettingsFormRow>
+          </SettingsSection>
+
         </div>
       </PageLayout>
     </SystemSettingsWrapper>

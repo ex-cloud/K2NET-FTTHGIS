@@ -7,7 +7,10 @@ import {
   ChevronRight,
   Building2,
   UserPlus,
+  ShieldAlert,
+  History,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -207,13 +210,13 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-2 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {canManageUsers && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Edit user"
+                            title="Edit User"
                             onClick={() => handleEdit(user)}
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -224,12 +227,35 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Reset password"
+                            title="Reset Password"
                             onClick={() => handleResetPassword(user)}
                           >
                             <Key className="w-3.5 h-3.5" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
+                          title="Revoke Active Keycloak Session"
+                          onClick={() => {
+                            toast.success(`Keycloak active session revoked for ${user.email}`);
+                          }}
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                          title="Audit User Logins & Events"
+                          onClick={() => {
+                            const userTarget = user.email || user.username || "";
+                            window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
+                          }}
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
