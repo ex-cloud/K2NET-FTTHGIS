@@ -77,10 +77,10 @@ export function PageLayout({
     return (
       <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-background relative">
         {showLogoWatermark && <LogoWatermark />}
-        <div className="flex-1 w-full min-w-0 px-6 md:px-12 xl:px-16 py-4 md:py-8 overflow-hidden relative z-10">
+        <div className="flex-1 w-full min-w-0 px-6 md:px-12 xl:px-16 py-4 md:py-8 overflow-y-auto relative z-10">
           <div
             className={cn(
-              "w-full pb-8 h-full flex flex-col mx-auto",
+              "w-full pb-16 min-h-full flex flex-col mx-auto",
               spaceY || "space-y-6",
               maxWidth,
               className

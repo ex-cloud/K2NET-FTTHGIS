@@ -69,15 +69,15 @@ export function TracingBeam({ children, className }: TracingBeamProps) {
       frameId = requestAnimationFrame(tick);
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("resize", onScroll, { capture: true, passive: true });
 
     onScroll();
     frameId = requestAnimationFrame(tick);
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll, true);
       if (frameId) {
         cancelAnimationFrame(frameId);
       }
