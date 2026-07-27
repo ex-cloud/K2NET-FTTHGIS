@@ -94,3 +94,26 @@ Aplikasi studio FTTH GIS menggunakan tema **dynamic brand-aware** bernuansa prem
   * Frontend wajib menyematkan header `X-Tenant-ID: <orgId>` pada setiap API call untuk diverifikasi oleh Kong.
   * Segala transaksi database, cache Redis, dan bucket MinIO di microservices Go wajib di-scope menggunakan ID Tenant yang aktif.
 
+---
+
+## 📐 7. Standardisasi PageLayout: Varian Workspace vs Dashboard
+
+Seluruh halaman baru **wajib** menggunakan komponen `<PageLayout>` dari `@k2net/ui` dengan pemilihan `variant` yang ketat berdasarkan keberadaan navigasi sekunder (*Secondary Sidebar*):
+
+### A. Workspace Variant (`<PageLayout variant="workspace">`) — WAJIB UNTUK HALAMAN SUB-MENU
+* **Penggunaan Wajib**: Digunakan untuk **seluruh halaman yang memiliki sub-menu / Secondary Sidebar 240px** (`SYSTEM_SIDEBAR_NAVIGATION`), yaitu rute:
+  * `/settings/*` (`/settings/general`, `/settings/gis-spatial`, `/settings/branding`, `/settings/security`, `/settings/audit-logs`, `/settings/smtp-mail`)
+  * `/users/*` (`/users`, `/users/roles`, `/users/sessions`)
+  * `/security/*` (`/security/roles`, `/security/permissions`, `/security/auth`, `/security/sso`, `/security/audit`, `/security/alerts`, `/security/password-policy`, `/security/compliance`)
+  * `/gateways/*` (`/gateways/overview`, `/gateways/notification`, `/gateways/payment`, `/gateways/map`, `/gateways/storage`, dll.)
+  * `/observability/*` (apabila menggunakan sub-menu navigasi sekunder)
+* **Perilaku Scroll**: Menggunakan `overflow-y-auto` pada kontainer konten dalam agar seluruh konten form/tabel yang panjang **dapat di-scroll vertikal 100% lancar** tanpa terpotong (*clipped*).
+
+### B. Dashboard Variant (`<PageLayout variant="dashboard">`) — WAJIB UNTUK HALAMAN MANDIRI
+* **Penggunaan Wajib**: Digunakan **hanya untuk halaman mandiri (standalone)** yang TIDAK memiliki sub-menu / Secondary Sidebar, yaitu rute:
+  * `/overview`
+  * `/organizations`
+  * `/health`
+* **Perilaku Scroll**: Menggunakan `overflow-y-auto` pada kanvas utama dengan margin terpusat `max-w-[95rem]` (`.page-layout-container`).
+
+
