@@ -138,18 +138,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "General Settings", url: "/settings/general", icon: "Sliders" },
           { title: "GIS & Spatial Map", url: "/settings/gis-spatial", icon: "MapPin" },
           { title: "Branding & Whitelabel", url: "/settings/branding", icon: "Palette" },
-        ],
-      },
-      {
-        title: "Security & Routing",
-        items: [
-          { title: "Security & CORS", url: "/settings/security", icon: "ShieldCheck" },
-          { title: "Audit Log Retention", url: "/settings/audit-logs", icon: "History" },
-        ],
-      },
-      {
-        title: "System Communications",
-        items: [
           { title: "SMTP Mail Server", url: "/settings/smtp-mail", icon: "Mail" },
         ],
       },
