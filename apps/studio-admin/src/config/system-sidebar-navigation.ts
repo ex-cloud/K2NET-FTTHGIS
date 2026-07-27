@@ -17,6 +17,23 @@ export type SidebarConfig = {
 };
 
 export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
+  logs: {
+    title: "Global Logs",
+    sections: [
+      {
+        title: "Forensics & Stream",
+        items: [
+          { title: "Logs Explorer", url: "/logs", icon: "Terminal" },
+        ],
+      },
+      {
+        title: "System Operations",
+        items: [
+          { title: "Operations Feed", url: "/observability/operations", icon: "History" },
+        ],
+      },
+    ],
+  },
   users: {
     title: "User Registry",
     sections: [

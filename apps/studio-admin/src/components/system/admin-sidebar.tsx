@@ -11,6 +11,7 @@ import {
   Lock,
   Cpu,
   LayoutDashboard,
+  Terminal,
 } from "lucide-react";
 import {
   Tooltip,
@@ -36,7 +37,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Global Users", icon: Users, href: "/users" },
   { title: "Observability", icon: ScanLine, href: "/observability" },
   { title: "Usage Metrics", icon: BarChart3, href: "/observability/api-gateway" },
-  { title: "Audit Logs", icon: History, href: "/observability/operations" },
+  { title: "Global Logs", icon: Terminal, href: "/logs" },
   { title: "Security", icon: Lock, href: "/security" },
   { title: "Gateways", icon: Cpu, href: "/gateways/overview" },
   { title: "Settings", icon: Settings, href: "/settings" },

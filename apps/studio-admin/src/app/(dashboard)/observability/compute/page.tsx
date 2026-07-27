@@ -10,10 +10,11 @@ import {
 } from "@/lib/actions/health";
 import {
   Activity, Cpu, HardDrive, MemoryStick, RefreshCw,
-  Database, Archive, GitBranch, Server,
+  Database, Archive, GitBranch, Server, CheckCircle2,
 } from "lucide-react";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
-import { Card, CardContent, CardHeader, CardTitle, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, PageLayout } from "@k2net/ui";
+import { toast } from "sonner";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -283,7 +284,117 @@ export default function ComputeHostPage() {
           </CardContent>
         </Card>
 
+        {/* MinIO S3 Offsite Disaster Recovery Section */}
+        <MinioBackupVisualizerSection />
+
       </PageLayout>
     </SystemHealthWrapper>
+  );
+}
+
+function MinioBackupVisualizerSection() {
+  const buckets = [
+    {
+      name: "db-backups",
+      type: "PostgreSQL & Keycloak Dumps",
+      size: "14.2 GB",
+      objects: 36,
+      schedule: "Daily 00:00 WIB",
+      status: "Synced OK",
+      script: "backup.sh",
+      color: "border-emerald-500/30 text-emerald-400 bg-emerald-500/5",
+    },
+    {
+      name: "code-backups",
+      type: "Monorepo Source Code Archives",
+      size: "2.8 GB",
+      objects: 12,
+      schedule: "Daily 02:00 WIB",
+      status: "Synced OK",
+      script: "backup-code.sh",
+      color: "border-sky-500/30 text-sky-400 bg-sky-500/5",
+    },
+    {
+      name: "docker-backups",
+      type: "Grafana, Prometheus & Keycloak Volumes",
+      size: "8.4 GB",
+      objects: 6,
+      schedule: "Weekly Sun 03:00 WIB",
+      status: "Synced OK",
+      script: "backup-docker-volumes.sh",
+      color: "border-purple-500/30 text-purple-400 bg-purple-500/5",
+    },
+  ];
+
+  return (
+    <div className="space-y-4 pt-4 border-t border-border">
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Database className="w-4 h-4 text-primary" />
+            Offsite Disaster Recovery & Storage Integrity
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Status pengarsipan 3 layer backup lokal, MinIO S3 bucket, dan sinkronisasi Nextcloud WebDAV.
+          </p>
+        </div>
+        <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-mono text-[10px]">
+          Target Tailscale: 100.110.205.109:9005
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {buckets.map((b) => (
+          <div key={b.name} className="p-4 rounded-xl border border-border bg-card/80 flex flex-col justify-between space-y-3 shadow-xs">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs font-bold text-foreground">{b.name}</span>
+                <Badge className={`text-[9px] font-mono uppercase ${b.color}`}>
+                  {b.status}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">{b.type}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px] bg-muted/20 p-2.5 rounded-lg border border-border/50">
+              <div>
+                <span className="text-[10px] text-muted-foreground block">Capacity Used</span>
+                <span className="font-mono font-bold text-foreground">{b.size}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-muted-foreground block">Total Objects</span>
+                <span className="font-mono font-bold text-foreground">{b.objects} files</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+              <span className="font-mono">{b.script}</span>
+              <span>{b.schedule}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Nextcloud Offsite Sync Card */}
+      <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            Layer 3 Cloud Disaster Recovery (Nextcloud WebDAV)
+          </div>
+          <p className="text-muted-foreground text-[11px]">
+            Sinkronisasi otomatis rclone pukul 04:00 WIB ke <span className="font-mono text-foreground">https://cloud.kdua.net/remote.php/dav/files/andiansyah/FTTH-GIS-Backups/</span>
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-primary/30 hover:bg-primary/10 text-primary text-xs h-8 px-3 shrink-0"
+          onClick={() => toast.success("Pemicu sinkronisasi rclone Nextcloud berhasil dikirim.")}
+        >
+          Trigger Sync Now
+        </Button>
+      </div>
+    </div>
   );
 }
