@@ -119,14 +119,14 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
 
     // Log type filters
     Object.entries(selectedTypes)
-      .filter(([_, active]) => active)
+      .filter(([, active]) => active)
       .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
 
     // Level filters (only if not all selected — skip if all true to keep URL clean)
     const allLevelsActive = Object.values(selectedLevels).every(Boolean);
     if (!allLevelsActive) {
       Object.entries(selectedLevels)
-        .filter(([_, active]) => active)
+        .filter(([, active]) => active)
         .forEach(([key]) => params.append("filter", `level:eq:${key}`));
     }
 

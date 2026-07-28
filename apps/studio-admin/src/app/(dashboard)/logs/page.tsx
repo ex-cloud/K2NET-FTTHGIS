@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Button, PageLayout } from "@k2net/ui";
+import { Button } from "@k2net/ui";
 import {
   Terminal,
   Copy,
@@ -61,7 +61,7 @@ export default function GlobalLogsPage() {
   // Pass isPaused & selectedTypes into the hook so:
   // 1. Interval stops when paused → no wasted CPU/network
   // 2. Empty state shown when no types selected
-  const { logs, totalCount, hasAnyTypeSelected, status, clearLogs } =
+  const { logs, totalCount, hasAnyTypeSelected, clearLogs } =
     useAuditLogStream("all", {
       isPaused: isLivePaused,
       selectedTypes,

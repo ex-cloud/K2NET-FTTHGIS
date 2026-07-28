@@ -75,12 +75,13 @@ export function useAuditLogStream(
 
   // Use a ref so the interval closure always reads the latest paused value
   const isPausedRef = useRef(options?.isPaused ?? false);
-  isPausedRef.current = options?.isPaused ?? false;
 
-  // Sync status indicator
+  // Sync ref value and status indicator safely in an effect
   useEffect(() => {
+    isPausedRef.current = options?.isPaused ?? false;
     setStatus(options?.isPaused ? "paused" : "live");
   }, [options?.isPaused]);
+
 
   useEffect(() => {
     let eventSource: EventSource | null = null;

@@ -48,7 +48,7 @@ const LEVEL_OPTIONS = [
   { key: "error",   label: "Error",   badge: "5xx", color: "text-rose-400",    bg: "bg-rose-500/10"    },
 ];
 
-export function LogsFilterSidebar({ onCollapse }: { onCollapse?: () => void }) {
+export function LogsFilterSidebar() {
   const {
     timeRange,
     setTimeRange,

@@ -34,7 +34,6 @@ export function LogsTopHeader({
     showHistogram,
     setShowHistogram,
     resetAllFilters,
-    isSidebarCollapsed,
     setIsSidebarCollapsed,
   } = useLogsFilter();
 
@@ -42,7 +41,7 @@ export function LogsTopHeader({
   const activeTypePills = React.useMemo(
     () =>
       Object.entries(selectedTypes)
-        .filter(([_, active]) => active)
+        .filter(([, active]) => active)
         .map(([key]) => ({
           id: key,
           label: `Log Type = ${LOG_TYPES_LABELS[key] ?? key}`,
@@ -54,7 +53,7 @@ export function LogsTopHeader({
   const activeLevelPills = React.useMemo(
     () =>
       Object.entries(selectedLevels)
-        .filter(([_, active]) => active)
+        .filter(([, active]) => active)
         .map(([key]) => ({
           id: key,
           label: `Level = ${key}`,
@@ -167,7 +166,10 @@ export function LogsTopHeader({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => toast.info("Refreshing real-time log feed...")}
+          onClick={() => {
+            clearLogs();
+            toast.info("Refreshing real-time log feed...");
+          }}
           title="Refresh Log Feed"
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md"
         >
