@@ -13,33 +13,42 @@ import {
   Activity,
   Globe,
   Sliders,
-  Sparkles,
-  PanelLeftClose,
+  RotateCcw,
+  Shield,
+  Bell,
+  Radio,
+  CalendarClock,
+  HardDrive,
+  Database,
+  Map,
+  Network,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@k2net/ui";
 import { useLogsFilter } from "./logs-filter-context";
 
-// Supabase-aligned log types (from audit: UnifiedLogs.constants.tsx)
+// K2NET real service log types — aligned with running containers
 const LOG_TYPES = [
   {
     key: "edge",
-    label: "API Gateway",
+    label: "API Gateway (Kong)",
+    icon: Network,
     count: 0,
+    description: "HTTP request & response logs routed via Kong",
     nested: [
-      { key: "edge_auth",      label: "Auth" },
-      { key: "edge_storage",   label: "Storage" },
-      { key: "edge_postgrest", label: "PostgREST" },
+      { key: "edge_api",     label: "REST API" },
+      { key: "edge_webhook", label: "Webhooks" },
+      { key: "edge_proxy",   label: "Go Gateway Proxy" },
     ],
   },
-  { key: "postgres",       label: "Postgres",      count: 0 },
-  { key: "postgrest",      label: "PostgREST",     count: 0 },
-  { key: "auth",           label: "Auth",           count: 0 },
-  { key: "storage",        label: "Storage",        count: 0 },
-  { key: "edge function",  label: "Edge Function",  count: 0 },
-  { key: "realtime",       label: "Realtime",       count: 0 },
-  { key: "supavisor",      label: "Supavisor",      count: 0 },
-  { key: "pgbouncer",      label: "PgBouncer",      count: 0 },
-  { key: "multigres",      label: "Multigres",      count: 0 },
+  { key: "auth",         label: "Auth & Security",    icon: Shield,       count: 0, description: "Keycloak auth events, access denials, rate limits" },
+  { key: "audit",        label: "Audit Trail",         icon: Layers,       count: 0, description: "Tenant resource changes via gateway-audit" },
+  { key: "notification", label: "Notification",        icon: Bell,         count: 0, description: "SMS, WhatsApp, email send logs (Twilio/SMTP)" },
+  { key: "poller",       label: "OLT Poller",          icon: Radio,        count: 0, description: "SNMP device health checks via ftth-poller" },
+  { key: "scheduler",    label: "Scheduler",           icon: CalendarClock, count: 0, description: "Scheduled job execution history" },
+  { key: "olt",          label: "OLT Gateway",         icon: Activity,     count: 0, description: "OLT device operations, ONT provisioning" },
+  { key: "postgres",     label: "Postgres (Envers)",   icon: Database,     count: 0, description: "PostGIS spatial query audit via Hibernate Envers" },
+  { key: "storage",      label: "Storage Gateway",     icon: HardDrive,    count: 0, description: "MinIO upload/presigned URL operations" },
+  { key: "map",          label: "Map Gateway",         icon: Map,          count: 0, description: "Geocoding & vector tile server requests" },
 ];
 
 // Level config (from getLevelLabel() audit)
@@ -63,6 +72,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     toggleLevel,
     edgeSubFilters,
     toggleEdgeSubFilter,
+    resetAllFilters,
   } = useLogsFilter();
 
   const [typeSearch, setTypeSearch] = React.useState("");
@@ -71,22 +81,32 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     t.label.toLowerCase().includes(typeSearch.toLowerCase())
   );
 
+  // Detect if any filter is active (type or level deviates from default)
+  const hasActiveFilters =
+    Object.values(selectedTypes).some((v) => !v) ||
+    Object.values(selectedTypes).every((v) => !v) ||
+    Object.values(selectedLevels).some((v) => !v);
+
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
 
-      {/* Optional Title Header with Collapse Toggle */}
-      {onCollapse && (
-        <div className="py-4 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
-          <h3 className="text-xs font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
+      {/* Sidebar Title Header — Collapse is handled by PanelLeft in the top header */}
+      {onCollapse !== undefined && (
+        <div className="py-3.5 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
+          <h3 className="text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
             Logs Explorer
           </h3>
-          <button
-            onClick={onCollapse}
-            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            title="Collapse Sidebar"
-          >
-            <PanelLeftClose className="w-3.5 h-3.5" />
-          </button>
+          {/* Only show Reset when filters are active — no double collapse icon */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+              title="Reset all filters"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -277,7 +297,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
       {/* Bottom Capture Logs Card */}
       <div className="p-3 border-t border-border/40 space-y-1 font-mono text-[10px] shrink-0 bg-card/40">
         <div className="flex items-center gap-1.5 text-foreground font-bold font-sans">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <Activity className="w-3.5 h-3.5 text-primary" />
           <span>Capture your logs</span>
         </div>
         <p className="text-muted-foreground/70 text-[9px] leading-tight font-sans">

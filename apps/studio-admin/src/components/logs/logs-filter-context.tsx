@@ -4,37 +4,38 @@ import React, { createContext, useContext, useState, useEffect, Suspense } from 
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 
-// Supabase-aligned LOG_TYPES_LABELS (from UnifiedLogs.constants.tsx audit)
+// K2NET Architecture — Real log source labels
 export const LOG_TYPES_LABELS: Record<string, string> = {
-  edge:           "API Gateway",
-  postgres:       "Postgres",
-  postgrest:      "PostgREST",
-  auth:           "Auth",
-  storage:        "Storage",
-  "edge function": "Edge Function",
-  realtime:       "Realtime",
-  supavisor:      "Supavisor",
-  pgbouncer:      "PgBouncer",
-  multigres:      "Multigres",
+  edge:         "API Gateway (Kong)",
+  auth:         "Auth & Security",
+  audit:        "Audit Trail",
+  notification: "Notification",
+  poller:       "OLT Poller",
+  scheduler:    "Scheduler",
+  olt:          "OLT Gateway",
+  postgres:     "Postgres (Envers)",
+  storage:      "Storage Gateway",
+  map:          "Map Gateway",
 };
 
 export const DEFAULT_SELECTED_TYPES: Record<string, boolean> = {
-  edge:           true,
-  postgres:       true,
-  postgrest:      true,
-  auth:           true,
-  storage:        true,
-  "edge function": false,
-  realtime:       false,
-  supavisor:      false,
-  pgbouncer:      false,
-  multigres:      false,
+  edge:         true,
+  auth:         true,
+  audit:        true,
+  notification: false,
+  poller:       false,
+  scheduler:    false,
+  olt:          false,
+  postgres:     false,
+  storage:      false,
+  map:          false,
 };
 
+// Kong API Gateway sub-filters (replaces Supabase edge sub-filters)
 export const DEFAULT_EDGE_SUB_FILTERS: Record<string, boolean> = {
-  edge_auth:      true,
-  edge_storage:   true,
-  edge_postgrest: true,
+  edge_api:     true,   // REST API requests routed through Kong
+  edge_webhook: true,   // Webhook callbacks (payment, etc)
+  edge_proxy:   true,   // Proxied Go gateway calls
 };
 
 export type LogFilterState = {

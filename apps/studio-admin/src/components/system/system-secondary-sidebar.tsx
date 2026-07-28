@@ -44,6 +44,7 @@ import {
 } from "@k2net/ui";
 import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
+import { useLogsFilter } from "@/components/logs/logs-filter-context";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Users,
@@ -81,6 +82,11 @@ export function SystemSecondarySidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
+  // For the logs page, sync collapse state with the shared LogsFilter context
+  // so the PanelLeft button in LogsTopHeader can also toggle the sidebar.
+  const { isSidebarCollapsed: ctxCollapsed, setIsSidebarCollapsed: ctxSetCollapsed } =
+    useLogsFilter();
+
   // Determine active config key based on URL pathname
   let activeKey: string | null = null;
   if (pathname?.includes("/users")) {
@@ -103,13 +109,20 @@ export function SystemSecondarySidebar() {
   const currentConfig = SYSTEM_SIDEBAR_NAVIGATION[activeKey];
   if (!currentConfig && !isLogsPage) return null;
 
+  // When on logs page: use shared context state so PanelLeft in the top header
+  // (which calls setIsSidebarCollapsed from context) is in sync with this sidebar.
+  const effectiveCollapsed = isLogsPage ? ctxCollapsed : isCollapsed;
+  const handleCollapse = isLogsPage
+    ? () => ctxSetCollapsed((prev) => !prev)
+    : () => setIsCollapsed(!isCollapsed);
+
   return (
     <div className="relative h-full flex shrink-0">
       <aside
-        className={`${isCollapsed ? "w-0 border-r-0" : "w-[240px] border-r"} transition-all duration-300 ease-in-out shrink-0 border-border bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
+        className={`${effectiveCollapsed ? "w-0 border-r-0" : "w-[240px] border-r"} transition-all duration-300 ease-in-out shrink-0 border-border bg-sidebar h-full hidden md:flex flex-col overflow-hidden`}
       >
         {isLogsPage ? (
-          <LogsFilterSidebar onCollapse={() => setIsCollapsed(!isCollapsed)} />
+          <LogsFilterSidebar onCollapse={handleCollapse} />
         ) : (
           <>
             {/* Title with Toggle */}

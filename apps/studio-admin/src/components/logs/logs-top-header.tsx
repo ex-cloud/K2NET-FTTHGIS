@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Badge, Button } from "@k2net/ui";
+
 import {
   Search,
   X,
@@ -10,7 +11,6 @@ import {
   BarChart2,
   Download,
   Play,
-  Terminal,
 } from "lucide-react";
 import { useLogsFilter, LOG_TYPES_LABELS } from "./logs-filter-context";
 import { toast } from "sonner";
@@ -86,29 +86,12 @@ export function LogsTopHeader({
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
 
-      {/* LEFT: Title + Reset + Sidebar Toggle */}
-      <div className="flex items-center gap-2.5 shrink-0 pr-4 border-r border-border/40">
-        <div className="flex items-center gap-1.5">
-          <Terminal className="w-4 h-4 text-primary" />
-          <h2 className="text-sm font-bold text-foreground tracking-tight font-sans">Logs</h2>
-          <Badge className="text-[9px] px-1.5 py-0 font-mono border-primary/20 bg-primary/10 text-primary">
-            BETA
-          </Badge>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetAllFilters}
-          className="h-6 text-[10px] px-2 font-mono gap-1 text-muted-foreground hover:text-foreground border border-border/50 rounded"
-        >
-          <X className="w-3 h-3" /> Reset
-        </Button>
-
+      {/* LEFT: Only the sidebar collapse toggle icon */}
+      <div className="flex items-center shrink-0 pr-3 border-r border-border/40">
         <button
           onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-          title="Toggle Left Filter Sidebar"
-          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors ml-1"
+          title="Toggle Filter Sidebar"
+          className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
