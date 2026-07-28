@@ -14,6 +14,7 @@ import {
   Globe,
   Sliders,
   Sparkles,
+  PanelLeftClose,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@k2net/ui";
 import { useLogsFilter } from "./logs-filter-context";
@@ -48,7 +49,11 @@ const LEVEL_OPTIONS = [
   { key: "error",   label: "Error",   badge: "5xx", color: "text-rose-400",    bg: "bg-rose-500/10"    },
 ];
 
-export function LogsFilterSidebar() {
+export interface LogsFilterSidebarProps {
+  onCollapse?: () => void;
+}
+
+export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
   const {
     timeRange,
     setTimeRange,
@@ -68,6 +73,22 @@ export function LogsFilterSidebar() {
 
   return (
     <div className="flex flex-col h-full w-[240px] font-sans text-xs bg-sidebar select-none border-r border-border/60 shrink-0">
+
+      {/* Optional Title Header with Collapse Toggle */}
+      {onCollapse && (
+        <div className="py-4 border-b border-border/40 shrink-0 flex items-center justify-between px-4 min-w-[240px]">
+          <h3 className="text-xs font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
+            Logs Explorer
+          </h3>
+          <button
+            onClick={onCollapse}
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            title="Collapse Sidebar"
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Filter Options Scrollable Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
