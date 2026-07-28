@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { getBackendBaseUrl } from "@/lib/api-config";
 
@@ -54,64 +54,90 @@ const MOCK_INITIAL_LOGS: AuditStreamEntry[] = [
   },
 ];
 
-export function useAuditLogStream(filterCategory: string = "all") {
+export interface UseAuditLogStreamOptions {
+  /** When true, stops adding new log entries (pauses the ticker & SSE) */
+  isPaused?: boolean;
+  /**
+   * Supabase-aligned log type filter map.
+   * If ALL values are false → no logs shown.
+   * If ANY value is true  → show matching logs (all until backend supports per-type).
+   */
+  selectedTypes?: Record<string, boolean>;
+}
+
+export function useAuditLogStream(
+  filterCategory: string = "all",
+  options?: UseAuditLogStreamOptions
+) {
   const { data: session } = useSession();
   const [logs, setLogs] = useState<AuditStreamEntry[]>(MOCK_INITIAL_LOGS);
   const [status, setStatus] = useState<"connecting" | "live" | "paused">("live");
 
-  // Simulated SSE generator / EventSource fallback for continuous real-time feed
+  // Use a ref so the interval closure always reads the latest paused value
+  const isPausedRef = useRef(options?.isPaused ?? false);
+  isPausedRef.current = options?.isPaused ?? false;
+
+  // Sync status indicator
   useEffect(() => {
-    if (!session?.accessToken) return;
+    setStatus(options?.isPaused ? "paused" : "live");
+  }, [options?.isPaused]);
 
+  useEffect(() => {
     let eventSource: EventSource | null = null;
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const streamUrl = `${baseUrl}/system/security/audit-logs/stream`;
-      
-      eventSource = new EventSource(streamUrl);
-      
-      eventSource.onopen = () => {
-        setStatus("live");
-      };
 
-      eventSource.addEventListener("audit-log", (event: MessageEvent) => {
-        try {
-          const newEntry = JSON.parse(event.data) as AuditStreamEntry;
-          setLogs((prev) => [newEntry, ...prev].slice(0, 500));
-        } catch {
-          // Parse fallback
-        }
-      });
+    // Attempt real SSE connection if authenticated
+    if (session?.accessToken) {
+      try {
+        const baseUrl = getBackendBaseUrl();
+        const streamUrl = `${baseUrl}/system/security/audit-logs/stream`;
+        eventSource = new EventSource(streamUrl);
 
-      eventSource.onerror = () => {
-        setStatus("connecting");
-      };
-    } catch {
-      setStatus("live");
+        eventSource.onopen = () => {
+          setStatus("live");
+        };
+
+        eventSource.addEventListener("audit-log", (event: MessageEvent) => {
+          if (isPausedRef.current) return; // ← PAUSE: drop incoming SSE events
+          try {
+            const newEntry = JSON.parse(event.data) as AuditStreamEntry;
+            setLogs((prev) => [newEntry, ...prev].slice(0, 500));
+          } catch {
+            // Parse fallback — ignore malformed events
+          }
+        });
+
+        eventSource.onerror = () => {
+          setStatus("connecting");
+        };
+      } catch {
+        // SSE not available — fall through to simulation ticker
+      }
     }
 
-    // Periodic simulation ticker ensuring terminal live stream animation
-    const interval = setInterval(() => {
-      const sampleCategories: Array<"olt" | "auth" | "postgis" | "general"> = ["olt", "auth", "postgis", "general"];
-      const sampleActions = [
-        { cat: "auth", act: "KEYCLOAK_SESSION_REFRESH", msg: "Token refresh request handled by ftth-keycloak", sev: "INFO" },
-        { cat: "olt", act: "POLLE_PING_HEALTH", msg: "Poller healthcheck scrape OK (ftth-poller:5010)", sev: "INFO" },
-        { cat: "postgis", act: "SPATIAL_INDEX_SCAN", msg: "PostGIS spatial query ST_Contains executed in 8ms", sev: "INFO" },
-        { cat: "general", act: "MINIO_S3_BACKUP_CHECK", msg: "MinIO bucket db-backups health check active", sev: "INFO" },
-      ] as const;
+    // Simulation ticker — respects isPaused via ref
+    const SAMPLE_ACTIONS = [
+      { cat: "auth",    act: "KEYCLOAK_SESSION_REFRESH", msg: "Token refresh request handled by ftth-keycloak",    sev: "INFO" },
+      { cat: "olt",     act: "POLLER_PING_HEALTH",       msg: "Poller healthcheck scrape OK (ftth-poller:5010)",   sev: "INFO" },
+      { cat: "postgis", act: "SPATIAL_INDEX_SCAN",       msg: "PostGIS spatial query ST_Contains executed in 8ms", sev: "INFO" },
+      { cat: "general", act: "MINIO_S3_BACKUP_CHECK",    msg: "MinIO bucket db-backups health check active",       sev: "INFO" },
+    ] as const;
 
-      const randomPick = sampleActions[Math.floor(Math.random() * sampleActions.length)];
-      const generatedEntry: AuditStreamEntry = {
+    const interval = setInterval(() => {
+      // ← KEY FIX: completely skip when paused — no CPU wasted
+      if (isPausedRef.current) return;
+
+      const pick = SAMPLE_ACTIONS[Math.floor(Math.random() * SAMPLE_ACTIONS.length)];
+      const entry: AuditStreamEntry = {
         id: `evt-${Date.now()}`,
         timestamp: new Date().toISOString().replace("T", " ").substring(0, 19),
-        category: randomPick.cat,
-        severity: randomPick.sev as "INFO" | "WARN",
+        category: pick.cat,
+        severity: pick.sev as "INFO" | "WARN",
         actor: "system-worker",
-        action: randomPick.act,
-        message: randomPick.msg,
+        action: pick.act,
+        message: pick.msg,
       };
 
-      setLogs((prev) => [generatedEntry, ...prev].slice(0, 300));
+      setLogs((prev) => [entry, ...prev].slice(0, 300));
     }, 4500);
 
     return () => {
@@ -124,14 +150,27 @@ export function useAuditLogStream(filterCategory: string = "all") {
     setLogs([]);
   }, []);
 
+  // Determine if any log types are selected
+  const selectedTypes = options?.selectedTypes ?? {};
+  const hasAnyTypeSelected =
+    Object.keys(selectedTypes).length === 0 ||
+    Object.values(selectedTypes).some(Boolean);
+
+  // Apply filters
   const filteredLogs = logs.filter((log) => {
-    if (filterCategory === "all") return true;
-    return log.category === filterCategory;
+    // If no types selected at all → show nothing
+    if (!hasAnyTypeSelected) return false;
+
+    // Category filter (legacy filterCategory param)
+    if (filterCategory !== "all" && log.category !== filterCategory) return false;
+
+    return true;
   });
 
   return {
     logs: filteredLogs,
     totalCount: logs.length,
+    hasAnyTypeSelected,
     status,
     clearLogs,
   };
