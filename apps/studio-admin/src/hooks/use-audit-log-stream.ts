@@ -238,13 +238,15 @@ export function useAuditLogStream(
     Object.keys(selectedTypes).length === 0 ||
     Object.values(selectedTypes).some(Boolean);
 
+  // filteredLogs: apply type and category filters on top of rawLogs
   const filteredLogs = logs.filter((log) => {
     if (!hasAnyTypeSelected) return false;
 
-    // If selectedTypes map exists and has any key set: filter by logType
+    // Filter by logType only when selectedTypes map has explicit entries
     if (Object.keys(selectedTypes).length > 0) {
-      const typeActive = selectedTypes[log.logType];
-      if (typeActive === false) return false;
+      // If the key is explicitly set to false, exclude it.
+      // If undefined (key not in map), show it.
+      if (selectedTypes[log.logType] === false) return false;
     }
 
     // Legacy filterCategory param (kept for backwards compat)
@@ -255,6 +257,7 @@ export function useAuditLogStream(
 
   return {
     logs: filteredLogs,
+    rawLogs: logs,          // ← unfiltered stream for count computation in page.tsx
     totalCount: logs.length,
     hasAnyTypeSelected,
     status,

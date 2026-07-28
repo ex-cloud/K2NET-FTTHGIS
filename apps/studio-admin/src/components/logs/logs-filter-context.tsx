@@ -59,6 +59,8 @@ export type LogFilterState = {
   resetAllFilters: () => void;
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  logTypeCounts: Record<string, number>;
+  setLogTypeCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 };
 
 const LogsFilterContext = createContext<LogFilterState | undefined>(undefined);
@@ -113,15 +115,23 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [edgeSubFilters, setEdgeSubFilters] = useState<Record<string, boolean>>(
     DEFAULT_EDGE_SUB_FILTERS
   );
+  // Counts per log type — updated reactively by page.tsx from raw log stream
+  const [logTypeCounts, setLogTypeCounts] = useState<Record<string, number>>({});
 
-  // Sync state → URL (Supabase-style: ?filter=log_type:eq:edge&filter=level:eq:success)
+  // Sync state → URL — only write log_type params when user has customised from defaults
+  // This keeps the URL clean (/logs) when filter is at default state, so Reset visibly works.
   useEffect(() => {
     const params = new URLSearchParams();
 
-    // Log type filters
-    Object.entries(selectedTypes)
-      .filter(([, active]) => active)
-      .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
+    // Log type filters — skip if identical to DEFAULT to keep URL clean
+    const isTypesDefault = Object.keys(DEFAULT_SELECTED_TYPES).every(
+      (k) => selectedTypes[k] === DEFAULT_SELECTED_TYPES[k]
+    );
+    if (!isTypesDefault) {
+      Object.entries(selectedTypes)
+        .filter(([, active]) => active)
+        .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
+    }
 
     // Level filters (only if not all selected — skip if all true to keep URL clean)
     const allLevelsActive = Object.values(selectedLevels).every(Boolean);
@@ -188,6 +198,8 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         resetAllFilters,
         isSidebarCollapsed,
         setIsSidebarCollapsed,
+        logTypeCounts,
+        setLogTypeCounts,
       }}
     >
       {children}
@@ -223,6 +235,8 @@ const DEFAULT_CONTEXT: LogFilterState = {
   resetAllFilters: () => {},
   isSidebarCollapsed: false,
   setIsSidebarCollapsed: () => {},
+  logTypeCounts: {},
+  setLogTypeCounts: () => {},
 };
 
 export function useLogsFilter() {

@@ -24,7 +24,7 @@ import {
   Network,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@k2net/ui";
-import { useLogsFilter } from "./logs-filter-context";
+import { useLogsFilter, DEFAULT_SELECTED_TYPES } from "./logs-filter-context";
 
 // K2NET real service log types — aligned with running containers
 const LOG_TYPES = [
@@ -73,6 +73,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     edgeSubFilters,
     toggleEdgeSubFilter,
     resetAllFilters,
+    logTypeCounts,
   } = useLogsFilter();
 
   const [typeSearch, setTypeSearch] = React.useState("");
@@ -81,10 +82,12 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
     t.label.toLowerCase().includes(typeSearch.toLowerCase())
   );
 
-  // Detect if any filter is active (type or level deviates from default)
+  // Detect if user has made custom changes vs the default filter state
+  // Compare each type against its DEFAULT value — not just checking for any false value
   const hasActiveFilters =
-    Object.values(selectedTypes).some((v) => !v) ||
-    Object.values(selectedTypes).every((v) => !v) ||
+    Object.keys(DEFAULT_SELECTED_TYPES).some(
+      (k) => selectedTypes[k] !== DEFAULT_SELECTED_TYPES[k]
+    ) ||
     Object.values(selectedLevels).some((v) => !v);
 
   return (
@@ -179,7 +182,12 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
                         {type.label}
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono text-muted-foreground/60">{type.count}</span>
+                    {/* Show count badge only when > 0 */}
+                    {(logTypeCounts[type.key] ?? 0) > 0 && (
+                      <span className="text-[10px] font-mono text-muted-foreground/60">
+                        {logTypeCounts[type.key]}
+                      </span>
+                    )}
                   </label>
 
                   {/* Nested sub-filters for "edge" (API Gateway) */}

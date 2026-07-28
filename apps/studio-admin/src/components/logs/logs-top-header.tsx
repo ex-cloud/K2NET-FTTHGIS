@@ -84,21 +84,19 @@ export function LogsTopHeader({
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
+    <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
 
-      {/* LEFT: Only the sidebar collapse toggle icon */}
-      <div className="flex items-center shrink-0 pr-3 border-r border-border/40">
-        <button
-          onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-          title="Toggle Filter Sidebar"
-          className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <PanelLeft className="w-4 h-4" />
-        </button>
-      </div>
+      {/* LEFT: Sidebar collapse toggle — compact, no separator */}
+      <button
+        onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+        title="Toggle Filter Sidebar"
+        className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <PanelLeft className="w-4 h-4" />
+      </button>
 
-      {/* CENTER: Search Input + Dynamic Filter Tag Pills */}
-      <div className="flex-1 flex items-center gap-1.5 max-w-3xl bg-background border border-border/80 rounded-lg px-3 py-1 text-xs focus-within:border-primary transition-colors mx-4 overflow-hidden">
+      {/* CENTER: Search Input + Dynamic Filter Tag Pills — fills all remaining space */}
+      <div className="flex-1 flex items-center gap-1.5 bg-background border border-border/80 rounded-lg px-3 py-1 text-xs focus-within:border-primary transition-colors overflow-hidden min-w-0">
         <Search className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
 
         {/* Render active filter pills */}

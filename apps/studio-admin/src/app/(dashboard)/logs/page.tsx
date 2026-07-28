@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@k2net/ui";
 import {
   Terminal,
@@ -56,16 +56,32 @@ export default function GlobalLogsPage() {
     setSelectedLog,
     isLivePaused,
     selectedTypes,
+    setLogTypeCounts,
   } = useLogsFilter();
 
   // Pass isPaused & selectedTypes into the hook so:
   // 1. Interval stops when paused → no wasted CPU/network
   // 2. Empty state shown when no types selected
-  const { logs, totalCount, hasAnyTypeSelected, clearLogs } =
+  const { logs, rawLogs, totalCount, hasAnyTypeSelected, clearLogs } =
     useAuditLogStream("all", {
       isPaused: isLivePaused,
       selectedTypes,
     });
+
+  // Compute per-type counts from ALL raw logs (unfiltered by type)
+  // so sidebar badges reflect what’s in the stream regardless of checkboxes
+  const logTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const log of rawLogs) {
+      counts[log.logType] = (counts[log.logType] ?? 0) + 1;
+    }
+    return counts;
+  }, [rawLogs]);
+
+  // Sync computed counts into context so LogsFilterSidebar can read them
+  useEffect(() => {
+    setLogTypeCounts(logTypeCounts);
+  }, [logTypeCounts, setLogTypeCounts]);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
