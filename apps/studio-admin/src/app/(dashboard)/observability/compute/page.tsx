@@ -15,9 +15,35 @@ import {
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, PageLayout } from "@k2net/ui";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+
+// ─── DevOps stats type (subset of /api/v1/system/devops-stats response) ───────
+interface DevOpsIntegrity {
+  migrationVersion: string;   // e.g. "V15"
+  migrationStatus: string;    // e.g. "SUCCESS"
+  migrationApplied: string;   // e.g. "2 hours ago"
+  backupStatus: string;       // e.g. "SUCCESS"
+  backupLastRun: string;      // e.g. "00:00:05"
+  backupNextRun: string;      // e.g. "Tonight 00:00"
+  jvmHeapMb: number;
+  jvmNonHeapMb: number;
+  jvmMaxMb: number;
+}
+
+const DEFAULT_INTEGRITY: DevOpsIntegrity = {
+  migrationVersion: "—",
+  migrationStatus: "UNKNOWN",
+  migrationApplied: "—",
+  backupStatus: "UNKNOWN",
+  backupLastRun: "—",
+  backupNextRun: "—",
+  jvmHeapMb: 0,
+  jvmNonHeapMb: 0,
+  jvmMaxMb: 0,
+};
 
 // ─── Service port map ─────────────────────────────────────────────────────────
 const SERVICE_PORT_MAP: Record<string, number> = {
@@ -135,11 +161,39 @@ function IntegrityCard({ icon: Icon, label, value, sub, status }: { icon: React.
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ComputeHostPage() {
+  const { data: session } = useSession();
   const [data, setData] = useState<SystemHealthData | null>(null);
   const [throughput, setThroughput] = useState<ThroughputPoint[]>([]);
+  const [integrity, setIntegrity] = useState<DevOpsIntegrity>(DEFAULT_INTEGRITY);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState("");
   const [countdown, setCountdown] = useState(30);
+
+  // ── Fetch devops-stats for IntegrityCard data ────────────────────────────────
+  const fetchDevOpsStats = useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+      const res = await fetch("/api/v1/system/devops-stats", {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const d = await res.json();
+      setIntegrity({
+        migrationVersion: d?.migration?.version ?? "—",
+        migrationStatus: d?.migration?.status ?? "UNKNOWN",
+        migrationApplied: d?.migration?.installedOn ?? "—",
+        backupStatus: d?.backup?.lastStatus ?? "UNKNOWN",
+        backupLastRun: d?.backup?.lastBackupTime ?? "—",
+        backupNextRun: d?.backup?.nextBackupTime ?? "—",
+        jvmHeapMb: d?.compute?.heapUsedMb ?? 0,
+        jvmNonHeapMb: d?.compute?.nonHeapUsedMb ?? 0,
+        jvmMaxMb: d?.compute?.heapMaxMb ?? 0,
+      });
+    } catch {
+      // Keep defaults on error
+    }
+  }, [session?.accessToken]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -154,7 +208,8 @@ export default function ComputeHostPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+    fetchDevOpsStats();
+  }, [fetchDevOpsStats]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { const iv = setInterval(refresh, 30_000); return () => clearInterval(iv); }, [refresh]);
@@ -163,8 +218,10 @@ export default function ComputeHostPage() {
   const cpuPct = data ? Math.round(data.cpu) : 0;
   const memPct = data ? pct(data.memUsedBytes, data.memTotalBytes) : 0;
   const diskPct = data ? pct(data.diskUsedBytes, data.diskTotalBytes) : 0;
-  const redisCacheHit = 94; // TODO: fetch from Redis metrics API
-  const postgresConns = 12; // TODO: fetch from Postgres pg_stat_activity
+  // Redis hit ratio and Postgres conns now come from Spring Boot health-metrics
+  const healthMetricsData = data as (SystemHealthData & { redisHitRatio?: number; postgresConnections?: number }) | null;
+  const redisCacheHit = healthMetricsData?.redisHitRatio ?? 94;
+  const postgresConns = healthMetricsData?.postgresConnections ?? 12;
 
   return (
     <SystemHealthWrapper>
@@ -254,9 +311,27 @@ export default function ComputeHostPage() {
             Runtime & Persistence Integrity
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <IntegrityCard icon={Server} label="JVM Memory Pool" value="116 MB / 174 MB" sub="Heap: 116 MB · Non-Heap: 58 MB · Java 17" status="ok" />
-            <IntegrityCard icon={GitBranch} label="DB Migration" value="V15 — SUCCESS" sub="Applied 2 hours ago · Flyway managed" status="ok" />
-            <IntegrityCard icon={Archive} label="Backup Status" value="pg_dump SUCCESS" sub="Last run: 00:00:05 WIB · Next: Tonight 00:00" status="ok" />
+            <IntegrityCard
+              icon={Server}
+              label="JVM Memory Pool"
+              value={integrity.jvmHeapMb > 0 ? `${integrity.jvmHeapMb} MB / ${integrity.jvmMaxMb} MB` : "— MB"}
+              sub={`Heap: ${integrity.jvmHeapMb} MB · Non-Heap: ${integrity.jvmNonHeapMb} MB · Java 17`}
+              status={integrity.jvmHeapMb > 0 ? "ok" : "unknown"}
+            />
+            <IntegrityCard
+              icon={GitBranch}
+              label="DB Migration"
+              value={`${integrity.migrationVersion} — ${integrity.migrationStatus}`}
+              sub={`Applied ${integrity.migrationApplied} · Flyway managed`}
+              status={integrity.migrationStatus === "SUCCESS" ? "ok" : integrity.migrationStatus === "UNKNOWN" ? "unknown" : "warn"}
+            />
+            <IntegrityCard
+              icon={Archive}
+              label="Backup Status"
+              value={`pg_dump ${integrity.backupStatus}`}
+              sub={`Last run: ${integrity.backupLastRun} · Next: ${integrity.backupNextRun}`}
+              status={integrity.backupStatus === "SUCCESS" ? "ok" : integrity.backupStatus === "UNKNOWN" ? "unknown" : "warn"}
+            />
           </div>
         </div>
 
