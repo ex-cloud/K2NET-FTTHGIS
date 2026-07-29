@@ -1,17 +1,19 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, PageLayout } from "@k2net/ui";
-import { KeyRound, Users, ShieldAlert, CheckCircle2, XCircle, Info } from "lucide-react";
-import { authEventsMock } from "@/lib/mock-data/observability-mock";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { KeyRound, Users, ShieldAlert, CheckCircle2, XCircle, Info, RefreshCw, AlertCircle } from "lucide-react";
+import { useKeycloakObservability } from "@/hooks/useKeycloakObservability";
 
-const eventIcon = (type: string) => {
-  if (type === "success") return <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />;
-  if (type === "error") return <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />;
-  if (type === "warning") return <ShieldAlert className="h-3.5 w-3.5 text-amber-500 shrink-0" />;
+function EventIcon({ severity }: { severity: "success" | "error" | "warning" | "info" }) {
+  if (severity === "success") return <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />;
+  if (severity === "error")   return <XCircle       className="h-3.5 w-3.5 text-rose-500 shrink-0" />;
+  if (severity === "warning") return <ShieldAlert   className="h-3.5 w-3.5 text-amber-500 shrink-0" />;
   return <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-};
+}
 
 export default function IdentityPage() {
+  const { events, stats, loading, error, refresh, formatEventType, formatEventTime } = useKeycloakObservability();
+
   return (
     <PageLayout variant="dashboard" spaceY="space-y-6">
       {/* Header */}
@@ -19,22 +21,58 @@ export default function IdentityPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
             <KeyRound className="h-5 w-5 text-primary" />
-            Identity & Auth
+            Identity &amp; Auth
           </h1>
           <p className="text-xs text-muted-foreground">
-            Keycloak session monitoring, authentication events, and IAM service health.
+            Keycloak session monitoring, authentication events, and IAM service health · real-time via Admin API.
           </p>
         </div>
-        <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px]">MOCK DATA</Badge>
+        <div className="flex items-center gap-2">
+          {error && (
+            <div className="flex items-center gap-1 text-[10px] text-amber-500">
+              <AlertCircle className="h-3 w-3" />
+              {error}
+            </div>
+          )}
+          <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
+            {loading ? "LOADING…" : "LIVE DATA"}
+          </Badge>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Active Sessions", value: "24", sub: "Current Keycloak active sessions", icon: Users },
-          { label: "Total Realm Users", value: "312", sub: "Users in realm: ftth-gis", icon: Users },
-          { label: "Failed Logins (24h)", value: "7", sub: "5 brute-force blocks detected", icon: ShieldAlert },
-          { label: "MFA Adoption", value: "68%", sub: "213 / 312 users with TOTP enabled", icon: KeyRound },
+          {
+            label: "Active Sessions",
+            value: loading ? "…" : String(stats.activeSessions),
+            sub: `Current Keycloak sessions · realm: ${stats.realm}`,
+            icon: Users,
+          },
+          {
+            label: "Total Realm Users",
+            value: loading ? "…" : String(stats.totalUsers),
+            sub: "Registered users in ftth-realm",
+            icon: Users,
+          },
+          {
+            label: "Failed Logins (24h)",
+            value: loading ? "…" : String(stats.failedLogins24h),
+            sub: "LOGIN_ERROR events from Keycloak",
+            icon: ShieldAlert,
+          },
+          {
+            label: "Keycloak Status",
+            value: loading ? "…" : stats.status.includes("fallback") ? "Fallback" : "Healthy",
+            sub: stats.status.includes("fallback")
+              ? "Admin API unavailable — simulated"
+              : "Connected via Admin Client Credentials",
+            icon: KeyRound,
+          },
         ].map((c) => (
           <Card key={c.label} className="p-5 flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -75,28 +113,39 @@ export default function IdentityPage() {
         </CardContent>
       </Card>
 
-      {/* Auth Audit Log Table */}
+      {/* Auth Event Log — real Keycloak events */}
       <Card>
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold text-foreground">Authentication Event Log</CardTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">Recent Keycloak events from the last 24 hours.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Recent auth events from Keycloak Admin API · {events.length} events loaded.
+          </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-[16px_1fr_140px_100px_120px] px-5 py-2 border-b border-border bg-muted/30 gap-3">
-            {["", "Event", "User", "IP Address", "Timestamp"].map((h, i) => (
+          <div className="grid grid-cols-[16px_1fr_140px_100px_150px] px-5 py-2 border-b border-border bg-muted/30 gap-3">
+            {["", "Event", "User / Client", "IP Address", "Timestamp"].map((h, i) => (
               <span key={i} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{h}</span>
             ))}
           </div>
           <div className="divide-y divide-border">
-            {authEventsMock.map((e) => (
-              <div key={e.id} className="grid grid-cols-[16px_1fr_140px_100px_120px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-3">
-                {eventIcon(e.type)}
-                <p className="text-sm font-medium text-foreground">{e.event}</p>
-                <p className="text-xs text-muted-foreground truncate">{e.user}</p>
-                <p className="text-xs font-mono text-muted-foreground">{e.ip}</p>
-                <p className="text-[10px] font-mono text-muted-foreground">{e.timestamp}</p>
+            {events.length === 0 ? (
+              <div className="p-8 text-center text-xs text-muted-foreground">
+                No events loaded. Check Keycloak Admin API connectivity.
               </div>
-            ))}
+            ) : (
+              events.map((e, idx) => {
+                const { label, severity } = formatEventType(e.type);
+                return (
+                  <div key={idx} className="grid grid-cols-[16px_1fr_140px_100px_150px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-3">
+                    <EventIcon severity={severity} />
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{e.userId ?? e.clientId ?? "—"}</p>
+                    <p className="text-xs font-mono text-muted-foreground">{e.details?.ipAddress ?? "—"}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground">{formatEventTime(e.time)}</p>
+                  </div>
+                );
+              })
+            )}
           </div>
         </CardContent>
       </Card>

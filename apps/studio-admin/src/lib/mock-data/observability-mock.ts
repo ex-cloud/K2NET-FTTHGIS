@@ -177,7 +177,7 @@ export const scheduledJobsMock = [
 
 // ─── Phase 10: Scheduler & Backup Explorer ────────────────────────────────────
 
-export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED";
+export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED" | "UNKNOWN";
 export type JobCategory = "backup" | "sync" | "maintenance" | "poller";
 
 export interface SchedulerJob {

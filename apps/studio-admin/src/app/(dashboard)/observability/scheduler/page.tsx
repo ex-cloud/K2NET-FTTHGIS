@@ -29,12 +29,8 @@ import {
   Check,
   Info,
 } from "lucide-react";
-import {
-  schedulerJobsMock,
-  backupArtifactsMock,
-  type SchedulerJob,
-  type BackupArtifact,
-} from "@/lib/mock-data/observability-mock";
+import { type SchedulerJob, type BackupArtifact } from "@/lib/mock-data/observability-mock";
+import { useSchedulerStatus } from "@/hooks/useSchedulerStatus";
 
 // ─── Security: ALLOWED script keys (IaC scripts must NEVER appear here) ───────
 const SCRIPT_WHITELIST = new Set([
@@ -50,14 +46,17 @@ const SCRIPT_WHITELIST = new Set([
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED" | "UNKNOWN";
+
 function StatusBadge({ status }: { status: SchedulerJob["lastStatus"] }) {
-  const map = {
+  const map: Record<JobStatus, { label: string; cls: string }> = {
     SUCCESS: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
     FAILED:  { label: "FAILED",  cls: "border-rose-500/30 bg-rose-500/10 text-rose-400" },
     RUNNING: { label: "RUNNING", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400 animate-pulse" },
     SKIPPED: { label: "SKIPPED", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
+    UNKNOWN: { label: "UNKNOWN", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
   };
-  const s = map[status];
+  const s = map[status] ?? map.UNKNOWN;
   return (
     <Badge className={`text-[10px] font-mono font-bold ${s.cls}`}>
       {s.label}
@@ -274,19 +273,20 @@ function MetadataModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SchedulerPage() {
+  const { jobs, artifacts, loading, error, refresh } = useSchedulerStatus();
   const [runDialog, setRunDialog] = useState<SchedulerJob | null>(null);
   const [triggering, setTriggering] = useState(false);
   const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
   const [checksumModal, setChecksumModal] = useState<BackupArtifact | null>(null);
   const [metadataModal, setMetadataModal] = useState<BackupArtifact | null>(null);
 
-  const hasFailedJobs = schedulerJobsMock.some((j) => j.lastStatus === "FAILED");
+  const hasFailedJobs = jobs.some((j) => j.lastStatus === "FAILED");
 
   // Stats for KPI cards
-  const activeJobs = schedulerJobsMock.length;
-  const lastBackup = schedulerJobsMock.find((j) => j.scriptKey === "backup");
-  const lastSync = schedulerJobsMock.find((j) => j.scriptKey === "sync-nextcloud");
-  const nextJob = schedulerJobsMock.reduce((a, b) =>
+  const activeJobs = jobs.length;
+  const lastBackup = jobs.find((j) => j.scriptKey === "backup");
+  const lastSync = jobs.find((j) => j.scriptKey === "sync-nextcloud");
+  const nextJob = jobs.reduce((a, b) =>
     a.nextRunAt < b.nextRunAt ? a : b
   );
 
@@ -349,8 +349,8 @@ export default function SchedulerPage() {
               Automated job scheduling, on-demand execution, and backup artifact validation.
             </p>
           </div>
-          <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px]">
-            MOCK DATA
+          <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
+            {loading ? "LOADING\u2026" : "LIVE DATA"}
           </Badge>
         </div>
 
@@ -361,7 +361,7 @@ export default function SchedulerPage() {
               label: "Scheduled Jobs (Active)",
               icon: <CalendarClock className="w-4 h-4 text-primary" />,
               value: String(activeJobs),
-              sub: `${activeJobs} registered · ${schedulerJobsMock.filter((j) => j.lastStatus === "FAILED").length} failed in 24h`,
+              sub: `${activeJobs} registered · ${jobs.filter((j) => j.lastStatus === "FAILED").length} failed in 24h`,
             },
             {
               label: "Last Backup Status",
@@ -431,7 +431,7 @@ export default function SchedulerPage() {
 
             {/* Table Rows */}
             <div className="divide-y divide-border/60">
-              {schedulerJobsMock.map((job) => {
+              {jobs.map((job) => {
                 const wasTriggered = triggeredIds.has(job.id);
                 return (
                   <div
@@ -537,7 +537,7 @@ export default function SchedulerPage() {
 
             {/* Table Rows */}
             <div className="divide-y divide-border/60">
-              {backupArtifactsMock.map((artifact) => (
+              {artifacts.map((artifact) => (
                 <div
                   key={artifact.id}
                   className="grid grid-cols-[1fr_140px_200px_80px_140px_150px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2"
