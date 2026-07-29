@@ -174,3 +174,57 @@ export const scheduledJobsMock = [
   { name: "Sync Nextcloud", cron: "0 4 * * *", lastRun: "04:00:09", nextRun: "Tomorrow 04:00", status: "SUCCESS" },
   { name: "GIS Topology Rebuild", cron: "0 2 * * 0", lastRun: "Sun 02:00", nextRun: "Next Sun 02:00", status: "SUCCESS" },
 ];
+
+// ─── Phase 10: Scheduler & Backup Explorer ────────────────────────────────────
+
+export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED";
+export type JobCategory = "backup" | "sync" | "maintenance" | "poller";
+
+export interface SchedulerJob {
+  id: string;
+  name: string;
+  scriptKey: string;
+  scriptFile: string;
+  cronExpression: string;
+  cronLabel: string;
+  lastStatus: JobStatus;
+  lastDuration: string;
+  lastRunAt: string;
+  nextRunAt: string;
+  category: JobCategory;
+}
+
+export const schedulerJobsMock: SchedulerJob[] = [
+  { id:"j1", name:"PostgreSQL Database Backup",    scriptKey:"backup",         scriptFile:"backup.sh",                cronExpression:"0 0 * * *",  cronLabel:"Every day at 00:00 WIB",    lastStatus:"SUCCESS", lastDuration:"45s",    lastRunAt:"2026-07-29 00:00:05", nextRunAt:"Tomorrow 00:00", category:"backup" },
+  { id:"j2", name:"MinIO Object Storage Backup",   scriptKey:"backup-minio",   scriptFile:"backup-minio.sh",          cronExpression:"0 1 * * *",  cronLabel:"Every day at 01:00 WIB",    lastStatus:"SUCCESS", lastDuration:"1m 22s", lastRunAt:"2026-07-29 01:00:14", nextRunAt:"Tomorrow 01:00", category:"backup" },
+  { id:"j3", name:"Codebase Archive Backup",       scriptKey:"backup-code",    scriptFile:"backup-code.sh",           cronExpression:"0 2 * * *",  cronLabel:"Every day at 02:00 WIB",    lastStatus:"SUCCESS", lastDuration:"28s",    lastRunAt:"2026-07-29 02:00:08", nextRunAt:"Tomorrow 02:00", category:"backup" },
+  { id:"j4", name:"Docker Volumes Backup",         scriptKey:"backup-docker",  scriptFile:"backup-docker-volumes.sh", cronExpression:"0 3 * * 0",  cronLabel:"Every Sunday at 03:00 WIB", lastStatus:"SUCCESS", lastDuration:"3m 41s", lastRunAt:"2026-07-27 03:00:22", nextRunAt:"Sun 03:00",      category:"backup" },
+  { id:"j5", name:"Secrets & Credentials Backup",  scriptKey:"backup-secrets", scriptFile:"backup-secrets.sh",        cronExpression:"0 0 * * 0",  cronLabel:"Every Sunday at 00:00 WIB", lastStatus:"SUCCESS", lastDuration:"8s",     lastRunAt:"2026-07-27 00:00:03", nextRunAt:"Sun 00:00",      category:"backup" },
+  { id:"j6", name:"Offsite Sync to Nextcloud",     scriptKey:"sync-nextcloud", scriptFile:"sync-nextcloud.sh",        cronExpression:"0 4 * * *",  cronLabel:"Every day at 04:00 WIB",    lastStatus:"SUCCESS", lastDuration:"2m 5s",  lastRunAt:"2026-07-29 04:00:09", nextRunAt:"Tomorrow 04:00", category:"sync" },
+  { id:"j7", name:"Audit Log Archive & Rotate",    scriptKey:"archive-audit",  scriptFile:"archive-audit-logs.sh",    cronExpression:"0 5 * * 0",  cronLabel:"Every Sunday at 05:00 WIB", lastStatus:"SUCCESS", lastDuration:"1m 10s", lastRunAt:"2026-07-27 05:00:15", nextRunAt:"Sun 05:00",      category:"maintenance" },
+  { id:"j8", name:"Disk & Docker Image Cleanup",   scriptKey:"cleanup",        scriptFile:"cleanup.sh",               cronExpression:"0 6 * * 0",  cronLabel:"Every Sunday at 06:00 WIB", lastStatus:"SUCCESS", lastDuration:"4m 18s", lastRunAt:"2026-07-27 06:00:31", nextRunAt:"Sun 06:00",      category:"maintenance" },
+];
+
+export type StorageTarget = "minio-db" | "minio-code" | "minio-docker" | "nextcloud-dr";
+
+export interface BackupArtifact {
+  id: string;
+  artifactName: string;
+  sourceScript: string;
+  storageTarget: StorageTarget;
+  storageLabel: string;
+  fileSize: string;
+  completedAt: string;
+  checksumSha256: string;
+}
+
+export const backupArtifactsMock: BackupArtifact[] = [
+  { id:"a1", artifactName:"ftth_gis_2026-07-29.sql.gz",                          sourceScript:"backup.sh",                storageTarget:"minio-db",     storageLabel:"MinIO S3: db-backups",         fileSize:"42.3 MB", completedAt:"2026-07-29 00:00:50", checksumSha256:"a3f9c2d1e8b74f56a9c0" },
+  { id:"a2", artifactName:"keycloak_db_2026-07-29.sql.gz",                       sourceScript:"backup.sh",                storageTarget:"minio-db",     storageLabel:"MinIO S3: db-backups",         fileSize:"8.1 MB",  completedAt:"2026-07-29 00:00:50", checksumSha256:"b2e7d4c9f1a3e6b8d0c2" },
+  { id:"a3", artifactName:"minio-data-2026-07-29.tar.gz",                        sourceScript:"backup-minio.sh",          storageTarget:"minio-db",     storageLabel:"MinIO S3: db-backups",         fileSize:"1.2 GB",  completedAt:"2026-07-29 01:01:36", checksumSha256:"c4f1a8e2d5b7c9f3a1e4" },
+  { id:"a4", artifactName:"codebase-2026-07-29.tar.gz",                          sourceScript:"backup-code.sh",           storageTarget:"minio-code",   storageLabel:"MinIO S3: code-backups",       fileSize:"312 MB",  completedAt:"2026-07-29 02:00:36", checksumSha256:"d9b2e5f7a4c1e8b3d6f0" },
+  { id:"a5", artifactName:"docker-volumes-2026-07-27.tar.gz",                    sourceScript:"backup-docker-volumes.sh", storageTarget:"minio-docker", storageLabel:"MinIO S3: docker-backups",     fileSize:"892 MB",  completedAt:"2026-07-27 03:04:03", checksumSha256:"e1c3f6a9d2b4e7c0f5a8" },
+  { id:"a6", artifactName:"audit-logs-2026-W30.tar.gz",                          sourceScript:"archive-audit-logs.sh",    storageTarget:"minio-db",     storageLabel:"MinIO S3: db-backups",         fileSize:"28.7 MB", completedAt:"2026-07-27 05:01:25", checksumSha256:"f5a8d2c7e4b1f9a3d6c0" },
+  { id:"a7", artifactName:"FTTH-GIS-Backups/db/ftth_gis_2026-07-29.sql.gz",     sourceScript:"sync-nextcloud.sh",        storageTarget:"nextcloud-dr", storageLabel:"Nextcloud WebDAV: Layer-3-DR", fileSize:"42.3 MB", completedAt:"2026-07-29 04:02:14", checksumSha256:"g7b9e4f2a6d0c3b8e1f5" },
+  { id:"a8", artifactName:"FTTH-GIS-Backups/code/codebase-2026-07-29.tar.gz",   sourceScript:"sync-nextcloud.sh",        storageTarget:"nextcloud-dr", storageLabel:"Nextcloud WebDAV: Layer-3-DR", fileSize:"312 MB",  completedAt:"2026-07-29 04:05:33", checksumSha256:"h2c4f8a1d6b3e9c5f7a0" },
+];

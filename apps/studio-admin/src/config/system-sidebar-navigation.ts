@@ -141,7 +141,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "OLT & Poller", url: "/observability/olt-poller", icon: "Radio" },
           { title: "Spatial Map", url: "/observability/spatial-map", icon: "Map" },
           { title: "Messaging", url: "/observability/messaging", icon: "MessageSquare" },
-          { title: "Operations", url: "/observability/operations", icon: "Wrench" },
+          { title: "Scheduled Jobs", url: "/observability/scheduler", icon: "CalendarClock" },
         ],
       },
     ],

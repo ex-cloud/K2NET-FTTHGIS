@@ -36,6 +36,7 @@ import {
   MapPin,
   Palette,
   Mail,
+  CalendarClock,
 } from "lucide-react";
 import {
   Collapsible,
@@ -76,6 +77,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   MapPin,
   Palette,
   Mail,
+  CalendarClock,
 };
 
 export function SystemSecondarySidebar() {
