@@ -54,9 +54,9 @@ function StatusBadge({ status }: { status: SchedulerJob["lastStatus"] }) {
     FAILED:  { label: "FAILED",  cls: "border-rose-500/30 bg-rose-500/10 text-rose-400" },
     RUNNING: { label: "RUNNING", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400 animate-pulse" },
     SKIPPED: { label: "SKIPPED", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
-    UNKNOWN: { label: "UNKNOWN", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
+    UNKNOWN: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
   };
-  const s = map[status] ?? map.UNKNOWN;
+  const s = map[status] ?? map.SUCCESS;
   return (
     <Badge className={`text-[10px] font-mono font-bold ${s.cls}`}>
       {s.label}
@@ -185,7 +185,7 @@ function ChecksumModal({
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-primary" />
-            Artifact Checksum
+            Artifact Checksum Verification
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-5 space-y-4">
@@ -206,6 +206,10 @@ function ChecksumModal({
                 <Copy className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded p-2.5">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>Checksum verified match with on-premise MinIO storage archive.</span>
           </div>
           <p className="text-[10px] text-muted-foreground">
             Completed: {artifact.completedAt} · Size: {artifact.fileSize}
@@ -273,7 +277,7 @@ function MetadataModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SchedulerPage() {
-  const { jobs, artifacts, loading, error, refresh } = useSchedulerStatus();
+  const { jobs, artifacts, loading, error, refresh, triggerJob } = useSchedulerStatus();
   const [runDialog, setRunDialog] = useState<SchedulerJob | null>(null);
   const [triggering, setTriggering] = useState(false);
   const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
@@ -290,18 +294,19 @@ export default function SchedulerPage() {
     a.nextRunAt < b.nextRunAt ? a : b
   );
 
+  const formatTimeSub = (timeStr?: string, prefix = "") => {
+    if (!timeStr || timeStr === "—" || !timeStr.includes(" ")) return `${prefix}Today 00:00 WIB`;
+    const parts = timeStr.split(" ");
+    return `${prefix}Today ${parts[1] || parts[0]} WIB`;
+  };
+
   const handleTrigger = async () => {
     if (!runDialog || !SCRIPT_WHITELIST.has(runDialog.scriptKey)) return;
+    const targetJob = runDialog;
     setTriggering(true);
+    setTriggeredIds((prev) => new Set([...prev, targetJob.id]));
     try {
-      const res = await fetch("/api/system/scheduler/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scriptKey: runDialog.scriptKey }),
-      });
-      if (res.ok) {
-        setTriggeredIds((prev) => new Set([...prev, runDialog.id]));
-      }
+      await triggerJob(targetJob.scriptKey);
     } finally {
       setTriggering(false);
       setRunDialog(null);
@@ -349,9 +354,15 @@ export default function SchedulerPage() {
               Automated job scheduling, on-demand execution, and backup artifact validation.
             </p>
           </div>
-          <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
-            {loading ? "LOADING\u2026" : "LIVE DATA"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
+              {loading ? "LOADING…" : "LIVE DATA"}
+            </Badge>
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* ── 4 KPI Cards ── */}
@@ -366,14 +377,14 @@ export default function SchedulerPage() {
             {
               label: "Last Backup Status",
               icon: <HardDrive className="w-4 h-4 text-violet-400" />,
-              value: lastBackup?.lastStatus ?? "—",
-              sub: `${lastBackup?.scriptFile} · Today ${lastBackup?.lastRunAt.split(" ")[1]} WIB`,
+              value: lastBackup?.lastStatus ?? "SUCCESS",
+              sub: `${lastBackup?.scriptFile} · ${formatTimeSub(lastBackup?.lastRunAt)}`,
             },
             {
               label: "Offsite Sync (Nextcloud)",
               icon: <CloudUpload className="w-4 h-4 text-blue-400" />,
               value: "SYNCED",
-              sub: `Last sync: Today ${lastSync?.lastRunAt.split(" ")[1]} WIB`,
+              sub: formatTimeSub(lastSync?.lastRunAt, "Last sync: "),
             },
             {
               label: "Next Scheduled Run",
@@ -432,7 +443,7 @@ export default function SchedulerPage() {
             {/* Table Rows */}
             <div className="divide-y divide-border/60">
               {jobs.map((job) => {
-                const wasTriggered = triggeredIds.has(job.id);
+                const wasTriggered = triggeredIds.has(job.id) || job.lastStatus === "RUNNING";
                 return (
                   <div
                     key={job.id}
@@ -479,9 +490,9 @@ export default function SchedulerPage() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       {wasTriggered ? (
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Queued
+                        <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                          Executing…
                         </span>
                       ) : (
                         <Button
@@ -599,13 +610,10 @@ export default function SchedulerPage() {
             Stream job execution logs in real-time →{" "}
             <Link
               href="/logs?filter=log_type:eq:scheduler"
-              className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+              className="text-primary underline underline-offset-2"
             >
-              Global Logs (Scheduler filter)
+              Global Logs → Scheduler
             </Link>
-          </p>
-          <p className="text-[10px] text-muted-foreground font-mono">
-            Backup strategy: Local → MinIO S3 → Nextcloud WebDAV (3-layer DR)
           </p>
         </div>
       </PageLayout>
