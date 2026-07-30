@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 
 // K2NET Architecture — Real log source labels
@@ -68,6 +68,7 @@ const LogsFilterContext = createContext<LogFilterState | undefined>(undefined);
 function LogsFilterProviderContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [timeRange, setTimeRange] = useState(searchParams.get("date") || "1h");
@@ -159,6 +160,8 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   // Sync state → URL — only write log_type params when user has customised from defaults
   // This keeps the URL clean (/logs) when filter is at default state, so Reset visibly works.
   useEffect(() => {
+    if (pathname !== "/logs") return;
+
     const params = new URLSearchParams();
 
     // Log type filters — skip if identical to DEFAULT to keep URL clean
@@ -166,17 +169,27 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
       (k) => selectedTypes[k] === DEFAULT_SELECTED_TYPES[k]
     );
     if (!isTypesDefault) {
-      Object.entries(selectedTypes)
-        .filter(([, active]) => active)
-        .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
+      const hasAnyTypeActive = Object.values(selectedTypes).some(Boolean);
+      if (!hasAnyTypeActive) {
+        params.append("filter", "log_type:eq:none");
+      } else {
+        Object.entries(selectedTypes)
+          .filter(([, active]) => active)
+          .forEach(([key]) => params.append("filter", `log_type:eq:${key}`));
+      }
     }
 
     // Level filters (only if not all selected — skip if all true to keep URL clean)
     const allLevelsActive = Object.values(selectedLevels).every(Boolean);
     if (!allLevelsActive) {
-      Object.entries(selectedLevels)
-        .filter(([, active]) => active)
-        .forEach(([key]) => params.append("filter", `level:eq:${key}`));
+      const hasAnyLevelActive = Object.values(selectedLevels).some(Boolean);
+      if (!hasAnyLevelActive) {
+        params.append("filter", "level:eq:none");
+      } else {
+        Object.entries(selectedLevels)
+          .filter(([, active]) => active)
+          .forEach(([key]) => params.append("filter", `level:eq:${key}`));
+      }
     }
 
     // Search query
@@ -190,7 +203,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
 
     const newUrl = params.size > 0 ? `/logs?${params.toString()}` : "/logs";
     router.replace(newUrl, { scroll: false });
-  }, [searchQuery, timeRange, selectedTypes, selectedLevels, isLivePaused, router]);
+  }, [searchQuery, timeRange, selectedTypes, selectedLevels, isLivePaused, router, pathname]);
 
   const toggleType = (key: string) => {
     setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }));

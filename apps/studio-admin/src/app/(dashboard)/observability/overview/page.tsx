@@ -267,7 +267,7 @@ export default function ObservabilityOverviewPage() {
                 <div
                   key={svc.key}
                   onClick={() => handleServiceClick(svc)}
-                  className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors group cursor-pointer"
+                  className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors group/row cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span
@@ -280,7 +280,7 @@ export default function ObservabilityOverviewPage() {
                       }`}
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                      <span className="text-sm font-semibold text-foreground group-hover/row:text-primary transition-colors truncate">
                         {svc.name}
                       </span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
@@ -293,7 +293,7 @@ export default function ObservabilityOverviewPage() {
                     <span className="text-xs text-muted-foreground w-24 text-right tabular-nums font-mono">
                       {sparklineLoading ? "…" : `${svc.rps} ${svc.unit}`}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover/row:opacity-100 group-hover/row:translate-x-1 transition-all" />
                   </div>
                 </div>
               ))}
@@ -319,7 +319,7 @@ export default function ObservabilityOverviewPage() {
                     <tr
                       key={svc.key}
                       onClick={() => handleServiceClick(svc)}
-                      className="hover:bg-muted/30 transition-colors cursor-pointer group"
+                      className="hover:bg-muted/30 transition-colors cursor-pointer group/row"
                     >
                       <td className="px-5 py-3.5">
                         <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border">
@@ -331,7 +331,7 @@ export default function ObservabilityOverviewPage() {
                           {svc.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
+                      <td className="px-5 py-3.5 font-semibold text-foreground group-hover/row:text-primary transition-colors text-sm">
                         {svc.name}
                       </td>
                       <td className="px-5 py-3.5 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
@@ -346,7 +346,7 @@ export default function ObservabilityOverviewPage() {
                         {svc.rps} <span className="text-[10px] text-muted-foreground font-normal">{svc.unit}</span>
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity" />
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover/row:opacity-100 transition-opacity" />
                       </td>
                     </tr>
                   ))}
@@ -362,14 +362,14 @@ export default function ObservabilityOverviewPage() {
                 <div
                   key={svc.key}
                   onClick={() => handleServiceClick(svc)}
-                  className="flex flex-col justify-between p-4 rounded-xl border border-border bg-card/40 hover:bg-card/80 hover:border-primary/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all cursor-pointer group"
+                  className="flex flex-col justify-between p-4 rounded-xl border border-border bg-card/40 hover:bg-card/80 hover:border-primary/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all cursor-pointer group/row"
                 >
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                         {svc.category}
                       </span>
-                      <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate mt-0.5">
+                      <span className="text-sm font-bold text-foreground group-hover/row:text-primary transition-colors truncate mt-0.5">
                         {svc.name}
                       </span>
                     </div>
@@ -397,7 +397,7 @@ export default function ObservabilityOverviewPage() {
                     </div>
                     <div className="flex items-end gap-3">
                       <MiniBarChart data={svc.bars} unit={svc.unit} />
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all mb-1" />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-30 group-hover/row:opacity-100 group-hover/row:translate-x-0.5 transition-all mb-1" />
                     </div>
                   </div>
                 </div>
