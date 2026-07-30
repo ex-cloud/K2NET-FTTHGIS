@@ -1,13 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
-import { ScanLine, RefreshCw, TrendingDown, Database, Server, Cpu, MemoryStick, AlertCircle } from "lucide-react";
-import { getSystemHealthMetrics } from "@/lib/actions/health";
-import { getSystemThroughput, ThroughputPoint } from "@/lib/actions/health";
-import { useServiceHealthSparkline } from "@/hooks/useServiceHealthSparkline";
 import {
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell,
+  ScanLine,
+  RefreshCw,
+  TrendingDown,
+  Database,
+  Server,
+  Cpu,
+  MemoryStick,
+  AlertCircle,
+  LayoutList,
+  Table,
+  LayoutGrid,
+  ArrowRight,
+  ExternalLink,
+} from "lucide-react";
+import { getSystemHealthMetrics, getSystemThroughput, ThroughputPoint } from "@/lib/actions/health";
+import { useServiceHealthSparkline, ServiceHealthRow } from "@/hooks/useServiceHealthSparkline";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
 } from "recharts";
 
 // ─── Mini sparkline bar component ────────────────────────────────────────────
@@ -33,7 +53,7 @@ function KpiCard({
   label: string; value: string; sub: string; icon: React.ElementType;
 }) {
   return (
-    <Card className="p-5 flex flex-col gap-2">
+    <Card className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -46,6 +66,7 @@ function KpiCard({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ObservabilityOverviewPage() {
+  const router = useRouter();
   const [healthData, setHealthData] = useState<{
     cpu: number;
     memory: number;
@@ -55,7 +76,11 @@ export default function ObservabilityOverviewPage() {
   const [throughput, setThroughput] = useState<ThroughputPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ── Real-time Service Health Sparkline (from health-metrics API)
+  // View States for layout configurations
+  const [viewMode, setViewMode] = useState<"list" | "table" | "card">("list");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  // Real-time Service Health Hook
   const { rows: serviceRows, loading: sparklineLoading, error: sparklineError, refresh: refreshSparkline } = useServiceHealthSparkline();
 
   const refresh = useCallback(async () => {
@@ -65,19 +90,44 @@ export default function ObservabilityOverviewPage() {
       setHealthData({
         cpu: Math.round(metrics.cpu),
         memory: Math.round((metrics.memUsedBytes / metrics.memTotalBytes) * 100),
-        postgresConns: 12, // from health-metrics API (postgres connections via Spring Boot)
-        slowQueries: 4,    // from db-performance API (RT-3 — pg_stat_statements)
+        postgresConns: 12,
+        slowQueries: 4,
       });
       setThroughput(tp);
-    } catch {
-      // Graceful: keep last known data
+    } catch (err) {
+      console.error("[ObservabilityOverview] Refresh metrics failed:", err);
     } finally {
       setLoading(false);
     }
     refreshSparkline();
   }, [refreshSparkline]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Click to logs redirect mapping
+  const handleServiceClick = (svc: ServiceHealthRow) => {
+    if (svc.logType) {
+      router.push(`/logs?filter=log_type:eq:${svc.logType}`);
+    } else {
+      router.push(`/logs?search=${encodeURIComponent(svc.key)}`);
+    }
+  };
+
+  // Filter rows by active category tab
+  const filteredRows = serviceRows.filter((r) => {
+    if (activeCategory === "all") return true;
+    return r.category === activeCategory;
+  });
+
+  const categories = [
+    { key: "all", label: "All Services" },
+    { key: "core", label: "Core" },
+    { key: "databases", label: "Databases & Storage" },
+    { key: "gateways", label: "Go Gateways" },
+    { key: "observability", label: "Observability" },
+  ];
 
   return (
     <PageLayout variant="dashboard" spaceY="space-y-6">
@@ -98,7 +148,7 @@ export default function ObservabilityOverviewPage() {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refresh()} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary mr-1" : "mr-1"}`} />
           Refresh
         </Button>
       </div>
@@ -131,82 +181,284 @@ export default function ObservabilityOverviewPage() {
         />
       </div>
 
-      {/* Service Health Grid — Real-time Sparkline */}
-      <Card>
-        <CardHeader className="border-b border-border pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Server className="h-4 w-4 text-muted-foreground" />
-                Service Health
-                {!sparklineLoading && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                )}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Request throughput per service — derived from Prometheus health-metrics · auto-refresh 30s
-              </p>
-            </div>
+      {/* Service Health Grid Section */}
+      <Card className="border-border">
+        <CardHeader className="border-b border-border pb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Server className="h-4 w-4 text-muted-foreground" />
+              Service Health
+              {!sparklineLoading && (
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              )}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Request throughput per service — derived from Prometheus health-metrics · auto-refresh 30s
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             {sparklineError && (
-              <div className="flex items-center gap-1 text-[10px] text-amber-500">
+              <div className="flex items-center gap-1 text-[10px] text-amber-500 mr-2">
                 <AlertCircle className="h-3 w-3" />
                 {sparklineError}
               </div>
             )}
+
+            {/* View Mode Selectors */}
+            <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 px-2.5 rounded-md ${viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                onClick={() => setViewMode("list")}
+              >
+                <LayoutList className="h-3.5 w-3.5 mr-1" />
+                List
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 px-2.5 rounded-md ${viewMode === "table" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                onClick={() => setViewMode("table")}
+              >
+                <Table className="h-3.5 w-3.5 mr-1" />
+                Table
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 px-2.5 rounded-md ${viewMode === "card" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+                onClick={() => setViewMode("card")}
+              >
+                <LayoutGrid className="h-3.5 w-3.5 mr-1" />
+                Cards
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 divide-y divide-border">
-          {(sparklineLoading ? serviceRows : serviceRows).map((svc) => (
-            <div
-              key={svc.name}
-              className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors group"
+
+        {/* Tab Categories Filter */}
+        <div className="px-5 py-2.5 border-b border-border bg-muted/10 overflow-x-auto flex gap-1.5">
+          {categories.map((cat) => (
+            <Button
+              key={cat.key}
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-3 rounded-full text-xs font-medium border border-transparent ${
+                activeCategory === cat.key
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+              }`}
+              onClick={() => setActiveCategory(cat.key)}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span
-                  className={`h-2 w-2 rounded-full shrink-0 ${
-                    svc.status === "up"
-                      ? "bg-primary animate-pulse"
-                      : svc.status === "down"
-                      ? "bg-rose-500"
-                      : "bg-muted-foreground"
-                  }`}
-                />
-                <span className="text-sm font-medium text-foreground truncate">{svc.name}</span>
-              </div>
-              <div className="flex items-center gap-4 shrink-0">
-                <MiniBarChart data={svc.bars} />
-                <span className="text-xs text-muted-foreground w-24 text-right tabular-nums font-mono">
-                  {sparklineLoading ? "…" : `${svc.rps} ${svc.unit}`}
-                </span>
-                <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">&gt;</span>
-              </div>
-            </div>
+              {cat.label}
+            </Button>
           ))}
+        </div>
+
+        {/* Dynamic Service Rendering based on Selected View Mode */}
+        <CardContent className="p-0">
+          {/* 1. LIST VIEW */}
+          {viewMode === "list" && (
+            <div className="divide-y divide-border">
+              {filteredRows.map((svc) => (
+                <div
+                  key={svc.key}
+                  onClick={() => handleServiceClick(svc)}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full shrink-0 ${
+                        svc.status === "up"
+                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                          : svc.status === "down"
+                          ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+                          : "bg-muted-foreground"
+                      }`}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                        {svc.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                        {svc.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 shrink-0">
+                    <MiniBarChart data={svc.bars} />
+                    <span className="text-xs text-muted-foreground w-24 text-right tabular-nums font-mono">
+                      {sparklineLoading ? "…" : `${svc.rps} ${svc.unit}`}
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 2. TABLE VIEW */}
+          {viewMode === "table" && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider bg-muted/20">
+                    <th className="px-5 py-3 w-28">Status</th>
+                    <th className="px-5 py-3">Service Name</th>
+                    <th className="px-5 py-3">Category</th>
+                    <th className="px-5 py-3 text-center w-36">Throughput Trend</th>
+                    <th className="px-5 py-3 text-right w-32">RPS Value</th>
+                    <th className="px-5 py-3 w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredRows.map((svc) => (
+                    <tr
+                      key={svc.key}
+                      onClick={() => handleServiceClick(svc)}
+                      className="hover:bg-muted/30 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border">
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              svc.status === "up" ? "bg-emerald-500 animate-pulse" : svc.status === "down" ? "bg-rose-500" : "bg-muted-foreground"
+                            }`}
+                          />
+                          {svc.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
+                        {svc.name}
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                        {svc.category}
+                      </td>
+                      <td className="px-5 py-3.5 align-middle">
+                        <div className="flex justify-center">
+                          <MiniBarChart data={svc.bars} />
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-mono text-xs text-foreground font-medium">
+                        {svc.rps} <span className="text-[10px] text-muted-foreground font-normal">{svc.unit}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-30 group-hover:opacity-100 transition-opacity" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 3. CARD GRID VIEW */}
+          {viewMode === "card" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 p-5">
+              {filteredRows.map((svc) => (
+                <div
+                  key={svc.key}
+                  onClick={() => handleServiceClick(svc)}
+                  className="flex flex-col justify-between p-4 rounded-xl border border-border bg-card/40 hover:bg-card/80 hover:border-primary/30 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                        {svc.category}
+                      </span>
+                      <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate mt-0.5">
+                        {svc.name}
+                      </span>
+                    </div>
+                    <Badge
+                      className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border ${
+                        svc.status === "up"
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                          : svc.status === "down"
+                          ? "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {svc.status}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-end justify-between gap-4 mt-auto">
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-black text-foreground tracking-tight tabular-nums">
+                        {svc.rps}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                        {svc.unit}
+                      </span>
+                    </div>
+                    <div className="flex items-end gap-3">
+                      <MiniBarChart data={svc.bars} />
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all mb-1" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Throughput Chart — real data from Prometheus */}
+      {/* Throughput Chart — real dynamic data from Prometheus */}
       {throughput.length > 0 && (
-        <Card>
+        <Card className="border-border">
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-sm font-semibold text-foreground">
               Combined Throughput — Last 30 Minutes
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Total HTTP hits across all gateways · Prometheus</p>
           </CardHeader>
-          <CardContent className="pt-4">
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={throughput} barSize={8}>
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: "var(--foreground)" }}
+          <CardContent className="pt-5">
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={throughput}>
+                <defs>
+                  <linearGradient id="throughputGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.2} vertical={false} />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={8}
                 />
-                <Bar dataKey="requests" radius={[3, 3, 0, 0]}>
-                  {throughput.map((_, i) => <Cell key={i} fill="var(--primary)" fillOpacity={0.7} />)}
-                </Bar>
-              </BarChart>
+                <YAxis
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={35}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: "bold" }}
+                  itemStyle={{ color: "var(--primary)" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="requests"
+                  name="Requests/min"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#throughputGrad)"
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

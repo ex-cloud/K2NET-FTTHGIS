@@ -29,6 +29,20 @@ services:
           cpus: '0.5'
           memory: 256M
 
+  # Cloudflare Tunnel Ingress Client
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token eyJhIjoiMjNhNzQyN2Y1MGVjMTc2MGZlMDEwNDYxNTljYWVhMWQiLCJ0IjoiYzgwOWVlOTUtMWJmYi00ZDQ4LTljNjMtNGNkYWZhNmM5MDRjIiwicyI6IlkyTTJaVEUyT1RRdE9UYzBaaTAwWkdZMExXSTNaVFF0TVdObFptWmpNemt3WVdObCJ9
+    depends_on:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+
   # API Gateway (Kong in DB-less mode)
   # Diakses oleh Nginx (host) melalui 127.0.0.1:8000
   kong:
