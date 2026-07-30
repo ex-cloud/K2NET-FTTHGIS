@@ -118,6 +118,44 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   // Counts per log type — updated reactively by page.tsx from raw log stream
   const [logTypeCounts, setLogTypeCounts] = useState<Record<string, number>>({});
 
+  // Synchronize URL search params to React state dynamically (handles interactive link clicks)
+  useEffect(() => {
+    const { types, levels } = parseFiltersFromUrl();
+
+    const typesRec = types as Record<string, boolean>;
+    const selectedTypesRec = selectedTypes as Record<string, boolean>;
+    const typesChanged = Object.keys(typesRec).some(
+      (k) => typesRec[k] !== selectedTypesRec[k]
+    );
+    if (typesChanged) {
+      setSelectedTypes(types);
+    }
+
+    const levelsRec = levels as Record<string, boolean>;
+    const selectedLevelsRec = selectedLevels as Record<string, boolean>;
+    const levelsChanged = Object.keys(levelsRec).some(
+      (k) => levelsRec[k] !== selectedLevelsRec[k]
+    );
+    if (levelsChanged) {
+      setSelectedLevels(levels);
+    }
+
+    const search = searchParams.get("search") || "";
+    if (search !== searchQuery) {
+      setSearchQuery(search);
+    }
+
+    const date = searchParams.get("date") || "1h";
+    if (date !== timeRange) {
+      setTimeRange(date);
+    }
+
+    const isPaused = searchParams.get("live") === "false";
+    if (isPaused !== isLivePaused) {
+      setIsLivePaused(isPaused);
+    }
+  }, [searchParams]);
+
   // Sync state → URL — only write log_type params when user has customised from defaults
   // This keeps the URL clean (/logs) when filter is at default state, so Reset visibly works.
   useEffect(() => {

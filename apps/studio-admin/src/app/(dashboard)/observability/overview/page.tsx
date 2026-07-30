@@ -31,14 +31,15 @@ import {
 } from "recharts";
 
 // ─── Mini sparkline bar component ────────────────────────────────────────────
-function MiniBarChart({ data }: { data: number[] }) {
+function MiniBarChart({ data, unit }: { data: number[]; unit: string }) {
   const max = Math.max(...data, 1);
   return (
     <div className="flex items-end gap-0.5 h-8">
       {data.map((v, i) => (
         <div
           key={i}
-          className="w-1.5 bg-primary rounded-sm opacity-80"
+          title={`${v} ${unit}`}
+          className="w-1.5 bg-primary rounded-sm opacity-70 hover:opacity-100 hover:scale-y-110 transition-all cursor-help"
           style={{ height: `${Math.max(10, (v / max) * 100)}%` }}
         />
       ))}
@@ -288,7 +289,7 @@ export default function ObservabilityOverviewPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-6 shrink-0">
-                    <MiniBarChart data={svc.bars} />
+                    <MiniBarChart data={svc.bars} unit={svc.unit} />
                     <span className="text-xs text-muted-foreground w-24 text-right tabular-nums font-mono">
                       {sparklineLoading ? "…" : `${svc.rps} ${svc.unit}`}
                     </span>
@@ -338,7 +339,7 @@ export default function ObservabilityOverviewPage() {
                       </td>
                       <td className="px-5 py-3.5 align-middle">
                         <div className="flex justify-center">
-                          <MiniBarChart data={svc.bars} />
+                          <MiniBarChart data={svc.bars} unit={svc.unit} />
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-right font-mono text-xs text-foreground font-medium">
@@ -395,7 +396,7 @@ export default function ObservabilityOverviewPage() {
                       </span>
                     </div>
                     <div className="flex items-end gap-3">
-                      <MiniBarChart data={svc.bars} />
+                      <MiniBarChart data={svc.bars} unit={svc.unit} />
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-30 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all mb-1" />
                     </div>
                   </div>
