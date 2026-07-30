@@ -64,15 +64,29 @@ docker network inspect project5_default | grep -E '"Name"|"IPv4Address"' # Verif
 
 ## 🚫 ATURAN MUTLAK DEPLOYMENT — TERLARANG BUILD DI SERVER
 
-> 🛑 **DILARANG KERAS**: Meminta agent atau mengosongkan/menjalankan perintah `docker compose build --no-cache` atau `docker build` langsung di server/VM produksi. Build Docker **WAJIB** dilakukan oleh GitHub Actions Runner (compute eksternal) untuk mencegah insiden server overload (Load Avg > 30).
+> 🛑 **ATURAN MUTLAK LEVEL 1 (CRITICAL)**: Dilarang keras memicu perintah `docker compose build --no-cache` or `docker build` secara langsung di server/VM produksi. Proses pengompilasian Docker image membutuhkan CPU/RAM tinggi dan memicu server crash/overload.
 
-### Alur Deployment Produksi Wajib:
+### Alur Deployment Produksi Wajib (Ketika IP Publik / SSH Aktif):
 1. Jalankan **Pre-Deployment Checklist** di atas secara lokal / di sandbox environment.
 2. Push commit ke branch `main`.
-3. GitHub Actions (`.github/workflows/deploy-production.yml`) akan:
-   - **Job 1 (Validate)**: Linting, type-checking, test suite, dan audit anti-regression.
-   - **Job 2 (Docker Build)**: Build Docker image di runner GitHub dan push ke `ghcr.io`.
-   - **Job 3 (Deploy)**: Trigger SSH ke server untuk `docker pull` + `docker compose up -d --no-build`.
+3. GitHub Actions (`.github/workflows/deploy-production.yml`) secara otomatis menjalankan alur:
+   - **Job 1 (Validate)**: Linting, type-checking, unit tests, dan audit regresi warna.
+   - **Job 2 (Docker Build)**: Mengompilasi image Docker di runner GitHub (compute eksternal) dan melakukan push ke `ghcr.io`.
+   - **Job 3 (Deploy)**: Melakukan SSH ke server produksi untuk menarik image terbaru (`docker pull`) dan me-restart container (`docker compose up -d --no-build`).
+
+### 🛟 Alur Cadangan Deployment Manual (Ketika IP Publik / SSH Mati):
+Jika proses login SSH dari GitHub Actions gagal (timeout/fail) karena IP publik server terganggu (misalnya setelah perpindahan ke Cloudflare Tunnel atau gangguan link ISP), tetapi proses build Docker image di GitHub Runner telah sukses, Anda **wajib** melakukan deployment manual secara aman langsung dari dalam server (0% overhead build):
+1. Pastikan server sudah login ke registry:
+   ```bash
+   docker login ghcr.io -u ex-cloud
+   # Masukkan GitHub Personal Access Token (PAT) dengan scope read:packages
+   ```
+2. Jalankan perintah git pull dan deploy script:
+   ```bash
+   git fetch origin && git checkout main && git pull origin main
+   bash scripts/deploy.sh production frontend-admin
+   ```
+*Catatan: Selalu patuhi Larangan Docker Build di Server demi kestabilan RAM dan CPU host.*
 
 ---
 
