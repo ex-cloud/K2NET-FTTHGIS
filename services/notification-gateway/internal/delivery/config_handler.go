@@ -313,7 +313,7 @@ func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 	var results []serviceStatus
 	for _, svc := range services {
 		// Use the docker-compose service hostname to check port health
-		address := fmt.Sprintf("%s:%d", svc.name, svc.port)
+		address := net.JoinHostPort(svc.name, fmt.Sprintf("%d", svc.port))
 		conn, err := net.DialTimeout("tcp", address, 300*time.Millisecond)
 		active := err == nil
 		status := "active"

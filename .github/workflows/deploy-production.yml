@@ -71,44 +71,32 @@ jobs:
               - 'packages/**'
               - 'pnpm-workspace.yaml'
               - 'pnpm-lock.yaml'
-              - '.github/workflows/deploy-production.yml'
             backend:
               - 'apps/api/**'
-              - '.github/workflows/deploy-production.yml'
             shared:
               - 'services/shared/**'
               - 'services/go.work'
               - '.github/workflows/deploy-production.yml'
             map-gateway:
               - 'services/map-gateway/**'
-              - '.github/workflows/deploy-production.yml'
             notification-gateway:
               - 'services/notification-gateway/**'
-              - '.github/workflows/deploy-production.yml'
             payment-gateway:
               - 'services/payment-gateway/**'
-              - '.github/workflows/deploy-production.yml'
             storage-gateway:
               - 'services/storage-gateway/**'
-              - '.github/workflows/deploy-production.yml'
             gateway-whatsapp:
               - 'services/gateway-whatsapp/**'
-              - '.github/workflows/deploy-production.yml'
             gateway-scheduler:
               - 'services/gateway-scheduler/**'
-              - '.github/workflows/deploy-production.yml'
             gateway-export:
               - 'services/gateway-export/**'
-              - '.github/workflows/deploy-production.yml'
             gateway-olt:
               - 'services/gateway-olt/**'
-              - '.github/workflows/deploy-production.yml'
             gateway-audit:
               - 'services/gateway-audit/**'
-              - '.github/workflows/deploy-production.yml'
             poller:
               - 'services/poller/**'
-              - '.github/workflows/deploy-production.yml'
 
 # ============================================================
 # JOB 1: VALIDATE — Memastikan sintaks & build 100% lulus
