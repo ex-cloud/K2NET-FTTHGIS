@@ -4,15 +4,28 @@ import com.company.ftthgis.domain.common.entity.AuditLog;
 import com.company.ftthgis.domain.common.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -202,6 +215,85 @@ public class AuditLoggingService {
         if (!oldLogs.isEmpty()) {
             auditLogRepository.deleteAll(oldLogs);
             log.info("🧹 Purged {} old audit logs (older than {} days)", oldLogs.size(), retentionDays);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Bridge: Push event to Go gateway-audit microservice
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Value("${app.gateway.audit-url:http://localhost:5009}")
+    private String auditGatewayUrl;
+
+    @Value("${app.gateway.token:}")
+    private String gatewayToken;
+
+    /**
+     * Kirim event audit ke Go gateway-audit microservice.
+     * Method ini bersifat fire-and-forget; kegagalan tidak akan
+     * membatalkan transaksi yang sedang berjalan.
+     */
+    public void logEvent(String tenantSlug, String action, String resourceType, String resourceId,
+                         Map<String, Object> oldValue, Map<String, Object> newValue,
+                         Map<String, Object> metadata) {
+        try {
+            String actorId = "system";
+            String actorRole = "system";
+            String actorIp = "127.0.0.1";
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+                String email = jwt.getClaimAsString("email");
+                String preferredUsername = jwt.getClaimAsString("preferred_username");
+                actorId = email != null ? email : (preferredUsername != null ? preferredUsername : jwt.getSubject());
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+                if (realmAccess != null && realmAccess.containsKey("roles")) {
+                    List<String> roles = (List<String>) realmAccess.get("roles");
+                    if (roles != null && !roles.isEmpty()) {
+                        actorRole = roles.get(0);
+                    }
+                }
+            }
+
+            try {
+                ServletRequestAttributes attrs =
+                        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                if (attrs != null) {
+                    HttpServletRequest request = attrs.getRequest();
+                    String ip = request.getHeader("X-Forwarded-For");
+                    if (ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip)) {
+                        ip = request.getRemoteAddr();
+                    }
+                    if (ip != null) actorIp = ip;
+                }
+            } catch (Exception ignored) {}
+
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("tenantSlug", tenantSlug != null ? tenantSlug : "system");
+            payload.put("actorId", actorId);
+            payload.put("actorRole", actorRole);
+            payload.put("actorIp", actorIp);
+            payload.put("action", action);
+            payload.put("resourceType", resourceType);
+            payload.put("resourceId", resourceId != null ? resourceId : "");
+            payload.put("oldValue", oldValue != null ? oldValue : new HashMap<>());
+            payload.put("newValue", newValue != null ? newValue : new HashMap<>());
+            payload.put("metadata", metadata != null ? metadata : new HashMap<>());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Gateway-Token", gatewayToken);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+            String url = auditGatewayUrl + "/api/v1/audit/events";
+
+            RestTemplate rt = new RestTemplate();
+            rt.postForEntity(url, entity, Map.class);
+            log.info("[AuditGateway] Event dikirim: action={}, resource={}/{}", action, resourceType, resourceId);
+        } catch (Exception e) {
+            log.warn("[AuditGateway] Gagal mengirim audit event (non-critical): {}", e.getMessage());
         }
     }
 }

@@ -43,6 +43,7 @@ public class OrganizationService {
     private final com.company.ftthgis.domain.network.repository.CustomerRepository customerRepository;
     private final com.company.ftthgis.domain.network.repository.FiberCableRepository fiberCableRepository;
     private final EntityManager entityManager;
+    private final AuditLoggingService auditLoggingService;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -243,6 +244,24 @@ public class OrganizationService {
             log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",
                     saved.getName(), adminUsername, tempPassword);
 
+            try {
+                java.util.Map<String, Object> metadata = new java.util.HashMap<>();
+                metadata.put("ownerEmail", request.getAdminEmail());
+                metadata.put("plan", request.getPlan());
+                
+                auditLoggingService.logEvent(
+                    "system",
+                    "TENANT_CREATED",
+                    "ORGANIZATION",
+                    saved.getId().toString(),
+                    new java.util.HashMap<>(),
+                    java.util.Map.of("name", saved.getName(), "slug", saved.getSlug(), "status", saved.getStatus().toString()),
+                    metadata
+                );
+            } catch (Exception auditEx) {
+                log.error("Failed to log TENANT_CREATED audit event: {}", auditEx.getMessage());
+            }
+
         } catch (Exception e) {
             log.error("❌ CRITICAL: Keycloak provisioning failed for {}. ROLLING BACK database changes.",
                     saved.getSlug());
@@ -386,6 +405,20 @@ public class OrganizationService {
                 fileStorageService.deleteFile(org.getLogoUrl());
             }
             organizationRepository.delete(org);
+
+            try {
+                auditLoggingService.logEvent(
+                    "system",
+                    "TENANT_DELETED",
+                    "ORGANIZATION",
+                    org.getId().toString(),
+                    java.util.Map.of("name", org.getName(), "slug", org.getSlug(), "status", org.getStatus().toString()),
+                    new java.util.HashMap<>(),
+                    new java.util.HashMap<>()
+                );
+            } catch (Exception auditEx) {
+                log.error("Failed to log TENANT_DELETED audit event: {}", auditEx.getMessage());
+            }
 
             log.info("✅ SUCCESS: Organization '{}' and all associated resources have been nuked.", slug);
 

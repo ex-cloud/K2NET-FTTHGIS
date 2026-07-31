@@ -70,12 +70,12 @@ export function useAuditLogStream(
         auditEventsResult.value.forEach((e: any) => {
           combinedLogs.push({
             id: e.id || `audit-${Date.now()}-${Math.random()}`,
-            timestamp: e.createdAt || new Date().toISOString(),
+            timestamp: e.occurredAt || e.createdAt || new Date().toISOString(),
             logType: "audit",
             severity: e.status === "FAILED" ? "ERROR" : "INFO",
-            actor: e.username || e.actor || "system",
+            actor: e.actorId || e.username || e.actor || "system",
             action: e.action || "UNKNOWN",
-            message: e.errorMessage ? `Error: ${e.errorMessage}` : `Action ${e.action} completed successfully`,
+            message: e.errorMessage ? `Error: ${e.errorMessage}` : (e.resourceType ? `Action ${e.action} on ${e.resourceType} completed successfully` : `Action ${e.action} completed successfully`),
           });
         });
       }
