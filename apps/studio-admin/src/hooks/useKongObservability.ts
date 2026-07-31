@@ -15,22 +15,10 @@ export interface KongMetrics {
   error?: string;
 }
 
-// ─── Fallback data (mock-compatible shape) ────────────────────────────────────
-const FALLBACK_ROUTES: KongRouteDisplay[] = [
-  { route: "/api/v1/wa",        routeId: "r1", upstream: "notification-gateway:5001", methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/olt",       routeId: "r2", upstream: "olt-gateway:5005",          methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/spatial",   routeId: "r3", upstream: "map-gateway:5003",          methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/payment",   routeId: "r4", upstream: "payment-gateway:5002",      methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/storage",   routeId: "r5", upstream: "storage-gateway:5004",      methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/system",    routeId: "r6", upstream: "ftth-backend:9090",         methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/audit",     routeId: "r7", upstream: "audit-gateway:5006",        methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-  { route: "/api/v1/scheduler", routeId: "r8", upstream: "scheduler-gateway:5007",    methods: "ALL", plugins: ["jwt", "rate-limiting"], status: "UP" },
-];
-
 // ─── useKongRoutes ────────────────────────────────────────────────────────────
 
 export function useKongRoutes() {
-  const [routes, setRoutes] = useState<KongRouteDisplay[]>(FALLBACK_ROUTES);
+  const [routes, setRoutes] = useState<KongRouteDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -45,12 +33,13 @@ export function useKongRoutes() {
           setError(null);
         } else if (data.error) {
           setError(`Kong Admin: ${data.error}`);
-          // Keep fallback routes
+          setRoutes([]);
         }
       }
     } catch (err) {
       if (mounted.current) {
-        setError("Kong Admin API unreachable — showing last known config");
+        setError("Kong Admin API unreachable");
+        setRoutes([]);
       }
     } finally {
       if (mounted.current) setLoading(false);

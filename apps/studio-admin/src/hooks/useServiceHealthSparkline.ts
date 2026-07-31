@@ -53,26 +53,6 @@ const SERVICE_CONFIG = [
   { name: "SNMP Simulator",             key: "snmpsim",            category: "observability", unit: "pings/sec",    logType: "poller" },
 ] as const;
 
-// ─── Helper: generate a stable sparkline from a single numeric seed ───────────
-function seedSparkline(seed: number, length = 10): number[] {
-  const bars: number[] = [];
-  for (let i = 0; i < length; i++) {
-    const jitter = (Math.sin(seed * (i + 1) * 13.37) * seed * 0.25);
-    bars.push(Math.max(1, Math.round(seed + jitter)));
-  }
-  return bars;
-}
-
-// ─── Fallback seeds for initial load or offline states ───────────────────────
-const SEEDS: Record<string, number> = {
-  "traefik": 72, "cloudflare-tunnel": 72, "kong": 68, "postgres": 95, "redis": 140, "keycloak": 6,
-  "minio": 12, "martin": 8, "spring-boot": 32, "frontend-admin": 8,
-  "storage-gateway": 5, "whatsapp-gateway": 2, "olt-gateway": 14, "scheduler-gateway": 3,
-  "export-gateway": 1, "go-poller": 25, "audit-gateway": 8, "map-gateway": 12,
-  "notification-gateway": 6, "payment-gateway": 3,
-  "prometheus": 15, "alertmanager": 1, "grafana": 3, "node-exporter": 30, "snmpsim": 25,
-};
-
 const RATIOS: Record<string, number> = {
   "traefik": 1.0, "cloudflare-tunnel": 1.0, "kong": 0.85, "postgres": 1.4, "redis": 2.2, "keycloak": 0.05,
   "minio": 0.12, "martin": 0.15, "spring-boot": 0.55, "frontend-admin": 0.2,
@@ -83,15 +63,14 @@ const RATIOS: Record<string, number> = {
 };
 
 const FALLBACK_DATA: ServiceHealthRow[] = SERVICE_CONFIG.map((svc) => {
-  const seed = SEEDS[svc.key] ?? 10;
   return {
     name: svc.name,
     category: svc.category,
     key: svc.key,
     unit: svc.unit,
-    rps: seed,
-    bars: seedSparkline(seed),
-    status: "up",
+    rps: 0,
+    bars: Array(10).fill(0),
+    status: "unknown",
     logType: svc.logType,
   };
 });
@@ -124,16 +103,15 @@ export function useServiceHealthSparkline() {
 
       const computed: ServiceHealthRow[] = SERVICE_CONFIG.map((svc) => {
         const ratio = RATIOS[svc.key] ?? 0.1;
-        const seed = SEEDS[svc.key] ?? 10;
 
-        // Calculate load metrics based on real throughput or fall back to seeds
+        // Calculate load metrics based on real throughput or fall back to 0
         const rps = latestTotal > 0
           ? Math.max(1, Math.round(latestTotal * ratio))
-          : seed;
+          : 0;
 
         const bars = allBars.length >= 3
           ? allBars.map((b) => Math.max(1, Math.round(b * ratio)))
-          : seedSparkline(seed);
+          : Array(10).fill(0);
 
         const status = serviceMap[svc.key] ?? "unknown";
 

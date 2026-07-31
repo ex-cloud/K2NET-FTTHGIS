@@ -56,7 +56,7 @@ export function useSchedulerStatus() {
   const [jobs, setJobs] = useState<SchedulerJob[]>(
     JOB_STATIC.map(s => ({
       ...s,
-      lastStatus: "SUCCESS" as const,
+      lastStatus: "UNKNOWN" as const,
       lastRunAt: "—",
       lastDuration: "—",
       nextRunAt: computeNextRun(s.cronExpression),
@@ -91,9 +91,9 @@ export function useSchedulerStatus() {
         const live = jobStatusMap[s.scriptKey];
         return {
           ...s,
-          lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "SUCCESS",
-          lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "2026-07-29 00:00:00",
-          lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "45s",
+          lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "UNKNOWN",
+          lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "—",
+          lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "—",
           nextRunAt: computeNextRun(s.cronExpression),
         };
       });

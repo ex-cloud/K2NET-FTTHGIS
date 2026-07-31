@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { getBackendBaseUrl } from "@/lib/api-config";
+import { getAuditEvents } from "@/lib/actions/gateways";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,121 +19,10 @@ export interface AuditStreamEntry {
   message: string;
 }
 
-// ─── Fallback mock data aligned to K2NET real services ────────────────────────
-// These show while waiting for a real SSE/REST connection.
-
-const MOCK_INITIAL_LOGS: AuditStreamEntry[] = [
-  {
-    id: "evt-k01",
-    timestamp: new Date(Date.now() - 3000).toISOString(),
-    logType: "auth",
-    severity: "INFO",
-    actor: "superadmin@k2net.id",
-    action: "KEYCLOAK_TOKEN_EXCHANGE",
-    message: "Super admin session authenticated via Keycloak OIDC Realm",
-  },
-  {
-    id: "evt-k02",
-    timestamp: new Date(Date.now() - 8000).toISOString(),
-    logType: "poller",
-    severity: "WARN",
-    actor: "ftth-poller",
-    action: "OLT_SIGNAL_DEGRADATION",
-    message: "Poller detected 2 minor signal degradation events on OLT-BDG-01",
-  },
-  {
-    id: "evt-k03",
-    timestamp: new Date(Date.now() - 15000).toISOString(),
-    logType: "edge",
-    severity: "INFO",
-    actor: "system",
-    action: "KONG_TENANT_HEADER",
-    message: "Kong API Gateway decorated X-Tenant-ID header for 42 inbound requests",
-  },
-  {
-    id: "evt-k04",
-    timestamp: new Date(Date.now() - 25000).toISOString(),
-    logType: "audit",
-    severity: "INFO",
-    actor: "superadmin@k2net.id",
-    action: "TENANT_CREATED",
-    message: "New tenant 'PT. Maju Bersama' created successfully via audit trail",
-  },
-  {
-    id: "evt-k05",
-    timestamp: new Date(Date.now() - 35000).toISOString(),
-    logType: "notification",
-    severity: "INFO",
-    actor: "notification-gateway",
-    action: "SMS_SENT",
-    message: "Twilio SMS sent to +62812xxxx: Invoice payment reminder",
-  },
-  {
-    id: "evt-k06",
-    timestamp: new Date(Date.now() - 50000).toISOString(),
-    logType: "auth",
-    severity: "WARN",
-    actor: "unknown@192.168.1.55",
-    action: "AUTHORIZATION_FAILURE",
-    message: "Access denied: missing permission 'network.write' on POST /api/v1/network/olt",
-  },
-  {
-    id: "evt-k07",
-    timestamp: new Date(Date.now() - 65000).toISOString(),
-    logType: "poller",
-    severity: "INFO",
-    actor: "ftth-poller",
-    action: "POLLER_HEALTH_SCRAPE",
-    message: "Poller healthcheck scrape OK (ftth-poller:5010) — 24 devices polled",
-  },
-  {
-    id: "evt-k08",
-    timestamp: new Date(Date.now() - 80000).toISOString(),
-    logType: "storage",
-    severity: "INFO",
-    actor: "storage-gateway",
-    action: "MINIO_UPLOAD",
-    message: "File uploaded to MinIO: tenant/logos/pt-maju-bersama.png (42KB)",
-  },
-  {
-    id: "evt-k09",
-    timestamp: new Date(Date.now() - 95000).toISOString(),
-    logType: "scheduler",
-    severity: "INFO",
-    actor: "gateway-scheduler",
-    action: "JOB_EXECUTED",
-    message: "Scheduled job 'monthly-invoice-gen' executed successfully in 230ms",
-  },
-  {
-    id: "evt-k10",
-    timestamp: new Date(Date.now() - 110000).toISOString(),
-    logType: "edge",
-    severity: "ERROR",
-    actor: "kong",
-    action: "RATE_LIMIT_EXCEEDED",
-    message: "Kong rate limit exceeded: 192.168.1.100 hit 100 req/min on /api/v1/network",
-  },
-];
-
-// ─── Simulation ticker data (K2NET real services) ────────────────────────────
-
-const SAMPLE_ACTIONS = [
-  { logType: "auth" as const,         act: "KEYCLOAK_SESSION_REFRESH",  msg: "Token refresh request handled by ftth-keycloak",             sev: "INFO" as const },
-  { logType: "poller" as const,       act: "POLLER_HEALTH_SCRAPE",      msg: "Poller healthcheck scrape OK (ftth-poller:5010)",            sev: "INFO" as const },
-  { logType: "edge" as const,         act: "KONG_REQUEST_PROXIED",      msg: "Kong API Gateway proxied request to backend (9090)",         sev: "INFO" as const },
-  { logType: "audit" as const,        act: "RESOURCE_UPDATED",          msg: "ODC asset updated by tenant operator — gateway-audit trail", sev: "INFO" as const },
-  { logType: "scheduler" as const,    act: "JOB_TRIGGERED",             msg: "Scheduled job 'olt-health-report' triggered by cron",       sev: "INFO" as const },
-  { logType: "notification" as const, act: "WHATSAPP_SENT",             msg: "WhatsApp message delivered via gateway-whatsapp (Twilio)",  sev: "INFO" as const },
-  { logType: "auth" as const,         act: "RATE_LIMIT_EXCEEDED",       msg: "Rate limit exceeded for client IP 10.0.0.25",               sev: "WARN" as const },
-  { logType: "olt" as const,          act: "ONT_PROVISIONED",           msg: "ONT serial HWTC1234A provisioned on OLT-SBY-02 port 4",    sev: "INFO" as const },
-  { logType: "storage" as const,      act: "PRESIGNED_URL_GENERATED",   msg: "MinIO presigned URL generated for tenant asset download",    sev: "INFO" as const },
-  { logType: "edge" as const,         act: "KONG_TENANT_HEADER",        msg: "Kong decorated X-Tenant-ID for 18 requests in last window", sev: "INFO" as const },
-];
-
 // ─── Hook Options ─────────────────────────────────────────────────────────────
 
 export interface UseAuditLogStreamOptions {
-  /** When true, stops adding new log entries (pauses the ticker & SSE) */
+  /** When true, stops polling for new logs */
   isPaused?: boolean;
   /**
    * K2NET log type filter map.
@@ -150,83 +39,117 @@ export function useAuditLogStream(
   options?: UseAuditLogStreamOptions
 ) {
   const { data: session } = useSession();
-  const [logs, setLogs] = useState<AuditStreamEntry[]>(MOCK_INITIAL_LOGS);
-  const [status, setStatus] = useState<"connecting" | "live" | "paused">("live");
+  const [logs, setLogs] = useState<AuditStreamEntry[]>([]);
+  const [status, setStatus] = useState<"connecting" | "live" | "paused">("paused");
 
-  // Ref so interval closure always reads latest paused value without re-mounting
-  const isPausedRef = useRef(options?.isPaused ?? false);
+  const isPausedRef = useRef(options?.isPaused ?? true);
 
   // Sync ref + status inside an effect (never during render)
   useEffect(() => {
-    isPausedRef.current = options?.isPaused ?? false;
+    isPausedRef.current = options?.isPaused ?? true;
     setStatus(options?.isPaused ? "paused" : "live");
   }, [options?.isPaused]);
 
-  // ── Real data fetch + simulation ticker ──────────────────────────────────
-  useEffect(() => {
-    let eventSource: EventSource | null = null;
+  const fetchRealLogs = useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+      const headers = { Authorization: `Bearer ${session.accessToken}` };
 
-    // Attempt real SSE connection when authenticated (Spring Boot endpoint)
-    if (session?.accessToken) {
-      try {
-        const baseUrl = getBackendBaseUrl();
-        const streamUrl = `${baseUrl}/system/security/audit-logs/stream`;
-        eventSource = new EventSource(streamUrl);
+      // Fetch concurrently
+      const [auditEventsResult, alertsResult, keycloakResult, notifyResult] = await Promise.allSettled([
+        getAuditEvents(),
+        fetch("/api/v1/system/security/alerts", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : []),
+        fetch("/api/v1/system/keycloak/events", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : []),
+        fetch("/api/observability/notification-stats", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : ({} as any)),
+      ]);
 
-        eventSource.onopen = () => {
-          setStatus("live");
-        };
+      const combinedLogs: AuditStreamEntry[] = [];
 
-        eventSource.addEventListener("audit-log", (event: MessageEvent) => {
-          if (isPausedRef.current) return;
-          try {
-            const raw = JSON.parse(event.data);
-            // Map Spring Boot AuditLog fields → AuditStreamEntry
-            const entry: AuditStreamEntry = {
-              id: raw.id ?? `sse-${Date.now()}`,
-              timestamp: raw.timestamp ?? new Date().toISOString(),
-              logType: mapSpringEventTypeToLogType(raw.eventType),
-              severity: (raw.severity as AuditStreamEntry["severity"]) ?? "INFO",
-              actor: raw.username ?? raw.clientIp ?? "system",
-              action: raw.eventType ?? "UNKNOWN",
-              message: raw.details ?? raw.requestUri ?? "",
-            };
-            setLogs((prev) => [entry, ...prev].slice(0, 500));
-          } catch {
-            // Silently ignore malformed SSE events
-          }
+      // 1. Audit events (from Go audit microservice)
+      if (auditEventsResult.status === "fulfilled" && Array.isArray(auditEventsResult.value)) {
+        auditEventsResult.value.forEach((e: any) => {
+          combinedLogs.push({
+            id: e.id || `audit-${Date.now()}-${Math.random()}`,
+            timestamp: e.createdAt || new Date().toISOString(),
+            logType: "audit",
+            severity: e.status === "FAILED" ? "ERROR" : "INFO",
+            actor: e.username || e.actor || "system",
+            action: e.action || "UNKNOWN",
+            message: e.errorMessage ? `Error: ${e.errorMessage}` : `Action ${e.action} completed successfully`,
+          });
         });
-
-        eventSource.onerror = () => {
-          setStatus("connecting");
-        };
-      } catch {
-        // SSE unavailable — fallback to simulation ticker below
       }
-    }
 
-    // Simulation ticker — fires every 4.5s, skips completely when paused
+      // 2. Security alerts (from Spring Boot security_events table)
+      if (alertsResult.status === "fulfilled" && Array.isArray(alertsResult.value)) {
+        alertsResult.value.forEach((e: any) => {
+          combinedLogs.push({
+            id: String(e.id || `alert-${Date.now()}-${Math.random()}`),
+            timestamp: e.createdAt || new Date().toISOString(),
+            logType: "auth",
+            severity: (e.severity as any) ?? "INFO",
+            actor: e.username || "system",
+            action: e.eventType || "SECURITY_ALERT",
+            message: e.details || "",
+          });
+        });
+      }
+
+      // 3. Keycloak events (from Keycloak realm events)
+      if (keycloakResult.status === "fulfilled" && Array.isArray(keycloakResult.value)) {
+        keycloakResult.value.forEach((e: any) => {
+          combinedLogs.push({
+            id: `keycloak-${e.time || Date.now()}-${Math.random()}`,
+            timestamp: e.time ? new Date(e.time).toISOString() : new Date().toISOString(),
+            logType: "auth",
+            severity: e.type.includes("ERROR") || e.type.includes("FAIL") ? "WARN" : "INFO",
+            actor: e.userId || "user",
+            action: e.type || "KEYCLOAK_EVENT",
+            message: `Client: ${e.clientId || "—"}. IP: ${e.details?.ipAddress || "—"}`,
+          });
+        });
+      }
+
+      // 4. Notification logs (from Redis list logs)
+      if (notifyResult.status === "fulfilled" && notifyResult.value?.recent_queue) {
+        const recent = notifyResult.value.recent_queue;
+        if (Array.isArray(recent)) {
+          recent.forEach((m: any) => {
+            combinedLogs.push({
+              id: String(m.id),
+              timestamp: m.sentAt || new Date().toISOString(),
+              logType: "notification",
+              severity: m.status === "failed" ? "ERROR" : "INFO",
+              actor: "notification-gateway",
+              action: m.channel ? m.channel.toUpperCase() : "SEND",
+              message: `${m.channel || "message"} sent to ${m.recipient || "—"}: ${m.subject || m.message || ""}`,
+            });
+          });
+        }
+      }
+
+      // Sort by timestamp descending
+      combinedLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      setLogs(combinedLogs);
+    } catch (err) {
+      console.error("[useAuditLogStream] Failed to fetch real logs:", err);
+    }
+  }, [session?.accessToken]);
+
+  // Handle data fetch and polling
+  useEffect(() => {
+    fetchRealLogs();
+
     const interval = setInterval(() => {
       if (isPausedRef.current) return;
-
-      const pick = SAMPLE_ACTIONS[Math.floor(Math.random() * SAMPLE_ACTIONS.length)];
-      const entry: AuditStreamEntry = {
-        id: `sim-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        logType: pick.logType,
-        severity: pick.sev,
-        actor: "system-worker",
-        action: pick.act,
-        message: pick.msg,
-      };
-      setLogs((prev) => [entry, ...prev].slice(0, 300));
-    }, 4500);
+      fetchRealLogs();
+    }, 5000); // Poll every 5s if active
 
     return () => {
-      if (eventSource) eventSource.close();
       clearInterval(interval);
     };
-  }, [session?.accessToken]);
+  }, [fetchRealLogs]);
 
   // ── Per-type filter logic ─────────────────────────────────────────────────
   const clearLogs = useCallback(() => {
@@ -265,24 +188,3 @@ export function useAuditLogStream(
   };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Map Spring Boot AuditLog eventType → K2NET logType key */
-function mapSpringEventTypeToLogType(
-  eventType: string
-): AuditStreamEntry["logType"] {
-  switch (eventType) {
-    case "AUTHORIZATION_FAILURE":
-    case "AUTHENTICATION_FAILURE":
-    case "RATE_LIMIT_EXCEEDED":
-    case "LOGIN_FAILED":
-    case "BRUTE_FORCE_ATTEMPT":
-      return "auth";
-    case "NETWORK_ASSET_CREATED":
-    case "NETWORK_ASSET_UPDATED":
-    case "NETWORK_ASSET_DELETED":
-      return "audit";
-    default:
-      return "auth"; // Default security events to auth
-  }
-}

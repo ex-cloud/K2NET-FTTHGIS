@@ -32,6 +32,7 @@ on:
         options:
           - frontend-admin
           - backend
+          - gateways
           - all
 
 jobs:
@@ -44,11 +45,23 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
+      shared: ${{ steps.filter.outputs.shared }}
+      map-gateway: ${{ steps.filter.outputs.map-gateway }}
+      notification-gateway: ${{ steps.filter.outputs.notification-gateway }}
+      payment-gateway: ${{ steps.filter.outputs.payment-gateway }}
+      storage-gateway: ${{ steps.filter.outputs.storage-gateway }}
+      gateway-whatsapp: ${{ steps.filter.outputs.gateway-whatsapp }}
+      gateway-scheduler: ${{ steps.filter.outputs.gateway-scheduler }}
+      gateway-export: ${{ steps.filter.outputs.gateway-export }}
+      gateway-olt: ${{ steps.filter.outputs.gateway-olt }}
+      gateway-audit: ${{ steps.filter.outputs.gateway-audit }}
+      poller: ${{ steps.filter.outputs.poller }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Detect Changes
+         # indentation fixed
         id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -61,6 +74,40 @@ jobs:
               - '.github/workflows/deploy-production.yml'
             backend:
               - 'apps/api/**'
+              - '.github/workflows/deploy-production.yml'
+            shared:
+              - 'services/shared/**'
+              - 'services/go.work'
+              - '.github/workflows/deploy-production.yml'
+            map-gateway:
+              - 'services/map-gateway/**'
+              - '.github/workflows/deploy-production.yml'
+            notification-gateway:
+              - 'services/notification-gateway/**'
+              - '.github/workflows/deploy-production.yml'
+            payment-gateway:
+              - 'services/payment-gateway/**'
+              - '.github/workflows/deploy-production.yml'
+            storage-gateway:
+              - 'services/storage-gateway/**'
+              - '.github/workflows/deploy-production.yml'
+            gateway-whatsapp:
+              - 'services/gateway-whatsapp/**'
+              - '.github/workflows/deploy-production.yml'
+            gateway-scheduler:
+              - 'services/gateway-scheduler/**'
+              - '.github/workflows/deploy-production.yml'
+            gateway-export:
+              - 'services/gateway-export/**'
+              - '.github/workflows/deploy-production.yml'
+            gateway-olt:
+              - 'services/gateway-olt/**'
+              - '.github/workflows/deploy-production.yml'
+            gateway-audit:
+              - 'services/gateway-audit/**'
+              - '.github/workflows/deploy-production.yml'
+            poller:
+              - 'services/poller/**'
               - '.github/workflows/deploy-production.yml'
 
 # ============================================================
@@ -138,6 +185,59 @@ jobs:
         run: |
           cd apps/api
           mvn clean compile
+
+  validate-gateways:
+    name: ✅ Validate Go Gateways
+    runs-on: ubuntu-latest
+    needs: changes
+    strategy:
+      matrix:
+        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
+    steps:
+      - name: Checkout repository
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: services/go.work
+
+      - name: Test Service
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        run: |
+          cd services/${{ matrix.service }}
+          go vet ./...
+          go test ./...
 
 # ============================================================
 # JOB 2: DOCKER BUILD — Dijalankan di Runner GitHub, BUKAN di Server
@@ -236,6 +336,102 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
+  docker-build-gateways:
+    name: 🐳 Docker Build — Go Gateways (GHA Runner)
+    runs-on: ubuntu-latest
+    needs: [changes, validate-gateways]
+    if: always() && needs.validate-gateways.result == 'success'
+    strategy:
+      matrix:
+        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/k2net-ftthgis/${{ matrix.service }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push Docker image
+        if: |
+          github.event_name == 'workflow_dispatch' && (
+            github.event.inputs.service == 'all' ||
+            github.event.inputs.service == 'gateways'
+          ) || (
+            github.event_name == 'push' && (
+              needs.changes.outputs[matrix.service] == 'true' ||
+              needs.changes.outputs.shared == 'true'
+            )
+          )
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services
+          file: ./services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
 # ============================================================
 # JOB 3: DEPLOY — SSH ke server, hanya docker pull + up (NO build on server)
 # ============================================================
@@ -246,7 +442,13 @@ jobs:
       - changes
       - docker-build-frontend-admin
       - docker-build-backend
-    if: always() && (needs.docker-build-frontend-admin.result == 'success' || needs.docker-build-backend.result == 'success')
+      - docker-build-gateways
+    if: |
+      always() && (
+        needs.docker-build-frontend-admin.result == 'success' ||
+        needs.docker-build-backend.result == 'success' ||
+        needs.docker-build-gateways.result == 'success'
+      )
     environment: production
     steps:
       - name: Deploy via SSH — Pull images & restart services
@@ -275,6 +477,34 @@ jobs:
               echo "Pulling backend..."
               bash scripts/deploy.sh production backend
             fi
+
+            # Deploy Go gateways if changed or manually triggered
+            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit poller"
+            for svc in $SERVICES_LIST; do
+              CHANGED="false"
+              if [ "$svc" == "map-gateway" ] && [ "${{ needs.changes.outputs.map-gateway }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "notification-gateway" ] && [ "${{ needs.changes.outputs.notification-gateway }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "payment-gateway" ] && [ "${{ needs.changes.outputs.payment-gateway }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "storage-gateway" ] && [ "${{ needs.changes.outputs.storage-gateway }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-whatsapp" ] && [ "${{ needs.changes.outputs.gateway-whatsapp }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-scheduler" ] && [ "${{ needs.changes.outputs.gateway-scheduler }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-export" ] && [ "${{ needs.changes.outputs.gateway-export }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-olt" ] && [ "${{ needs.changes.outputs.gateway-olt }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-audit" ] && [ "${{ needs.changes.outputs.gateway-audit }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "poller" ] && [ "${{ needs.changes.outputs.poller }}" == "true" ]; then CHANGED="true"; fi
+
+              # If shared libraries changed, we build/deploy all gateways
+              if [ "${{ needs.changes.outputs.shared }}" == "true" ]; then CHANGED="true"; fi
+
+              # Handle manual choice triggers
+              if [ "${{ github.event.inputs.service }}" == "all" ] || [ "${{ github.event.inputs.service }}" == "gateways" ]; then CHANGED="true"; fi
+
+              if [ "$CHANGED" == "true" ]; then
+                echo "Deploying Go gateway: $svc..."
+                docker pull ghcr.io/ex-cloud/k2net-ftthgis/$svc:latest || true
+                docker compose -f docker-compose.gateways.yml up -d --no-build $svc
+              fi
+            done
 
             echo "=== [3/3] Verifikasi Container Status ==="
             docker ps --filter "name=ftth-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

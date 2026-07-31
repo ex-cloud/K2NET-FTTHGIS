@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   notification-gateway:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/notification-gateway:latest
     build:
       context: ./services
       dockerfile: notification-gateway/Dockerfile
@@ -24,6 +25,7 @@ services:
           memory: 128M
 
   payment-gateway:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/payment-gateway:latest
     build:
       context: ./services
       dockerfile: payment-gateway/Dockerfile
@@ -47,6 +49,7 @@ services:
           memory: 128M
 
   map-gateway:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest
     build:
       context: ./services
       dockerfile: map-gateway/Dockerfile
@@ -69,6 +72,7 @@ services:
           memory: 128M
 
   storage-gateway:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/storage-gateway:latest
     build:
       context: ./services
       dockerfile: storage-gateway/Dockerfile
@@ -92,6 +96,7 @@ services:
           memory: 128M
 
   poller:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/poller:latest
     build:
       context: ./services
       dockerfile: poller/Dockerfile
@@ -113,6 +118,7 @@ services:
           memory: 128M
 
   gateway-whatsapp:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-whatsapp:latest
     build:
       context: ./services
       dockerfile: gateway-whatsapp/Dockerfile
@@ -135,6 +141,7 @@ services:
           memory: 128M
 
   gateway-scheduler:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-scheduler:latest
     build:
       context: ./services
       dockerfile: gateway-scheduler/Dockerfile
@@ -158,6 +165,7 @@ services:
           memory: 128M
 
   gateway-export:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-export:latest
     build:
       context: ./services
       dockerfile: gateway-export/Dockerfile
@@ -181,6 +189,7 @@ services:
           memory: 128M
 
   gateway-olt:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-olt:latest
     build:
       context: ./services
       dockerfile: gateway-olt/Dockerfile
@@ -204,6 +213,7 @@ services:
           memory: 128M
 
   gateway-audit:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest
     build:
       context: ./services
       dockerfile: gateway-audit/Dockerfile

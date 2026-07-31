@@ -63,6 +63,7 @@ func main() {
 			"version": "1.0.0",
 		})
 	})
+	router.GET("/stats", handler.GetStats)
 
 	cfgHandler := confighandler.NewConfigHandler("notification-gateway")
 

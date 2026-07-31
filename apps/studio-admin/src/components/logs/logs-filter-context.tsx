@@ -73,7 +73,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [timeRange, setTimeRange] = useState(searchParams.get("date") || "1h");
   const [isLivePaused, setIsLivePaused] = useState(
-    searchParams.get("live") === "false" ? true : false
+    searchParams.get("live") === "true" ? false : true
   );
   const [showHistogram, setShowHistogram] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -151,9 +151,10 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
       setTimeRange(date);
     }
 
-    const isPaused = searchParams.get("live") === "false";
-    if (isPaused !== isLivePaused) {
-      setIsLivePaused(isPaused);
+    const isLive = searchParams.get("live") === "true";
+    const shouldBePaused = !isLive;
+    if (shouldBePaused !== isLivePaused) {
+      setIsLivePaused(shouldBePaused);
     }
   }, [searchParams]);
 
@@ -198,8 +199,8 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     // Time range
     if (timeRange && timeRange !== "1h") params.set("date", timeRange);
 
-    // Live mode
-    if (isLivePaused) params.set("live", "false");
+    // Live mode — default is paused (true), write parameter only when live (false)
+    if (!isLivePaused) params.set("live", "true");
 
     const newUrl = params.size > 0 ? `/logs?${params.toString()}` : "/logs";
     router.replace(newUrl, { scroll: false });
@@ -224,6 +225,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setSelectedLevels({ success: true, warning: true, error: true });
     setEdgeSubFilters({ ...DEFAULT_EDGE_SUB_FILTERS });
     setSelectedLog(null);
+    setIsLivePaused(true);
     router.replace("/logs", { scroll: false });
   };
 
@@ -271,7 +273,7 @@ const DEFAULT_CONTEXT: LogFilterState = {
   setSearchQuery: () => {},
   timeRange: "1h",
   setTimeRange: () => {},
-  isLivePaused: false,
+  isLivePaused: true,
   setIsLivePaused: () => {},
   showHistogram: true,
   setShowHistogram: () => {},

@@ -58,11 +58,11 @@ export function useMessagingStats() {
 
       const mapped: MessagingStats = {
         queueDepth:          data.queue_depth          ?? data.queueDepth          ?? 0,
-        deliveryRate24h:     data.delivery_rate_24h    ?? data.deliveryRate24h     ?? 98.4,
-        totalSent24h:        data.total_sent_24h       ?? data.totalSent24h        ?? 185,
-        totalDelivered24h:   data.total_delivered_24h  ?? data.totalDelivered24h   ?? 182,
-        wabaStatus:          data.waba_status          ?? data.wabaStatus          ?? "CONNECTED",
-        smsCreditsRemaining: data.sms_credits_remaining ?? data.smsCreditsRemaining ?? 8420,
+        deliveryRate24h:     data.delivery_rate_24h    ?? data.deliveryRate24h     ?? 0,
+        totalSent24h:        data.total_sent_24h       ?? data.totalSent24h        ?? 0,
+        totalDelivered24h:   data.total_delivered_24h  ?? data.totalDelivered24h   ?? 0,
+        wabaStatus:          data.waba_status          ?? data.wabaStatus          ?? "DISCONNECTED",
+        smsCreditsRemaining: data.sms_credits_remaining ?? data.smsCreditsRemaining ?? 0,
         smsCreditsMax:       data.sms_credits_max       ?? data.smsCreditsMax       ?? 10000,
         status:              data.status               ?? "healthy",
       };
@@ -81,17 +81,17 @@ export function useMessagingStats() {
 
       if (mounted.current) {
         setStats(mapped);
-        setQueue(queueItems.length > 0 ? queueItems : getFallbackQueue());
+        setQueue(queueItems);
         setError(null);
       }
     } catch (err) {
       if (mounted.current) {
-        setError("notification-gateway stats unavailable — using estimated values");
+        setError("notification-gateway stats unavailable");
         setStats({
-          queueDepth: 2, deliveryRate24h: 98.4, totalSent24h: 185, totalDelivered24h: 182,
-          wabaStatus: "CONNECTED", smsCreditsRemaining: 8420, smsCreditsMax: 10000, status: "fallback",
+          queueDepth: 0, deliveryRate24h: 0, totalSent24h: 0, totalDelivered24h: 0,
+          wabaStatus: "DISCONNECTED", smsCreditsRemaining: 0, smsCreditsMax: 10000, status: "down",
         });
-        setQueue(getFallbackQueue());
+        setQueue([]);
       }
     } finally {
       if (mounted.current) setLoading(false);
@@ -106,21 +106,4 @@ export function useMessagingStats() {
   }, [fetchStats]);
 
   return { stats, queue, loading, error, refresh: fetchStats };
-}
-
-// ─── Fallback queue data (structurally identical to mock, timestamps dynamic) ─
-function getFallbackQueue(): MessageQueueItem[] {
-  const now = new Date();
-  const fmt = (minsAgo: number) =>
-    new Date(now.getTime() - minsAgo * 60_000)
-      .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-
-  return [
-    { id:"m1", message:"Tagihan bulan Juli telah jatuh tempo",            recipient:"+6281200001111", type:"whatsapp", queue:"priority",  status:"sent",       sentAt: fmt(5)  },
-    { id:"m2", message:"ODP-JKT-001 maintenance selesai",                 recipient:"+6281200002222", type:"whatsapp", queue:"default",   status:"sent",       sentAt: fmt(12) },
-    { id:"m3", message:"Layanan internet Anda akan segera aktif",         recipient:"+6281200003333", type:"sms",      queue:"sms-backup",status:"sent",       sentAt: fmt(18) },
-    { id:"m4", message:"Konfirmasi aktivasi: nomor pelanggan #CUS-00412", recipient:"+6281200004444", type:"whatsapp", queue:"priority",  status:"processing", sentAt: null    },
-    { id:"m5", message:"Laporan bulanan telah tersedia di dashboard",      recipient:"+6281200005555", type:"email",    queue:"email",     status:"pending",    sentAt: null    },
-    { id:"m6", message:"Peringatan: saldo hampir habis",                  recipient:"+6281200006666", type:"whatsapp", queue:"default",   status:"failed",     sentAt: null    },
-  ];
 }

@@ -145,8 +145,3 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Penggunaan**: Bungkus halaman berkonten panjang (settings, compliance, password-policy) dengan `<TracingBeam className="px-4">` dari `@k2net/ui`.
 - **Padding dalam**: Tambahkan `pl-4 md:pl-10` pada container dalam `<TracingBeam>` agar garis SVG beam tidak menimpa sisi kiri konten card/form.
 
-### Docker Build & Deployment
-- **Build Time**: `docker compose build --no-cache frontend-admin` memerlukan sekitar **5-6 menit** (328s pada mesin produksi). Gunakan `docker images project5-frontend-admin --format "table {{.CreatedAt}}"` untuk verifikasi image terbaru sudah terbuild.
-- **Server Restart Risk**: Background task Docker build **akan terpotong** jika server restart. Selalu verifikasi timestamp image setelah deployment: jika `CreatedAt` tidak sesuai waktu build terbaru, perlu build ulang.
-- **Deploy Command Urutan**: `docker compose build --no-cache frontend-admin` → `docker compose up -d frontend-admin` (jangan jalankan `up` sebelum `build` selesai).
-
