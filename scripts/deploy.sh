@@ -53,35 +53,59 @@ echo "Rebuilding and restarting services..."
 
 # Target service mapping
 TARGET_SERVICE=""
+IS_GO_GATEWAY="false"
+
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
-    if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
-      TARGET_SERVICE="backend-staging"
-    elif [ "$2" = "frontend-admin" ] || [ "$2" = "studio-admin" ]; then
-      TARGET_SERVICE="frontend-admin-staging"
-    elif [ "$2" = "frontend-tenant" ] || [ "$2" = "studio-tenant" ]; then
-      TARGET_SERVICE="frontend-tenant-staging"
-    elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
-      TARGET_SERVICE="frontend-staging"
-    elif [ "$2" = "gateways" ]; then
-      TARGET_SERVICE="gateways"
-    else
-      TARGET_SERVICE="$2"
-    fi
+    case "$2" in
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller)
+        IS_GO_GATEWAY="true"
+        TARGET_SERVICE="$2"
+        ;;
+      backend|api)
+        TARGET_SERVICE="backend-staging"
+        ;;
+      frontend-admin|studio-admin)
+        TARGET_SERVICE="frontend-admin-staging"
+        ;;
+      frontend-tenant|studio-tenant)
+        TARGET_SERVICE="frontend-tenant-staging"
+        ;;
+      frontend|studio)
+        TARGET_SERVICE="frontend-staging"
+        ;;
+      gateways)
+        TARGET_SERVICE="gateways"
+        ;;
+      *)
+        TARGET_SERVICE="$2"
+        ;;
+    esac
   else
-    if [ "$2" = "backend" ] || [ "$2" = "api" ]; then
-      TARGET_SERVICE="backend"
-    elif [ "$2" = "frontend-admin" ] || [ "$2" = "studio-admin" ]; then
-      TARGET_SERVICE="frontend-admin"
-    elif [ "$2" = "frontend-tenant" ] || [ "$2" = "studio-tenant" ]; then
-      TARGET_SERVICE="frontend-tenant"
-    elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
-      TARGET_SERVICE="frontend"
-    elif [ "$2" = "gateways" ]; then
-      TARGET_SERVICE="gateways"
-    else
-      TARGET_SERVICE="$2"
-    fi
+    case "$2" in
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller)
+        IS_GO_GATEWAY="true"
+        TARGET_SERVICE="$2"
+        ;;
+      backend|api)
+        TARGET_SERVICE="backend"
+        ;;
+      frontend-admin|studio-admin)
+        TARGET_SERVICE="frontend-admin"
+        ;;
+      frontend-tenant|studio-tenant)
+        TARGET_SERVICE="frontend-tenant"
+        ;;
+      frontend|studio)
+        TARGET_SERVICE="frontend"
+        ;;
+      gateways)
+        TARGET_SERVICE="gateways"
+        ;;
+      *)
+        TARGET_SERVICE="$2"
+        ;;
+    esac
   fi
 fi
 
@@ -91,8 +115,11 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
   elif [ "$TARGET_SERVICE" = "backend" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
+  elif [ "$IS_GO_GATEWAY" = "true" ]; then
+    echo "Pulling specific Go gateway: $TARGET_SERVICE..."
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/$TARGET_SERVICE:latest || true
   elif [ "$TARGET_SERVICE" = "gateways" ]; then
-    echo "Pulling Go gateways..."
+    echo "Pulling all Go gateways..."
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/notification-gateway:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/payment-gateway:latest || true
@@ -106,7 +133,7 @@ if [ "$ENV" = "production" ]; then
   else
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
-    echo "Pulling Go gateways..."
+    echo "Pulling all Go gateways..."
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/notification-gateway:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/payment-gateway:latest || true
@@ -123,6 +150,8 @@ if [ "$ENV" = "production" ]; then
     echo "Starting service: $TARGET_SERVICE"
     if [ "$TARGET_SERVICE" = "gateways" ]; then
       BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --no-build"
+    elif [ "$IS_GO_GATEWAY" = "true" ]; then
+      BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --no-build $TARGET_SERVICE"
     else
       BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build $TARGET_SERVICE"
     fi
@@ -134,6 +163,8 @@ else
     echo "Targeting service: $TARGET_SERVICE"
     if [ "$TARGET_SERVICE" = "gateways" ]; then
       BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --build"
+    elif [ "$IS_GO_GATEWAY" = "true" ]; then
+      BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --build $TARGET_SERVICE"
     else
       BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build $TARGET_SERVICE"
     fi
@@ -157,7 +188,7 @@ if $BUILD_CMD; then
     if curl -s "http://127.0.0.1:$PORT_BACKEND/actuator/health" | grep -q "UP"; then
       echo "Backend is healthy!"
       
-      if [ "$TARGET_SERVICE" = "backend" ] || [ "$TARGET_SERVICE" = "gateways" ]; then
+      if [ "$TARGET_SERVICE" = "backend" ] || [ "$TARGET_SERVICE" = "gateways" ] || [ "$IS_GO_GATEWAY" = "true" ]; then
         HEALTHY=true
         break
       fi
