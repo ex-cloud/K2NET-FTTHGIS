@@ -63,6 +63,8 @@ if [ -n "$2" ]; then
       TARGET_SERVICE="frontend-tenant-staging"
     elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
       TARGET_SERVICE="frontend-staging"
+    elif [ "$2" = "gateways" ]; then
+      TARGET_SERVICE="gateways"
     else
       TARGET_SERVICE="$2"
     fi
@@ -75,6 +77,8 @@ if [ -n "$2" ]; then
       TARGET_SERVICE="frontend-tenant"
     elif [ "$2" = "frontend" ] || [ "$2" = "studio" ]; then
       TARGET_SERVICE="frontend"
+    elif [ "$2" = "gateways" ]; then
+      TARGET_SERVICE="gateways"
     else
       TARGET_SERVICE="$2"
     fi
@@ -87,23 +91,54 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
   elif [ "$TARGET_SERVICE" = "backend" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
+  elif [ "$TARGET_SERVICE" = "gateways" ]; then
+    echo "Pulling Go gateways..."
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/notification-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/payment-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/storage-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-whatsapp:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-scheduler:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-export:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-olt:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
   else
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
+    echo "Pulling Go gateways..."
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/notification-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/payment-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/storage-gateway:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-whatsapp:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-scheduler:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-export:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-olt:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
   fi
 
   if [ -n "$TARGET_SERVICE" ]; then
     echo "Starting service: $TARGET_SERVICE"
-    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build $TARGET_SERVICE"
+    if [ "$TARGET_SERVICE" = "gateways" ]; then
+      BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --no-build"
+    else
+      BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build $TARGET_SERVICE"
+    fi
   else
-    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build"
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --no-build && docker compose -f docker-compose.gateways.yml up -d --no-build"
   fi
 else
   if [ -n "$TARGET_SERVICE" ]; then
     echo "Targeting service: $TARGET_SERVICE"
-    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build $TARGET_SERVICE"
+    if [ "$TARGET_SERVICE" = "gateways" ]; then
+      BUILD_CMD="docker compose -f docker-compose.gateways.yml up -d --build"
+    else
+      BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build $TARGET_SERVICE"
+    fi
   else
-    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build"
+    BUILD_CMD="docker compose -f $COMPOSE_FILE up -d --build && docker compose -f docker-compose.gateways.yml up -d --build"
   fi
 fi
 
@@ -122,7 +157,7 @@ if $BUILD_CMD; then
     if curl -s "http://127.0.0.1:$PORT_BACKEND/actuator/health" | grep -q "UP"; then
       echo "Backend is healthy!"
       
-      if [ "$TARGET_SERVICE" = "backend" ]; then
+      if [ "$TARGET_SERVICE" = "backend" ] || [ "$TARGET_SERVICE" = "gateways" ]; then
         HEALTHY=true
         break
       fi
