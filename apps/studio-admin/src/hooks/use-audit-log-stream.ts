@@ -87,6 +87,10 @@ export interface AuditStreamEntry {
   action: string;
   message: string;
   resourceType?: string;
+  method?: string;
+  status?: string | number;
+  pathname?: string;
+  ip?: string;
 }
 
 // ─── Hook Options ─────────────────────────────────────────────────────────────
@@ -102,6 +106,8 @@ export interface UseAuditLogStreamOptions {
   selectedTypes?: Record<string, boolean>;
   /** Optional group filter — if set, only show logs matching this group */
   selectedGroups?: Record<LogGroupKey, boolean>;
+  /** Optional time range filter (relative e.g. "15m", "1h", "24h" or custom "custom:start_end") */
+  timeRange?: string;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -146,6 +152,11 @@ export function useAuditLogStream(
           const logType = metadata.logType ?? resolveLogTypeFromSource(rawSource, e.resourceType);
           const logGroup = resolveLogGroup(logType, e.resourceType, metadata);
 
+          const method = metadata.method || (e.action && e.action.includes(":") ? e.action.split(":")[0] : undefined);
+          const status = metadata.status || metadata.statusCode || (e.errorMessage ? 500 : 200);
+          const pathname = e.resourceId || metadata.pathname || (e.action && e.action.includes(":") ? e.action.split(":")[1] : undefined);
+          const ip = e.actorIp || metadata.ip || undefined;
+
           combinedLogs.push({
             id: e.id || `audit-${Date.now()}-${Math.random()}`,
             timestamp: e.occurredAt || e.createdAt || new Date().toISOString(),
@@ -162,6 +173,10 @@ export function useAuditLogStream(
               : (e.resourceType
                 ? `${e.action} on ${e.resourceType}${e.resourceId ? ` [${e.resourceId}]` : ""}`
                 : `${e.action} completed`),
+            method,
+            status,
+            pathname,
+            ip,
           });
         });
       }
@@ -199,6 +214,9 @@ export function useAuditLogStream(
             actor: e.userId || "user",
             action: e.type || "KEYCLOAK_EVENT",
             message: `Client: ${e.clientId || "—"}. IP: ${e.details?.ipAddress || "—"}`,
+            status: hasError ? 400 : 200,
+            ip: e.details?.ipAddress || undefined,
+            pathname: e.details?.representation || undefined,
           });
         });
       }
@@ -221,6 +239,7 @@ export function useAuditLogStream(
               actor: "notification-gateway",
               action: channel ? `${channel}_SENT` : "NOTIFICATION_SENT",
               message: `${m.channel || "message"} to ${m.recipient || "—"}: ${m.subject || m.message || ""}`,
+              status: m.status === "failed" ? 500 : 200,
             });
           });
         }
@@ -261,6 +280,8 @@ export function useAuditLogStream(
     Object.keys(selectedTypes).length === 0 ||
     Object.values(selectedTypes).some(Boolean);
 
+  const timeRange = options?.timeRange;
+
   const filteredLogs = logs.filter((log) => {
     if (!hasAnyTypeSelected) return false;
 
@@ -273,6 +294,34 @@ export function useAuditLogStream(
     if (selectedGroups && Object.keys(selectedGroups).length > 0) {
       const hasAnyGroup = Object.values(selectedGroups).some(Boolean);
       if (hasAnyGroup && selectedGroups[log.logGroup] === false) return false;
+    }
+
+    // Filter by timeRange
+    if (timeRange) {
+      const logTime = new Date(log.timestamp).getTime();
+      const now = Date.now();
+      
+      if (timeRange.startsWith("custom:")) {
+        const parts = timeRange.substring(7).split("_");
+        if (parts.length === 2) {
+          const start = new Date(parts[0]).getTime();
+          const end = new Date(parts[1]).getTime();
+          if (logTime < start || logTime > end) return false;
+        }
+      } else {
+        let durationMs = 0;
+        const match = timeRange.match(/^(\d+)([mhd])$/);
+        if (match) {
+          const val = parseInt(match[1], 10);
+          const unit = match[2];
+          if (unit === "m") durationMs = val * 60 * 1000;
+          else if (unit === "h") durationMs = val * 60 * 60 * 1000;
+          else if (unit === "d") durationMs = val * 24 * 60 * 60 * 1000;
+        }
+        if (durationMs > 0 && logTime < now - durationMs) {
+          return false;
+        }
+      }
     }
 
     // Legacy filterCategory param

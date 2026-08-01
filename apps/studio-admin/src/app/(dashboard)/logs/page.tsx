@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Button } from "@k2net/ui";
+import { Button, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@k2net/ui";
 import {
   Terminal,
   Copy,
@@ -10,6 +10,11 @@ import {
   FileCode,
   Building2,
   Cpu,
+  Server,
+  Globe,
+  Shield,
+  Send,
+  Database,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuditLogStream, AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
@@ -21,21 +26,36 @@ import { toast } from "sonner";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function getSourceIcon(source: string) {
+  const src = source.toLowerCase();
+  if (src.includes("kong") || src.includes("edge")) {
+    return <Globe className="w-3.5 h-3.5 text-indigo-400" />;
+  }
+  if (src.includes("keycloak") || src.includes("auth")) {
+    return <Shield className="w-3.5 h-3.5 text-amber-400" />;
+  }
+  if (src.includes("notification") || src.includes("whatsapp") || src.includes("sms")) {
+    return <Send className="w-3.5 h-3.5 text-sky-400" />;
+  }
+  if (src.includes("db") || src.includes("postgres")) {
+    return <Database className="w-3.5 h-3.5 text-emerald-400" />;
+  }
+  if (src.includes("backend")) {
+    return <Server className="w-3.5 h-3.5 text-violet-400" />;
+  }
+  return <Cpu className="w-3.5 h-3.5 text-muted-foreground" />;
+}
+
 /**
- * Format a log entry's event_message in Supabase style:
- * actor | METHOD | STATUS | IP | req_id | /pathname | @service/message
+ * Format a log entry's event_message in Supabase style.
+ * Since method/pathname/status are now separate columns, this shows
+ * just actor + message (and any extra context not in those columns).
  */
 function getEventMessageDisplay(log: AuditStreamEntry): string {
   const parts: (string | undefined | null)[] = [
-    log.actor,
-    (log as any).method ?? null,
-    (log as any).status ? String((log as any).status) : null,
-    (log as any).ip ?? null,
-    (log as any).requestId ? `req-${(log as any).requestId}` : null,
-    (log as any).pathname ?? null,
-    (log as any).service
-      ? `@${(log as any).service}`
-      : log.message ?? null,
+    log.actor !== "system" ? log.actor : null,
+    log.ip ? `IP:${log.ip}` : null,
+    log.message ?? null,
   ];
   return parts.filter(Boolean).join(" | ");
 }
@@ -60,15 +80,15 @@ export default function GlobalLogsPage() {
     selectedTypes,
     setLogTypeCounts,
     tenantFilter,
+    timeRange,
   } = useLogsFilter();
 
-  // Pass isPaused & selectedTypes into the hook so:
-  // 1. Interval stops when paused → no wasted CPU/network
-  // 2. Empty state shown when no types selected
+  // Pass isPaused, selectedTypes, and timeRange into the hook
   const { logs, rawLogs, totalCount, hasAnyTypeSelected, clearLogs } =
     useAuditLogStream("all", {
       isPaused: isLivePaused,
       selectedTypes,
+      timeRange,
     });
 
   // Compute per-type counts from ALL raw logs (unfiltered by type)
@@ -158,23 +178,29 @@ export default function GlobalLogsPage() {
             </div>
             {/* Col 2: level dot */}
             <div className="w-4 shrink-0" />
-            {/* Col 3: date ~160px */}
-            <div className="w-40 shrink-0">Date</div>
-            {/* Col 4: copy icon spacer */}
+            {/* Col 3: date ~148px */}
+            <div className="w-[148px] shrink-0">Date</div>
+            {/* Col 4: status ~52px */}
+            <div className="w-[52px] shrink-0">Status</div>
+            {/* Col 5: copy icon spacer */}
             <div className="w-7 shrink-0" />
             {/* divider */}
             <span className="text-muted-foreground/30 mr-3">—</span>
-            {/* Col 5: tenant ~108px */}
-            <div className="w-28 shrink-0 flex items-center gap-1">
+            {/* Col 6: tenant ~88px */}
+            <div className="w-[88px] shrink-0 flex items-center gap-1">
               <Building2 className="w-3 h-3" />
               Tenant
             </div>
-            {/* Col 6: source ~100px */}
-            <div className="w-24 shrink-0 flex items-center gap-1">
+            {/* Col 7: source ~80px */}
+            <div className="w-[80px] shrink-0 flex items-center gap-1">
               <Cpu className="w-3 h-3" />
               Source
             </div>
-            {/* Col 7: event message */}
+            {/* Col 8: method ~56px */}
+            <div className="w-[56px] shrink-0">Method</div>
+            {/* Col 9: pathname ~140px */}
+            <div className="w-[140px] shrink-0">Pathname</div>
+            {/* Col 10: event message */}
             <div className="flex-1 min-w-0">Event Message</div>
           </div>
 
@@ -214,6 +240,25 @@ export default function GlobalLogsPage() {
                   formattedDate = format(new Date(log.timestamp), "dd MMM yy HH:mm:ss");
                 } catch { /* keep raw timestamp */ }
 
+                // Status code color
+                const statusNum = typeof log.status === "number"
+                  ? log.status
+                  : log.status ? parseInt(String(log.status)) : undefined;
+                const statusColor = statusNum
+                  ? statusNum >= 500 ? "text-rose-400"
+                  : statusNum >= 400 ? "text-amber-400"
+                  : statusNum >= 200 ? "text-emerald-400"
+                  : "text-muted-foreground/50"
+                  : "text-muted-foreground/30";
+
+                // Method badge color
+                const methodColor =
+                  log.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
+                  : log.method === "PUT" || log.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                  : log.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                  : log.method === "GET" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                  : "text-muted-foreground/60 bg-muted/20 border-border/30";
+
                 return (
                   <div
                     key={log.id}
@@ -233,7 +278,7 @@ export default function GlobalLogsPage() {
                       />
                     </div>
 
-                    {/* Col 2: Level dot — own column per Supabase audit */}
+                    {/* Col 2: Level dot */}
                     <span
                       className={`w-2 h-2 rounded-full shrink-0 mr-2 ${
                         isError
@@ -244,12 +289,38 @@ export default function GlobalLogsPage() {
                       }`}
                     />
 
-                    {/* Col 3: Timestamp ~160px */}
-                    <span className="w-40 shrink-0 text-muted-foreground text-[11px] font-mono">
-                      {formattedDate}
-                    </span>
+                    {/* Col 3: Timestamp ~148px — with source icon tooltip */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center gap-1.5 cursor-default">
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              {getSourceIcon(log.serviceSource)}
+                            </span>
+                            {formattedDate}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1">
+                          <span className="flex items-center gap-1.5">
+                            {getSourceIcon(log.serviceSource)}
+                            {log.serviceSource || "unknown"}
+                          </span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
 
-                    {/* Col 4: Copy icon (visible on row hover) */}
+                    {/* Col 4: HTTP Status ~52px */}
+                    <div className="w-[52px] shrink-0">
+                      {statusNum ? (
+                        <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>
+                          {statusNum}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/20">—</span>
+                      )}
+                    </div>
+
+                    {/* Col 5: Copy icon */}
                     <button
                       onClick={(e) => handleCopyLog(log, e)}
                       title="Copy Log JSON"
@@ -265,8 +336,8 @@ export default function GlobalLogsPage() {
                     {/* Divider */}
                     <span className="text-muted-foreground/30 mr-3 shrink-0">—</span>
 
-                    {/* Col 5: Tenant slug ~108px */}
-                    <div className="w-28 shrink-0 font-mono text-[10px] truncate">
+                    {/* Col 6: Tenant slug ~88px */}
+                    <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
                       {log.tenantSlug ? (
                         <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
                           {log.tenantSlug}
@@ -276,8 +347,8 @@ export default function GlobalLogsPage() {
                       )}
                     </div>
 
-                    {/* Col 6: Service source ~100px */}
-                    <div className="w-24 shrink-0 font-mono text-[10px] truncate">
+                    {/* Col 7: Service source ~80px */}
+                    <div className="w-[80px] shrink-0 font-mono text-[10px] truncate">
                       {log.serviceSource ? (
                         <span
                           className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
@@ -293,7 +364,27 @@ export default function GlobalLogsPage() {
                       )}
                     </div>
 
-                    {/* Col 7: Event Message (flex-1, truncated) */}
+                    {/* Col 8: HTTP Method ~56px */}
+                    <div className="w-[56px] shrink-0">
+                      {log.method ? (
+                        <span className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold border ${methodColor}`}>
+                          {log.method}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/20">—</span>
+                      )}
+                    </div>
+
+                    {/* Col 9: Pathname ~140px */}
+                    <div className="w-[140px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80">
+                      {log.pathname ? (
+                        <span title={log.pathname}>{log.pathname}</span>
+                      ) : (
+                        <span className="text-muted-foreground/20">—</span>
+                      )}
+                    </div>
+
+                    {/* Col 10: Event Message (flex-1, truncated) */}
                     <div className="flex-1 min-w-0 truncate font-mono text-[11px]">
                       <span
                         className={
@@ -428,9 +519,51 @@ export default function GlobalLogsPage() {
                 <div className="space-y-1">
                   <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Event Message</label>
                   <p className="text-foreground bg-muted/30 p-2 rounded border border-border/50 text-[10px] break-all font-mono">
-                    {getEventMessageDisplay(selectedLog)}
+                    {selectedLog.message}
                   </p>
                 </div>
+
+                {/* HTTP Request details */}
+                {(selectedLog.method || selectedLog.status || selectedLog.pathname || selectedLog.ip) && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">HTTP Request</label>
+                    <div className="bg-muted/30 p-2 rounded border border-border/50 space-y-1.5">
+                      {selectedLog.method && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">Method</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                            selectedLog.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
+                            : selectedLog.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+                            : selectedLog.method === "PUT" || selectedLog.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                            : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                          }`}>{selectedLog.method}</span>
+                        </div>
+                      )}
+                      {selectedLog.status && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">Status</span>
+                          <span className={`font-mono text-[11px] font-semibold ${
+                            Number(selectedLog.status) >= 500 ? "text-rose-400"
+                            : Number(selectedLog.status) >= 400 ? "text-amber-400"
+                            : "text-emerald-400"
+                          }`}>{selectedLog.status}</span>
+                        </div>
+                      )}
+                      {selectedLog.pathname && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0 mt-0.5">Path</span>
+                          <span className="font-mono text-[10px] text-foreground break-all">{selectedLog.pathname}</span>
+                        </div>
+                      )}
+                      {selectedLog.ip && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground w-16 shrink-0">IP</span>
+                          <span className="font-mono text-[10px] text-foreground">{selectedLog.ip}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Raw JSON Payload</label>

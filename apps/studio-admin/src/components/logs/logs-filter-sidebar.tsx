@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@k2net/ui";
 import { useLogsFilter, DEFAULT_SELECTED_TYPES, LOG_GROUPS, LogGroupKey } from "./logs-filter-context";
+import { LogsDateRangePicker } from "./logs-date-range-picker";
 
 // ─── Log type definitions per group ──────────────────────────────────────────
 
@@ -147,27 +148,14 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
 
         {/* ─── Time Range ─── */}
-        <Collapsible defaultOpen className="w-full space-y-1">
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-            <span className="flex items-center gap-1.5">
+        <div className="w-full space-y-1">
+          <div className="flex items-center justify-between px-1 py-1">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest">
               <Clock className="w-3 h-3 text-primary" /> Time Range
             </span>
-            <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-1">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full bg-background border border-border/60 text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary outline-none font-mono"
-            >
-              <option value="15m">Last 15 minutes</option>
-              <option value="1h">Last 60 minutes</option>
-              <option value="24h">Last 24 hours</option>
-              <option value="7d">Last 7 days</option>
-              <option value="custom">Custom Range...</option>
-            </select>
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+          <LogsDateRangePicker value={timeRange} onChange={setTimeRange} />
+        </div>
 
         {/* ─── Tenant Filter (Super Admin) ─── */}
         <Collapsible defaultOpen={false} className="w-full space-y-1 pt-2 border-t border-border/40">
