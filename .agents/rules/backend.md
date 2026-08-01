@@ -26,3 +26,13 @@ Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan Spring Boot 
 * **Format API**: Response API untuk data koordinat wajib dikembalikan dalam format standar **GeoJSON** (Point untuk Node, LineString untuk Kabel) agar dapat langsung dibaca oleh Google Maps / HERE Maps SDK di frontend.
 * **Spatial Query Guard**: Operasi query spasial yang berat (seperti pencarian ODP terdekat / *nearest neighbor*) wajib memanfaatkan spatial index (`GIST` index) di level database PostgreSQL untuk mencegah overload resource.
 
+---
+
+## 📊 4. Standardisasi Audit Logging & AOP
+
+Pencatatan log pada tier backend Spring Boot wajib menggunakan metode **Aspect-Oriented Programming (AOP)** untuk pemisahan modul yang bersih:
+* **Deklarasi `@AuditRequired`**: Modifikasi state data (create, update, delete) pada service layer wajib ditandai dengan annotation `@AuditRequired(action = "NAMA_AKSI", resourceType = "TIPE_RESOURCE")`. Gunakan ekspresi SpEL untuk ekstraksi parameter dinamis dari argumen method (seperti `#slug` atau `#id.toString()`).
+* **Kompabilitas Transaksi & Non-Blocking**: Pengiriman log audit tidak boleh menggagalkan transaksi database utama. Jika aspect gagal menghubungi `gateway-audit`, error tersebut wajib ditangkap (try-catch) secara internal di dalam aspect dan tidak boleh dilempar ke client.
+* **Keycloak Event Syncing**: Saat menyinkronkan event autentikasi dari Keycloak, controller wajib menyaring event duplikat menggunakan in-memory cache LRU (maksimal 1000 signature) untuk mencegah pengiriman log berulang ketika dashboard logs di-refresh.
+
+

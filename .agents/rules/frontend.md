@@ -120,4 +120,21 @@ Seluruh halaman baru **wajib** menggunakan komponen `<PageLayout>` dari `@k2net/
 * **Dilarang Gunakan pada Form Standar**: Komponen `TracingBeam` **dilarang keras** dipasang pada halaman form standar (termasuk seluruh rute `/settings/*`).
 * **Penggunaan Terbatas**: `TracingBeam` hanya digunakan khusus untuk halaman dokumentasi bertingkat panjang, log audit timeline, atau wizard pendaftaran multi-step agar estetika antarmuka tetap bersih dan konsisten dengan rute workspace lainnya.
 
+---
+
+## 📊 8. Standardisasi Global Log Explorer & Audit Grouping
+
+Setiap kali melakukan pembaruan atau penambahan visualisasi pada Global Log Explorer (`apps/studio-admin/src/app/(dashboard)/logs/page.tsx`):
+* **Klasifikasi Log (`LOG_GROUPS`)**: Seluruh tipe log baru wajib dikelompokkan secara visual menggunakan model `LOG_GROUPS` yang membaginya menjadi 4 kategori:
+  - `CORE`: Infrastruktur utama, otentikasi (Keycloak), routing API (Kong). Warna: Violet (`text-violet-400`).
+  - `OPERATIONS`: Alur proses bisnis (pembayaran, scheduler, storage, user management). Warna: Sky (`text-sky-400`).
+  - `NETWORK`: Perangkat keras jaringan dan pemetaan (OLT, ONT provisioning, poller). Warna: Emerald (`text-emerald-400`).
+  - `MESSAGING`: Komunikasi eksternal (WhatsApp, SMS, Email). Warna: Amber (`text-amber-400`).
+* **Multi-Tenancy Isolation**:
+  - Halaman log wajib menyediakan input filter `tenantSlug` (hanya aktif untuk Super Admin). Filter ini secara default kosong (menampilkan seluruh tenant) dan dapat difilter secara spesifik per tenant.
+  - Untuk non-Super Admin, filter `tenantSlug` diset otomatis ke tenant pengguna dan input filter disembunyikan.
+* **Informasi Tambahan Detail Drawer**:
+  - Detail drawer log wajib menampilkan parameter `tenantSlug`, `serviceSource` (container asal), dan `logGroup` secara rapi dan terformat.
+
+
 

@@ -125,10 +125,24 @@ Jika GitHub Actions SSH timeout karena IP publik server mati, Anda dapat melakuk
    docker login ghcr.io -u ex-cloud
    # Masukkan GitHub Personal Access Token (PAT) dengan scope read:packages
    ```
-2. Tarik kode compose terbaru dan jalankan script deploy:
-   ```bash
-   git fetch origin && git checkout main && git pull origin main
-   bash scripts/deploy.sh production frontend-admin
-   ```
+    ```bash
+    git fetch origin && git checkout main && git pull origin main
+    bash scripts/deploy.sh production frontend-admin
+    ```
+
+---
+
+## 📈 9. Standardisasi Log Ingress & Infrastruktur (Loki & Kong http-log)
+
+Pengumpulan log pada layer ingress API gateway dan reverse proxy wajib mengikuti standar observability berikut:
+1. **Kong API Gateway Ingress Logging**:
+   * Setiap request mutasi data (`POST`, `PUT`, `DELETE`, `PATCH`) yang melalui Kong wajib dipantau dan dikirim ke `gateway-audit` menggunakan global plugin `http-log`.
+   * Endpoint target log diatur ke `http://gateway-audit:5009/api/v1/audit/events/kong` dengan menyertakan header otentikasi `X-Gateway-Token` dari config server.
+2. **Traefik Access Logging**:
+   * Traefik wajib menulis access log berformat JSON ke file `/var/log/traefik/access.log` yang dimount ke host (`./docker/traefik/logs:/var/log/traefik`).
+   * Gunakan **Promtail** sebagai log shipper untuk mengirim access log tersebut secara asinkronus ke **Grafana Loki**.
+3. **Grafana Provisioning**:
+   * Loki wajib didaftarkan secara deklaratif di `docker/grafana/provisioning/datasources/datasource.yml` agar langsung dapat digunakan untuk visualisasi log dashboard tanpa konfigurasi manual di UI Grafana.
+
 
 

@@ -41,3 +41,14 @@ Setiap gateway **wajib** mengekstrak header `X-Tenant-ID` yang dikirimkan oleh K
 
 * Setiap gateway disarankan mengekspos endpoint `/metrics` di port utama mereka.
 * metrics tersebut harus memuat minimal counter request HTTP atau uptime dari service bersangkutan.
+
+---
+
+## 📊 5. Audit Logging & Client Standard
+
+Setiap mikroservis Go baru atau lama yang memodifikasi state data (write operation) wajib menerapkan standarisasi audit logging:
+* **Penggunaan Shared Client**: Gunakan shared package `gateways/shared/auditclient` yang diinisialisasi melalui helper `auditclient.NewFromEnv()`.
+* **Mekanisme Non-Blocking (Asinkronus)**: Pengiriman audit log harus bersifat *fire-and-forget* dan dijalankan asinkronus menggunakan goroutine (`go client.LogEvent(...)`). Kegagalan koneksi audit tidak boleh mematikan alur eksekusi request utama.
+* **Graceful Fallback**: Client wajib mendeteksi parameter `AUDIT_GATEWAY_URL`. Jika kosong, client harus otomatis dinonaktifkan (no-op) secara aman untuk mencegah crash pada development environment.
+* **Noise Control pada Ingress Audit**: Endpoint penerima log audit (seperti log HTTP dari Kong) wajib menyaring dan mengabaikan request baca-saja (`GET`, `HEAD`, `OPTIONS`) guna mencegah membengkaknya ukuran database log.
+
