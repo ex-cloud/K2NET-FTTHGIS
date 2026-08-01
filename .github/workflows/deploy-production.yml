@@ -56,6 +56,8 @@ jobs:
       gateway-olt: ${{ steps.filter.outputs.gateway-olt }}
       gateway-audit: ${{ steps.filter.outputs.gateway-audit }}
       poller: ${{ steps.filter.outputs.poller }}
+      gateways_matrix: ${{ steps.set-matrix.outputs.gateways_matrix }}
+      any_gateway_changed: ${{ steps.set-matrix.outputs.any_gateway_changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -97,6 +99,44 @@ jobs:
               - 'services/gateway-audit/**'
             poller:
               - 'services/poller/**'
+
+      - name: Generate Go Gateways Build Matrix
+        id: set-matrix
+        run: |
+          SERVICES=()
+          SHARED="${{ steps.filter.outputs.shared }}"
+          EVENT_NAME="${{ github.event_name }}"
+          MANUAL_SERVICE="${{ github.event.inputs.service }}"
+          
+          if [[ "$SHARED" == "true" || ( "$EVENT_NAME" == "workflow_dispatch" && ( "$MANUAL_SERVICE" == "all" || "$MANUAL_SERVICE" == "gateways" ) ) ]]; then
+            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "poller")
+          else
+            if [[ "${{ steps.filter.outputs.map-gateway }}" == "true" ]]; then SERVICES+=("map-gateway"); fi
+            if [[ "${{ steps.filter.outputs.notification-gateway }}" == "true" ]]; then SERVICES+=("notification-gateway"); fi
+            if [[ "${{ steps.filter.outputs.payment-gateway }}" == "true" ]]; then SERVICES+=("payment-gateway"); fi
+            if [[ "${{ steps.filter.outputs.storage-gateway }}" == "true" ]]; then SERVICES+=("storage-gateway"); fi
+            if [[ "${{ steps.filter.outputs.gateway-whatsapp }}" == "true" ]]; then SERVICES+=("gateway-whatsapp"); fi
+            if [[ "${{ steps.filter.outputs.gateway-scheduler }}" == "true" ]]; then SERVICES+=("gateway-scheduler"); fi
+            if [[ "${{ steps.filter.outputs.gateway-export }}" == "true" ]]; then SERVICES+=("gateway-export"); fi
+            if [[ "${{ steps.filter.outputs.gateway-olt }}" == "true" ]]; then SERVICES+=("gateway-olt"); fi
+            if [[ "${{ steps.filter.outputs.gateway-audit }}" == "true" ]]; then SERVICES+=("gateway-audit"); fi
+            if [[ "${{ steps.filter.outputs.poller }}" == "true" ]]; then SERVICES+=("poller"); fi
+          fi
+          
+          # Build JSON manually
+          JSON="["
+          for i in "${!SERVICES[@]}"; do
+            if [ $i -gt 0 ]; then JSON+=","; fi
+            JSON+="\"${SERVICES[$i]}\""
+          done
+          JSON+="]"
+          echo "gateways_matrix=${JSON}" >> $GITHUB_OUTPUT
+          
+          if [ ${#SERVICES[@]} -gt 0 ]; then
+            echo "any_gateway_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_gateway_changed=false" >> $GITHUB_OUTPUT
+          fi
 
 # ============================================================
 # JOB 1: VALIDATE — Memastikan sintaks & build 100% lulus
@@ -178,50 +218,21 @@ jobs:
     name: ✅ Validate Go Gateways
     runs-on: ubuntu-latest
     needs: changes
+    if: needs.changes.outputs.any_gateway_changed == 'true'
     strategy:
       matrix:
-        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
+        service: ${{ fromJSON(needs.changes.outputs.gateways_matrix) }}
     steps:
       - name: Checkout repository
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: actions/checkout@v4
 
       - name: Set up Go
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
           cache-dependency-path: services/go.work
 
       - name: Test Service
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         run: |
           cd services/${{ matrix.service }}
           go vet ./...
@@ -328,51 +339,24 @@ jobs:
     name: 🐳 Docker Build — Go Gateways (GHA Runner)
     runs-on: ubuntu-latest
     needs: [changes, validate-gateways]
-    if: always() && needs.validate-gateways.result == 'success'
+    if: |
+      always() &&
+      needs.changes.outputs.any_gateway_changed == 'true' &&
+      (needs.validate-gateways.result == 'success' || needs.validate-gateways.result == 'skipped')
     strategy:
       matrix:
-        service: [map-gateway, notification-gateway, payment-gateway, storage-gateway, gateway-whatsapp, gateway-scheduler, gateway-export, gateway-olt, gateway-audit, poller]
+        service: ${{ fromJSON(needs.changes.outputs.gateways_matrix) }}
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -380,16 +364,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -399,16 +373,6 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       - name: Build and push Docker image
-        if: |
-          github.event_name == 'workflow_dispatch' && (
-            github.event.inputs.service == 'all' ||
-            github.event.inputs.service == 'gateways'
-          ) || (
-            github.event_name == 'push' && (
-              needs.changes.outputs[matrix.service] == 'true' ||
-              needs.changes.outputs.shared == 'true'
-            )
-          )
         uses: docker/build-push-action@v6
         with:
           context: ./services
