@@ -1,7 +1,10 @@
 package delivery
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"gateways/gateway-audit/internal/audit"
@@ -71,6 +74,15 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 	actorID := payload.Request.Headers["x-user-email"]
 	if actorID == "" {
 		actorID = payload.Request.Headers["x-user-id"]
+	}
+	if actorID == "" {
+		authHeader := payload.Request.Headers["authorization"]
+		if authHeader == "" {
+			authHeader = payload.Request.Headers["Authorization"]
+		}
+		if authHeader != "" {
+			actorID = extractActorFromJWT(authHeader)
+		}
 	}
 	if actorID == "" {
 		actorID = "anonymous"
@@ -206,3 +218,53 @@ func (h *HTTPHandler) ExportAuditEvents(c *gin.Context) {
 		},
 	})
 }
+
+func extractActorFromJWT(authHeader string) string {
+	if authHeader == "" {
+		return ""
+	}
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return ""
+	}
+	token := parts[1]
+	tokenParts := strings.Split(token, ".")
+	if len(tokenParts) < 2 {
+		return ""
+	}
+	payloadSegment := tokenParts[1]
+	
+	// Replace URL characters with standard base64 characters
+	payloadSegment = strings.ReplaceAll(payloadSegment, "-", "+")
+	payloadSegment = strings.ReplaceAll(payloadSegment, "_", "/")
+	
+	// Add padding if necessary
+	switch len(payloadSegment) % 4 {
+	case 2:
+		payloadSegment += "=="
+	case 3:
+		payloadSegment += "="
+	}
+	
+	decoded, err := base64.StdEncoding.DecodeString(payloadSegment)
+	if err != nil {
+		return ""
+	}
+	
+	var claims map[string]any
+	if err := json.Unmarshal(decoded, &claims); err != nil {
+		return ""
+	}
+	
+	if email, ok := claims["email"].(string); ok && email != "" {
+		return email
+	}
+	if username, ok := claims["preferred_username"].(string); ok && username != "" {
+		return username
+	}
+	if sub, ok := claims["sub"].(string); ok && sub != "" {
+		return sub
+	}
+	return ""
+}
+
