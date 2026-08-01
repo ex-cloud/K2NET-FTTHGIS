@@ -54,6 +54,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const { preset: activePreset, range: customRange } = parseValue(value);
+  const today = React.useMemo(() => new Date(), []);
 
   // Local range state for the calendar
   const [localRange, setLocalRange] = React.useState<DateRange | undefined>(customRange);
@@ -182,7 +183,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                 selected={localRange}
                 onSelect={setLocalRange}
                 numberOfMonths={1}
-                disabled={{ after: new Date() }}
+                disabled={{ after: today }}
                 className="text-xs"
               />
 

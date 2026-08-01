@@ -121,6 +121,12 @@ export function useAuditLogStream(
   const [status, setStatus] = useState<"connecting" | "live" | "paused">("paused");
 
   const isPausedRef = useRef(options?.isPaused ?? true);
+  const [now, setNow] = useState(() => Date.now());
+  const timeRange = options?.timeRange;
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, [logs, timeRange]);
 
   // Sync ref + status inside an effect (never during render)
   useEffect(() => {
@@ -280,8 +286,6 @@ export function useAuditLogStream(
     Object.keys(selectedTypes).length === 0 ||
     Object.values(selectedTypes).some(Boolean);
 
-  const timeRange = options?.timeRange;
-
   const filteredLogs = logs.filter((log) => {
     if (!hasAnyTypeSelected) return false;
 
@@ -299,7 +303,6 @@ export function useAuditLogStream(
     // Filter by timeRange
     if (timeRange) {
       const logTime = new Date(log.timestamp).getTime();
-      const now = Date.now();
       
       if (timeRange.startsWith("custom:")) {
         const parts = timeRange.substring(7).split("_");
