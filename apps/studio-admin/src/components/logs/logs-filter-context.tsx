@@ -8,6 +8,51 @@ import { AuditStreamEntry, LOG_GROUPS, LogGroupKey } from "@/hooks/use-audit-log
 export { LOG_GROUPS };
 export type { LogGroupKey };
 
+// ─── Advanced Filter Types ─────────────────────────────────────────────────────
+
+export type AdvancedFilterField =
+  | "status"
+  | "method"
+  | "pathname"
+  | "actor"
+  | "message"
+  | "tenantSlug"
+  | "serviceSource";
+
+export type AdvancedFilterOperator =
+  | "eq"
+  | "neq"
+  | "contains"
+  | "not_contains"
+  | "starts_with"
+  | "ends_with";
+
+export type AdvancedFilter = {
+  id: string;
+  field: AdvancedFilterField;
+  operator: AdvancedFilterOperator;
+  value: string;
+};
+
+export const FILTER_FIELD_LABELS: Record<AdvancedFilterField, string> = {
+  status:        "Status",
+  method:        "Method",
+  pathname:      "Pathname",
+  actor:         "Actor",
+  message:       "Event message",
+  tenantSlug:    "Tenant",
+  serviceSource: "Source",
+};
+
+export const FILTER_OPERATOR_LABELS: Record<AdvancedFilterOperator, string> = {
+  eq:           "Equals",
+  neq:          "Not equal",
+  contains:     "Contains",
+  not_contains: "Not contains",
+  starts_with:  "Starts with",
+  ends_with:    "Ends with",
+};
+
 // ─── Log Type Definitions ─────────────────────────────────────────────────────
 
 // K2NET Architecture — Real log source labels (aligned with running containers)
@@ -93,6 +138,11 @@ export type LogFilterState = {
   setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   logTypeCounts: Record<string, number>;
   setLogTypeCounts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  /** Advanced filter rules (field + operator + value) */
+  advancedFilters: AdvancedFilter[];
+  addAdvancedFilter: (f: AdvancedFilter) => void;
+  removeAdvancedFilter: (id: string) => void;
+  clearAdvancedFilters: () => void;
   /** tenantSlug filter — empty string = all tenants */
   tenantFilter: string;
   setTenantFilter: (slug: string) => void;
@@ -156,6 +206,19 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   const [selectedGroups, setSelectedGroups] = useState<Record<LogGroupKey, boolean>>(initialGroups as Record<LogGroupKey, boolean>);
   const [edgeSubFilters, setEdgeSubFilters] = useState<Record<string, boolean>>(DEFAULT_EDGE_SUB_FILTERS);
   const [logTypeCounts, setLogTypeCounts] = useState<Record<string, number>>({});
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilter[]>([]);
+
+  const addAdvancedFilter = (f: AdvancedFilter) => {
+    setAdvancedFilters((prev) => [...prev, f]);
+  };
+
+  const removeAdvancedFilter = (id: string) => {
+    setAdvancedFilters((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const clearAdvancedFilters = () => {
+    setAdvancedFilters([]);
+  };
 
   // Sync URL → state
   useEffect(() => {
@@ -265,6 +328,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setSelectedLog(null);
     setIsLivePaused(true);
     setTenantFilter("");
+    setAdvancedFilters([]);
     router.replace("/logs", { scroll: false });
   };
 
@@ -284,6 +348,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         isSidebarCollapsed, setIsSidebarCollapsed,
         logTypeCounts, setLogTypeCounts,
         tenantFilter, setTenantFilter,
+        advancedFilters, addAdvancedFilter, removeAdvancedFilter, clearAdvancedFilters,
       }}
     >
       {children}
@@ -313,6 +378,7 @@ const DEFAULT_CONTEXT: LogFilterState = {
   isSidebarCollapsed: false, setIsSidebarCollapsed: () => {},
   logTypeCounts: {}, setLogTypeCounts: () => {},
   tenantFilter: "", setTenantFilter: () => {},
+  advancedFilters: [], addAdvancedFilter: () => {}, removeAdvancedFilter: () => {}, clearAdvancedFilters: () => {},
 };
 
 export function useLogsFilter() {

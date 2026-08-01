@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Clock, ChevronDown, Copy } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
@@ -51,7 +52,10 @@ function getDisplayLabel(value: string): string {
 
 export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   const { preset: activePreset, range: customRange } = parseValue(value);
   const today = React.useMemo(() => new Date(), []);
@@ -64,10 +68,42 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   // Quick text input (like supabase: "2h, 30m, 7d")
   const [quickInput, setQuickInput] = React.useState("");
 
+  const [coords, setCoords] = React.useState({ top: 0, left: 0 });
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateCoords = React.useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (open) {
+      updateCoords();
+      window.addEventListener("resize", updateCoords);
+      window.addEventListener("scroll", updateCoords, true);
+    }
+    return () => {
+      window.removeEventListener("resize", updateCoords);
+      window.removeEventListener("scroll", updateCoords, true);
+    };
+  }, [open, updateCoords]);
+
   // Close on outside click
   React.useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        contentRef.current && !contentRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
@@ -113,9 +149,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
+    <div className="w-full">
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         onClick={() => setOpen((o) => !o)}
         className={cn(
           "w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono transition-colors",
@@ -130,10 +167,17 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <ChevronDown className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
 
-      {/* Dropdown Panel */}
-      {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 w-[340px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
-
+      {/* Dropdown Panel - Rendered via Portal to escape parent sidebar overflow clips */}
+      {open && mounted && createPortal(
+        <div
+          ref={contentRef}
+          style={{
+            position: "absolute",
+            top: `${coords.top + 4}px`,
+            left: `${coords.left}px`,
+          }}
+          className="z-[9999] w-[340px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+        >
           {/* Quick input at top (e.g. "2h, 30m") */}
           <div className="px-3 pt-3 pb-2 border-b border-border/50">
             <input
@@ -157,27 +201,30 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
             />
           </div>
 
-          <div className="flex">
-            {/* LEFT: Preset list */}
-            <div className="w-36 border-r border-border/50 p-1.5 flex flex-col gap-0.5 text-[11px] font-mono">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.value}
-                  onClick={() => handlePreset(p.value)}
-                  className={cn(
-                    "w-full text-left px-2 py-1.5 rounded-md transition-colors",
-                    activePreset === p.value
-                      ? "bg-primary/15 text-primary font-semibold"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
+          <div className="flex bg-card">
+            {/* LEFT: Presets */}
+            <div className="w-[140px] border-r border-border/50 flex flex-col p-1.5 gap-0.5">
+              {PRESETS.map((p) => {
+                const isActive = activePreset === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    onClick={() => handlePreset(p.value)}
+                    className={cn(
+                      "w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors font-medium",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* RIGHT: Calendar */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col bg-card">
               <Calendar
                 mode="range"
                 selected={localRange}
@@ -206,7 +253,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* Footer actions */}
-              <div className="px-3 pb-3 flex items-center justify-between gap-2">
+              <div className="px-3 pb-3 pt-2 flex items-center justify-between gap-2">
                 <button
                   onClick={handleCopyRange}
                   title="Copy date range"
@@ -238,7 +285,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

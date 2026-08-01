@@ -68,6 +68,21 @@ body {
   background: var(--muted-foreground);
 }
 
+.custom-scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
 /* ============================================================
    ☀️ Light Mode Global CSS Safety Net
    Memastikan seluruh utility class zinc-* & white/* yang
