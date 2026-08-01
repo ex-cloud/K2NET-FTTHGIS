@@ -145,3 +145,11 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Penggunaan**: Bungkus halaman berkonten panjang (settings, compliance, password-policy) dengan `<TracingBeam className="px-4">` dari `@k2net/ui`.
 - **Padding dalam**: Tambahkan `pl-4 md:pl-10` pada container dalam `<TracingBeam>` agar garis SVG beam tidak menimpa sisi kiri konten card/form.
 
+### Integrasi Audit Logging Terpadu (Agustus 2026)
+- **Arsitektur Pipeline**: Log audit dari semua tier (Go microservices, Spring Boot, Keycloak, Kong, Traefik) dialirkan secara asinkronus ke `gateway-audit:5009`.
+- **Go Shared Client**: Library `gateways/shared/auditclient` dirancang *fire-and-forget* (goroutine) dan aman dari crash jika URL log tidak di-set (no-op fallback).
+- **Spring Boot AOP**: Pemisahan logic audit menggunakan annotation `@AuditRequired` (SpEL support) dan aspect `AuditAspect`. Error di aspect tidak boleh membatalkan transaksi utama database.
+- **Kong Ingress & Noise Control**: Endpoint `/api/v1/audit/events/kong` di `gateway-audit` menyaring dan membuang HTTP method read-only (`GET`, `HEAD`, `OPTIONS`) secara real-time untuk menghindari ledakan data (DB bloat).
+- **Pencegah Duplikasi Event**: Komunikasi Keycloak event controller disaring melalui LRU Cache in-memory (kapasitas 1000 item) sebelum diteruskan ke database.
+
+
