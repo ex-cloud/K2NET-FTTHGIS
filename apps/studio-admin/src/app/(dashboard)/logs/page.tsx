@@ -8,9 +8,11 @@ import {
   Check,
   X,
   FileCode,
+  Building2,
+  Cpu,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useAuditLogStream, AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { useAuditLogStream, AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
@@ -57,6 +59,7 @@ export default function GlobalLogsPage() {
     isLivePaused,
     selectedTypes,
     setLogTypeCounts,
+    tenantFilter,
   } = useLogsFilter();
 
   // Pass isPaused & selectedTypes into the hook so:
@@ -85,18 +88,30 @@ export default function GlobalLogsPage() {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Client-side free-text search filter
+  // Client-side free-text search + tenant filter
   const filteredLogs = useMemo(() => {
-    if (!searchQuery.trim()) return logs;
+    let result = logs;
+
+    // Tenant filter (Super Admin: empty = all tenants)
+    if (tenantFilter.trim()) {
+      const tf = tenantFilter.toLowerCase().trim();
+      result = result.filter(
+        (log) => (log.tenantSlug ?? "").toLowerCase().includes(tf)
+      );
+    }
+
+    if (!searchQuery.trim()) return result;
     const q = searchQuery.toLowerCase();
-    return logs.filter(
+    return result.filter(
       (log) =>
         log.message?.toLowerCase().includes(q) ||
         log.action?.toLowerCase().includes(q) ||
         log.actor?.toLowerCase().includes(q) ||
-        log.timestamp?.toLowerCase().includes(q)
+        log.timestamp?.toLowerCase().includes(q) ||
+        log.tenantSlug?.toLowerCase().includes(q) ||
+        log.serviceSource?.toLowerCase().includes(q)
     );
-  }, [logs, searchQuery]);
+  }, [logs, searchQuery, tenantFilter]);
 
   // Histogram data — built from full log stream (not filtered)
   const histogramData = useMemo(() => buildHistogramData(logs), [logs]);
@@ -149,7 +164,17 @@ export default function GlobalLogsPage() {
             <div className="w-7 shrink-0" />
             {/* divider */}
             <span className="text-muted-foreground/30 mr-3">—</span>
-            {/* Col 5: event message */}
+            {/* Col 5: tenant ~108px */}
+            <div className="w-28 shrink-0 flex items-center gap-1">
+              <Building2 className="w-3 h-3" />
+              Tenant
+            </div>
+            {/* Col 6: source ~100px */}
+            <div className="w-24 shrink-0 flex items-center gap-1">
+              <Cpu className="w-3 h-3" />
+              Source
+            </div>
+            {/* Col 7: event message */}
             <div className="flex-1 min-w-0">Event Message</div>
           </div>
 
@@ -240,7 +265,35 @@ export default function GlobalLogsPage() {
                     {/* Divider */}
                     <span className="text-muted-foreground/30 mr-3 shrink-0">—</span>
 
-                    {/* Col 5: Event Message (flex-1, truncated) */}
+                    {/* Col 5: Tenant slug ~108px */}
+                    <div className="w-28 shrink-0 font-mono text-[10px] truncate">
+                      {log.tenantSlug ? (
+                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
+                          {log.tenantSlug}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )}
+                    </div>
+
+                    {/* Col 6: Service source ~100px */}
+                    <div className="w-24 shrink-0 font-mono text-[10px] truncate">
+                      {log.serviceSource ? (
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
+                            log.logGroup
+                              ? `${LOG_GROUPS[log.logGroup]?.color ?? "text-muted-foreground"} ${LOG_GROUPS[log.logGroup]?.accentBg ?? "bg-muted/20"} border-current/20`
+                              : "text-muted-foreground/60 bg-muted/20 border-border/30"
+                          }`}
+                        >
+                          {log.serviceSource.replace("gateway-", "").replace("-gateway", "")}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )}
+                    </div>
+
+                    {/* Col 7: Event Message (flex-1, truncated) */}
                     <div className="flex-1 min-w-0 truncate font-mono text-[11px]">
                       <span
                         className={
@@ -337,6 +390,35 @@ export default function GlobalLogsPage() {
                   <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Actor</label>
                   <p className="text-foreground text-xs font-mono">{selectedLog.actor}</p>
                 </div>
+
+                {selectedLog.tenantSlug && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Tenant</label>
+                    <p className="text-foreground font-mono text-xs inline-flex items-center gap-1.5">
+                      <Building2 className="w-3 h-3 text-primary" />
+                      {selectedLog.tenantSlug}
+                    </p>
+                  </div>
+                )}
+
+                {selectedLog.serviceSource && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Service Source</label>
+                    <p className="text-foreground font-mono text-xs inline-flex items-center gap-1.5">
+                      <Cpu className="w-3 h-3 text-primary" />
+                      {selectedLog.serviceSource}
+                    </p>
+                  </div>
+                )}
+
+                {selectedLog.logGroup && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Log Group</label>
+                    <p className={`font-mono text-xs font-semibold ${LOG_GROUPS[selectedLog.logGroup]?.color ?? "text-muted-foreground"}`}>
+                      {LOG_GROUPS[selectedLog.logGroup]?.label ?? selectedLog.logGroup}
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Timestamp</label>

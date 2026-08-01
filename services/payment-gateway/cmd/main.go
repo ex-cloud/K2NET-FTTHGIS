@@ -10,6 +10,7 @@ import (
 
 	"gateways/payment-gateway/internal/config"
 	"gateways/payment-gateway/internal/service"
+	"gateways/shared/auditclient"
 	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
@@ -31,6 +32,7 @@ func main() {
 	telemetry.InitTelemetry("payment-gateway")
 
 	paymentService := service.NewPaymentService(cfg.XenditAPIKey, cfg.XenditWebhookKey, cfg.CoreAPIURL)
+	audit := auditclient.NewFromEnv()
 
 	cJob := cron.New()
 	_, err := cJob.AddFunc("@hourly", func() {
@@ -86,6 +88,14 @@ func main() {
 			return
 		}
 
+		// Audit: persist webhook received event
+		audit.LogSuccess(reqCtx,
+			c.GetHeader("X-Tenant-ID"), "xendit-webhook",
+			"PAYMENT_WEBHOOK_RECEIVED", "PAYMENT", extID,
+			auditclient.GroupOperations, "payment-gateway",
+			map[string]any{"xendit_status": status, "external_id": extID},
+		)
+
 		c.JSON(http.StatusOK, gin.H{"status": "Success"})
 	})
 
@@ -106,10 +116,24 @@ func main() {
 			
 			id, url, err := paymentService.CreateInvoice(c.Request.Context(), payload)
 			if err != nil {
+				audit.LogError(c.Request.Context(),
+					c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+					"PAYMENT_LINK_FAILED", "PAYMENT", payload.ExternalID,
+					auditclient.GroupOperations, "payment-gateway",
+					err.Error(), map[string]any{"amount": payload.Amount},
+				)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
 			
+			// Audit: payment link created
+			audit.LogSuccess(c.Request.Context(),
+				c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+				"PAYMENT_LINK_CREATED", "PAYMENT", id,
+				auditclient.GroupOperations, "payment-gateway",
+				map[string]any{"external_id": payload.ExternalID, "amount": payload.Amount, "invoice_url": url},
+			)
+
 			c.JSON(http.StatusOK, gin.H{
 				"invoice_id":  id,
 				"invoice_url": url,

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"gateways/shared/auditclient"
 	"gateways/shared/confighandler"
 	"gateways/shared/logger"
 	"gateways/shared/middleware"
@@ -31,6 +32,7 @@ func main() {
 	telemetry.InitTelemetry("storage-gateway")
 
 	storageService := service.NewStorageService(cfg)
+	audit := auditclient.NewFromEnv()
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
@@ -81,9 +83,23 @@ func main() {
 			url, err := storageService.UploadFile(c.Request.Context(), file, header.Filename, header.Size, contentType, bucket)
 			if err != nil {
 				logger.Error(c.Request.Context(), "File upload failed", zap.Error(err), zap.String("filename", header.Filename))
+				audit.LogError(c.Request.Context(),
+					c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+					"FILE_UPLOAD_FAILED", "FILE", header.Filename,
+					auditclient.GroupOperations, "storage-gateway",
+					err.Error(), map[string]any{"bucket": bucket, "size": header.Size, "mime": contentType},
+				)
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}
+
+			// Audit: file uploaded successfully
+			audit.LogSuccess(c.Request.Context(),
+				c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+				"FILE_UPLOADED", "FILE", header.Filename,
+				auditclient.GroupOperations, "storage-gateway",
+				map[string]any{"bucket": bucket, "url": url, "size": header.Size, "mime": contentType},
+			)
 
 			c.JSON(http.StatusOK, gin.H{
 				"status": "Success",

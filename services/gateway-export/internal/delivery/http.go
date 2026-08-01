@@ -4,15 +4,20 @@ import (
 	"net/http"
 
 	"gateways/gateway-export/internal/exporter"
+	"gateways/shared/auditclient"
 	"github.com/gin-gonic/gin"
 )
 
 type HTTPHandler struct {
 	worker *exporter.Worker
+	audit  *auditclient.Client
 }
 
 func NewHTTPHandler(worker *exporter.Worker) *HTTPHandler {
-	return &HTTPHandler{worker: worker}
+	return &HTTPHandler{
+		worker: worker,
+		audit:  auditclient.NewFromEnv(),
+	}
 }
 
 // POST /export/invoice/:invoiceId
@@ -31,11 +36,25 @@ func (h *HTTPHandler) ExportInvoice(c *gin.Context) {
 
 	job, err := h.worker.EnqueueJob(ctx, "invoice", tenantSlug, params)
 	if err != nil {
+		h.audit.LogError(ctx,
+			tenantSlug, c.GetHeader("X-Actor-ID"),
+			"EXPORT_INVOICE_FAILED", "EXPORT", invoiceID,
+			auditclient.GroupOperations, "gateway-export",
+			err.Error(), map[string]any{"type": "invoice"},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "INTERNAL_ERROR", "message": err.Error()}})
 		return
 	}
 
 	h.worker.ProcessAsync(job)
+
+	// Audit: export job enqueued
+	h.audit.LogSuccess(ctx,
+		tenantSlug, c.GetHeader("X-Actor-ID"),
+		"EXPORT_INVOICE_QUEUED", "EXPORT", job.JobID,
+		auditclient.GroupOperations, "gateway-export",
+		map[string]any{"type": "invoice", "invoice_id": invoiceID},
+	)
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"success": true,
@@ -67,6 +86,14 @@ func (h *HTTPHandler) ExportBillingReport(c *gin.Context) {
 	}
 
 	h.worker.ProcessAsync(job)
+
+	// Audit: billing report export queued
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, c.GetHeader("X-Actor-ID"),
+		"EXPORT_BILLING_REPORT_QUEUED", "EXPORT", job.JobID,
+		auditclient.GroupOperations, "gateway-export",
+		map[string]any{"type": "billing", "period": req.Period, "format": req.Format},
+	)
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"success": true,
@@ -112,11 +139,25 @@ func (h *HTTPHandler) enqueueGenericReport(c *gin.Context, reportType string) {
 
 	job, err := h.worker.EnqueueJob(ctx, reportType, req.TenantSlug, params)
 	if err != nil {
+		h.audit.LogError(ctx,
+			req.TenantSlug, c.GetHeader("X-Actor-ID"),
+			"EXPORT_REPORT_FAILED", "EXPORT", "",
+			auditclient.GroupOperations, "gateway-export",
+			err.Error(), map[string]any{"type": reportType},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "INTERNAL_ERROR", "message": err.Error()}})
 		return
 	}
 
 	h.worker.ProcessAsync(job)
+
+	// Audit: generic report export queued
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, c.GetHeader("X-Actor-ID"),
+		"EXPORT_REPORT_QUEUED", "EXPORT", job.JobID,
+		auditclient.GroupOperations, "gateway-export",
+		map[string]any{"type": reportType, "period": req.Period, "format": req.Format},
+	)
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"success": true,

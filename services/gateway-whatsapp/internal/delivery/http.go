@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gateways/gateway-whatsapp/internal/whatsapp"
+	"gateways/shared/auditclient"
 	"gateways/shared/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -23,6 +24,7 @@ type HTTPHandler struct {
 	client     *whatsapp.Client
 	sessionMgr *whatsapp.SessionManager
 	rdb        *redis.Client
+	audit      *auditclient.Client
 }
 
 func NewHTTPHandler(client *whatsapp.Client, sessionMgr *whatsapp.SessionManager, rdb *redis.Client) *HTTPHandler {
@@ -30,6 +32,7 @@ func NewHTTPHandler(client *whatsapp.Client, sessionMgr *whatsapp.SessionManager
 		client:     client,
 		sessionMgr: sessionMgr,
 		rdb:        rdb,
+		audit:      auditclient.NewFromEnv(),
 	}
 }
 
@@ -49,9 +52,23 @@ func (h *HTTPHandler) SendSingle(c *gin.Context) {
 
 	err := h.client.SendText(ctx, req.Phone, req.Message)
 	if err != nil {
+		h.audit.LogError(ctx,
+			req.TenantSlug, "whatsapp-gateway",
+			"WHATSAPP_SEND_FAILED", "WHATSAPP", req.Phone,
+			auditclient.GroupMessaging, "gateway-whatsapp",
+			err.Error(), map[string]any{"phone": req.Phone},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "API_ERROR", "message": err.Error()}})
 		return
 	}
+
+	// Audit: WhatsApp message sent
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, "whatsapp-gateway",
+		"WHATSAPP_MESSAGE_SENT", "WHATSAPP", req.Phone,
+		auditclient.GroupMessaging, "gateway-whatsapp",
+		map[string]any{"phone": req.Phone, "type": "text"},
+	)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

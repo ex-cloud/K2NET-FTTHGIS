@@ -9,6 +9,7 @@ import (
 
 	"gateways/notification-gateway/internal/provider"
 	"gateways/notification-gateway/internal/service"
+	"gateways/shared/auditclient"
 	"gateways/shared/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -18,12 +19,14 @@ import (
 type HTTPHandler struct {
 	worker *service.Worker
 	rdb    *redis.Client
+	audit  *auditclient.Client
 }
 
 func NewHTTPHandler(worker *service.Worker, rdb *redis.Client) *HTTPHandler {
 	return &HTTPHandler{
 		worker: worker,
 		rdb:    rdb,
+		audit:  auditclient.NewFromEnv(),
 	}
 }
 
@@ -94,15 +97,29 @@ func (h *HTTPHandler) SendNotification(c *gin.Context) {
 		// Log failed notification to Redis
 		h.appendNotificationLog(c, payload, "failed", err.Error())
 		logger.Error(ctx, "Failed to enqueue notification task", zap.Error(err))
+		// Audit: persist failure event to gateway-audit
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"NOTIFICATION_FAILED", "NOTIFICATION", "",
+			auditclient.GroupOperations, "notification-gateway",
+			err.Error(), map[string]any{"channel": string(payload.Type), "recipient": payload.To},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Log successful notification to Redis
 	h.appendNotificationLog(c, payload, "sent", "")
-	
+	// Audit: persist success event to gateway-audit
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"NOTIFICATION_SENT", "NOTIFICATION", "",
+		auditclient.GroupOperations, "notification-gateway",
+		map[string]any{"channel": string(payload.Type), "recipient": payload.To},
+	)
+
 	c.JSON(http.StatusAccepted, gin.H{
-		"status": "Accepted",
+		"status":  "Accepted",
 		"message": "Notification enqueued asynchronously",
 	})
 }

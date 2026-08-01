@@ -4,16 +4,18 @@ import (
 	"net/http"
 
 	"gateways/gateway-olt/internal/olt"
+	"gateways/shared/auditclient"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
 
 type HTTPHandler struct {
-	repo *olt.Repository
+	repo  *olt.Repository
+	audit *auditclient.Client
 }
 
 func NewHTTPHandler(repo *olt.Repository) *HTTPHandler {
-	return &HTTPHandler{repo: repo}
+	return &HTTPHandler{repo: repo, audit: auditclient.NewFromEnv()}
 }
 
 // GET /olt
@@ -67,6 +69,14 @@ func (h *HTTPHandler) CreateOlt(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
 		return
 	}
+
+	// Audit: OLT device registered
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, c.GetHeader("X-Actor-ID"),
+		"OLT_CREATED", "OLT", o.ID,
+		auditclient.GroupNetwork, "gateway-olt",
+		map[string]any{"name": req.Name, "host": req.Host, "vendor": req.Vendor},
+	)
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "data": o})
 }
@@ -299,9 +309,23 @@ func (h *HTTPHandler) ProvisionOnt(c *gin.Context) {
 	}
 
 	if err := driver.ProvisionOnt(ctx, &req); err != nil {
+		h.audit.LogError(ctx,
+			c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+			"ONT_PROVISION_FAILED", "ONT", req.Serial,
+			auditclient.GroupNetwork, "gateway-olt",
+			err.Error(), map[string]any{"olt_id": req.OltID, "pon_port": req.PONPort, "ont_index": req.ONTIndex},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "PROVISION_ERROR", "message": err.Error()}})
 		return
 	}
+
+	// Audit: ONT provisioned successfully
+	h.audit.LogSuccess(ctx,
+		c.GetHeader("X-Tenant-ID"), c.GetHeader("X-Actor-ID"),
+		"ONT_PROVISIONED", "ONT", req.Serial,
+		auditclient.GroupNetwork, "gateway-olt",
+		map[string]any{"olt_id": req.OltID, "pon_port": req.PONPort, "ont_index": req.ONTIndex, "serial": req.Serial},
+	)
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "ONT provisioning command successful"})
 }

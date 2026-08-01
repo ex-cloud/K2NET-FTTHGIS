@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"gateways/gateway-scheduler/internal/scheduler"
+	"gateways/shared/auditclient"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -11,10 +12,15 @@ import (
 type HTTPHandler struct {
 	repo   *scheduler.Repository
 	engine *scheduler.Engine
+	audit  *auditclient.Client
 }
 
 func NewHTTPHandler(repo *scheduler.Repository, engine *scheduler.Engine) *HTTPHandler {
-	return &HTTPHandler{repo: repo, engine: engine}
+	return &HTTPHandler{
+		repo:   repo,
+		engine: engine,
+		audit:  auditclient.NewFromEnv(),
+	}
 }
 
 // POST /scheduler/jobs
@@ -28,6 +34,12 @@ func (h *HTTPHandler) CreateJob(c *gin.Context) {
 
 	job, err := h.repo.CreateJob(ctx, &req)
 	if err != nil {
+		h.audit.LogError(ctx,
+			req.TenantSlug, c.GetHeader("X-Actor-ID"),
+			"SCHEDULER_JOB_CREATE_FAILED", "SCHEDULER_JOB", "",
+			auditclient.GroupOperations, "gateway-scheduler",
+			err.Error(), map[string]any{"job_name": req.Name, "cron": req.CronExpr},
+		)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
 		return
 	}
@@ -43,6 +55,14 @@ func (h *HTTPHandler) CreateJob(c *gin.Context) {
 			return
 		}
 	}
+
+	// Audit: scheduler job created
+	h.audit.LogSuccess(ctx,
+		req.TenantSlug, c.GetHeader("X-Actor-ID"),
+		"SCHEDULER_JOB_CREATED", "SCHEDULER_JOB", job.ID,
+		auditclient.GroupOperations, "gateway-scheduler",
+		map[string]any{"job_name": req.Name, "cron": req.CronExpr, "job_type": req.JobType},
+	)
 
 	c.JSON(http.StatusCreated, gin.H{"success": true, "data": job})
 }
@@ -148,6 +168,15 @@ func (h *HTTPHandler) TriggerJob(c *gin.Context) {
 	}
 
 	h.engine.TriggerJob(ctx, job)
+
+	// Audit: scheduler job manually triggered
+	h.audit.LogSuccess(ctx,
+		job.TenantSlug, c.GetHeader("X-Actor-ID"),
+		"SCHEDULER_JOB_TRIGGERED", "SCHEDULER_JOB", id,
+		auditclient.GroupOperations, "gateway-scheduler",
+		map[string]any{"job_name": job.Name, "trigger": "manual"},
+	)
+
 	c.JSON(http.StatusAccepted, gin.H{"success": true, "message": "Job triggered successfully", "data": gin.H{"jobId": id}})
 }
 
