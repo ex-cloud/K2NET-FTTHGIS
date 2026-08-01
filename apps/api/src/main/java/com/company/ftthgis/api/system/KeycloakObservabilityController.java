@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.company.ftthgis.service.AuditLoggingService;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -27,6 +28,16 @@ import java.util.*;
 public class KeycloakObservabilityController {
 
     private final ObjectMapper objectMapper;
+    private final AuditLoggingService auditLoggingService;
+
+    private static final Set<String> forwardedSignatures = Collections.newSetFromMap(
+        new java.util.LinkedHashMap<String, Boolean>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+                return size() > 1000;
+            }
+        }
+    );
 
     @Value("${keycloak.internal-url:http://localhost:8081}")
     private String keycloakInternalUrl;
@@ -65,6 +76,7 @@ public class KeycloakObservabilityController {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 List<Map<String, Object>> events = objectMapper.readValue(response.body(), List.class);
+                forwardEventsToAudit(events);
                 return ResponseEntity.ok(events);
             } else {
                 log.warn("Keycloak admin /events returned status: {}. Serving simulated events.", response.statusCode());
@@ -73,6 +85,69 @@ public class KeycloakObservabilityController {
         } catch (Exception e) {
             log.warn("Exception checking Keycloak events: {}. Serving simulated events.", e.getMessage());
             return ResponseEntity.ok(getSimulatedEvents());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void forwardEventsToAudit(List<Map<String, Object>> events) {
+        if (events == null) return;
+        for (Map<String, Object> event : events) {
+            try {
+                String type = (String) event.get("type");
+                if (type == null) continue;
+
+                if (!List.of("LOGIN", "LOGIN_ERROR", "LOGOUT", "REGISTER", "UPDATE_PASSWORD").contains(type)) {
+                    continue;
+                }
+
+                String userId = (String) event.get("userId");
+                Object timeObj = event.get("time");
+                String signature = userId + ":" + type + ":" + timeObj;
+
+                if (forwardedSignatures.contains(signature)) {
+                    continue;
+                }
+                forwardedSignatures.add(signature);
+
+                String action = "KEYCLOAK_" + type;
+                String clientIp = "127.0.0.1";
+                if (event.get("ipAddress") != null) {
+                    clientIp = (String) event.get("ipAddress");
+                } else if (event.get("details") instanceof Map) {
+                    Map<String, String> details = (Map<String, String>) event.get("details");
+                    if (details.containsKey("ipAddress")) {
+                        clientIp = details.get("ipAddress");
+                    }
+                }
+
+                String username = userId;
+                if (event.get("details") instanceof Map) {
+                    Map<String, String> details = (Map<String, String>) event.get("details");
+                    if (details.containsKey("username")) {
+                        username = details.get("username");
+                    }
+                }
+
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("logGroup", "CORE");
+                metadata.put("serviceSource", "keycloak-auth");
+                metadata.put("clientId", event.get("clientId"));
+                metadata.put("username", username);
+                metadata.put("ipAddress", clientIp);
+                metadata.put("severity", "LOGIN_ERROR".equals(type) ? "WARN" : "INFO");
+
+                auditLoggingService.logEvent(
+                    "system",
+                    action,
+                    "AUTH",
+                    userId,
+                    null,
+                    null,
+                    metadata
+                );
+            } catch (Exception e) {
+                log.warn("Failed to forward keycloak event to audit logging service: {}", e.getMessage());
+            }
         }
     }
 

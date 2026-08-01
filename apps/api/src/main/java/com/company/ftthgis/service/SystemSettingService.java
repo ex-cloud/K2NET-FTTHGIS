@@ -3,6 +3,7 @@ package com.company.ftthgis.service;
 import com.company.ftthgis.domain.common.SystemSetting;
 import com.company.ftthgis.domain.common.repository.SystemSettingRepository;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.company.ftthgis.config.logging.AuditRequired;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -91,6 +92,7 @@ public class SystemSettingService {
     }
 
     @Transactional
+    @AuditRequired(action = "GLOBAL_SETTINGS_UPDATED", resourceType = "SYSTEM_SETTING")
     public List<SystemSetting> updateSettings(Map<String, String> newSettings) {
         log.info("⚙️ Updating system settings: {}", newSettings);
         boolean passwordPoliciesChanged = false;

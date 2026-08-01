@@ -117,6 +117,7 @@ func main() {
 		api.POST("/config", cfgHandler.UpdateConfig)
 		api.GET("/gateway-status", cfgHandler.GetGatewayStatus)
 		api.POST("/audit/events", handler.CreateAuditEvent)
+		api.POST("/audit/events/kong", handler.CreateKongLog)
 		api.GET("/audit/events", handler.GetAuditEvents)
 		api.GET("/audit/events/:id", handler.GetAuditEvent)
 		api.GET("/audit/report/tenant/:slug", handler.GetTenantAuditReport)

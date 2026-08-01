@@ -35,6 +35,85 @@ func (h *HTTPHandler) CreateAuditEvent(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
 }
 
+// POST /audit/events/kong
+func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
+	ctx := c.Request.Context()
+	var payload struct {
+		ClientIP  string `json:"client_ip"`
+		Request   struct {
+			Method  string            `json:"method"`
+			URI     string            `json:"uri"`
+			Headers map[string]string `json:"headers"`
+		} `json:"request"`
+		Response struct {
+			Status int `json:"status"`
+		} `json:"response"`
+		Latencies struct {
+			Request int `json:"request"`
+		} `json:"latencies"`
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": gin.H{"code": "BAD_REQUEST", "message": err.Error()}})
+		return
+	}
+
+	// Filter out read operations to keep audit logs clean
+	if payload.Request.Method == "GET" || payload.Request.Method == "HEAD" || payload.Request.Method == "OPTIONS" {
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Ignored read-only request"})
+		return
+	}
+
+	tenantSlug := payload.Request.Headers["x-tenant-id"]
+	if tenantSlug == "" {
+		tenantSlug = "system"
+	}
+	actorID := payload.Request.Headers["x-user-email"]
+	if actorID == "" {
+		actorID = payload.Request.Headers["x-user-id"]
+	}
+	if actorID == "" {
+		actorID = "anonymous"
+	}
+
+	action := payload.Request.Method + ":" + payload.Request.URI
+	
+	logGroup := "CORE"
+	severity := "INFO"
+	if payload.Response.Status >= 400 {
+		severity = "WARN"
+	}
+	if payload.Response.Status >= 500 {
+		severity = "ERROR"
+	}
+
+	req := audit.CreateAuditEventRequest{
+		TenantSlug:   tenantSlug,
+		ActorID:      actorID,
+		ActorRole:    "user",
+		ActorIP:      payload.ClientIP,
+		Action:       action,
+		ResourceType: "EDGE_API",
+		ResourceID:   payload.Request.URI,
+		Metadata: map[string]any{
+			"logGroup":      logGroup,
+			"serviceSource": "kong-gateway",
+			"severity":      severity,
+			"status":        payload.Response.Status,
+			"method":        payload.Request.Method,
+			"latencyMs":     payload.Latencies.Request,
+		},
+	}
+
+	ev, err := h.repo.CreateEvent(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"code": "DB_ERROR", "message": err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"success": true, "data": ev})
+}
+
 // GET /audit/events
 func (h *HTTPHandler) GetAuditEvents(c *gin.Context) {
 	ctx := c.Request.Context()

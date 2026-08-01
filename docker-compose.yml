@@ -14,6 +14,9 @@ services:
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
       - "--log.level=info"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
     ports:
       - "80:80"
       - "443:443"
@@ -21,6 +24,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./docker/certs:/certs:ro"
       - "./docker/traefik/dynamic:/etc/traefik/dynamic:ro"
+      - "./docker/traefik/logs:/var/log/traefik"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     deploy:
@@ -248,6 +252,40 @@ services:
         limits:
           cpus: '0.5'
           memory: 512M
+
+  # Centralized Log Store (Grafana Loki)
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: ftth-loki
+    restart: always
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Log Shipper (Grafana Promtail)
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: ftth-promtail
+    restart: always
+    volumes:
+      - ./docker/traefik/logs:/var/log/traefik:ro
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
 
   # Node Exporter (Host/OS metrics)
   node-exporter:
@@ -533,3 +571,4 @@ volumes:
   keycloak_data:
   prometheus_data:
   grafana_data:
+  loki_data:

@@ -1,6 +1,7 @@
 package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.user.dto.UserDto;
+import com.company.ftthgis.config.logging.AuditRequired;
 import lombok.extern.slf4j.Slf4j;
 import com.company.ftthgis.api.user.dto.UserStatsDto;
 import com.company.ftthgis.domain.user.entity.User;
@@ -99,6 +100,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
+    @AuditRequired(action = "USER_INVITED", resourceType = "USER", tenantSlugExpression = "#orgIdOrSlug")
     public UserDto inviteUser(String orgIdOrSlug, UserInviteRequest request) {
         // 1. Get Organization
         Organization organization;
@@ -199,6 +201,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
+    @AuditRequired(action = "USER_UPDATED", resourceType = "USER", resourceIdExpression = "#id.toString()")
     public UserDto updateUser(UUID id, String roleName, String status, String reason, String modifiedBySubject) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -257,6 +260,7 @@ public class ConfigurableUserService {
     }
 
     @Transactional
+    @AuditRequired(action = "USER_PASSWORD_RESET", resourceType = "USER", resourceIdExpression = "#userId.toString()")
     public void resetPassword(UUID userId, String newPassword, boolean temporary, String modifiedBySubject) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

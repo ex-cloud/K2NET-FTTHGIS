@@ -1,5 +1,6 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.OrganizationConfig;
 import com.company.ftthgis.domain.tenant.repository.OrganizationConfigRepository;
@@ -54,6 +55,7 @@ public class OrganizationConfigService {
     }
 
     @Transactional
+    @AuditRequired(action = "TENANT_CONFIG_SAVED", resourceType = "TENANT_CONFIG", tenantSlugExpression = "#slug", resourceIdExpression = "#key")
     public OrganizationConfig saveConfig(String slug, String key, String value, String description) {
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));
@@ -92,6 +94,7 @@ public class OrganizationConfigService {
         return saved;
     }
 
+    @AuditRequired(action = "TENANT_LDAP_SYNCED", resourceType = "TENANT_CONFIG", tenantSlugExpression = "#slug")
     public void syncLdapWithKeycloak(String slug) {
         boolean enabled = "true".equalsIgnoreCase(getRawConfigValue(slug, "ldap_enabled"));
 
@@ -148,6 +151,7 @@ public class OrganizationConfigService {
     }
 
     @Transactional
+    @AuditRequired(action = "TENANT_CONFIG_DELETED", resourceType = "TENANT_CONFIG", tenantSlugExpression = "#slug", resourceIdExpression = "#key")
     public void deleteConfig(String slug, String key) {
         Organization org = organizationRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));

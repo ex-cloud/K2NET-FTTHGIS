@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import java.util.List;
 import java.util.UUID;
 
@@ -113,6 +114,7 @@ public class RolePermissionService {
     }
 
     @Transactional
+    @AuditRequired(action = "ROLE_PERMISSIONS_UPDATED", resourceType = "ROLE", resourceIdExpression = "#roleId.toString()")
     public Role updateRolePermissions(Long roleId, List<Long> permissionIds) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
@@ -179,6 +181,7 @@ public class RolePermissionService {
     }
 
     @Transactional
+    @AuditRequired(action = "PERMISSION_CREATED", resourceType = "PERMISSION", resourceIdExpression = "#permission.code")
     public Permission createPermission(Permission permission) {
         if (permissionRepository.existsByCode(permission.getCode())) {
             throw new IllegalArgumentException("Permission dengan code '" + permission.getCode() + "' sudah terdaftar.");
@@ -189,6 +192,7 @@ public class RolePermissionService {
     }
 
     @Transactional
+    @AuditRequired(action = "PERMISSION_DELETED", resourceType = "PERMISSION", resourceIdExpression = "#id.toString()")
     public void deletePermission(Long id) {
         Permission permission = permissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Permission dengan ID " + id + " tidak ditemukan."));

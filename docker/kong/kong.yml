@@ -275,3 +275,14 @@ plugins:
       credentials: true
       max_age: 3600
 
+  # ─── HTTP Log ───────────────────────────────────────────────────────────────
+  - name: http-log
+    config:
+      http_endpoint: http://gateway-audit:5009/api/v1/audit/events/kong
+      method: POST
+      timeout: 2000
+      keepalive: 60000
+      headers:
+        X-Gateway-Token: 2dcac271c2b24a4de521951d1a413000
+
+

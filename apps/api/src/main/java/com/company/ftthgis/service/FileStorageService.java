@@ -1,5 +1,6 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.config.logging.AuditRequired;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ public class FileStorageService {
      * Deletes a file from the local storage given its relative or absolute URL.
      * Expects URLs in the format "/uploads/filename.ext"
      */
+    @AuditRequired(action = "FILE_DELETED", resourceType = "FILE", resourceIdExpression = "#fileUrl")
     public void deleteFile(String fileUrl) {
         if (fileUrl == null || fileUrl.isEmpty()) {
             return;
