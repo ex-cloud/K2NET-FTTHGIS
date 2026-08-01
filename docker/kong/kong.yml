@@ -74,6 +74,14 @@ services:
         paths:
           - /actuator
         strip_path: false
+      # GitHub webhook — no JWT (GitHub signs its own payload via HMAC-SHA256)
+      # Signature validated at Spring Boot layer. Noise-filtered from audit log.
+      - name: backend-github-webhook-route
+        paths:
+          - /api/github/webhook
+        methods:
+          - POST
+        strip_path: false
 
   # ─── 1. Notification Gateway (Port 5001) ───────────────────────────────────
   - name: notification-gateway

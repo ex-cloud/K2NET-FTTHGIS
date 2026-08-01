@@ -33,7 +33,7 @@ import { cn } from "@k2net/ui";
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
-  "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource",
+  "logType", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource",
 ];
 
 const FILTER_OPERATORS: AdvancedFilterOperator[] = [
@@ -41,6 +41,7 @@ const FILTER_OPERATORS: AdvancedFilterOperator[] = [
 ];
 
 const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
+  logType:       ["edge", "auth", "postgres", "audit", "notification", "scheduler", "storage", "export", "payment", "olt", "poller", "map", "whatsapp"],
   method:        ["GET", "POST", "PUT", "PATCH", "DELETE"],
   status:        ["200", "201", "204", "400", "401", "403", "404", "500"],
   serviceSource: ["kong-gateway", "keycloak", "backend", "gateway-audit", "gateway-notification"],
@@ -50,6 +51,8 @@ const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
 
 interface ColumnPickerProps {
   table: Table<AuditStreamEntry>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  columnVisibility: any; // passed only to trigger re-render when visibility changes
   anchorRef: React.RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }
@@ -425,6 +428,7 @@ export function LogsTopHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowFilterBuilder(true)}
               placeholder={hasActivePills ? "Add more filters..." : "Filter by Log Type, Level, Status..."}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono"
             />
@@ -493,7 +497,12 @@ export function LogsTopHeader({
         <FilterBuilder anchorRef={filterAnchorRef} onClose={() => setShowFilterBuilder(false)} onAdd={addAdvancedFilter} />
       )}
       {showColumnPicker && (
-        <ColumnPicker table={table} anchorRef={columnBtnRef} onClose={() => setShowColumnPicker(false)} />
+        <ColumnPicker
+          table={table}
+          columnVisibility={table.getState().columnVisibility}
+          anchorRef={columnBtnRef}
+          onClose={() => setShowColumnPicker(false)}
+        />
       )}
     </div>
   );

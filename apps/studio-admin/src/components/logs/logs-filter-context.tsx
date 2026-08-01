@@ -17,7 +17,8 @@ export type AdvancedFilterField =
   | "actor"
   | "message"
   | "tenantSlug"
-  | "serviceSource";
+  | "serviceSource"
+  | "logType";
 
 export type AdvancedFilterOperator =
   | "eq"
@@ -42,6 +43,7 @@ export const FILTER_FIELD_LABELS: Record<AdvancedFilterField, string> = {
   message:       "Event message",
   tenantSlug:    "Tenant",
   serviceSource: "Source",
+  logType:       "Log Type",
 };
 
 export const FILTER_OPERATOR_LABELS: Record<AdvancedFilterOperator, string> = {

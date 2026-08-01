@@ -67,6 +67,14 @@ func (h *HTTPHandler) CreateKongLog(c *gin.Context) {
 		return
 	}
 
+	// Filter out GitHub webhook calls — these are GitHub Actions deploy notifications.
+	// The actual request is handled by Spring Boot (HMAC-SHA256 validated).
+	// Will be re-enabled when tenant GitHub integration goes live.
+	if payload.Request.URI == "/api/github/webhook" {
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Ignored github webhook noise"})
+		return
+	}
+
 	tenantSlug := payload.Request.Headers["x-tenant-id"]
 	if tenantSlug == "" {
 		tenantSlug = "system"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import React from "react";
 import { Button, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@k2net/ui";
 import {
   Terminal,
@@ -242,7 +243,10 @@ export function LogsContainer() {
 
     for (const f of advancedFilters) {
       result = result.filter((log) => {
-        const raw = log[f.field as keyof AuditStreamEntry];
+        // logType is a top-level field on AuditStreamEntry
+        const raw = f.field === "logType"
+          ? log.logType
+          : log[f.field as keyof AuditStreamEntry];
         const val = String(raw ?? "").toLowerCase();
         const target = f.value.toLowerCase();
         switch (f.operator) {
@@ -289,27 +293,36 @@ export function LogsContainer() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Table column header */}
+        {/* Table column header - fixed widths must match row cells exactly */}
         <div className="flex items-center px-4 py-2 bg-muted/50 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-mono">
+          {/* Checkbox */}
           <div className="w-[42px] shrink-0 flex items-center">
             <input
               type="checkbox"
               className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
             />
           </div>
-          <div className="w-4 shrink-0" />
+          {/* Level dot placeholder */}
+          <div className="w-[16px] mr-2 shrink-0" />
           {table.getAllLeafColumns().filter(c => c.getIsVisible()).map((col) => {
             const label = (col.columnDef.meta as { label?: string })?.label ?? col.id;
             if (col.id === "date")     return <div key={col.id} className="w-[148px] shrink-0">{label}</div>;
-            if (col.id === "status")   return <div key={col.id} className="w-[52px] shrink-0">{label}</div>;
+            if (col.id === "status")   return (
+              <React.Fragment key={col.id}>
+                <div className="w-[52px] shrink-0">{label}</div>
+                {/* Spacer for copy button that appears in rows */}
+                <div className="w-7 shrink-0" />
+              </React.Fragment>
+            );
             if (col.id === "tenant")   return (
               <div key={col.id} className="w-[88px] shrink-0 flex items-center gap-1">
                 <Building2 className="w-3 h-3" />{label}
               </div>
             );
+            // Source: icon-only header, no text
             if (col.id === "source")   return (
-              <div key={col.id} className="w-[80px] shrink-0 flex items-center gap-1">
-                <Cpu className="w-3 h-3" />{label}
+              <div key={col.id} className="w-[28px] shrink-0 flex items-center justify-center">
+                <Cpu className="w-3 h-3" />
               </div>
             );
             if (col.id === "method")   return <div key={col.id} className="w-[56px] shrink-0">{label}</div>;
@@ -319,8 +332,8 @@ export function LogsContainer() {
           })}
         </div>
 
-        {/* Rows feed */}
-        <div className="flex-1 overflow-y-auto divide-y divide-border/30 custom-scrollbar">
+        {/* Rows feed - overflow-x-hidden prevents horizontal scrollbar */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden divide-y divide-border/30 custom-scrollbar-thin">
           {!hasAnyTypeSelected ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
               <Terminal className="w-10 h-10 opacity-20 text-primary" />
@@ -439,7 +452,7 @@ export function LogsContainer() {
                     </div>
                   )}
 
-                  {/* Copy Icon */}
+                  {/* Copy Icon — always occupies w-7 space to keep alignment */}
                   <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
                     className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                     {copiedId === log.id
@@ -448,50 +461,44 @@ export function LogsContainer() {
                     }
                   </button>
 
-                  {/* Divider */}
-                  {(visibleCols.has("tenant") || visibleCols.has("source")) && (
-                    <span className="text-muted-foreground/30 mr-3 shrink-0">—</span>
-                  )}
-
-                  {/* Tenant Column */}
+                  {/* Tenant Column — no dash separator */}
                   {visibleCols.has("tenant") && (
                     <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
                       {log.tenantSlug ? (
                         <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
                           {log.tenantSlug}
                         </span>
-                      ) : <span className="text-muted-foreground/30">—</span>}
+                      ) : <span className="text-muted-foreground/20">—</span>}
                     </div>
                   )}
 
-                  {/* Source Column: includes source icon and re-located badge tooltip */}
+                  {/* Source Column — icon only in narrow w-[28px], full badge tooltip on hover */}
                   {visibleCols.has("source") && (
-                    <div className="w-[80px] shrink-0 font-mono text-[10px] flex items-center gap-1.5">
+                    <div className="w-[28px] shrink-0 flex items-center justify-center">
                       {log.serviceSource ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="flex items-center gap-1 cursor-default">
+                              <span className="flex items-center justify-center cursor-default">
+                                {getSourceIcon(log.serviceSource)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground">
+                              <span className="flex items-center gap-1.5">
                                 {getSourceIcon(log.serviceSource)}
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
                                   log.logGroup
                                     ? `${LOG_GROUPS[log.logGroup]?.color ?? "text-muted-foreground"} ${LOG_GROUPS[log.logGroup]?.accentBg ?? "bg-muted/20"} border-current/20`
                                     : "text-muted-foreground/60 bg-muted/20 border-border/30"
                                 }`}>
-                                  {log.serviceSource.replace("gateway-", "").replace("-gateway", "")}
+                                  {log.serviceSource}
                                 </span>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1 bg-popover border border-border text-foreground">
-                              <span className="flex items-center gap-1.5">
-                                {getSourceIcon(log.serviceSource)}
-                                {log.serviceSource || "unknown"}
                               </span>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       ) : (
-                        <span className="text-muted-foreground/30">—</span>
+                        <span className="text-muted-foreground/20">—</span>
                       )}
                     </div>
                   )}

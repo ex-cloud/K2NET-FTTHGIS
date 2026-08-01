@@ -77,9 +77,14 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const popupWidth = 340;
+      const margin = 8;
+      // Prefer aligning to left of trigger; clamp so popup never exits viewport right edge
+      const rawLeft = rect.left + window.scrollX;
+      const maxLeft = window.innerWidth - popupWidth - margin;
       setCoords({
         top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        left: Math.min(rawLeft, maxLeft),
       });
     }
   }, []);
