@@ -149,6 +149,11 @@ const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
     meta: { label: "Date" },
     enableHiding: true,
   }),
+  columnHelper.accessor("serviceSource", {
+    id: "source",
+    meta: { label: "Source" },
+    enableHiding: true,
+  }),
   columnHelper.accessor("status", {
     id: "status",
     meta: { label: "Status" },
@@ -157,11 +162,6 @@ const LOG_COLUMNS: ColumnDef<AuditStreamEntry, any>[] = [
   columnHelper.accessor("tenantSlug", {
     id: "tenant",
     meta: { label: "Tenant" },
-    enableHiding: true,
-  }),
-  columnHelper.accessor("serviceSource", {
-    id: "source",
-    meta: { label: "Source" },
     enableHiding: true,
   }),
   columnHelper.accessor("method", {
@@ -307,24 +307,18 @@ export function LogsContainer() {
           {table.getAllLeafColumns().filter(c => c.getIsVisible()).map((col) => {
             const label = (col.columnDef.meta as { label?: string })?.label ?? col.id;
             if (col.id === "date")     return <div key={col.id} className="w-[148px] shrink-0">{label}</div>;
+            // Source: blank space header
+            if (col.id === "source")   return <div key={col.id} className="w-[28px] shrink-0" />;
+            // Status: blank space header + copy spacer
             if (col.id === "status")   return (
               <React.Fragment key={col.id}>
-                <div className="w-[52px] shrink-0">{label}</div>
+                <div className="w-[52px] shrink-0" />
                 {/* Spacer for copy button that appears in rows */}
                 <div className="w-7 shrink-0" />
               </React.Fragment>
             );
-            if (col.id === "tenant")   return (
-              <div key={col.id} className="w-[88px] shrink-0 flex items-center gap-1">
-                <Building2 className="w-3 h-3" />{label}
-              </div>
-            );
-            // Source: icon-only header, no text
-            if (col.id === "source")   return (
-              <div key={col.id} className="w-[28px] shrink-0 flex items-center justify-center">
-                <Cpu className="w-3 h-3" />
-              </div>
-            );
+            // Tenant: text only (no icon)
+            if (col.id === "tenant")   return <div key={col.id} className="w-[88px] shrink-0">{label}</div>;
             if (col.id === "method")   return <div key={col.id} className="w-[56px] shrink-0">{label}</div>;
             if (col.id === "pathname") return <div key={col.id} className="w-[140px] shrink-0">{label}</div>;
             if (col.id === "message")  return <div key={col.id} className="flex-1 min-w-0">{label}</div>;
@@ -441,37 +435,6 @@ export function LogsContainer() {
                     </TooltipProvider>
                   )}
 
-                  {/* Status Column */}
-                  {visibleCols.has("status") && (
-                    <div className="w-[52px] shrink-0">
-                      {statusNum ? (
-                        <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
-                      ) : (
-                        <span className="text-muted-foreground/20">—</span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Copy Icon — always occupies w-7 space to keep alignment */}
-                  <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
-                    className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                    {copiedId === log.id
-                      ? <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      : <Copy className="w-3.5 h-3.5" />
-                    }
-                  </button>
-
-                  {/* Tenant Column — no dash separator */}
-                  {visibleCols.has("tenant") && (
-                    <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
-                      {log.tenantSlug ? (
-                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
-                          {log.tenantSlug}
-                        </span>
-                      ) : <span className="text-muted-foreground/20">—</span>}
-                    </div>
-                  )}
-
                   {/* Source Column — icon only in narrow w-[28px], full badge tooltip on hover */}
                   {visibleCols.has("source") && (
                     <div className="w-[28px] shrink-0 flex items-center justify-center">
@@ -500,6 +463,37 @@ export function LogsContainer() {
                       ) : (
                         <span className="text-muted-foreground/20">—</span>
                       )}
+                    </div>
+                  )}
+
+                  {/* Status Column */}
+                  {visibleCols.has("status") && (
+                    <div className="w-[52px] shrink-0">
+                      {statusNum ? (
+                        <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
+                      ) : (
+                        <span className="text-muted-foreground/20">—</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Copy Icon — always occupies w-7 space to keep alignment */}
+                  <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
+                    className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    {copiedId === log.id
+                      ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      : <Copy className="w-3.5 h-3.5" />
+                    }
+                  </button>
+
+                  {/* Tenant Column — no dash separator */}
+                  {visibleCols.has("tenant") && (
+                    <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
+                      {log.tenantSlug ? (
+                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
+                          {log.tenantSlug}
+                        </span>
+                      ) : <span className="text-muted-foreground/20">—</span>}
                     </div>
                   )}
 

@@ -57,7 +57,7 @@ interface ColumnPickerProps {
   onClose: () => void;
 }
 
-function ColumnPicker({ table, anchorRef, onClose }: ColumnPickerProps) {
+function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPickerProps) {
   const [mounted, setMounted] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [coords, setCoords] = React.useState({ top: 0, right: 0 });
@@ -72,7 +72,7 @@ function ColumnPicker({ table, anchorRef, onClose }: ColumnPickerProps) {
         right: window.innerWidth - rect.right + window.scrollX,
       });
     }
-  }, [anchorRef]);
+  }, [anchorRef, columnVisibility]);
 
   React.useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -129,7 +129,7 @@ function ColumnPicker({ table, anchorRef, onClose }: ColumnPickerProps) {
               <input
                 type="checkbox"
                 checked={isVisible}
-                onChange={col.getToggleVisibilityHandler()}
+                onChange={(e) => col.toggleVisibility(e.target.checked)}
                 className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer"
               />
               <span className="text-[11px] text-foreground/80">{label}</span>
@@ -338,7 +338,7 @@ export function LogsTopHeader({
 }) {
   const {
     searchQuery, setSearchQuery,
-    selectedTypes, toggleType,
+    selectedTypes, toggleType, setLogType,
     selectedLevels, toggleLevel,
     isLivePaused, setIsLivePaused,
     showHistogram, setShowHistogram,
@@ -494,7 +494,23 @@ export function LogsTopHeader({
       </div>
 
       {showFilterBuilder && (
-        <FilterBuilder anchorRef={filterAnchorRef} onClose={() => setShowFilterBuilder(false)} onAdd={addAdvancedFilter} />
+        <FilterBuilder
+          anchorRef={filterAnchorRef}
+          onClose={() => setShowFilterBuilder(false)}
+          onAdd={(f) => {
+            if (f.field === "logType") {
+              if (f.operator === "eq") {
+                setLogType(f.value, true);
+                toast.success(`Active filter: Log Type = ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
+              } else if (f.operator === "neq") {
+                setLogType(f.value, false);
+                toast.success(`Deactivated filter: Log Type != ${LOG_TYPES_LABELS[f.value] ?? f.value}`);
+              }
+            } else {
+              addAdvancedFilter(f);
+            }
+          }}
+        />
       )}
       {showColumnPicker && (
         <ColumnPicker

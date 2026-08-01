@@ -125,6 +125,7 @@ export type LogFilterState = {
   setShowHistogram: React.Dispatch<React.SetStateAction<boolean>>;
   selectedTypes: Record<string, boolean>;
   toggleType: (key: string) => void;
+  setLogType: (key: string, enabled: boolean) => void;
   /** Group-level toggle — enables/disables all types within a group */
   selectedGroups: Record<LogGroupKey, boolean>;
   toggleGroup: (key: LogGroupKey) => void;
@@ -296,6 +297,10 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     setSelectedTypes((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const setLogType = (key: string, enabled: boolean) => {
+    setSelectedTypes((prev) => ({ ...prev, [key]: enabled }));
+  };
+
   /**
    * Toggle a whole group — if currently all-on, turns all off. Otherwise turns all on.
    * Also cascades to selectedTypes so individual type checkboxes stay in sync.
@@ -341,7 +346,7 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
         timeRange, setTimeRange,
         isLivePaused, setIsLivePaused,
         showHistogram, setShowHistogram,
-        selectedTypes, toggleType,
+        selectedTypes, toggleType, setLogType,
         selectedGroups, toggleGroup,
         selectedLevels, toggleLevel,
         edgeSubFilters, toggleEdgeSubFilter,
@@ -371,7 +376,7 @@ const DEFAULT_CONTEXT: LogFilterState = {
   timeRange: "1h", setTimeRange: () => {},
   isLivePaused: true, setIsLivePaused: () => {},
   showHistogram: true, setShowHistogram: () => {},
-  selectedTypes: { ...DEFAULT_SELECTED_TYPES }, toggleType: () => {},
+  selectedTypes: { ...DEFAULT_SELECTED_TYPES }, toggleType: () => {}, setLogType: () => {},
   selectedGroups: { ...DEFAULT_SELECTED_GROUPS }, toggleGroup: () => {},
   selectedLevels: { success: true, warning: true, error: true }, toggleLevel: () => {},
   edgeSubFilters: { ...DEFAULT_EDGE_SUB_FILTERS }, toggleEdgeSubFilter: () => {},

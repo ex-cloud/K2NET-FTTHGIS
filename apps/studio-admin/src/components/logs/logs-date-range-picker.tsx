@@ -77,14 +77,14 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 340;
+      const popupWidth = 420;
       const margin = 8;
-      // Prefer aligning to left of trigger; clamp so popup never exits viewport right edge
+      // Prefer aligning to left of trigger; clamp so popup never exits viewport right edge, and is at least 8px from left edge
       const rawLeft = rect.left + window.scrollX;
       const maxLeft = window.innerWidth - popupWidth - margin;
       setCoords({
         top: rect.bottom + window.scrollY,
-        left: Math.min(rawLeft, maxLeft),
+        left: Math.max(margin, Math.min(rawLeft, maxLeft)),
       });
     }
   }, []);
@@ -181,7 +181,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
             top: `${coords.top + 4}px`,
             left: `${coords.left}px`,
           }}
-          className="z-[9999] w-[340px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[420px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
         >
           {/* Quick input at top (e.g. "2h, 30m") */}
           <div className="px-3 pt-3 pb-2 border-b border-border/50">
@@ -208,7 +208,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
 
           <div className="flex bg-card">
             {/* LEFT: Presets */}
-            <div className="w-[140px] border-r border-border/50 flex flex-col p-1.5 gap-0.5">
+            <div className="w-[140px] shrink-0 border-r border-border/50 flex flex-col p-1.5 gap-0.5">
               {PRESETS.map((p) => {
                 const isActive = activePreset === p.value;
                 return (

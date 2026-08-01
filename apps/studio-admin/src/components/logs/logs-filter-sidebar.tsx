@@ -145,7 +145,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
       )}
 
       {/* Scrollable filter content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar-thin p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar-thin p-3 space-y-4">
 
         {/* ─── Time Range ─── */}
         <div className="w-full space-y-1">
@@ -222,7 +222,7 @@ export function LogsFilterSidebar({ onCollapse }: LogsFilterSidebarProps) {
             </div>
 
             {/* Groups */}
-            <div className="space-y-1 font-mono text-[11px] max-h-[260px] overflow-y-auto custom-scrollbar-thin pr-1">
+            <div className="space-y-1 font-mono text-[11px] max-h-[260px] overflow-y-auto overflow-x-hidden custom-scrollbar-thin pr-1">
               {(Object.keys(LOG_GROUPS) as LogGroupKey[]).map((groupKey) => {
                 const group = LOG_GROUPS[groupKey];
                 const GroupIcon = GROUP_ICONS[groupKey];

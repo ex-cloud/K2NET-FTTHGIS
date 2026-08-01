@@ -61,11 +61,22 @@ body {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: transparent;
   border-radius: 999px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease-in-out;
+}
+.custom-scrollbar:hover {
+  scrollbar-color: var(--border) transparent;
 }
 
 .custom-scrollbar-thin::-webkit-scrollbar {
@@ -76,11 +87,22 @@ body {
   background: transparent;
 }
 .custom-scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: transparent;
   border-radius: 999px;
+}
+.custom-scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
 }
 .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
+}
+.custom-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease-in-out;
+}
+.custom-scrollbar-thin:hover {
+  scrollbar-color: var(--border) transparent;
 }
 
 /* ============================================================
