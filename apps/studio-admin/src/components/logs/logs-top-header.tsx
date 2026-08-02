@@ -72,7 +72,10 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
         right: window.innerWidth - rect.right + window.scrollX,
       });
     }
-  }, [anchorRef, columnVisibility]);
+  // columnVisibility intentionally excluded: prop change causes parent re-render
+  // which re-renders ColumnPicker; only recompute coords on mount / anchor change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorRef]);
 
   React.useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -120,7 +123,9 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
       <div className="px-1.5 py-1.5 max-h-[280px] overflow-y-auto custom-scrollbar-thin">
         {filtered.map((col) => {
           const label = (col.columnDef.meta as { label?: string })?.label ?? col.id;
-          const isVisible = col.getIsVisible();
+          // Derive visibility directly from the passed columnVisibility prop to avoid
+          // stale closure issues with col.getIsVisible(). undefined key = visible.
+          const isVisible = (columnVisibility as Record<string, boolean>)?.[col.id] !== false;
           return (
             <label
               key={col.id}

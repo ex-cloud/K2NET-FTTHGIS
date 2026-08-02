@@ -189,6 +189,7 @@ export function LogsContainer() {
     setSelectedLog,
     isLivePaused,
     selectedTypes,
+    selectedLevels,
     setLogTypeCounts,
     tenantFilter,
     timeRange,
@@ -241,6 +242,15 @@ export function LogsContainer() {
       );
     }
 
+    // Apply level filter if not all levels are active
+    const allLevelsActive = Object.values(selectedLevels).every(Boolean);
+    if (!allLevelsActive) {
+      result = result.filter((log) => {
+        const level = getLevel(log);
+        return !!selectedLevels[level];
+      });
+    }
+
     for (const f of advancedFilters) {
       result = result.filter((log) => {
         // logType is a top-level field on AuditStreamEntry
@@ -262,9 +272,11 @@ export function LogsContainer() {
     }
 
     return result;
-  }, [logs, searchQuery, tenantFilter, advancedFilters]);
+  }, [logs, searchQuery, tenantFilter, selectedLevels, advancedFilters]);
 
-  const histogramData = useMemo(() => buildHistogramData(logs), [logs]);
+  // Histogram always uses raw (unfiltered) logs so it shows total activity
+  // even when the type/level filter returns zero results.
+  const histogramData = useMemo(() => buildHistogramData(rawLogs), [rawLogs]);
 
   const table = useReactTable({
     data: filteredLogs,
@@ -340,10 +352,12 @@ export function LogsContainer() {
             <div className="h-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
               <Terminal className="w-10 h-10 opacity-20 text-primary" />
               <p className="font-semibold text-foreground text-xs font-sans">
-                No data to load (0 of {totalCount} rows)
+                No matching events
               </p>
-              <p className="text-[11px] text-muted-foreground/60 font-sans">
-                Try clearing the search or adjusting filters.
+              <p className="text-[11px] text-muted-foreground/60 font-sans text-center max-w-[260px]">
+                {totalCount > 0
+                  ? `${totalCount} raw event${totalCount !== 1 ? "s" : ""} exist — try adjusting the type, level, or time-range filter.`
+                  : "No events received yet. Check your log sources or wait for new events."}
               </p>
             </div>
           ) : (
@@ -537,8 +551,8 @@ export function LogsContainer() {
         <div className="px-6 py-2 border-t border-border bg-muted/20 flex items-center justify-between text-[10px] text-muted-foreground font-mono shrink-0">
           <span>
             {isLivePaused
-              ? `⏸ Paused — ${filteredLogs.length} rows buffered`
-              : `No more data to load (${filteredLogs.length} of ${totalCount} rows)`}
+              ? `⏸ Paused — ${filteredLogs.length} of ${totalCount} events buffered`
+              : `● Live — ${filteredLogs.length} of ${totalCount} events matching`}
           </span>
           <div className="flex items-center gap-2">
             {isLivePaused ? (
