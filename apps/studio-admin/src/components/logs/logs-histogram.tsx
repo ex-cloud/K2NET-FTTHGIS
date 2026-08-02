@@ -168,16 +168,7 @@ export function buildHistogramData(logs: AuditStreamEntry[]): HistogramBucket[] 
     }
   });
 
-  // Fallback demo pattern when no real data is available
-  const hasData = buckets.some((b) => b.success + b.warning + b.error > 0);
-  if (!hasData) {
-    return buckets.map((b, i) => ({
-      ...b,
-      success: Math.floor(Math.sin(i * 0.5) * 4 + 5),
-      warning: i % 7 === 0 ? 2 : 0,
-      error:   i % 11 === 0 ? 1 : 0,
-    }));
-  }
+
 
   return buckets;
 }

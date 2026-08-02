@@ -296,7 +296,13 @@ export function LogsContainer() {
 
   return (
     <div className="flex flex-col h-full w-full bg-background font-mono text-xs overflow-hidden select-none">
-      <LogsTopHeader filteredLogs={filteredLogs} clearLogs={clearLogs} table={table} />
+      <LogsTopHeader
+        filteredLogs={filteredLogs}
+        clearLogs={clearLogs}
+        table={table}
+        columnVisibility={columnVisibility}
+        setColumnVisibility={setColumnVisibility}
+      />
 
       {showHistogram && (
         <div className="bg-muted/20 border-b border-border/60 shrink-0">

@@ -336,10 +336,14 @@ export function LogsTopHeader({
   filteredLogs,
   clearLogs,
   table,
+  columnVisibility,
+  setColumnVisibility,
 }: {
   filteredLogs: AuditStreamEntry[];
   clearLogs: () => void;
   table: Table<AuditStreamEntry>;
+  columnVisibility: any;
+  setColumnVisibility: React.Dispatch<React.SetStateAction<any>>;
 }) {
   const {
     searchQuery, setSearchQuery,
@@ -520,7 +524,7 @@ export function LogsTopHeader({
       {showColumnPicker && (
         <ColumnPicker
           table={table}
-          columnVisibility={table.getState().columnVisibility}
+          columnVisibility={columnVisibility}
           anchorRef={columnBtnRef}
           onClose={() => setShowColumnPicker(false)}
         />

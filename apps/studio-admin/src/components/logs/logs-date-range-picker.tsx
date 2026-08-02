@@ -80,11 +80,18 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const popupWidth = 436;
+      const popupHeight = 360;
       const margin = 8;
       const rawLeft = rect.left + window.scrollX;
       const maxLeft = window.innerWidth - popupWidth - margin;
+      
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < popupHeight && rect.top > popupHeight;
+
       setCoords({
-        top:  rect.bottom + window.scrollY + 4,
+        top:  openUpwards
+          ? rect.top + window.scrollY - popupHeight - 4
+          : rect.bottom + window.scrollY + 4,
         left: Math.max(margin, Math.min(rawLeft, maxLeft)),
       });
     }
@@ -122,12 +129,12 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleApply = () => {
-    if (localRange?.from && localRange?.to) {
+    if (localRange?.from) {
       const from = new Date(localRange.from);
       const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
       from.setHours(fh, fm, fs, 0);
 
-      const to = new Date(localRange.to);
+      const to = new Date(localRange.to || localRange.from);
       const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
       to.setHours(th, tm, ts, 999);
 
@@ -149,11 +156,11 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleCopyRange = () => {
-    if (localRange?.from && localRange?.to) {
+    if (localRange?.from) {
       const from = new Date(localRange.from);
       const { h: fh, m: fm, s: fs } = parseTimeStr(fromTime);
       from.setHours(fh, fm, fs);
-      const to = new Date(localRange.to);
+      const to = new Date(localRange.to || localRange.from);
       const { h: th, m: tm, s: ts } = parseTimeStr(toTime);
       to.setHours(th, tm, ts);
       navigator.clipboard.writeText(
@@ -255,6 +262,9 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   numberOfMonths={1}
                   disabled={{ after: today }}
                   className="text-xs"
+                  classNames={{
+                    month: "relative flex flex-col gap-4",
+                  }}
                 />
               </div>
 
@@ -277,10 +287,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   </button>
                   <button
                     onClick={handleApply}
-                    disabled={!localRange?.from || !localRange?.to}
+                    disabled={!localRange?.from}
                     className={cn(
                       "px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition-colors",
-                      localRange?.from && localRange?.to
+                      localRange?.from
                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed"
                     )}
