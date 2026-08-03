@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, ChevronDown, Copy, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, Copy, RefreshCw } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 
@@ -71,6 +71,33 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   // Time strings for custom range — HH:MM:SS
   const [fromTime, setFromTime] = React.useState("00:00:00");
   const [toTime, setToTime]     = React.useState("23:59:59");
+
+  const [customRelativeInput, setCustomRelativeInput] = React.useState("");
+
+  const handleCustomRelativeSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = customRelativeInput.trim();
+      const match = val.match(/^(\d+)([mhd])$/i);
+      if (match) {
+        const amount = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+        let multiplier = 60 * 1000; // minutes
+        if (unit === "h") multiplier = 60 * 60 * 1000; // hours
+        if (unit === "d") multiplier = 24 * 60 * 60 * 1000; // days
+        
+        const to = new Date();
+        const from = new Date(to.getTime() - amount * multiplier);
+        onChange(`custom:${from.toISOString()}_${to.toISOString()}`);
+        setOpen(false);
+      }
+    }
+  };
+
+  const handleResetTime = () => {
+    setFromTime("00:00:00");
+    setToTime("23:59:59");
+  };
 
   const [coords, setCoords] = React.useState({ top: 0, left: 0 });
 
@@ -198,6 +225,16 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
           <div className="flex bg-card">
             {/* LEFT: Presets list */}
             <div className="w-[160px] shrink-0 border-r border-border/40 flex flex-col py-1.5 gap-0.5">
+              <div className="px-2 pb-1 border-b border-border/10 mb-1">
+                <input
+                  type="text"
+                  placeholder="e.g. 2h, 30m, 7d"
+                  value={customRelativeInput}
+                  onChange={(e) => setCustomRelativeInput(e.target.value)}
+                  onKeyDown={handleCustomRelativeSubmit}
+                  className="w-full bg-muted/30 border border-border/60 rounded px-2 py-0.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/40 transition-colors"
+                />
+              </div>
               <p className="px-3 pt-1 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
                 Quick select
               </p>
@@ -210,7 +247,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                     className={cn(
                       "w-full text-left px-3 py-1.5 text-[11px] transition-colors font-medium rounded-none",
                       isActive
-                        ? "bg-primary/10 text-primary font-semibold"
+                        ? "bg-muted text-foreground font-semibold"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     )}
                   >
@@ -223,34 +260,29 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
             {/* RIGHT: Time + Calendar */}
             <div className="flex-1 flex flex-col">
               {/* ── Time pickers at TOP (like Supabase) ── */}
-              <div className="px-3 pt-3 pb-2 border-b border-border/40 space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 font-semibold uppercase tracking-wider">
-                  <Clock className="w-3 h-3 text-primary" />
-                  Custom time range
-                </div>
-                <div className="flex items-center gap-2 font-mono">
-                  <div className="flex flex-col gap-0.5 flex-1">
-                    <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Start</span>
-                    <input
-                      type="time"
-                      step="1"
-                      value={fromTime}
-                      onChange={(e) => setFromTime(e.target.value)}
-                      className="w-full bg-muted/30 border border-border/60 rounded-md px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors"
-                    />
-                  </div>
-                  <span className="text-muted-foreground/40 mt-4 shrink-0">→</span>
-                  <div className="flex flex-col gap-0.5 flex-1">
-                    <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">End</span>
-                    <input
-                      type="time"
-                      step="1"
-                      value={toTime}
-                      onChange={(e) => setToTime(e.target.value)}
-                      className="w-full bg-muted/30 border border-border/60 rounded-md px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors"
-                    />
-                  </div>
-                </div>
+              <div className="px-3 pt-2 pb-1.5 border-b border-border/40 flex items-center justify-between gap-1.5 font-mono">
+                <input
+                  type="time"
+                  step="1"
+                  value={fromTime}
+                  onChange={(e) => setFromTime(e.target.value)}
+                  className="bg-muted/30 border border-border/60 rounded px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors text-center w-[104px] shrink-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-clear-button]:hidden"
+                />
+                <span className="text-muted-foreground/30 text-[10px]">→</span>
+                <input
+                  type="time"
+                  step="1"
+                  value={toTime}
+                  onChange={(e) => setToTime(e.target.value)}
+                  className="bg-muted/30 border border-border/60 rounded px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors text-center w-[104px] shrink-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-clear-button]:hidden"
+                />
+                <button
+                  onClick={handleResetTime}
+                  title="Reset times"
+                  className="p-1 rounded hover:bg-muted text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
               </div>
 
               {/* ── Calendar ── */}
