@@ -379,7 +379,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Calendar ── */}
-              <div className="border-t border-border/40 flex justify-center py-2.5 px-[14px]">
+              <div className="border-t border-border/40 flex justify-center py-1 px-[2px]">
                 <Calendar
                   mode="range"
                   selected={localRange}
