@@ -259,7 +259,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       >
         <span className="flex items-center gap-1.5 truncate">
           <CalendarIcon className="w-3 h-3 text-primary shrink-0" />
-          {getDisplayLabel(value)}
+          {mounted ? getDisplayLabel(value) : "Loading..."}
         </span>
         <ChevronDown className={cn("w-3 h-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
