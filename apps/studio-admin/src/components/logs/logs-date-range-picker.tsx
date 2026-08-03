@@ -106,7 +106,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 440;
+      const popupWidth = 480;
       const popupHeight = 360;
       const margin = 8;
       const rawLeft = rect.left + window.scrollX;
@@ -231,11 +231,11 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <div
           ref={contentRef}
           style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[440px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
         >
           <div className="flex bg-card">
             {/* LEFT: Presets list */}
-            <div className="w-[160px] shrink-0 border-r border-border/40 flex flex-col p-2 gap-px">
+            <div className="w-[200px] shrink-0 border-r border-border/40 flex flex-col p-2 gap-px">
               <input
                 type="text"
                 placeholder="e.g. 2h, 30m, 7d"
@@ -379,7 +379,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Calendar ── */}
-              <div className="border-t flex justify-center py-2.5">
+              <div className="border-t border-border/40 flex justify-center py-2.5">
                 <Calendar
                   mode="range"
                   selected={localRange}
@@ -400,7 +400,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Footer actions ── */}
-              <div className="flex items-center justify-end gap-2 p-2 border-t">
+              <div className="flex items-center justify-end gap-2 p-2 border-t border-border/40">
                 <button
                   type="button"
                   onClick={handleCopyRange}
