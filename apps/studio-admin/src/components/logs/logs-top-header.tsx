@@ -33,7 +33,7 @@ import { cn } from "@k2net/ui";
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
-  "logType", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource",
+  "logType", "status", "method", "pathname", "actor", "message", "tenantSlug", "serviceSource", "level",
 ];
 
 const FILTER_OPERATORS: AdvancedFilterOperator[] = [
@@ -45,6 +45,7 @@ const FIELD_SUGGESTIONS: Partial<Record<AdvancedFilterField, string[]>> = {
   method:        ["GET", "POST", "PUT", "PATCH", "DELETE"],
   status:        ["200", "201", "204", "400", "401", "403", "404", "500"],
   serviceSource: ["kong-gateway", "keycloak", "backend", "gateway-audit", "gateway-notification"],
+  level:         ["success", "warning", "error"],
 };
 
 // ─── Column Toggle Popover ────────────────────────────────────────────────────

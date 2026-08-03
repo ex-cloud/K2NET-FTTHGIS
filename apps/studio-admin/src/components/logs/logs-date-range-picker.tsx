@@ -43,7 +43,7 @@ function getDisplayLabel(value: string): string {
     if (parts.length === 2) {
       const from = new Date(parts[0]);
       const to = new Date(parts[1]);
-      return `${format(from, "MMM d HH:mm:ss")} → ${format(to, "MMM d HH:mm:ss")}`;
+      return `${format(from, "MMM d, HH:mm")} → ${format(to, "MMM d, HH:mm")}`;
     }
   }
   const preset = PRESETS.find((p) => p.value === value);
@@ -261,9 +261,11 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   onSelect={setLocalRange}
                   numberOfMonths={1}
                   disabled={{ after: today }}
-                  className="text-xs"
+                  className="text-xs relative"
                   classNames={{
                     month: "relative flex flex-col gap-4",
+                    button_previous: "absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    button_next: "absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
                   }}
                 />
               </div>

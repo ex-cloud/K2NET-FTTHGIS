@@ -253,11 +253,15 @@ export function LogsContainer() {
 
     for (const f of advancedFilters) {
       result = result.filter((log) => {
-        // logType is a top-level field on AuditStreamEntry
-        const raw = f.field === "logType"
-          ? log.logType
-          : log[f.field as keyof AuditStreamEntry];
-        const val = String(raw ?? "").toLowerCase();
+        let raw = "";
+        if (f.field === "logType") {
+          raw = log.logType;
+        } else if (f.field === "level") {
+          raw = getLevel(log);
+        } else {
+          raw = String(log[f.field as keyof AuditStreamEntry] ?? "");
+        }
+        const val = raw.toLowerCase();
         const target = f.value.toLowerCase();
         switch (f.operator) {
           case "eq":           return val === target;
@@ -418,16 +422,18 @@ export function LogsContainer() {
                   </div>
 
                   {/* Level dot */}
-                  <span className={`w-2 h-2 rounded-full shrink-0 mr-2 ${
-                    isError ? "bg-rose-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"
-                  }`} />
+                  <div className="w-[16px] mr-2 shrink-0 flex items-center justify-center">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                      isError ? "bg-rose-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"
+                    }`} />
+                  </div>
 
                   {/* Date Column with Supabase-style Date details Tooltip */}
                   {visibleCols.has("date") && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center cursor-default">
+                          <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
                             {formattedDate}
                           </span>
                         </TooltipTrigger>
@@ -462,7 +468,7 @@ export function LogsContainer() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="flex items-center justify-center cursor-default">
+                              <span className="flex items-center justify-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
                                 {getSourceIcon(log.serviceSource)}
                               </span>
                             </TooltipTrigger>
@@ -486,25 +492,26 @@ export function LogsContainer() {
                     </div>
                   )}
 
-                  {/* Status Column */}
+                   {/* Status Column + Copy Icon */}
                   {visibleCols.has("status") && (
-                    <div className="w-[52px] shrink-0">
-                      {statusNum ? (
-                        <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
-                      ) : (
-                        <span className="text-muted-foreground/20">—</span>
-                      )}
-                    </div>
+                    <React.Fragment>
+                      <div className="w-[52px] shrink-0">
+                        {statusNum ? (
+                          <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
+                        ) : (
+                          <span className="text-muted-foreground/20">—</span>
+                        )}
+                      </div>
+                      {/* Copy Icon — occupies w-7 space to keep alignment */}
+                      <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
+                        className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                        {copiedId === log.id
+                          ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          : <Copy className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    </React.Fragment>
                   )}
-
-                  {/* Copy Icon — always occupies w-7 space to keep alignment */}
-                  <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
-                    className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                    {copiedId === log.id
-                      ? <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      : <Copy className="w-3.5 h-3.5" />
-                    }
-                  </button>
 
                   {/* Tenant Column — no dash separator */}
                   {visibleCols.has("tenant") && (
