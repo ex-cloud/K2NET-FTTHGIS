@@ -95,9 +95,47 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleResetTime = () => {
-    setFromTime("00:00:00");
-    setToTime("23:59:59");
+    const { range } = parseValue(value);
+    if (range?.from) {
+      const hh = String(range.from.getHours()).padStart(2, "0");
+      const mm = String(range.from.getMinutes()).padStart(2, "0");
+      const ss = String(range.from.getSeconds()).padStart(2, "0");
+      setFromTime(`${hh}:${mm}:${ss}`);
+    } else {
+      setFromTime("00:00:00");
+    }
+    if (range?.to) {
+      const hh = String(range.to.getHours()).padStart(2, "0");
+      const mm = String(range.to.getMinutes()).padStart(2, "0");
+      const ss = String(range.to.getSeconds()).padStart(2, "0");
+      setToTime(`${hh}:${mm}:${ss}`);
+    } else {
+      setToTime("23:59:59");
+    }
   };
+
+  React.useEffect(() => {
+    if (open) {
+      const { range } = parseValue(value);
+      if (range?.from) {
+        const hh = String(range.from.getHours()).padStart(2, "0");
+        const mm = String(range.from.getMinutes()).padStart(2, "0");
+        const ss = String(range.from.getSeconds()).padStart(2, "0");
+        setFromTime(`${hh}:${mm}:${ss}`);
+      } else {
+        setFromTime("00:00:00");
+      }
+      if (range?.to) {
+        const hh = String(range.to.getHours()).padStart(2, "0");
+        const mm = String(range.to.getMinutes()).padStart(2, "0");
+        const ss = String(range.to.getSeconds()).padStart(2, "0");
+        setToTime(`${hh}:${mm}:${ss}`);
+      } else {
+        setToTime("23:59:59");
+      }
+      setLocalRange(range);
+    }
+  }, [open, value]);
 
   const [coords, setCoords] = React.useState({ top: 0, left: 0 });
 
