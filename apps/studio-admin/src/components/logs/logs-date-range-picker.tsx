@@ -3,21 +3,21 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, ChevronDown, Copy, RefreshCw } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, Copy, History } from "lucide-react";
 import { Calendar, cn } from "@k2net/ui";
 import type { DateRange } from "react-day-picker";
 
 // ─── Preset options like Supabase ────────────────────────────────────────────
 
 const PRESETS = [
-  { label: "Last 10 minutes",   value: "10m"  },
-  { label: "Last 30 minutes",   value: "30m"  },
-  { label: "Last 60 minutes",   value: "1h"   },
-  { label: "Last 3 hours",      value: "3h"   },
-  { label: "Last 24 hours",     value: "24h"  },
-  { label: "Last 7 days",       value: "7d"   },
-  { label: "Last 14 days",      value: "14d"  },
-  { label: "Last 28 days",      value: "28d"  },
+  { label: "Last 10 minutes", value: "10m" },
+  { label: "Last 30 minutes", value: "30m" },
+  { label: "Last 60 minutes", value: "1h" },
+  { label: "Last 3 hours", value: "3h" },
+  { label: "Last 24 hours", value: "24h" },
+  { label: "Last 7 days", value: "7d" },
+  { label: "Last 14 days", value: "14d" },
+  { label: "Last 28 days", value: "28d" },
 ];
 
 interface LogsDateRangePickerProps {
@@ -70,7 +70,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const [localRange, setLocalRange] = React.useState<DateRange | undefined>(customRange);
   // Time strings for custom range — HH:MM:SS
   const [fromTime, setFromTime] = React.useState("00:00:00");
-  const [toTime, setToTime]     = React.useState("23:59:59");
+  const [toTime, setToTime] = React.useState("23:59:59");
 
   const [customRelativeInput, setCustomRelativeInput] = React.useState("");
 
@@ -85,7 +85,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         let multiplier = 60 * 1000; // minutes
         if (unit === "h") multiplier = 60 * 60 * 1000; // hours
         if (unit === "d") multiplier = 24 * 60 * 60 * 1000; // days
-        
+
         const to = new Date();
         const from = new Date(to.getTime() - amount * multiplier);
         onChange(`custom:${from.toISOString()}_${to.toISOString()}`);
@@ -106,17 +106,17 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 480;
+      const popupWidth = 440;
       const popupHeight = 360;
       const margin = 8;
       const rawLeft = rect.left + window.scrollX;
       const maxLeft = window.innerWidth - popupWidth - margin;
-      
+
       const spaceBelow = window.innerHeight - rect.bottom;
       const openUpwards = spaceBelow < popupHeight && rect.top > popupHeight;
 
       setCoords({
-        top:  openUpwards
+        top: openUpwards
           ? rect.top + window.scrollY - popupHeight - 4
           : rect.bottom + window.scrollY + 4,
         left: Math.max(margin, Math.min(rawLeft, maxLeft)),
@@ -196,6 +196,17 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
     }
   };
 
+  const { h: fromHNum, m: fromMNum, s: fromSNum } = parseTimeStr(fromTime);
+  const { h: toHNum, m: toMNum, s: toSNum } = parseTimeStr(toTime);
+
+  const fromHStr = String(fromHNum).padStart(2, "0");
+  const fromMStr = String(fromMNum).padStart(2, "0");
+  const fromSStr = String(fromSNum).padStart(2, "0");
+
+  const toHStr = String(toHNum).padStart(2, "0");
+  const toMStr = String(toMNum).padStart(2, "0");
+  const toSStr = String(toSNum).padStart(2, "0");
+
   return (
     <div className="w-full">
       {/* Trigger Button */}
@@ -220,73 +231,155 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <div
           ref={contentRef}
           style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[440px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
         >
           <div className="flex bg-card">
             {/* LEFT: Presets list */}
-            <div className="w-[160px] shrink-0 border-r border-border/40 flex flex-col py-1.5 gap-0.5">
-              <div className="px-2 pb-1 border-b border-border/10 mb-1">
-                <input
-                  type="text"
-                  placeholder="e.g. 2h, 30m, 7d"
-                  value={customRelativeInput}
-                  onChange={(e) => setCustomRelativeInput(e.target.value)}
-                  onKeyDown={handleCustomRelativeSubmit}
-                  className="w-full bg-muted/30 border border-border/60 rounded px-2 py-0.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/40 transition-colors"
-                />
+            <div className="w-[160px] shrink-0 border-r border-border/40 flex flex-col p-2 gap-px">
+              <input
+                type="text"
+                placeholder="e.g. 2h, 30m, 7d"
+                value={customRelativeInput}
+                onChange={(e) => setCustomRelativeInput(e.target.value)}
+                onKeyDown={handleCustomRelativeSubmit}
+                className="flex w-full border border-border bg-foreground/[.026] placeholder:text-muted-foreground/40 px-3 py-2 mb-2 text-xs h-7 rounded-sm focus:outline-none focus:border-border/80 transition-colors font-sans"
+              />
+              <div className="flex flex-col gap-px">
+                {PRESETS.map((p) => {
+                  const isActive = activePreset === p.value;
+                  return (
+                    <label
+                      key={p.value}
+                      onClick={() => handlePreset(p.value)}
+                      className={cn(
+                        "px-4 py-1.5 flex items-center justify-between text-xs w-full cursor-pointer transition-all rounded-sm",
+                        isActive
+                          ? "bg-muted text-foreground font-semibold"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                        )}
+                        {p.label}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
-              <p className="px-3 pt-1 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                Quick select
-              </p>
-              {PRESETS.map((p) => {
-                const isActive = activePreset === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    onClick={() => handlePreset(p.value)}
-                    className={cn(
-                      "w-full text-left px-3 py-1.5 text-[11px] transition-colors font-medium rounded-none",
-                      isActive
-                        ? "bg-muted text-foreground font-semibold"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
             </div>
 
             {/* RIGHT: Time + Calendar */}
             <div className="flex-1 flex flex-col">
               {/* ── Time pickers at TOP (like Supabase) ── */}
-              <div className="px-3 pt-2 pb-1.5 border-b border-border/40 flex items-center justify-between gap-1.5 font-mono">
-                <input
-                  type="time"
-                  step="1"
-                  value={fromTime}
-                  onChange={(e) => setFromTime(e.target.value)}
-                  className="bg-muted/30 border border-border/60 rounded px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors text-center w-[104px] shrink-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-clear-button]:hidden"
-                />
-                <span className="text-muted-foreground/30 text-[10px]">→</span>
-                <input
-                  type="time"
-                  step="1"
-                  value={toTime}
-                  onChange={(e) => setToTime(e.target.value)}
-                  className="bg-muted/30 border border-border/60 rounded px-2 py-1 text-[11px] font-mono text-foreground focus:outline-none focus:border-primary/60 transition-colors text-center w-[104px] shrink-0 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-clear-button]:hidden"
-                />
-                <button
-                  onClick={handleResetTime}
-                  title="Reset times"
-                  className="p-1 rounded hover:bg-muted text-muted-foreground/60 hover:text-foreground transition-colors shrink-0"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex p-2 gap-2 items-center">
+                <div className="flex grow gap-2 font-mono">
+                  {/* Start Time Widget */}
+                  <div className="flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors w-[100px] shrink-0">
+                    <input
+                      type="text"
+                      pattern="[0-23]*"
+                      placeholder="00"
+                      aria-label="Hours"
+                      value={fromHStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const h = Math.min(23, parseInt(val) || 0);
+                        setFromTime(`${String(h).padStart(2, "0")}:${fromMStr}:${fromSStr}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                    <span className="text-muted-foreground/40">:</span>
+                    <input
+                      type="text"
+                      pattern="[0-59]*"
+                      placeholder="00"
+                      aria-label="Minutes"
+                      value={fromMStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const m = Math.min(59, parseInt(val) || 0);
+                        setFromTime(`${fromHStr}:${String(m).padStart(2, "0")}:${fromSStr}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                    <span className="text-muted-foreground/40">:</span>
+                    <input
+                      type="text"
+                      pattern="[0-59]*"
+                      placeholder="00"
+                      aria-label="Seconds"
+                      value={fromSStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const s = Math.min(59, parseInt(val) || 0);
+                        setFromTime(`${fromHStr}:${fromMStr}:${String(s).padStart(2, "0")}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* End Time Widget */}
+                  <div className="flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors w-[100px] shrink-0">
+                    <input
+                      type="text"
+                      pattern="[0-23]*"
+                      placeholder="00"
+                      aria-label="Hours"
+                      value={toHStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const h = Math.min(23, parseInt(val) || 0);
+                        setToTime(`${String(h).padStart(2, "0")}:${toMStr}:${toSStr}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                    <span className="text-muted-foreground/40">:</span>
+                    <input
+                      type="text"
+                      pattern="[0-59]*"
+                      placeholder="00"
+                      aria-label="Minutes"
+                      value={toMStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const m = Math.min(59, parseInt(val) || 0);
+                        setToTime(`${toHStr}:${String(m).padStart(2, "0")}:${toSStr}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                    <span className="text-muted-foreground/40">:</span>
+                    <input
+                      type="text"
+                      pattern="[0-59]*"
+                      placeholder="00"
+                      aria-label="Seconds"
+                      value={toSStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        const s = Math.min(59, parseInt(val) || 0);
+                        setToTime(`${toHStr}:${toMStr}:${String(s).padStart(2, "0")}`);
+                      }}
+                      className="w-4 p-0 text-center text-xs text-foreground bg-transparent border-none outline-none focus:ring-0 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="shrink">
+                  <button
+                    type="button"
+                    onClick={handleResetTime}
+                    title="Reset times"
+                    className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-transparent text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors shrink-0"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               {/* ── Calendar ── */}
-              <div className="px-3 py-2.5 flex justify-center">
+              <div className="border-t flex justify-center py-2.5">
                 <Calendar
                   mode="range"
                   selected={localRange}
@@ -298,44 +391,43 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                     month: "relative flex flex-col gap-2.5",
                     button_previous: "absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
                     button_next: "absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                    weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
-                    day: "h-8 w-8 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                    week: "flex w-full mt-1",
+                    day_button: "h-9 w-9 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    weekday: "text-muted-foreground rounded-md w-9 font-normal text-[11px] pb-1 text-center",
+                    day: "h-9 w-9 relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                    week: "flex w-full mt-2",
                   }}
                 />
               </div>
 
               {/* ── Footer actions ── */}
-              <div className="px-3 pb-3 pt-1.5 border-t border-border/40 flex items-center justify-between gap-2">
+              <div className="flex items-center justify-end gap-2 p-2 border-t">
                 <button
+                  type="button"
                   onClick={handleCopyRange}
-                  title="Copy date range"
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors font-mono"
+                  className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors hover:bg-muted text-xs h-[26px] px-2.5 text-muted-foreground hover:text-foreground"
                 >
-                  <Copy className="w-3 h-3" />
-                  Copy range
+                  <span className="truncate">Copy range</span>
                 </button>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={handleToday}
-                    className="px-2.5 py-1 rounded-md border border-border/60 text-[11px] font-mono text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={handleApply}
-                    disabled={!localRange?.from}
-                    className={cn(
-                      "px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold transition-colors",
-                      localRange?.from
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed"
-                    )}
-                  >
-                    Apply
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleToday}
+                  className="relative inline-flex items-center justify-center cursor-pointer text-center font-normal rounded-md transition-colors border border-border bg-muted/40 hover:bg-muted text-xs h-[26px] px-2.5 text-foreground"
+                >
+                  <span className="truncate">Today</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  disabled={!localRange?.from}
+                  className={cn(
+                    "relative inline-flex items-center justify-center cursor-pointer text-center font-medium rounded-md transition-colors text-xs h-[26px] px-2.5",
+                    localRange?.from
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-border/40"
+                  )}
+                >
+                  <span className="truncate">Apply</span>
+                </button>
               </div>
             </div>
           </div>
