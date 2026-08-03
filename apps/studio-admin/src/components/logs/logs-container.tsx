@@ -437,7 +437,7 @@ export function LogsContainer() {
                             {formattedDate}
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="z-50 p-3 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl w-[260px] select-none">
+                        <TooltipContent side="top" className="z-50 p-3 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl w-[260px] select-none [&_svg]:!hidden">
                           <div className="space-y-1.5">
                             <div className="flex justify-between gap-4">
                               <span className="text-muted-foreground font-semibold">UTC</span>
@@ -472,7 +472,7 @@ export function LogsContainer() {
                                 {getSourceIcon(log.serviceSource)}
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground">
+                            <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
                               <span className="flex items-center gap-1.5">
                                 {getSourceIcon(log.serviceSource)}
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${

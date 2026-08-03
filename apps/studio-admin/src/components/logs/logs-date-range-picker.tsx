@@ -79,7 +79,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   const updateCoords = React.useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const popupWidth = 436;
+      const popupWidth = 480;
       const popupHeight = 360;
       const margin = 8;
       const rawLeft = rect.left + window.scrollX;
@@ -193,11 +193,11 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <div
           ref={contentRef}
           style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[436px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
         >
           <div className="flex bg-card">
             {/* LEFT: Presets list */}
-            <div className="w-[148px] shrink-0 border-r border-border/40 flex flex-col py-1.5 gap-0.5">
+            <div className="w-[160px] shrink-0 border-r border-border/40 flex flex-col py-1.5 gap-0.5">
               <p className="px-3 pt-1 pb-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
                 Quick select
               </p>
@@ -254,18 +254,21 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Calendar ── */}
-              <div className="px-2 py-1">
+              <div className="px-3 py-2.5 flex justify-center">
                 <Calendar
                   mode="range"
                   selected={localRange}
                   onSelect={setLocalRange}
                   numberOfMonths={1}
                   disabled={{ after: today }}
-                  className="text-xs relative"
+                  className="text-xs relative p-0"
                   classNames={{
-                    month: "relative flex flex-col gap-4",
-                    button_previous: "absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                    button_next: "absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    month: "relative flex flex-col gap-2.5",
+                    button_previous: "absolute left-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    button_next: "absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+                    day_button: "h-8 w-8 rounded-md font-normal text-xs transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    weekday: "text-muted-foreground rounded-md w-8 font-normal text-[11px] pb-1 text-center",
+                    day: "relative p-0 text-center text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-primary/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
                   }}
                 />
               </div>
