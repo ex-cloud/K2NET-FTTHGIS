@@ -273,8 +273,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
             {/* RIGHT: Time + Calendar */}
             <div className="flex-1 flex flex-col">
               {/* ── Time pickers at TOP (like Supabase) ── */}
-              <div className="flex px-[14px] py-2 gap-2 items-center justify-between">
-                <div className="flex grow gap-2 font-mono">
+              <div className="w-full flex px-[14px] py-2 gap-2 items-center justify-between">
+                <div className="flex-1 flex gap-2 font-mono">
                   {/* Start Time Widget */}
                   <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors">
                     <input
@@ -366,7 +366,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   </div>
                 </div>
 
-                <div className="shrink">
+                <div className="shrink-0">
                   <button
                     type="button"
                     onClick={handleResetTime}
