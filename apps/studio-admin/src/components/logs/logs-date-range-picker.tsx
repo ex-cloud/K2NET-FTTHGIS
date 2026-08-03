@@ -273,10 +273,10 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
             {/* RIGHT: Time + Calendar */}
             <div className="flex-1 flex flex-col">
               {/* ── Time pickers at TOP (like Supabase) ── */}
-              <div className="flex p-2 gap-2 items-center">
+              <div className="flex px-[14px] py-2 gap-2 items-center justify-between">
                 <div className="flex grow gap-2 font-mono">
                   {/* Start Time Widget */}
-                  <div className="flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors w-[100px] shrink-0">
+                  <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors">
                     <input
                       type="text"
                       pattern="[0-23]*"
@@ -321,7 +321,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
                   </div>
 
                   {/* End Time Widget */}
-                  <div className="flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors w-[100px] shrink-0">
+                  <div className="flex-1 flex h-7 items-center justify-center gap-0.5 rounded-sm border border-border bg-muted/20 text-xs px-2 hover:border-border/80 transition-colors">
                     <input
                       type="text"
                       pattern="[0-23]*"
@@ -379,7 +379,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Calendar ── */}
-              <div className="border-t border-border/40 flex justify-center py-2.5">
+              <div className="border-t border-border/40 flex justify-center py-2.5 px-[14px]">
                 <Calendar
                   mode="range"
                   selected={localRange}
@@ -400,7 +400,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
               </div>
 
               {/* ── Footer actions ── */}
-              <div className="flex items-center justify-end gap-2 p-2 border-t border-border/40">
+              <div className="flex items-center justify-end gap-2 px-[14px] py-2 border-t border-border/40">
                 <button
                   type="button"
                   onClick={handleCopyRange}
