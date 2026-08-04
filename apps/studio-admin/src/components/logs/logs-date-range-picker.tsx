@@ -50,6 +50,20 @@ function getDisplayLabel(value: string): string {
   return preset ? preset.label : value;
 }
 
+function getPresetRange(preset: string): { from: Date; to: Date } {
+  const to = new Date();
+  const match = preset.match(/^(\d+)([mhd])$/i);
+  if (match) {
+    const amount = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    let multiplier = 60 * 1000;
+    if (unit === "h") multiplier = 60 * 60 * 1000;
+    if (unit === "d") multiplier = 24 * 60 * 60 * 1000;
+    return { from: new Date(to.getTime() - amount * multiplier), to };
+  }
+  return { from: new Date(to.getTime() - 60 * 60 * 1000), to };
+}
+
 /** Parse "HH:MM:SS" or "HH:MM" string → { h, m, s } */
 function parseTimeStr(t: string): { h: number; m: number; s: number } {
   const [h = 0, m = 0, s = 0] = t.split(":").map(Number);
@@ -95,40 +109,29 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleResetTime = () => {
-    const { range } = parseValue(value);
-    if (range?.from) {
-      const hh = String(range.from.getHours()).padStart(2, "0");
-      const mm = String(range.from.getMinutes()).padStart(2, "0");
-      const ss = String(range.from.getSeconds()).padStart(2, "0");
-      setFromTime(`${hh}:${mm}:${ss}`);
-    } else {
-      setFromTime("00:00:00");
-    }
-    if (range?.to) {
-      const hh = String(range.to.getHours()).padStart(2, "0");
-      const mm = String(range.to.getMinutes()).padStart(2, "0");
-      const ss = String(range.to.getSeconds()).padStart(2, "0");
-      setToTime(`${hh}:${mm}:${ss}`);
-    } else {
-      setToTime("23:59:59");
-    }
+    setFromTime("00:00:00");
+    setToTime("23:59:59");
   };
 
   React.useEffect(() => {
     if (open) {
-      const { range } = parseValue(value);
-      if (range?.from) {
-        const hh = String(range.from.getHours()).padStart(2, "0");
-        const mm = String(range.from.getMinutes()).padStart(2, "0");
-        const ss = String(range.from.getSeconds()).padStart(2, "0");
+      const { preset, range } = parseValue(value);
+      let activeRange = range;
+      if (preset) {
+        activeRange = getPresetRange(preset);
+      }
+      if (activeRange?.from) {
+        const hh = String(activeRange.from.getHours()).padStart(2, "0");
+        const mm = String(activeRange.from.getMinutes()).padStart(2, "0");
+        const ss = String(activeRange.from.getSeconds()).padStart(2, "0");
         setFromTime(`${hh}:${mm}:${ss}`);
       } else {
         setFromTime("00:00:00");
       }
-      if (range?.to) {
-        const hh = String(range.to.getHours()).padStart(2, "0");
-        const mm = String(range.to.getMinutes()).padStart(2, "0");
-        const ss = String(range.to.getSeconds()).padStart(2, "0");
+      if (activeRange?.to) {
+        const hh = String(activeRange.to.getHours()).padStart(2, "0");
+        const mm = String(activeRange.to.getMinutes()).padStart(2, "0");
+        const ss = String(activeRange.to.getSeconds()).padStart(2, "0");
         setToTime(`${hh}:${mm}:${ss}`);
       } else {
         setToTime("23:59:59");
