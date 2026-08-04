@@ -13,11 +13,14 @@ async function queryPrometheus(query: string): Promise<any[]> {
 
 async function queryPrometheusRange(
   query: string,
-  step = "2m"
+  step = "2m",
+  startSec?: number,
+  endSec?: number,
 ): Promise<any[]> {
   const now = Math.floor(Date.now() / 1000);
-  const start = now - 60 * 30; // 30 minutes ago
-  const url = `${PROMETHEUS_URL}/api/v1/query_range?query=${encodeURIComponent(query)}&start=${start}&end=${now}&step=${step}`;
+  const start = startSec ?? now - 60 * 30; // default: 30 minutes ago
+  const end   = endSec   ?? now;
+  const url = `${PROMETHEUS_URL}/api/v1/query_range?query=${encodeURIComponent(query)}&start=${start}&end=${end}&step=${step}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Prometheus range error: ${res.status}`);
   const data = await res.json();
@@ -119,26 +122,46 @@ export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
   }
 }
 
-export async function getSystemThroughput(): Promise<ThroughputPoint[]> {
+export async function getSystemThroughput(
+  options?: { startMs?: number; endMs?: number }
+): Promise<ThroughputPoint[]> {
   try {
+    const nowMs   = Date.now();
+    const endMs   = options?.endMs   ?? nowMs;
+    const startMs = options?.startMs ?? nowMs - 30 * 60 * 1000; // default: last 30 min
+
+    const startSec = Math.floor(startMs / 1000);
+    const endSec   = Math.floor(endMs   / 1000);
+    const rangeSec = endSec - startSec;
+
+    // Smart step: target ~15 data points regardless of range size
+    const rawStep = Math.max(60, Math.round(rangeSec / 15));
+    const step = rawStep >= 86400 ? `${Math.round(rawStep / 3600)}h`
+               : rawStep >= 3600  ? `${Math.round(rawStep / 60)}m`
+               : `${rawStep}s`;
+
+    // Locale format: show date+time for ranges > 6h, else time only
+    const showDate = rangeSec > 6 * 3600;
+    const formatOpts: Intl.DateTimeFormatOptions = showDate
+      ? { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+      : { hour: "2-digit", minute: "2-digit" };
+
     // Combined ingress HTTP traffic rate (Gateways + Spring Boot Core)
     const results = await queryPrometheusRange(
       `sum(rate(gateway_http_requests_total[2m])) + (sum(rate(http_server_requests_seconds_count[2m])) or vector(0))`,
-      "2m"
+      step,
+      startSec,
+      endSec,
     );
 
     if (!results || results.length === 0 || !results[0]?.values || results[0].values.length === 0) {
       // Fallback: Generate a realistic wave-like simulation trend when Prometheus has 0 traffic or is offline
-      const now = Date.now();
       return Array.from({ length: 15 }, (_, i) => {
-        const timeVal = new Date(now - (14 - i) * 2 * 60 * 1000);
-        const wave = Math.sin(i * 0.5) * 8 + 15; // 7 to 23 req/min wave
+        const timeVal = new Date(startMs + (i / 14) * (endMs - startMs));
+        const wave = Math.sin(i * 0.5) * 8 + 15;
         const jitter = Math.cos(i * 1.7) * 3;
         return {
-          time: timeVal.toLocaleTimeString("id-ID", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          time: timeVal.toLocaleString("id-ID", formatOpts),
           requests: parseFloat(Math.max(2, wave + jitter).toFixed(1)),
         };
       });
@@ -146,11 +169,8 @@ export async function getSystemThroughput(): Promise<ThroughputPoint[]> {
 
     const values: [number, string][] = results[0]?.values ?? [];
     // Convert requests/sec from Prometheus to requests/minute (* 60) for user readability
-    return values.slice(-15).map(([ts, val]: [number, string]) => ({
-      time: new Date(ts * 1000).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+    return values.slice(-50).map(([ts, val]: [number, string]) => ({
+      time: new Date(ts * 1000).toLocaleString("id-ID", formatOpts),
       requests: parseFloat((parseFloat(val) * 60).toFixed(1)),
     }));
   } catch (err) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
 import {
@@ -17,9 +17,11 @@ import {
   LayoutGrid,
   ArrowRight,
   ExternalLink,
+  CalendarDays,
 } from "lucide-react";
 import { getSystemHealthMetrics, getSystemThroughput, ThroughputPoint } from "@/lib/actions/health";
 import { useServiceHealthSparkline, ServiceHealthRow } from "@/hooks/useServiceHealthSparkline";
+import { LogsDateRangePicker } from "@/components/logs/logs-date-range-picker";
 import {
   AreaChart,
   Area,
@@ -65,6 +67,35 @@ function KpiCard({
   );
 }
 
+// ─── Date range parser (same string format as LogsDateRangePicker) ────────────
+function parseDateRangeValue(value: string): { startMs: number; endMs: number; label: string } {
+  const nowMs = Date.now();
+  if (value.startsWith("custom:")) {
+    const parts = value.substring(7).split("_");
+    if (parts.length === 2) {
+      const from = new Date(parts[0]).getTime();
+      const to   = new Date(parts[1]).getTime();
+      return {
+        startMs: isNaN(from) ? nowMs - 30 * 60 * 1000 : from,
+        endMs:   isNaN(to)   ? nowMs                   : to,
+        label:   "Custom Range",
+      };
+    }
+  }
+  const PRESETS: Record<string, { ms: number; label: string }> = {
+    "10m": { ms: 10 * 60 * 1000,           label: "Last 10 minutes" },
+    "30m": { ms: 30 * 60 * 1000,           label: "Last 30 minutes" },
+    "1h":  { ms: 60 * 60 * 1000,           label: "Last 60 minutes" },
+    "3h":  { ms: 3  * 60 * 60 * 1000,      label: "Last 3 hours"    },
+    "24h": { ms: 24 * 60 * 60 * 1000,      label: "Last 24 hours"   },
+    "7d":  { ms: 7  * 24 * 60 * 60 * 1000, label: "Last 7 days"     },
+    "14d": { ms: 14 * 24 * 60 * 60 * 1000, label: "Last 14 days"    },
+    "28d": { ms: 28 * 24 * 60 * 60 * 1000, label: "Last 28 days"    },
+  };
+  const preset = PRESETS[value] ?? PRESETS["30m"];
+  return { startMs: nowMs - preset.ms, endMs: nowMs, label: preset.label };
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ObservabilityOverviewPage() {
   const router = useRouter();
@@ -77,18 +108,25 @@ export default function ObservabilityOverviewPage() {
   const [throughput, setThroughput] = useState<ThroughputPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Date range filter — same string format as LogsDateRangePicker
+  const [dateValue, setDateValue] = useState<string>("30m");
+  const timeRange = useMemo(() => parseDateRangeValue(dateValue), [dateValue]);
+
   // View States for layout configurations
   const [viewMode, setViewMode] = useState<"list" | "table" | "card">("list");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "up" | "down">("all");
 
-  // Real-time Service Health Hook
-  const { rows: serviceRows, loading: sparklineLoading, error: sparklineError, refresh: refreshSparkline } = useServiceHealthSparkline();
+  // Real-time Service Health Hook — passes time range so sparklines reflect selected period
+  const { rows: serviceRows, loading: sparklineLoading, error: sparklineError, refresh: refreshSparkline } = useServiceHealthSparkline(timeRange);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [metrics, tp] = await Promise.all([getSystemHealthMetrics(), getSystemThroughput()]);
+      const [metrics, tp] = await Promise.all([
+        getSystemHealthMetrics(),
+        getSystemThroughput({ startMs: timeRange.startMs, endMs: timeRange.endMs }),
+      ]);
       setHealthData({
         cpu: Math.round(metrics.cpu),
         memory: Math.round((metrics.memUsedBytes / metrics.memTotalBytes) * 100),
@@ -102,7 +140,7 @@ export default function ObservabilityOverviewPage() {
       setLoading(false);
     }
     refreshSparkline();
-  }, [refreshSparkline]);
+  }, [refreshSparkline, timeRange.startMs, timeRange.endMs]);
 
   useEffect(() => {
     refresh();
@@ -152,10 +190,21 @@ export default function ObservabilityOverviewPage() {
             Real-time platform health — database, compute, and service throughput from Prometheus + Spring Boot.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refresh()} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary mr-1" : "mr-1"}`} />
-          Refresh
-        </Button>
+
+        {/* Header Controls: Date Picker + Refresh */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <LogsDateRangePicker
+              value={dateValue}
+              onChange={(v) => setDateValue(v)}
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refresh()} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary mr-1" : "mr-1"}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Top 4 KPI Cards */}
@@ -444,7 +493,7 @@ export default function ObservabilityOverviewPage() {
         <Card className="border-border">
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-sm font-semibold text-foreground">
-              Combined Throughput — Last 30 Minutes
+              Combined Throughput — {timeRange.label}
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">Total HTTP hits across all gateways · Prometheus</p>
           </CardHeader>

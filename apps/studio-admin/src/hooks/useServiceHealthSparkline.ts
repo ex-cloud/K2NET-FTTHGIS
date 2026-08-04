@@ -77,7 +77,9 @@ const FALLBACK_DATA: ServiceHealthRow[] = SERVICE_CONFIG.map((svc) => {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useServiceHealthSparkline() {
+export function useServiceHealthSparkline(
+  timeRange?: { startMs: number; endMs: number }
+) {
   const { data: session } = useSession();
   const [rows, setRows] = useState<ServiceHealthRow[]>(FALLBACK_DATA);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ export function useServiceHealthSparkline() {
       // Run the dynamic checks and fetch Prometheus throughput concurrently
       const [serviceMap, throughput] = await Promise.all([
         getDetailedServicesHealth(session.accessToken),
-        getSystemThroughput(),
+        getSystemThroughput(timeRange ? { startMs: timeRange.startMs, endMs: timeRange.endMs } : undefined),
       ]);
 
       // Calculate latest total throughput
@@ -190,7 +192,7 @@ export function useServiceHealthSparkline() {
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [session?.accessToken]);
+  }, [session?.accessToken, timeRange?.startMs, timeRange?.endMs]);
 
   useEffect(() => {
     mountedRef.current = true;
