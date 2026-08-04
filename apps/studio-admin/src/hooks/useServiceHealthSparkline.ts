@@ -83,6 +83,8 @@ export function useServiceHealthSparkline() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  /** Tracks previous status per service key across polls to detect transitions */
+  const prevStatusMapRef = useRef<Record<string, string>>({});
 
   const fetch_data = useCallback(async () => {
     if (!session?.accessToken) {
@@ -130,6 +132,55 @@ export function useServiceHealthSparkline() {
       if (mountedRef.current) {
         setRows(computed);
         setError(null);
+
+        // ── Detect status transitions and emit audit events ────────────────────
+        const prev = prevStatusMapRef.current;
+        const transitionEvents: Promise<void>[] = [];
+
+        computed.forEach((svc) => {
+          const prevStatus = prev[svc.key];
+          const curStatus  = svc.status;
+
+          // Only emit when:
+          //  1. We have a previous status recorded (not first-load unknown)
+          //  2. The status has actually changed
+          //  3. The transition involves a real status (not unknown→unknown)
+          const isRealTransition =
+            prevStatus !== undefined &&
+            prevStatus !== curStatus &&
+            prevStatus !== "unknown" &&
+            curStatus  !== "unknown";
+
+          if (isRealTransition) {
+            transitionEvents.push(
+              fetch("/api/observability/service-health-event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  serviceName: svc.name,
+                  serviceKey:  svc.key,
+                  fromStatus:  prevStatus,
+                  toStatus:    curStatus,
+                  logType:     svc.logType,
+                  category:    svc.category,
+                }),
+              }).then(() => {}).catch((e) =>
+                console.warn(`[health-monitor] Failed to emit event for ${svc.key}:`, e)
+              )
+            );
+          }
+
+          // Update previous status map (record real statuses; skip "unknown" to
+          // preserve last known real status for future comparisons)
+          if (curStatus !== "unknown") {
+            prev[svc.key] = curStatus;
+          }
+        });
+
+        // Fire-and-forget (don't block the UI update)
+        if (transitionEvents.length > 0) {
+          Promise.allSettled(transitionEvents);
+        }
       }
     } catch (err) {
       console.error("[useServiceHealthSparkline] Failed to fetch service health:", err);

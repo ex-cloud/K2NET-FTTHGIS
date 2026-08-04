@@ -201,7 +201,10 @@ export async function getDetailedServicesHealth(token: string): Promise<Record<s
     console.error("[health] Prometheus up check failed:", err);
   }
 
-  // 2. Fetch Postgres, Redis, and Keycloak statuses from Spring Boot core health-metrics API
+  // 2. Fetch Postgres and Redis statuses from Spring Boot core health-metrics API
+  // Note: Keycloak is checked via directChecks below to avoid Keycloak 26 /health/ready 404 issue.
+  // Note: On token expiry Spring Boot returns 401 — we fall back to "unknown" (not "down") to
+  //       prevent all three services from falsely showing DOWN during a session token refresh.
   try {
     const res = await fetch("http://ftth-backend:9090/api/v1/system/health-metrics", {
       headers: { Authorization: `Bearer ${token}` },
@@ -212,27 +215,31 @@ export async function getDetailedServicesHealth(token: string): Promise<Record<s
       const springServices = data?.services ?? {};
       statuses["postgres"] = springServices.postgres === "healthy" ? "up" : "down";
       statuses["redis"] = springServices.redis === "healthy" ? "up" : "down";
-      statuses["keycloak"] = springServices.keycloak === "healthy" ? "up" : "down";
+    } else if (res.status === 401 || res.status === 403) {
+      // Token expired/invalid — avoid false positives; keep as unknown until re-auth
+      console.warn("[health] Spring Boot health-metrics: auth error (", res.status, ") — skipping postgres/redis status");
+      statuses["postgres"] = "unknown" as any;
+      statuses["redis"] = "unknown" as any;
     } else {
       statuses["postgres"] = "down";
       statuses["redis"] = "down";
-      statuses["keycloak"] = "down";
     }
   } catch (err) {
     console.error("[health] Spring Boot health fetch failed:", err);
     statuses["postgres"] = "down";
     statuses["redis"] = "down";
-    statuses["keycloak"] = "down";
   }
 
   // 3. Check auxiliary infrastructure containers via direct HTTP pings
+  // Keycloak: use /realms/master on port 8081 (confirmed reachable; /health/ready returns 404 in KC 26)
   const directChecks = [
-    { key: "minio", url: "http://ftth-minio:9000/minio/health/live" },
-    { key: "kong", url: "http://kong:8001/status" },
-    { key: "martin", url: "http://ftth-martin:3000/" },
-    { key: "grafana", url: "http://ftth-grafana:3000/api/health" },
+    { key: "minio",        url: "http://ftth-minio:9000/minio/health/live" },
+    { key: "kong",         url: "http://kong:8001/status" },
+    { key: "martin",       url: "http://ftth-martin:3001/" },
+    { key: "grafana",      url: "http://ftth-grafana:3000/api/health" },
     { key: "alertmanager", url: "http://ftth-alertmanager:9093/" },
-    { key: "prometheus", url: "http://ftth-prometheus:9090/-/healthy" },
+    { key: "prometheus",   url: "http://ftth-prometheus:9090/-/healthy" },
+    { key: "keycloak",     url: "http://ftth-keycloak:8081/realms/master" },
   ];
 
   await Promise.all(

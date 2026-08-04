@@ -80,6 +80,7 @@ export default function ObservabilityOverviewPage() {
   // View States for layout configurations
   const [viewMode, setViewMode] = useState<"list" | "table" | "card">("list");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "up" | "down">("all");
 
   // Real-time Service Health Hook
   const { rows: serviceRows, loading: sparklineLoading, error: sparklineError, refresh: refreshSparkline } = useServiceHealthSparkline();
@@ -116,11 +117,14 @@ export default function ObservabilityOverviewPage() {
     }
   };
 
-  // Filter rows by active category tab
+  // Filter rows by active category tab + status filter
   const filteredRows = serviceRows.filter((r) => {
-    if (activeCategory === "all") return true;
-    return r.category === activeCategory;
+    const categoryMatch = activeCategory === "all" || r.category === activeCategory;
+    const statusMatch   = statusFilter === "all"   || r.status === statusFilter;
+    return categoryMatch && statusMatch;
   });
+
+  const downCount = serviceRows.filter((r) => r.status === "down").length;
 
   const categories = [
     { key: "all", label: "All Services" },
@@ -205,6 +209,34 @@ export default function ObservabilityOverviewPage() {
                 {sparklineError}
               </div>
             )}
+
+            {/* Status Filter Pills */}
+            <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+              {([
+                { key: "all",  label: "All" },
+                { key: "up",   label: "Up" },
+                { key: "down", label: "Down" },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors ${
+                    statusFilter === key
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {key === "up"   && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />}
+                  {key === "down" && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse inline-block" />}
+                  {label}
+                  {key === "down" && downCount > 0 && (
+                    <span className="ml-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[9px] font-bold px-1.5 py-0.5 leading-none">
+                      {downCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
 
             {/* View Mode Selectors */}
             <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
