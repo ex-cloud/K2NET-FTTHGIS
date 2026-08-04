@@ -2,6 +2,9 @@
 -- PHASE 1: DATABASE OPTIMIZATION SCRIPT
 -- ==========================================
 
+-- 0. ENABLE QUERY PERFORMANCE EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
 -- 1. ADDITIONAL INDEXES
 CREATE INDEX IF NOT EXISTS idx_network_edges_project_id ON network_edges (project_id);
 CREATE INDEX IF NOT EXISTS idx_network_edges_status ON network_edges (status);

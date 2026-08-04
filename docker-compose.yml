@@ -96,6 +96,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
       - ./database/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.max=10000", "-c", "pg_stat_statements.track=all"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ftth_gis"]
       interval: 5s
