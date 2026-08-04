@@ -95,7 +95,7 @@ export default function QueryPerformancePage() {
   };
 
   return (
-    <div className="relative flex flex-col w-full h-full min-h-0 bg-background pt-6 pb-32 gap-6 select-none">
+    <div className="relative flex flex-col w-full h-full overflow-y-auto bg-background pt-6 pb-0 gap-6 select-none custom-scrollbar-thin">
       {/* Top Header Section */}
       <div className="flex items-center justify-between px-4 md:px-6">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
@@ -322,9 +322,9 @@ export default function QueryPerformancePage() {
         </Card>
       )}
 
-      {/* Floating Dismissible Info Footer Banner (Supabase style) */}
+      {/* Sticky Dismissible Info Footer Banner (Supabase style) */}
       {showFooterBanner && (
-        <div className="fixed bottom-4 right-4 left-4 md:left-[280px] bg-card border border-border p-5 z-40 rounded-xl shadow-2xl backdrop-blur-sm transition-all duration-300">
+        <div className="sticky bottom-0 w-full bg-card border-t border-border p-5 z-40 shadow-xl backdrop-blur-sm transition-all duration-300">
           <button 
             onClick={() => setShowFooterBanner(false)}
             className="absolute top-3 right-3 text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-all"
@@ -333,7 +333,7 @@ export default function QueryPerformancePage() {
             <X className="h-4 w-4" />
           </button>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pr-6 text-xs text-muted-foreground">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pr-6 text-xs text-muted-foreground px-4 md:px-6">
             <div>
               <h4 className="font-semibold text-foreground mb-1">Reset report</h4>
               <p className="mb-3 leading-relaxed">Consider resetting the analysis statistics after optimizing any indexes or queries to clear the historical baselines.</p>
