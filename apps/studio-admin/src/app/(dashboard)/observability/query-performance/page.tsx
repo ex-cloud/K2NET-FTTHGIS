@@ -100,10 +100,7 @@ export default function QueryPerformancePage() {
   };
 
   return (
-    <div 
-      onScroll={handleScroll}
-      className="relative flex flex-col w-full h-full overflow-y-auto bg-background pt-6 pb-0 gap-6 select-none custom-scrollbar-thin"
-    >
+    <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 select-none overflow-hidden">
       {/* Shimmer line CSS animations */}
       <style>{`
         @keyframes shimmer {
@@ -207,9 +204,9 @@ export default function QueryPerformancePage() {
       </div>
 
       {activeTab === "queries" ? (
-        <>
-          {/* Sticky Filter and Sort Toolbar */}
-          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm py-3 sm:py-0 sm:h-14 flex flex-col justify-center border-b border-border/10 select-none">
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Static Filter and Sort Toolbar */}
+          <div className="relative z-30 bg-background py-3 select-none shrink-0 border-b border-border/40">
             <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-4 md:px-6">
               <div className="relative w-full sm:w-[320px]">
                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -279,16 +276,21 @@ export default function QueryPerformancePage() {
               </div>
             </div>
 
-            {/* Glowing border under sticky filter toolbar when scrolled or loading */}
+            {/* Glowing border under filter toolbar: animate shimmer only on loading/loadingMore, static border on scroll */}
             <div className={`absolute bottom-0 left-0 right-0 h-[1.5px] transition-all duration-300 ${
-              loading || isScrolled 
+              loading || loadingMore
                 ? "shimmer-line opacity-100" 
-                : "bg-transparent opacity-0"
+                : isScrolled
+                  ? "bg-border/60 opacity-100"
+                  : "bg-transparent opacity-0"
             }`} />
           </div>
 
-          {/* Borderless slow queries list table using TanStack Table */}
-          <div className="border-t border-border/40 px-0">
+          {/* Scrollable Table Container */}
+          <div 
+            onScroll={handleScroll}
+            className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin"
+          >
             <QueryPerformanceTable
               data={slowQueries}
               onSelectQuery={setSelectedQuery}
@@ -297,7 +299,7 @@ export default function QueryPerformancePage() {
             />
 
             {/* Scroll Sentinel for Infinite Scrolling */}
-            <div ref={sentinelRef} className="h-10 w-full flex justify-center items-center">
+            <div ref={sentinelRef} className="h-10 w-full flex justify-center items-center py-4">
               {loadingMore && (
                 <div className="flex items-center gap-2">
                   <RefreshCw className="h-4 w-4 animate-spin text-primary" />
@@ -309,47 +311,49 @@ export default function QueryPerformancePage() {
               )}
             </div>
           </div>
-        </>
+        </div>
       ) : (
         /* Spatial Index Registry Content Tab */
-        <Card className="overflow-hidden bg-transparent border-none">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border bg-transparent text-[11px] font-medium text-muted-foreground/85">
-                    <th className="py-2.5 px-4">Table</th>
-                    <th className="py-2.5 px-4">Index Definition</th>
-                    <th className="py-2.5 px-4 text-center">Status</th>
-                    <th className="py-2.5 px-4 text-right">Size</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {spatialIndexes.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                        No spatial indexes registered.
-                      </td>
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin px-4 md:px-6">
+          <Card className="overflow-hidden bg-transparent border-none">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-transparent text-[11px] font-medium text-muted-foreground/85">
+                      <th className="py-2.5 px-4">Table</th>
+                      <th className="py-2.5 px-4">Index Definition</th>
+                      <th className="py-2.5 px-4 text-center">Status</th>
+                      <th className="py-2.5 px-4 text-right">Size</th>
                     </tr>
-                  ) : (
-                    spatialIndexes.map((idx, indexIdx) => (
-                      <tr key={indexIdx} className="hover:bg-muted/10 transition-colors">
-                        <td className="py-3 px-4 font-mono text-foreground">{idx.tableName}</td>
-                        <td className="py-3 px-4 font-mono text-muted-foreground select-all break-all" title={idx.indexDef}>
-                          {idx.indexDef}
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {spatialIndexes.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                          No spatial indexes registered.
                         </td>
-                        <td className="py-3 px-4 text-center">
-                          <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{idx.status}</Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-muted-foreground">{idx.size}</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : (
+                      spatialIndexes.map((idx, indexIdx) => (
+                        <tr key={indexIdx} className="hover:bg-muted/10 transition-colors">
+                          <td className="py-3 px-4 font-mono text-foreground">{idx.tableName}</td>
+                          <td className="py-3 px-4 font-mono text-muted-foreground select-all break-all" title={idx.indexDef}>
+                            {idx.indexDef}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{idx.status}</Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-muted-foreground">{idx.size}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Sticky Dismissible Info Footer Banner (Supabase style) */}

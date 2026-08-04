@@ -165,34 +165,32 @@ export function QueryPerformanceTable({
   });
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[1340px]">
-        {/* Table Head */}
-        <div className="sticky top-[56px] z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80">
-          {table.getFlatHeaders().map((header) => (
-            <div key={header.id}>
-              {header.isPlaceholder
-                ? null
-                : flexRender(header.column.columnDef.header, header.getContext())}
-            </div>
-          ))}
-        </div>
+    <div className="min-w-[1340px]">
+      {/* Table Head */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80">
+        {table.getFlatHeaders().map((header) => (
+          <div key={header.id}>
+            {header.isPlaceholder
+              ? null
+              : flexRender(header.column.columnDef.header, header.getContext())}
+          </div>
+        ))}
+      </div>
 
-        {/* Table Body */}
-        <div className="divide-y divide-border/40">
-          {table.getRowModel().rows.map((row) => (
-            <div
-              key={row.id}
-              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <div key={cell.id} className="min-w-0">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+      {/* Table Body */}
+      <div className="divide-y divide-border/40">
+        {table.getRowModel().rows.map((row) => (
+          <div
+            key={row.id}
+            className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
+          >
+            {row.getVisibleCells().map((cell) => (
+              <div key={cell.id} className="min-w-0">
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
