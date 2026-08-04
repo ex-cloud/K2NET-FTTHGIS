@@ -158,7 +158,19 @@ export function useAuditLogStream(
           const logType = metadata.logType ?? resolveLogTypeFromSource(rawSource, e.resourceType);
           const logGroup = resolveLogGroup(logType, e.resourceType, metadata);
 
-          const method = metadata.method || (e.action && e.action.includes(":") ? e.action.split(":")[0] : undefined);
+          let method = metadata.method || (e.action && e.action.includes(":") ? e.action.split(":")[0] : undefined);
+          if (!method && e.action) {
+            const act = e.action.toUpperCase();
+            if (act.includes("CREATE") || act.includes("ADD") || act.includes("POST")) {
+              method = "POST";
+            } else if (act.includes("UPDATE") || act.includes("EDIT") || act.includes("MODIFY") || act.includes("PUT") || act.includes("PATCH")) {
+              method = "PUT";
+            } else if (act.includes("DELETE") || act.includes("REMOVE")) {
+              method = "DELETE";
+            } else {
+              method = "GET";
+            }
+          }
           const status = metadata.status || metadata.statusCode || (e.errorMessage ? 500 : 200);
           const pathname = e.resourceId || metadata.pathname || (e.action && e.action.includes(":") ? e.action.split(":")[1] : undefined);
           const ip = e.actorIp || metadata.ip || undefined;
