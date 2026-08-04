@@ -1,10 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@k2net/ui";
-import { DatabaseZap, AlertCircle, RefreshCw, Copy, Check, Search, Download, HelpCircle, FileText } from "lucide-react";
+import { DatabaseZap, AlertCircle, RefreshCw, Copy, Check, Search, HelpCircle, FileText, User } from "lucide-react";
 import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
 import { QueryPerformanceTable } from "@/components/observability/query-performance-table";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function QueryPerformancePage() {
   const {
@@ -26,9 +26,13 @@ export default function QueryPerformancePage() {
     resetPerformanceStats,
   } = useDbPerformance();
 
+  const [activeTab, setActiveTab] = useState<"queries" | "indexes">("queries");
   const [selectedQuery, setSelectedQuery] = useState<SlowQuery | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -43,22 +47,24 @@ export default function QueryPerformancePage() {
     }
   };
 
-  // Infinite scroll window event listener
+  // Intersection Observer for Infinite Scroll Paging
   useEffect(() => {
-    const handleScroll = () => {
-      if (typeof window === "undefined") return;
-      const threshold = 150; // pixels from bottom
-      const totalHeight = document.documentElement.scrollHeight;
-      const scrollPosition = window.innerHeight + window.scrollY;
+    if (observerRef.current) observerRef.current.disconnect();
 
-      if (totalHeight - scrollPosition < threshold) {
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
         fetchMore();
       }
-    };
+    }, { threshold: 0.1 });
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [fetchMore]);
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [fetchMore, hasMore, loadingMore, loading, activeTab]);
 
   // Export data as CSV
   const exportToCsv = () => {
@@ -89,178 +95,238 @@ export default function QueryPerformancePage() {
 
   return (
     <PageLayout variant="dashboard" spaceY="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border pb-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-            <DatabaseZap className="h-5 w-5 text-primary" />
-            Query Performance
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            PostGIS spatial query diagnostics, pg_stat_statements slow query log, and index health monitoring.
-          </p>
-        </div>
+      {/* Top Header Section */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
+          Query Performance
+        </h1>
+        
+        {/* Right side navigation buttons / database selectors */}
         <div className="flex items-center gap-2">
           {error && (
-            <div className="flex items-center gap-1 text-[10px] text-amber-500">
+            <div className="flex items-center gap-1 text-[10px] text-amber-500 mr-2">
               <AlertCircle className="h-3 w-3" />
               {error}
             </div>
           )}
-          <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">LIVE DATA</Badge>
-          <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)}>
-            Reset report
-          </Button>
+          <a
+            href="https://supabase.com/docs/guides/platform/performance"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-card hover:bg-muted/30 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors h-8"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Docs
+          </a>
+          <select
+            disabled
+            className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
+          >
+            <option>Source</option>
+          </select>
+          <select
+            disabled
+            className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
+          >
+            <option>Primary Database</option>
+          </select>
         </div>
       </div>
 
       {/* Supabase style inline KPI Stats bar */}
-      <div className="flex items-center gap-6 px-6 py-4 bg-card border border-border rounded-xl text-xs text-muted-foreground shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium">
         <div className="flex items-center gap-1.5">
-          <span className="font-bold text-base text-foreground font-mono">{stats.slowQueriesCount}</span>
-          <span className="uppercase tracking-wider font-semibold text-[10px]">Slow Queries</span>
-          <span title="Number of statements taking longer than 50ms on average." className="cursor-help shrink-0">
-            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="font-bold text-foreground font-mono">{stats.slowQueriesCount}</span>
+          <span>Slow Queries</span>
+          <span title="Number of statements taking longer than 50ms on average." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3.5 w-3.5" />
           </span>
         </div>
-        <div className="text-border">/</div>
+        <span className="text-muted-foreground/30 px-1">/</span>
         <div className="flex items-center gap-1.5">
-          <span className="font-bold text-base text-foreground font-mono">{stats.cacheHitRate.toFixed(2)}%</span>
-          <span className="uppercase tracking-wider font-semibold text-[10px]">Cache Hit Rate</span>
-          <span title="Percentage of blocks read from memory buffer cache vs disk." className="cursor-help shrink-0">
-            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="font-bold text-foreground font-mono">{stats.cacheHitRate.toFixed(2)}%</span>
+          <span>Cache Hit Rate</span>
+          <span title="Percentage of blocks read from memory buffer cache vs disk." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3.5 w-3.5" />
           </span>
         </div>
-        <div className="text-border">/</div>
+        <span className="text-muted-foreground/30 px-1">/</span>
         <div className="flex items-center gap-1.5">
-          <span className="font-bold text-base text-foreground font-mono">{stats.avgRowsPerCall.toFixed(1)}</span>
-          <span className="uppercase tracking-wider font-semibold text-[10px]">Avg. Rows Per Call</span>
-          <span title="Average number of rows returned or affected per statement call." className="cursor-help shrink-0">
-            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="font-bold text-foreground font-mono">{stats.avgRowsPerCall.toFixed(1)}</span>
+          <span>Avg. Rows Per Call</span>
+          <span title="Average number of rows returned or affected per statement call." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3.5 w-3.5" />
           </span>
         </div>
       </div>
 
-      {/* Filter and Sort Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="relative w-full sm:w-[320px]">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Filter by query"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-          {/* Sort By Selector */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="total_time">Sort by: Total Time</option>
-            <option value="calls">Sort by: Calls</option>
-            <option value="mean_time">Sort by: Mean Time</option>
-            <option value="max_time">Sort by: Max Time</option>
-            <option value="min_time">Sort by: Min Time</option>
-            <option value="rows">Sort by: Rows Processed</option>
-            <option value="cache_hit_rate">Sort by: Cache Hit Rate</option>
-          </select>
-
-          {/* Roles Selector */}
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">All Roles</option>
-            <option value="postgres">postgres</option>
-            <option value="authenticator">authenticator</option>
-            <option value="keycloak">keycloak</option>
-          </select>
-
-          <Button variant="outline" size="sm" onClick={exportToCsv} title="Export to CSV">
-            <Download className="h-3.5 w-3.5 mr-1" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-          </Button>
-        </div>
+      {/* Tabs Menu Navigation */}
+      <div className="flex border-b border-border/80 gap-6 text-xs font-semibold">
+        <button
+          onClick={() => setActiveTab("queries")}
+          className={`pb-2 px-1 border-b-2 transition-all ${
+            activeTab === "queries"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Slow Queries Log
+        </button>
+        <button
+          onClick={() => setActiveTab("indexes")}
+          className={`pb-2 px-1 border-b-2 transition-all ${
+            activeTab === "indexes"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Spatial Index Registries
+        </button>
       </div>
 
-      {/* Query Performance Scrollable Table using TanStack Table */}
-      <Card className="overflow-hidden">
-        <QueryPerformanceTable
-          data={slowQueries}
-          onSelectQuery={setSelectedQuery}
-          onCopy={handleCopy}
-          copiedIdx={copiedIdx}
-        />
-        
-        {/* Infinite Scroll loading indicators */}
-        {loadingMore && (
-          <div className="py-4 border-t border-border flex justify-center items-center gap-2 bg-muted/10">
-            <RefreshCw className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground">Loading more queries...</span>
-          </div>
-        )}
-        {!hasMore && slowQueries.length > 0 && (
-          <div className="py-4 border-t border-border text-center text-xs text-muted-foreground bg-muted/10">
-            All captured queries loaded.
-          </div>
-        )}
-      </Card>
+      {activeTab === "queries" ? (
+        <>
+          {/* Filter and Sort Toolbar */}
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div className="relative w-full sm:w-[320px]">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Filter by query"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+              {/* Calls Sort Selector */}
+              <select
+                value={sortBy === "calls" ? "calls" : "none"}
+                onChange={(e) => {
+                  if (e.target.value === "calls") {
+                    setSortBy("calls");
+                  }
+                }}
+                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+              >
+                <option value="none">Calls</option>
+                <option value="calls">Calls: High to Low</option>
+              </select>
 
-      {/* Spatial Index Status Section */}
-      <Card>
-        <CardHeader className="border-b border-border pb-4">
-          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <FileText className="h-4 w-4 text-primary" />
-            Spatial Table Index Status
-          </CardTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Active GIST/GIN spatial index registry from PostgreSQL pg_indexes.
-          </p>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="grid grid-cols-[120px_1fr_120px_80px] px-5 py-2 border-b border-border bg-muted/30 gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Table</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Index Definition</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Status</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Size</span>
+              {/* Total Time Sort Selector */}
+              <select
+                value={sortBy === "total_time" ? "total_time" : "none"}
+                onChange={(e) => {
+                  if (e.target.value === "total_time") {
+                    setSortBy("total_time");
+                  }
+                }}
+                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+              >
+                <option value="none">Total Time</option>
+                <option value="total_time">Time: High to Low</option>
+              </select>
+
+              {/* Roles Selector */}
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+              >
+                <option value="">Roles</option>
+                <option value="postgres">postgres</option>
+                <option value="authenticator">authenticator</option>
+                <option value="keycloak">keycloak</option>
+              </select>
+
+              {/* Source Selector */}
+              <select
+                disabled
+                className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg font-semibold h-8 cursor-not-allowed opacity-80"
+              >
+                <option value="">Source</option>
+              </select>
+
+              <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="h-8 w-8 p-0 shrink-0">
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportToCsv} className="h-8 font-semibold">
+                Export
+              </Button>
+            </div>
           </div>
-          <div className="divide-y divide-border">
-            {spatialIndexes.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted-foreground">
-                No spatial indexes registered.
-              </div>
-            ) : (
-              spatialIndexes.map((idx, indexIdx) => (
-                <div key={indexIdx} className="grid grid-cols-[120px_1fr_120px_80px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-2">
-                  <p className="text-xs font-mono text-foreground">{idx.tableName}</p>
-                  <p className="text-xs text-muted-foreground font-mono truncate select-all" title={idx.indexDef}>
-                    {idx.indexDef}
-                  </p>
-                  <div className="flex justify-center">
-                    <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{idx.status}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-right font-mono">{idx.size}</p>
+
+          {/* Borderless slow queries list table using TanStack Table */}
+          <div className="border-t border-border/40">
+            <QueryPerformanceTable
+              data={slowQueries}
+              onSelectQuery={setSelectedQuery}
+              onCopy={handleCopy}
+              copiedIdx={copiedIdx}
+            />
+
+            {/* Scroll Sentinel for Infinite Scrolling */}
+            <div ref={sentinelRef} className="h-10 w-full flex justify-center items-center">
+              {loadingMore && (
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">Loading more queries...</span>
                 </div>
-              ))
-            )}
+              )}
+              {!hasMore && slowQueries.length > 0 && (
+                <span className="text-xs text-muted-foreground">All captured queries loaded.</span>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </>
+      ) : (
+        /* Spatial Index Registry Content Tab */
+        <Card className="overflow-hidden bg-transparent border-none">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-transparent text-[11px] font-medium text-muted-foreground/85">
+                    <th className="py-2.5 px-4">Table</th>
+                    <th className="py-2.5 px-4">Index Definition</th>
+                    <th className="py-2.5 px-4 text-center">Status</th>
+                    <th className="py-2.5 px-4 text-right">Size</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {spatialIndexes.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                        No spatial indexes registered.
+                      </td>
+                    </tr>
+                  ) : (
+                    spatialIndexes.map((idx, indexIdx) => (
+                      <tr key={indexIdx} className="hover:bg-muted/10 transition-colors">
+                        <td className="py-3 px-4 font-mono text-foreground">{idx.tableName}</td>
+                        <td className="py-3 px-4 font-mono text-muted-foreground select-all break-all" title={idx.indexDef}>
+                          {idx.indexDef}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{idx.status}</Badge>
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono text-muted-foreground">{idx.size}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Footer Info Section (Supabase style) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-border text-xs text-muted-foreground">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-border/60 text-xs text-muted-foreground mt-8">
         <div>
           <h4 className="font-semibold text-foreground mb-1">Reset report</h4>
           <p className="mb-3 leading-relaxed">Consider resetting the analysis statistics after optimizing any indexes or queries to clear the historical baselines.</p>
-          <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)} className="h-8 font-semibold">
             Reset report
           </Button>
         </div>
@@ -274,7 +340,7 @@ export default function QueryPerformancePage() {
         </div>
       </div>
 
-      {/* Detail Dialog */}
+      {/* Query Detail Dialog */}
       <Dialog open={!!selectedQuery} onOpenChange={(open) => !open && setSelectedQuery(null)}>
         <DialogContent className="bg-card border-border sm:max-w-[700px] p-6 shadow-2xl">
           <DialogHeader>
@@ -322,7 +388,7 @@ export default function QueryPerformancePage() {
                 </div>
                 <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
                   <p className="text-[10px] text-muted-foreground uppercase font-bold">Cache Hit Rate</p>
-                  <p className="text-sm font-mono font-bold text-foreground mt-0.5">{selectedQuery.cacheHitRate.toFixed(1)}%</p>
+                  <p className="text-sm font-mono font-bold text-foreground mt-0.5">{selectedQuery.cacheHitRate.toFixed(3)}%</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
@@ -357,10 +423,10 @@ export default function QueryPerformancePage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(false)} className="h-8">
               Cancel
             </Button>
-            <Button className="bg-rose-600 hover:bg-rose-500 text-white" size="sm" onClick={handleResetReport}>
+            <Button className="bg-rose-600 hover:bg-rose-500 text-white h-8" size="sm" onClick={handleResetReport}>
               Reset stats
             </Button>
           </DialogFooter>

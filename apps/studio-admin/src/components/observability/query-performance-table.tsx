@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, User } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -28,7 +28,7 @@ export function QueryPerformanceTable({
   const columns = React.useMemo(
     () => [
       columnHelper.accessor("query", {
-        header: "SQL Query Statement",
+        header: "Query",
         cell: (info) => {
           const queryText = info.getValue();
           const rowIdx = info.row.index;
@@ -50,7 +50,7 @@ export function QueryPerformanceTable({
               </button>
               <p
                 onClick={() => onSelectQuery(info.row.original)}
-                className="text-xs font-mono text-foreground truncate cursor-pointer hover:text-primary hover:underline select-all flex-1"
+                className="text-xs font-mono text-sky-400 hover:text-sky-300 font-medium truncate cursor-pointer hover:underline select-all flex-1"
                 title="Click to view full SQL query"
               >
                 {queryText}
@@ -65,14 +65,15 @@ export function QueryPerformanceTable({
           const percent = info.getValue() ?? 0;
           const totalMs = info.row.original.totalTimeMs;
           return (
-            <div className="flex flex-col gap-1 pr-4">
-              <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                <span>{percent}%</span>
-                <span>{(totalMs / 1000).toFixed(2)}s</span>
+            <div className="flex flex-col gap-1 pr-4 min-w-[130px]">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-foreground font-medium">
+                <span>{percent.toFixed(1)}%</span>
+                <span className="text-[10px] text-muted-foreground">/</span>
+                <span className="text-[10px] text-muted-foreground">{(totalMs / 1000).toFixed(2)}s</span>
               </div>
-              <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-muted/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -92,7 +93,7 @@ export function QueryPerformanceTable({
         header: () => <span className="block text-right">Max time</span>,
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
-            {info.getValue().toFixed(1)}ms
+            {info.getValue() >= 1000 ? `${(info.getValue() / 1000).toFixed(1)}s` : `${info.getValue().toFixed(0)}ms`}
           </span>
         ),
       }),
@@ -106,7 +107,7 @@ export function QueryPerformanceTable({
                 val > 500 ? "text-rose-500" : val > 200 ? "text-amber-500" : "text-foreground"
               }`}
             >
-              {val.toFixed(1)}ms
+              {val >= 1000 ? `${(val / 1000).toFixed(1)}s` : `${val.toFixed(0)}ms`}
             </span>
           );
         },
@@ -115,7 +116,7 @@ export function QueryPerformanceTable({
         header: () => <span className="block text-right">Min time</span>,
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
-            {info.getValue().toFixed(1)}ms
+            {info.getValue() >= 1000 ? `${(info.getValue() / 1000).toFixed(1)}s` : `${info.getValue().toFixed(0)}ms`}
           </span>
         ),
       }),
@@ -130,16 +131,17 @@ export function QueryPerformanceTable({
       columnHelper.accessor("cacheHitRate", {
         header: () => <span className="block text-right">Cache hit rate</span>,
         cell: (info) => (
-          <span className="block text-xs font-mono text-muted-foreground text-right select-all">
-            {info.getValue().toFixed(2)}%
+          <span className="block text-xs font-mono text-muted-foreground text-right select-all font-medium text-emerald-500/90">
+            {info.getValue().toFixed(3)}%
           </span>
         ),
       }),
       columnHelper.accessor("role", {
         header: () => <span className="block text-right">Role</span>,
         cell: (info) => (
-          <span className="block text-xs font-mono text-muted-foreground text-right select-all">
+          <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground text-right select-all justify-end w-full">
             {info.getValue()}
+            <User className="h-3 w-3 text-muted-foreground/40" />
           </span>
         ),
       }),
@@ -166,7 +168,7 @@ export function QueryPerformanceTable({
     <div className="overflow-x-auto">
       <div className="min-w-[1340px]">
         {/* Table Head */}
-        <div className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2 border-b border-border bg-muted/30 gap-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border bg-transparent gap-3 text-[11px] font-medium text-muted-foreground/80">
           {table.getFlatHeaders().map((header) => (
             <div key={header.id}>
               {header.isPlaceholder
@@ -177,11 +179,11 @@ export function QueryPerformanceTable({
         </div>
 
         {/* Table Body */}
-        <div className="divide-y divide-border/60">
+        <div className="divide-y divide-border/40">
           {table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-3 group/row"
+              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
             >
               {row.getVisibleCells().map((cell) => (
                 <div key={cell.id} className="min-w-0">
