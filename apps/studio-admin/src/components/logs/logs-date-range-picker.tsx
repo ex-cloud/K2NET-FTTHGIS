@@ -150,7 +150,12 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
       const popupWidth = 480;
       const popupHeight = 360;
       const margin = 8;
-      const rawLeft = rect.left + window.scrollX;
+
+      const isOnRightHalf = rect.left + rect.width / 2 > window.innerWidth / 2;
+      const rawLeft = isOnRightHalf
+        ? rect.right + window.scrollX - popupWidth
+        : rect.left + window.scrollX;
+
       const maxLeft = window.innerWidth - popupWidth - margin;
 
       const spaceBelow = window.innerHeight - rect.bottom;
