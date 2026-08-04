@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface SlowQuery {
   query: string;
@@ -46,7 +46,7 @@ export function useDbPerformance() {
   const [error, setError] = useState<string | null>(null);
   
   // Pagination & Filters States
-  const [offset, setOffset] = useState(0);
+  const [_offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("total_time");
@@ -54,6 +54,8 @@ export function useDbPerformance() {
   const limit = 20;
 
   const mounted = useRef(true);
+  const offsetRef = useRef(0);
+  const loadingMoreRef = useRef(false);
 
   // Fetch initial data or stats/indexes (also triggers on filter change)
   const fetchData = useCallback(async (resetList = true) => {
@@ -64,13 +66,17 @@ export function useDbPerformance() {
 
     if (resetList) {
       setLoading(true);
+      offsetRef.current = 0;
+      setOffset(0);
     } else {
+      if (loadingMoreRef.current) return;
+      loadingMoreRef.current = true;
       setLoadingMore(true);
     }
 
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
-      const currentOffset = resetList ? 0 : offset;
+      const currentOffset = offsetRef.current;
       
       const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=${currentOffset}&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}`;
       
@@ -92,9 +98,11 @@ export function useDbPerformance() {
       if (mounted.current) {
         if (resetList) {
           setSlowQueries(queriesData);
+          offsetRef.current = queriesData.length;
           setOffset(queriesData.length);
         } else {
           setSlowQueries((prev) => [...prev, ...queriesData]);
+          offsetRef.current += queriesData.length;
           setOffset((prev) => prev + queriesData.length);
         }
         
@@ -111,9 +119,10 @@ export function useDbPerformance() {
       if (mounted.current) {
         setLoading(false);
         setLoadingMore(false);
+        loadingMoreRef.current = false;
       }
     }
-  }, [session?.accessToken, offset, searchQuery, sortBy, roleFilter]);
+  }, [session?.accessToken, searchQuery, sortBy, roleFilter]);
 
   // Infinite Scroll fetch function
   const fetchMore = useCallback(async () => {
@@ -134,6 +143,7 @@ export function useDbPerformance() {
       if (res.ok) {
         // Clear local list and refresh stats
         setSlowQueries([]);
+        offsetRef.current = 0;
         setOffset(0);
         setHasMore(false);
         await fetchData(true);
@@ -148,48 +158,19 @@ export function useDbPerformance() {
 
   // Refresh or trigger on query/filter/sort changes
   const refresh = useCallback(() => {
-    setOffset(0);
-    setHasMore(true);
-    // Setting offset to 0 and doing fresh fetch
-    if (session?.accessToken) {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
-      const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=0&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}`;
-      
-      Promise.all([
-        fetch(slowQueriesUrl, { headers, cache: "no-store" }),
-        fetch("/api/v1/system/db-performance/spatial-indexes", { headers, cache: "no-store" }),
-        fetch("/api/v1/system/db-performance/stats", { headers, cache: "no-store" })
-      ])
-        .then(async ([qRes, iRes, sRes]) => {
-          if (qRes.ok && iRes.ok && sRes.ok) {
-            const qData = await qRes.json();
-            const iData = await iRes.json();
-            const sData = await sRes.json();
-            if (mounted.current) {
-              setSlowQueries(qData);
-              setOffset(qData.length);
-              setHasMore(qData.length === limit);
-              setSpatialIndexes(iData);
-              setStats(sData);
-              setError(null);
-            }
-          }
-        })
-        .catch((err) => console.error("Filter refresh failed:", err));
-    }
-  }, [session?.accessToken, searchQuery, sortBy, roleFilter]);
+    fetchData(true);
+  }, [fetchData]);
 
   // Fetch initial on mount
   useEffect(() => {
     mounted.current = true;
-    // Initial load
     if (session?.accessToken) {
       fetchData(true);
     }
     return () => {
       mounted.current = false;
     };
-  }, [session?.accessToken, fetchData]); // Only run when token becomes available
+  }, [session?.accessToken, fetchData]);
 
   // Trigger refresh on filter or sort updates
   useEffect(() => {

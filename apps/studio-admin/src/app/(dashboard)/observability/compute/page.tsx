@@ -225,7 +225,7 @@ export default function ComputeHostPage() {
 
   return (
     <SystemHealthWrapper>
-      <PageLayout variant="dashboard" spaceY="space-y-6">
+      <PageLayout variant="workspace" spaceY="space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">

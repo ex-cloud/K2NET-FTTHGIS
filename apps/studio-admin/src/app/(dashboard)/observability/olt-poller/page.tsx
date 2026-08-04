@@ -10,7 +10,7 @@ export default function OltPollerPage() {
   const totalOdp = devices.reduce((acc, d) => acc + d.odpCount, 0);
 
   return (
-    <PageLayout variant="dashboard" spaceY="space-y-6">
+    <PageLayout variant="workspace" spaceY="space-y-6">
       <div className="flex items-center justify-between border-b border-border pb-5">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">

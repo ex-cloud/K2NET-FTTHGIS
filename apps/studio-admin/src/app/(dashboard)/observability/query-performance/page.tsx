@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@k2net/ui";
-import { DatabaseZap, AlertCircle, RefreshCw, Copy, Check, Search, HelpCircle, FileText, User } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@k2net/ui";
+import { DatabaseZap, AlertCircle, RefreshCw, Copy, Check, Search, HelpCircle, FileText, X } from "lucide-react";
 import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
 import { QueryPerformanceTable } from "@/components/observability/query-performance-table";
 import { useState, useEffect, useRef } from "react";
@@ -30,6 +30,7 @@ export default function QueryPerformancePage() {
   const [selectedQuery, setSelectedQuery] = useState<SlowQuery | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [showFooterBanner, setShowFooterBanner] = useState(true);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -94,9 +95,9 @@ export default function QueryPerformancePage() {
   };
 
   return (
-    <PageLayout variant="dashboard" spaceY="space-y-6">
+    <div className="relative flex flex-col w-full h-full min-h-0 bg-background pt-6 pb-32 gap-6 select-none">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-4 md:px-6">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
           Query Performance
         </h1>
@@ -134,7 +135,7 @@ export default function QueryPerformancePage() {
       </div>
 
       {/* Supabase style inline KPI Stats bar */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6">
         <div className="flex items-center gap-1.5">
           <span className="font-bold text-foreground font-mono">{stats.slowQueriesCount}</span>
           <span>Slow Queries</span>
@@ -161,7 +162,7 @@ export default function QueryPerformancePage() {
       </div>
 
       {/* Tabs Menu Navigation */}
-      <div className="flex border-b border-border/80 gap-6 text-xs font-semibold">
+      <div className="flex border-b border-border/80 gap-6 text-xs font-semibold px-4 md:px-6">
         <button
           onClick={() => setActiveTab("queries")}
           className={`pb-2 px-1 border-b-2 transition-all ${
@@ -187,7 +188,7 @@ export default function QueryPerformancePage() {
       {activeTab === "queries" ? (
         <>
           {/* Filter and Sort Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-4 md:px-6">
             <div className="relative w-full sm:w-[320px]">
               <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <input
@@ -257,7 +258,7 @@ export default function QueryPerformancePage() {
           </div>
 
           {/* Borderless slow queries list table using TanStack Table */}
-          <div className="border-t border-border/40">
+          <div className="border-t border-border/40 px-0">
             <QueryPerformanceTable
               data={slowQueries}
               onSelectQuery={setSelectedQuery}
@@ -321,24 +322,36 @@ export default function QueryPerformancePage() {
         </Card>
       )}
 
-      {/* Footer Info Section (Supabase style) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-border/60 text-xs text-muted-foreground mt-8">
-        <div>
-          <h4 className="font-semibold text-foreground mb-1">Reset report</h4>
-          <p className="mb-3 leading-relaxed">Consider resetting the analysis statistics after optimizing any indexes or queries to clear the historical baselines.</p>
-          <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)} className="h-8 font-semibold">
-            Reset report
-          </Button>
+      {/* Floating Dismissible Info Footer Banner (Supabase style) */}
+      {showFooterBanner && (
+        <div className="fixed bottom-4 right-4 left-4 md:left-[280px] bg-card border border-border p-5 z-40 rounded-xl shadow-2xl backdrop-blur-sm transition-all duration-300">
+          <button 
+            onClick={() => setShowFooterBanner(false)}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-all"
+            title="Close info panel"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pr-6 text-xs text-muted-foreground">
+            <div>
+              <h4 className="font-semibold text-foreground mb-1">Reset report</h4>
+              <p className="mb-3 leading-relaxed">Consider resetting the analysis statistics after optimizing any indexes or queries to clear the historical baselines.</p>
+              <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)} className="h-8 font-semibold">
+                Reset report
+              </Button>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-1">How is this report generated?</h4>
+              <p className="leading-relaxed">This report aggregates query statistics collected by the PostgreSQL <code>pg_stat_statements</code> extension. Metrics are updated continuously during query executions.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground mb-1">Inspect your database for potential issues</h4>
+              <p className="leading-relaxed">Verify that spatial indexes are active for your geocoding tables. Lack of GIST indexes on spatial columns causes heavy sequential scans.</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h4 className="font-semibold text-foreground mb-1">How is this report generated?</h4>
-          <p className="leading-relaxed">This report aggregates query statistics collected by the PostgreSQL <code>pg_stat_statements</code> extension. Metrics are updated continuously during query executions.</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-foreground mb-1">Inspect your database for issues</h4>
-          <p className="leading-relaxed">Verify that spatial indexes are active for your geocoding tables. Lack of GIST indexes on spatial columns causes heavy sequential scans.</p>
-        </div>
-      </div>
+      )}
 
       {/* Query Detail Dialog */}
       <Dialog open={!!selectedQuery} onOpenChange={(open) => !open && setSelectedQuery(null)}>
@@ -432,6 +445,6 @@ export default function QueryPerformancePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageLayout>
+    </div>
   );
 }

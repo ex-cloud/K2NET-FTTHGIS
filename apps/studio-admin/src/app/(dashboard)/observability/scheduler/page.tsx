@@ -337,7 +337,7 @@ export default function SchedulerPage() {
         />
       )}
 
-      <PageLayout variant="dashboard" spaceY="space-y-6">
+      <PageLayout variant="workspace" spaceY="space-y-6">
         {/* ── Page Header ── */}
         <div className="flex items-center justify-between border-b border-border pb-5">
           <div className="space-y-1">
