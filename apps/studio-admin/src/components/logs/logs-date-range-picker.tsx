@@ -109,8 +109,8 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
   };
 
   const handleResetTime = () => {
-    setFromTime("00:00:00");
-    setToTime("23:59:59");
+    onChange("1h");
+    setCustomRelativeInput("");
   };
 
   React.useEffect(() => {
