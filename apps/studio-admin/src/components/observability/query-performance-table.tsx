@@ -168,7 +168,7 @@ export function QueryPerformanceTable({
     <div className="overflow-x-auto">
       <div className="min-w-[1340px]">
         {/* Table Head */}
-        <div className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border bg-transparent gap-3 text-[11px] font-medium text-muted-foreground/80">
+        <div className="sticky top-[56px] z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80">
           {table.getFlatHeaders().map((header) => (
             <div key={header.id}>
               {header.isPlaceholder

@@ -29,11 +29,16 @@ export default function QueryPerformancePage() {
   const [activeTab, setActiveTab] = useState<"queries" | "indexes">("queries");
   const [selectedQuery, setSelectedQuery] = useState<SlowQuery | null>(null);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [showFooterBanner, setShowFooterBanner] = useState(true);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setIsScrolled(e.currentTarget.scrollTop > 5);
+  };
 
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
@@ -95,7 +100,23 @@ export default function QueryPerformancePage() {
   };
 
   return (
-    <div className="relative flex flex-col w-full h-full overflow-y-auto bg-background pt-6 pb-0 gap-6 select-none custom-scrollbar-thin">
+    <div 
+      onScroll={handleScroll}
+      className="relative flex flex-col w-full h-full overflow-y-auto bg-background pt-6 pb-0 gap-6 select-none custom-scrollbar-thin"
+    >
+      {/* Shimmer line CSS animations */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .shimmer-line {
+          background: linear-gradient(90deg, transparent, var(--primary) 50%, transparent);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite linear;
+        }
+      `}</style>
+
       {/* Top Header Section */}
       <div className="flex items-center justify-between px-4 md:px-6">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
@@ -187,74 +208,83 @@ export default function QueryPerformancePage() {
 
       {activeTab === "queries" ? (
         <>
-          {/* Filter and Sort Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-4 md:px-6">
-            <div className="relative w-full sm:w-[320px]">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Filter by query"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
-              />
+          {/* Sticky Filter and Sort Toolbar */}
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm py-3 sm:py-0 sm:h-14 flex flex-col justify-center border-b border-border/10 select-none">
+            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-4 md:px-6">
+              <div className="relative w-full sm:w-[320px]">
+                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Filter by query"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                {/* Calls Sort Selector */}
+                <select
+                  value={sortBy === "calls" ? "calls" : "none"}
+                  onChange={(e) => {
+                    if (e.target.value === "calls") {
+                      setSortBy("calls");
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+                >
+                  <option value="none">Calls</option>
+                  <option value="calls">Calls: High to Low</option>
+                </select>
+
+                {/* Total Time Sort Selector */}
+                <select
+                  value={sortBy === "total_time" ? "total_time" : "none"}
+                  onChange={(e) => {
+                    if (e.target.value === "total_time") {
+                      setSortBy("total_time");
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+                >
+                  <option value="none">Total Time</option>
+                  <option value="total_time">Time: High to Low</option>
+                </select>
+
+                {/* Roles Selector */}
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
+                >
+                  <option value="">Roles</option>
+                  <option value="postgres">postgres</option>
+                  <option value="authenticator">authenticator</option>
+                  <option value="keycloak">keycloak</option>
+                </select>
+
+                {/* Source Selector */}
+                <select
+                  disabled
+                  className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg font-semibold h-8 cursor-not-allowed opacity-80"
+                >
+                  <option value="">Source</option>
+                </select>
+
+                <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="h-8 w-8 p-0 shrink-0">
+                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+                </Button>
+                <Button variant="outline" size="sm" onClick={exportToCsv} className="h-8 font-semibold">
+                  Export
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-              {/* Calls Sort Selector */}
-              <select
-                value={sortBy === "calls" ? "calls" : "none"}
-                onChange={(e) => {
-                  if (e.target.value === "calls") {
-                    setSortBy("calls");
-                  }
-                }}
-                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-              >
-                <option value="none">Calls</option>
-                <option value="calls">Calls: High to Low</option>
-              </select>
 
-              {/* Total Time Sort Selector */}
-              <select
-                value={sortBy === "total_time" ? "total_time" : "none"}
-                onChange={(e) => {
-                  if (e.target.value === "total_time") {
-                    setSortBy("total_time");
-                  }
-                }}
-                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-              >
-                <option value="none">Total Time</option>
-                <option value="total_time">Time: High to Low</option>
-              </select>
-
-              {/* Roles Selector */}
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-              >
-                <option value="">Roles</option>
-                <option value="postgres">postgres</option>
-                <option value="authenticator">authenticator</option>
-                <option value="keycloak">keycloak</option>
-              </select>
-
-              {/* Source Selector */}
-              <select
-                disabled
-                className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg font-semibold h-8 cursor-not-allowed opacity-80"
-              >
-                <option value="">Source</option>
-              </select>
-
-              <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="h-8 w-8 p-0 shrink-0">
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToCsv} className="h-8 font-semibold">
-                Export
-              </Button>
-            </div>
+            {/* Glowing border under sticky filter toolbar when scrolled or loading */}
+            <div className={`absolute bottom-0 left-0 right-0 h-[1.5px] transition-all duration-300 ${
+              loading || isScrolled 
+                ? "shimmer-line opacity-100" 
+                : "bg-transparent opacity-0"
+            }`} />
           </div>
 
           {/* Borderless slow queries list table using TanStack Table */}
