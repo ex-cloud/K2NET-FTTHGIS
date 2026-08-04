@@ -1,11 +1,20 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
-import { DatabaseZap, Clock, AlertCircle, RefreshCw } from "lucide-react";
-import { useDbPerformance } from "@/hooks/useDbPerformance";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, Dialog, DialogContent, DialogHeader, DialogTitle } from "@k2net/ui";
+import { DatabaseZap, Clock, AlertCircle, RefreshCw, Copy, Check } from "lucide-react";
+import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
+import { useState } from "react";
 
 export default function QueryPerformancePage() {
   const { slowQueries, spatialIndexes, loading, error, refresh } = useDbPerformance();
+  const [selectedQuery, setSelectedQuery] = useState<SlowQuery | null>(null);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const handleCopy = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
 
   // Compute stats from real queries if available
   const totalCalls = slowQueries.reduce((acc, q) => acc + q.calls, 0);
@@ -98,9 +107,24 @@ export default function QueryPerformancePage() {
               </div>
             ) : (
               slowQueries.map((q, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_80px_100px_120px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-mono text-foreground truncate select-all" title={q.query}>
+                <div key={idx} className="grid grid-cols-[1fr_80px_100px_120px] px-5 py-3 hover:bg-muted/20 transition-colors items-center gap-2 group/row">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <button
+                      onClick={() => handleCopy(q.query, idx)}
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+                      title="Copy SQL Query"
+                    >
+                      {copiedIdx === idx ? (
+                        <Check className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                    <p
+                      onClick={() => setSelectedQuery(q)}
+                      className="text-xs font-mono text-foreground truncate cursor-pointer hover:text-primary hover:underline select-all flex-1"
+                      title="Click to view full SQL query"
+                    >
                       {q.query}
                     </p>
                   </div>
@@ -157,6 +181,57 @@ export default function QueryPerformancePage() {
           </div>
         </CardContent>
       </Card>
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedQuery} onOpenChange={(open) => !open && setSelectedQuery(null)}>
+        <DialogContent className="bg-card border-border sm:max-w-[700px] p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold text-foreground flex items-center justify-between">
+              <span>Full SQL Statement Details</span>
+              {selectedQuery && (
+                <button
+                  onClick={() => handleCopy(selectedQuery.query, -1)}
+                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-[10px]"
+                >
+                  {copiedIdx === -1 ? (
+                    <>
+                      <Check className="h-3 w-3 text-emerald-500" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" />
+                      <span>Copy SQL</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedQuery && (
+            <div className="mt-4 space-y-4">
+              <div className="p-4 rounded-lg bg-muted/40 border border-border overflow-x-auto max-h-[300px]">
+                <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-all select-all">
+                  {selectedQuery.query}
+                </pre>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 bg-muted/20 border border-border rounded-lg">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Calls</p>
+                  <p className="text-sm font-mono font-bold text-foreground mt-0.5">{selectedQuery.calls.toLocaleString()}</p>
+                </div>
+                <div className="p-3 bg-muted/20 border border-border rounded-lg">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Mean Execution Time</p>
+                  <p className="text-sm font-mono font-bold text-foreground mt-0.5">{selectedQuery.meanTimeMs.toFixed(1)}ms</p>
+                </div>
+                <div className="p-3 bg-muted/20 border border-border rounded-lg">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Time</p>
+                  <p className="text-sm font-mono font-bold text-foreground mt-0.5">{(selectedQuery.totalTimeMs / 1000).toFixed(2)}s</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 }
