@@ -46,7 +46,6 @@ export function useDbPerformance() {
   const [error, setError] = useState<string | null>(null);
 
   // Pagination & Filters States
-  const [_offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("total_time");
@@ -72,7 +71,6 @@ export function useDbPerformance() {
       if (resetList) {
         setLoading(true);
         offsetRef.current = 0;
-        setOffset(0);
       } else {
         if (loadingMoreRef.current) return;
         loadingMoreRef.current = true;
@@ -112,11 +110,9 @@ export function useDbPerformance() {
           if (resetList) {
             setSlowQueries(queriesData);
             offsetRef.current = queriesData.length;
-            setOffset(queriesData.length);
           } else {
             setSlowQueries((prev) => [...prev, ...queriesData]);
             offsetRef.current += queriesData.length;
-            setOffset((prev) => prev + queriesData.length);
           }
 
           setHasMore(queriesData.length === limit);
@@ -143,7 +139,10 @@ export function useDbPerformance() {
 
   // Always-current ref to the latest fetchData — avoids stale closure issues
   const fetchDataRef = useRef(fetchData);
-  fetchDataRef.current = fetchData;
+
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
   // Infinite scroll fetch
   const fetchMore = useCallback(async () => {
@@ -178,7 +177,6 @@ export function useDbPerformance() {
         setSlowQueries([]);
         setStats(DEFAULT_STATS);
         offsetRef.current = 0;
-        setOffset(0);
         setHasMore(false);
         setError(null);
         // Note: fetchData is NOT called here intentionally.
