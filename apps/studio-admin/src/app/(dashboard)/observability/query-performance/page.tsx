@@ -58,6 +58,9 @@ export default function QueryPerformancePage() {
     const success = await resetPerformanceStats();
     if (success) {
       setResetConfirmOpen(false);
+      setTimeout(() => {
+        refresh();
+      }, 50);
     }
   };
 

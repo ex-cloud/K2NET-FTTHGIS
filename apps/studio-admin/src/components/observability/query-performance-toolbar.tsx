@@ -61,6 +61,11 @@ export function QueryPerformanceToolbar({
     setTempRoles(selectedRoles);
   }, [selectedRoles]);
 
+  // Synchronize timeValue state when minTotalTime prop changes from outside (e.g. on reset/clear)
+  useEffect(() => {
+    setTimeValue(minTotalTime ? String(minTotalTime) : "");
+  }, [minTotalTime]);
+
   // Export handlers
   const handleCopyMarkdown = () => {
     const headers = "| Query | Calls | Total Time | Mean Time | Min Time | Max Time | Rows | Cache Hit Rate | Role |";

@@ -44,7 +44,7 @@ export function useDbPerformance() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Pagination & Filters States
   const [_offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -59,97 +59,132 @@ export function useDbPerformance() {
   const offsetRef = useRef(0);
   const loadingMoreRef = useRef(false);
 
-  // Fetch initial data or stats/indexes (also triggers on filter change)
-  const fetchData = useCallback(async (resetList = true) => {
-    if (!session?.accessToken) {
-      setLoading(false);
-      return;
-    }
+  // Skip initial run of the filter-change effect (mount fires initial load separately)
+  const isFilterEffectMounted = useRef(false);
 
-    if (resetList) {
-      setLoading(true);
-      offsetRef.current = 0;
-      setOffset(0);
-    } else {
-      if (loadingMoreRef.current) return;
-      loadingMoreRef.current = true;
-      setLoadingMore(true);
-    }
-
-    try {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
-      const currentOffset = offsetRef.current;
-      
-      const minTimeParam = minTotalTime !== null ? `&minTotalTime=${minTotalTime}` : "";
-      const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=${currentOffset}&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}${minTimeParam}`;
-      
-      // Concurrently fetch queries, indexes, and summary stats
-      const [queriesRes, indexesRes, statsRes] = await Promise.all([
-        fetch(slowQueriesUrl, { headers, cache: "no-store" }),
-        fetch("/api/v1/system/db-performance/spatial-indexes", { headers, cache: "no-store" }),
-        fetch("/api/v1/system/db-performance/stats", { headers, cache: "no-store" })
-      ]);
-
-      if (!queriesRes.ok || !indexesRes.ok || !statsRes.ok) {
-        throw new Error("Failed to fetch database performance metrics");
-      }
-
-      const queriesData = await queriesRes.json();
-      const indexesData = await indexesRes.json();
-      const statsData = await statsRes.json();
-
-      if (mounted.current) {
-        if (resetList) {
-          setSlowQueries(queriesData);
-          offsetRef.current = queriesData.length;
-          setOffset(queriesData.length);
-        } else {
-          setSlowQueries((prev) => [...prev, ...queriesData]);
-          offsetRef.current += queriesData.length;
-          setOffset((prev) => prev + queriesData.length);
-        }
-        
-        setHasMore(queriesData.length === limit);
-        setSpatialIndexes(indexesData);
-        setStats(statsData);
-        setError(null);
-      }
-    } catch (err) {
-      if (mounted.current) {
-        setError(err instanceof Error ? err.message : "Database API unavailable");
-      }
-    } finally {
-      if (mounted.current) {
+  const fetchData = useCallback(
+    async (resetList = true) => {
+      if (!session?.accessToken) {
         setLoading(false);
-        setLoadingMore(false);
-        loadingMoreRef.current = false;
+        return;
       }
-    }
-  }, [session?.accessToken, searchQuery, sortBy, roleFilter, minTotalTime]);
 
-  // Infinite Scroll fetch function
+      if (resetList) {
+        setLoading(true);
+        offsetRef.current = 0;
+        setOffset(0);
+      } else {
+        if (loadingMoreRef.current) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      }
+
+      try {
+        const headers = { Authorization: `Bearer ${session.accessToken}` };
+        const currentOffset = offsetRef.current;
+
+        const minTimeParam =
+          minTotalTime !== null ? `&minTotalTime=${minTotalTime}` : "";
+        const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=${currentOffset}&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}${minTimeParam}`;
+
+        // Concurrently fetch queries, indexes, and summary stats
+        const [queriesRes, indexesRes, statsRes] = await Promise.all([
+          fetch(slowQueriesUrl, { headers, cache: "no-store" }),
+          fetch("/api/v1/system/db-performance/spatial-indexes", {
+            headers,
+            cache: "no-store",
+          }),
+          fetch("/api/v1/system/db-performance/stats", {
+            headers,
+            cache: "no-store",
+          }),
+        ]);
+
+        if (!queriesRes.ok || !indexesRes.ok || !statsRes.ok) {
+          throw new Error("Failed to fetch database performance metrics");
+        }
+
+        const queriesData = await queriesRes.json();
+        const indexesData = await indexesRes.json();
+        const statsData = await statsRes.json();
+
+        if (mounted.current) {
+          if (resetList) {
+            setSlowQueries(queriesData);
+            offsetRef.current = queriesData.length;
+            setOffset(queriesData.length);
+          } else {
+            setSlowQueries((prev) => [...prev, ...queriesData]);
+            offsetRef.current += queriesData.length;
+            setOffset((prev) => prev + queriesData.length);
+          }
+
+          setHasMore(queriesData.length === limit);
+          setSpatialIndexes(indexesData);
+          setStats(statsData);
+          setError(null);
+        }
+      } catch (err) {
+        if (mounted.current) {
+          setError(
+            err instanceof Error ? err.message : "Database API unavailable"
+          );
+        }
+      } finally {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadingMore(false);
+          loadingMoreRef.current = false;
+        }
+      }
+    },
+    [session?.accessToken, searchQuery, sortBy, roleFilter, minTotalTime]
+  );
+
+  // Always-current ref to the latest fetchData — avoids stale closure issues
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
+  // Infinite scroll fetch
   const fetchMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore) return;
     await fetchData(false);
   }, [fetchData, loading, loadingMore, hasMore]);
 
-  // Reset performance statistics endpoint
+  // Stable refresh: never recreated, always calls the latest fetchData via ref.
+  // This prevents the double-fetch bug where both the mount-effect and the
+  // filter-effect used to fire on every filter change.
+  const refresh = useCallback(() => {
+    fetchDataRef.current(true);
+  }, []);
+
+  // Reset pg_stat_statements AND all UI filter states so the page is clean.
   const resetPerformanceStats = useCallback(async () => {
     if (!session?.accessToken) return false;
     try {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
       const res = await fetch("/api/v1/system/db-performance/reset", {
         method: "POST",
-        headers,
+        headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });
       if (res.ok) {
-        // Clear local list and refresh stats
+        // 1. Reset all server-side filter states (clears filter chips in UI)
+        setSearchQuery("");
+        setSortBy("total_time");
+        setRoleFilter("");
+        setMinTotalTime(null);
+        setSelectedRoles([]);
+        // 2. Clear local data immediately so UI shows 0 queries right away
         setSlowQueries([]);
+        setStats(DEFAULT_STATS);
         offsetRef.current = 0;
         setOffset(0);
         setHasMore(false);
-        await fetchData(true);
+        setError(null);
+        // Note: fetchData is NOT called here intentionally.
+        // page.tsx will call refresh() via setTimeout after React processes
+        // the state updates above, ensuring the new (empty) filter values
+        // are used in the outgoing request.
         return true;
       }
       return false;
@@ -157,33 +192,40 @@ export function useDbPerformance() {
       console.error("Failed to reset database statistics:", err);
       return false;
     }
-  }, [session?.accessToken, fetchData]);
+  }, [session?.accessToken]);
 
-  // Refresh or trigger on query/filter/sort changes
-  const refresh = useCallback(() => {
-    fetchData(true);
-  }, [fetchData]);
+  // ─── Effects ────────────────────────────────────────────────────────────────
 
-  // Fetch initial on mount
+  // Initial data load — fires once on mount and again if the auth token changes.
+  // fetchData is intentionally NOT in the deps array; we access it via
+  // fetchDataRef.current so this effect does not re-fire on every filter change.
   useEffect(() => {
     mounted.current = true;
     if (session?.accessToken) {
-      fetchData(true);
+      fetchDataRef.current(true);
     }
     return () => {
       mounted.current = false;
     };
-  }, [session?.accessToken, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
 
-  // Trigger refresh on filter or sort updates
+  // Filter / sort change → refresh (skip the first/mount run to avoid double-fetch).
+  // refresh is stable (useCallback with []) so it does not itself trigger this effect.
   useEffect(() => {
-    refresh();
-  }, [searchQuery, sortBy, roleFilter, refresh]);
+    if (!isFilterEffectMounted.current) {
+      isFilterEffectMounted.current = true;
+      return;
+    }
+    if (session?.accessToken) {
+      refresh();
+    }
+  }, [searchQuery, sortBy, roleFilter, minTotalTime, session?.accessToken, refresh]);
 
-  // Filter slowQueries based on client-side filters (minTotalTime & selectedRoles)
+  // Client-side filter by role selection (selectedRoles is UI-only, not sent to server)
   const filteredSlowQueries = slowQueries.filter((q) => {
-    if (minTotalTime !== null && q.totalTimeMs < minTotalTime) return false;
-    if (selectedRoles.length > 0 && !selectedRoles.includes(q.role)) return false;
+    if (selectedRoles.length > 0 && !selectedRoles.includes(q.role))
+      return false;
     return true;
   });
 
