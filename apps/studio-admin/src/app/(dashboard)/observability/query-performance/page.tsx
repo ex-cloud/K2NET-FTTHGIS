@@ -5,7 +5,7 @@ import { AlertCircle, RefreshCw, HelpCircle, FileText } from "lucide-react";
 import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
 import { QueryPerformanceTable } from "@/components/observability/query-performance-table";
 import { SpatialIndexTable } from "@/components/observability/spatial-index-table";
-import { QueryDetailModal } from "@/components/observability/query-detail-modal";
+import { QueryDetailPanel } from "@/components/observability/query-detail-panel";
 import { ResetConfirmModal } from "@/components/observability/reset-confirm-modal";
 import { QueryPerformanceBanner } from "@/components/observability/query-performance-banner";
 import { QueryPerformanceToolbar } from "@/components/observability/query-performance-toolbar";
@@ -235,11 +235,9 @@ export default function QueryPerformancePage() {
         onOpenResetModal={() => setResetConfirmOpen(true)}
       />
 
-      <QueryDetailModal
+      <QueryDetailPanel
         selectedQuery={selectedQuery}
         onClose={() => setSelectedQuery(null)}
-        onCopy={handleCopy}
-        copiedIdx={copiedIdx}
       />
 
       <ResetConfirmModal

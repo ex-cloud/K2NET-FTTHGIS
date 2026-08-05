@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Button } from "@k2net/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@k2net/ui";
 import { AlertCircle } from "lucide-react";
 
 interface ResetConfirmModalProps {
@@ -24,17 +24,30 @@ export function ResetConfirmModal({
             Reset Statistics Report?
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground mt-2 leading-relaxed">
-            This action will reset all metrics gathered by the <code>pg_stat_statements</code> extension in the database. Historical data will be cleared, and new performance baselines will be started.
+            This action will reset all metrics gathered by the{" "}
+            <code className="bg-muted/60 px-1 py-0.5 rounded text-[10px] font-mono">pg_stat_statements</code>{" "}
+            extension in the database. Historical data will be cleared, and new performance
+            baselines will be started.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8">
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors"
+          >
             Cancel
-          </Button>
-          <Button className="bg-rose-600 hover:bg-rose-500 text-white h-8" size="sm" onClick={onConfirm}>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onConfirm();
+            }}
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+          >
             Reset stats
-          </Button>
-        </DialogFooter>
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
