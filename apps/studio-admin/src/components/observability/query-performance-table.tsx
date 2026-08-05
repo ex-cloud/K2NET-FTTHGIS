@@ -75,15 +75,15 @@ export function QueryPerformanceTable({
           const percent = info.getValue() ?? 0;
           const totalMs = info.row.original.totalTimeMs;
           return (
-            <div className="flex flex-col gap-1 pr-4 min-w-[130px]">
-              <div className="flex items-center gap-1.5 text-xs font-mono text-foreground font-medium">
-                <span>{percent.toFixed(1)}%</span>
+            <div className="flex flex-col gap-1 items-end w-full">
+              <div className="flex items-center justify-end gap-1.5 text-xs font-mono text-foreground font-medium">
+                <span className="font-semibold text-foreground">{percent.toFixed(1)}%</span>
                 <span className="text-[10px] text-muted-foreground">/</span>
                 <span className="text-[10px] text-muted-foreground">{(totalMs / 1000).toFixed(2)}s</span>
               </div>
-              <div className="h-1 w-full bg-muted/40 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  className="h-full bg-muted-foreground/60 rounded-full transition-all duration-300"
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -192,7 +192,7 @@ export function QueryPerformanceTable({
           const isSorted = header.column.getIsSorted();
 
           const isRightAligned = [
-            "calls", "maxTimeMs", "meanTimeMs", "minTimeMs", 
+            "totalTimePercent", "calls", "maxTimeMs", "meanTimeMs", "minTimeMs", 
             "rows", "cacheHitRate", "role", "application"
           ].includes(header.column.id);
 
