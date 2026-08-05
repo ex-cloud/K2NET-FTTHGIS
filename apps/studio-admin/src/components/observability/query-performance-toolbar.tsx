@@ -27,8 +27,8 @@ interface QueryPerformanceToolbarProps {
 const AVAILABLE_ROLES = [
   { id: "postgres", label: "postgres" },
   { id: "authenticator", label: "authenticator" },
-  { id: "supabase_admin", label: "supabase_admin" },
   { id: "keycloak", label: "keycloak" },
+  { id: "ftth_admin", label: "ftth_admin" },
   { id: "ftth_user", label: "ftth_user" },
 ];
 

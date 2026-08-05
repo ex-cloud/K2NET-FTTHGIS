@@ -80,7 +80,8 @@ export function useDbPerformance() {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
       const currentOffset = offsetRef.current;
       
-      const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=${currentOffset}&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}`;
+      const minTimeParam = minTotalTime !== null ? `&minTotalTime=${minTotalTime}` : "";
+      const slowQueriesUrl = `/api/v1/system/db-performance/slow-queries?limit=${limit}&offset=${currentOffset}&search=${encodeURIComponent(searchQuery)}&sort=${sortBy}&role=${roleFilter}${minTimeParam}`;
       
       // Concurrently fetch queries, indexes, and summary stats
       const [queriesRes, indexesRes, statsRes] = await Promise.all([
@@ -124,7 +125,7 @@ export function useDbPerformance() {
         loadingMoreRef.current = false;
       }
     }
-  }, [session?.accessToken, searchQuery, sortBy, roleFilter]);
+  }, [session?.accessToken, searchQuery, sortBy, roleFilter, minTotalTime]);
 
   // Infinite Scroll fetch function
   const fetchMore = useCallback(async () => {

@@ -26,7 +26,8 @@ public class DbPerformanceController {
             @org.springframework.web.bind.annotation.RequestParam(value = "offset", defaultValue = "0") int offset,
             @org.springframework.web.bind.annotation.RequestParam(value = "search", defaultValue = "") String search,
             @org.springframework.web.bind.annotation.RequestParam(value = "sort", defaultValue = "total_time") String sort,
-            @org.springframework.web.bind.annotation.RequestParam(value = "role", defaultValue = "") String role
+            @org.springframework.web.bind.annotation.RequestParam(value = "role", defaultValue = "") String role,
+            @org.springframework.web.bind.annotation.RequestParam(value = "minTotalTime", required = false) Double minTotalTime
     ) {
         List<Map<String, Object>> slowQueries = new ArrayList<>();
         try {
@@ -58,6 +59,10 @@ public class DbPerformanceController {
                 if (role != null && !role.trim().isEmpty()) {
                     sql.append("AND r.rolname = ? ");
                     params.add(role.trim());
+                }
+                if (minTotalTime != null && minTotalTime > 0) {
+                    sql.append("AND q.total_exec_time >= ? ");
+                    params.add(minTotalTime);
                 }
 
                 // Sorting mapping to prevent SQL injection

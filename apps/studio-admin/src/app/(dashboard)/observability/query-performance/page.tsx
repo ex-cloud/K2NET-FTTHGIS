@@ -67,7 +67,7 @@ export default function QueryPerformancePage() {
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading && slowQueries.length >= 20) {
           fetchMore();
         }
       },
@@ -81,7 +81,7 @@ export default function QueryPerformancePage() {
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
-  }, [fetchMore, hasMore, loadingMore, loading, activeTab]);
+  }, [fetchMore, hasMore, loadingMore, loading, activeTab, slowQueries.length]);
 
   return (
     <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 select-none overflow-hidden">
