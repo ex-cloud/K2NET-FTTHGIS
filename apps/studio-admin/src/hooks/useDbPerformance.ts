@@ -51,6 +51,8 @@ export function useDbPerformance() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("total_time");
   const [roleFilter, setRoleFilter] = useState("");
+  const [minTotalTime, setMinTotalTime] = useState<number | null>(null);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const limit = 20;
 
   const mounted = useRef(true);
@@ -177,8 +179,16 @@ export function useDbPerformance() {
     refresh();
   }, [searchQuery, sortBy, roleFilter, refresh]);
 
+  // Filter slowQueries based on client-side filters (minTotalTime & selectedRoles)
+  const filteredSlowQueries = slowQueries.filter((q) => {
+    if (minTotalTime !== null && q.totalTimeMs < minTotalTime) return false;
+    if (selectedRoles.length > 0 && !selectedRoles.includes(q.role)) return false;
+    return true;
+  });
+
   return {
-    slowQueries,
+    slowQueries: filteredSlowQueries,
+    rawSlowQueries: slowQueries,
     spatialIndexes,
     stats,
     loading,
@@ -191,6 +201,10 @@ export function useDbPerformance() {
     setSortBy,
     roleFilter,
     setRoleFilter,
+    minTotalTime,
+    setMinTotalTime,
+    selectedRoles,
+    setSelectedRoles,
     fetchMore,
     refresh,
     resetPerformanceStats,

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@k2net/ui";
-import { AlertCircle, RefreshCw, Search, HelpCircle, FileText } from "lucide-react";
+import { AlertCircle, RefreshCw, HelpCircle, FileText } from "lucide-react";
 import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
 import { QueryPerformanceTable } from "@/components/observability/query-performance-table";
 import { SpatialIndexTable } from "@/components/observability/spatial-index-table";
 import { QueryDetailModal } from "@/components/observability/query-detail-modal";
 import { ResetConfirmModal } from "@/components/observability/reset-confirm-modal";
 import { QueryPerformanceBanner } from "@/components/observability/query-performance-banner";
+import { QueryPerformanceToolbar } from "@/components/observability/query-performance-toolbar";
 
 export default function QueryPerformancePage() {
   const {
@@ -25,6 +25,10 @@ export default function QueryPerformancePage() {
     setSortBy,
     roleFilter,
     setRoleFilter,
+    minTotalTime,
+    setMinTotalTime,
+    selectedRoles,
+    setSelectedRoles,
     fetchMore,
     refresh,
     resetPerformanceStats,
@@ -78,34 +82,6 @@ export default function QueryPerformancePage() {
       if (observerRef.current) observerRef.current.disconnect();
     };
   }, [fetchMore, hasMore, loadingMore, loading, activeTab]);
-
-  // Export data as CSV
-  const exportToCsv = () => {
-    const headers = ["Query", "Calls", "Total Time (ms)", "Mean Time (ms)", "Min Time (ms)", "Max Time (ms)", "Rows Processed", "Cache Hit Rate (%)", "Role"];
-    const rows = slowQueries.map((q) => [
-      `"${q.query.replace(/"/g, '""')}"`,
-      q.calls,
-      q.totalTimeMs,
-      q.meanTimeMs,
-      q.minTimeMs,
-      q.maxTimeMs,
-      q.rows,
-      q.cacheHitRate,
-      q.role,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `database_query_performance_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 select-none overflow-hidden">
@@ -201,89 +177,25 @@ export default function QueryPerformancePage() {
       {activeTab === "queries" ? (
         <div className="flex-1 min-h-0 flex flex-col px-4 md:px-6 pb-6">
           <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
-            {/* Static Filter and Sort Toolbar */}
-            <div className="relative z-30 bg-background/50 backdrop-blur-sm py-3 select-none shrink-0 border-b border-border overflow-hidden">
-              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-5">
-                <div className="relative w-full sm:w-[320px]">
-                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Filter by query"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
-                  />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-                  {/* Calls Sort Selector */}
-                  <select
-                    value={sortBy === "calls" ? "calls" : "none"}
-                    onChange={(e) => {
-                      if (e.target.value === "calls") {
-                        setSortBy("calls");
-                      }
-                    }}
-                    className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-                  >
-                    <option value="none">Calls</option>
-                    <option value="calls">Calls: High to Low</option>
-                  </select>
-
-                  {/* Total Time Sort Selector */}
-                  <select
-                    value={sortBy === "total_time" ? "total_time" : "none"}
-                    onChange={(e) => {
-                      if (e.target.value === "total_time") {
-                        setSortBy("total_time");
-                      }
-                    }}
-                    className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-                  >
-                    <option value="none">Total Time</option>
-                    <option value="total_time">Time: High to Low</option>
-                  </select>
-
-                  {/* Roles Selector */}
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="px-3 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-semibold h-8"
-                  >
-                    <option value="">Roles</option>
-                    <option value="postgres">postgres</option>
-                    <option value="authenticator">authenticator</option>
-                    <option value="keycloak">keycloak</option>
-                  </select>
-
-                  {/* Source Selector */}
-                  <select
-                    disabled
-                    className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg font-semibold h-8 cursor-not-allowed opacity-80"
-                  >
-                    <option value="">Source</option>
-                  </select>
-
-                  <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="h-8 w-8 p-0 shrink-0">
-                    <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={exportToCsv} className="h-8 font-semibold">
-                    Export
-                  </Button>
-                </div>
-              </div>
-
-              {/* Static scroll border: full width, very thin */}
-              <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-border/40 transition-opacity duration-300 ${
-                isScrolled && !loading && !loadingMore ? "opacity-100" : "opacity-0"
-              }`} />
-
-              {/* Shimmer loading line */}
-              <div className="absolute bottom-0 left-0 right-0 h-[1px] overflow-hidden">
-                <div className={`h-full w-1/5 bg-gradient-to-r from-transparent via-primary to-transparent transition-opacity duration-300 will-change-transform ${
-                  loading || loadingMore ? "animate-shimmer-line opacity-100" : "opacity-0"
-                }`} />
-              </div>
-            </div>
+            {/* Filter and Sort Toolbar matching Supabase left/right architecture */}
+            <QueryPerformanceToolbar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              roleFilter={roleFilter}
+              setRoleFilter={setRoleFilter}
+              minTotalTime={minTotalTime}
+              setMinTotalTime={setMinTotalTime}
+              selectedRoles={selectedRoles}
+              setSelectedRoles={setSelectedRoles}
+              loading={loading}
+              loadingMore={loadingMore}
+              isScrolled={isScrolled}
+              refresh={refresh}
+              onOpenResetModal={() => setResetConfirmOpen(true)}
+              slowQueries={slowQueries}
+            />
 
             {/* Scrollable Table Container */}
             <div 
