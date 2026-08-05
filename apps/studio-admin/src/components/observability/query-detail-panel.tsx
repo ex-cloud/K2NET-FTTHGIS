@@ -152,19 +152,19 @@ export function QueryDetailPanel({ selectedQuery, onClose }: QueryDetailPanelPro
 
   return (
     <>
-      {/* Backdrop overlay — click to close */}
+      {/* Backdrop overlay — click to close (starts below SystemHeader h-12 = 48px) */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-300",
+          "fixed top-12 left-0 right-0 bottom-0 z-40 bg-black/20 backdrop-blur-[2px] transition-opacity duration-300",
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
       />
 
-      {/* Side Panel */}
+      {/* Side Panel — top-12 to start below the 48px SystemHeader */}
       <div
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full max-w-[480px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out",
+          "fixed top-12 right-0 z-50 h-[calc(100vh-3rem)] w-full max-w-[480px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
