@@ -101,18 +101,7 @@ export default function QueryPerformancePage() {
 
   return (
     <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 select-none overflow-hidden">
-      {/* Shimmer line CSS animations */}
-      <style>{`
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .shimmer-line {
-          background: linear-gradient(90deg, transparent, var(--primary) 50%, transparent);
-          background-size: 200% 100%;
-          animation: shimmer 1.5s infinite linear;
-        }
-      `}</style>
+
 
       {/* Top Header Section */}
       <div className="flex items-center justify-between px-4 md:px-6">
@@ -204,10 +193,11 @@ export default function QueryPerformancePage() {
       </div>
 
       {activeTab === "queries" ? (
-        <div className="flex-1 min-h-0 flex flex-col">
-          {/* Static Filter and Sort Toolbar */}
-          <div className="relative z-30 bg-background py-3 select-none shrink-0 border-b border-border/40">
-            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-4 md:px-6">
+        <div className="flex-1 min-h-0 flex flex-col px-4 md:px-6 pb-6">
+          <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
+            {/* Static Filter and Sort Toolbar */}
+            <div className="relative z-30 bg-background/50 backdrop-blur-sm py-3 select-none shrink-0 border-b border-border overflow-hidden">
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-5">
               <div className="relative w-full sm:w-[320px]">
                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <input
@@ -276,14 +266,17 @@ export default function QueryPerformancePage() {
               </div>
             </div>
 
-            {/* Glowing border under filter toolbar: animate shimmer only on loading/loadingMore, static border on scroll */}
-            <div className={`absolute bottom-0 left-0 right-0 h-[1.5px] transition-all duration-300 ${
-              loading || loadingMore
-                ? "shimmer-line opacity-100" 
-                : isScrolled
-                  ? "bg-border/60 opacity-100"
-                  : "bg-transparent opacity-0"
+            {/* Static scroll border: full width, very thin */}
+            <div className={`absolute bottom-0 left-0 right-0 h-[1px] bg-border/40 transition-opacity duration-300 ${
+              isScrolled && !loading && !loadingMore ? "opacity-100" : "opacity-0"
             }`} />
+
+            {/* Shimmer loading line: walking from left to right like a shooting star along the bottom border */}
+            <div className="absolute bottom-0 left-0 right-0 h-[1px] overflow-hidden">
+              <div className={`h-full w-1/5 bg-gradient-to-r from-transparent via-primary to-transparent transition-opacity duration-300 will-change-transform ${
+                loading || loadingMore ? "animate-shimmer-line opacity-100" : "opacity-0"
+              }`} />
+            </div>
           </div>
 
           {/* Scrollable Table Container */}
@@ -293,6 +286,7 @@ export default function QueryPerformancePage() {
           >
             <QueryPerformanceTable
               data={slowQueries}
+              loading={loading}
               onSelectQuery={setSelectedQuery}
               onCopy={handleCopy}
               copiedIdx={copiedIdx}
@@ -312,11 +306,12 @@ export default function QueryPerformancePage() {
             </div>
           </div>
         </div>
-      ) : (
+      </div>
+    ) : (
         /* Spatial Index Registry Content Tab */
-        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin px-4 md:px-6">
-          <Card className="overflow-hidden bg-transparent border-none">
-            <CardContent className="p-0">
+        <div className="flex-1 min-h-0 flex flex-col px-4 md:px-6 pb-6">
+          <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden overflow-y-auto overflow-x-auto custom-scrollbar-thin">
+            <div className="min-w-[800px] w-full p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
@@ -351,8 +346,8 @@ export default function QueryPerformancePage() {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 

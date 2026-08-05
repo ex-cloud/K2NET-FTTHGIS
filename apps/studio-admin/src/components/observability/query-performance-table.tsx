@@ -1,17 +1,26 @@
 "use client";
 
 import React from "react";
-import { Copy, Check, User } from "lucide-react";
+import { Copy, Check, User, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
   createColumnHelper,
   flexRender,
+  SortingState,
 } from "@tanstack/react-table";
 import { SlowQuery } from "@/hooks/useDbPerformance";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@k2net/ui";
 
 interface QueryPerformanceTableProps {
   data: SlowQuery[];
+  loading?: boolean;
   onSelectQuery: (query: SlowQuery) => void;
   onCopy: (text: string, idx: number) => void;
   copiedIdx: number | null;
@@ -21,6 +30,7 @@ const columnHelper = createColumnHelper<SlowQuery>();
 
 export function QueryPerformanceTable({
   data,
+  loading = false,
   onSelectQuery,
   onCopy,
   copiedIdx,
@@ -82,7 +92,7 @@ export function QueryPerformanceTable({
         },
       }),
       columnHelper.accessor("calls", {
-        header: () => <span className="block text-right">Calls</span>,
+        header: "Calls",
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
             {info.getValue().toLocaleString()}
@@ -90,7 +100,7 @@ export function QueryPerformanceTable({
         ),
       }),
       columnHelper.accessor("maxTimeMs", {
-        header: () => <span className="block text-right">Max time</span>,
+        header: "Max time",
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
             {info.getValue() >= 1000 ? `${(info.getValue() / 1000).toFixed(1)}s` : `${info.getValue().toFixed(0)}ms`}
@@ -98,7 +108,7 @@ export function QueryPerformanceTable({
         ),
       }),
       columnHelper.accessor("meanTimeMs", {
-        header: () => <span className="block text-right">Mean time</span>,
+        header: "Mean time",
         cell: (info) => {
           const val = info.getValue();
           return (
@@ -113,7 +123,7 @@ export function QueryPerformanceTable({
         },
       }),
       columnHelper.accessor("minTimeMs", {
-        header: () => <span className="block text-right">Min time</span>,
+        header: "Min time",
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
             {info.getValue() >= 1000 ? `${(info.getValue() / 1000).toFixed(1)}s` : `${info.getValue().toFixed(0)}ms`}
@@ -121,7 +131,7 @@ export function QueryPerformanceTable({
         ),
       }),
       columnHelper.accessor("rows", {
-        header: () => <span className="block text-right">Rows processed</span>,
+        header: "Rows processed",
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
             {info.getValue().toLocaleString()}
@@ -129,7 +139,7 @@ export function QueryPerformanceTable({
         ),
       }),
       columnHelper.accessor("cacheHitRate", {
-        header: () => <span className="block text-right">Cache hit rate</span>,
+        header: "Cache hit rate",
         cell: (info) => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all font-medium text-emerald-500/90">
             {info.getValue().toFixed(3)}%
@@ -137,7 +147,7 @@ export function QueryPerformanceTable({
         ),
       }),
       columnHelper.accessor("role", {
-        header: () => <span className="block text-right">Role</span>,
+        header: "Role",
         cell: (info) => (
           <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground text-right select-all justify-end w-full">
             {info.getValue()}
@@ -147,7 +157,7 @@ export function QueryPerformanceTable({
       }),
       columnHelper.display({
         id: "application",
-        header: () => <span className="block text-right">Application</span>,
+        header: "Application",
         cell: () => (
           <span className="block text-xs font-mono text-muted-foreground text-right select-all">
             -
@@ -158,39 +168,113 @@ export function QueryPerformanceTable({
     [copiedIdx, onCopy, onSelectQuery]
   );
 
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+
   const table = useReactTable({
     data,
     columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
     <div className="min-w-[1340px]">
       {/* Table Head */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2.5 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80">
-        {table.getFlatHeaders().map((header) => (
-          <div key={header.id}>
-            {header.isPlaceholder
-              ? null
-              : flexRender(header.column.columnDef.header, header.getContext())}
-          </div>
-        ))}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80 items-center">
+        {table.getFlatHeaders().map((header) => {
+          if (header.isPlaceholder) return <div key={header.id} />;
+
+          const canSort = header.column.getCanSort();
+          const isSorted = header.column.getIsSorted();
+
+          const isRightAligned = [
+            "calls", "maxTimeMs", "meanTimeMs", "minTimeMs", 
+            "rows", "cacheHitRate", "role", "application"
+          ].includes(header.column.id);
+
+          return (
+            <div key={header.id} className={`min-w-0 flex items-center ${isRightAligned ? "justify-end text-right" : "justify-start text-left"}`}>
+              {canSort && header.column.id !== "application" ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
+                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                      <span className="flex items-center">
+                        {isSorted === "asc" ? (
+                          <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                        ) : isSorted === "desc" ? (
+                          <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                        )}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={isRightAligned ? "end" : "start"} className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                    <DropdownMenuItem 
+                      onClick={() => header.column.toggleSorting(false)}
+                      className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Sort Ascending</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => header.column.toggleSorting(true)}
+                      className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Sort Descending</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Table Body */}
       <div className="divide-y divide-border/40">
-        {table.getRowModel().rows.map((row) => (
-          <div
-            key={row.id}
-            className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
-          >
-            {row.getVisibleCells().map((cell) => (
-              <div key={cell.id} className="min-w-0">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </div>
-            ))}
-          </div>
-        ))}
+        {loading && data.length === 0 ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-4 border-b border-border/40 gap-3 items-center animate-pulse"
+            >
+              <div className={`h-3.5 bg-muted/60 rounded ${
+                i === 0 ? "w-[75%]" : i === 1 ? "w-[50%]" : i === 2 ? "w-[65%]" : i === 3 ? "w-[40%]" : i === 4 ? "w-[80%]" : "w-[55%]"
+              }`} />
+              <div className="h-3.5 bg-muted/60 rounded w-28" />
+              <div className="h-3.5 bg-muted/60 rounded w-10 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-16 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-14 ml-auto" />
+              <div className="h-3.5 bg-muted/60 rounded w-6 ml-auto" />
+            </div>
+          ))
+        ) : (
+          table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
+            >
+              {row.getVisibleCells().map((cell) => (
+                <div key={cell.id} className="min-w-0">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
