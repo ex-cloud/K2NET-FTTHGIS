@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -201,7 +202,7 @@ func (h *HTTPHandler) GetNotificationLogs(c *gin.Context) {
 	})
 }
 
-// GetStats returns dynamically calculated statistics from Redis logs
+// GetStats returns dynamically calculated statistics from Redis logs and environment configuration
 func (h *HTTPHandler) GetStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -240,21 +241,37 @@ func (h *HTTPHandler) GetStats(c *gin.Context) {
 		}
 	}
 
+	if recentQueue == nil {
+		recentQueue = []logEntry{}
+	}
+
 	deliveryRate := 100.0
 	if totalSent+totalFailed > 0 {
 		deliveryRate = float64(totalSent) / float64(totalSent+totalFailed) * 100.0
 	}
 
+	queueDepth, _ := h.rdb.LLen(ctx, "gateway:notification:queue").Result()
+
+	twilioConfigured := os.Getenv("TWILIO_ACCOUNT_SID") != ""
+	smtpConfigured := os.Getenv("SMTP_HOST") != ""
+
+	wabaStatus := "NOT_CONFIGURED"
+	if twilioConfigured {
+		wabaStatus = "CONFIGURED"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"queue_depth":            0,
-		"delivery_rate_24h":     deliveryRate,
-		"total_sent_24h":        totalSent,
-		"total_delivered_24h":   totalSent,
-		"waba_status":            "CONNECTED",
-		"sms_credits_remaining": 8420,
-		"sms_credits_max":       10000,
-		"status":                "healthy",
-		"recent_queue":          recentQueue,
+		"queue_depth":          queueDepth,
+		"delivery_rate_24h":   deliveryRate,
+		"total_sent_24h":      totalSent,
+		"total_delivered_24h": totalSent,
+		"total_failed_24h":    totalFailed,
+		"waba_status":         wabaStatus,
+		"twilio_configured":   twilioConfigured,
+		"smtp_configured":     smtpConfigured,
+		"status":              "healthy",
+		"recent_queue":        recentQueue,
 	})
 }
+
 

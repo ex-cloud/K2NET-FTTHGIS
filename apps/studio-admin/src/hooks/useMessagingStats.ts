@@ -18,9 +18,10 @@ export interface MessagingStats {
   deliveryRate24h: number;
   totalSent24h: number;
   totalDelivered24h: number;
+  totalFailed24h: number;
   wabaStatus: string;
-  smsCreditsRemaining: number;
-  smsCreditsMax: number;
+  twilioConfigured: boolean;
+  smtpConfigured: boolean;
   status: string;
 }
 
@@ -29,9 +30,10 @@ const DEFAULT_STATS: MessagingStats = {
   deliveryRate24h: 0,
   totalSent24h: 0,
   totalDelivered24h: 0,
+  totalFailed24h: 0,
   wabaStatus: "loading",
-  smsCreditsRemaining: 0,
-  smsCreditsMax: 10000,
+  twilioConfigured: false,
+  smtpConfigured: false,
   status: "loading",
 };
 
@@ -57,14 +59,15 @@ export function useMessagingStats() {
       const data = await res.json();
 
       const mapped: MessagingStats = {
-        queueDepth:          data.queue_depth          ?? data.queueDepth          ?? 0,
-        deliveryRate24h:     data.delivery_rate_24h    ?? data.deliveryRate24h     ?? 0,
-        totalSent24h:        data.total_sent_24h       ?? data.totalSent24h        ?? 0,
-        totalDelivered24h:   data.total_delivered_24h  ?? data.totalDelivered24h   ?? 0,
-        wabaStatus:          data.waba_status          ?? data.wabaStatus          ?? "DISCONNECTED",
-        smsCreditsRemaining: data.sms_credits_remaining ?? data.smsCreditsRemaining ?? 0,
-        smsCreditsMax:       data.sms_credits_max       ?? data.smsCreditsMax       ?? 10000,
-        status:              data.status               ?? "healthy",
+        queueDepth:        data.queue_depth        ?? data.queueDepth        ?? 0,
+        deliveryRate24h:   data.delivery_rate_24h  ?? data.deliveryRate24h   ?? 0,
+        totalSent24h:      data.total_sent_24h     ?? data.totalSent24h      ?? 0,
+        totalDelivered24h: data.total_delivered_24h?? data.totalDelivered24h ?? 0,
+        totalFailed24h:    data.total_failed_24h   ?? data.totalFailed24h    ?? 0,
+        wabaStatus:        data.waba_status        ?? data.wabaStatus        ?? "NOT_CONFIGURED",
+        twilioConfigured:  Boolean(data.twilio_configured ?? data.twilioConfigured ?? false),
+        smtpConfigured:    Boolean(data.smtp_configured   ?? data.smtpConfigured   ?? false),
+        status:            data.status             ?? "healthy",
       };
 
       const queueItems: MessageQueueItem[] = (data.recent_queue ?? data.recentQueue ?? []).map(
@@ -88,8 +91,8 @@ export function useMessagingStats() {
       if (mounted.current) {
         setError("notification-gateway stats unavailable");
         setStats({
-          queueDepth: 0, deliveryRate24h: 0, totalSent24h: 0, totalDelivered24h: 0,
-          wabaStatus: "DISCONNECTED", smsCreditsRemaining: 0, smsCreditsMax: 10000, status: "down",
+          queueDepth: 0, deliveryRate24h: 0, totalSent24h: 0, totalDelivered24h: 0, totalFailed24h: 0,
+          wabaStatus: "NOT_CONFIGURED", twilioConfigured: false, smtpConfigured: false, status: "down",
         });
         setQueue([]);
       }
