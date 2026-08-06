@@ -187,8 +187,18 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
 
 ### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
-- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`
-- **❌ Belum diaudit**: `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`
+- **❌ Belum diaudit**: `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
+
+### 🔐 Identity & Auth Dashboard Upgrade (Agustus 2026)
+- **Halaman**: [identity/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/identity/page.tsx)
+- **Hook**: `useKeycloakObservability` dari `apps/studio-admin/src/hooks/useKeycloakObservability.ts` — polling 30s
+- **Controller**: [KeycloakObservabilityController.java](file:///opt/project5/apps/api/src/main/java/com/company/ftthgis/api/system/KeycloakObservabilityController.java)
+- **Bug Active Sessions Mocked (Diperbaiki)**: Root cause: `Math.round(totalUsers * 0.4)`. Fix: panggil `/admin/realms/ftth-realm/client-session-stats` dan sum field `active` per client.
+- **Bug Failed Logins Hardcoded (Diperbaiki)**: Root cause: `stats.put("failedLogins24h", 3)`. Fix: query `/events?type=LOGIN_ERROR` dan hitung `eventsList.size()`.
+- **IAM Connections Hardcoded (Diperbaiki)**: Root cause: data statis di frontend. Fix: Backend mengukur latency riil Spring Boot→Keycloak, Kong→Keycloak, dan Keycloak→PostgreSQL (`pg_stat_activity` query via `JdbcTemplate`).
+- **Simulated Events Dihapus**: Metode `getSimulatedEvents()` dan `getSimulatedStats()` dihapus. Jika Keycloak tidak bisa dijangkau, endpoint mengembalikan list kosong `[]` dan status `degraded`.
+- **Frontend**: Menampilkan skeleton loading, status DISCONNECTED merah, badge Degraded jika Keycloak unreachable.
 
 ### 🖥️ Compute & Host Dashboard Upgrade (Agustus 2026)
 - **Halaman**: [compute/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/compute/page.tsx)
