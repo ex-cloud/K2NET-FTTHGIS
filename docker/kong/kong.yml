@@ -255,6 +255,22 @@ services:
               claims_to_verify:
                 - exp
 
+  # ─── Frontend Admin (Next.js Internal API routes) ───────────────────────────
+  # Routes Next.js internal API paths that are NOT backend API calls.
+  # These paths are handled by Next.js Route Handlers, NOT Spring Boot.
+  # Authentication is managed by next-auth inside Next.js — no Kong JWT needed.
+  - name: frontend-admin-service
+    url: http://ftth-frontend-admin:3001
+    routes:
+      - name: frontend-observability-api-route
+        paths:
+          - /api/observability
+        strip_path: false
+      - name: frontend-nextauth-route
+        paths:
+          - /api/auth
+        strip_path: false
+
 # ====================================================
 # Global Plugins
 # ====================================================

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 const KONG_ADMIN_URL = process.env.KONG_ADMIN_URL ?? "http://kong:8001";
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://backend:9090";
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 // Kong Admin API is accessible on the internal Docker network
 const KONG_ADMIN_URL = process.env.KONG_ADMIN_URL ?? "http://kong:8001";
 
@@ -28,7 +30,7 @@ export interface KongRouteDisplay {
 async function fetchPluginsForRoute(routeId: string): Promise<string[]> {
   try {
     const res = await fetch(
-      `${KONG_ADMIN_URL}/plugins?route.id=${routeId}&size=20`,
+      `${KONG_ADMIN_URL}/routes/${routeId}/plugins`,
       { cache: "no-store", signal: AbortSignal.timeout(3000) }
     );
     if (!res.ok) return [];
