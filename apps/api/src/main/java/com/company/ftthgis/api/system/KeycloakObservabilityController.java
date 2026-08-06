@@ -308,4 +308,50 @@ public class KeycloakObservabilityController {
 
         return ResponseEntity.ok(stats);
     }
+
+    private String getAdminAccessToken() {
+        if (clientSecret == null || clientSecret.isEmpty()) {
+            log.debug("keycloak.client-secret is empty. Skipping admin login.");
+            return null;
+        }
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(3))
+                    .build();
+
+            Map<String, String> params = new HashMap<>();
+            params.put("grant_type", "client_credentials");
+            params.put("client_id", clientId);
+            params.put("client_secret", clientSecret);
+
+            StringBuilder formBody = new StringBuilder();
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                if (formBody.length() > 0) formBody.append("&");
+                formBody.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
+                formBody.append("=");
+                formBody.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
+            }
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(keycloakInternalUrl + "/realms/" + adminRealm + "/protocol/openid-connect/token"))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .timeout(Duration.ofSeconds(3))
+                    .POST(HttpRequest.BodyPublishers.ofString(formBody.toString()))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                Map<String, Object> bodyMap = objectMapper.readValue(response.body(), Map.class);
+                return (String) bodyMap.get("access_token");
+            } else {
+                log.warn("Keycloak admin auth failed with status: {}, body: {}", response.statusCode(), response.body());
+                return null;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to retrieve Keycloak admin access token: {}", e.getMessage());
+            return null;
+        }
+    }
 }
+
