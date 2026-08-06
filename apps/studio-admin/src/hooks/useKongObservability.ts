@@ -10,6 +10,9 @@ export interface KongMetrics {
   totalRequests: number;
   activeConnections: number;
   dbReachable: boolean;
+  configHash: string;
+  workerCount: number;
+  workerMemoryMiB: number;
   trafficHistory: KongTrafficPoint[];
   source: "kong-admin" | "unavailable";
   error?: string;

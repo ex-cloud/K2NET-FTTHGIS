@@ -17,31 +17,87 @@ export interface KongRouteDisplay {
   route: string;
   routeId: string;
   upstream: string;
+  upstreamHost: string;
+  upstreamPort: number;
   methods: string;
   plugins: string[];
-  status: "UP" | "UNKNOWN";
+  status: "UP" | "DOWN" | "UNKNOWN";
 }
 
-function transformRoute(r: KongRoute, serviceNames: Record<string, string>): KongRouteDisplay {
+// ── Plugin fetcher per route ───────────────────────────────────────────────
+async function fetchPluginsForRoute(routeId: string): Promise<string[]> {
+  try {
+    const res = await fetch(
+      `${KONG_ADMIN_URL}/plugins?route.id=${routeId}&size=20`,
+      { cache: "no-store", signal: AbortSignal.timeout(3000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.data ?? []).map((p: { name: string }) => p.name);
+  } catch {
+    return [];
+  }
+}
+
+// ── Upstream health checker ────────────────────────────────────────────────
+// Probes common health endpoints for each upstream service
+const HEALTH_PATHS = ["/health", "/actuator/health", "/api/v1/health"];
+
+async function checkUpstreamHealth(
+  host: string,
+  port: number
+): Promise<"UP" | "DOWN" | "UNKNOWN"> {
+  for (const path of HEALTH_PATHS) {
+    try {
+      const res = await fetch(`http://${host}:${port}${path}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(2500),
+      });
+      if (res.ok || res.status === 401 || res.status === 403) {
+        // 401/403 means service is UP but requires auth
+        return "UP";
+      }
+    } catch {
+      // try next path
+    }
+  }
+  return "DOWN";
+}
+
+function transformRoute(
+  r: KongRoute,
+  serviceMap: Record<string, { name: string; host: string; port: number }>,
+  plugins: string[],
+  status: "UP" | "DOWN" | "UNKNOWN"
+): KongRouteDisplay {
   const path = r.paths?.[0] ?? r.name ?? "unknown";
-  const serviceName = serviceNames[r.service?.id ?? ""] ?? r.service?.id ?? "unknown";
+  const svc = serviceMap[r.service?.id ?? ""];
+  const upstream = svc ? `${svc.host}:${svc.port}` : r.service?.id ?? "unknown";
   return {
     route: path,
     routeId: r.id,
-    upstream: serviceName,
+    upstream,
+    upstreamHost: svc?.host ?? "",
+    upstreamPort: svc?.port ?? 0,
     methods: r.methods?.join(", ") ?? "ALL",
-    plugins: r.plugins ?? [],
-    status: "UP",
+    plugins,
+    status,
   };
 }
 
 export async function GET(_req: NextRequest) {
   try {
-    // 1. Fetch routes from Kong Admin API
-    const routesRes = await fetch(`${KONG_ADMIN_URL}/routes?size=100`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(5000), // 5s timeout
-    });
+    // 1. Fetch routes and services in parallel
+    const [routesRes, servicesRes] = await Promise.all([
+      fetch(`${KONG_ADMIN_URL}/routes?size=100`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000),
+      }),
+      fetch(`${KONG_ADMIN_URL}/services?size=100`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000),
+      }),
+    ]);
 
     if (!routesRes.ok) {
       throw new Error(`Kong Admin /routes returned ${routesRes.status}`);
@@ -50,22 +106,34 @@ export async function GET(_req: NextRequest) {
     const routesData = await routesRes.json();
     const routes: KongRoute[] = routesData?.data ?? [];
 
-    // 2. Fetch services to resolve service names
-    const servicesRes = await fetch(`${KONG_ADMIN_URL}/services?size=100`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(5000),
-    });
-
-    const serviceNames: Record<string, string> = {};
+    // 2. Build service map
+    const serviceMap: Record<string, { name: string; host: string; port: number }> = {};
     if (servicesRes.ok) {
       const svcsData = await servicesRes.json();
-      (svcsData?.data ?? []).forEach((s: { id: string; name: string; host: string; port: number }) => {
-        // e.g. "ftth-backend:9090"
-        serviceNames[s.id] = `${s.host}:${s.port}`;
-      });
+      (svcsData?.data ?? []).forEach(
+        (s: { id: string; name: string; host: string; port: number }) => {
+          serviceMap[s.id] = { name: s.name, host: s.host, port: s.port };
+        }
+      );
     }
 
-    const display = routes.map((r) => transformRoute(r, serviceNames));
+    // 3. Fetch plugins per route + health check upstream — fully parallel
+    const enriched = await Promise.allSettled(
+      routes.map(async (r) => {
+        const svc = serviceMap[r.service?.id ?? ""];
+        const [plugins, status] = await Promise.all([
+          fetchPluginsForRoute(r.id),
+          svc
+            ? checkUpstreamHealth(svc.host, svc.port)
+            : Promise.resolve<"UP" | "DOWN" | "UNKNOWN">("UNKNOWN"),
+        ]);
+        return transformRoute(r, serviceMap, plugins, status);
+      })
+    );
+
+    const display = enriched
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => (r as PromiseFulfilledResult<KongRouteDisplay>).value);
 
     return NextResponse.json(
       { data: display, total: display.length, source: "kong-admin" },
@@ -75,10 +143,10 @@ export async function GET(_req: NextRequest) {
       }
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Kong Admin API unavailable";
+    const message =
+      err instanceof Error ? err.message : "Kong Admin API unavailable";
     console.warn(`[api/observability/kong-routes] ${message}`);
 
-    // Return graceful empty + error flag (do NOT crash)
     return NextResponse.json(
       { data: [], total: 0, source: "unavailable", error: message },
       { status: 200 } // 200 so frontend can render fallback

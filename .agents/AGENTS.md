@@ -152,4 +152,27 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Kong Ingress & Noise Control**: Endpoint `/api/v1/audit/events/kong` di `gateway-audit` menyaring dan membuang HTTP method read-only (`GET`, `HEAD`, `OPTIONS`) secara real-time untuk menghindari ledakan data (DB bloat).
 - **Pencegah Duplikasi Event**: Komunikasi Keycloak event controller disaring melalui LRU Cache in-memory (kapasitas 1000 item) sebelum diteruskan ke database.
 
+### 🔍 Pola Audit Halaman Observability (Agustus 2026)
+- **Sub-menu yang sudah diaudit**: `overview` ([31-juli-2026-observability-overview.md](file:///opt/project5/docs/Server/rekomendasi/plan/31-juli-2026-observability-overview.md)), `query-performance` ([04-agustus-2026-query-performance-upgrades.md](file:///opt/project5/docs/Server/rekomendasi/plan/04-agustus-2026-query-performance-upgrades.md))
+- **Sub-menu yang belum diaudit**: `api-gateway`, `compute`, `database`, `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
+- **Format nama dokumen**: `DD-bulan-YYYY-nama-submenu.md` — simpan di `/opt/project5/docs/Server/rekomendasi/plan/`
+- **Alur audit baku**: (1) Baca 2 dokumen plan sebelumnya sebagai referensi gaya, (2) Analisa halaman + hook + backend endpoint, (3) Buat dokumen rekomendasi lengkap, (4) Buat implementation plan + task.md
+
+### 🎨 High-Contrast Light Mode Token Standard (Agustus 2026)
+- **`--muted-foreground` di `.light`** ([theme.css](file:///opt/project5/packages/design-system/src/theme.css)): Gunakan `hsl(0 0% 30%)` — lebih gelap dari default `hsl(0 0% 38%)` agar teks deskriptif terbaca di latar putih
+- **Label eyebrow/kategori card**: Gunakan `text-foreground/75 dark:text-muted-foreground` (bukan `text-muted-foreground` murni yang terlalu pucat di light mode)
+- **Header sub-kategori panel**: Gunakan `text-foreground/75 dark:text-muted-foreground/70`
+- **Telemetry headers**: Wajib gunakan token semantik — dilarang hardcode warna zinc/emerald
+- Verified ✅ di: `overview-metric-card.tsx`, `overview-devops-card.tsx`, `map-detail-panel.tsx`, `gateways/overview/page.tsx`
+
+### 🔄 Observability API Gateway — Status Tertunda (06 Agustus 2026)
+- **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/api-gateway/page.tsx) (168 baris)
+- **Hook**: `useKongRoutes`, `useKongTraffic` dari `apps/studio-admin/src/hooks/useKongObservability.ts`
+- **Tugas yang belum dikerjakan**:
+  1. Buat `/opt/project5/docs/Server/rekomendasi/plan/06-agustus-2026-observability-api-gateway.md`
+  2. Buat implementation plan & task list untuk audit + upgrade halaman API Gateway
+  3. Referensi gaya: `31-juli-2026-observability-overview.md` dan `04-agustus-2026-query-performance-upgrades.md`
+  4. Referensi Supabase: https://github.com/supabase/supabase/tree/master
+- **Kong Admin API**: tersedia di `http://kong:8001` (internal Docker), sudah digunakan via `useKongRoutes` dan `useKongTraffic` hooks
+
 
