@@ -165,14 +165,29 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Telemetry headers**: Wajib gunakan token semantik — dilarang hardcode warna zinc/emerald
 - Verified ✅ di: `overview-metric-card.tsx`, `overview-devops-card.tsx`, `map-detail-panel.tsx`, `gateways/overview/page.tsx`
 
-### 🔄 Observability API Gateway — Status Tertunda (06 Agustus 2026)
-- **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/api-gateway/page.tsx) (168 baris)
+### ✅ Observability API Gateway — Selesai (06 Agustus 2026)
+- **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/api-gateway/page.tsx)
 - **Hook**: `useKongRoutes`, `useKongTraffic` dari `apps/studio-admin/src/hooks/useKongObservability.ts`
-- **Tugas yang belum dikerjakan**:
-  1. Buat `/opt/project5/docs/Server/rekomendasi/plan/06-agustus-2026-observability-api-gateway.md`
-  2. Buat implementation plan & task list untuk audit + upgrade halaman API Gateway
-  3. Referensi gaya: `31-juli-2026-observability-overview.md` dan `04-agustus-2026-query-performance-upgrades.md`
-  4. Referensi Supabase: https://github.com/supabase/supabase/tree/master
-- **Kong Admin API**: tersedia di `http://kong:8001` (internal Docker), sudah digunakan via `useKongRoutes` dan `useKongTraffic` hooks
+- **Root Cause OFFLINE Bug**: Kong tidak memiliki route `/api/observability/*` — request dari browser melewati Kong dan mendapat 404. Fix: tambah service `frontend-admin-api-service` di `docker/kong/kong.yml`.
+- **Kong Admin API**: tersedia di `http://kong:8001` (internal Docker)
+- **Kong Next.js API Routes**: Wajib ditambahkan ke `kong.yml` agar browser bisa reach `/api/observability/*`, `/api/auth/*`, `/_next/*`.
+
+### 📊 Pola Observability Time-Series Charts (Agustus 2026)
+- **Sumber data**: Semua chart observabilitas wajib menggunakan Prometheus `query_range` (24 jam, step `15m`) dari `http://ftth-prometheus:9090` via Next.js API route (bukan langsung dari client browser).
+- **API Route Pattern**: Buat file di `apps/studio-admin/src/app/api/observability/<nama>/route.ts` — gunakan `Promise.all` untuk parallel fetch semua metric sekaligus.
+- **Hook Pattern**: Buat `use<Nama>Observability.ts` di `src/hooks/` — polling 30 detik, return `charts`, `loading`, `error`, `lastUpdated`, `refresh`.
+- **Fallback**: Jika Prometheus kosong, generate fallback data 24 jam agar UI tidak blank.
+- **CSS Variables untuk chart**: Gunakan `var(--chart-1)` hingga `var(--chart-5)` — jangan hardcode warna hex.
+
+### 🗄️ Endpoint DB Observability (Agustus 2026)
+- **Controller**: [DatabaseObservabilityController.java](file:///opt/project5/apps/api/src/main/java/com/company/ftthgis/api/system/DatabaseObservabilityController.java)
+- **Endpoint**: `GET /api/v1/system/db-observability`
+- **Data yang diekspos**: DB sizes (`pg_database_size`), WAL size (`pg_ls_waldir`), PG buffer cache hit rate (`pg_statio_user_tables`), connection breakdown by state (`pg_stat_activity`), top 10 large objects (tables + indexes), disk info.
+- **Nextcloud status**: Sudah real dari `database_backups.nextcloud_status` kolom (via migration V16). Tidak lagi hardcoded `"SUCCESS"`.
+- **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
+
+### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`
+- **❌ Belum diaudit**: `compute`, `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
 
 

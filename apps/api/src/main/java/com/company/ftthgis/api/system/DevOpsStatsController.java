@@ -197,16 +197,44 @@ public class DevOpsStatsController {
     private BackupInfo loadBackupInfo() {
         try {
             return jdbcTemplate.queryForObject(
-                    "SELECT backup_time, status, success FROM database_backups ORDER BY id DESC LIMIT 1",
+                    "SELECT backup_time, status, success, minio_status, minio_sync_time, nextcloud_status, nextcloud_sync_time " +
+                    "FROM database_backups ORDER BY id DESC LIMIT 1",
                     (rs, rowNum) -> {
                         java.sql.Timestamp ts = rs.getTimestamp("backup_time");
                         String timeStr = ts != null 
                                 ? ts.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                                 : "N/A";
+                        
+                        java.sql.Timestamp minioTs = rs.getTimestamp("minio_sync_time");
+                        String minioTimeStr = minioTs != null
+                                ? minioTs.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                                : "N/A";
+
+                        java.sql.Timestamp ncTs = rs.getTimestamp("nextcloud_sync_time");
+                        String ncTimeStr = ncTs != null
+                                ? ncTs.toLocalDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                                : "N/A";
+
+                        String minioStat = rs.getString("minio_status");
+                        String ncStat = rs.getString("nextcloud_status");
+                        String statusVal = rs.getString("status");
+
+                        // Estimated next backup time (24h after last backup)
+                        String nextTimeStr = "N/A";
+                        if (ts != null) {
+                            nextTimeStr = ts.toLocalDateTime().plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                        }
+
                         return new BackupInfo(
                                 timeStr,
-                                rs.getString("status"),
-                                rs.getBoolean("success")
+                                statusVal,
+                                statusVal,
+                                rs.getBoolean("success"),
+                                minioStat != null ? minioStat : "UNKNOWN",
+                                minioTimeStr,
+                                ncStat != null ? ncStat : "UNKNOWN",
+                                ncTimeStr,
+                                nextTimeStr
                         );
                     }
             );
@@ -215,7 +243,7 @@ public class DevOpsStatsController {
         }
 
         // Fallback: No backup log found – return placeholder
-        return new BackupInfo("N/A", "NOT_CONFIGURED", false);
+        return new BackupInfo("N/A", "NOT_CONFIGURED", "NOT_CONFIGURED", false, "UNKNOWN", "N/A", "UNKNOWN", "N/A", "N/A");
     }
 
     // --- DTO Records ---
@@ -257,7 +285,13 @@ public class DevOpsStatsController {
     public record BackupInfo(
             String lastBackupTime,
             String status,
-            boolean success
+            String lastStatus,
+            boolean success,
+            String minioStatus,
+            String minioSyncTime,
+            String nextcloudStatus,
+            String nextcloudSyncTime,
+            String nextBackupTime
     ) {}
 
     public record GithubInfo(
