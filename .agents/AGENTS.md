@@ -187,7 +187,25 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
 
 ### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
-- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`
-- **❌ Belum diaudit**: `compute`, `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`
+- **❌ Belum diaudit**: `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
 
+### 🖥️ Compute & Host Dashboard Upgrade (Agustus 2026)
+- **Halaman**: [compute/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/compute/page.tsx)
+- **Hook**: `useComputeObservability` dari `apps/studio-admin/src/hooks/useComputeObservability.ts` — polling 30s
+- **API Route**: `/api/observability/compute-metrics/route.ts` — parallel Prometheus + Spring Boot devops-stats
+- **Bug JVM "— MB" (Diperbaiki)**: Root cause: mapping `d?.compute?.heapUsedMb` padahal backend mengirim `usedMemoryMb`. Fix: tambahkan `heapUsedMb`, `nonHeapUsedMb`, `heapMaxMb` ke `ComputeInfo` record di `DevOpsStatsController.java` via `MemoryMXBean`.
+- **Bug Migration "— UNKNOWN" (Diperbaiki)**: Root cause: mapping `d?.migration?.status` padahal backend mengirim `d?.lastMigration?.success` (boolean). Fix: UI kini baca `migration.success` dan `migration.version`.
+- **MinIO Bucket Stats Real (Diperbaiki)**: Root cause: hardcoded array statis (14.2 GB dll). Fix: tambah endpoint `GET /api/v1/bucket-stats?bucket=...` di `storage-gateway` Go, dipanggil dari `DevOpsStatsController.loadBackupInfo()`, dikirim via `BackupInfo.dbBackups/codeBackups/dockerBackups`.
+- **KPI Card ke-4 (Diperbarui)**: Diganti dari "Database & Cache" (duplikat dengan `/database`) menjadi **System Load Average** (`node_load1/5/15` dari Prometheus).
+- **Per-service Memory (Baru)**: Setiap service card menampilkan RSS Memory dari Prometheus `process_resident_memory_bytes`.
+- **Charts (Baru)**: Ditambahkan chart CPU utilization + RAM usage rolling 30 menit (AreaChart) di samping HTTP request rate.
+- **Nextcloud Trigger Palsu (Dihapus)**: Tombol "Trigger Sync Now" yang hanya `toast.success()` dihapus; diganti informasi jadwal + status real `nextcloudStatus` dari database.
+
+### 🗂️ Storage Gateway — BucketStats Endpoint (Agustus 2026)
+- **Endpoint**: `GET /api/v1/bucket-stats?bucket=<nama>` di `storage-gateway:5004`
+- **Auth**: Dilindungi `X-Gateway-Token` (middleware.InternalAuthMiddleware)
+- **Mode Local Store** (sandbox/no AWS creds): baca filesystem `/opt/project5/backups/{bucket}`
+- **Mode MinIO S3** (production): `s3Client.ListObjectsPagesWithContext` untuk count & total bytes
+- **Consumer**: `DevOpsStatsController.fetchBucketStats(bucketName)` di Spring Boot — fetches 3 bucket (db-backups, code-backups, docker-backups) secara parallel saat `loadBackupInfo()` dipanggil.
 

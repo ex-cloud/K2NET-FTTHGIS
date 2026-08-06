@@ -7,9 +7,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -28,6 +34,35 @@ import java.util.Properties;
 public class DevOpsStatsController {
 
     private final JdbcTemplate jdbcTemplate;
+
+    @Value("${app.gateway.storage-url:http://ftth-storage-gateway:5004}")
+    private String storageGatewayUrl;
+
+    @Value("${app.gateway.token:}")
+    private String gatewayToken;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private BucketStats fetchBucketStats(String bucketName) {
+        try {
+            String url = storageGatewayUrl + "/api/v1/bucket-stats?bucket=" + bucketName;
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("X-Gateway-Token", gatewayToken);
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            ResponseEntity<BucketStats> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    BucketStats.class
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch bucket stats for bucket '{}' from storage-gateway: {}", bucketName, e.getMessage());
+        }
+        return new BucketStats(bucketName, 0L, 0L); // fallback
+    }
 
     @Value("${app.devops.github.frontend-repo:https://github.com/user/front_springboot_ftth_gis}")
     private String frontendRepoUrl;
@@ -165,6 +200,11 @@ public class DevOpsStatsController {
         long usedMemoryMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
         long totalMemoryMb = runtime.totalMemory() / (1024 * 1024);
 
+        MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+        long heapUsedMb = memoryMXBean.getHeapMemoryUsage().getUsed() / (1024 * 1024);
+        long heapMaxMb = memoryMXBean.getHeapMemoryUsage().getMax() / (1024 * 1024);
+        long nonHeapUsedMb = memoryMXBean.getNonHeapMemoryUsage().getUsed() / (1024 * 1024);
+
         // Determine VM tier label based on CPU/RAM
         String tier;
         if (cpuCores <= 1 && maxMemoryMb <= 1024) {
@@ -186,7 +226,10 @@ public class DevOpsStatsController {
                 usedMemoryMb,
                 totalMemoryMb,
                 System.getProperty("java.version"),
-                System.getProperty("os.name") + " " + System.getProperty("os.arch")
+                System.getProperty("os.name") + " " + System.getProperty("os.arch"),
+                heapUsedMb,
+                nonHeapUsedMb,
+                heapMaxMb
         );
     }
 
@@ -195,6 +238,10 @@ public class DevOpsStatsController {
      * If the log file is not available, returns a fallback indicating backup status is unknown.
      */
     private BackupInfo loadBackupInfo() {
+        BucketStats dbStats = fetchBucketStats("db-backups");
+        BucketStats codeStats = fetchBucketStats("code-backups");
+        BucketStats dockerStats = fetchBucketStats("docker-backups");
+
         try {
             return jdbcTemplate.queryForObject(
                     "SELECT backup_time, status, success, minio_status, minio_sync_time, nextcloud_status, nextcloud_sync_time " +
@@ -234,7 +281,10 @@ public class DevOpsStatsController {
                                 minioTimeStr,
                                 ncStat != null ? ncStat : "UNKNOWN",
                                 ncTimeStr,
-                                nextTimeStr
+                                nextTimeStr,
+                                dbStats,
+                                codeStats,
+                                dockerStats
                         );
                     }
             );
@@ -243,7 +293,7 @@ public class DevOpsStatsController {
         }
 
         // Fallback: No backup log found – return placeholder
-        return new BackupInfo("N/A", "NOT_CONFIGURED", "NOT_CONFIGURED", false, "UNKNOWN", "N/A", "UNKNOWN", "N/A", "N/A");
+        return new BackupInfo("N/A", "NOT_CONFIGURED", "NOT_CONFIGURED", false, "UNKNOWN", "N/A", "UNKNOWN", "N/A", "N/A", dbStats, codeStats, dockerStats);
     }
 
     // --- DTO Records ---
@@ -279,7 +329,10 @@ public class DevOpsStatsController {
             long usedMemoryMb,
             long totalMemoryMb,
             String javaVersion,
-            String osInfo
+            String osInfo,
+            long heapUsedMb,
+            long nonHeapUsedMb,
+            long heapMaxMb
     ) {}
 
     public record BackupInfo(
@@ -291,7 +344,16 @@ public class DevOpsStatsController {
             String minioSyncTime,
             String nextcloudStatus,
             String nextcloudSyncTime,
-            String nextBackupTime
+            String nextBackupTime,
+            BucketStats dbBackups,
+            BucketStats codeBackups,
+            BucketStats dockerBackups
+    ) {}
+
+    public record BucketStats(
+            String name,
+            long totalFiles,
+            long totalSize
     ) {}
 
     public record GithubInfo(

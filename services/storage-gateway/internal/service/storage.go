@@ -322,3 +322,48 @@ func (s *StorageService) GetStats(ctx context.Context) (StorageStats, error) {
 	defer statsMutex.Unlock()
 	return s.readStats()
 }
+
+type BucketStats struct {
+	Name       string `json:"name"`
+	TotalFiles int64  `json:"total_files"`
+	TotalSize  int64  `json:"total_size"`
+}
+
+func (s *StorageService) GetBucketStats(ctx context.Context, bucket string) (BucketStats, error) {
+	stats := BucketStats{Name: bucket}
+	if s.localStore {
+		dirPath := filepath.Join("/opt/project5/backups", bucket)
+		if bucket == "db-backups" {
+			dirPath = "/opt/project5/backups"
+		}
+		files, err := os.ReadDir(dirPath)
+		if err != nil {
+			return stats, err
+		}
+		for _, file := range files {
+			if !file.IsDir() {
+				name := file.Name()
+				if bucket == "db-backups" && !(strings.HasSuffix(name, ".sql") || strings.HasSuffix(name, ".sql.gz")) {
+					continue
+				}
+				info, err := file.Info()
+				if err == nil {
+					stats.TotalFiles++
+					stats.TotalSize += info.Size()
+				}
+			}
+		}
+		return stats, nil
+	}
+
+	err := s.s3Client.ListObjectsPagesWithContext(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(bucket),
+	}, func(page *s3.ListObjectsOutput, lastPage bool) bool {
+		for _, obj := range page.Contents {
+			stats.TotalFiles++
+			stats.TotalSize += aws.Int64Value(obj.Size)
+		}
+		return true
+	})
+	return stats, err
+}

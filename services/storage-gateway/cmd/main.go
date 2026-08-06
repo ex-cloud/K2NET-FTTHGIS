@@ -138,6 +138,21 @@ func main() {
 			})
 		})
 
+		api.GET("/bucket-stats", func(c *gin.Context) {
+			bucket := c.Query("bucket")
+			if bucket == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "bucket query parameter is required"})
+				return
+			}
+			stats, err := storageService.GetBucketStats(c.Request.Context(), bucket)
+			if err != nil {
+				logger.Error(c.Request.Context(), "Failed to get bucket stats", zap.Error(err), zap.String("bucket", bucket))
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, stats)
+		})
+
 		// Endpoint untuk mengambil statistik penyimpanan secara real-time
 		api.GET("/stats", func(c *gin.Context) {
 			stats, err := storageService.GetStats(c.Request.Context())
