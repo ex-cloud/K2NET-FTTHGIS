@@ -182,9 +182,9 @@ export function QueryPerformanceTable({
   });
 
   return (
-    <div className="min-w-[1340px]">
+    <div className="min-w-[1340px] border border-border/40 rounded-xl overflow-hidden bg-card/10">
       {/* Table Head */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-2 border-b border-border gap-3 text-[11px] font-medium text-muted-foreground/80 items-center">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-medium text-muted-foreground/80">
         {table.getFlatHeaders().map((header) => {
           if (header.isPlaceholder) return <div key={header.id} />;
 
@@ -197,7 +197,7 @@ export function QueryPerformanceTable({
           ].includes(header.column.id);
 
           return (
-            <div key={header.id} className={`min-w-0 flex items-center ${isRightAligned ? "justify-end text-right" : "justify-start text-left"}`}>
+            <div key={header.id} className={`min-w-0 px-4 py-2.5 flex items-center ${isRightAligned ? "justify-end text-right" : "justify-start text-left"}`}>
               {canSort && header.column.id !== "application" ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -245,33 +245,43 @@ export function QueryPerformanceTable({
           Array.from({ length: 6 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-4 border-b border-border/40 gap-3 items-center animate-pulse"
+              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
             >
-              <div className={`h-3.5 bg-muted/60 rounded ${
-                i === 0 ? "w-[75%]" : i === 1 ? "w-[50%]" : i === 2 ? "w-[65%]" : i === 3 ? "w-[40%]" : i === 4 ? "w-[80%]" : "w-[55%]"
-              }`} />
-              <div className="h-3.5 bg-muted/60 rounded w-28" />
-              <div className="h-3.5 bg-muted/60 rounded w-10 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-16 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-12 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-14 ml-auto" />
-              <div className="h-3.5 bg-muted/60 rounded w-6 ml-auto" />
+              <div className="min-w-0 px-4 py-4 flex items-center">
+                <div className={`h-3.5 bg-muted/60 rounded ${
+                  i === 0 ? "w-[75%]" : i === 1 ? "w-[50%]" : i === 2 ? "w-[65%]" : i === 3 ? "w-[40%]" : i === 4 ? "w-[80%]" : "w-[55%]"
+                }`} />
+              </div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-28" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-10" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-14" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-end"><div className="h-3.5 bg-muted/60 rounded w-6" /></div>
             </div>
           ))
         ) : (
           table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] px-5 py-3 hover:bg-muted/10 transition-colors items-center gap-3 group/row"
+              className="grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] items-stretch hover:bg-muted/10 transition-colors border-b border-border/40 divide-x divide-border/30 group/row bg-background/20"
             >
-              {row.getVisibleCells().map((cell) => (
-                <div key={cell.id} className="min-w-0">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </div>
-              ))}
+              {row.getVisibleCells().map((cell) => {
+                const isRightAligned = [
+                  "totalTimePercent", "calls", "maxTimeMs", "meanTimeMs", "minTimeMs", 
+                  "rows", "cacheHitRate", "role", "application"
+                ].includes(cell.column.id);
+                return (
+                  <div key={cell.id} className={`min-w-0 px-4 py-3.5 flex items-center ${isRightAligned ? "justify-end" : "justify-start"}`}>
+                    <div className="w-full min-w-0">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))
         )}

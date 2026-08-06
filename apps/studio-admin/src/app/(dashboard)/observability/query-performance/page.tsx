@@ -29,6 +29,8 @@ export default function QueryPerformancePage() {
     setMinTotalTime,
     selectedRoles,
     setSelectedRoles,
+    sourceFilter,
+    setSourceFilter,
     fetchMore,
     refresh,
     resetPerformanceStats,
@@ -186,12 +188,12 @@ export default function QueryPerformancePage() {
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
               setSortBy={setSortBy}
-              roleFilter={roleFilter}
-              setRoleFilter={setRoleFilter}
               minTotalTime={minTotalTime}
               setMinTotalTime={setMinTotalTime}
               selectedRoles={selectedRoles}
               setSelectedRoles={setSelectedRoles}
+              sourceFilter={sourceFilter}
+              setSourceFilter={setSourceFilter}
               loading={loading}
               loadingMore={loadingMore}
               isScrolled={isScrolled}

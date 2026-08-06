@@ -10,12 +10,12 @@ interface QueryPerformanceToolbarProps {
   setSearchQuery: (query: string) => void;
   sortBy: string;
   setSortBy: (sortBy: string) => void;
-  roleFilter: string;
-  setRoleFilter: (role: string) => void;
   minTotalTime: number | null;
   setMinTotalTime: (time: number | null) => void;
   selectedRoles: string[];
   setSelectedRoles: (roles: string[]) => void;
+  sourceFilter: "dashboard" | "nondashboard" | "";
+  setSourceFilter: (source: "dashboard" | "nondashboard" | "") => void;
   loading: boolean;
   loadingMore: boolean;
   isScrolled: boolean;
@@ -24,12 +24,33 @@ interface QueryPerformanceToolbarProps {
   slowQueries: SlowQuery[];
 }
 
-const AVAILABLE_ROLES = [
-  { id: "postgres", label: "postgres" },
-  { id: "authenticator", label: "authenticator" },
-  { id: "keycloak", label: "keycloak" },
-  { id: "ftth_admin", label: "ftth_admin" },
-  { id: "ftth_user", label: "ftth_user" },
+const ROLE_GROUPS = [
+  {
+    title: "User Access",
+    roles: [
+      { id: "super_admin", label: "super_admin" },
+      { id: "admin", label: "admin" },
+      { id: "noc", label: "noc" },
+      { id: "surveyor", label: "surveyor" },
+      { id: "system_support", label: "system_support" },
+    ],
+  },
+  {
+    title: "System and Services",
+    roles: [
+      { id: "postgres", label: "postgres" },
+      { id: "keycloak", label: "keycloak" },
+      { id: "ftth_backend", label: "ftth_backend" },
+      { id: "gateways", label: "gateways" },
+    ],
+  },
+  {
+    title: "Custom",
+    roles: [
+      { id: "authenticator", label: "authenticator" },
+      { id: "pgbouncer", label: "pgbouncer" },
+    ],
+  },
 ];
 
 export function QueryPerformanceToolbar({
@@ -37,12 +58,12 @@ export function QueryPerformanceToolbar({
   setSearchQuery,
   sortBy,
   setSortBy,
-  roleFilter,
-  setRoleFilter,
   minTotalTime,
   setMinTotalTime,
   selectedRoles,
   setSelectedRoles,
+  sourceFilter,
+  setSourceFilter,
   loading,
   loadingMore,
   isScrolled,
@@ -57,9 +78,16 @@ export function QueryPerformanceToolbar({
   // Roles selection temp state
   const [tempRoles, setTempRoles] = useState<string[]>(selectedRoles);
 
+  // Source selection temp state
+  const [tempSource, setTempSource] = useState<"dashboard" | "nondashboard" | "">(sourceFilter);
+
   useEffect(() => {
     setTempRoles(selectedRoles);
   }, [selectedRoles]);
+
+  useEffect(() => {
+    setTempSource(sourceFilter);
+  }, [sourceFilter]);
 
   // Synchronize timeValue state when minTotalTime prop changes from outside (e.g. on reset/clear)
   useEffect(() => {
@@ -141,7 +169,7 @@ export function QueryPerformanceToolbar({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [slowQueries]);
+  }, [slowQueries, handleCopyMarkdown, handleCopyJson, handleCopyCsv, handleDownloadCsv]);
 
   const handleApplyTotalTime = () => {
     const val = parseFloat(timeValue);
@@ -165,17 +193,24 @@ export function QueryPerformanceToolbar({
 
   const handleSaveRoles = () => {
     setSelectedRoles(tempRoles);
-    if (tempRoles.length === 1) {
-      setRoleFilter(tempRoles[0]);
-    } else {
-      setRoleFilter("");
-    }
   };
 
   const handleClearRoles = () => {
     setTempRoles([]);
     setSelectedRoles([]);
-    setRoleFilter("");
+  };
+
+  const handleToggleSource = (source: "dashboard" | "nondashboard") => {
+    setTempSource((prev) => (prev === source ? "" : source));
+  };
+
+  const handleApplySource = () => {
+    setSourceFilter(tempSource);
+  };
+
+  const handleClearSource = () => {
+    setTempSource("");
+    setSourceFilter("");
   };
 
   return (
@@ -269,7 +304,7 @@ export function QueryPerformanceToolbar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Roles Filter Dropdown (Supabase style Checkboxes Popover) */}
+          {/* Roles Filter Dropdown (Supabase style Checkboxes Popover with grouping) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
@@ -279,23 +314,32 @@ export function QueryPerformanceToolbar({
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-56 z-50">
+            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
               <div>
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Select roles
                 </p>
-                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar-thin pr-1">
-                  {AVAILABLE_ROLES.map((role) => (
-                    <label
-                      key={role.id}
-                      className="flex items-center gap-2.5 text-xs font-mono text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors"
-                    >
-                      <Checkbox
-                        checked={tempRoles.includes(role.id)}
-                        onCheckedChange={() => handleToggleRole(role.id)}
-                      />
-                      <span>{role.label}</span>
-                    </label>
+                <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar-thin pr-1">
+                  {ROLE_GROUPS.map((group) => (
+                    <div key={group.title} className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">
+                        {group.title}
+                      </p>
+                      <div className="space-y-1">
+                        {group.roles.map((role) => (
+                          <label
+                            key={role.id}
+                            className="flex items-center gap-2.5 text-xs font-mono text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors"
+                          >
+                            <Checkbox
+                              checked={tempRoles.includes(role.id)}
+                              onCheckedChange={() => handleToggleRole(role.id)}
+                            />
+                            <span>{role.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
                 <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/60">
@@ -311,13 +355,53 @@ export function QueryPerformanceToolbar({
           </DropdownMenu>
 
           {/* Source Filter Dropdown */}
-          <button
-            disabled
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg font-semibold h-8 opacity-70 cursor-not-allowed"
-          >
-            <span>Source</span>
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+                sourceFilter ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
+              }`}>
+                <span>{sourceFilter ? (sourceFilter === "dashboard" ? "Dashboard & Portal" : "System & Utility") : "Source"}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-60 z-50">
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Select query source
+                </p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
+                    <Checkbox
+                      checked={tempSource === "dashboard"}
+                      onCheckedChange={() => handleToggleSource("dashboard")}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-xs">Dashboard & Portal Queries</span>
+                      <span className="text-[10px] text-muted-foreground">K2NET GIS application tables & core features</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
+                    <Checkbox
+                      checked={tempSource === "nondashboard"}
+                      onCheckedChange={() => handleToggleSource("nondashboard")}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-xs">System Utility & Background</span>
+                      <span className="text-[10px] text-muted-foreground">pg_stat, keycloak internals, and system tables</span>
+                    </div>
+                  </label>
+                </div>
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/60">
+                  <Button variant="ghost" size="sm" onClick={handleClearSource} className="h-7 text-xs px-2.5">
+                    Clear
+                  </Button>
+                  <Button size="sm" onClick={handleApplySource} className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* RIGHT GROUP: Reset Report, Refresh & Export Dropdown */}

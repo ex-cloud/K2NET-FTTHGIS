@@ -93,7 +93,7 @@ export default function GatewaysOverviewPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
               Gateways Control Panel <Sparkles className="w-5 h-5 text-primary animate-pulse" />
             </h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-foreground/75 dark:text-muted-foreground">
               Oversight and dynamic microservice orchestration for payment, messaging, maps, and WebP storage.
             </p>
           </div>
@@ -126,7 +126,7 @@ export default function GatewaysOverviewPage() {
               {/* Card 1: Global Health */}
               <Card glowingEffect>
                 <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
                     <span>Service Health</span>
                     <Cpu className="w-3.5 h-3.5 text-primary group-hover:text-primary/80 transition-colors" />
                   </CardDescription>
@@ -147,7 +147,7 @@ export default function GatewaysOverviewPage() {
               {/* Card 2: Avg Latency */}
               <Card glowingEffect>
                 <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
                     <span>Avg Latency</span>
                     <Activity className="w-3.5 h-3.5 text-sky-400 group-hover:text-sky-300 transition-colors" />
                   </CardDescription>
@@ -166,7 +166,7 @@ export default function GatewaysOverviewPage() {
               {/* Card 3: Cache Hit Ratio */}
               <Card glowingEffect>
                 <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
                     <span>Cache Efficiency</span>
                     <Database className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
                   </CardDescription>
@@ -185,7 +185,7 @@ export default function GatewaysOverviewPage() {
               {/* Card 4: Compression Rate */}
               <Card glowingEffect>
                 <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                  <CardDescription className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-foreground/75 dark:text-muted-foreground">
                     <span>Storage Optimization</span>
                     <HardDrive className="w-3.5 h-3.5 text-teal-400 group-hover:text-teal-300 transition-colors" />
                   </CardDescription>
@@ -207,16 +207,16 @@ export default function GatewaysOverviewPage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">Throughput & Gateway Load</h4>
-                  <p className="text-[10px] text-muted-foreground">Visualisasi beban request gabungan ke seluruh port gateway (5001 - 5004)</p>
+                  <p className="text-[10px] text-foreground/75 dark:text-muted-foreground">Visualisasi beban request gabungan ke seluruh port gateway (5001 - 5004)</p>
                 </div>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-primary/80" />
-                    <span className="text-muted-foreground">Successful Hits</span>
+                    <span className="text-foreground/75 dark:text-muted-foreground">Successful Hits</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-amber-500/40" />
-                    <span className="text-muted-foreground">Cached / Delayed</span>
+                    <span className="text-foreground/75 dark:text-muted-foreground">Cached / Delayed</span>
                   </div>
                 </div>
               </div>
@@ -283,7 +283,7 @@ export default function GatewaysOverviewPage() {
                       {/* Performance Details */}
                       <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
                         <div>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Throughput</p>
+                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Throughput</p>
                           <p className="text-xs font-mono text-foreground mt-0.5">
                             {svc.active 
                               ? (svc.throughput !== undefined && svc.throughput > 0 
@@ -293,13 +293,13 @@ export default function GatewaysOverviewPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Latency</p>
+                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Latency</p>
                           <p className="text-xs font-mono text-foreground mt-0.5">
                             {svc.active ? metrics.latency : "-"}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Telemetry State</p>
+                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Telemetry State</p>
                           <p className="text-xs font-mono text-foreground mt-0.5">
                             {svc.active ? metrics.extra : "Offline"}
                           </p>
@@ -327,7 +327,7 @@ export default function GatewaysOverviewPage() {
                 <ServerCrash className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="text-xs font-semibold text-red-400">Troubleshooting Alert</h4>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-foreground/75 dark:text-muted-foreground/80">
                     Salah satu atau lebih layanan gateway terhenti. Mohon periksa log systemd via SSH dengan perintah: <code className="bg-background px-1 py-0.5 rounded font-mono text-red-300 text-[9px]">journalctl -u ftth-[service-name] -f</code> untuk memeriksa penyebab error.
                   </p>
                 </div>

@@ -36,6 +36,55 @@ const DEFAULT_STATS: DbPerfStats = {
   avgRowsPerCall: 0.0,
 };
 
+// Helper to classify dashboard vs non-dashboard queries
+const isDashboardQuery = (queryText: string): boolean => {
+  const q = queryText.toLowerCase();
+
+  // Non-dashboard patterns first (system/connection utilities)
+  if (
+    q.includes("pg_stat_statements") ||
+    q.includes("pg_timezone_names") ||
+    q.includes("pg_is_in_recovery") ||
+    q.includes("pg_indexes") ||
+    q.includes("pg_roles") ||
+    q.includes("pg_catalog") ||
+    q.includes("information_schema") ||
+    q.includes("show transaction_read_only") ||
+    q.includes("alter role") ||
+    q.includes("pgbouncer") ||
+    q.includes("discard all") ||
+    q.includes("deallocate") ||
+    q.startsWith("begin") ||
+    q.startsWith("commit") ||
+    q.startsWith("rollback") ||
+    q.startsWith("set ") ||
+    q.trim() === "select 1"
+  ) {
+    return false;
+  }
+
+  // Dashboard app tables/functions
+  return (
+    q.includes("projects") ||
+    q.includes("nodes") ||
+    q.includes("edges") ||
+    q.includes("customers") ||
+    q.includes("audit") ||
+    q.includes("organization") ||
+    q.includes("users") ||
+    q.includes("roles") ||
+    q.includes("permission") ||
+    q.includes("settings") ||
+    q.includes("members") ||
+    q.includes("olt") ||
+    q.includes("splice") ||
+    q.includes("payment") ||
+    q.includes("notification") ||
+    q.includes("get_mvt_data") ||
+    q.includes("fn_truncate_cache")
+  );
+};
+
 export function useDbPerformance() {
   const { data: session } = useSession();
   const [slowQueries, setSlowQueries] = useState<SlowQuery[]>([]);
@@ -52,6 +101,7 @@ export function useDbPerformance() {
   const [roleFilter, setRoleFilter] = useState("");
   const [minTotalTime, setMinTotalTime] = useState<number | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<"dashboard" | "nondashboard" | "">("");
   const limit = 20;
 
   const mounted = useRef(true);
@@ -173,6 +223,7 @@ export function useDbPerformance() {
         setRoleFilter("");
         setMinTotalTime(null);
         setSelectedRoles([]);
+        setSourceFilter("");
         // 2. Clear local data immediately so UI shows 0 queries right away
         setSlowQueries([]);
         setStats(DEFAULT_STATS);
@@ -195,21 +246,20 @@ export function useDbPerformance() {
   // ─── Effects ────────────────────────────────────────────────────────────────
 
   // Initial data load — fires once on mount and again if the auth token changes.
-  // fetchData is intentionally NOT in the deps array; we access it via
-  // fetchDataRef.current so this effect does not re-fire on every filter change.
   useEffect(() => {
-    mounted.current = true;
     if (session?.accessToken) {
       fetchDataRef.current(true);
     }
+  }, [session?.accessToken]);
+
+  // Clean up on unmount
+  useEffect(() => {
     return () => {
       mounted.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.accessToken]);
+  }, []);
 
   // Filter / sort change → refresh (skip the first/mount run to avoid double-fetch).
-  // refresh is stable (useCallback with []) so it does not itself trigger this effect.
   useEffect(() => {
     if (!isFilterEffectMounted.current) {
       isFilterEffectMounted.current = true;
@@ -220,10 +270,15 @@ export function useDbPerformance() {
     }
   }, [searchQuery, sortBy, roleFilter, minTotalTime, session?.accessToken, refresh]);
 
-  // Client-side filter by role selection (selectedRoles is UI-only, not sent to server)
+  // Client-side filter by role selection and source selection
   const filteredSlowQueries = slowQueries.filter((q) => {
     if (selectedRoles.length > 0 && !selectedRoles.includes(q.role))
       return false;
+    if (sourceFilter) {
+      const isDash = isDashboardQuery(q.query);
+      if (sourceFilter === "dashboard" && !isDash) return false;
+      if (sourceFilter === "nondashboard" && isDash) return false;
+    }
     return true;
   });
 
@@ -246,6 +301,8 @@ export function useDbPerformance() {
     setMinTotalTime,
     selectedRoles,
     setSelectedRoles,
+    sourceFilter,
+    setSourceFilter,
     fetchMore,
     refresh,
     resetPerformanceStats,

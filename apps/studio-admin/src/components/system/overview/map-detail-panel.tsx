@@ -22,7 +22,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
           <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Service Details</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-foreground/75 dark:text-muted-foreground">Service Details</h4>
               {activeNodeData.port ? (
                 <Badge variant="outline" className="border-border text-[9px] font-mono text-muted-foreground bg-muted/40 font-bold">
                   Port {activeNodeData.port}
@@ -50,11 +50,11 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
 
             {/* Metrics telemetry */}
             <div className="space-y-3 pt-3">
-              <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Metrics &amp; Telemetry</h5>
+              <h5 className="text-[9px] font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground/70">Metrics &amp; Telemetry</h5>
               <div className="grid grid-cols-1 gap-2.5">
                 {Object.entries(activeNodeData.metrics).map(([key, val]) => (
                   <div key={key} className="rounded-lg border border-border bg-muted/30 p-2">
-                    <span className="text-[8px] font-mono uppercase tracking-wide text-muted-foreground">{key}</span>
+                    <span className="text-[8px] font-mono uppercase tracking-wide text-foreground/75 dark:text-muted-foreground/65">{key}</span>
                     <span className="mt-0.5 block text-[10px] font-bold font-mono text-foreground">{val}</span>
                   </div>
                 ))}
@@ -64,7 +64,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
             {/* Sub-components */}
             {activeSubNodes.length > 0 && (
               <div className="space-y-2.5 pt-3 border-t border-border">
-                <h5 className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                <h5 className="text-[9px] font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground/70">
                   Sub Components ({activeSubNodes.length})
                 </h5>
                 <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
