@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.company.ftthgis.service.AuditLoggingService;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -29,6 +30,7 @@ public class KeycloakObservabilityController {
 
     private final ObjectMapper objectMapper;
     private final AuditLoggingService auditLoggingService;
+    private final JdbcTemplate jdbcTemplate;
 
     private static final Set<String> forwardedSignatures = Collections.newSetFromMap(
         new java.util.LinkedHashMap<String, Boolean>() {
@@ -58,8 +60,8 @@ public class KeycloakObservabilityController {
         try {
             String adminToken = getAdminAccessToken();
             if (adminToken == null) {
-                log.warn("Unable to fetch Keycloak admin token. Serving simulated keycloak events.");
-                return ResponseEntity.ok(getSimulatedEvents());
+                log.warn("Unable to fetch Keycloak admin token. Returning empty event list.");
+                return ResponseEntity.ok(new ArrayList<>());
             }
 
             HttpClient client = HttpClient.newBuilder()
@@ -79,12 +81,12 @@ public class KeycloakObservabilityController {
                 forwardEventsToAudit(events);
                 return ResponseEntity.ok(events);
             } else {
-                log.warn("Keycloak admin /events returned status: {}. Serving simulated events.", response.statusCode());
-                return ResponseEntity.ok(getSimulatedEvents());
+                log.warn("Keycloak admin /events returned status: {}. Returning empty list.", response.statusCode());
+                return ResponseEntity.ok(new ArrayList<>());
             }
         } catch (Exception e) {
-            log.warn("Exception checking Keycloak events: {}. Serving simulated events.", e.getMessage());
-            return ResponseEntity.ok(getSimulatedEvents());
+            log.warn("Exception checking Keycloak events: {}. Returning empty list.", e.getMessage());
+            return ResponseEntity.ok(new ArrayList<>());
         }
     }
 
@@ -154,17 +156,101 @@ public class KeycloakObservabilityController {
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getKeycloakStats() {
         Map<String, Object> stats = new HashMap<>();
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(3))
+                .build();
+
+        // 1. Connection check: Spring Boot -> Keycloak
+        long keycloakStart = System.currentTimeMillis();
+        boolean keycloakConnected = false;
+        long keycloakLatency = 0;
         try {
-            String adminToken = getAdminAccessToken();
-            if (adminToken == null) {
-                return ResponseEntity.ok(getSimulatedStats());
-            }
-
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(3))
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(keycloakInternalUrl + "/realms/" + FTTH_REALM))
+                    .timeout(Duration.ofSeconds(2))
+                    .GET()
                     .build();
+            HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+            keycloakLatency = System.currentTimeMillis() - keycloakStart;
+            keycloakConnected = response.statusCode() == 200;
+        } catch (Exception e) {
+            log.debug("Spring Boot to Keycloak connection check failed: {}", e.getMessage());
+        }
 
-            // 1. Fetch user count
+        // 2. Connection check: Kong -> Keycloak (via Kong admin port 8001 /status)
+        long kongStart = System.currentTimeMillis();
+        boolean kongConnected = false;
+        long kongLatency = 0;
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://kong:8001/status"))
+                    .timeout(Duration.ofSeconds(2))
+                    .GET()
+                    .build();
+            HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+            kongLatency = System.currentTimeMillis() - kongStart;
+            kongConnected = response.statusCode() == 200;
+        } catch (Exception e) {
+            log.debug("Kong to Keycloak (via Kong admin status) check failed: {}", e.getMessage());
+        }
+
+        // 3. Connection check: Keycloak -> PostgreSQL (keycloak_db)
+        long dbStart = System.currentTimeMillis();
+        boolean dbConnected = false;
+        long dbLatency = 0;
+        try {
+            Integer activeConnections = jdbcTemplate.queryForObject(
+                    "SELECT count(*)::int FROM pg_stat_activity WHERE datname = 'keycloak_db'",
+                    Integer.class
+            );
+            dbLatency = System.currentTimeMillis() - dbStart;
+            dbConnected = activeConnections != null && activeConnections > 0;
+        } catch (Exception e) {
+            log.debug("Keycloak database connection check failed: {}", e.getMessage());
+        }
+
+        // Build connections list for UI
+        List<Map<String, Object>> connections = new ArrayList<>();
+
+        Map<String, Object> conn1 = new HashMap<>();
+        conn1.put("service", "Spring Boot → Keycloak");
+        conn1.put("status", keycloakConnected ? "CONNECTED" : "DISCONNECTED");
+        conn1.put("latency", keycloakConnected ? keycloakLatency + "ms" : "N/A");
+        conn1.put("detail", "JWT validation · OpenID Connect");
+        connections.add(conn1);
+
+        Map<String, Object> conn2 = new HashMap<>();
+        conn2.put("service", "Kong → Keycloak");
+        conn2.put("status", kongConnected ? "CONNECTED" : "DISCONNECTED");
+        conn2.put("latency", kongConnected ? kongLatency + "ms" : "N/A");
+        conn2.put("detail", "JWT plugin · Token introspection");
+        connections.add(conn2);
+
+        Map<String, Object> conn3 = new HashMap<>();
+        conn3.put("service", "Keycloak → PostgreSQL (keycloak_db)");
+        conn3.put("status", dbConnected ? "CONNECTED" : "DISCONNECTED");
+        conn3.put("latency", dbConnected ? dbLatency + "ms" : "N/A");
+        conn3.put("detail", "Session & user persistence");
+        connections.add(conn3);
+
+        stats.put("connections", connections);
+        stats.put("realm", FTTH_REALM);
+
+        String adminToken = getAdminAccessToken();
+        if (adminToken == null) {
+            stats.put("totalUsers", 0);
+            stats.put("activeSessions", 0);
+            stats.put("failedLogins24h", 0);
+            stats.put("status", "degraded");
+            return ResponseEntity.ok(stats);
+        }
+
+        int totalUsers = 0;
+        int activeSessions = 0;
+        int failedLogins24h = 0;
+
+        try {
+            // 1. Fetch real user count
             HttpRequest userCountRequest = HttpRequest.newBuilder()
                     .uri(URI.create(keycloakInternalUrl + "/admin/realms/" + FTTH_REALM + "/users/count"))
                     .header("Authorization", "Bearer " + adminToken)
@@ -173,105 +259,53 @@ public class KeycloakObservabilityController {
                     .build();
 
             HttpResponse<String> userCountResponse = client.send(userCountRequest, HttpResponse.BodyHandlers.ofString());
-            int totalUsers = 15;
             if (userCountResponse.statusCode() == 200) {
                 totalUsers = Integer.parseInt(userCountResponse.body().trim());
             }
 
-            // 2. Fetch active sessions (approximate via client session statistics or hardcoded estimate if complex)
-            // To be robust, we'll return user count and mock active sessions derived logically
-            stats.put("totalUsers", totalUsers);
-            stats.put("activeSessions", Math.max(1, Math.round(totalUsers * 0.4))); // Assume 40% active sessions
-            stats.put("failedLogins24h", 3);
-            stats.put("status", "healthy");
-            stats.put("realm", FTTH_REALM);
-
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            log.warn("Exception checking Keycloak stats: {}", e.getMessage());
-            return ResponseEntity.ok(getSimulatedStats());
-        }
-    }
-
-    private String getAdminAccessToken() {
-        if (clientSecret == null || clientSecret.isEmpty()) {
-            log.debug("keycloak.client-secret is empty. Skipping admin login.");
-            return null;
-        }
-
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(3))
-                    .build();
-
-            Map<String, String> params = new HashMap<>();
-            params.put("grant_type", "client_credentials");
-            params.put("client_id", clientId);
-            params.put("client_secret", clientSecret);
-
-            StringBuilder formBody = new StringBuilder();
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                if (formBody.length() > 0) formBody.append("&");
-                formBody.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
-                formBody.append("=");
-                formBody.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
-            }
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(keycloakInternalUrl + "/realms/" + adminRealm + "/protocol/openid-connect/token"))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
+            // 2. Fetch real active sessions
+            HttpRequest activeSessionsRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(keycloakInternalUrl + "/admin/realms/" + FTTH_REALM + "/client-session-stats"))
+                    .header("Authorization", "Bearer " + adminToken)
                     .timeout(Duration.ofSeconds(3))
-                    .POST(HttpRequest.BodyPublishers.ofString(formBody.toString()))
+                    .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                Map<String, Object> bodyMap = objectMapper.readValue(response.body(), Map.class);
-                return (String) bodyMap.get("access_token");
-            } else {
-                log.warn("Keycloak admin auth failed with status: {}, body: {}", response.statusCode(), response.body());
-                return null;
+            HttpResponse<String> activeSessionsResponse = client.send(activeSessionsRequest, HttpResponse.BodyHandlers.ofString());
+            if (activeSessionsResponse.statusCode() == 200) {
+                List<Map<String, Object>> clientStats = objectMapper.readValue(activeSessionsResponse.body(), List.class);
+                for (Map<String, Object> cStat : clientStats) {
+                    Object activeVal = cStat.get("active");
+                    if (activeVal != null) {
+                        activeSessions += Integer.parseInt(activeVal.toString());
+                    }
+                }
             }
+
+            // 3. Fetch real failed logins count
+            HttpRequest failedLoginsRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(keycloakInternalUrl + "/admin/realms/" + FTTH_REALM + "/events?type=LOGIN_ERROR"))
+                    .header("Authorization", "Bearer " + adminToken)
+                    .timeout(Duration.ofSeconds(3))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> failedLoginsResponse = client.send(failedLoginsRequest, HttpResponse.BodyHandlers.ofString());
+            if (failedLoginsResponse.statusCode() == 200) {
+                List<?> eventsList = objectMapper.readValue(failedLoginsResponse.body(), List.class);
+                failedLogins24h = eventsList.size();
+            }
+
+            stats.put("status", "healthy");
         } catch (Exception e) {
-            log.warn("Failed to retrieve Keycloak admin access token: {}", e.getMessage());
-            return null;
+            log.warn("Exception checking Keycloak API stats: {}", e.getMessage());
+            stats.put("status", "degraded");
         }
-    }
 
-    private List<Map<String, Object>> getSimulatedEvents() {
-        List<Map<String, Object>> events = new ArrayList<>();
-        long now = System.currentTimeMillis();
+        stats.put("totalUsers", totalUsers);
+        stats.put("activeSessions", activeSessions);
+        stats.put("failedLogins24h", failedLogins24h);
 
-        events.add(createEvent(now - 120000, "LOGIN", "user-john@k2net.id", "192.168.1.5", "ftth-gis-frontend"));
-        events.add(createEvent(now - 350000, "REFRESH_TOKEN", "user-john@k2net.id", "192.168.1.5", "ftth-gis-frontend"));
-        events.add(createEvent(now - 600000, "LOGIN_ERROR", "user-admin@k2net.id", "203.0.113.42", "ftth-gis-frontend"));
-        events.add(createEvent(now - 1200000, "CODE_TO_TOKEN", "api-gateway-service", "127.0.0.1", "ftth-gis-admin"));
-        events.add(createEvent(now - 1800000, "LOGOUT", "user-sally@k2net.id", "192.168.2.14", "ftth-gis-frontend"));
-
-        return events;
-    }
-
-    private Map<String, Object> createEvent(long time, String type, String userId, String ipAddress, String clientId) {
-        Map<String, Object> event = new HashMap<>();
-        event.put("time", time);
-        event.put("type", type);
-        event.put("userId", userId);
-        event.put("clientId", clientId);
-        
-        Map<String, String> details = new HashMap<>();
-        details.put("ipAddress", ipAddress);
-        event.put("details", details);
-        
-        return event;
-    }
-
-    private Map<String, Object> getSimulatedStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalUsers", 14);
-        stats.put("activeSessions", 6);
-        stats.put("failedLogins24h", 3);
-        stats.put("status", "fallback-healthy");
-        stats.put("realm", FTTH_REALM);
-        return stats;
+        return ResponseEntity.ok(stats);
     }
 }

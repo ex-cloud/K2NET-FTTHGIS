@@ -11,12 +11,20 @@ export interface KeycloakEvent {
   details?: { ipAddress?: string; [key: string]: string | undefined };
 }
 
+export interface ServiceConnection {
+  service: string;
+  status: "CONNECTED" | "DISCONNECTED";
+  latency: string;
+  detail: string;
+}
+
 export interface KeycloakStats {
   totalUsers: number;
   activeSessions: number;
   failedLogins24h: number;
   status: string;
   realm: string;
+  connections: ServiceConnection[];
 }
 
 const DEFAULT_STATS: KeycloakStats = {
@@ -25,6 +33,7 @@ const DEFAULT_STATS: KeycloakStats = {
   failedLogins24h: 0,
   status: "loading",
   realm: "ftth-realm",
+  connections: [],
 };
 
 export function useKeycloakObservability() {
