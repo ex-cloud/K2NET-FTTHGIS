@@ -187,8 +187,17 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
 
 ### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
-- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`
-- **❌ Belum diaudit**: `olt-poller`, `operations`, `scheduler`, `spatial-map`
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`, `olt-poller`
+- **❌ Belum diaudit**: `operations`, `scheduler`, `spatial-map`
+
+### 📡 OLT & Poller Dashboard Upgrade (Agustus 2026)
+- **Halaman**: [olt-poller/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/olt-poller/page.tsx)
+- **Hook**: `useOltPollerObservability` dari `apps/studio-admin/src/hooks/useOltPollerObservability.ts` — polling 30s
+- **API Route**: `apps/studio-admin/src/app/api/observability/olt-poller/route.ts` — parallel fetch 3 sumber
+- **Bug Hardcoded Subtitle (Diperbaiki)**: `Last polling cycle: 3 min ago` diganti dengan `lastPolledAt` riil dari `ftth-poller:5010`.
+- **Bug SSH Card Statis (Diperbaiki)**: Kartu `SSH Session Failures: 0` dihapus, diganti **Poller Engine Health** (status Running/Offline, poll interval, Redis status).
+- **Integrasi go-poller**: API Route menggabungkan (merge) inventaris OLT dari Spring Boot DB dengan live telemetry Redis (`status UP/DOWN/SLOW`, `responseTimeMs`, `lastPolledAt`) berdasarkan `deviceCode`.
+- **Prometheus Metrics**: `ftth_poller_devices_count`, `ftth_poller_redis_connected`, `ftth_poller_uptime_seconds` tersedia di `ftth-poller:5010/metrics` (diakses Prometheus di `ftth-poller:5010`).
 
 ### 💬 Messaging Gateway Dashboard Upgrade (Agustus 2026)
 - **Halaman**: [messaging/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/messaging/page.tsx)
