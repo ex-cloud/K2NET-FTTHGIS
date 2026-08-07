@@ -1,19 +1,33 @@
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const POLLER_URL = process.env.POLLER_URL ?? "http://ftth-poller:5010";
-const BACKEND_URL = process.env.BACKEND_INTERNAL_URL ?? "http://backend:9090";
-const GATEWAY_TOKEN = process.env.INTERNAL_GATEWAY_TOKEN ?? "";
+export const dynamic = "force-dynamic";
+
+const POLLER_URL = process.env.POLLER_GATEWAY_URL ?? "http://ftth-poller:5010";
+const BACKEND_URL = process.env.BACKEND_API_URL ?? "http://backend:9090";
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN ?? "";
+
+function decodeJwt(token: string): any {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return {};
+    return JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
+  } catch {
+    return {};
+  }
+}
 
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req });
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader ? authHeader.replace("Bearer ", "") : "";
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const decoded = decodeJwt(token);
+  const tenantId = String(decoded.tenantId ?? decoded.tenant_id ?? "system");
 
   const pollerHeaders = { "X-Gateway-Token": GATEWAY_TOKEN };
   const backendHeaders = {
-    Authorization: `Bearer ${token.accessToken as string}`,
-    "X-Tenant-ID": String(token.tenantId ?? "system"),
+    Authorization: `Bearer ${token}`,
+    "X-Tenant-ID": tenantId,
   };
 
   try {

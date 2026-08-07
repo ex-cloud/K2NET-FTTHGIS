@@ -1,18 +1,33 @@
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const NOTIFICATION_GATEWAY_URL = process.env.NOTIFICATION_GATEWAY_URL ?? "http://notification-gateway:5001";
+export const dynamic = "force-dynamic";
+
+const NOTIFICATION_GATEWAY_URL = process.env.NOTIFICATION_GATEWAY_URL ?? "http://ftth-notification-gateway:5001";
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN ?? "";
+
+function decodeJwt(token: string): any {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return {};
+    return JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
+  } catch {
+    return {};
+  }
+}
 
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req });
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader ? authHeader.replace("Bearer ", "") : "";
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const decoded = decodeJwt(token);
+  const tenantId = String(decoded.tenantId ?? decoded.tenant_id ?? "system");
 
   try {
     const res = await fetch(`${NOTIFICATION_GATEWAY_URL}/stats`, {
       headers: {
-        "X-Gateway-Token": process.env.INTERNAL_GATEWAY_TOKEN ?? "",
-        "X-Tenant-ID": String(token.tenantId ?? "system"),
+        "X-Gateway-Token": GATEWAY_TOKEN,
+        "X-Tenant-ID": tenantId,
       },
       signal: AbortSignal.timeout(5000),
     });
