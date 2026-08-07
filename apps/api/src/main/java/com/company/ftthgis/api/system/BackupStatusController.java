@@ -303,7 +303,8 @@ public class BackupStatusController {
             String status = "SUCCESS";
             if (fullText.contains("ERROR") || fullText.contains("FAIL") || fullText.contains("GAGAL")) {
                 status = "FAILED";
-            } else if (fullText.contains("RUNNING") || fullText.contains("STARTING") || fullText.contains("MEMULAI")) {
+            } else if ((fullText.contains("RUNNING") || fullText.contains("STARTING") || fullText.contains("MEMULAI")) 
+                       && !(fullText.contains("FINISHED") || fullText.contains("EXIT CODE") || fullText.contains("SELESAI"))) {
                 status = "RUNNING";
             }
 
