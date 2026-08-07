@@ -49,6 +49,17 @@ function computeNextRun(cronExpression: string): string {
   return tomorrow ? `Tomorrow ${hour.toString().padStart(2, "0")}:00` : `Today ${hour.toString().padStart(2, "0")}:00`;
 }
 
+export interface DevopsBackupInfo {
+  lastBackupTime: string;
+  status: string;
+  success: boolean;
+  minioStatus: string;
+  minioSyncTime: string;
+  nextcloudStatus: string;
+  nextcloudSyncTime: string;
+  nextBackupTime: string;
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useSchedulerStatus() {
@@ -63,6 +74,7 @@ export function useSchedulerStatus() {
     }))
   );
   const [artifacts, setArtifacts] = useState<BackupArtifact[]>([]);
+  const [devopsBackupInfo, setDevopsBackupInfo] = useState<DevopsBackupInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -75,37 +87,58 @@ export function useSchedulerStatus() {
     const headers = { Authorization: `Bearer ${session.accessToken}` };
 
     try {
-      const [jobsRes, artifactsRes] = await Promise.all([
+      const [jobsRes, artifactsRes, devopsRes] = await Promise.allSettled([
         fetch("/api/v1/system/backup-status/jobs",      { headers, cache: "no-store" }),
         fetch("/api/v1/system/backup-status/artifacts", { headers, cache: "no-store" }),
+        fetch("/api/v1/system/devops-stats",            { headers, cache: "no-store" }),
       ]);
 
-      if (!jobsRes.ok) throw new Error(`backup-status/jobs: ${jobsRes.status}`);
+      if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {
+        const jobsData: JobStatusResponse[] = await jobsRes.value.json();
+        const jobStatusMap: Record<string, JobStatusResponse> = {};
+        jobsData.forEach(j => { jobStatusMap[j.scriptKey] = j; });
 
-      const jobsData: JobStatusResponse[] = await jobsRes.json();
-      const jobStatusMap: Record<string, JobStatusResponse> = {};
-      jobsData.forEach(j => { jobStatusMap[j.scriptKey] = j; });
+        // Merge static metadata with live status
+        const merged: SchedulerJob[] = JOB_STATIC.map(s => {
+          const live = jobStatusMap[s.scriptKey];
+          return {
+            ...s,
+            lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "UNKNOWN",
+            lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "—",
+            lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "—",
+            nextRunAt: computeNextRun(s.cronExpression),
+          };
+        });
 
-      // Merge static metadata with live status
-      const merged: SchedulerJob[] = JOB_STATIC.map(s => {
-        const live = jobStatusMap[s.scriptKey];
-        return {
-          ...s,
-          lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "UNKNOWN",
-          lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "—",
-          lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "—",
-          nextRunAt: computeNextRun(s.cronExpression),
-        };
-      });
+        if (mounted.current) {
+          setJobs(merged);
+          setError(null);
+        }
+      } else if (jobsRes.status === "rejected" || !jobsRes.value.ok) {
+        throw new Error("backup-status/jobs unavailable");
+      }
 
-      if (mounted.current) {
-        setJobs(merged);
-        setError(null);
+      // DevOps stats (Nextcloud, MinIO and DB Backup Info)
+      if (devopsRes.status === "fulfilled" && devopsRes.value.ok) {
+        const devopsData = await devopsRes.value.json();
+        if (devopsData?.lastBackup && mounted.current) {
+          const lb = devopsData.lastBackup;
+          setDevopsBackupInfo({
+            lastBackupTime: lb.lastBackupTime ?? "—",
+            status: lb.status ?? lb.lastStatus ?? "UNKNOWN",
+            success: lb.success ?? false,
+            minioStatus: lb.minioStatus ?? "UNKNOWN",
+            minioSyncTime: lb.minioSyncTime ?? "—",
+            nextcloudStatus: lb.nextcloudStatus ?? "UNKNOWN",
+            nextcloudSyncTime: lb.nextcloudSyncTime ?? "—",
+            nextBackupTime: lb.nextBackupTime ?? "—",
+          });
+        }
       }
 
       // Artifacts (best-effort, non-blocking)
-      if (artifactsRes.ok) {
-        const artData: ArtifactResponse[] = await artifactsRes.json();
+      if (artifactsRes.status === "fulfilled" && artifactsRes.value.ok) {
+        const artData: ArtifactResponse[] = await artifactsRes.value.json();
         const artMapped: BackupArtifact[] = artData.map((a, i) => ({
           id: `a${i + 1}`,
           artifactName: a.artifactName,
@@ -157,5 +190,5 @@ export function useSchedulerStatus() {
     };
   }, [fetchData]);
 
-  return { jobs, artifacts, loading, error, refresh: fetchData, triggerJob };
+  return { jobs, artifacts, devopsBackupInfo, loading, error, refresh: fetchData, triggerJob };
 }

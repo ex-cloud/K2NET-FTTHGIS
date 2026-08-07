@@ -1,0 +1,233 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
+import { Clock, Loader2, Play, Info, HardDrive, CloudUpload, RefreshCw, Timer } from "lucide-react";
+import { type SchedulerJob } from "@/lib/mock-data/observability-mock";
+
+export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED" | "UNKNOWN";
+
+function StatusBadge({ status }: { status: SchedulerJob["lastStatus"] }) {
+  const map: Record<JobStatus, { label: string; cls: string }> = {
+    SUCCESS: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+    FAILED:  { label: "FAILED",  cls: "border-rose-500/30 bg-rose-500/10 text-rose-400" },
+    RUNNING: { label: "RUNNING", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400 animate-pulse" },
+    SKIPPED: { label: "SKIPPED", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
+    UNKNOWN: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+  };
+  const s = map[status] ?? map.SUCCESS;
+  return (
+    <Badge className={`text-[10px] font-mono font-bold ${s.cls}`}>
+      {s.label}
+    </Badge>
+  );
+}
+
+function CategoryIcon({ cat }: { cat: SchedulerJob["category"] }) {
+  const map = {
+    backup:      <HardDrive className="w-3.5 h-3.5 text-violet-400" />,
+    sync:        <CloudUpload className="w-3.5 h-3.5 text-blue-400" />,
+    maintenance: <RefreshCw className="w-3.5 h-3.5 text-amber-400" />,
+    poller:      <Timer className="w-3.5 h-3.5 text-emerald-400" />,
+  };
+  return map[cat] ?? null;
+}
+
+interface RunNowDialogProps {
+  job: SchedulerJob;
+  onClose: () => void;
+  onConfirm: () => void;
+  triggering: boolean;
+}
+
+function RunNowDialog({ job, onClose, onConfirm, triggering }: RunNowDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <Card className="w-full max-w-md mx-4 shadow-2xl border-border/80">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Play className="w-4 h-4 text-primary" />
+            Trigger Manual Execution
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-5 space-y-4">
+          <div className="rounded-lg bg-muted/40 border border-border/60 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <CategoryIcon cat={job.category} />
+              <p className="text-sm font-semibold text-foreground">{job.name}</p>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge className="font-mono text-[10px] border-border bg-muted/60 text-muted-foreground">
+                {job.scriptFile}
+              </Badge>
+              <Badge className="font-mono text-[10px] border-border bg-muted/60 text-muted-foreground">
+                {job.cronExpression}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p>
+              This will queue the job for immediate async execution on the server.
+              Output logs will stream to{" "}
+              <Link href="/logs?filter=log_type:eq:scheduler" className="text-primary underline underline-offset-2">
+                Global Logs → Scheduler
+              </Link>
+              .
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={onClose} disabled={triggering}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={onConfirm} disabled={triggering} className="gap-1.5">
+              {triggering ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              {triggering ? "Queuing…" : "Run Job"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface SchedulerJobsTableProps {
+  jobs: SchedulerJob[];
+  triggerJob: (scriptKey: string) => Promise<boolean>;
+  scriptWhitelist: Set<string>;
+}
+
+export function SchedulerJobsTable({
+  jobs,
+  triggerJob,
+  scriptWhitelist,
+}: SchedulerJobsTableProps) {
+  const [runDialog, setRunDialog] = useState<SchedulerJob | null>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
+
+  const handleTrigger = async () => {
+    if (!runDialog || !scriptWhitelist.has(runDialog.scriptKey)) return;
+    const targetJob = runDialog;
+    setTriggering(true);
+    setTriggeredIds((prev) => new Set([...prev, targetJob.id]));
+    try {
+      await triggerJob(targetJob.scriptKey);
+    } finally {
+      setTriggering(false);
+      setRunDialog(null);
+    }
+  };
+
+  return (
+    <>
+      {runDialog && (
+        <RunNowDialog
+          job={runDialog}
+          onClose={() => setRunDialog(null)}
+          onConfirm={handleTrigger}
+          triggering={triggering}
+        />
+      )}
+
+      <Card>
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            Cron &amp; System Jobs Monitor
+          </CardTitle>
+          <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+            Registered operational scripts with crontab schedule. Use{" "}
+            <span className="font-semibold text-foreground">[Run Now]</span> to
+            queue an immediate async execution — no blocking, no shell exec in
+            web server thread.
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-[1fr_180px_100px_90px_140px_130px] px-5 py-2.5 border-b border-border bg-muted/30 gap-2">
+            {[
+              "Job Name & Script",
+              "Cron Schedule",
+              "Last Status",
+              "Duration",
+              "Next Run",
+              "Actions",
+            ].map((h) => (
+              <span key={h} className="text-[10px] font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
+                {h}
+              </span>
+            ))}
+          </div>
+
+          <div className="divide-y divide-border/60">
+            {jobs.map((job) => {
+              const wasTriggered = triggeredIds.has(job.id) || job.lastStatus === "RUNNING";
+              return (
+                <div key={job.id} className="grid grid-cols-[1fr_180px_100px_90px_140px_130px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <CategoryIcon cat={job.category} />
+                      <span className="text-sm font-semibold text-foreground truncate">
+                        {job.name}
+                      </span>
+                    </div>
+                    <Badge className="w-fit font-mono text-[10px] border-border bg-muted/60 text-muted-foreground">
+                      {job.scriptFile}
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-mono text-foreground/80">
+                      {job.cronExpression}
+                    </span>
+                    <span className="text-[10px] text-foreground/75 dark:text-muted-foreground">
+                      {job.cronLabel}
+                    </span>
+                  </div>
+
+                  <div>
+                    <StatusBadge status={wasTriggered ? "RUNNING" : job.lastStatus} />
+                  </div>
+
+                  <span className="text-xs font-mono text-foreground/75 dark:text-muted-foreground">
+                    {job.lastDuration}
+                  </span>
+
+                  <span className="text-xs font-mono text-foreground/75 dark:text-muted-foreground">
+                    {job.nextRunAt}
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    {wasTriggered ? (
+                      <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                        Executing…
+                      </span>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[11px] gap-1 font-mono"
+                        onClick={() => setRunDialog(job)}
+                      >
+                        <Play className="w-3 h-3" />
+                        Run Now
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
