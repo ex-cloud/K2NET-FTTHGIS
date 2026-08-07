@@ -120,6 +120,13 @@ export function SchedulerJobsTable({
     setTriggeredIds((prev) => new Set([...prev, targetJob.id]));
     try {
       await triggerJob(targetJob.scriptKey);
+      setTimeout(() => {
+        setTriggeredIds((prev) => {
+          const next = new Set(prev);
+          next.delete(targetJob.id);
+          return next;
+        });
+      }, 5000);
     } finally {
       setTriggering(false);
       setRunDialog(null);

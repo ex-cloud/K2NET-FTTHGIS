@@ -195,15 +195,37 @@ public class BackupStatusController {
             return;
         }
 
+        String logName = meta.logFileCandidates().isEmpty() ? meta.scriptKey() + ".log" : meta.logFileCandidates().get(0);
+        File logFile = new File(PRIMARY_LOG_DIR, logName);
+
         try {
-            log.info("Executing bash script: {}", scriptPath);
+            log.info("Executing bash script: {} with log redirect to {}", scriptPath, logFile.getAbsolutePath());
+            
+            // Write job starting marker and RUNNING state to log file
+            Files.writeString(logFile.toPath(), "=== JOB STARTING AT " + DT_FMT.format(Instant.now()) + " ===\nRUNNING\n", 
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+
             ProcessBuilder pb = new ProcessBuilder("bash", scriptPath.toAbsolutePath().toString());
             pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             Process process = pb.start();
-            int exitCode = process.waitFor();
-            log.info("Finished script {} with exit code {}", meta.scriptFile(), exitCode);
+            
+            process.onExit().thenAccept(p -> {
+                try {
+                    int exitCode = p.exitValue();
+                    String endMarker = "\n=== JOB FINISHED WITH EXIT CODE " + exitCode + " AT " + DT_FMT.format(Instant.now()) + " ===\n";
+                    Files.writeString(logFile.toPath(), endMarker, java.nio.file.StandardOpenOption.APPEND);
+                    log.info("Finished script {} with exit code {}", meta.scriptFile(), exitCode);
+                } catch (Exception e) {
+                    log.error("Failed writing exit code marker to log file", e);
+                }
+            });
         } catch (Exception e) {
             log.error("Failed executing script {}", meta.scriptFile(), e);
+            try {
+                Files.writeString(logFile.toPath(), "\nERROR: Failed executing script: " + e.getMessage() + "\n", 
+                        java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+            } catch (Exception ignored) {}
         }
     }
 
