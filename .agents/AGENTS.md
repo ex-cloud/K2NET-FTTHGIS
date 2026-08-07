@@ -154,7 +154,7 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 
 ### 🔍 Pola Audit Halaman Observability (Agustus 2026)
 - **Sub-menu yang sudah diaudit**: `overview` ([31-juli-2026-observability-overview.md](file:///opt/project5/docs/Server/rekomendasi/plan/31-juli-2026-observability-overview.md)), `query-performance` ([04-agustus-2026-query-performance-upgrades.md](file:///opt/project5/docs/Server/rekomendasi/plan/04-agustus-2026-query-performance-upgrades.md))
-- **Sub-menu yang belum diaudit**: `api-gateway`, `compute`, `database`, `identity`, `messaging`, `olt-poller`, `operations`, `scheduler`, `spatial-map`
+- **Sub-menu yang belum diaudit**: `api-gateway`, `compute`, `database`, `identity`, `messaging`, `olt-poller`, `scheduler`, `spatial-map`
 - **Format nama dokumen**: `DD-bulan-YYYY-nama-submenu.md` — simpan di `/opt/project5/docs/Server/rekomendasi/plan/`
 - **Alur audit baku**: (1) Baca 2 dokumen plan sebelumnya sebagai referensi gaya, (2) Analisa halaman + hook + backend endpoint, (3) Buat dokumen rekomendasi lengkap, (4) Buat implementation plan + task.md
 
@@ -187,8 +187,17 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
 
 ### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
-- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`, `olt-poller`
-- **❌ Belum diaudit**: `operations`, `scheduler`, `spatial-map`
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`, `olt-poller`, `scheduler`
+- **❌ Belum diaudit**: `spatial-map`
+
+### ⏰ System Jobs & Cron Scheduler Dashboard Upgrade (Agustus 2026)
+- **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/scheduler/page.tsx)
+- **Hook**: `useSchedulerStatus` dari `apps/studio-admin/src/hooks/useSchedulerStatus.ts` — polling 60s
+- **Sub-komponen**: `SchedulerKpiCards`, `SchedulerJobsTable`, `SchedulerArtifactsTable` di [components/](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/scheduler/components/)
+- **Penyelarasan DevOps Stats API**: Hook melakukan query paralel ke `/api/v1/system/devops-stats` untuk memuat data `lastBackup` secara rill.
+- **Bug Nextcloud Status Mock (Diperbaiki)**: Kartu *Offsite Sync (Nextcloud)* tidak lagi hardcoded `"SYNCED"`, melainkan membaca kolom `nextcloudStatus` & `nextcloudSyncTime` rill dari database (`database_backups`).
+- **Bug Last Backup Status Mock (Diperbaiki)**: Kartu *Last Backup Status* membaca status rill dan timestamp `lastBackupTime` dari disk yang diverifikasi langsung oleh backend.
+- **High-Contrast Colors**: Label Kpi Cards menggunakan token `text-foreground/75 dark:text-muted-foreground` agar mudah terbaca pada Light Mode.
 
 ### 📡 OLT & Poller Dashboard Upgrade (Agustus 2026)
 - **Halaman**: [olt-poller/page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/olt-poller/page.tsx)
