@@ -187,8 +187,16 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Migration V16**: [V16__add_sync_columns_to_database_backups.sql](file:///opt/project5/apps/api/src/main/resources/db/migration/V16__add_sync_columns_to_database_backups.sql) — menambah kolom `minio_status`, `minio_sync_time`, `nextcloud_status`, `nextcloud_sync_time` ke tabel `database_backups`.
 
 ### 🔍 Sub-menu Observability — Status Audit (Agustus 2026)
-- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`, `olt-poller`, `scheduler`
-- **❌ Belum diaudit**: `spatial-map`
+- **✅ Selesai diaudit**: `overview`, `query-performance`, `api-gateway`, `database`, `compute`, `identity`, `messaging`, `olt-poller`, `scheduler`, `spatial-map`
+
+### 🗺️ Spatial Map Gateway Dashboard Upgrade (Agustus 2026)
+- **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/spatial-map/page.tsx)
+- **Hook**: `useMapGatewayStats` dari `apps/studio-admin/src/hooks/useMapGatewayStats.ts` — polling 60s
+- **Sub-komponen**: `SpatialKpiCards`, `SpatialThroughputChart`, `SpatialDetailsPanel` di [components/](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/spatial-map/components/)
+- **API Route**: `apps/studio-admin/src/app/api/observability/map-stats/route.ts` — mengagregasikan status rill
+- **Penyelarasan Host & Token**: Mengoreksi endpoint target ke `http://ftth-map-gateway:5003` dan `GATEWAY_TOKEN`.
+- **Integrasi DB Pool Spasial Rill**: Menghubungkan metrik DB Pool dengan endpoint `/api/v1/system/db-observability` di backend Java Core.
+- **High-Contrast Colors**: Label KPI cards menggunakan token `text-foreground/75 dark:text-muted-foreground` agar mudah terbaca pada Light Mode.
 
 ### ⏰ System Jobs & Cron Scheduler Dashboard Upgrade (Agustus 2026)
 - **Halaman**: [page.tsx](file:///opt/project5/apps/studio-admin/src/app/(dashboard)/observability/scheduler/page.tsx)

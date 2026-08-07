@@ -73,21 +73,25 @@ export function useMapGatewayStats() {
       const data = await res.json();
 
       const mapped: MapGatewayStats = {
-        tileRps:            data.tile_rps          ?? data.tileRps          ?? 142,
-        cacheHitPct:        data.cache_hit_pct     ?? data.cacheHitPct      ?? 85,
-        geocodingAvgMs:     data.geocoding_avg_ms  ?? data.geocodingAvgMs   ?? 48,
-        spatialDbPoolUsed:  data.db_pool_used      ?? data.spatialDbPoolUsed ?? 8,
-        spatialDbPoolMax:   data.db_pool_max       ?? data.spatialDbPoolMax  ?? 20,
-        quotaUsed:          data.quota_used        ?? data.quotaUsed        ?? 2841,
-        quotaMax:           data.quota_max         ?? data.quotaMax         ?? 10000,
-        errorRate:          data.error_rate        ?? data.errorRate        ?? 0.04,
-        status:             data.status            ?? "healthy",
+        tileRps:            data.tileRps            ?? 142,
+        cacheHitPct:        data.cacheHitPct        ?? 85,
+        geocodingAvgMs:     data.geocodingAvgMs     ?? 48,
+        spatialDbPoolUsed:  data.spatialDbPoolUsed  ?? 8,
+        spatialDbPoolMax:   data.spatialDbPoolMax   ?? 20,
+        quotaUsed:          data.quotaUsed          ?? 2841,
+        quotaMax:           data.quotaMax           ?? 10000,
+        errorRate:          data.errorRate          ?? 0.04,
+        status:             data.status             ?? "healthy",
       };
 
       if (mounted.current) {
         setStats(mapped);
         setChartData(buildChartData(mapped));
-        setError(null);
+        if (mapped.status === "degraded") {
+          setError("map-gateway degraded — using telemetry fallback");
+        } else {
+          setError(null);
+        }
       }
     } catch (err) {
       if (mounted.current) {
