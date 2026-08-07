@@ -205,6 +205,8 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Penyelarasan DevOps Stats API**: Hook melakukan query paralel ke `/api/v1/system/devops-stats` untuk memuat data `lastBackup` secara rill.
 - **Bug Nextcloud Status Mock (Diperbaiki)**: Kartu *Offsite Sync (Nextcloud)* tidak lagi hardcoded `"SYNCED"`, melainkan membaca kolom `nextcloudStatus` & `nextcloudSyncTime` rill dari database (`database_backups`).
 - **Bug Last Backup Status Mock (Diperbaiki)**: Kartu *Last Backup Status* membaca status rill dan timestamp `lastBackupTime` dari disk yang diverifikasi langsung oleh backend.
+- **Fitur Live Logs Stream (Baru)**: Ditambahkan modal `LiveLogModal` di UI dan REST endpoint `/logs/{scriptKey}` di Spring Boot. Membaca file log rill di server latar belakang secara dinamis dengan visual console.
+- **Fitur Local File Manager (Baru)**: Ditambahkan tombol download (binary stream `/download`) dan hapus fisik (`/delete` dengan validasi anti directory traversal) untuk berkas hasil backup lokal.
 - **High-Contrast Colors**: Label Kpi Cards menggunakan token `text-foreground/75 dark:text-muted-foreground` agar mudah terbaca pada Light Mode.
 
 ### 📡 OLT & Poller Dashboard Upgrade (Agustus 2026)

@@ -180,6 +180,22 @@ export function useSchedulerStatus() {
     }
   }, [session?.accessToken, fetchData]);
 
+  const deleteArtifact = useCallback(async (filename: string) => {
+    if (!session?.accessToken) return false;
+    try {
+      const res = await fetch(`/api/v1/system/backup-status/delete?file=${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+      fetchData();
+      return true;
+    } catch (err) {
+      console.error("Failed to delete artifact:", err);
+      return false;
+    }
+  }, [session?.accessToken, fetchData]);
+
   useEffect(() => {
     mounted.current = true;
     fetchData();
@@ -190,5 +206,5 @@ export function useSchedulerStatus() {
     };
   }, [fetchData]);
 
-  return { jobs, artifacts, devopsBackupInfo, loading, error, refresh: fetchData, triggerJob };
+  return { jobs, artifacts, devopsBackupInfo, loading, error, refresh: fetchData, triggerJob, deleteArtifact };
 }

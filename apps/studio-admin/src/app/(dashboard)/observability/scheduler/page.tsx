@@ -22,7 +22,7 @@ const SCRIPT_WHITELIST = new Set([
 ]);
 
 export default function SchedulerPage() {
-  const { jobs, artifacts, devopsBackupInfo, loading, error, refresh, triggerJob } = useSchedulerStatus();
+  const { jobs, artifacts, devopsBackupInfo, loading, error, refresh, triggerJob, deleteArtifact } = useSchedulerStatus();
   const hasFailedJobs = jobs.some((j) => j.lastStatus === "FAILED");
 
   const formatTimeSub = (timeStr?: string, prefix = "") => {
@@ -79,6 +79,7 @@ export default function SchedulerPage() {
       <SchedulerArtifactsTable
         artifacts={artifacts}
         loading={loading}
+        deleteArtifact={deleteArtifact}
       />
 
       {/* ── Footer ── */}

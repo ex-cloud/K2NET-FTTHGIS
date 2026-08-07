@@ -17,6 +17,13 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import java.io.FileInputStream;
+
 /**
  * Exposes cron job execution status by reading log files from /opt/project5/backups/ or /var/log/ftth-jobs/
  * and allows triggering asynchronous execution of whitelisted backup/maintenance scripts.
@@ -123,6 +130,95 @@ public class BackupStatusController {
         }
 
         return ResponseEntity.ok(artifacts);
+    }
+
+    @GetMapping("/logs/{scriptKey}")
+    public ResponseEntity<Map<String, Object>> getJobLogs(@PathVariable String scriptKey) {
+        JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
+        if (meta == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid scriptKey"));
+        }
+
+        Path foundLogPath = findLogFile(meta.logFileCandidates());
+        List<String> logsList = new ArrayList<>();
+
+        if (foundLogPath != null && Files.exists(foundLogPath)) {
+            try (Stream<String> stream = Files.lines(foundLogPath)) {
+                List<String> allLines = stream.toList();
+                // Tail the last 100 lines
+                int start = Math.max(0, allLines.size() - 100);
+                logsList = allLines.subList(start, allLines.size());
+            } catch (Exception e) {
+                log.warn("Failed to read log file {}: {}", foundLogPath, e.getMessage());
+                logsList.add("Error reading log file: " + e.getMessage());
+            }
+        } else {
+            logsList.add("No execution log file found yet for job: " + scriptKey);
+        }
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("scriptKey", scriptKey);
+        res.put("logs", logsList);
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<Resource> downloadArtifact(@RequestParam("file") String filename) {
+        if (!isValidFilename(filename)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        File targetFile = new File(PRIMARY_LOG_DIR, filename);
+        if (!targetFile.exists() || !targetFile.isFile()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            InputStreamResource resource = new InputStreamResource(new FileInputStream(targetFile));
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+            headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+            headers.add("Pragma", "no-cache");
+            headers.add("Expires", "0");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(targetFile.length())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("Failed to stream backup artifact download: {}", filename, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<Map<String, Object>> deleteArtifact(@RequestParam("file") String filename) {
+        if (!isValidFilename(filename)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or unsafe filename"));
+        }
+
+        File targetFile = new File(PRIMARY_LOG_DIR, filename);
+        if (!targetFile.exists() || !targetFile.isFile()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "File not found"));
+        }
+
+        try {
+            boolean deleted = Files.deleteIfExists(targetFile.toPath());
+            if (deleted) {
+                log.info("Backup artifact deleted successfully: {}", filename);
+                return ResponseEntity.ok(Map.of("message", "File deleted successfully", "filename", filename));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to delete file"));
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete backup artifact: {}", filename, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    private boolean isValidFilename(String filename) {
+        return filename != null && filename.matches("^[a-zA-Z0-9_\\.\\-]+$") && !filename.contains("..");
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

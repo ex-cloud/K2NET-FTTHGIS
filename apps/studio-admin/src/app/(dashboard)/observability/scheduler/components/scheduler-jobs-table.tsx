@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
 import { Clock, Loader2, Play, Info, HardDrive, CloudUpload, RefreshCw, Timer } from "lucide-react";
 import { type SchedulerJob } from "@/lib/mock-data/observability-mock";
@@ -98,6 +99,81 @@ function RunNowDialog({ job, onClose, onConfirm, triggering }: RunNowDialogProps
   );
 }
 
+interface LiveLogModalProps {
+  job: SchedulerJob;
+  onClose: () => void;
+}
+
+function LiveLogModal({ job, onClose }: LiveLogModalProps) {
+  const { data: session } = useSession();
+  const [logs, setLogs] = useState<string[]>(["Connecting to logs stream..."]);
+  const [loading, setLoading] = useState(true);
+  const terminalEndRef = React.useRef<HTMLDivElement>(null);
+
+  const fetchLogs = React.useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+      const res = await fetch(`/api/v1/system/backup-status/logs/${job.scriptKey}`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.logs) {
+          setLogs(data.logs);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch job logs:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.accessToken, job.scriptKey]);
+
+  React.useEffect(() => {
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 2000);
+    return () => clearInterval(interval);
+  }, [fetchLogs]);
+
+  React.useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl mx-4 shadow-2xl border-border/80 flex flex-col h-[400px]">
+        <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between shrink-0">
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Logs: {job.scriptFile}
+            </CardTitle>
+            <p className="text-[10px] text-foreground/75 dark:text-muted-foreground">Streaming stdout/stderr from background daemon.</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-8">Close</Button>
+        </CardHeader>
+        <CardContent className="flex-1 bg-zinc-950 p-4 font-mono text-[11px] overflow-y-auto text-zinc-300 flex flex-col gap-1 rounded-b-lg">
+          {loading ? (
+            <div className="flex items-center gap-2 text-zinc-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Connecting to daemon...
+            </div>
+          ) : (
+            <>
+              {logs.map((logLine, idx) => (
+                <div key={idx} className="whitespace-pre-wrap break-all leading-relaxed">
+                  {logLine}
+                </div>
+              ))}
+              <div ref={terminalEndRef} />
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 interface SchedulerJobsTableProps {
   jobs: SchedulerJob[];
   triggerJob: (scriptKey: string) => Promise<boolean>;
@@ -110,6 +186,7 @@ export function SchedulerJobsTable({
   scriptWhitelist,
 }: SchedulerJobsTableProps) {
   const [runDialog, setRunDialog] = useState<SchedulerJob | null>(null);
+  const [logDialog, setLogDialog] = useState<SchedulerJob | null>(null);
   const [triggering, setTriggering] = useState(false);
   const [triggeredIds, setTriggeredIds] = useState<Set<string>>(new Set());
 
@@ -141,6 +218,13 @@ export function SchedulerJobsTable({
           onClose={() => setRunDialog(null)}
           onConfirm={handleTrigger}
           triggering={triggering}
+        />
+      )}
+
+      {logDialog && (
+        <LiveLogModal
+          job={logDialog}
+          onClose={() => setLogDialog(null)}
         />
       )}
 
@@ -228,6 +312,14 @@ export function SchedulerJobsTable({
                         Run Now
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[11px] gap-1 font-mono border-border/80"
+                      onClick={() => setLogDialog(job)}
+                    >
+                      Logs
+                    </Button>
                   </div>
                 </div>
               );

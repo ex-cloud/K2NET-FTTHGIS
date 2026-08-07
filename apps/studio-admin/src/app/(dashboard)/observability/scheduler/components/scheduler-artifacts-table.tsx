@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
-import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink } from "lucide-react";
+import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2 } from "lucide-react";
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
 
 function StorageBadge({ target, label }: { target: BackupArtifact["storageTarget"]; label: string }) {
@@ -119,17 +119,66 @@ function MetadataModal({ artifact, onClose }: MetadataModalProps) {
   );
 }
 
+interface DeleteConfirmDialogProps {
+  filename: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function DeleteConfirmDialog({ filename, onClose, onConfirm }: DeleteConfirmDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <Card className="w-full max-w-md mx-4 shadow-2xl border-border/80">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-rose-500">
+            <Trash2 className="w-4 h-4" />
+            Confirm Delete Backup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-5 space-y-4">
+          <p className="text-xs text-foreground/80">
+            Are you sure you want to permanently delete the following backup file from local storage?
+          </p>
+          <div className="rounded-lg bg-muted/40 border border-border/60 p-3 font-mono text-xs text-foreground/90 truncate">
+            {filename}
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onConfirm}>
+              Delete File
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 interface SchedulerArtifactsTableProps {
   artifacts: BackupArtifact[];
   loading: boolean;
+  deleteArtifact: (filename: string) => Promise<boolean>;
 }
 
 export function SchedulerArtifactsTable({
   artifacts,
   loading,
+  deleteArtifact,
 }: SchedulerArtifactsTableProps) {
   const [checksumModal, setChecksumModal] = useState<BackupArtifact | null>(null);
   const [metadataModal, setMetadataModal] = useState<BackupArtifact | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<BackupArtifact | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteDialog) return;
+    try {
+      await deleteArtifact(deleteDialog.artifactName);
+    } finally {
+      setDeleteDialog(null);
+    }
+  };
 
   return (
     <>
@@ -138,6 +187,13 @@ export function SchedulerArtifactsTable({
       )}
       {metadataModal && (
         <MetadataModal artifact={metadataModal} onClose={() => setMetadataModal(null)} />
+      )}
+      {deleteDialog && (
+        <DeleteConfirmDialog
+          filename={deleteDialog.artifactName}
+          onClose={() => setDeleteDialog(null)}
+          onConfirm={handleDelete}
+        />
       )}
 
       <Card>
@@ -154,7 +210,7 @@ export function SchedulerArtifactsTable({
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-[1fr_140px_200px_80px_140px_150px] px-5 py-2.5 border-b border-border bg-muted/30 gap-2">
+          <div className="grid grid-cols-[1fr_140px_150px_80px_140px_200px] px-5 py-2.5 border-b border-border bg-muted/30 gap-2">
             {[
               "Artifact Name",
               "Source Script",
@@ -179,7 +235,7 @@ export function SchedulerArtifactsTable({
               </div>
             ) : (
               artifacts.map((artifact) => (
-                <div key={artifact.id} className="grid grid-cols-[1fr_140px_200px_80px_140px_150px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2">
+                <div key={artifact.id} className="grid grid-cols-[1fr_140px_150px_80px_140px_200px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2">
                   <span className="text-xs font-mono text-foreground/80 truncate" title={artifact.artifactName}>
                     {artifact.artifactName.split("/").pop()}
                   </span>
@@ -198,14 +254,32 @@ export function SchedulerArtifactsTable({
                     {artifact.completedAt}
                   </span>
 
-                  <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 font-mono" onClick={() => setChecksumModal(artifact)}>
-                      <ShieldCheck className="w-3 h-3" />
-                      Verify
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 font-mono" title="Verify checksum" onClick={() => setChecksumModal(artifact)}>
+                      <ShieldCheck className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 font-mono" onClick={() => setMetadataModal(artifact)}>
-                      <Info className="w-3 h-3" />
-                      Metadata
+                    <Button variant="outline" size="sm" className="h-7 text-[10px] px-2 font-mono" title="View metadata" onClick={() => setMetadataModal(artifact)}>
+                      <Info className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-mono"
+                      title="Download backup file"
+                      onClick={() => {
+                        window.location.href = `/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}`;
+                      }}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-mono hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
+                      title="Delete backup file"
+                      onClick={() => setDeleteDialog(artifact)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
