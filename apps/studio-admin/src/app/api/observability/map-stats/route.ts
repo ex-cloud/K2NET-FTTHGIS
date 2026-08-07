@@ -3,9 +3,7 @@ import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const MAP_GATEWAY_URL = process.env.POLLER_GATEWAY_URL 
-  ? process.env.POLLER_GATEWAY_URL.replace(":5010", ":5003") 
-  : (process.env.MAP_GATEWAY_URL ?? "http://ftth-map-gateway:5003");
+const MAP_GATEWAY_URL = process.env.MAP_GATEWAY_URL ?? "http://ftth-map-gateway:5003";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL ?? "http://backend:9090";
 
