@@ -32,7 +32,6 @@ import java.io.FileInputStream;
 @RequestMapping("/api/v1/system/backup-status")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
 public class BackupStatusController {
 
     private static final String PRIMARY_LOG_DIR = "/opt/project5/backups";
@@ -58,6 +57,7 @@ public class BackupStatusController {
         SCRIPT_META_MAP.put("cleanup",        new JobMeta("cleanup",        "cleanup.sh",               List.of("cleanup.log")));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/jobs")
     public ResponseEntity<List<Map<String, Object>>> getJobStatus() {
         List<Map<String, Object>> jobs = new ArrayList<>();
@@ -71,6 +71,7 @@ public class BackupStatusController {
         return ResponseEntity.ok(jobs);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/trigger/{scriptKey}")
     public ResponseEntity<Map<String, Object>> triggerJob(@PathVariable String scriptKey) {
         JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
@@ -96,6 +97,7 @@ public class BackupStatusController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/artifacts")
     public ResponseEntity<List<Map<String, Object>>> getBackupArtifacts() {
         List<Map<String, Object>> artifacts = new ArrayList<>();
@@ -133,7 +135,16 @@ public class BackupStatusController {
     }
 
     @GetMapping("/logs/{scriptKey}")
-    public ResponseEntity<Map<String, Object>> getJobLogs(@PathVariable String scriptKey) {
+    public ResponseEntity<Map<String, Object>> getJobLogs(
+            @PathVariable String scriptKey,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestParam(value = "token", required = false) String queryToken) {
+
+        String token = authHeader != null ? authHeader : queryToken;
+        if (!validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+
         JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
         if (meta == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid scriptKey"));
@@ -163,7 +174,16 @@ public class BackupStatusController {
     }
 
     @GetMapping("/download")
-    public ResponseEntity<Resource> downloadArtifact(@RequestParam("file") String filename) {
+    public ResponseEntity<Resource> downloadArtifact(
+            @RequestParam("file") String filename,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestParam(value = "token", required = false) String queryToken) {
+
+        String token = authHeader != null ? authHeader : queryToken;
+        if (!validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         if (!isValidFilename(filename)) {
             return ResponseEntity.badRequest().build();
         }
@@ -192,6 +212,7 @@ public class BackupStatusController {
         }
     }
 
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/delete")
     public ResponseEntity<Map<String, Object>> deleteArtifact(@RequestParam("file") String filename) {
         if (!isValidFilename(filename)) {
@@ -214,6 +235,34 @@ public class BackupStatusController {
         } catch (Exception e) {
             log.error("Failed to delete backup artifact: {}", filename, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    private boolean validateToken(String token) {
+        if (token == null || token.isEmpty()) {
+            return false;
+        }
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return false;
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+            if (payload.contains("\"exp\"")) {
+                int expStart = payload.indexOf("\"exp\":") + 6;
+                int expEnd = payload.indexOf(",", expStart);
+                if (expEnd == -1) expEnd = payload.indexOf("}", expStart);
+                long exp = Long.parseLong(payload.substring(expStart, expEnd).trim());
+                if (Instant.now().getEpochSecond() > exp) {
+                    log.warn("Manual JWT token validation failed: Expired at {}", exp);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("Manual JWT token validation error: {}", e.getMessage());
+            return false;
         }
     }
 

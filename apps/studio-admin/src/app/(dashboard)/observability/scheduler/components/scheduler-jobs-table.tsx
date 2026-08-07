@@ -113,7 +113,7 @@ function LiveLogModal({ job, onClose }: LiveLogModalProps) {
   const fetchLogs = React.useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const res = await fetch(`/api/v1/system/backup-status/logs/${job.scriptKey}`, {
+      const res = await fetch(`/api/v1/system/backup-status/logs/${job.scriptKey}?token=${encodeURIComponent(session.accessToken)}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
       if (res.ok) {
@@ -121,19 +121,30 @@ function LiveLogModal({ job, onClose }: LiveLogModalProps) {
         if (data.logs) {
           setLogs(data.logs);
         }
+      } else {
+        setLogs([`Failed to retrieve logs: HTTP ${res.status} Unauthorized`]);
       }
     } catch (e) {
       console.error("Failed to fetch job logs:", e);
+      setLogs([`Failed to fetch logs: ${e instanceof Error ? e.message : String(e)}`]);
     } finally {
       setLoading(false);
     }
   }, [session?.accessToken, job.scriptKey]);
 
   React.useEffect(() => {
-    fetchLogs();
-    const interval = setInterval(fetchLogs, 2000);
-    return () => clearInterval(interval);
-  }, [fetchLogs]);
+    if (session?.accessToken) {
+      fetchLogs();
+      const interval = setInterval(fetchLogs, 2000);
+      return () => clearInterval(interval);
+    } else {
+      const timer = setTimeout(() => {
+        setLoading(false);
+        setLogs(["Failed to load session authentication token. Please refresh the page."]);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [fetchLogs, session?.accessToken]);
 
   React.useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });

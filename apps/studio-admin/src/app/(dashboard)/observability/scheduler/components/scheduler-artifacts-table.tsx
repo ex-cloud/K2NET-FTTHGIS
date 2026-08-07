@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
 import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2 } from "lucide-react";
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
@@ -167,6 +168,7 @@ export function SchedulerArtifactsTable({
   loading,
   deleteArtifact,
 }: SchedulerArtifactsTableProps) {
+  const { data: session } = useSession();
   const [checksumModal, setChecksumModal] = useState<BackupArtifact | null>(null);
   const [metadataModal, setMetadataModal] = useState<BackupArtifact | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<BackupArtifact | null>(null);
@@ -267,7 +269,8 @@ export function SchedulerArtifactsTable({
                       className="h-7 text-[10px] px-2 font-mono"
                       title="Download backup file"
                       onClick={() => {
-                        window.location.href = `/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}`;
+                        const tokenParam = session?.accessToken ? `&token=${encodeURIComponent(session.accessToken)}` : "";
+                        window.location.href = `/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}${tokenParam}`;
                       }}
                     >
                       <Download className="w-3.5 h-3.5" />
