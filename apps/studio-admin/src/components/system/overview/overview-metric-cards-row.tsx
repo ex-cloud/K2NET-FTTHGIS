@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Users, MapPin, Globe } from "lucide-react";
+import { Building2, Users, MapPin, Globe, ClipboardList } from "lucide-react";
 import { OverviewMetricCard } from "./overview-metric-card";
 
 interface OverviewMetricCardsRowProps {
@@ -14,6 +14,10 @@ interface OverviewMetricCardsRowProps {
   pendingRequests: number;
   totalAssets?: number | string;
   spatialThroughput?: number | string;
+  loadingTasks?: boolean;
+  totalOpenTasks?: number;
+  urgentTasks?: number;
+  resolvedTasksToday?: number;
 }
 
 export function OverviewMetricCardsRow({
@@ -27,9 +31,13 @@ export function OverviewMetricCardsRow({
   pendingRequests,
   totalAssets,
   spatialThroughput,
+  loadingTasks = false,
+  totalOpenTasks = 0,
+  urgentTasks = 0,
+  resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <OverviewMetricCard
         eyebrow="Active Tenants"
         value={
@@ -93,6 +101,29 @@ export function OverviewMetricCardsRow({
         footerLinkHref="/observability/spatial-map"
         footerLinkLabel="Map Gateway"
       />
+
+      <OverviewMetricCard
+        eyebrow="Active Tickets"
+        value={
+          <span className="flex items-baseline gap-2">
+            {loadingTasks ? "..." : totalOpenTasks}
+            {urgentTasks > 0 ? (
+              <span className="text-xs text-destructive font-bold flex items-center gap-1 animate-pulse">
+                <span>·</span> {urgentTasks} URGENT
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Open</span>
+            )}
+          </span>
+        }
+        helper={<span>Resolved Today: {loadingTasks ? "..." : resolvedTasksToday}</span>}
+        footer="Operations & SLA"
+        icon={ClipboardList}
+        accentClassName={urgentTasks > 0 ? "text-destructive" : "text-primary"}
+        footerLinkHref="/tasks"
+        footerLinkLabel="Manage Tasks"
+      />
     </div>
   );
 }
+

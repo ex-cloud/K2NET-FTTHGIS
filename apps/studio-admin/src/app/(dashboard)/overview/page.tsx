@@ -6,6 +6,7 @@ import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { throughputData } from "@/lib/system-overview-data";
 import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
+import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import {
   OverviewInfrastructureMap,
@@ -20,6 +21,7 @@ import type { ServiceNode } from "@/components/system/overview/overview-types";
 
 export default function SystemOverviewPage() {
   const data = useSystemOverviewData();
+  const { summary: taskSummary, loading: loadingTasks, refresh: refreshTasks } = useTaskSummary();
   const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
 
   const serviceNodes: ServiceNode[] = useServiceNodes({
@@ -58,7 +60,7 @@ export default function SystemOverviewPage() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20">
-                  Admin Platform Control
+                   Admin Platform Control
                 </Badge>
               </div>
               <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground">
@@ -69,8 +71,11 @@ export default function SystemOverviewPage() {
               </p>
             </div>
             <Button
-              onClick={() => data.loadData(true)}
-              disabled={data.refreshing || data.loadingOrgs || data.loadingStats}
+              onClick={() => {
+                data.loadData(true);
+                refreshTasks();
+              }}
+              disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
               variant="outline"
               size="sm"
             >
@@ -88,7 +93,7 @@ export default function SystemOverviewPage() {
             />
           )}
 
-          {/* 4 Business KPI Cards */}
+          {/* 5 Business KPI Cards */}
           <OverviewMetricCardsRow
             loadingOrgs={data.loadingOrgs}
             loadingUsers={data.loadingUsers}
@@ -98,6 +103,10 @@ export default function SystemOverviewPage() {
             totalUsers={data.userStats.totalUsers}
             activeUsers={data.userStats.activeUsers}
             pendingRequests={data.userStats.pendingRequests}
+            loadingTasks={loadingTasks}
+            totalOpenTasks={taskSummary?.totalOpen ?? 0}
+            urgentTasks={taskSummary?.urgentCount ?? 0}
+            resolvedTasksToday={taskSummary?.resolvedToday ?? 0}
           />
 
 
