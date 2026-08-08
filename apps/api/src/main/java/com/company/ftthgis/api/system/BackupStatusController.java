@@ -76,10 +76,34 @@ public class BackupStatusController {
     @PostMapping("/trigger/{scriptKey}")
     @AuditRequired(action = "SCHEDULER_JOB_TRIGGERED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#scriptKey")
     public ResponseEntity<Map<String, Object>> triggerJob(@PathVariable String scriptKey) {
-        log.warn("Security Hardening: Manual trigger for scriptKey '{}' via web API was blocked.", scriptKey);
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                "error", "Triggering system maintenance scripts from the web container is restricted for security hardening. Please run manually via host SSH terminal or crontab daemon.",
-                "scriptKey", scriptKey
+        JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
+        if (meta == null) {
+            log.warn("Unauthorized attempt to trigger unknown or forbidden scriptKey: {}", scriptKey);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Script key not allowed or not found in whitelist",
+                    "scriptKey", scriptKey
+            ));
+        }
+
+        // Whitelist: only postgres 'backup', 'backup-minio', and 'archive-audit' can run inside container
+        List<String> allowedTriggers = List.of("backup", "backup-minio", "archive-audit");
+        if (!allowedTriggers.contains(scriptKey)) {
+            log.warn("Security Hardening: Manual trigger for host-only scriptKey '{}' via web API was blocked.", scriptKey);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "error", "Triggering this system-level host script from the web container is restricted for security hardening. Please run manually via host SSH terminal.",
+                    "scriptKey", scriptKey
+            ));
+        }
+
+        log.info("Triggering async execution for job scriptKey: {} ({})", scriptKey, meta.scriptFile());
+
+        // Execute script asynchronously in background thread
+        CompletableFuture.runAsync(() -> executeScriptAsync(meta));
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Job execution triggered successfully",
+                "scriptKey", scriptKey,
+                "status", "RUNNING"
         ));
     }
 

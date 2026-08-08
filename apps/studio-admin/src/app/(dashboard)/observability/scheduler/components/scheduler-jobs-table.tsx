@@ -323,9 +323,28 @@ export function SchedulerJobsTable({
                   </span>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2.5 py-1.5 rounded font-semibold font-mono" title="Operational maintenance scripts are managed by the host OS daemon (crontab). On-demand execution is restricted to host SSH terminal for container security and environment compliance.">
-                      SSH Only
-                    </span>
+                    {["backup.sh", "backup-minio.sh", "archive-audit-logs.sh"].includes(job.scriptFile) ? (
+                      wasTriggered ? (
+                        <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-1.5 rounded">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                          Executing…
+                        </span>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-[11px] gap-1 font-mono"
+                          onClick={() => setRunDialog(job)}
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                          Run Now
+                        </Button>
+                      )
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2.5 py-1.5 rounded font-semibold font-mono" title="Operational maintenance scripts are managed by the host OS daemon (crontab). On-demand execution is restricted to host SSH terminal for container security and environment compliance.">
+                        SSH Only
+                      </span>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

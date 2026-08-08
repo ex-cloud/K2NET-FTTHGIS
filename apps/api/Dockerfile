@@ -8,6 +8,12 @@ RUN mvn package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+
+# Install bash, postgresql-client, and download mc (MinIO Client) CLI
+RUN apk add --no-cache bash postgresql-client wget && \
+    wget -q https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc && \
+    chmod +x /usr/local/bin/mc
+
 RUN addgroup -S spring && adduser -S spring -G spring
 COPY --from=builder /app/target/*.jar app.jar
 RUN chown -R spring:spring /app
