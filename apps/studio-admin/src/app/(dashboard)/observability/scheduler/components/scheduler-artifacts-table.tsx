@@ -207,6 +207,7 @@ export function SchedulerArtifactsTable({
       const parts = session.accessToken.split(".");
       if (parts.length >= 2) {
         const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+        // eslint-disable-next-line react-hooks/purity
         if (Date.now() / 1000 > payload.exp - 5) {
           toast.info("Sesi kedaluwarsa. Memperbarui token...");
           await update();
