@@ -21,12 +21,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.RedisTemplate;
+import com.company.ftthgis.domain.user.repository.UserRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Core domain service for Task Management.
@@ -59,6 +63,8 @@ public class TaskService {
     private final TaskCommentRepository commentRepository;
     private final OrganizationRepository organizationRepository;
     private final EntityManager entityManager;
+    private final UserRepository userRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     // ─── Read operations ────────────────────────────────────────────────────────
 
@@ -130,8 +136,8 @@ public class TaskService {
         Task saved = taskRepository.save(task);
         log.info("[TaskService] Created {} task id={} orgId={}", request.type(), saved.getId(), organizationId);
 
-        // TODO Phase 3: publish to Redis "obsidian:sync" queue for gateway-task worker
-        // redisTemplate.opsForList().leftPush("obsidian:sync", buildSyncPayload(saved));
+        // Publish to Redis "obsidian:sync" queue for gateway-task worker
+        publishSyncEvent(saved);
 
         return saved;
     }
@@ -163,7 +169,9 @@ public class TaskService {
             }
         }
 
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        publishSyncEvent(saved);
+        return saved;
     }
 
     @Transactional
@@ -176,7 +184,9 @@ public class TaskService {
     public Task assignTask(UUID id, String assigneeId) {
         Task task = findById(id);
         task.setAssigneeId(assigneeId);
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        publishSyncEvent(saved);
+        return saved;
     }
 
     @Transactional
@@ -190,7 +200,9 @@ public class TaskService {
         Task task = findById(id);
         task.setStatus(TaskStatus.RESOLVED);
         task.setResolvedAt(LocalDateTime.now());
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        publishSyncEvent(saved);
+        return saved;
     }
 
     @Transactional
@@ -265,5 +277,77 @@ public class TaskService {
         int month = LocalDate.now().getMonthValue();
         long seq = taskRepository.countProjectsForMonth(orgId, year, month) + 1;
         return String.format("%s-%d-%s-%03d", prefix, year, OBS_MONTH_FMT.format(LocalDate.now()), seq);
+    }
+
+    /**
+     * Publish task synchronization event to Redis "obsidian:sync" queue.
+     * Applicable to PROJECT type tasks or HIGH/URGENT ticketing tasks.
+     */
+    private void publishSyncEvent(Task task) {
+        if (task.getType() == TaskType.PROJECT ||
+            task.getPriority() == TaskPriority.HIGH ||
+            task.getPriority() == TaskPriority.URGENT) {
+            try {
+                Map<String, Object> payload = buildSyncPayload(task);
+                redisTemplate.opsForList().leftPush("obsidian:sync", payload);
+                log.info("[TaskService] Published sync event for task id={} ref={}", task.getId(), task.getObsidianRef());
+            } catch (Exception e) {
+                log.error("[TaskService] Failed to publish sync event for task id={}", task.getId(), e);
+            }
+        }
+    }
+
+    /**
+     * Construct a detailed map payload for the Obsidian Sync Worker.
+     */
+    private Map<String, Object> buildSyncPayload(Task task) {
+        Map<String, Object> payload = new HashMap<>();
+        
+        payload.put("taskId", task.getObsidianRef() != null ? task.getObsidianRef() : task.getId().toString());
+        payload.put("taskType", task.getType().name());
+        payload.put("status", task.getStatus().name());
+        payload.put("priority", task.getPriority().name());
+        
+        Organization org = task.getOrganization();
+        payload.put("tenantName", org != null ? org.getName() : "");
+        payload.put("tenantSlug", org != null ? org.getSlug() : "");
+        
+        String reporterName = "Belum diketahui";
+        if (task.getReporterId() != null) {
+            try {
+                UUID reporterUuid = UUID.fromString(task.getReporterId());
+                reporterName = userRepository.findById(reporterUuid)
+                        .map(u -> u.getFullName() != null ? u.getFullName() + " (" + u.getUsername() + ")" : u.getUsername())
+                        .orElse(task.getReporterId());
+            } catch (Exception e) {
+                reporterName = task.getReporterId();
+            }
+        }
+        payload.put("reporterName", reporterName);
+        
+        String assigneeName = "Belum ditugaskan";
+        if (task.getAssigneeId() != null) {
+            try {
+                UUID assigneeUuid = UUID.fromString(task.getAssigneeId());
+                assigneeName = userRepository.findById(assigneeUuid)
+                        .map(u -> u.getFullName() != null ? u.getFullName() + " (" + u.getUsername() + ")" : u.getUsername())
+                        .orElse(task.getAssigneeId());
+            } catch (Exception e) {
+                assigneeName = task.getAssigneeId();
+            }
+        }
+        payload.put("assigneeName", assigneeName);
+        
+        payload.put("referenceType", task.getReferenceType() != null ? task.getReferenceType() : "");
+        payload.put("referenceId", task.getReferenceId() != null ? task.getReferenceId() : "");
+        
+        payload.put("dueDate", task.getDueDate() != null ? task.getDueDate().toLocalDate().toString() : "");
+        payload.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : LocalDateTime.now().toString());
+        
+        payload.put("title", task.getTitle());
+        payload.put("description", task.getDescription() != null ? task.getDescription() : "");
+        payload.put("obsidianRef", task.getObsidianRef() != null ? task.getObsidianRef() : "");
+        
+        return payload;
     }
 }

@@ -255,6 +255,21 @@ services:
               claims_to_verify:
                 - exp
 
+  # ─── 10. Task Gateway (Port 5011) ──────────────────────────────────────────
+  - name: task-gateway
+    url: http://ftth-task-gateway:5011
+    routes:
+      - name: task-gateway-route
+        paths:
+          - /api/v1/task-gateway
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+
   # ─── Frontend Admin (Next.js Internal API routes) ───────────────────────────
   # Routes Next.js internal API paths that are NOT backend API calls.
   # These paths are handled by Next.js Route Handlers, NOT Spring Boot.

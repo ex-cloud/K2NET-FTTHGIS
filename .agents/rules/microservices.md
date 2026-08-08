@@ -17,6 +17,7 @@ Semua service internal berjalan pada port statis berikut:
 * `5008` - olt-gateway (SNMP OLT client)
 * `5009` - audit-gateway (Database audit logs)
 * `5010` - go-poller (SNMP live status tracking API & Prometheus Metrics)
+* `5011` - gateway-task (Obsidian Sync Worker)
 
 *Saat membuat service atau port baru, pastikan didaftarkan juga di `docker/prometheus/prometheus.yml` untuk monitoring.*
 

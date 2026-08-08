@@ -58,7 +58,7 @@ IS_GO_GATEWAY="false"
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -83,7 +83,7 @@ if [ -n "$2" ]; then
     esac
   else
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -129,6 +129,7 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-export:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-olt:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
   else
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
@@ -143,6 +144,7 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-export:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-olt:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
   fi
 

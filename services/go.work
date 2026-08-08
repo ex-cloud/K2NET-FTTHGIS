@@ -10,6 +10,7 @@ use (
 	./notification-gateway
 	./payment-gateway
 	./poller
+	./gateway-task
 	./shared
 	./storage-gateway
 )

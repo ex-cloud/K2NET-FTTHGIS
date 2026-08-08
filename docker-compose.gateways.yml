@@ -235,6 +235,34 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  gateway-task:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest
+    build:
+      context: ./services
+      dockerfile: gateway-task/Dockerfile
+    container_name: ftth-task-gateway
+    restart: always
+    env_file:
+      - ./services/.env
+    environment:
+      - PORT=5011
+      - REDIS_ADDR=redis:6379
+      - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
+      - GATEWAY_TOKEN=${GATEWAY_TOKEN}
+      - NEXTCLOUD_URL=${NEXTCLOUD_URL}
+      - NEXTCLOUD_USER=${NEXTCLOUD_USER}
+      - NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_APP_PASSWORD}
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
+    ports:
+      - "127.0.0.1:5011:5011"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   default:
     name: project5_default
