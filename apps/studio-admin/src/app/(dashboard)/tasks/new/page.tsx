@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from 'next-auth/react';
+import { httpClient } from '@/lib/httpClient';
+import { getBackendBaseUrl } from '@/lib/api-config';
 import { cn } from "@/lib/utils";
 
 // ─── Zod Validation Schema ───────────────────────────────────────────────────
@@ -49,6 +52,7 @@ function FieldError({ message }: { message?: string }) {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function NewTaskPage() {
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultType = (searchParams.get("type") ?? "TICKET") as "TICKET" | "PROJECT";
@@ -70,10 +74,16 @@ export default function NewTaskPage() {
   const selectedType = watch("type");
 
   const onSubmit = async (data: CreateTaskForm) => {
+    if (!session?.accessToken) {
+      toast.error("Sesi Anda telah kedaluwarsa. Silakan login kembali.");
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/v1/tasks", {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks`, {
         method: "POST",
+        token: session.accessToken,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,

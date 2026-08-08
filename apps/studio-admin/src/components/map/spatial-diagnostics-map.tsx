@@ -18,6 +18,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from 'next-auth/react';
+import { httpClient } from '@/lib/httpClient';
+import { getBackendBaseUrl } from '@/lib/api-config';
 
 interface PopupInfo {
   longitude: number;
@@ -30,6 +33,7 @@ interface PopupInfo {
 }
 
 export function SpatialDiagnosticsMap({ tenantSlug }: { tenantSlug?: string }) {
+  const { data: session } = useSession();
   const router = useRouter();
   const [viewState, setViewState] = useState({
     longitude: 107.6098,
@@ -46,9 +50,11 @@ export function SpatialDiagnosticsMap({ tenantSlug }: { tenantSlug?: string }) {
 
   // Fetch live tasks GeoJSON data from Phase 2 endpoint
   const fetchTasks = useCallback(async () => {
+    if (!session?.accessToken) return;
     setLoadingTasks(true);
     try {
-      const res = await fetch("/api/v1/tasks/geojson");
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/geojson`, { token: session.accessToken });
       if (res.ok) {
         const data = await res.json();
         setTasksGeoJson(data);
@@ -58,7 +64,7 @@ export function SpatialDiagnosticsMap({ tenantSlug }: { tenantSlug?: string }) {
     } finally {
       setLoadingTasks(false);
     }
-  }, []);
+  }, [session?.accessToken]);
 
   useEffect(() => {
     fetchTasks();
