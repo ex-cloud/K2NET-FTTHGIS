@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
 import {
   MessageSquare, CheckCircle2, Clock, XCircle, RefreshCw,
@@ -16,12 +17,12 @@ const statusConfig: Record<string, { label: string; className: string; icon: Rea
 };
 
 function KpiCard({
-  label, value, sub, highlight,
+  label, value, sub, highlight, linkHref,
 }: {
-  label: string; value: string; sub: string; highlight?: boolean;
+  label: string; value: string; sub: string; highlight?: boolean; linkHref?: string;
 }) {
-  return (
-    <Card glowingEffect className="p-5 flex flex-col gap-2">
+  const innerContent = (
+    <>
       <span className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
         {label}
       </span>
@@ -29,6 +30,22 @@ function KpiCard({
         {value}
       </p>
       <p className="text-xs text-foreground/75 dark:text-muted-foreground">{sub}</p>
+    </>
+  );
+
+  if (linkHref) {
+    return (
+      <Link href={linkHref} className="block transition-transform hover:scale-[1.01] focus:outline-none">
+        <Card glowingEffect className="p-5 flex flex-col gap-2 cursor-pointer hover:border-primary/50 transition-colors">
+          {innerContent}
+        </Card>
+      </Link>
+    );
+  }
+
+  return (
+    <Card glowingEffect className="p-5 flex flex-col gap-2">
+      {innerContent}
     </Card>
   );
 }
@@ -78,8 +95,10 @@ export default function MessagingPage() {
         />
         <KpiCard
           label="Meta WABA Status"
-          value={loading ? "…" : stats.wabaStatus}
-          sub={stats.wabaStatus === "CONFIGURED" ? "Twilio WhatsApp API ready" : "Provider credentials not set"}
+          value={loading ? "…" : stats.wabaStatus === "CONFIGURED" ? "CONFIGURED" : "NOT CONFIGURED"}
+          sub={stats.wabaStatus === "CONFIGURED" ? "Twilio WhatsApp API ready" : "Click to configure credentials ↗"}
+          highlight={stats.wabaStatus !== "CONFIGURED"}
+          linkHref={stats.wabaStatus !== "CONFIGURED" ? "/gateways/notification" : undefined}
         />
         <KpiCard
           label="Total Failed (24h)"
@@ -110,21 +129,21 @@ export default function MessagingPage() {
             {
               channel: "WhatsApp (Twilio / Meta)",
               icon: MessageCircle,
-              status: stats.wabaStatus === "CONFIGURED" ? "ACTIVE" : "NOT CONFIGURED",
-              configured: stats.twilioConfigured,
+              status: stats.wabaStatus === "CONFIGURED" ? "CONFIGURED" : "NOT CONFIGURED",
+              configured: stats.wabaStatus === "CONFIGURED",
               detail: "Template messages & outbound alerts",
             },
             {
               channel: "SMS Backup (Twilio)",
               icon: Send,
-              status: stats.twilioConfigured ? "ACTIVE" : "NOT CONFIGURED",
+              status: stats.twilioConfigured ? "CONFIGURED" : "NOT CONFIGURED",
               configured: stats.twilioConfigured,
               detail: "Fallback SMS delivery when WhatsApp is unreachable",
             },
             {
               channel: "Email Gateway (SMTP)",
               icon: Mail,
-              status: stats.smtpConfigured ? "ACTIVE" : "NOT CONFIGURED",
+              status: stats.smtpConfigured ? "CONFIGURED" : "NOT CONFIGURED",
               configured: stats.smtpConfigured,
               detail: "Transactional emails & invoice notifications",
             },
@@ -137,15 +156,17 @@ export default function MessagingPage() {
                   <p className="text-xs text-foreground/75 dark:text-muted-foreground">{c.detail}</p>
                 </div>
               </div>
-              <Badge
-                className={`text-[10px] font-mono ${
-                  c.configured
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-muted text-muted-foreground border-border"
-                }`}
-              >
-                {c.status}
-              </Badge>
+              {c.configured ? (
+                <Badge className="text-[10px] font-mono bg-primary/10 text-primary border-primary/20">
+                  {c.status}
+                </Badge>
+              ) : (
+                <Link href="/gateways/notification" title="Click to configure in Notification Gateway">
+                  <Badge className="text-[10px] font-mono bg-rose-500/10 text-rose-500 border-rose-500/20 cursor-pointer hover:bg-rose-500/20 hover:border-rose-500/30 transition-all">
+                    {c.status} (Configure ↗)
+                  </Badge>
+                </Link>
+              )}
             </div>
           ))}
         </CardContent>
