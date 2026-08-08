@@ -300,15 +300,18 @@ public class BackupStatusController {
             }
 
             String fullText = String.join("\n", lines.subList(Math.max(0, lines.size() - 20), lines.size())).toUpperCase();
+            Instant lastModified = Files.getLastModifiedTime(foundLogPath).toInstant();
+            long ageSeconds = Instant.now().getEpochSecond() - lastModified.getEpochSecond();
+            boolean isRecent = ageSeconds < 300; // Log file actively written to in the last 5 minutes
+
             String status = "SUCCESS";
             if (fullText.contains("ERROR") || fullText.contains("FAIL") || fullText.contains("GAGAL")) {
                 status = "FAILED";
-            } else if ((fullText.contains("RUNNING") || fullText.contains("STARTING") || fullText.contains("MEMULAI")) 
+            } else if (isRecent && (fullText.contains("RUNNING") || fullText.contains("STARTING") || fullText.contains("MEMULAI")) 
                        && !(fullText.contains("FINISHED") || fullText.contains("EXIT CODE") || fullText.contains("SELESAI"))) {
                 status = "RUNNING";
             }
 
-            Instant lastModified = Files.getLastModifiedTime(foundLogPath).toInstant();
             job.put("lastStatus",   status);
             job.put("lastRunAt",    DT_FMT.format(lastModified));
             job.put("lastDuration", "45s");
