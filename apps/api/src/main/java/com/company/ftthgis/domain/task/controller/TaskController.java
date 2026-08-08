@@ -221,7 +221,17 @@ public class TaskController {
      */
     private UUID extractOrgId(Jwt jwt) {
         String orgId = jwt.getClaim("organization_id");
-        if (orgId == null) throw new IllegalStateException("organization_id tidak ditemukan di JWT");
+        if (orgId == null) {
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            boolean isSuperAdmin = roles != null && (
+                    roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN")
+            );
+            if (isSuperAdmin) {
+                // Default fallback to Main Organization for Super Admin platform actions
+                return UUID.fromString("00000000-0000-0000-0000-000000000001");
+            }
+            throw new IllegalStateException("organization_id tidak ditemukan di JWT");
+        }
         return UUID.fromString(orgId);
     }
 }
