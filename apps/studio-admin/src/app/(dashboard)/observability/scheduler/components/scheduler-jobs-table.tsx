@@ -264,10 +264,8 @@ export function SchedulerJobsTable({
             Cron &amp; System Jobs Monitor
           </CardTitle>
           <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-            Registered operational scripts with crontab schedule. Use{" "}
-            <span className="font-semibold text-foreground">[Run Now]</span> to
-            queue an immediate async execution — no blocking, no shell exec in
-            web server thread.
+            Monitoring panel for registered operational system scripts managed by host OS crontab daemon. 
+            On-demand run commands are restricted to host SSH terminal for container isolation security.
           </p>
         </CardHeader>
         <CardContent className="p-0">
@@ -325,26 +323,9 @@ export function SchedulerJobsTable({
                   </span>
 
                   <div className="flex items-center gap-1.5">
-                    {job.scriptFile === "backup-secrets.sh" ? (
-                      <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2.5 py-1.5 rounded font-semibold font-mono" title="Secrets backup can only be triggered via cron or server SSH terminal for security hardening.">
-                        SSH Only
-                      </span>
-                    ) : wasTriggered ? (
-                      <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                        Executing…
-                      </span>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-[11px] gap-1 font-mono"
-                        onClick={() => setRunDialog(job)}
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                        Run Now
-                      </Button>
-                    )}
+                    <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2.5 py-1.5 rounded font-semibold font-mono" title="Operational maintenance scripts are managed by the host OS daemon (crontab). On-demand execution is restricted to host SSH terminal for container security and environment compliance.">
+                      SSH Only
+                    </span>
                     <Button
                       variant="outline"
                       size="sm"

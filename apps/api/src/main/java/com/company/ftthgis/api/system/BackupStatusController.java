@@ -76,36 +76,11 @@ public class BackupStatusController {
     @PostMapping("/trigger/{scriptKey}")
     @AuditRequired(action = "SCHEDULER_JOB_TRIGGERED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#scriptKey")
     public ResponseEntity<Map<String, Object>> triggerJob(@PathVariable String scriptKey) {
-        JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
-        if (meta == null) {
-            log.warn("Unauthorized attempt to trigger unknown or forbidden scriptKey: {}", scriptKey);
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Script key not allowed or not found in whitelist",
-                    "scriptKey", scriptKey
-            ));
-        }
-
-        // Hardening Security: block triggering of backup-secrets from UI
-        if ("backup-secrets".equals(scriptKey)) {
-            log.warn("Security Hardening: Triggering backup-secrets via web panel was blocked.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                    "error", "Triggering backup-secrets is only permitted via host SSH terminal for security reasons.",
-                    "scriptKey", scriptKey
-            ));
-        }
-
-        log.info("Triggering async execution for job scriptKey: {} ({})", scriptKey, meta.scriptFile());
-
-        // Execute script asynchronously in background thread
-        CompletableFuture.runAsync(() -> executeScriptAsync(meta));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Job " + meta.scriptKey() + " queued for execution");
-        response.put("scriptKey", meta.scriptKey());
-        response.put("status", "RUNNING");
-        response.put("triggeredAt", DT_FMT.format(Instant.now()));
-
-        return ResponseEntity.ok(response);
+        log.warn("Security Hardening: Manual trigger for scriptKey '{}' via web API was blocked.", scriptKey);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "error", "Triggering system maintenance scripts from the web container is restricted for security hardening. Please run manually via host SSH terminal or crontab daemon.",
+                "scriptKey", scriptKey
+        ));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -185,7 +160,14 @@ public class BackupStatusController {
                 logsList.add("Error reading log file: " + e.getMessage());
             }
         } else {
-            logsList.add("No execution log file found yet for job: " + scriptKey);
+            logsList.add("=== SYSTEM MAINTENANCE OBSERVABILITY ===");
+            logsList.add("No active execution log file found for job: " + scriptKey);
+            logsList.add("Environment Note: operational scripts run under the host OS crontab daemon.");
+            logsList.add("Target Host script: " + meta.scriptFile());
+            logsList.add("");
+            logsList.add("To execute on-demand:");
+            logsList.add("  1. Login to host system via SSH terminal");
+            logsList.add("  2. Run command: sudo bash /opt/project5/scripts/" + meta.scriptFile());
         }
 
         Map<String, Object> res = new HashMap<>();
