@@ -85,6 +85,15 @@ public class BackupStatusController {
             ));
         }
 
+        // Hardening Security: block triggering of backup-secrets from UI
+        if ("backup-secrets".equals(scriptKey)) {
+            log.warn("Security Hardening: Triggering backup-secrets via web panel was blocked.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "error", "Triggering backup-secrets is only permitted via host SSH terminal for security reasons.",
+                    "scriptKey", scriptKey
+            ));
+        }
+
         log.info("Triggering async execution for job scriptKey: {} ({})", scriptKey, meta.scriptFile());
 
         // Execute script asynchronously in background thread
@@ -233,6 +242,8 @@ public class BackupStatusController {
             boolean deleted = Files.deleteIfExists(targetFile.toPath());
             if (deleted) {
                 log.info("Backup artifact deleted successfully: {}", filename);
+                // Trigger MinIO deletion asynchronously
+                deleteFromMinioAsync(filename);
                 return ResponseEntity.ok(Map.of("message", "File deleted successfully", "filename", filename));
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to delete file"));
@@ -404,5 +415,46 @@ public class BackupStatusController {
             }
         }
         return null;
+    }
+
+    private void deleteFromMinioAsync(String filename) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                String bucket = "db-backups";
+                String key = filename;
+
+                if (filename.startsWith("codebase-backup")) {
+                    bucket = "code-backups";
+                } else if (filename.startsWith("docker-volumes-backup")) {
+                    bucket = "docker-backups";
+                } else if (filename.startsWith("secrets_") || filename.startsWith("olt_key")) {
+                    bucket = "db-backups";
+                    key = "secrets/" + filename;
+                }
+
+                // Execute mc rm command
+                ProcessBuilder pb = new ProcessBuilder(
+                    "/usr/local/bin/mc", "rm", "ftth-minio/" + bucket + "/" + key
+                );
+                String minioUser = System.getenv("MINIO_ROOT_USER");
+                String minioPass = System.getenv("MINIO_ROOT_PASSWORD");
+                if (minioUser != null && !minioUser.isBlank()) {
+                    pb.environment().put("MINIO_ROOT_USER", minioUser);
+                }
+                if (minioPass != null && !minioPass.isBlank()) {
+                    pb.environment().put("MINIO_ROOT_PASSWORD", minioPass);
+                }
+
+                Process process = pb.start();
+                int exitCode = process.waitFor();
+                if (exitCode == 0) {
+                    log.info("Successfully deleted backup file from MinIO: {}/{}", bucket, key);
+                } else {
+                    log.warn("Failed to delete backup file from MinIO (exit code {}): {}/{}", exitCode, bucket, key);
+                }
+            } catch (Exception e) {
+                log.error("Error executing mc rm for filename: {}", filename, e);
+            }
+        });
     }
 }

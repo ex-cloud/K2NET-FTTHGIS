@@ -325,7 +325,11 @@ export function SchedulerJobsTable({
                   </span>
 
                   <div className="flex items-center gap-1.5">
-                    {wasTriggered ? (
+                    {job.scriptFile === "backup-secrets.sh" ? (
+                      <span className="text-[10px] text-muted-foreground bg-muted border border-border px-2.5 py-1.5 rounded font-semibold font-mono" title="Secrets backup can only be triggered via cron or server SSH terminal for security hardening.">
+                        SSH Only
+                      </span>
+                    ) : wasTriggered ? (
                       <span className="flex items-center gap-1.5 text-[10px] text-amber-400 font-mono font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded">
                         <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
                         Executing…
@@ -337,7 +341,7 @@ export function SchedulerJobsTable({
                         className="h-7 text-[11px] gap-1 font-mono"
                         onClick={() => setRunDialog(job)}
                       >
-                        <Play className="w-3 h-3" />
+                        <Play className="w-3.5 h-3.5" />
                         Run Now
                       </Button>
                     )}
