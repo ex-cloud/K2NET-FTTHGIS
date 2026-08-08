@@ -257,3 +257,8 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Mode MinIO S3** (production): `s3Client.ListObjectsPagesWithContext` untuk count & total bytes
 - **Consumer**: `DevOpsStatsController.fetchBucketStats(bucketName)` di Spring Boot — fetches 3 bucket (db-backups, code-backups, docker-backups) secara parallel saat `loadBackupInfo()` dipanggil.
 
+### 🛡️ Next.js Admin Portal Proxy Middleware
+- **Lokasi file**: [proxy.ts](file:///opt/project5/apps/studio-admin/src/proxy.ts) (bertindak sebagai `middleware.ts` untuk Next.js admin portal).
+- **Aturan bypass**: API paths `/api/*` dan berkas statis secara eksplisit di-bypass di middleware agar request rewrite langsung diteruskan ke Spring Boot Core Backend.
+- **Validasi Unduhan Berkas**: Endpoint binary download `/api/v1/system/backup-status/download` harus diakses melalui *client-side secure AJAX fetch blob* (dengan menyertakan header `Authorization: Bearer <token>`) agar terotentikasi secara native di filter Spring Security core dan aman dari Cloudflare WAF parameter injection block.
+
