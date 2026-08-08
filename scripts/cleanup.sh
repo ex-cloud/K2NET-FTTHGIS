@@ -244,13 +244,14 @@ if [ "$DRY_RUN" = false ] && [ "$OLD_TMP" -gt 0 ]; then
   log "   ✅ Old /tmp dirs dihapus."
 fi
 
-# 3c. Bersihkan arsip backup lokal (.gz) di /opt/project5/backups agar tidak menumpuk
+# 3c. Bersihkan arsip backup lokal (.gz, .tar.gz, .enc) berusia lebih dari 7 hari agar tidak menumpuk
 BACKUP_PARENT="/opt/project5/backups"
-OLD_BACKUP_FILES=$(find "$BACKUP_PARENT" -type f -name "*.gz" 2>/dev/null | wc -l)
-log "🗑️  Arsip backup lokal ditemukan: $OLD_BACKUP_FILES berkas (.gz)"
+RETENTION_DAYS=7
+OLD_BACKUP_FILES=$(find "$BACKUP_PARENT" -type f -mtime +$RETENTION_DAYS \( -name "*.gz" -o -name "*.tar.gz" -o -name "*.enc" \) 2>/dev/null | wc -l)
+log "🗑️  Arsip backup lokal lama (>$RETENTION_DAYS hari) ditemukan: $OLD_BACKUP_FILES berkas"
 if [ "$DRY_RUN" = false ] && [ "$OLD_BACKUP_FILES" -gt 0 ]; then
-  find "$BACKUP_PARENT" -type f -name "*.gz" -delete
-  log "   ✅ Semua berkas arsip backup lokal dibersihkan."
+  find "$BACKUP_PARENT" -type f -mtime +$RETENTION_DAYS \( -name "*.gz" -o -name "*.tar.gz" -o -name "*.enc" \) -delete
+  log "   ✅ Berkas arsip backup lokal lama berhasil dibersihkan."
 fi
 
 # 3d. Bersihkan systemd journal log (simpan 7 hari terakhir)

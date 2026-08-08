@@ -42,7 +42,7 @@ send_telegram() {
 }
 
 # Pasang trap untuk mendeteksi error
-trap 'send_telegram "FAILED" "Proses rclone sync ke Nextcloud terputus/gagal!"' ERR
+trap 'docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "UPDATE database_backups SET nextcloud_status = '\''FAILED'\'' WHERE id = (SELECT id FROM database_backups ORDER BY id DESC LIMIT 1);" 2>/dev/null || true; send_telegram "FAILED" "Proses rclone sync ke Nextcloud terputus/gagal!"' ERR
 
 
 BACKUP_BASE="/opt/project5/backups"
@@ -144,7 +144,14 @@ else
   echo "Tidak ada file arsip audit_logs ditemukan."
 fi
 
+# 7. Bersihkan berkas cadangan di Nextcloud yang berusia lebih dari 30 hari (Retensi 30 hari)
+echo "--- Membersihkan berkas cadangan lama di Nextcloud (Retensi 30 hari) ---"
+rclone delete "${REMOTE}:${REMOTE_BASE}/" --min-age 30d --rmdirs -v 2>&1 | tail -5
+
 echo "=== Sinkronisasi ke Nextcloud Selesai [$(date '+%Y-%m-%d %H:%M:%S')] ==="
+
+# Catat sukses Nextcloud sync ke DB
+docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "UPDATE database_backups SET nextcloud_status = 'SUCCESS', nextcloud_sync_time = NOW() WHERE id = (SELECT id FROM database_backups ORDER BY id DESC LIMIT 1);" 2>/dev/null || true
 
 # Kirim notifikasi sukses ke Telegram
 send_telegram "SUCCESS"
