@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from 'next-auth/react';
+import { httpClient } from '@/lib/httpClient';
+import { getBackendBaseUrl } from '@/lib/api-config';
 
 export interface TaskSummary {
   totalOpen: number;
@@ -23,14 +26,19 @@ const POLL_INTERVAL_MS = 30_000;
  * Tenant-scoped automatically by the backend Hibernate Filter.
  */
 export function useTaskSummary(): UseTaskSummaryResult {
+  const { data: session } = useSession();
   const [summary, setSummary] = useState<TaskSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
+    if (!session?.accessToken) {
+      return;
+    }
     try {
       setError(null);
-      const res = await fetch("/api/v1/tasks/summary");
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/summary`, { token: session.accessToken });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: TaskSummary = await res.json();
       setSummary(data);
@@ -39,7 +47,7 @@ export function useTaskSummary(): UseTaskSummaryResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.accessToken]);
 
   useEffect(() => {
     fetchSummary();

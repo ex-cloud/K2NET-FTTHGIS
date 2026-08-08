@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from 'next-auth/react';
+import { httpClient } from '@/lib/httpClient';
+import { getBackendBaseUrl } from '@/lib/api-config';
 
 export interface Task {
   id: string;
@@ -48,16 +51,21 @@ const POLL_INTERVAL_MS = 30_000;
  * Data is scoped automatically by the backend Hibernate Filter (JWT org context).
  */
 export function useTasksQuery(taskId?: string): UseTasksQueryResult {
+  const { data: session } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [task, setTask] = useState<Task | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!session?.accessToken) {
+      return;
+    }
     try {
       setError(null);
-      const url = taskId ? `/api/v1/tasks/${taskId}` : `/api/v1/tasks?size=100&sort=createdAt&direction=DESC`;
-      const res = await fetch(url);
+      const baseUrl = getBackendBaseUrl();
+      const url = taskId ? `${baseUrl}/tasks/${taskId}` : `${baseUrl}/tasks?size=100&sort=createdAt&direction=DESC`;
+      const res = await httpClient(url, { token: session.accessToken });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -74,7 +82,7 @@ export function useTasksQuery(taskId?: string): UseTasksQueryResult {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, session?.accessToken]);
 
   useEffect(() => {
     fetchData();
