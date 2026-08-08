@@ -135,16 +135,8 @@ public class BackupStatusController {
     }
 
     @GetMapping("/logs/{scriptKey}")
-    public ResponseEntity<Map<String, Object>> getJobLogs(
-            @PathVariable String scriptKey,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @RequestParam(value = "token", required = false) String queryToken) {
-
-        String token = authHeader != null ? authHeader : queryToken;
-        if (!validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
-        }
-
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Object>> getJobLogs(@PathVariable String scriptKey) {
         JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
         if (meta == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid scriptKey"));
@@ -174,16 +166,8 @@ public class BackupStatusController {
     }
 
     @GetMapping("/download")
-    public ResponseEntity<Resource> downloadArtifact(
-            @RequestParam("file") String filename,
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @RequestParam(value = "token", required = false) String queryToken) {
-
-        String token = authHeader != null ? authHeader : queryToken;
-        if (!validateToken(token)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Resource> downloadArtifact(@RequestParam("file") String filename) {
         if (!isValidFilename(filename)) {
             return ResponseEntity.badRequest().build();
         }
@@ -238,33 +222,6 @@ public class BackupStatusController {
         }
     }
 
-    private boolean validateToken(String token) {
-        if (token == null || token.isEmpty()) {
-            return false;
-        }
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return false;
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            if (payload.contains("\"exp\"")) {
-                int expStart = payload.indexOf("\"exp\":") + 6;
-                int expEnd = payload.indexOf(",", expStart);
-                if (expEnd == -1) expEnd = payload.indexOf("}", expStart);
-                long exp = Long.parseLong(payload.substring(expStart, expEnd).trim());
-                if (Instant.now().getEpochSecond() > exp) {
-                    log.warn("Manual JWT token validation failed: Expired at {}", exp);
-                    return false;
-                }
-            }
-            return true;
-        } catch (Exception e) {
-            log.error("Manual JWT token validation error: {}", e.getMessage());
-            return false;
-        }
-    }
 
     private boolean isValidFilename(String filename) {
         return filename != null && filename.matches("^[a-zA-Z0-9_\\.\\-]+$") && !filename.contains("..");

@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
-import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2 } from "lucide-react";
+import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
 
 function StorageBadge({ target, label }: { target: BackupArtifact["storageTarget"]; label: string }) {
@@ -181,13 +182,50 @@ export function SchedulerArtifactsTable({
   const [checksumModal, setChecksumModal] = useState<BackupArtifact | null>(null);
   const [metadataModal, setMetadataModal] = useState<BackupArtifact | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<BackupArtifact | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleDelete = async () => {
     if (!deleteDialog) return;
     try {
       await deleteArtifact(deleteDialog.artifactName);
+      toast.success("Berkas cadangan berhasil dihapus!");
+    } catch (err) {
+      toast.error("Gagal menghapus berkas cadangan.");
     } finally {
       setDeleteDialog(null);
+    }
+  };
+
+  const handleDownload = async (artifact: BackupArtifact) => {
+    if (!session?.accessToken) {
+      toast.error("Sesi berakhir. Silakan muat ulang halaman.");
+      return;
+    }
+    setDownloadingId(artifact.id);
+    const loadToast = toast.loading(`Menyiapkan unduhan ${artifact.artifactName.split("/").pop()}...`);
+    try {
+      const res = await fetch(`/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = artifact.artifactName.split("/").pop() || "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success("Berkas berhasil diunduh!", { id: loadToast });
+      } else {
+        toast.error(`Gagal mengunduh: HTTP ${res.status}`, { id: loadToast });
+      }
+    } catch (e) {
+      console.error("Download error:", e);
+      toast.error("Gagal mengunduh berkas.", { id: loadToast });
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -277,12 +315,14 @@ export function SchedulerArtifactsTable({
                       size="sm"
                       className="h-7 text-[10px] px-2 font-mono"
                       title="Download backup file"
-                      onClick={() => {
-                        const tokenParam = session?.accessToken ? `&token=${encodeURIComponent(session.accessToken)}` : "";
-                        window.location.href = `/api/v1/system/backup-status/download?file=${encodeURIComponent(artifact.artifactName)}${tokenParam}`;
-                      }}
+                      disabled={downloadingId !== null}
+                      onClick={() => handleDownload(artifact)}
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      {downloadingId === artifact.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
                     </Button>
                     <Button
                       variant="outline"
