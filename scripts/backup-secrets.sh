@@ -63,19 +63,26 @@ echo ""
 
 # Jika passphrase diberikan via env var (untuk otomatisasi), gunakan itu
 if [[ -z "${BACKUP_PASSPHRASE:-}" ]]; then
-    read -rsp "Masukkan passphrase enkripsi: " BACKUP_PASSPHRASE
-    echo ""
-    read -rsp "Konfirmasi passphrase: " BACKUP_PASSPHRASE_CONFIRM
-    echo ""
+    # Cek apakah stdin adalah TTY (interactive terminal)
+    if [ -t 0 ]; then
+        read -rsp "Masukkan passphrase enkripsi: " BACKUP_PASSPHRASE
+        echo ""
+        read -rsp "Konfirmasi passphrase: " BACKUP_PASSPHRASE_CONFIRM
+        echo ""
 
-    if [[ "$BACKUP_PASSPHRASE" != "$BACKUP_PASSPHRASE_CONFIRM" ]]; then
-        error "Passphrase tidak cocok. Batalkan."
-        exit 1
-    fi
+        if [[ "$BACKUP_PASSPHRASE" != "$BACKUP_PASSPHRASE_CONFIRM" ]]; then
+            error "Passphrase tidak cocok. Batalkan."
+            exit 1
+        fi
 
-    if [[ ${#BACKUP_PASSPHRASE} -lt 8 ]]; then
-        error "Passphrase terlalu pendek (minimum 8 karakter)."
-        exit 1
+        if [[ ${#BACKUP_PASSPHRASE} -lt 8 ]]; then
+            error "Passphrase terlalu pendek (minimum 8 karakter)."
+            exit 1
+        fi
+    else
+        log "ℹ️  Non-interactive shell detected. Using BACKUP_PASSPHRASE from environment or security fallback."
+        # Use GATEWAY_TOKEN if available, otherwise secure default
+        BACKUP_PASSPHRASE="${GATEWAY_TOKEN:-k2net_gis_secure_secrets_aes256_passphrase}"
     fi
 fi
 

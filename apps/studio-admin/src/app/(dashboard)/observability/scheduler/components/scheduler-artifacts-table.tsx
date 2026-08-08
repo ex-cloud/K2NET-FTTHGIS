@@ -178,7 +178,7 @@ export function SchedulerArtifactsTable({
   loading,
   deleteArtifact,
 }: SchedulerArtifactsTableProps) {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [checksumModal, setChecksumModal] = useState<BackupArtifact | null>(null);
   const [metadataModal, setMetadataModal] = useState<BackupArtifact | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<BackupArtifact | null>(null);
@@ -201,6 +201,23 @@ export function SchedulerArtifactsTable({
       toast.error("Sesi berakhir. Silakan muat ulang halaman.");
       return;
     }
+
+    // Auto-refresh token client-side if expired before fetching
+    try {
+      const parts = session.accessToken.split(".");
+      if (parts.length >= 2) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+        if (Date.now() / 1000 > payload.exp - 5) {
+          toast.info("Sesi kedaluwarsa. Memperbarui token...");
+          await update();
+          window.location.reload();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("JWT validation parsing failed", e);
+    }
+
     setDownloadingId(artifact.id);
     const loadToast = toast.loading(`Menyiapkan unduhan ${artifact.artifactName.split("/").pop()}...`);
     try {

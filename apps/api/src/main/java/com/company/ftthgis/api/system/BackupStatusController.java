@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.company.ftthgis.config.logging.AuditRequired;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -73,6 +74,7 @@ public class BackupStatusController {
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/trigger/{scriptKey}")
+    @AuditRequired(action = "SCHEDULER_JOB_TRIGGERED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#scriptKey")
     public ResponseEntity<Map<String, Object>> triggerJob(@PathVariable String scriptKey) {
         JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
         if (meta == null) {
@@ -102,25 +104,43 @@ public class BackupStatusController {
     public ResponseEntity<List<Map<String, Object>>> getBackupArtifacts() {
         List<Map<String, Object>> artifacts = new ArrayList<>();
 
-        // List actual backup files if directory is accessible
-        List<String> backupDirs = List.of("/opt/project5/backups", "/var/backups/postgresql", "/var/backups/minio", "/var/backups/code", "/var/backups/docker");
+        // List actual backup files from all target directories (root and specific subfolders)
+        List<String> backupDirs = List.of(
+            "/opt/project5/backups",
+            "/opt/project5/backups/secrets",
+            "/opt/project5/backups/minio",
+            "/opt/project5/backups/code",
+            "/opt/project5/backups/docker"
+        );
 
         for (String dirPath : backupDirs) {
             File dir = new File(dirPath);
             if (!dir.exists() || !dir.isDirectory()) continue;
 
-            File[] files = dir.listFiles(f -> f.isFile() && (f.getName().endsWith(".gz") || f.getName().endsWith(".tar") || f.getName().endsWith(".sql")));
+            File[] files = dir.listFiles(f -> f.isFile() && (
+                f.getName().endsWith(".gz") || 
+                f.getName().endsWith(".tar") || 
+                f.getName().endsWith(".sql") || 
+                f.getName().endsWith(".enc")
+            ));
             if (files == null) continue;
 
             Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
 
             for (File f : files) {
-                if (artifacts.size() >= 20) break;
+                if (artifacts.size() >= 25) break;
                 Map<String, Object> artifact = new HashMap<>();
                 artifact.put("artifactName", f.getName());
                 artifact.put("fileSize",     formatFileSize(f.length()));
                 artifact.put("completedAt",  DT_FMT.format(Instant.ofEpochMilli(f.lastModified())));
-                artifact.put("storageTarget", dirPath.contains("minio") ? "minio-db" : dirPath.contains("code") ? "minio-code" : "local");
+                
+                String targetType = "local";
+                if (dirPath.contains("minio")) targetType = "minio-db";
+                else if (dirPath.contains("code")) targetType = "minio-code";
+                else if (dirPath.contains("docker")) targetType = "minio-docker";
+                else if (dirPath.contains("secrets")) targetType = "local-secrets";
+
+                artifact.put("storageTarget", targetType);
                 artifact.put("storageLabel", "Local Storage: " + dirPath);
                 artifact.put("checksumSha256", Integer.toHexString(f.getName().hashCode()) + "a8f9c2d1e");
                 artifacts.add(artifact);
@@ -172,8 +192,8 @@ public class BackupStatusController {
             return ResponseEntity.badRequest().build();
         }
 
-        File targetFile = new File(PRIMARY_LOG_DIR, filename);
-        if (!targetFile.exists() || !targetFile.isFile()) {
+        File targetFile = findFileInBackupDirs(filename);
+        if (targetFile == null || !targetFile.exists() || !targetFile.isFile()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -198,13 +218,14 @@ public class BackupStatusController {
 
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/delete")
+    @AuditRequired(action = "BACKUP_ARTIFACT_DELETED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#filename")
     public ResponseEntity<Map<String, Object>> deleteArtifact(@RequestParam("file") String filename) {
         if (!isValidFilename(filename)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid or unsafe filename"));
         }
 
-        File targetFile = new File(PRIMARY_LOG_DIR, filename);
-        if (!targetFile.exists() || !targetFile.isFile()) {
+        File targetFile = findFileInBackupDirs(filename);
+        if (targetFile == null || !targetFile.exists() || !targetFile.isFile()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "File not found"));
         }
 
@@ -366,5 +387,22 @@ public class BackupStatusController {
             artifacts.add(a);
         }
         return artifacts;
+    }
+
+    private File findFileInBackupDirs(String filename) {
+        List<String> backupDirs = List.of(
+            "/opt/project5/backups",
+            "/opt/project5/backups/secrets",
+            "/opt/project5/backups/minio",
+            "/opt/project5/backups/code",
+            "/opt/project5/backups/docker"
+        );
+        for (String dirPath : backupDirs) {
+            File f = new File(dirPath, filename);
+            if (f.exists() && f.isFile()) {
+                return f;
+            }
+        }
+        return null;
     }
 }

@@ -88,6 +88,9 @@ public class AuditAspect {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("logGroup", ann.logGroup());
             metadata.put("serviceSource", "ftth-backend");
+            if ("SCHEDULER".equalsIgnoreCase(ann.resourceType())) {
+                metadata.put("logType", "scheduler");
+            }
             metadata.put("severity", "FAILED".equals(status) ? "ERROR" : ann.severity());
             metadata.put("status", status);
             metadata.put("method", sig.getDeclaringType().getSimpleName() + "." + method.getName());

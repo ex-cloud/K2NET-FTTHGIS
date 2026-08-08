@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
 import { Clock, Loader2, Play, Info, HardDrive, CloudUpload, RefreshCw, Timer } from "lucide-react";
 import { type SchedulerJob } from "@/lib/mock-data/observability-mock";
@@ -105,15 +106,32 @@ interface LiveLogModalProps {
 }
 
 function LiveLogModal({ job, onClose }: LiveLogModalProps) {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [logs, setLogs] = useState<string[]>(["Connecting to logs stream..."]);
   const [loading, setLoading] = useState(true);
   const terminalEndRef = React.useRef<HTMLDivElement>(null);
 
   const fetchLogs = React.useCallback(async () => {
     if (!session?.accessToken) return;
+
+    // Check token validity client-side before fetching
     try {
-      const res = await fetch(`/api/v1/system/backup-status/logs/${job.scriptKey}?token=${encodeURIComponent(session.accessToken)}`, {
+      const parts = session.accessToken.split(".");
+      if (parts.length >= 2) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+        if (Date.now() / 1000 > payload.exp - 5) {
+          toast.info("Memperbarui sesi log...");
+          await update();
+          window.location.reload();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Logs token validation failed", e);
+    }
+
+    try {
+      const res = await fetch(`/api/v1/system/backup-status/logs/${job.scriptKey}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
       });
       if (res.ok) {
@@ -130,7 +148,7 @@ function LiveLogModal({ job, onClose }: LiveLogModalProps) {
     } finally {
       setLoading(false);
     }
-  }, [session?.accessToken, job.scriptKey]);
+  }, [session?.accessToken, job.scriptKey, update]);
 
   React.useEffect(() => {
     if (session?.accessToken) {
