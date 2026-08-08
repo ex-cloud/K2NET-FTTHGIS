@@ -12,6 +12,7 @@ COPY notification-gateway/go.mod notification-gateway/go.sum ./notification-gate
 COPY payment-gateway/go.mod payment-gateway/go.sum ./payment-gateway/
 COPY poller/go.mod poller/go.sum ./poller/
 COPY storage-gateway/go.mod storage-gateway/go.sum ./storage-gateway/
+COPY gateway-task/go.mod gateway-task/go.sum ./gateway-task/
 RUN go work sync
 COPY shared/ ./shared/
 COPY gateway-export/ ./gateway-export/
