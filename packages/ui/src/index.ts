@@ -35,3 +35,4 @@ export * from "./components/tracing-beam";
 export * from "./components/skeletons";
 export * from "./components/floating-banner";
 export * from "./components/command-palette";
+export * from "./components/markdown";

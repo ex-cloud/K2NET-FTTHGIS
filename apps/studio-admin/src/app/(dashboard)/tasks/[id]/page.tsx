@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { PageLayout } from "@k2net/ui";
+import { PageLayout, Markdown } from "@k2net/ui";
 import {
   ChevronLeft,
   Clock,
@@ -86,9 +86,11 @@ export default function TaskDetailPage() {
                 </span>
               </div>
 
-              <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
-                {task.description ?? "Tidak ada deskripsi."}
-              </p>
+              {task.description ? (
+                <Markdown content={task.description} />
+              ) : (
+                <p className="text-muted-foreground text-sm">Tidak ada deskripsi.</p>
+              )}
             </div>
 
             {/* ── Comments Timeline ── */}
