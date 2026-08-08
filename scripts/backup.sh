@@ -55,7 +55,7 @@ if [ $PG_STATUS -eq 0 ]; then
   GZIP_STATUS=$?
   if [ $GZIP_STATUS -eq 0 ]; then
     # Catat sukses ke DB
-    docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "INSERT INTO database_backups (backup_time, status, success, backup_file) VALUES (NOW(), 'SUCCESS', true, '$(basename $BACKUP_FILE).gz');"
+    docker exec -i ftth-postgres psql -U postgres -d ftth_gis -c "INSERT INTO database_backups (backup_time, status, success, backup_file, minio_status, minio_sync_time) VALUES (NOW(), 'SUCCESS', true, '$(basename $BACKUP_FILE).gz', 'SUCCESS', NOW());"
     echo "Backup database sukses: $BACKUP_FILE.gz"
 
     # Unggah cadangan database ke MinIO lokal via Storage Gateway secara background
