@@ -28,6 +28,8 @@ import {
   FileText,
   MapPin,
   Lock,
+  ClipboardList,
+  AlertCircle,
 } from "lucide-react";
 
 interface NavActionItem {
@@ -153,6 +155,37 @@ export function CommandPaletteModal({
         badgeText: "Test",
         action: () => {
           router.push("/settings/smtp-mail");
+        },
+      },
+      // ── Task Management Quick Actions ──────────────────────────
+      {
+        id: "action-create-ticket",
+        title: "Create New Support Ticket",
+        category: "Actions",
+        icon: ClipboardList,
+        badgeText: "Tasks",
+        action: () => {
+          router.push("/tasks/new?type=TICKET");
+        },
+      },
+      {
+        id: "action-open-kanban",
+        title: "Open Project Kanban Board",
+        category: "Actions",
+        icon: ClipboardList,
+        badgeText: "Tasks",
+        action: () => {
+          router.push("/tasks?view=kanban");
+        },
+      },
+      {
+        id: "action-view-urgent",
+        title: "View All Urgent Tickets Now",
+        category: "Actions",
+        icon: AlertCircle,
+        badgeText: "Tasks",
+        action: () => {
+          router.push("/tasks?priority=URGENT&status=TODO");
         },
       },
     ],

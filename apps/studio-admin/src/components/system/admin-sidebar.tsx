@@ -12,6 +12,7 @@ import {
   Cpu,
   LayoutDashboard,
   Terminal,
+  ClipboardList,
 } from "lucide-react";
 import {
   Tooltip,
@@ -35,6 +36,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
   { title: "Organizations", icon: Building2, href: "/organizations" },
   { title: "Global Users", icon: Users, href: "/users" },
+  { title: "Tasks & Tickets", icon: ClipboardList, href: "/tasks" },
   { title: "Observability", icon: ScanLine, href: "/observability" },
   { title: "Global Logs", icon: Terminal, href: "/logs" },
   { title: "Security", icon: Lock, href: "/security" },
@@ -42,10 +44,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Settings", icon: Settings, href: "/settings" },
 ];
 
+/** Items that get a divider rendered BELOW them to separate logical groups. */
+const DIVIDER_AFTER = ["/tasks"];
+
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
   if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
   if (href === "/observability") return pathname.startsWith("/observability");
+  if (href === "/tasks") return pathname === "/tasks" || pathname.startsWith("/tasks/");
   return pathname === href || pathname.startsWith(href);
 };
 
@@ -117,16 +123,28 @@ export function AdminSidebar() {
 
                 if (!isExpanded) {
                   return (
-                    <Tooltip key={item.title}>
-                      <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
-                      <TooltipContent side="right" className="text-xs">
-                        {item.title}
-                      </TooltipContent>
-                    </Tooltip>
+                    <React.Fragment key={item.title}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>{wrapped}</TooltipTrigger>
+                        <TooltipContent side="right" className="text-xs">
+                          {item.title}
+                        </TooltipContent>
+                      </Tooltip>
+                      {DIVIDER_AFTER.includes(item.href) && (
+                        <div className="my-1 mx-1 border-t border-border/30" />
+                      )}
+                    </React.Fragment>
                   );
                 }
 
-                return wrapped;
+                return (
+                  <React.Fragment key={item.title}>
+                    {wrapped}
+                    {DIVIDER_AFTER.includes(item.href) && (
+                      <div className="my-1 mx-1 border-t border-border/30" />
+                    )}
+                  </React.Fragment>
+                );
               })}
             </nav>
           </TooltipProvider>
