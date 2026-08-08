@@ -7,13 +7,22 @@ import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
 
 function StorageBadge({ target, label }: { target: BackupArtifact["storageTarget"]; label: string }) {
-  const cls =
-    target === "nextcloud-dr"
-      ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+  const isNextcloud = target === "nextcloud-dr" || label.toLowerCase().includes("nextcloud");
+  const isMinio = target.includes("minio") || label.toLowerCase().includes("minio");
+
+  const cls = isNextcloud
+    ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+    : isMinio
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
       : "border-violet-500/30 bg-violet-500/10 text-violet-400";
+
+  const displayLabel = isNextcloud ? "Nextcloud Cloud"
+    : isMinio ? "MinIO S3"
+    : "Local Storage";
+
   return (
-    <Badge className={`text-[10px] font-mono ${cls}`}>
-      {label}
+    <Badge className={`text-[10px] font-mono ${cls}`} title={label}>
+      {displayLabel}
     </Badge>
   );
 }

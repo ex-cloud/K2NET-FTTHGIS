@@ -253,7 +253,7 @@ export function SchedulerJobsTable({
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-[1fr_180px_100px_90px_140px_130px] px-5 py-2.5 border-b border-border bg-muted/30 gap-2">
+          <div className="grid grid-cols-[1fr_150px_100px_80px_120px_180px] px-5 py-2.5 border-b border-border bg-muted/30 gap-2">
             {[
               "Job Name & Script",
               "Cron Schedule",
@@ -272,7 +272,7 @@ export function SchedulerJobsTable({
             {jobs.map((job) => {
               const wasTriggered = triggeredIds.has(job.id) || job.lastStatus === "RUNNING";
               return (
-                <div key={job.id} className="grid grid-cols-[1fr_180px_100px_90px_140px_130px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2">
+                <div key={job.id} className="grid grid-cols-[1fr_150px_100px_80px_120px_180px] px-5 py-3.5 hover:bg-muted/20 transition-colors items-center gap-2">
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <CategoryIcon cat={job.category} />
