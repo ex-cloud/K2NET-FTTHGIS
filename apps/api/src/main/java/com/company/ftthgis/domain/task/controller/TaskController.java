@@ -56,6 +56,41 @@ public class TaskController {
         return ResponseEntity.ok(taskService.findAll(pageable));
     }
 
+    @GetMapping("/geojson")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Object>> getGeoJson(@AuthenticationPrincipal Jwt jwt) {
+        applyTenantFilter(jwt);
+        java.util.List<Task> tasks = taskService.findAllWithLocation();
+
+        java.util.List<Map<String, Object>> features = tasks.stream().map(task -> {
+            Map<String, Object> feature = new java.util.HashMap<>();
+            feature.put("type", "Feature");
+            feature.put("geometry", task.getLocationGeom());
+
+            Map<String, Object> props = new java.util.HashMap<>();
+            props.put("id", task.getId());
+            props.put("type", task.getType());
+            props.put("status", task.getStatus());
+            props.put("priority", task.getPriority());
+            props.put("title", task.getTitle());
+            props.put("description", task.getDescription());
+            props.put("assigneeId", task.getAssigneeId());
+            props.put("referenceType", task.getReferenceType());
+            props.put("referenceId", task.getReferenceId());
+            props.put("obsidianRef", task.getObsidianRef());
+            props.put("dueDate", task.getDueDate());
+            feature.put("properties", props);
+
+            return feature;
+        }).collect(java.util.stream.Collectors.toList());
+
+        Map<String, Object> geoJson = new java.util.HashMap<>();
+        geoJson.put("type", "FeatureCollection");
+        geoJson.put("features", features);
+
+        return ResponseEntity.ok(geoJson);
+    }
+
     // ─── Get single task ────────────────────────────────────────────────────────
 
     @GetMapping("/{id}")

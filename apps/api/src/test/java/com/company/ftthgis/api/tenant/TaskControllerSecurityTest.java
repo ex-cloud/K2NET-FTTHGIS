@@ -50,4 +50,12 @@ class TaskControllerSecurityTest {
         assertNotNull(annotation, "Add comment endpoint should require authorization");
         assertEquals("isAuthenticated()", annotation.value());
     }
+
+    @Test
+    void geojsonEndpointIsProtected() throws NoSuchMethodException {
+        Method method = TaskController.class.getDeclaredMethod("getGeoJson", Jwt.class);
+        PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
+        assertNotNull(annotation, "GeoJSON endpoint should require authorization");
+        assertEquals("isAuthenticated()", annotation.value());
+    }
 }

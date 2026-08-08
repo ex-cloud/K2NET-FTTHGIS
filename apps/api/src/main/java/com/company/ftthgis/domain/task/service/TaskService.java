@@ -71,6 +71,11 @@ public class TaskService {
         return taskRepository.findAll(pageable);
     }
 
+    /** Fetch all tasks with points for spatial map integration. */
+    public List<Task> findAllWithLocation() {
+        return taskRepository.findAllWithLocation();
+    }
+
     public Task findById(UUID id) {
         return taskRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Task tidak ditemukan: " + id));

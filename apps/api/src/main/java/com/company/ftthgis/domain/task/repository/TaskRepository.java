@@ -42,4 +42,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             @Param("year") int year,
             @Param("month") int month
     );
+
+    /** Fetch all tasks having non-null geometry for spatial map integration. */
+    @Query("SELECT t FROM Task t WHERE t.locationGeom IS NOT NULL")
+    List<Task> findAllWithLocation();
 }
