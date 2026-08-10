@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PageLayout } from "@k2net/ui";
+import { PageLayout, KanbanBoard, type KanbanColumn } from "@k2net/ui";
+import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
 import {
   ClipboardList,
   Plus,
@@ -67,6 +70,81 @@ const SCOPE_TABS: { id: ScopeTab; label: string; icon: React.ElementType; desc: 
     desc: "Tiket masuk dari mitra ISP",
   },
 ];
+
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  { id: "BACKLOG", title: "Backlog" },
+  { id: "TODO", title: "Todo" },
+  { id: "IN_PROGRESS", title: "In Progress" },
+  { id: "WAITING_ON_CLIENT", title: "Waiting" },
+  { id: "RESOLVED", title: "Resolved" },
+  { id: "CLOSED", title: "Closed" },
+];
+
+function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+  const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
+  const isOverdue =
+    task.dueDate &&
+    new Date(task.dueDate) < new Date() &&
+    task.status !== "RESOLVED" &&
+    task.status !== "CLOSED";
+  const formattedDate = task.dueDate
+    ? new Date(task.dueDate).toLocaleDateString("id-ID")
+    : null;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm hover:shadow-md cursor-pointer hover:border-border transition-all flex flex-col gap-3 group relative overflow-hidden"
+    >
+      {/* Indicator border for urgent/high priority tasks */}
+      {task.priority === "URGENT" && (
+        <div className="absolute top-0 left-0 w-1 h-full bg-destructive" />
+      )}
+      {task.priority === "HIGH" && (
+        <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-semibold text-foreground text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
+            {task.title}
+          </span>
+        </div>
+
+        {task.obsidianRef && (
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded w-fit">
+            {task.obsidianRef}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 mt-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-semibold", priority.className)}>
+            {priority.label}
+          </span>
+          <ScopeBadge scope={task.scope} />
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {formattedDate && (
+            <span className={cn("inline-flex items-center gap-1 text-[10px]", isOverdue ? "text-destructive font-semibold" : "")}>
+              <Clock className="h-3 w-3" />
+              {formattedDate}
+            </span>
+          )}
+
+          <div
+            className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px] uppercase border border-primary/20"
+            title={task.assigneeId ?? "Unassigned"}
+          >
+            {task.assigneeId ? task.assigneeId.substring(0, 2) : "?"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Scope badge ──────────────────────────────────────────────────────────────
 
@@ -273,6 +351,7 @@ function TaskTable({
 
 export default function TasksPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const view = searchParams.get("view") ?? "list";
 
@@ -283,6 +362,12 @@ export default function TasksPage() {
     activeScope === "ALL" ? undefined : (activeScope as TaskScope);
 
   const { tasks, loading, error, refresh } = useTasksQuery(undefined, scopeParam);
+
+  // Synchronize local tasks state for Kanban optimistic updates
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  React.useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
 
   // B2B inbox count for badge
   const { tasks: b2bTasks } = useTasksQuery(undefined, "TENANT_TO_PLATFORM");
@@ -299,6 +384,34 @@ export default function TasksPage() {
   const handleRefresh = () => {
     refresh();
     toast.info("Memuat ulang daftar task...");
+  };
+
+  const handleCardDrop = async (itemId: string, targetStatus: string) => {
+    // 1. Optimistic Update on local UI state
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === itemId ? { ...t, status: targetStatus } : t))
+    );
+
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${itemId}`, {
+        method: "PUT",
+        token: session?.accessToken ?? "",
+        body: JSON.stringify({ status: targetStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      toast.success("Status task berhasil diperbarui");
+      // Silent refresh to sync background updates (Obsidian references, statistics, etc.)
+      refresh();
+    } catch (err: any) {
+      toast.error("Gagal memperbarui status: " + err.message);
+      // Revert optimistic update to original server state
+      setLocalTasks(tasks);
+    }
   };
 
   if (error) {
@@ -429,11 +542,24 @@ export default function TasksPage() {
         )}
 
         {view === "kanban" && (
-          <div className="flex items-center justify-center h-64 bg-card border border-border rounded-xl text-muted-foreground">
-            <div className="text-center">
-              <Kanban className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Kanban view akan tersedia di Fase 6</p>
-            </div>
+          <div className="w-full overflow-hidden">
+            {loading && localTasks.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+                {KANBAN_COLUMNS.map((col) => (
+                  <div key={col.id} className="bg-card/40 border border-border/50 rounded-xl p-4 min-h-[450px]" />
+                ))}
+              </div>
+            ) : (
+              <KanbanBoard<Task>
+                items={localTasks}
+                columns={KANBAN_COLUMNS}
+                getColumnId={(t) => t.status}
+                onCardDrop={handleCardDrop}
+                renderCard={(task) => (
+                  <TaskCard task={task} onClick={() => router.push(`/tasks/${task.id}`)} />
+                )}
+              />
+            )}
           </div>
         )}
 
