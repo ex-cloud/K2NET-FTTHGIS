@@ -20,6 +20,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
+import com.company.ftthgis.domain.user.repository.UserRepository;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,6 +46,15 @@ class TaskServiceTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private TaskService taskService;

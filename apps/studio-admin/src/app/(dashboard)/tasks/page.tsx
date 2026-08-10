@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskScope } from "@/hooks/useTasksQuery";
 import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
+import { useTaskStore } from "@/store/task-store";
 
 // ─── Config maps ─────────────────────────────────────────────────────────────
 
@@ -288,6 +289,12 @@ export default function TasksPage() {
   const b2bCount = b2bTasks.filter(
     (t) => t.status !== "RESOLVED" && t.status !== "CLOSED"
   ).length;
+
+  // Synchronize count to global Zustand store for the sidebar badge
+  const setUnreadCount = useTaskStore((state) => state.setUnreadCount);
+  React.useEffect(() => {
+    setUnreadCount(b2bCount);
+  }, [b2bCount, setUnreadCount]);
 
   const handleRefresh = () => {
     refresh();

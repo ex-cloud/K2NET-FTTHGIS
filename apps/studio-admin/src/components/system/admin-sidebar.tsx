@@ -25,6 +25,7 @@ import { usePathname } from "next/navigation";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { SidebarControl } from "@/components/sidebar-control";
 import { cn } from "@/lib/utils";
+import { useTaskStore } from "@/store/task-store";
 
 export type NavItem = {
   title: string;
@@ -59,6 +60,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { sidebarMode } = useSidebarMode();
   const [isHovering, setIsHovering] = React.useState(false);
+  const unreadB2BCount = useTaskStore((state) => state.unreadB2BCount);
 
   // Determine visual expansion
   const isExpanded =
@@ -93,25 +95,38 @@ export function AdminSidebar() {
               {ADMIN_NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = checkIsActive(item.href, pathname);
-                 const button = (
+                const button = (
                   <div
                     className={cn(
-                      "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group",
+                      "flex items-center rounded-lg h-8 cursor-pointer justify-start w-full pl-[9px] pr-2.5 transition-colors duration-200 group relative",
                       isActive
                         ? "text-sidebar-foreground bg-sidebar-accent"
                         : "text-sidebar-foreground/90 dark:text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <Icon className="h-4 w-4" />
+                      {item.href === "/tasks" && unreadB2BCount > 0 && !isExpanded && (
+                        <>
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full animate-ping" />
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
+                        </>
+                      )}
+                    </div>
                     <span
                       className={cn(
-                        "text-sm whitespace-nowrap transition-all duration-300",
+                        "text-sm whitespace-nowrap transition-all duration-300 flex-1",
                         isActive ? "font-semibold text-sidebar-foreground" : "font-medium",
                         isExpanded ? "opacity-100 w-auto ml-3" : "opacity-0 w-0 overflow-hidden ml-0"
                       )}
                     >
                       {item.title}
                     </span>
+                    {item.href === "/tasks" && unreadB2BCount > 0 && isExpanded && (
+                      <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse">
+                        {unreadB2BCount}
+                      </span>
+                    )}
                   </div>
                 );
 

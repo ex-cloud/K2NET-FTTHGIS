@@ -10,11 +10,15 @@ import { CommandPaletteProvider } from "@/components/command-palette/command-pal
 import * as React from "react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getLogoUrl } from "@/lib/domain";
+import { useTaskNotifications } from "@/hooks/useTaskNotifications";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { open, setOpen, sidebarMode } = useSidebarMode();
   const { settings = [] } = useSystemSettings();
+
+  // Listen to real-time B2B task notifications via SSE
+  useTaskNotifications();
 
   // Due to subdomain rewrite, pathname might be just '/login' on the client side
   const isLoginPage = pathname === "/login" || pathname === "/login";

@@ -1,6 +1,7 @@
 package com.company.ftthgis.api.tenant;
 
 import com.company.ftthgis.domain.tenant.repository.SubscriptionPlanRepository;
+import com.company.ftthgis.domain.tenant.repository.PaymentTransactionRepository;
 import com.company.ftthgis.domain.user.repository.UserRepository;
 import com.company.ftthgis.service.OrganizationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,9 @@ public class PaymentControllerTest {
 
     @Mock
     private SubscriptionPlanRepository subscriptionPlanRepository;
+
+    @Mock
+    private PaymentTransactionRepository paymentTransactionRepository;
 
     @InjectMocks
     private PaymentController paymentController;

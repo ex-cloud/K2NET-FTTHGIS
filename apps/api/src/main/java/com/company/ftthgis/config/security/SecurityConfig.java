@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 
 import java.util.Collection;
 import java.util.List;
@@ -73,7 +75,8 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                    .authenticationManagerResolver(authenticationManagerResolver))
+                    .authenticationManagerResolver(authenticationManagerResolver)
+                    .bearerTokenResolver(bearerTokenResolver()))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(auditingAccessDeniedHandler));
 
         return http.build();
@@ -84,6 +87,13 @@ public class SecurityConfig {
 
     @org.springframework.beans.factory.annotation.Value("${keycloak.internal-url:http://localhost:8081}")
     private String keycloakInternalUrl;
+
+    @Bean
+    public BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
+        resolver.setAllowUriQueryParameter(true);
+        return resolver;
+    }
 
     @Bean
     public JwtIssuerAuthenticationManagerResolver authenticationManagerResolver(

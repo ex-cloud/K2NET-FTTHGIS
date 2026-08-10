@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.company.ftthgis.domain.user.repository.UserRepository;
+import com.company.ftthgis.domain.task.event.TaskCreatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,6 +68,7 @@ public class TaskService {
     private final EntityManager entityManager;
     private final UserRepository userRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ─── Read operations ────────────────────────────────────────────────────────
 
@@ -164,6 +167,9 @@ public class TaskService {
 
         // Publish to Redis "obsidian:sync" queue for gateway-task worker
         publishSyncEvent(saved);
+
+        // Publish event for SSE notification pipeline
+        eventPublisher.publishEvent(new TaskCreatedEvent(this, saved));
 
         return saved;
     }
