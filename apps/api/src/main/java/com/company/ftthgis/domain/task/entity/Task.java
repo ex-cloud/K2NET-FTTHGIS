@@ -18,6 +18,13 @@ import java.util.UUID;
  * <p>Tenant isolation is provided automatically by {@link OrganizationAwareEntity}
  * via Hibernate Filter on {@code organization_id}.
  *
+ * <p>Portal visibility is controlled by {@link TaskScope}:
+ * <ul>
+ *   <li>{@code PLATFORM_INTERNAL} — studio-admin only (K2NET engineering)</li>
+ *   <li>{@code TENANT_TO_PLATFORM} — B2B inbox at studio-admin, outbox at studio-tenant</li>
+ *   <li>{@code TENANT_INTERNAL} — studio-tenant only, per-tenant isolated</li>
+ * </ul>
+ *
  * <p>Audit trail is handled automatically by Hibernate Envers ({@code tasks_aud} table).
  */
 @Entity
@@ -51,6 +58,17 @@ public class Task extends OrganizationAwareEntity {
     @Column(name = "priority", nullable = false, length = 10)
     @Builder.Default
     private TaskPriority priority = TaskPriority.NORMAL;
+
+    /**
+     * Portal visibility scope — see {@link TaskScope} for documentation.
+     * Defaults to {@code PLATFORM_INTERNAL} so that tasks created via studio-admin
+     * by Super Admin are invisible to tenant portals unless explicitly set otherwise.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scope", nullable = false, length = 30,
+            columnDefinition = "task_scope_enum")
+    @Builder.Default
+    private TaskScope scope = TaskScope.PLATFORM_INTERNAL;
 
     // ── Content ───────────────────────────────────────────────────────────────
 

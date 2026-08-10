@@ -11,6 +11,7 @@ import (
 const projectTemplateStr = `---
 task_id: {{.TaskID}}
 type: PROJECT
+scope: {{.Scope}}
 status: {{.Status}}
 priority: {{.Priority}}
 tenant: {{.TenantName}}
@@ -43,6 +44,7 @@ infrastructure_type: ftth-project
 const ticketTemplateStr = `---
 task_id: {{.TaskID}}
 type: TICKET
+scope: {{.Scope}}
 status: {{.Status}}
 priority: {{.Priority}}
 tenant: {{.TenantName}}
@@ -71,6 +73,7 @@ infrastructure_type: support-ticket
 type TaskPayload struct {
 	TaskID        string   `json:"taskId"`
 	TaskType      string   `json:"taskType"`
+	Scope         string   `json:"scope"` // PLATFORM_INTERNAL | TENANT_TO_PLATFORM | TENANT_INTERNAL
 	Status        string   `json:"status"`
 	Priority      string   `json:"priority"`
 	TenantName    string   `json:"tenantName"`

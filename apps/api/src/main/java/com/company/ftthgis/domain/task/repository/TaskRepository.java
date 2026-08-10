@@ -2,6 +2,7 @@ package com.company.ftthgis.domain.task.repository;
 
 import com.company.ftthgis.domain.task.entity.Task;
 import com.company.ftthgis.domain.task.entity.TaskPriority;
+import com.company.ftthgis.domain.task.entity.TaskScope;
 import com.company.ftthgis.domain.task.entity.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,4 +47,13 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     /** Fetch all tasks having non-null geometry for spatial map integration. */
     @Query("SELECT t FROM Task t WHERE t.locationGeom IS NOT NULL")
     List<Task> findAllWithLocation();
+
+    // ── Scope-based queries (Phase 5: Portal Isolation) ──────────────────────
+
+    /** Filter tasks by a single scope value — paginated. Hibernate Filter scopes by org if active. */
+    Page<Task> findByScope(TaskScope scope, Pageable pageable);
+
+    /** Filter tasks matching any of the given scopes — used by studio-admin combined view. */
+    Page<Task> findByScopeIn(List<TaskScope> scopes, Pageable pageable);
 }
+

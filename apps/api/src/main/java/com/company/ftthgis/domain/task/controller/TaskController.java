@@ -3,6 +3,7 @@ package com.company.ftthgis.domain.task.controller;
 import com.company.ftthgis.domain.task.dto.*;
 import com.company.ftthgis.domain.task.entity.Task;
 import com.company.ftthgis.domain.task.entity.TaskComment;
+import com.company.ftthgis.domain.task.entity.TaskScope;
 import com.company.ftthgis.domain.task.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,10 +51,26 @@ public class TaskController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "DESC") Sort.Direction direction
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(required = false) String scope
     ) {
         applyTenantFilter(jwt);
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
+
+        // scope filter: if provided, filter by that scope; otherwise return all
+        if (scope != null && !scope.isBlank()) {
+            try {
+                TaskScope taskScope = TaskScope.valueOf(scope.toUpperCase());
+                return ResponseEntity.ok(taskService.findByScope(taskScope, pageable));
+            } catch (IllegalArgumentException ignored) {
+                // fall through to default
+            }
+        }
+        // Super Admin default: show PLATFORM_INTERNAL + TENANT_TO_PLATFORM combined
+        if (isSuperAdmin(jwt)) {
+            return ResponseEntity.ok(taskService.findByScopeIn(
+                    List.of(TaskScope.PLATFORM_INTERNAL, TaskScope.TENANT_TO_PLATFORM), pageable));
+        }
         return ResponseEntity.ok(taskService.findAll(pageable));
     }
 
@@ -73,6 +90,7 @@ public class TaskController {
             props.put("type", task.getType());
             props.put("status", task.getStatus());
             props.put("priority", task.getPriority());
+            props.put("scope", task.getScope());
             props.put("title", task.getTitle());
             props.put("description", task.getDescription());
             props.put("assigneeId", task.getAssigneeId());
@@ -123,8 +141,9 @@ public class TaskController {
     ) {
         String reporterId = jwt.getSubject();
         UUID orgId = extractOrgId(jwt);
+        boolean superAdmin = isSuperAdmin(jwt);
         applyTenantFilter(jwt);
-        Task created = taskService.create(request, reporterId, orgId);
+        Task created = taskService.create(request, reporterId, orgId, superAdmin);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -234,4 +253,16 @@ public class TaskController {
         }
         return UUID.fromString(orgId);
     }
+
+    /**
+     * Check if the caller has Super Admin role in their JWT.
+     * Supports both {@code super_admin} and {@code ROLE_SUPER_ADMIN} role name conventions.
+     */
+    private boolean isSuperAdmin(Jwt jwt) {
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        return roles != null && (
+                roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN")
+        );
+    }
 }
+

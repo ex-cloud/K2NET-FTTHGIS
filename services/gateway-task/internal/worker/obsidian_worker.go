@@ -69,15 +69,38 @@ func (w *ObsidianWorker) Start(ctx context.Context) {
 
 func (w *ObsidianWorker) processTaskWithRetry(ctx context.Context, payload template.TaskPayload) {
 	vaultFolder := "K2NET_Engineering_Vault"
+
+	// Scope-aware path routing (Phase 5: Portal Isolation)
+	// Determines which subfolder in Obsidian Vault receives this file.
 	var folder string
-	if payload.TaskType == "PROJECT" {
-		folder = "01_Projects"
-	} else {
-		folder = "02_Tickets"
+	switch payload.TaskType {
+	case "PROJECT":
+		switch payload.Scope {
+		case "TENANT_INTERNAL":
+			// Physical FTTH projects from a specific ISP tenant
+			slug := payload.TenantSlug
+			if slug == "" {
+				slug = "unknown-tenant"
+			}
+			folder = "01_Projects/Tenants/" + slug
+		default:
+			// PLATFORM_INTERNAL or unspecified: K2NET internal engineering projects
+			folder = "01_Projects/Platform"
+		}
+	default: // TICKET
+		switch payload.Scope {
+		case "TENANT_TO_PLATFORM":
+			// B2B ticket from ISP tenant to K2NET platform support (inbox)
+			folder = "02_Tickets/B2B_Inbox"
+		default:
+			// PLATFORM_INTERNAL: DevOps alerts, server monitoring, internal tickets
+			folder = "02_Tickets/DevOps_Internal"
+		}
 	}
 
 	// Nextcloud WebDAV destination path
 	filePath := fmt.Sprintf("%s/%s/%s.md", vaultFolder, folder, payload.TaskID)
+
 
 	content, err := template.RenderTask(payload)
 	if err != nil {

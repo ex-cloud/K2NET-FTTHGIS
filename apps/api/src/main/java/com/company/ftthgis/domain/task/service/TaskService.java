@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Optional;
 
 /**
  * Core domain service for Task Management.
@@ -77,6 +78,23 @@ public class TaskService {
         return taskRepository.findAll(pageable);
     }
 
+    /**
+     * List tasks filtered by scope — used by studio-admin portal.
+     * @param scope the TaskScope to filter on
+     * @param pageable pagination parameters
+     */
+    public Page<Task> findByScope(TaskScope scope, Pageable pageable) {
+        return taskRepository.findByScope(scope, pageable);
+    }
+
+    /**
+     * List tasks matching either of two scopes — used to show studio-admin all relevant tasks
+     * (PLATFORM_INTERNAL + TENANT_TO_PLATFORM combined view).
+     */
+    public Page<Task> findByScopeIn(List<TaskScope> scopes, Pageable pageable) {
+        return taskRepository.findByScopeIn(scopes, pageable);
+    }
+
     /** Fetch all tasks with points for spatial map integration. */
     public List<Task> findAllWithLocation() {
         return taskRepository.findAllWithLocation();
@@ -108,9 +126,13 @@ public class TaskService {
             logGroup = "OPERATIONS",
             resourceIdExpression = "#result.id.toString()"
     )
-    public Task create(CreateTaskRequest request, String reporterId, UUID organizationId) {
+    public Task create(CreateTaskRequest request, String reporterId, UUID organizationId, boolean isSuperAdmin) {
         Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new EntityNotFoundException("Organization tidak ditemukan: " + organizationId));
+
+        // ── Air-Gap Guard: Super Admin cannot create TENANT_INTERNAL tasks ──────
+        // Only a genuine tenant caller (with a real organization_id JWT claim) may do so.
+        TaskScope resolvedScope = resolveScope(request.scope(), isSuperAdmin);
 
         Task task = Task.builder()
                 .type(request.type())
@@ -126,15 +148,19 @@ public class TaskService {
                 .parentTaskId(request.parentTaskId())
                 .dueDate(request.dueDate())
                 .locationGeom(toPoint(request.coordinates()))
+                .scope(resolvedScope)
                 .build();
 
-        // Auto-generate Obsidian vault reference for PROJECT tasks
+        // Auto-generate Obsidian vault reference for PROJECT tasks or HIGH/URGENT tickets
         if (request.type() == TaskType.PROJECT) {
             task.setObsidianRef(generateObsidianRef("PRJ", organizationId));
+        } else if (task.getPriority() == TaskPriority.HIGH || task.getPriority() == TaskPriority.URGENT) {
+            task.setObsidianRef(generateObsidianRef("TKT", organizationId));
         }
 
         Task saved = taskRepository.save(task);
-        log.info("[TaskService] Created {} task id={} orgId={}", request.type(), saved.getId(), organizationId);
+        log.info("[TaskService] Created {} task id={} orgId={} scope={}",
+                request.type(), saved.getId(), organizationId, resolvedScope);
 
         // Publish to Redis "obsidian:sync" queue for gateway-task worker
         publishSyncEvent(saved);
@@ -300,18 +326,38 @@ public class TaskService {
     /**
      * Construct a detailed map payload for the Obsidian Sync Worker.
      */
+    /**
+     * Resolve the effective scope for a new task.
+     * Enforces the Air-Gap rule: Super Admin CANNOT create TENANT_INTERNAL tasks.
+     */
+    private TaskScope resolveScope(TaskScope requested, boolean isSuperAdmin) {
+        if (isSuperAdmin) {
+            if (requested == TaskScope.TENANT_INTERNAL) {
+                throw new AccessDeniedException(
+                        "Super Admin tidak diperkenankan membuat task dengan scope TENANT_INTERNAL. " +
+                        "Gunakan scope PLATFORM_INTERNAL atau TENANT_TO_PLATFORM.");
+            }
+            // Default to PLATFORM_INTERNAL if not specified
+            return requested != null ? requested : TaskScope.PLATFORM_INTERNAL;
+        }
+        // Tenant callers: default to TENANT_INTERNAL
+        return requested != null ? requested : TaskScope.TENANT_INTERNAL;
+    }
+
     private Map<String, Object> buildSyncPayload(Task task) {
         Map<String, Object> payload = new HashMap<>();
-        
+
         payload.put("taskId", task.getObsidianRef() != null ? task.getObsidianRef() : task.getId().toString());
         payload.put("taskType", task.getType().name());
         payload.put("status", task.getStatus().name());
         payload.put("priority", task.getPriority().name());
-        
+        // Scope determines the Obsidian vault folder destination in gateway-task worker
+        payload.put("scope", task.getScope() != null ? task.getScope().name() : TaskScope.PLATFORM_INTERNAL.name());
+
         Organization org = task.getOrganization();
         payload.put("tenantName", org != null ? org.getName() : "");
         payload.put("tenantSlug", org != null ? org.getSlug() : "");
-        
+
         String reporterName = "Belum diketahui";
         if (task.getReporterId() != null) {
             try {
@@ -324,7 +370,7 @@ public class TaskService {
             }
         }
         payload.put("reporterName", reporterName);
-        
+
         String assigneeName = "Belum ditugaskan";
         if (task.getAssigneeId() != null) {
             try {
@@ -337,17 +383,15 @@ public class TaskService {
             }
         }
         payload.put("assigneeName", assigneeName);
-        
+
         payload.put("referenceType", task.getReferenceType() != null ? task.getReferenceType() : "");
         payload.put("referenceId", task.getReferenceId() != null ? task.getReferenceId() : "");
-        
         payload.put("dueDate", task.getDueDate() != null ? task.getDueDate().toLocalDate().toString() : "");
         payload.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : LocalDateTime.now().toString());
-        
         payload.put("title", task.getTitle());
         payload.put("description", task.getDescription() != null ? task.getDescription() : "");
         payload.put("obsidianRef", task.getObsidianRef() != null ? task.getObsidianRef() : "");
-        
+
         return payload;
     }
 }
