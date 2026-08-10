@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Users,
@@ -96,6 +96,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export function SystemSecondarySidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   // For the logs page, sync collapse state with the shared LogsFilter context
@@ -165,7 +166,32 @@ export function SystemSecondarySidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-0.5 mt-2">
                     {section.items.map((item, idx) => {
-                      const isActive = pathname === item.url || pathname === `/system${item.url}`;
+                      // Support query-param-based active detection (e.g. /tasks?quick=active)
+                      let isActive: boolean;
+                      if (item.url.includes("?")) {
+                        const [itemPath, itemSearch] = item.url.split("?");
+                        const itemParams = new URLSearchParams(itemSearch);
+                        const pathMatch =
+                          pathname === itemPath ||
+                          pathname === `/system${itemPath}`;
+                        isActive =
+                          pathMatch &&
+                          Array.from(itemParams.entries()).every(
+                            ([k, v]) => searchParams.get(k) === v
+                          );
+                      } else {
+                        // No query params: only active if we're on this exact path
+                        // AND no task-specific filter params are active
+                        const pathMatch =
+                          pathname === item.url ||
+                          pathname === `/system${item.url}`;
+                        const hasTaskFilter =
+                          searchParams.has("quick") || searchParams.has("scope");
+                        // For /tasks (All Issues), only active when no filters applied
+                        isActive =
+                          pathMatch &&
+                          (item.url.startsWith("/tasks") ? !hasTaskFilter : true);
+                      }
                       const Icon = ICON_MAP[item.icon] || FileText;
                       return (
                         <Link

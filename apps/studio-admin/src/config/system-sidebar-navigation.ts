@@ -175,13 +175,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "B2B Inbox", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Globe" },
         ],
       },
-      {
-        title: "Actions",
-        items: [
-          { title: "New Task", url: "/tasks/new", icon: "Plus" },
-          { title: "New Project", url: "/tasks/new?type=PROJECT", icon: "FolderKanban" },
-        ],
-      },
     ],
   },
   settings: {
