@@ -241,11 +241,7 @@ public class TaskController {
     private UUID extractOrgId(Jwt jwt) {
         String orgId = jwt.getClaim("organization_id");
         if (orgId == null) {
-            List<String> roles = jwt.getClaimAsStringList("roles");
-            boolean isSuperAdmin = roles != null && (
-                    roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN")
-            );
-            if (isSuperAdmin) {
+            if (isSuperAdmin(jwt)) {
                 // Default fallback to Main Organization for Super Admin platform actions
                 return UUID.fromString("00000000-0000-0000-0000-000000000001");
             }
@@ -255,14 +251,40 @@ public class TaskController {
     }
 
     /**
-     * Check if the caller has Super Admin role in their JWT.
+     * Check if the caller has Super Admin role in their JWT or mapped authorities.
      * Supports both {@code super_admin} and {@code ROLE_SUPER_ADMIN} role name conventions.
      */
     private boolean isSuperAdmin(Jwt jwt) {
+        // 1. Try root claim "roles"
         List<String> roles = jwt.getClaimAsStringList("roles");
-        return roles != null && (
-                roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN")
-        );
+        if (roles != null && (roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN"))) {
+            return true;
+        }
+
+        // 2. Try realm_access.roles
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess != null && realmAccess.containsKey("roles")) {
+            Object rolesObj = realmAccess.get("roles");
+            if (rolesObj instanceof List<?> list) {
+                if (list.contains("super_admin") || list.contains("ROLE_SUPER_ADMIN") ||
+                    list.contains("ROLE_super_admin")) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Fallback to current authenticated authorities
+        try {
+            org.springframework.security.core.Authentication auth =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                return auth.getAuthorities().stream()
+                        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                        .anyMatch(a -> "ROLE_super_admin".equalsIgnoreCase(a) || "ROLE_SUPER_ADMIN".equalsIgnoreCase(a));
+            }
+        } catch (Exception ignored) {}
+
+        return false;
     }
 }
 
