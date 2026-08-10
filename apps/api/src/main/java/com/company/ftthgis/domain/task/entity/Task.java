@@ -65,8 +65,7 @@ public class Task extends OrganizationAwareEntity {
      * by Super Admin are invisible to tenant portals unless explicitly set otherwise.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "scope", nullable = false, length = 30,
-            columnDefinition = "task_scope_enum")
+    @Column(name = "scope", nullable = false, length = 30)
     @Builder.Default
     private TaskScope scope = TaskScope.PLATFORM_INTERNAL;
 
