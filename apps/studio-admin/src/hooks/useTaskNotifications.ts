@@ -30,6 +30,7 @@ export function useTaskNotifications() {
   const activeEventSourceRef = useRef<EventSource | null>(null);
   const reconnectCountRef = useRef<number>(0);
   const maxReconnects = 5;
+  const connectRef = useRef<() => void>(() => {});
 
   const handleTaskCreated = useCallback((eventPayload: TaskEventPayload) => {
     // 1. Increment the unread B2B counter in store
@@ -95,7 +96,7 @@ export function useTaskNotifications() {
           
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectCountRef.current += 1;
-            connect();
+            connectRef.current();
           }, delay);
         } else {
           console.error("[SSE-Task] Max reconnection attempts reached. SSE stream disconnected.");
@@ -106,8 +107,13 @@ export function useTaskNotifications() {
     }
   }, [session?.accessToken, handleTaskCreated]);
 
+  // Keep ref updated to latest connect function instance
   useEffect(() => {
-    connect();
+    connectRef.current = connect;
+  }, [connect]);
+
+  useEffect(() => {
+    connectRef.current();
 
     return () => {
       if (activeEventSourceRef.current) {
