@@ -11,8 +11,6 @@ import {
   ClipboardList,
   Plus,
   RefreshCw,
-  List,
-  Kanban,
   PanelRight,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +24,12 @@ import { TaskTable } from "./components/TaskTable";
 import { TaskCard } from "./components/TaskCard";
 import { TaskSecondarySidebar } from "./components/TaskSecondarySidebar";
 import { KANBAN_COLUMNS } from "./components/configs";
+
+// Fase 8 new components
+import { TaskViewOptions, type ViewOptionsState } from "./components/TaskViewOptions";
+import { TaskFilterMenu, type TaskFilterState } from "./components/TaskFilterMenu";
+import { TaskTimelineView } from "./components/TaskTimelineView";
+import { NewTaskDialog } from "./components/NewTaskDialog";
 
 // ─── Quick-view filter ────────────────────────────────────────────────────────
 
@@ -92,13 +96,37 @@ export default function TasksPage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
 
-  // URL-driven state — works via SystemSecondarySidebar Link navigation
-  const viewMode = searchParams.get("view") ?? "list";
+  // URL-driven viewMode, quickParam, and scopeParam (updated via SystemSecondarySidebar)
+  const viewMode = (searchParams.get("view") ?? "list") as "list" | "kanban" | "timeline";
   const quickParam = (searchParams.get("quick") ?? "all") as QuickView;
   const scopeParam = searchParams.get("scope") as TaskScope | null;
 
+  // NewTaskDialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   // Right stats panel toggle
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
+  // Fase 8 States: filters & view options
+  const [filters, setFilters] = useState<TaskFilterState>({
+    status: [],
+    priority: [],
+    scope: [],
+    assigneeId: null,
+  });
+
+  const [viewOptions, setViewOptions] = useState<ViewOptionsState>({
+    groupBy: "status",
+    sortBy: "manual",
+    showEmptyColumns: true,
+    displayProperties: {
+      priority: true,
+      status: true,
+      assignee: true,
+      dueDate: true,
+      obsidianRef: true,
+    },
+  });
 
   // Fetch data — scope filter driven by URL ?scope= param
   const { tasks, loading, error, refresh } = useTasksQuery(
@@ -106,14 +134,52 @@ export default function TasksPage() {
     scopeParam ?? undefined
   );
 
-  // Apply quick-view filter locally (no extra network request)
-  const userId = session?.user?.id ?? session?.user?.email ?? "";
-  const filteredTasks = useMemo(
-    () => applyViewFilter(tasks, quickParam, userId),
-    [tasks, quickParam, userId]
-  );
+  // Derive unique assignees present in the tasks list
+  const assigneesList = useMemo(() => {
+    const ids = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.assigneeId) ids.add(t.assigneeId);
+    });
+    return Array.from(ids);
+  }, [tasks]);
 
-  // Kanban optimistic update state
+  // Apply quick-view filter + rich options filters + sorting locally
+  const userId = session?.user?.id ?? session?.user?.email ?? "";
+  const filteredTasks = useMemo(() => {
+    let result = applyViewFilter(tasks, quickParam, userId);
+
+    // Apply custom filters
+    if (filters.status.length > 0) {
+      result = result.filter((t) => filters.status.includes(t.status));
+    }
+    if (filters.priority.length > 0) {
+      result = result.filter((t) => filters.priority.includes(t.priority));
+    }
+    if (filters.scope.length > 0) {
+      result = result.filter((t) => filters.scope.includes(t.scope));
+    }
+    if (filters.assigneeId) {
+      result = result.filter((t) => t.assigneeId === filters.assigneeId);
+    }
+
+    // Apply sorting
+    if (viewOptions.sortBy === "dueDate") {
+      result = [...result].sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+    } else {
+      // Default: manual (newest created first)
+      result = [...result].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    return result;
+  }, [tasks, quickParam, filters, viewOptions.sortBy, userId]);
+
+  // Kanban optimistic update local state
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   React.useEffect(() => {
     setLocalTasks(filteredTasks);
@@ -163,6 +229,16 @@ export default function TasksPage() {
     [session?.accessToken, filteredTasks, refresh]
   );
 
+  const handleViewModeChange = (mode: "list" | "kanban" | "timeline") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (mode === "list") {
+      params.delete("view");
+    } else {
+      params.set("view", mode);
+    }
+    router.push(`/tasks?${params.toString()}`);
+  };
+
   // ── Derived breadcrumb label ──────────────────────────────────────────────────
 
   const pageTitle = VIEW_LABELS[quickParam] ?? "Tasks & Tickets";
@@ -172,6 +248,15 @@ export default function TasksPage() {
       : scopeParam === "TENANT_TO_PLATFORM"
       ? "Tiket masuk dari mitra ISP"
       : "Internal + B2B Inbox";
+
+  // Filter columns based on showEmptyColumns switch
+  const activeKanbanColumns = useMemo(() => {
+    if (viewOptions.showEmptyColumns) return KANBAN_COLUMNS;
+    // Hide columns that have 0 tasks in current localTasks list
+    return KANBAN_COLUMNS.filter((col) =>
+      localTasks.some((t) => t.status === col.id)
+    );
+  }, [viewOptions.showEmptyColumns, localTasks]);
 
   return (
     <PageLayout
@@ -199,41 +284,20 @@ export default function TasksPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* View toggle List/Kanban */}
-            <div className="flex items-center gap-0 border border-border rounded-lg p-0.5 bg-card">
-              <button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.delete("view");
-                  router.push(`/tasks?${params.toString()}`);
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  viewMode === "list"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <List className="h-3.5 w-3.5" />
-                List
-              </button>
-              <button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  params.set("view", "kanban");
-                  router.push(`/tasks?${params.toString()}`);
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  viewMode === "kanban"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Kanban className="h-3.5 w-3.5" />
-                Kanban
-              </button>
-            </div>
+            {/* Filter Menu Popover */}
+            <TaskFilterMenu
+              filters={filters}
+              onChange={setFilters}
+              assigneesList={assigneesList}
+            />
+
+            {/* View Options Popover (combining list/kanban/timeline options) */}
+            <TaskViewOptions
+              options={viewOptions}
+              onChange={setViewOptions}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+            />
 
             {/* Refresh */}
             <button
@@ -258,9 +322,9 @@ export default function TasksPage() {
               <PanelRight className="h-4 w-4" />
             </button>
 
-            {/* New Task CTA */}
+            {/* New Task dialog trigger (Instant Modal overlay) */}
             <button
-              onClick={() => router.push("/tasks/new")}
+              onClick={() => setDialogOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
             >
               <Plus className="h-4 w-4" />
@@ -340,7 +404,7 @@ export default function TasksPage() {
               ) : (
                 <KanbanBoard<Task>
                   items={localTasks}
-                  columns={KANBAN_COLUMNS}
+                  columns={activeKanbanColumns}
                   getColumnId={(t) => t.status}
                   onCardDrop={handleCardDrop}
                   renderCard={(task) => (
@@ -353,8 +417,25 @@ export default function TasksPage() {
               )}
             </div>
           )}
+
+          {/* ── Timeline View ── */}
+          {viewMode === "timeline" && (
+            <TaskTimelineView
+              tasks={filteredTasks}
+              onRowClick={(id) => router.push(`/tasks/${id}`)}
+              displayProperties={viewOptions.displayProperties}
+            />
+          )}
         </div>
       </div>
+
+      {/* ── New Task Modal Dialog Overlay ── */}
+      <NewTaskDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={refresh}
+        assigneesList={assigneesList}
+      />
     </PageLayout>
   );
 }
