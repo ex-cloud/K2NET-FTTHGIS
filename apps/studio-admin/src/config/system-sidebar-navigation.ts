@@ -146,6 +146,44 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  tasks: {
+    title: "Tasks & Tickets",
+    sections: [
+      {
+        title: "Personal",
+        items: [
+          { title: "My Issues", url: "/tasks?quick=my-issues", icon: "ClipboardList" },
+          { title: "Created by Me", url: "/tasks?quick=created-by-me", icon: "Cpu" },
+          { title: "B2B Inbox", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Inbox" },
+        ],
+      },
+      {
+        title: "Views",
+        items: [
+          { title: "All Issues", url: "/tasks", icon: "LayoutDashboard" },
+          { title: "Active", url: "/tasks?quick=active", icon: "Activity" },
+          { title: "Overdue", url: "/tasks?quick=overdue", icon: "CalendarClock" },
+          { title: "No Assignee", url: "/tasks?quick=no-assignee", icon: "UserX" },
+          { title: "Upcoming 7d", url: "/tasks?quick=upcoming", icon: "Clock" },
+          { title: "Resolved", url: "/tasks?quick=resolved", icon: "CheckCircle" },
+        ],
+      },
+      {
+        title: "Scope",
+        items: [
+          { title: "Internal K2NET", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
+          { title: "B2B Inbox", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Globe" },
+        ],
+      },
+      {
+        title: "Actions",
+        items: [
+          { title: "New Task", url: "/tasks/new", icon: "Plus" },
+          { title: "New Project", url: "/tasks/new?type=PROJECT", icon: "FolderKanban" },
+        ],
+      },
+    ],
+  },
   settings: {
     title: "Global Settings",
     sections: [

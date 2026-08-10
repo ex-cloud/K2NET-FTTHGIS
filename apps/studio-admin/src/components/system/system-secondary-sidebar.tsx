@@ -37,6 +37,13 @@ import {
   Palette,
   Mail,
   CalendarClock,
+  ClipboardList,
+  Inbox,
+  UserX,
+  CheckCircle,
+  Plus,
+  FolderKanban,
+  Cpu,
 } from "lucide-react";
 import {
   Collapsible,
@@ -78,6 +85,13 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Palette,
   Mail,
   CalendarClock,
+  ClipboardList,
+  Inbox,
+  UserX,
+  CheckCircle,
+  Plus,
+  FolderKanban,
+  Cpu,
 };
 
 export function SystemSecondarySidebar() {
@@ -103,6 +117,8 @@ export function SystemSecondarySidebar() {
     activeKey = "settings";
   } else if (pathname?.includes("/logs")) {
     activeKey = "logs";
+  } else if (pathname?.startsWith("/tasks")) {
+    activeKey = "tasks";
   }
 
   if (!activeKey) return null;
