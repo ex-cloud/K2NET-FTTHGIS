@@ -118,7 +118,7 @@ class TaskServiceTest {
         );
 
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
-        when(taskRepository.countProjectsForMonth(any(), anyInt(), anyInt())).thenReturn(5L);
+        when(taskRepository.countTasksForMonth(any(), any(), anyInt(), anyInt())).thenReturn(5L);
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Task result = taskService.create(req, "user-reporter-123", orgId, true);

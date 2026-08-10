@@ -305,9 +305,10 @@ public class TaskService {
      * e.g. {@code PRJ-2026-08-001}
      */
     private String generateObsidianRef(String prefix, UUID orgId) {
+        TaskType type = "PRJ".equalsIgnoreCase(prefix) ? TaskType.PROJECT : TaskType.TICKET;
         int year = LocalDate.now().getYear();
         int month = LocalDate.now().getMonthValue();
-        long seq = taskRepository.countProjectsForMonth(orgId, year, month) + 1;
+        long seq = taskRepository.countTasksForMonth(orgId, type, year, month) + 1;
         return String.format("%s-%d-%s-%03d", prefix, year, OBS_MONTH_FMT.format(LocalDate.now()), seq);
     }
 

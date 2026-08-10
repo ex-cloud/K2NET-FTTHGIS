@@ -36,10 +36,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT COUNT(t) FROM Task t WHERE t.status = 'RESOLVED' AND t.resolvedAt >= :startOfDay")
     long countResolvedToday(@Param("startOfDay") LocalDateTime startOfDay);
 
-    /** Count per-org for sequence generation (obsidianRef). */
-    @Query("SELECT COUNT(t) FROM Task t WHERE t.organization.id = :orgId AND t.type = 'PROJECT' AND YEAR(t.createdAt) = :year AND MONTH(t.createdAt) = :month")
-    long countProjectsForMonth(
+    /** Count per-org and per-type for sequence generation (obsidianRef). */
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.organization.id = :orgId AND t.type = :type AND YEAR(t.createdAt) = :year AND MONTH(t.createdAt) = :month")
+    long countTasksForMonth(
             @Param("orgId") UUID orgId,
+            @Param("type") com.company.ftthgis.domain.task.entity.TaskType type,
             @Param("year") int year,
             @Param("month") int month
     );
