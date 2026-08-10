@@ -55,6 +55,7 @@ jobs:
       gateway-export: ${{ steps.filter.outputs.gateway-export }}
       gateway-olt: ${{ steps.filter.outputs.gateway-olt }}
       gateway-audit: ${{ steps.filter.outputs.gateway-audit }}
+      gateway-task: ${{ steps.filter.outputs.gateway-task }}
       poller: ${{ steps.filter.outputs.poller }}
       gateways_matrix: ${{ steps.set-matrix.outputs.gateways_matrix }}
       any_gateway_changed: ${{ steps.set-matrix.outputs.any_gateway_changed }}
@@ -97,6 +98,8 @@ jobs:
               - 'services/gateway-olt/**'
             gateway-audit:
               - 'services/gateway-audit/**'
+            gateway-task:
+              - 'services/gateway-task/**'
             poller:
               - 'services/poller/**'
 
@@ -109,7 +112,7 @@ jobs:
           MANUAL_SERVICE="${{ github.event.inputs.service }}"
           
           if [[ "$SHARED" == "true" || ( "$EVENT_NAME" == "workflow_dispatch" && ( "$MANUAL_SERVICE" == "all" || "$MANUAL_SERVICE" == "gateways" ) ) ]]; then
-            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "poller")
+            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller")
           else
             if [[ "${{ steps.filter.outputs.map-gateway }}" == "true" ]]; then SERVICES+=("map-gateway"); fi
             if [[ "${{ steps.filter.outputs.notification-gateway }}" == "true" ]]; then SERVICES+=("notification-gateway"); fi
@@ -120,6 +123,7 @@ jobs:
             if [[ "${{ steps.filter.outputs.gateway-export }}" == "true" ]]; then SERVICES+=("gateway-export"); fi
             if [[ "${{ steps.filter.outputs.gateway-olt }}" == "true" ]]; then SERVICES+=("gateway-olt"); fi
             if [[ "${{ steps.filter.outputs.gateway-audit }}" == "true" ]]; then SERVICES+=("gateway-audit"); fi
+            if [[ "${{ steps.filter.outputs.gateway-task }}" == "true" ]]; then SERVICES+=("gateway-task"); fi
             if [[ "${{ steps.filter.outputs.poller }}" == "true" ]]; then SERVICES+=("poller"); fi
           fi
           
@@ -431,7 +435,7 @@ jobs:
             fi
 
             # Deploy Go gateways if changed or manually triggered
-            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit poller"
+            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller"
             for svc in $SERVICES_LIST; do
               CHANGED="false"
               if [ "$svc" == "map-gateway" ] && [ "${{ needs.changes.outputs.map-gateway }}" == "true" ]; then CHANGED="true"; fi
@@ -443,6 +447,7 @@ jobs:
               if [ "$svc" == "gateway-export" ] && [ "${{ needs.changes.outputs.gateway-export }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "gateway-olt" ] && [ "${{ needs.changes.outputs.gateway-olt }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "gateway-audit" ] && [ "${{ needs.changes.outputs.gateway-audit }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-task" ] && [ "${{ needs.changes.outputs.gateway-task }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "poller" ] && [ "${{ needs.changes.outputs.poller }}" == "true" ]; then CHANGED="true"; fi
 
               # If shared libraries changed, we build/deploy all gateways

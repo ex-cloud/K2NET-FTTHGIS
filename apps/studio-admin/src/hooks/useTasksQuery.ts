@@ -5,11 +5,16 @@ import { useSession } from 'next-auth/react';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type TaskScope = "PLATFORM_INTERNAL" | "TENANT_TO_PLATFORM" | "TENANT_INTERNAL";
+
 export interface Task {
   id: string;
   type: "TICKET" | "PROJECT";
   status: string;
   priority: string;
+  scope: TaskScope;
   title: string;
   description?: string;
   reporterId: string;
@@ -48,9 +53,13 @@ const POLL_INTERVAL_MS = 30_000;
 /**
  * Hook to fetch the task list, or a single task by ID.
  * Polls every 30 seconds to keep data fresh.
- * Data is scoped automatically by the backend Hibernate Filter (JWT org context).
+ *
+ * @param taskId  - if provided, fetches a single task by ID
+ * @param scope   - filter by scope (e.g. "PLATFORM_INTERNAL" | "TENANT_TO_PLATFORM")
+ *                  If undefined, the backend default is applied (Super Admin sees
+ *                  PLATFORM_INTERNAL + TENANT_TO_PLATFORM combined).
  */
-export function useTasksQuery(taskId?: string): UseTasksQueryResult {
+export function useTasksQuery(taskId?: string, scope?: TaskScope): UseTasksQueryResult {
   const { data: session } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [task, setTask] = useState<Task | undefined>();
@@ -64,9 +73,21 @@ export function useTasksQuery(taskId?: string): UseTasksQueryResult {
     try {
       setError(null);
       const baseUrl = getBackendBaseUrl();
-      const url = taskId ? `${baseUrl}/tasks/${taskId}` : `${baseUrl}/tasks?size=100&sort=createdAt&direction=DESC`;
-      const res = await httpClient(url, { token: session.accessToken });
 
+      let url: string;
+      if (taskId) {
+        url = `${baseUrl}/tasks/${taskId}`;
+      } else {
+        const params = new URLSearchParams({
+          size: "100",
+          sort: "createdAt",
+          direction: "DESC",
+        });
+        if (scope) params.set("scope", scope);
+        url = `${baseUrl}/tasks?${params.toString()}`;
+      }
+
+      const res = await httpClient(url, { token: session.accessToken });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
@@ -74,7 +95,7 @@ export function useTasksQuery(taskId?: string): UseTasksQueryResult {
       if (taskId) {
         setTask(data as Task);
       } else {
-        // Spring Page response
+        // Spring Page response: { content: Task[], totalElements, ... }
         setTasks(data.content ?? (Array.isArray(data) ? data : []));
       }
     } catch (err: any) {
@@ -82,9 +103,10 @@ export function useTasksQuery(taskId?: string): UseTasksQueryResult {
     } finally {
       setLoading(false);
     }
-  }, [taskId, session?.accessToken]);
+  }, [taskId, scope, session?.accessToken]);
 
   useEffect(() => {
+    setLoading(true);
     fetchData();
     const interval = setInterval(fetchData, POLL_INTERVAL_MS);
     return () => clearInterval(interval);

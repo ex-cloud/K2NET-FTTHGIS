@@ -5,6 +5,7 @@ import com.company.ftthgis.domain.task.dto.CreateTaskRequest;
 import com.company.ftthgis.domain.task.dto.UpdateTaskRequest;
 import com.company.ftthgis.domain.task.entity.Task;
 import com.company.ftthgis.domain.task.entity.TaskComment;
+import com.company.ftthgis.domain.task.entity.TaskScope;
 import com.company.ftthgis.domain.task.entity.TaskStatus;
 import com.company.ftthgis.domain.task.entity.TaskType;
 import com.company.ftthgis.domain.task.repository.TaskCommentRepository;
@@ -46,34 +47,37 @@ class TaskServiceTest {
     private TaskService taskService;
 
     @Test
-    void createTaskShouldPersistAndSetDefaults() {
+    void createTaskShouldPersistAndSetDefaultsAsSuperAdmin() {
         UUID orgId = UUID.randomUUID();
         Organization org = new Organization();
         org.setId(orgId);
         org.setName("Test Org");
 
+        // scope=null → service resolves to PLATFORM_INTERNAL for Super Admin
         CreateTaskRequest req = new CreateTaskRequest(
                 TaskType.TICKET,
                 "Outage BDG-02",
                 "Fiber cut description",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
+                null,  // priority
+                null,  // assigneeId
+                null,  // referenceType
+                null,  // referenceId
+                null,  // parentTaskId
+                null,  // dueDate
+                null,  // coordinates
+                null   // scope — resolved to PLATFORM_INTERNAL by service
         );
 
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Task result = taskService.create(req, "user-reporter-123", orgId);
+        Task result = taskService.create(req, "user-reporter-123", orgId, true);
 
         assertNotNull(result);
         assertEquals("Outage BDG-02", result.getTitle());
         assertEquals("Fiber cut description", result.getDescription());
         assertEquals(TaskStatus.TODO, result.getStatus());
+        assertEquals(TaskScope.PLATFORM_INTERNAL, result.getScope());
         assertEquals("user-reporter-123", result.getReporterId());
         assertEquals(org, result.getOrganization());
         verify(taskRepository).save(any(Task.class));
@@ -85,28 +89,31 @@ class TaskServiceTest {
         Organization org = new Organization();
         org.setId(orgId);
 
+        // scope=PLATFORM_INTERNAL explicitly for Super Admin platform project
         CreateTaskRequest req = new CreateTaskRequest(
                 TaskType.PROJECT,
                 "New ODP Splicing Project",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
+                null,   // description
+                null,   // priority
+                null,   // assigneeId
+                null,   // referenceType
+                null,   // referenceId
+                null,   // parentTaskId
+                null,   // dueDate
+                null,   // coordinates
+                TaskScope.PLATFORM_INTERNAL  // scope
         );
 
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(taskRepository.countProjectsForMonth(any(), anyInt(), anyInt())).thenReturn(5L);
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Task result = taskService.create(req, "user-reporter-123", orgId);
+        Task result = taskService.create(req, "user-reporter-123", orgId, true);
 
         assertNotNull(result.getObsidianRef());
         assertTrue(result.getObsidianRef().startsWith("PRJ-"));
         assertTrue(result.getObsidianRef().endsWith("-006")); // 5 + 1
+        assertEquals(TaskScope.PLATFORM_INTERNAL, result.getScope());
         verify(taskRepository).save(any(Task.class));
     }
 

@@ -21,7 +21,16 @@ class TaskControllerSecurityTest {
 
     @Test
     void listEndpointIsProtected() throws NoSuchMethodException {
-        Method method = TaskController.class.getDeclaredMethod("list", Jwt.class, int.class, int.class, String.class, org.springframework.data.domain.Sort.Direction.class);
+        // list() now accepts: Jwt, int page, int size, String sort, Sort.Direction, String scope
+        Method method = TaskController.class.getDeclaredMethod(
+                "list",
+                Jwt.class,
+                int.class,
+                int.class,
+                String.class,
+                org.springframework.data.domain.Sort.Direction.class,
+                String.class  // scope filter added in Phase 5
+        );
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "List endpoint should require authorization");
         assertEquals("isAuthenticated()", annotation.value());
