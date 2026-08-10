@@ -30,6 +30,7 @@ public class TaskComment extends AuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "task_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Task task;
 
     /** UUID of the Keycloak user who wrote this comment. */

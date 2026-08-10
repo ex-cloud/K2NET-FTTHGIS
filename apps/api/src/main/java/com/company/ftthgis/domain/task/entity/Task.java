@@ -132,7 +132,7 @@ public class Task extends OrganizationAwareEntity {
     // ── Comments (Not audited separately — tracked via task_comments table) ───
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true,
-               fetch = FetchType.LAZY)
+               fetch = FetchType.EAGER)
     @NotAudited
     private List<TaskComment> comments;
 }

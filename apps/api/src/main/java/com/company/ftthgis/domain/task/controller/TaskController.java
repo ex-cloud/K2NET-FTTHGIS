@@ -219,12 +219,7 @@ public class TaskController {
      * Everyone else: filter enabled with their organization ID.
      */
     private void applyTenantFilter(Jwt jwt) {
-        List<String> roles = jwt.getClaimAsStringList("roles");
-        boolean isSuperAdmin = roles != null && (
-                roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN")
-        );
-
-        if (isSuperAdmin) {
+        if (isSuperAdmin(jwt)) {
             taskService.disableOrgFilter();
         } else {
             String orgId = jwt.getClaim("organization_id");
