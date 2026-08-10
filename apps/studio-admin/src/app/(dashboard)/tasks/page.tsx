@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PageLayout, KanbanBoard, type KanbanColumn } from "@k2net/ui";
+import { PageLayout, KanbanBoard } from "@k2net/ui";
 import { useSession } from "next-auth/react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
@@ -12,39 +12,19 @@ import {
   RefreshCw,
   List,
   Kanban,
-  AlertCircle,
-  Clock,
-  CheckCircle2,
-  Circle,
-  ArrowUpCircle,
-  Timer,
-  Building2,
   Cpu,
   Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskScope } from "@/hooks/useTasksQuery";
-import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
 
-// ─── Config maps ─────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  BACKLOG: { label: "Backlog", icon: Circle, className: "text-muted-foreground bg-muted" },
-  TODO: { label: "Todo", icon: Circle, className: "text-foreground bg-muted" },
-  IN_PROGRESS: { label: "In Progress", icon: Timer, className: "text-primary bg-primary/10" },
-  WAITING_ON_CLIENT: { label: "Waiting", icon: Clock, className: "text-amber-500 bg-amber-500/10" },
-  RESOLVED: { label: "Resolved", icon: CheckCircle2, className: "text-green-500 bg-green-500/10" },
-  CLOSED: { label: "Closed", icon: CheckCircle2, className: "text-muted-foreground bg-muted" },
-};
-
-const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
-  URGENT: { label: "URGENT", className: "text-destructive bg-destructive/10" },
-  HIGH: { label: "HIGH", className: "text-orange-500 bg-orange-500/10" },
-  NORMAL: { label: "NORMAL", className: "text-foreground bg-muted" },
-  LOW: { label: "LOW", className: "text-muted-foreground bg-muted" },
-};
+// Sub-components & configurations
+import { TaskKpiStrip } from "./components/TaskKpiStrip";
+import { TaskTable } from "./components/TaskTable";
+import { TaskCard } from "./components/TaskCard";
+import { KANBAN_COLUMNS } from "./components/configs";
 
 // ─── Scope Tab config ─────────────────────────────────────────────────────────
 
@@ -70,282 +50,6 @@ const SCOPE_TABS: { id: ScopeTab; label: string; icon: React.ElementType; desc: 
     desc: "Tiket masuk dari mitra ISP",
   },
 ];
-
-const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: "BACKLOG", title: "Backlog" },
-  { id: "TODO", title: "Todo" },
-  { id: "IN_PROGRESS", title: "In Progress" },
-  { id: "WAITING_ON_CLIENT", title: "Waiting" },
-  { id: "RESOLVED", title: "Resolved" },
-  { id: "CLOSED", title: "Closed" },
-];
-
-function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
-  const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
-  const isOverdue =
-    task.dueDate &&
-    new Date(task.dueDate) < new Date() &&
-    task.status !== "RESOLVED" &&
-    task.status !== "CLOSED";
-  const formattedDate = task.dueDate
-    ? new Date(task.dueDate).toLocaleDateString("id-ID")
-    : null;
-
-  return (
-    <div
-      onClick={onClick}
-      className="bg-card border border-border/70 rounded-xl p-3.5 shadow-sm hover:shadow-md cursor-pointer hover:border-border transition-all flex flex-col gap-3 group relative overflow-hidden"
-    >
-      {/* Indicator border for urgent/high priority tasks */}
-      {task.priority === "URGENT" && (
-        <div className="absolute top-0 left-0 w-1 h-full bg-destructive" />
-      )}
-      {task.priority === "HIGH" && (
-        <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
-      )}
-
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-semibold text-foreground text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
-            {task.title}
-          </span>
-        </div>
-
-        {task.obsidianRef && (
-          <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded w-fit">
-            {task.obsidianRef}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 mt-1">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-semibold", priority.className)}>
-            {priority.label}
-          </span>
-          <ScopeBadge scope={task.scope} />
-        </div>
-
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          {formattedDate && (
-            <span className={cn("inline-flex items-center gap-1 text-[10px]", isOverdue ? "text-destructive font-semibold" : "")}>
-              <Clock className="h-3 w-3" />
-              {formattedDate}
-            </span>
-          )}
-
-          <div
-            className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px] uppercase border border-primary/20"
-            title={task.assigneeId ?? "Unassigned"}
-          >
-            {task.assigneeId ? task.assigneeId.substring(0, 2) : "?"}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Scope badge ──────────────────────────────────────────────────────────────
-
-function ScopeBadge({ scope }: { scope?: string }) {
-  if (scope === "TENANT_TO_PLATFORM") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold bg-violet-500/10 text-violet-500 border border-violet-500/20">
-        <Building2 className="h-2.5 w-2.5" />
-        B2B
-      </span>
-    );
-  }
-  if (scope === "PLATFORM_INTERNAL") {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
-        <Cpu className="h-2.5 w-2.5" />
-        Internal
-      </span>
-    );
-  }
-  return null;
-}
-
-// ─── KPI Summary Strip ────────────────────────────────────────────────────────
-
-function TaskKpiStrip() {
-  const { summary, loading } = useTaskSummary();
-
-  return (
-    <div className="grid grid-cols-3 gap-4 mb-6">
-      {[
-        {
-          label: "Active Tasks",
-          value: loading ? "—" : summary?.totalOpen ?? 0,
-          icon: ClipboardList,
-          accent: "text-primary",
-        },
-        {
-          label: "Urgent",
-          value: loading ? "—" : summary?.urgentCount ?? 0,
-          icon: AlertCircle,
-          accent: (summary?.urgentCount ?? 0) > 0 ? "text-destructive" : "text-muted-foreground",
-          pulse: (summary?.urgentCount ?? 0) > 0,
-        },
-        {
-          label: "Resolved Today",
-          value: loading ? "—" : summary?.resolvedToday ?? 0,
-          icon: CheckCircle2,
-          accent: "text-green-500",
-        },
-      ].map((kpi) => (
-        <div
-          key={kpi.label}
-          className="bg-card border border-border rounded-xl p-4 flex items-center gap-3"
-        >
-          <div className={cn("p-2 rounded-lg bg-muted", kpi.accent)}>
-            <kpi.icon className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-foreground/75 dark:text-muted-foreground text-xs font-medium">
-              {kpi.label}
-            </p>
-            <div className="flex items-center gap-1.5">
-              <p className={cn("text-xl font-semibold text-foreground", kpi.accent)}>
-                {kpi.value}
-              </p>
-              {kpi.pulse && (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Task Table ───────────────────────────────────────────────────────────────
-
-function TaskTable({
-  tasks,
-  loading,
-  onRowClick,
-}: {
-  tasks: Task[];
-  loading: boolean;
-  onRowClick: (id: string) => void;
-}) {
-  return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              {["Judul", "Scope", "Tipe", "Prioritas", "Status", "Assignee", "Tenggat"].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-semibold text-foreground/75 dark:text-muted-foreground uppercase tracking-wide"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-muted rounded animate-pulse" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : tasks.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
-                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <ClipboardList className="h-10 w-10 opacity-30" />
-                    <p className="text-sm">Belum ada task di tampilan ini.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              tasks.map((task) => {
-                const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
-                const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
-                const StatusIcon = status.icon;
-
-                return (
-                  <tr
-                    key={task.id}
-                    className="hover:bg-muted/40 cursor-pointer transition-colors group"
-                    onClick={() => onRowClick(task.id)}
-                  >
-                    {/* Title + obsidianRef */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground text-sm line-clamp-1">
-                          {task.title}
-                        </span>
-                        {task.obsidianRef && (
-                          <span className="text-xs text-muted-foreground font-mono">
-                            {task.obsidianRef}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Scope badge */}
-                    <td className="px-4 py-3">
-                      <ScopeBadge scope={task.scope} />
-                    </td>
-
-                    {/* Type */}
-                    <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
-                        {task.type}
-                      </span>
-                    </td>
-
-                    {/* Priority */}
-                    <td className="px-4 py-3">
-                      <span className={cn("text-xs px-2 py-0.5 rounded-md font-semibold", priority.className)}>
-                        {priority.label}
-                      </span>
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3">
-                      <span className={cn("inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md", status.className)}>
-                        <StatusIcon className="h-3 w-3" />
-                        {status.label}
-                      </span>
-                    </td>
-
-                    {/* Assignee */}
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {task.assigneeId ?? "—"}
-                    </td>
-
-                    {/* Due Date */}
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {task.dueDate
-                        ? new Date(task.dueDate).toLocaleDateString("id-ID")
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
