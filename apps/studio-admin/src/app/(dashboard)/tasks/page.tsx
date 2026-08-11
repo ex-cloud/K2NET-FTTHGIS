@@ -230,6 +230,32 @@ export default function TasksPage() {
     [session?.accessToken, filteredTasks, refresh]
   );
 
+  const handleDeleteTask = useCallback(
+    async (itemId: string) => {
+      // Optimistic delete
+      setLocalTasks((prev) => prev.filter((t) => t.id !== itemId));
+      try {
+        const baseUrl = getBackendBaseUrl();
+        const res = await httpClient(`${baseUrl}/tasks/${itemId}`, {
+          method: "DELETE",
+          token: session?.accessToken ?? "",
+        });
+        if (!res.ok) {
+          if (res.status === 403) {
+            throw new Error("Anda tidak memiliki izin (Super Admin) untuk menghapus task.");
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        toast.success("Task berhasil dihapus");
+        refresh();
+      } catch (err: any) {
+        toast.error("Gagal menghapus: " + err.message);
+        setLocalTasks(filteredTasks);
+      }
+    },
+    [session?.accessToken, filteredTasks, refresh]
+  );
+
   const handleCardDrop = useCallback(
     (itemId: string, targetStatus: string) => {
       handleUpdateTask(itemId, { status: targetStatus });
@@ -395,6 +421,7 @@ export default function TasksPage() {
               loading={loading}
               onRowClick={(id) => router.push(`/tasks/${id}`)}
               onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
               assigneesList={assigneesList}
             />
           )}

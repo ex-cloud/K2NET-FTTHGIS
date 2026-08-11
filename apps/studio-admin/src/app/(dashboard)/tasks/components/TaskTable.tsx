@@ -1,7 +1,25 @@
 "use client";
 
 import React from "react";
-import { ClipboardList, Calendar as CalendarIcon, User, ChevronDown } from "lucide-react";
+import {
+  ClipboardList,
+  Calendar as CalendarIcon,
+  User,
+  ChevronDown,
+  ArrowUp,
+  ArrowDown,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  createColumnHelper,
+  flexRender,
+  SortingState,
+} from "@tanstack/react-table";
 import { type Task } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";
 import { ScopeBadge } from "./ScopeBadge";
@@ -19,224 +37,380 @@ interface TaskTableProps {
   loading: boolean;
   onRowClick: (id: string) => void;
   onUpdateTask: (id: string, fields: any) => void;
+  onDeleteTask: (id: string) => void;
   assigneesList: string[];
 }
+
+const columnHelper = createColumnHelper<Task>();
 
 export function TaskTable({
   tasks,
   loading,
   onRowClick,
   onUpdateTask,
+  onDeleteTask,
   assigneesList,
 }: TaskTableProps) {
-  return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-muted/20">
-              {["Judul", "Scope", "Tipe", "Prioritas", "Status", "Assignee", "Tenggat"].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-semibold text-foreground/75 dark:text-muted-foreground uppercase tracking-wide select-none"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3.5">
-                      <div className="h-4 bg-muted rounded animate-pulse w-24" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : tasks.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
-                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <ClipboardList className="h-10 w-10 opacity-35" />
-                    <p className="text-sm">Belum ada task di tampilan ini.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              tasks.map((task) => {
-                const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
-                const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
-                const StatusIcon = status.icon;
-                const formattedDate = task.dueDate
-                  ? new Date(task.dueDate).toLocaleDateString("id-ID")
-                  : "Set Date";
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
-                return (
-                  <tr
-                    key={task.id}
-                    className="hover:bg-muted/30 cursor-pointer transition-colors group"
-                    onClick={() => onRowClick(task.id)}
+  const columns = React.useMemo(
+    () => [
+      columnHelper.accessor("title", {
+        header: "Title",
+        cell: (info) => {
+          const task = info.row.original;
+          return (
+            <div className="min-w-0 flex items-center gap-2">
+              <span className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
+                {task.title}
+              </span>
+              {task.obsidianRef && (
+                <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                  {task.obsidianRef}
+                </span>
+              )}
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("scope", {
+        header: "Scope",
+        cell: (info) => <ScopeBadge scope={info.getValue()} />,
+      }),
+      columnHelper.accessor("type", {
+        header: "Type",
+        cell: (info) => (
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider">
+            {info.getValue()}
+          </span>
+        ),
+      }),
+      columnHelper.accessor("priority", {
+        header: "Priority",
+        cell: (info) => {
+          const task = info.row.original;
+          const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "text-xs px-2 py-1 rounded-md font-semibold flex items-center gap-1 border border-transparent hover:border-border transition-all",
+                      priority.className
+                    )}
                   >
-                    {/* 1. Judul + obsidianRef */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2 max-w-xs md:max-w-md">
-                        <span className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
-                          {task.title}
+                    <span>{priority.label}</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[120px]">
+                  {Object.keys(PRIORITY_CONFIG).map((pKey) => (
+                    <DropdownMenuItem
+                      key={pKey}
+                      onClick={() => onUpdateTask(task.id, { priority: pKey })}
+                      className="text-xs font-semibold cursor-pointer"
+                    >
+                      {PRIORITY_CONFIG[pKey].label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("status", {
+        header: "Status",
+        cell: (info) => {
+          const task = info.row.original;
+          const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
+          const StatusIcon = status.icon;
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-transparent hover:border-border transition-all",
+                      status.className
+                    )}
+                  >
+                    <StatusIcon className="h-3.5 w-3.5" />
+                    <span>{status.label}</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[150px]">
+                  {Object.keys(STATUS_CONFIG).map((sKey) => {
+                    const val = STATUS_CONFIG[sKey];
+                    const Icon = val.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={sKey}
+                        onClick={() => onUpdateTask(task.id, { status: sKey })}
+                        className="text-xs flex items-center gap-2 cursor-pointer"
+                      >
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{val.label}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("assigneeId", {
+        header: "Assignee",
+        cell: (info) => {
+          const task = info.row.original;
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all font-mono">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>
+                      {task.assigneeId ? `…${task.assigneeId.slice(-8)}` : "Assignee"}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto custom-scrollbar">
+                  <DropdownMenuItem
+                    onClick={() => onUpdateTask(task.id, { assigneeId: null })}
+                    className="text-xs text-muted-foreground italic cursor-pointer"
+                  >
+                    Unassigned
+                  </DropdownMenuItem>
+                  {assigneesList.map((id) => (
+                    <DropdownMenuItem
+                      key={id}
+                      onClick={() => onUpdateTask(task.id, { assigneeId: id })}
+                      className="text-xs font-mono cursor-pointer"
+                    >
+                      {`…${id.slice(-8)}`}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("dueDate", {
+        header: "Due Date",
+        cell: (info) => {
+          const task = info.row.original;
+          const formattedDate = task.dueDate
+            ? new Date(task.dueDate).toLocaleDateString("id-ID")
+            : "Set Date";
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all",
+                      task.dueDate
+                        ? "border-border bg-card text-foreground"
+                        : "border-dashed border-border text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{formattedDate}</span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="p-0 border border-border shadow-xl">
+                  <Calendar
+                    mode="single"
+                    selected={task.dueDate ? new Date(task.dueDate) : undefined}
+                    onSelect={(date) => {
+                      onUpdateTask(task.id, {
+                        dueDate: date ? date.toISOString() : null,
+                      });
+                    }}
+                    className="bg-card rounded-xl"
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Actions",
+        cell: (info) => {
+          const task = info.row.original;
+          return (
+            <div onClick={(e) => e.stopPropagation()} className="flex justify-center w-full">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1 rounded-md border border-transparent hover:border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[120px]">
+                  <DropdownMenuItem
+                    onClick={() => onRowClick(task.id)}
+                    className="text-xs font-semibold cursor-pointer flex items-center gap-2"
+                  >
+                    <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Edit / Detail</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (window.confirm("Apakah Anda yakin ingin menghapus tugas ini?")) {
+                        onDeleteTask(task.id);
+                      }
+                    }}
+                    className="text-xs font-semibold cursor-pointer text-destructive focus:text-destructive flex items-center gap-2"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      }),
+    ],
+    [assigneesList, onRowClick, onUpdateTask, onDeleteTask]
+  );
+
+  const table = useReactTable({
+    data: tasks,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  return (
+    <div className="overflow-x-auto custom-scrollbar-thin">
+      <div className="min-w-[960px] border border-border/40 rounded-xl overflow-hidden bg-card/10 flex flex-col">
+        {/* Table Head */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xs grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
+          {table.getFlatHeaders().map((header) => {
+            if (header.isPlaceholder) return <div key={header.id} />;
+
+            const canSort = header.column.getCanSort();
+            const isSorted = header.column.getIsSorted();
+
+            return (
+              <div
+                key={header.id}
+                className="min-w-0 px-4 py-2.5 flex items-center justify-start text-left"
+              >
+                {canSort && header.column.id !== "actions" ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                        <span className="flex items-center">
+                          {isSorted === "asc" ? (
+                            <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                          ) : isSorted === "desc" ? (
+                            <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                          )}
                         </span>
-                        {task.obsidianRef && (
-                          <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
-                            {task.obsidianRef}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                      <DropdownMenuItem
+                        onClick={() => header.column.toggleSorting(false)}
+                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Sort Ascending</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => header.column.toggleSorting(true)}
+                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Sort Descending</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-                    {/* 2. Scope badge */}
-                    <td className="px-4 py-3.5">
-                      <ScopeBadge scope={task.scope} />
-                    </td>
-
-                    {/* 3. Tipe */}
-                    <td className="px-4 py-3.5">
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider">
-                        {task.type}
-                      </span>
-                    </td>
-
-                    {/* 4. Prioritas (Interactive Dropdown) */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className={cn(
-                              "text-xs px-2 py-1 rounded-md font-semibold flex items-center gap-1 border border-transparent hover:border-border transition-all",
-                              priority.className
-                            )}
-                          >
-                            <span>{priority.label}</span>
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[120px]">
-                          {Object.keys(PRIORITY_CONFIG).map((pKey) => (
-                            <DropdownMenuItem
-                              key={pKey}
-                              onClick={() => onUpdateTask(task.id, { priority: pKey })}
-                              className="text-xs font-semibold cursor-pointer"
-                            >
-                              {PRIORITY_CONFIG[pKey].label}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-
-                    {/* 5. Status (Interactive Dropdown) */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className={cn(
-                              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-transparent hover:border-border transition-all",
-                              status.className
-                            )}
-                          >
-                            <StatusIcon className="h-3.5 w-3.5" />
-                            <span>{status.label}</span>
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[150px]">
-                          {Object.keys(STATUS_CONFIG).map((sKey) => {
-                            const val = STATUS_CONFIG[sKey];
-                            const Icon = val.icon;
-                            return (
-                              <DropdownMenuItem
-                                key={sKey}
-                                onClick={() => onUpdateTask(task.id, { status: sKey })}
-                                className="text-xs flex items-center gap-2 cursor-pointer"
-                              >
-                                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{val.label}</span>
-                              </DropdownMenuItem>
-                            );
-                          })}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-
-                    {/* 6. Assignee (Interactive Dropdown) */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all font-mono">
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>
-                              {task.assigneeId ? `…${task.assigneeId.slice(-8)}` : "Assignee"}
-                            </span>
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto custom-scrollbar">
-                          <DropdownMenuItem
-                            onClick={() => onUpdateTask(task.id, { assigneeId: null })}
-                            className="text-xs text-muted-foreground italic cursor-pointer"
-                          >
-                            Unassigned
-                          </DropdownMenuItem>
-                          {assigneesList.map((id) => (
-                            <DropdownMenuItem
-                              key={id}
-                              onClick={() => onUpdateTask(task.id, { assigneeId: id })}
-                              className="text-xs font-mono cursor-pointer"
-                            >
-                              {`…${id.slice(-8)}`}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-
-                    {/* 7. Tenggat / Due Date (Interactive Calendar Dropdown) */}
-                    <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className={cn(
-                              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all",
-                              task.dueDate
-                                ? "border-border bg-card text-foreground"
-                                : "border-dashed border-border text-muted-foreground hover:bg-muted"
-                            )}
-                          >
-                            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>{formattedDate}</span>
-                            <ChevronDown className="h-3 w-3 opacity-60" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="p-0 border border-border shadow-xl">
-                          <Calendar
-                            mode="single"
-                            selected={task.dueDate ? new Date(task.dueDate) : undefined}
-                            onSelect={(date) => {
-                              onUpdateTask(task.id, {
-                                dueDate: date ? date.toISOString() : null,
-                              });
-                            }}
-                            className="bg-card rounded-xl"
-                          />
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+        {/* Table Body */}
+        <div className="divide-y divide-border/40">
+          {loading && tasks.length === 0 ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+              >
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-[60%]" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-16" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-12" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-16" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-20" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-20" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-20" />
+                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center justify-center">
+                  <div className="h-3.5 bg-muted/60 rounded w-6" />
+                </div>
+              </div>
+            ))
+          ) : tasks.length === 0 ? (
+            <div className="px-4 py-12 text-center flex flex-col items-center gap-3 text-muted-foreground">
+              <ClipboardList className="h-10 w-10 opacity-35" />
+              <p className="text-sm">Belum ada task di tampilan ini.</p>
+            </div>
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <div
+                key={row.id}
+                onClick={() => onRowClick(row.original.id)}
+                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/40 divide-x divide-border/30 group bg-card/5"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <div
+                    key={cell.id}
+                    className="min-w-0 px-4 py-3.5 flex items-center justify-start"
+                  >
+                    <div className="w-full min-w-0">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
