@@ -145,7 +145,7 @@ export default function OtpPage() {
               const data = await res.json();
               if (data.verified) {
                 // Mark device verified via cookie and redirect to main page
-                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
+                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
                 redirectToMain();
               }
             } catch (e) {
@@ -261,7 +261,7 @@ export default function OtpPage() {
       if (res.ok && data.success) {
         setInfoMessage("Verifikasi perangkat berhasil! Mengarahkan Anda...");
         // Set verify token cookie
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
         }, 1500);
@@ -368,7 +368,7 @@ export default function OtpPage() {
 
       if (res.ok && data.success) {
         setInfoMessage("Perangkat berhasil dipercayai! Mengarahkan...");
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
         }, 1200);
