@@ -7,8 +7,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  Calendar,
 } from "@k2net/ui";
-import { Loader2, FolderKanban, ClipboardList, Calendar, User, Cpu, AlertTriangle } from "lucide-react";
+import { Loader2, FolderKanban, ClipboardList, Calendar as CalendarIcon, User, Cpu, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { httpClient } from "@/lib/httpClient";
@@ -210,16 +214,30 @@ export function NewTaskDialog({
               </select>
             </div>
 
-            {/* Target Date Select Badge */}
-            <div className="flex items-center gap-1.5 border border-border/80 px-2 py-1 rounded-lg bg-muted/20">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="bg-transparent border-0 p-0 text-xs font-semibold text-foreground focus:ring-0 focus:outline-none cursor-pointer"
-              />
-            </div>
+            {/* Target Date Select Badge (Interactive Calendar Dropdown) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 border border-border/80 px-2 py-1 rounded-lg bg-muted/20 hover:bg-muted/40 text-foreground transition-all"
+                >
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold">
+                    {dueDate ? new Date(dueDate).toLocaleDateString("id-ID") : "Tenggat"}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="p-0 border border-border shadow-xl">
+                <Calendar
+                  mode="single"
+                  selected={dueDate ? new Date(dueDate) : undefined}
+                  onSelect={(date) => {
+                    setDueDate(date ? date.toISOString() : "");
+                  }}
+                  className="bg-card rounded-xl"
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* ── Rich Text Description Textarea ── */}
