@@ -87,16 +87,16 @@ export function TaskFilterMenu({
       <DropdownMenuTrigger asChild>
         <button
           className={cn(
-            "flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium transition-all duration-200",
+            "p-2 rounded-lg border transition-all duration-200 relative",
             hasActiveFilters
               ? "border-primary/30 bg-primary/5 text-primary"
               : "border-border bg-card text-muted-foreground hover:text-foreground"
           )}
+          title="Filters"
         >
-          <Filter className="h-3.5 w-3.5" />
-          <span>Filters</span>
+          <Filter className="h-4 w-4" />
           {hasActiveFilters && (
-            <span className="ml-1 bg-primary text-primary-foreground text-[10px] font-bold h-4 min-w-[16px] rounded-full flex items-center justify-center px-1">
+            <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[8px] font-bold h-3.5 min-w-[14px] rounded-full flex items-center justify-center px-0.5 animate-pulse">
               {[
                 filters.status.length,
                 filters.priority.length,

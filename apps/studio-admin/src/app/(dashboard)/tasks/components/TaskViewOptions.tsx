@@ -71,9 +71,11 @@ export function TaskViewOptions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-xs font-medium text-muted-foreground hover:text-foreground transition-all duration-200">
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span>View Options</span>
+        <button
+          className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-all duration-200"
+          title="View Options"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
         </button>
       </DropdownMenuTrigger>
 

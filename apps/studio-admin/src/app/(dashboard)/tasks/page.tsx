@@ -104,8 +104,8 @@ export default function TasksPage() {
   // NewTaskDialog state
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Right stats panel toggle
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  // Right stats panel toggle - closed by default to match clean workspace
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
   // Fase 8 States: filters & view options
   const [filters, setFilters] = useState<TaskFilterState>({
@@ -325,10 +325,10 @@ export default function TasksPage() {
             {/* New Task dialog trigger (Instant Modal overlay) */}
             <button
               onClick={() => setDialogOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
+              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all"
+              title="New Task"
             >
               <Plus className="h-4 w-4" />
-              New Task
             </button>
           </div>
         </div>
