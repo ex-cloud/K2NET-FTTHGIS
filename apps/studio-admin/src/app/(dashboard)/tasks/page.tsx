@@ -205,28 +205,36 @@ export default function TasksPage() {
     toast.info("Memuat ulang daftar task...");
   }, [refresh]);
 
-  const handleCardDrop = useCallback(
-    async (itemId: string, targetStatus: string) => {
+  const handleUpdateTask = useCallback(
+    async (itemId: string, fields: Partial<Task>) => {
       // Optimistic update
       setLocalTasks((prev) =>
-        prev.map((t) => (t.id === itemId ? { ...t, status: targetStatus } : t))
+        prev.map((t) => (t.id === itemId ? { ...t, ...fields } : t))
       );
       try {
         const baseUrl = getBackendBaseUrl();
         const res = await httpClient(`${baseUrl}/tasks/${itemId}`, {
           method: "PUT",
           token: session?.accessToken ?? "",
-          body: JSON.stringify({ status: targetStatus }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fields),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        toast.success("Status task berhasil diperbarui");
+        toast.success("Task berhasil diperbarui");
         refresh();
       } catch (err: any) {
-        toast.error("Gagal memperbarui status: " + err.message);
+        toast.error("Gagal memperbarui: " + err.message);
         setLocalTasks(filteredTasks);
       }
     },
     [session?.accessToken, filteredTasks, refresh]
+  );
+
+  const handleCardDrop = useCallback(
+    (itemId: string, targetStatus: string) => {
+      handleUpdateTask(itemId, { status: targetStatus });
+    },
+    [handleUpdateTask]
   );
 
   const handleViewModeChange = (mode: "list" | "kanban" | "timeline") => {
@@ -386,6 +394,8 @@ export default function TasksPage() {
               tasks={filteredTasks}
               loading={loading}
               onRowClick={(id) => router.push(`/tasks/${id}`)}
+              onUpdateTask={handleUpdateTask}
+              assigneesList={assigneesList}
             />
           )}
 
