@@ -10,11 +10,12 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import {
   ClipboardList,
   Plus,
-  RefreshCw,
   PanelRight,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskScope } from "@/hooks/useTasksQuery";
+import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
 
@@ -24,9 +25,7 @@ import { TaskTable } from "./components/TaskTable";
 import { TaskCard } from "./components/TaskCard";
 import { TaskSecondarySidebar } from "./components/TaskSecondarySidebar";
 import { KANBAN_COLUMNS } from "./components/configs";
-
-// Fase 8 new components
-import { TaskViewOptions, type ViewOptionsState } from "./components/TaskViewOptions";
+import { TaskToolbar } from "./components/TaskToolbar";
 import { TaskFilterMenu, type TaskFilterState } from "./components/TaskFilterMenu";
 import { TaskTimelineView } from "./components/TaskTimelineView";
 import { NewTaskDialog } from "./components/NewTaskDialog";
@@ -104,10 +103,13 @@ export default function TasksPage() {
   // NewTaskDialog state
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Right stats panel toggle - closed by default to match clean workspace
+  // Right stats panel toggle
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
-  // Fase 8 States: filters & view options
+  // Toolbar search query
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filters state
   const [filters, setFilters] = useState<TaskFilterState>({
     status: [],
     priority: [],
@@ -115,24 +117,14 @@ export default function TasksPage() {
     assigneeId: null,
   });
 
-  const [viewOptions, setViewOptions] = useState<ViewOptionsState>({
-    groupBy: "status",
-    sortBy: "manual",
-    showEmptyColumns: true,
-    displayProperties: {
-      priority: true,
-      status: true,
-      assignee: true,
-      dueDate: true,
-      obsidianRef: true,
-    },
-  });
-
   // Fetch data — scope filter driven by URL ?scope= param
   const { tasks, loading, error, refresh } = useTasksQuery(
     undefined,
     scopeParam ?? undefined
   );
+
+  // Task summary for inline stats bar
+  const { summary } = useTaskSummary();
 
   // Derive unique assignees present in the tasks list
   const assigneesList = useMemo(() => {
@@ -148,6 +140,12 @@ export default function TasksPage() {
   const filteredTasks = useMemo(() => {
     let result = applyViewFilter(tasks, quickParam, userId);
 
+    // Apply search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((t) => t.title.toLowerCase().includes(q));
+    }
+
     // Apply custom filters
     if (filters.status.length > 0) {
       result = result.filter((t) => filters.status.includes(t.status));
@@ -162,22 +160,13 @@ export default function TasksPage() {
       result = result.filter((t) => t.assigneeId === filters.assigneeId);
     }
 
-    // Apply sorting
-    if (viewOptions.sortBy === "dueDate") {
-      result = [...result].sort((a, b) => {
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      });
-    } else {
-      // Default: manual (newest created first)
-      result = [...result].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    }
+    // Default sort: newest created first
+    result = [...result].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return result;
-  }, [tasks, quickParam, filters, viewOptions.sortBy, userId]);
+  }, [tasks, quickParam, filters, searchQuery, userId]);
 
   // Kanban optimistic update local state
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
@@ -273,6 +262,24 @@ export default function TasksPage() {
     router.push(`/tasks?${params.toString()}`);
   };
 
+  const handleToggleFilter = (type: keyof TaskFilterState, value: string) => {
+    setFilters((prev) => {
+      if (type === "assigneeId") {
+        return { ...prev, assigneeId: prev.assigneeId === value ? null : value };
+      }
+      const currentList = prev[type] as string[];
+      const newList = currentList.includes(value)
+        ? currentList.filter((v) => v !== value)
+        : [...currentList, value];
+      return { ...prev, [type]: newList };
+    });
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ status: [], priority: [], scope: [], assigneeId: null });
+    setSearchQuery("");
+  };
+
   // ── Derived breadcrumb label ──────────────────────────────────────────────────
 
   const pageTitle = VIEW_LABELS[quickParam] ?? "Tasks & Tickets";
@@ -285,12 +292,8 @@ export default function TasksPage() {
 
   // Filter columns based on showEmptyColumns switch
   const activeKanbanColumns = useMemo(() => {
-    if (viewOptions.showEmptyColumns) return KANBAN_COLUMNS;
-    // Hide columns that have 0 tasks in current localTasks list
-    return KANBAN_COLUMNS.filter((col) =>
-      localTasks.some((t) => t.status === col.id)
-    );
-  }, [viewOptions.showEmptyColumns, localTasks]);
+    return KANBAN_COLUMNS;
+  }, []);
 
   return (
     <PageLayout
@@ -303,45 +306,21 @@ export default function TasksPage() {
       spaceY="space-y-0"
       maxWidth="w-full"
     >
-      <div className="flex flex-col h-full min-h-0 w-full">
+      <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 overflow-hidden select-none">
 
         {/* ── Page Header ──────────────────────────────────────────────────── */}
-        <div className="shrink-0 flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/60">
+        <div className="flex items-center justify-between px-6">
           <div>
-            <h1 className="text-2xl font-light text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
               <ClipboardList className="h-5 w-5 text-primary" />
               {pageTitle}
             </h1>
-            <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {scopeDescription}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Filter Menu Popover */}
-            <TaskFilterMenu
-              filters={filters}
-              onChange={setFilters}
-              assigneesList={assigneesList}
-            />
-
-            {/* View Options Popover (combining list/kanban/timeline options) */}
-            <TaskViewOptions
-              options={viewOptions}
-              onChange={setViewOptions}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-            />
-
-            {/* Refresh */}
-            <button
-              onClick={handleRefresh}
-              className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            </button>
-
             {/* Toggle right stats panel */}
             <button
               onClick={() => setRightPanelOpen((v) => !v)}
@@ -356,7 +335,7 @@ export default function TasksPage() {
               <PanelRight className="h-4 w-4" />
             </button>
 
-            {/* New Task dialog trigger (Instant Modal overlay) */}
+            {/* New Task dialog trigger */}
             <button
               onClick={() => setDialogOpen(true)}
               className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all"
@@ -367,18 +346,66 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
-        <div className="shrink-0 px-6 pt-4">
+        {/* ── Inline KPI Stats Bar (like query-performance) ─────────────── */}
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-6 -mt-4">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-foreground font-mono">
+              {summary?.totalOpen ?? "—"}
+            </span>
+            <span>Active Tasks</span>
+            <span title="Total open non-terminal tasks" className="cursor-help text-muted-foreground/60 hover:text-foreground">
+              <HelpCircle className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <span className="text-muted-foreground/30 px-1">/</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cn(
+              "font-bold font-mono",
+              (summary?.urgentCount ?? 0) > 0 ? "text-destructive" : "text-foreground"
+            )}>
+              {summary?.urgentCount ?? "—"}
+            </span>
+            <span>Urgent</span>
+            <span title="Tasks marked URGENT priority" className="cursor-help text-muted-foreground/60 hover:text-foreground">
+              <HelpCircle className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <span className="text-muted-foreground/30 px-1">/</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-foreground font-mono">
+              {summary?.resolvedToday ?? "—"}
+            </span>
+            <span>Resolved Today</span>
+            <span title="Tasks resolved or closed today" className="cursor-help text-muted-foreground/60 hover:text-foreground">
+              <HelpCircle className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </div>
+
+        {/* ── KPI Cards (compute-style MetricCard) ─────────────────────── */}
+        <div className="px-6 -mt-2">
           <TaskKpiStrip />
         </div>
 
-        {/* ── Scrollable Content Area ───────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-6 pb-8 pt-4 min-h-0">
+        {/* ── Content area: Toolbar + View ──────────────────────────────── */}
+        <div className="flex-1 flex flex-col min-h-0 border border-border/50 bg-card/10 rounded-xl mx-6 mb-6 overflow-hidden">
+          {/* Sticky Toolbar */}
+          <TaskToolbar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filters={filters}
+            onToggleFilter={handleToggleFilter}
+            onClearFilters={handleClearFilters}
+            loading={loading}
+            onRefresh={handleRefresh}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+          />
 
-          {/* Active quick-filter label */}
+          {/* Active quick-filter chip */}
           {quickParam !== "all" && (
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Menampilkan:</span>
+            <div className="px-6 py-2 flex items-center gap-2 border-b border-border/40">
+              <span className="text-xs text-muted-foreground">Showing:</span>
               <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                 {VIEW_LABELS[quickParam]}
               </span>
@@ -391,78 +418,64 @@ export default function TasksPage() {
             </div>
           )}
 
-          {/* Scope filter label */}
-          {scopeParam && (
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Scope:</span>
-              <span
-                className={cn(
-                  "text-xs font-medium px-2 py-0.5 rounded-full",
-                  scopeParam === "TENANT_TO_PLATFORM"
-                    ? "text-violet-500 bg-violet-500/10"
-                    : "text-primary bg-primary/10"
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar-thin">
+            {/* ── List View ─────────────────────────────────────────── */}
+            {viewMode === "list" && (
+              <TaskTable
+                tasks={filteredTasks}
+                loading={loading}
+                onRowClick={(id) => router.push(`/tasks/${id}`)}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
+                assigneesList={assigneesList}
+              />
+            )}
+
+            {/* ── Kanban View ───────────────────────────────────────── */}
+            {viewMode === "kanban" && (
+              <div className="w-full p-4 overflow-x-auto">
+                {loading && localTasks.length === 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+                    {KANBAN_COLUMNS.map((col) => (
+                      <div
+                        key={col.id}
+                        className="bg-card/40 border border-border/50 rounded-xl p-4 min-h-[450px]"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <KanbanBoard<Task>
+                    items={localTasks}
+                    columns={activeKanbanColumns}
+                    getColumnId={(t) => t.status}
+                    onCardDrop={handleCardDrop}
+                    renderCard={(task) => (
+                      <TaskCard
+                        task={task}
+                        onClick={() => router.push(`/tasks/${task.id}`)}
+                      />
+                    )}
+                  />
                 )}
-              >
-                {scopeParam === "TENANT_TO_PLATFORM" ? "B2B Inbox" : "Internal K2NET"}
-              </span>
-              <button
-                onClick={() => router.push("/tasks")}
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors underline"
-              >
-                Reset filter
-              </button>
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* ── List View ────────────────────────────────────────────────── */}
-          {viewMode === "list" && (
-            <TaskTable
-              tasks={filteredTasks}
-              loading={loading}
-              onRowClick={(id) => router.push(`/tasks/${id}`)}
-              onUpdateTask={handleUpdateTask}
-              onDeleteTask={handleDeleteTask}
-              assigneesList={assigneesList}
-            />
-          )}
-
-          {/* ── Kanban View ───────────────────────────────────────────────── */}
-          {viewMode === "kanban" && (
-            <div className="w-full overflow-hidden">
-              {loading && localTasks.length === 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
-                  {KANBAN_COLUMNS.map((col) => (
-                    <div
-                      key={col.id}
-                      className="bg-card/40 border border-border/50 rounded-xl p-4 min-h-[450px]"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <KanbanBoard<Task>
-                  items={localTasks}
-                  columns={activeKanbanColumns}
-                  getColumnId={(t) => t.status}
-                  onCardDrop={handleCardDrop}
-                  renderCard={(task) => (
-                    <TaskCard
-                      task={task}
-                      onClick={() => router.push(`/tasks/${task.id}`)}
-                    />
-                  )}
-                />
-              )}
-            </div>
-          )}
-
-          {/* ── Timeline View ── */}
-          {viewMode === "timeline" && (
-            <TaskTimelineView
-              tasks={filteredTasks}
-              onRowClick={(id) => router.push(`/tasks/${id}`)}
-              displayProperties={viewOptions.displayProperties}
-            />
-          )}
+            {/* ── Timeline View ── */}
+            {viewMode === "timeline" && (
+              <TaskTimelineView
+                tasks={filteredTasks}
+                onRowClick={(id) => router.push(`/tasks/${id}`)}
+                displayProperties={{
+                  priority: true,
+                  status: true,
+                  assignee: true,
+                  dueDate: true,
+                  obsidianRef: true,
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
 
