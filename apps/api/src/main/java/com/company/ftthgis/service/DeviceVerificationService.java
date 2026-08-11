@@ -41,9 +41,6 @@ public class DeviceVerificationService {
         private final LocalDateTime expiryTime;
     }
 
-    /**
-     * Checks if a device fingerprint is verified for a user.
-     */
     public boolean isDeviceVerified(UUID userId, String deviceFingerprint) {
         // If MFA is not globally enforced, we can bypass or require it
         boolean enforceMfa = settingsService.getSettingBoolean("enforce_mfa", false);
@@ -54,7 +51,19 @@ public class DeviceVerificationService {
         }
 
         return userDeviceRepository.findByUserIdAndDeviceFingerprint(userId, deviceFingerprint)
-                .map(UserDevice::isVerified)
+                .map(device -> {
+                    if (!device.isVerified()) {
+                        return false;
+                    }
+                    // Batasi durasi kepercayaan perangkat menjadi maksimal 24 jam (1 hari) sejak verifikasi terakhir
+                    LocalDateTime expiryThreshold = LocalDateTime.now().minusHours(24);
+                    if (device.getLastUsedAt() != null && device.getLastUsedAt().isBefore(expiryThreshold)) {
+                        log.info("⏰ Device trust expired for user {} device {} (Last verified: {})", 
+                                userId, deviceFingerprint, device.getLastUsedAt());
+                        return false;
+                    }
+                    return true;
+                })
                 .orElse(false);
     }
 

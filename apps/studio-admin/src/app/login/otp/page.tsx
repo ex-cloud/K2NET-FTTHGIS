@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { 
-  Lock, Phone, Mail, KeyRound, Loader2, AlertCircle, CheckCircle, 
-  ArrowLeft, ShieldCheck, Laptop, Fingerprint 
-} from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
+import { Lock, AlertCircle, CheckCircle, ArrowLeft, ShieldCheck } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+
+// Sub-components
+import { DeviceTrustBanner } from "./components/DeviceTrustBanner";
+import { MethodSelector } from "./components/MethodSelector";
+import { OtpInputForm } from "./components/OtpInputForm";
 
 // Browser detection helpers
 function getBrowserName(userAgent: string) {
@@ -120,7 +120,6 @@ export default function OtpPage() {
         console.log("[OTP] Status unauthenticated tetapi kuki sesi mungkin ada. Sinkronisasi sesi...");
         updateSession();
       } else {
-        // Jika setelah disinkronkan memang benar-benar unauthenticated, redirect keras ke login
         console.log("[OTP] Benar-benar unauthenticated. Mengalihkan ke login...");
         window.location.href = "/login";
       }
@@ -144,8 +143,8 @@ export default function OtpPage() {
             try {
               const data = await res.json();
               if (data.verified) {
-                // Mark device verified via cookie and redirect to main page
-                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
+                // Mark device verified via cookie and redirect to main page (expires in 24 hours to match backend)
+                document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
                 redirectToMain();
               }
             } catch (e) {
@@ -161,8 +160,8 @@ export default function OtpPage() {
   }, [status, session, fingerprint, hasCheckedSession, updateSession, redirectToMain]);
 
   // Send OTP handler
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!session?.accessToken || !fingerprint) return;
 
     if (method === "whatsapp" && (!phoneNumber || phoneNumber.trim() === "")) {
@@ -260,8 +259,8 @@ export default function OtpPage() {
 
       if (res.ok && data.success) {
         setInfoMessage("Verifikasi perangkat berhasil! Mengarahkan Anda...");
-        // Set verify token cookie
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
+        // Set verify token cookie (expires in 24 hours to match backend)
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
         }, 1500);
@@ -288,7 +287,6 @@ export default function OtpPage() {
     setIsTrustingDevice(true);
     setError(null);
 
-    // Ensure we have a valid accessToken before calling the API.
     let currentAccessToken = session?.accessToken;
     if (!currentAccessToken) {
       try {
@@ -305,12 +303,11 @@ export default function OtpPage() {
       return;
     }
 
-    // Step 1: Try WebAuthn Biometrics ONLY if running in a Secure Context (HTTPS / localhost)
+    // WebAuthn Biometrics ONLY if running in a Secure Context (HTTPS / localhost)
     if (typeof window !== "undefined" && window.isSecureContext && navigator.credentials?.create) {
       try {
         const challenge = new Uint8Array(32);
         crypto.getRandomValues(challenge);
-
         const userId = new TextEncoder().encode(session?.user?.email || "user");
 
         await navigator.credentials.create({
@@ -323,11 +320,11 @@ export default function OtpPage() {
               displayName: session?.user?.name || "User",
             },
             pubKeyCredParams: [
-              { alg: -7, type: "public-key" },   // ES256
-              { alg: -257, type: "public-key" },  // RS256
+              { alg: -7, type: "public-key" },
+              { alg: -257, type: "public-key" },
             ],
             authenticatorSelection: {
-              authenticatorAttachment: "platform", // Force Windows Hello / Touch ID
+              authenticatorAttachment: "platform",
               userVerification: "required",
               residentKey: "discouraged",
             },
@@ -335,11 +332,11 @@ export default function OtpPage() {
           },
         });
       } catch (webauthnErr) {
-        console.warn("[WebAuthn] Biometrics skipped/failed (e.g. HTTP connection), proceeding with API device trust:", webauthnErr);
+        console.warn("[WebAuthn] Biometrics skipped/failed, proceeding with API device trust:", webauthnErr);
       }
     }
 
-    // Step 2: Register device trust in backend database via API
+    // Register device trust in backend database via API
     try {
       const res = await fetch("/api/v1/security/device/trust-current", {
         method: "POST",
@@ -368,7 +365,7 @@ export default function OtpPage() {
 
       if (res.ok && data.success) {
         setInfoMessage("Perangkat berhasil dipercayai! Mengarahkan...");
-        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=2592000; SameSite=Lax${getCookieSecureFlag()}`;
+        document.cookie = `device_verified_${fingerprint}=true; path=/; max-age=86400; SameSite=Lax${getCookieSecureFlag()}`;
         setTimeout(() => {
           redirectToMain();
         }, 1200);
@@ -383,20 +380,18 @@ export default function OtpPage() {
     }
   };
 
-  // Otp digit inputs change helper
-  const handleChange = (index: number, value: string) => {
+  const handleDigitChange = (index: number, value: string) => {
     if (isNaN(Number(value))) return;
     const newOtp = [...otp];
     newOtp[index] = value.substring(value.length - 1);
     setOtp(newOtp);
 
-    // Focus next ref
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -420,7 +415,6 @@ export default function OtpPage() {
                   <div className="h-3 bg-muted rounded w-24 mb-1.5" />
                   <div className="h-2 bg-muted rounded w-32" />
                 </div>
-                <div className="h-6 w-16 bg-muted rounded-md" />
               </div>
             </div>
             <div className="h-3 bg-muted rounded w-40 mx-auto mb-4" />
@@ -437,12 +431,10 @@ export default function OtpPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
-      {/* Theme Switcher */}
       <div className="absolute top-4 right-4 z-50">
         <ModeToggle />
       </div>
 
-      {/* Background Gradient */}
       <div className="absolute inset-0 bg-linear-to-br from-background via-muted/20 to-background" />
       <div className="absolute inset-0 opacity-15">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-3xl animate-pulse" />
@@ -465,57 +457,14 @@ export default function OtpPage() {
             </p>
           </div>
 
-          {/* Current Device Banner */}
-          {!sessionReady ? (
-            <div className="rounded-lg bg-muted/50 border border-border p-3 mb-6 animate-pulse">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-muted rounded" />
-                  <div>
-                    <div className="h-3 bg-muted rounded w-24 mb-1.5" />
-                    <div className="h-2 bg-muted rounded w-32" />
-                  </div>
-                </div>
-                <div className="h-6 w-20 bg-muted/40 rounded-md" />
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 border border-border p-3 text-xs text-foreground mb-6 transition-all duration-500 animate-in fade-in">
-              <div className="flex items-center gap-3">
-                <Laptop className="h-5 w-5 text-primary shrink-0" />
-                <div>
-                  <p className="font-semibold text-foreground">Perangkat Saat Ini</p>
-                  <p className="text-[10px] text-muted-foreground">{browser} ({os})</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setInfoMessage(null);
-                  handleTrustDevice();
-                }}
-                disabled={isTrustingDevice}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold border rounded-lg transition-all shrink-0 ${
-                  isTrustingDevice
-                    ? "text-muted-foreground border-border bg-muted/30 cursor-not-allowed"
-                    : "text-primary border-primary/35 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 hover:text-primary"
-                }`}
-              >
-                {isTrustingDevice ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Memverifikasi...
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="h-3.5 w-3.5" />
-                    Percayai Perangkat
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {/* Current Device Banner Component */}
+          <DeviceTrustBanner
+            sessionReady={sessionReady}
+            browser={browser}
+            os={os}
+            isTrustingDevice={isTrustingDevice}
+            onTrustDevice={handleTrustDevice}
+          />
 
           {/* Error and Success Alerts */}
           {error && (
@@ -532,145 +481,37 @@ export default function OtpPage() {
             </div>
           )}
 
-          {/* Verification Method Chooser */}
+          {/* Verification Forms */}
           {!otpSent ? (
-            <form onSubmit={handleSendOtp} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground">Pilih Metode Pengiriman OTP</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { setMethod("email"); setError(null); }}
-                    className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition-all ${
-                      method === "email"
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-muted/40 hover:bg-muted/60 text-muted-foreground"
-                    }`}
-                  >
-                    <Mail className="h-5 w-5 mb-1.5" />
-                    <span className="text-xs font-medium">Kirim ke Email</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setMethod("whatsapp"); setError(null); }}
-                    className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition-all ${
-                      method === "whatsapp"
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-muted/40 hover:bg-muted/60 text-muted-foreground"
-                    }`}
-                  >
-                    <Phone className="h-5 w-5 mb-1.5" />
-                    <span className="text-xs font-medium">Kirim ke WhatsApp</span>
-                  </button>
-                </div>
-              </div>
-
-              {method === "email" && (
-                <div className="rounded-lg bg-muted border border-border p-3.5 text-center">
-                  <p className="text-[10px] text-muted-foreground">KODE AKAN DIKIRIM KE ALAMAT EMAIL TERDAFTAR</p>
-                  <p className="text-xs font-semibold text-foreground mt-1">{session?.user?.email || "Email akun"}</p>
-                </div>
-              )}
-
-              {method === "whatsapp" && (
-                <div className="space-y-2 animate-fadeIn">
-                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    Nomor WhatsApp Anda
-                  </label>
-                  <Input
-                    type="tel"
-                    placeholder="e.g. 08123456789 atau 628123456789"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="h-11 bg-background border-border text-sm focus:border-primary/50 text-foreground"
-                  />
-                  <p className="text-[10px] text-muted-foreground">Masukkan nomor yang aktif untuk menerima OTP.</p>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isSending}
-                className="w-full h-11 bg-linear-to-r from-primary to-primary/80 hover:from-primary/95 text-foreground transition-all shadow-lg"
-              >
-                {isSending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Mengirimkan Kode...
-                  </>
-                ) : (
-                  <>
-                    <KeyRound className="mr-2 h-4 w-4" />
-                    Kirim Kode OTP
-                  </>
-                )}
-              </Button>
-            </form>
+            <MethodSelector
+              method={method}
+              onMethodChange={(m) => {
+                setMethod(m);
+                setError(null);
+              }}
+              phoneNumber={phoneNumber}
+              onPhoneNumberChange={setPhoneNumber}
+              email={session?.user?.email || ""}
+              isSending={isSending}
+              onSubmit={handleSendOtp}
+            />
           ) : (
-            <div className="space-y-6">
-              {/* 6 Digit Input Fields */}
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold text-muted-foreground">Masukkan 6 Digit OTP</label>
-                  {countdown > 0 ? (
-                    <span className="text-[10px] text-muted-foreground">Kirim ulang dalam {countdown}s</span>
-                  ) : (
-                    <button 
-                      onClick={handleSendOtp} 
-                      disabled={isSending}
-                      className="text-[10px] text-primary font-semibold hover:underline"
-                    >
-                      Kirim Ulang OTP
-                    </button>
-                  )}
-                </div>
-                
-                <div className="flex justify-between gap-2.5">
-                  {otp.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      disabled={isVerifying}
-                      ref={(el) => { inputRefs.current[idx] = el; }}
-                      onChange={(e) => handleChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(idx, e)}
-                      className="w-12 h-12 bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg text-center text-xl font-bold text-foreground outline-hidden transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <Button
-                  onClick={handleVerifyOtp}
-                  disabled={isVerifying}
-                  className="w-full h-11 bg-linear-to-r from-primary to-primary/85 hover:from-primary/90 text-foreground transition-all shadow-lg font-semibold"
-                >
-                  {isVerifying ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Memverifikasi...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="mr-2 h-4 w-4" />
-                      Verifikasi & Masuk
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={() => { setOtpSent(false); setError(null); setInfoMessage(null); }}
-                  variant="outline"
-                  className="w-full h-11 border-border bg-muted/30 text-muted-foreground hover:bg-muted/40 text-xs"
-                >
-                  <ArrowLeft className="mr-2 h-3.5 w-3.5" />
-                  Ganti Metode Pengiriman
-                </Button>
-              </div>
-            </div>
+            <OtpInputForm
+              otp={otp}
+              onChangeDigit={handleDigitChange}
+              onKeyDownDigit={handleDigitKeyDown}
+              inputRefs={inputRefs}
+              isVerifying={isVerifying}
+              countdown={countdown}
+              isSending={isSending}
+              onSendOtp={() => handleSendOtp()}
+              onVerifyOtp={handleVerifyOtp}
+              onChangeMethodClick={() => {
+                setOtpSent(false);
+                setError(null);
+                setInfoMessage(null);
+              }}
+            />
           )}
 
           {/* Footer Back Link */}
@@ -685,8 +526,6 @@ export default function OtpPage() {
           </div>
         </div>
       </div>
-
-      {/* WebAuthn verification is handled natively by the browser - no modal needed */}
     </div>
   );
 }
