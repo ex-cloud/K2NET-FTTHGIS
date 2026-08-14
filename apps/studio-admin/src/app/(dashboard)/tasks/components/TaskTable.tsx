@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import {
   ClipboardList,
   Calendar as CalendarIcon,
@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   useReactTable,
@@ -35,9 +36,12 @@ import {
 interface TaskTableProps {
   tasks: Task[];
   loading: boolean;
-  onRowClick: (id: string) => void;
+  loadingMore: boolean;
+  hasMore: boolean;
+  onRowClick: (task: Task) => void;     // now passes full Task object
   onUpdateTask: (id: string, fields: any) => void;
   onDeleteTask: (id: string) => void;
+  onFetchMore: () => void;
   assigneesList: string[];
 }
 
@@ -46,12 +50,42 @@ const columnHelper = createColumnHelper<Task>();
 export function TaskTable({
   tasks,
   loading,
+  loadingMore,
+  hasMore,
   onRowClick,
   onUpdateTask,
   onDeleteTask,
+  onFetchMore,
   assigneesList,
 }: TaskTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  // ── IntersectionObserver for infinite scroll ────────────────────────────────
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          onFetchMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [onFetchMore, hasMore, loadingMore, loading]);
+
+  // ── Columns ────────────────────────────────────────────────────────────────
 
   const columns = React.useMemo(
     () => [
@@ -178,7 +212,7 @@ export function TaskTable({
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto custom-scrollbar">
+                <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto">
                   <DropdownMenuItem
                     onClick={() => onUpdateTask(task.id, { assigneeId: null })}
                     className="text-xs text-muted-foreground italic cursor-pointer"
@@ -205,7 +239,7 @@ export function TaskTable({
         cell: (info) => {
           const task = info.row.original;
           const formattedDate = task.dueDate
-            ? new Date(task.dueDate).toLocaleDateString("id-ID")
+            ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
             : "Set Date";
           return (
             <div onClick={(e) => e.stopPropagation()}>
@@ -254,9 +288,9 @@ export function TaskTable({
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[120px]">
+                <DropdownMenuContent align="end" className="min-w-[130px]">
                   <DropdownMenuItem
-                    onClick={() => onRowClick(task.id)}
+                    onClick={() => onRowClick(task)}
                     className="text-xs font-semibold cursor-pointer flex items-center gap-2"
                   >
                     <Edit className="h-3.5 w-3.5 text-muted-foreground" />
@@ -264,7 +298,7 @@ export function TaskTable({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
-                      if (window.confirm("Apakah Anda yakin ingin menghapus tugas ini?")) {
+                      if (window.confirm("Are you sure you want to delete this task?")) {
                         onDeleteTask(task.id);
                       }
                     }}
@@ -286,22 +320,22 @@ export function TaskTable({
   const table = useReactTable({
     data: tasks,
     columns,
-    state: {
-      sorting,
-    },
+    state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="overflow-x-auto custom-scrollbar-thin">
-      <div className="min-w-[960px] border border-border/40 rounded-xl overflow-hidden bg-card/10 flex flex-col">
-        {/* Table Head */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xs grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
+    <div className="overflow-x-auto">
+      <div className="min-w-[960px] flex flex-col">
+
+        {/* ── Sticky Column Headers ──────────────────────────────────────── */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
           {table.getFlatHeaders().map((header) => {
             if (header.isPlaceholder) return <div key={header.id} />;
-
             const canSort = header.column.getCanSort();
             const isSorted = header.column.getIsSorted();
 
@@ -329,14 +363,14 @@ export function TaskTable({
                     <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
                       <DropdownMenuItem
                         onClick={() => header.column.toggleSorting(false)}
-                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
                       >
                         <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>Sort Ascending</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => header.column.toggleSorting(true)}
-                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground focus:bg-accent focus:text-accent-foreground"
+                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
                       >
                         <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>Sort Descending</span>
@@ -344,58 +378,43 @@ export function TaskTable({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                  <span className="font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</span>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Table Body */}
+        {/* ── Table Body ─────────────────────────────────────────────────── */}
         <div className="divide-y divide-border/40">
           {loading && tasks.length === 0 ? (
-            Array.from({ length: 5 }).map((_, i) => (
+            // Skeleton rows
+            Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={`skeleton-${i}`}
-                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
               >
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-[60%]" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-16" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-12" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-16" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-20" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-20" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-20" />
-                </div>
-                <div className="min-w-0 px-4 py-4 flex items-center justify-center">
-                  <div className="h-3.5 bg-muted/60 rounded w-6" />
-                </div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+                <div className="min-w-0 px-4 py-4 flex items-center justify-center"><div className="h-3.5 bg-muted/60 rounded w-6" /></div>
               </div>
             ))
           ) : tasks.length === 0 ? (
-            <div className="px-4 py-12 text-center flex flex-col items-center gap-3 text-muted-foreground">
-              <ClipboardList className="h-10 w-10 opacity-35" />
-              <p className="text-sm">Belum ada task di tampilan ini.</p>
+            <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
+              <ClipboardList className="h-10 w-10 opacity-30" />
+              <p className="text-sm">No tasks found for this view.</p>
             </div>
           ) : (
             table.getRowModel().rows.map((row) => (
               <div
                 key={row.id}
-                onClick={() => onRowClick(row.original.id)}
-                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/40 divide-x divide-border/30 group bg-card/5"
+                onClick={() => onRowClick(row.original)}
+                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
               >
                 {row.getVisibleCells().map((cell) => (
                   <div
@@ -411,6 +430,24 @@ export function TaskTable({
             ))
           )}
         </div>
+
+        {/* ── Infinite Scroll Sentinel ────────────────────────────────────── */}
+        <div ref={sentinelRef} className="h-1" />
+
+        {/* ── Loading more indicator ─────────────────────────────────────── */}
+        {loadingMore && (
+          <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground border-t border-border/30">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span>Loading more tasks...</span>
+          </div>
+        )}
+
+        {/* ── End of list indicator ──────────────────────────────────────── */}
+        {!hasMore && tasks.length > 0 && !loading && (
+          <div className="flex items-center justify-center py-3 text-[11px] text-muted-foreground/60 border-t border-border/30">
+            <span>All {tasks.length} tasks loaded</span>
+          </div>
+        )}
       </div>
     </div>
   );
