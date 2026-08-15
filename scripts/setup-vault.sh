@@ -40,11 +40,19 @@ upload_nextcloud() {
     -X PUT -H "Content-Type: text/markdown" -T "$local_file" "${BASE_URL}${target_path}" -o /dev/null
 }
 
-# ─── 1. Folder Structure (Scope-Aware) ──────────────────────────────────────
+# ─── 1. Folder Structure (Scope-Aware & AI-First) ───────────────────────────
 echo ""
-echo "Step 1: Creating scope-aware folder structure..."
+echo "Step 1: Creating scope-aware and AI-First folder structure..."
 
 mkdir_nextcloud "$VAULT_DIR"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/skills"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/devops-monitoring"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/ftth-gis-engine"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/backup-disaster-dr"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/task-management"
+mkdir_nextcloud "${VAULT_DIR}/00_AI_Agent/prompts"
+
 mkdir_nextcloud "${VAULT_DIR}/01_Projects"
 mkdir_nextcloud "${VAULT_DIR}/01_Projects/Platform"         # scope=PLATFORM_INTERNAL
 mkdir_nextcloud "${VAULT_DIR}/01_Projects/Tenants"          # scope=TENANT_INTERNAL (per-tenant subfolders)
@@ -53,6 +61,10 @@ mkdir_nextcloud "${VAULT_DIR}/02_Tickets/B2B_Inbox"         # scope=TENANT_TO_PL
 mkdir_nextcloud "${VAULT_DIR}/02_Tickets/DevOps_Internal"   # scope=PLATFORM_INTERNAL (alerts/manual)
 mkdir_nextcloud "${VAULT_DIR}/03_Infrastructure"
 mkdir_nextcloud "${VAULT_DIR}/04_Tenants"
+mkdir_nextcloud "${VAULT_DIR}/05_Documentation"
+mkdir_nextcloud "${VAULT_DIR}/05_Documentation/Architecture"
+mkdir_nextcloud "${VAULT_DIR}/05_Documentation/Server_Plans"
+mkdir_nextcloud "${VAULT_DIR}/05_Documentation/Guides"
 mkdir_nextcloud "${VAULT_DIR}/99_Templates"
 
 echo "  ✅ Folder structure ready."
@@ -333,9 +345,117 @@ create_service_doc "map-gateway" "🗺️ Spatial Map Gateway" "production" "GIS
 create_service_doc "storage-gateway" "📂 Storage Gateway" "production" "Storage Bridge" "Go Microservice (5004)" "http://storage-gateway:5004" "active" "Presigned URL generator, chunked upload orchestrator, and MinIO S3 bridge."
 create_service_doc "prometheus-grafana" "📊 Observability Suite" "production" "Metrics & Monitoring" "Prometheus + Grafana" "100.110.205.109:3002 (Grafana)" "active" "Time-series metrics collection, alertmanager, and infrastructure telemetry dashboards."
 
-# ─── 4. Upload Files ─────────────────────────────────────────────────────────
+# ─── 4. AI Agent Memory & Skills Hub (00_AI_Agent/) ────────────────────────
 echo ""
-echo "Step 3: Uploading dashboard files..."
+echo "Step 3: Generating AI Agent Skills & Memory Hub..."
+
+# 4.1 AGENTS.md (Root memory)
+if [ -f "/opt/project5/AGENTS.md" ]; then
+  upload_nextcloud "${VAULT_DIR}/00_AI_Agent/AGENTS.md" "/opt/project5/AGENTS.md"
+  echo "  🤖 Uploaded 00_AI_Agent/AGENTS.md"
+fi
+
+# 4.2 DevOps Monitoring Skill
+cat > "$TMPDIR_VAULT/skill_devops.md" << 'EOF'
+---
+name: devops-monitoring
+description: Runbook investigasi metrik Prometheus, status gateway Kong, Traefik SSL, dan log Redis telemetry
+---
+
+# 🛠️ DevOps & Observability Runbook
+
+Gunakan skill ini untuk memeriksa kesehatan dan telemetri server K2NET FTTH GIS.
+
+## 📊 Endpoints Observabilitas
+- **Prometheus Scrape**: `http://ftth-prometheus:9090`
+- **OLT Poller Metrics**: `http://ftth-poller:5010/metrics`
+- **Kong Admin API**: `http://kong:8001/status`
+- **Spring Core DevOps API**: `GET /api/v1/system/devops-stats`
+
+## 🚨 Troubleshooting Alerting
+1. Jika Poller lambat: Periksa koneksi Redis key `gateway:poller:stats`.
+2. Jika Traefik SSL expired: Periksa `docker/traefik/acme.json` dan let's encrypt challenge.
+EOF
+upload_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/devops-monitoring/SKILL.md" "$TMPDIR_VAULT/skill_devops.md"
+
+# 4.3 FTTH GIS Engine Skill
+cat > "$TMPDIR_VAULT/skill_gis.md" << 'EOF'
+---
+name: ftth-gis-engine
+description: Panduan query spasial PostGIS, manajemen polygon coverage ODP/OLT, dan vector tiles
+---
+
+# 🗺️ FTTH GIS Spatial Engine Runbook
+
+Gunakan skill ini saat mengelola data spasial kabel fiber optik, ODP, closure, dan pole.
+
+## 📐 Standar Geometri
+- **SRID Baku**: `EPSG:4326` (WGS 84 Lat/Lng)
+- **Indexing**: Spatial GiST Index pada kolom `location_geom`
+- **Vector Tiles**: Map Gateway port `5003` mengompilasi MVT (Mapbox Vector Tiles) dari layer PostgreSQL.
+EOF
+upload_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/ftth-gis-engine/SKILL.md" "$TMPDIR_VAULT/skill_gis.md"
+
+# 4.4 Backup & Disaster Recovery Skill
+cat > "$TMPDIR_VAULT/skill_backup.md" << 'EOF'
+---
+name: backup-disaster-dr
+description: Panduan 3-layer disaster recovery (Local Disk, MinIO S3, Nextcloud WebDAV offsite)
+---
+
+# 💾 3-Layer Disaster Recovery Runbook
+
+Panduan pemulihan sistem dari backup lokal, S3 MinIO, atau cloud Nextcloud.
+
+## 🕒 Jadwal Backup Harian
+- `00:00` — `scripts/backup.sh` (Postgres & Keycloak dumps)
+- `01:00` — `scripts/backup-minio.sh` (MinIO assets archive)
+- `02:00` — `scripts/backup-code.sh` (Codebase archive)
+- `04:00` — `scripts/sync-nextcloud.sh` (Sync rclone ke Nextcloud)
+EOF
+upload_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/backup-disaster-dr/SKILL.md" "$TMPDIR_VAULT/skill_backup.md"
+
+# 4.5 Task Management Skill
+cat > "$TMPDIR_VAULT/skill_tasks.md" << 'EOF'
+---
+name: task-management
+description: Panduan arsitektur Linear (Projects & Plans, Tickets, Sub-issues, Air-Gap isolation)
+---
+
+# 📋 Linear Task Management Runbook
+
+Hierarki sistem task K2NET:
+1. **Projects (Induk Inisiatif)**: Disimpan di `01_Projects/Platform/` atau `01_Projects/Tenants/`.
+2. **Tickets (Anak Tugas)**: Disimpan di `02_Tickets/DevOps_Internal/` atau `02_Tickets/B2B_Inbox/`.
+3. **Sub-issues**: Tugas butir terkecil dalam task dengan dynamic circular progress ratio (`0/1`, `2/2`).
+EOF
+upload_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/task-management/SKILL.md" "$TMPDIR_VAULT/skill_tasks.md"
+
+# ─── 5. Sync Documentation (/opt/project5/docs/ -> 05_Documentation/) ────────
+echo ""
+echo "Step 4: Syncing technical documentation from /opt/project5/docs/..."
+
+for doc in /opt/project5/docs/*.md; do
+  if [ -f "$doc" ]; then
+    fname=$(basename "$doc")
+    upload_nextcloud "${VAULT_DIR}/05_Documentation/${fname}" "$doc"
+    echo "  📄 Synced docs: ${fname}"
+  fi
+done
+
+# Sync server recommendation plans if any
+if [ -d "/opt/project5/docs/Server" ]; then
+  for doc in /opt/project5/docs/Server/*.md; do
+    if [ -f "$doc" ]; then
+      fname=$(basename "$doc")
+      upload_nextcloud "${VAULT_DIR}/05_Documentation/Server_Plans/${fname}" "$doc"
+    fi
+  done
+fi
+
+# ─── 6. Upload Dashboards ───────────────────────────────────────────────────
+echo ""
+echo "Step 5: Uploading dashboard files..."
 
 upload_nextcloud "${VAULT_DIR}/📌 Project Dashboard.md" "$TMPDIR_VAULT/project_dashboard.md"
 upload_nextcloud "${VAULT_DIR}/📌 Ticket Dashboard.md" "$TMPDIR_VAULT/ticket_dashboard.md"
@@ -343,16 +463,19 @@ upload_nextcloud "${VAULT_DIR}/📌 Infrastructure Map.md" "$TMPDIR_VAULT/infras
 upload_nextcloud "${VAULT_DIR}/🧭 Scope Architecture Guide.md" "$TMPDIR_VAULT/scope_guide.md"
 
 echo ""
-echo "=== Nextcloud Vault Update v1.3 Completed Successfully ==="
+echo "=== Nextcloud Vault Update v1.4 (AI-First & Full Docs) Completed Successfully ==="
 echo ""
-echo "📁 New folder structure:"
+echo "📁 Vault Structure:"
+echo "  ✅ 00_AI_Agent/skills/        ← 4 AI Skills (DevOps, GIS, Backup, Tasks) + AGENTS.md"
 echo "  ✅ 01_Projects/Platform/      ← scope=PLATFORM_INTERNAL projects"
 echo "  ✅ 01_Projects/Tenants/       ← scope=TENANT_INTERNAL projects (per ISP)"
 echo "  ✅ 02_Tickets/B2B_Inbox/      ← scope=TENANT_TO_PLATFORM tickets"
 echo "  ✅ 02_Tickets/DevOps_Internal/ ← scope=PLATFORM_INTERNAL tickets"
+echo "  ✅ 03_Infrastructure/         ← 13 Microservices markdown docs"
+echo "  ✅ 05_Documentation/          ← /opt/project5/docs/ technical docs"
 echo ""
-echo "📄 Updated files:"
-echo "  ✅ 📌 Project Dashboard.md (scope-aware Dataview query)"
-echo "  ✅ 📌 Ticket Dashboard.md  (B2B Inbox + DevOps Internal split)"
+echo "📄 Dashboards:"
+echo "  ✅ 📌 Project Dashboard.md"
+echo "  ✅ 📌 Ticket Dashboard.md"
 echo "  ✅ 📌 Infrastructure Map.md"
-echo "  ✅ 🧭 Scope Architecture Guide.md (NEW — explains Air-Gap logic)"
+echo "  ✅ 🧭 Scope Architecture Guide.md"
