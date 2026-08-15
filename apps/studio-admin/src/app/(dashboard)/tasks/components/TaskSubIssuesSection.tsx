@@ -25,6 +25,47 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import { cn } from "@/lib/utils";
 
+// ─── Linear-style SVG Progress Circle Component ──────────────────────────────
+function LinearProgressCircle({ completed, total }: { completed: number; total: number }) {
+  if (total === 0) return null;
+  const percentage = Math.min(100, Math.round((completed / total) * 100));
+  const radius = 4.5;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const isComplete = completed === total && total > 0;
+
+  return (
+    <svg className="w-3.5 h-3.5 -rotate-90 shrink-0" viewBox="0 0 12 12">
+      {/* Background ring */}
+      <circle
+        cx="6"
+        cy="6"
+        r={radius}
+        className="stroke-muted-foreground/30 fill-none"
+        strokeWidth="1.5"
+      />
+      {/* Progress ring */}
+      <circle
+        cx="6"
+        cy="6"
+        r={radius}
+        className={cn(
+          "fill-none transition-all duration-300",
+          isComplete
+            ? "stroke-green-500"
+            : percentage > 0
+            ? "stroke-primary"
+            : "stroke-transparent"
+        )}
+        strokeWidth="1.5"
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 interface TaskSubIssuesSectionProps {
   parentTask: Task;
   onCountChange?: (count: number) => void;
@@ -81,11 +122,12 @@ export function TaskSubIssuesSection({
     }
   }, [isAdding]);
 
-  // Count resolved
+  // Dynamic Count: instantly recalculates when any sub-issue status changes
   const resolvedCount = subIssues.filter(
     (t) => t.status === "RESOLVED" || t.status === "CLOSED"
   ).length;
   const totalCount = subIssues.length;
+  const isAllComplete = resolvedCount === totalCount && totalCount > 0;
 
   // Handle create sub-issue
   const handleCreateSubIssue = async () => {
@@ -129,10 +171,18 @@ export function TaskSubIssuesSection({
     }
   };
 
-  // Handle quick update status of a sub-issue
+  // Handle quick update status of a sub-issue with instant optimistic UI update
   const handleToggleStatus = async (sub: Task) => {
     const nextStatus =
       sub.status === "RESOLVED" || sub.status === "CLOSED" ? "TODO" : "RESOLVED";
+
+    // Optimistic UI update — updates counter and progress ring immediately
+    setSubIssues((prev) =>
+      prev.map((item) =>
+        item.id === sub.id ? { ...item, status: nextStatus } : item
+      )
+    );
+
     try {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(`${baseUrl}/tasks/${sub.id}`, {
@@ -141,15 +191,11 @@ export function TaskSubIssuesSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
       });
-      if (res.ok) {
-        setSubIssues((prev) =>
-          prev.map((item) =>
-            item.id === sub.id ? { ...item, status: nextStatus } : item
-          )
-        );
+      if (!res.ok) {
+        fetchSubIssues();
       }
     } catch {
-      // ignore
+      fetchSubIssues();
     }
   };
 
@@ -208,17 +254,19 @@ export function TaskSubIssuesSection({
           )}
           <span>Sub-issues</span>
 
-          {/* Linear Progress Counter e.g. 0/1 */}
-          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground/80 bg-muted/40 px-1.5 py-0.5 rounded ml-1">
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                resolvedCount === totalCount && totalCount > 0
-                  ? "bg-green-500"
-                  : "bg-muted-foreground/50"
-              )}
-            />
-            {resolvedCount}/{totalCount}
+          {/* Dynamic Linear Progress Ring & Counter */}
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-full ml-1 transition-colors",
+              isAllComplete
+                ? "bg-green-500/10 text-green-500 font-semibold"
+                : "bg-muted/50 text-muted-foreground"
+            )}
+          >
+            <LinearProgressCircle completed={resolvedCount} total={totalCount} />
+            <span>
+              {resolvedCount}/{totalCount}
+            </span>
           </span>
         </button>
 
