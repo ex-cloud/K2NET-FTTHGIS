@@ -7,8 +7,6 @@ import {
   ChevronLeft,
   Loader2,
   ExternalLink,
-  FolderOpen,
-  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskComment } from "@/hooks/useTasksQuery";
@@ -18,7 +16,7 @@ import { ScopeBadge } from "../components/ScopeBadge";
 import { TaskEmojiPicker } from "../components/TaskEmojiPicker";
 import { TaskCommentsSection } from "../components/TaskCommentsSection";
 import { TaskPropertiesPanel } from "../components/TaskPropertiesPanel";
-import { NewTaskDialog } from "../components/NewTaskDialog";
+import { TaskSubIssuesSection } from "../components/TaskSubIssuesSection";
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,9 +38,6 @@ export default function TaskDetailPage() {
 
   // Comments
   const [comments, setComments] = useState<TaskComment[]>([]);
-
-  // Sub-issues dialog
-  const [subIssueDialogOpen, setSubIssueDialogOpen] = useState(false);
 
   // Auto-save debounce ref
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
@@ -231,27 +226,8 @@ export default function TaskDetailPage() {
                 />
               </div>
 
-              {/* Sub-issues Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                  <h3 className="text-sm font-semibold text-foreground">Sub-issues</h3>
-                </div>
-                <div className="border border-border/50 rounded-xl overflow-hidden bg-card/30">
-                  <div className="px-4 py-6 text-center text-sm text-muted-foreground/60">
-                    Belum ada sub-issues untuk task ini.
-                  </div>
-                  <div className="border-t border-border/50">
-                    <button
-                      onClick={() => setSubIssueDialogOpen(true)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add sub-issue
-                    </button>
-                  </div>
-                </div>
-              </div>
+              {/* Sub-issues Section (Linear-style Inline Accordion) */}
+              <TaskSubIssuesSection parentTask={task} />
 
               {/* Activity & Comments (Modular Component) */}
               <TaskCommentsSection
@@ -276,19 +252,6 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Sub-issue creation dialog */}
-      <NewTaskDialog
-        open={subIssueDialogOpen}
-        onOpenChange={setSubIssueDialogOpen}
-        onSuccess={refresh}
-        defaultValues={{
-          title: `[Sub] ${task.title}`,
-          scope: task.scope,
-          type: task.type,
-          project: task.obsidianRef,
-        }}
-      />
     </>
   );
 }

@@ -122,6 +122,18 @@ public class TaskController {
         return ResponseEntity.ok(taskService.findById(id));
     }
 
+    // ─── Get sub-tasks of a task ────────────────────────────────────────────────
+
+    @GetMapping("/{id}/subtasks")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<Task>> getSubTasks(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id
+    ) {
+        applyTenantFilter(jwt);
+        return ResponseEntity.ok(taskService.findSubTasks(id));
+    }
+
     // ─── Overview KPI summary ───────────────────────────────────────────────────
 
     @GetMapping("/summary")

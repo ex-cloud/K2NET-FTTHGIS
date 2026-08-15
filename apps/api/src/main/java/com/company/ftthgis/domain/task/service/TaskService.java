@@ -268,6 +268,11 @@ public class TaskService {
         return commentRepository.save(comment);
     }
 
+    @Transactional(readOnly = true)
+    public List<Task> findSubTasks(UUID parentTaskId) {
+        return taskRepository.findByParentTaskId(parentTaskId);
+    }
+
     // ─── Hibernate Filter management ────────────────────────────────────────────
 
     /**

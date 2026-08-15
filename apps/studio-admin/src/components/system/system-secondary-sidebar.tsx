@@ -44,6 +44,7 @@ import {
   Plus,
   FolderKanban,
   Cpu,
+  Building2,
 } from "lucide-react";
 import {
   Collapsible,
@@ -92,6 +93,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Plus,
   FolderKanban,
   Cpu,
+  Building2,
 };
 
 export function SystemSecondarySidebar() {

@@ -56,5 +56,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     /** Filter tasks matching any of the given scopes — used by studio-admin combined view. */
     Page<Task> findByScopeIn(List<TaskScope> scopes, Pageable pageable);
+
+    /** Find all sub-tasks belonging to a parent task. */
+    List<Task> findByParentTaskId(UUID parentTaskId);
 }
 

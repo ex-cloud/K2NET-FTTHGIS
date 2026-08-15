@@ -94,6 +94,7 @@ export default function TasksPage() {
   const quickParam = (searchParams.get("quick") ?? "all") as QuickView;
   const scopeParam = searchParams.get("scope") as TaskScope | null;
   const projectParam = searchParams.get("project");
+  const typeParam = searchParams.get("type");
 
   // Dialog / panel state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -172,17 +173,18 @@ export default function TasksPage() {
     if (filters.priority.length > 0) result = result.filter((t) => filters.priority.includes(t.priority));
     if (filters.scope.length > 0) result = result.filter((t) => filters.scope.includes(t.scope));
     if (filters.assigneeId) result = result.filter((t) => t.assigneeId === filters.assigneeId);
+    if (typeParam) result = result.filter((t) => t.type === typeParam);
     if (projectParam) {
       result = result.filter(
         (t) =>
           t.obsidianRef === projectParam ||
           t.title.toLowerCase().includes(projectParam.toLowerCase()) ||
-          (t.type === "PROJECT" && projectParam === "Rancang Bangun FTTH Garut")
+          t.title === projectParam
       );
     }
 
     return result;
-  }, [tasks, quickParam, filters, searchQuery, userId, projectParam]);
+  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, typeParam]);
 
   // Local optimistic state for Kanban
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
@@ -402,12 +404,22 @@ export default function TasksPage() {
             />
 
             {/* Active quick-filter or project chip */}
-            {(quickParam !== "all" || projectParam) && (
+            {(quickParam !== "all" || projectParam || typeParam || (scopeParam && scopeParam !== "PLATFORM_INTERNAL")) && (
               <div className="px-4 py-2 flex items-center gap-2 border-b border-border/40 bg-background/30 shrink-0">
                 <span className="text-xs text-muted-foreground">Showing:</span>
                 {quickParam !== "all" && (
                   <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                     {VIEW_LABELS[quickParam]}
+                  </span>
+                )}
+                {typeParam === "PROJECT" && (
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    Projects & Plans
+                  </span>
+                )}
+                {scopeParam === "TENANT_TO_PLATFORM" && (
+                  <span className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full">
+                    B2B Mitra Tickets
                   </span>
                 )}
                 {projectParam && (

@@ -150,11 +150,11 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     title: "Tasks & Tickets",
     sections: [
       {
-        title: "Personal",
+        title: "Workspace",
         items: [
-          { title: "My Issues", url: "/tasks?quick=my-issues", icon: "ClipboardList" },
-          { title: "Created by Me", url: "/tasks?quick=created-by-me", icon: "Cpu" },
-          { title: "B2B Inbox", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Inbox" },
+          { title: "Projects & Plans", url: "/tasks?scope=PLATFORM_INTERNAL&type=PROJECT", icon: "FolderKanban" },
+          { title: "Internal Tasks", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
+          { title: "B2B Mitra Tickets", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2" },
         ],
       },
       {
@@ -169,10 +169,10 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         ],
       },
       {
-        title: "Scope",
+        title: "Personal",
         items: [
-          { title: "Internal K2NET", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
-          { title: "B2B Inbox", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Globe" },
+          { title: "My Issues", url: "/tasks?quick=my-issues", icon: "ClipboardList" },
+          { title: "Created by Me", url: "/tasks?quick=created-by-me", icon: "Cpu" },
         ],
       },
     ],
