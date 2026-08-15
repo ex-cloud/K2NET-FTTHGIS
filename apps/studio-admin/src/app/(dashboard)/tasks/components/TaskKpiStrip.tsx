@@ -5,7 +5,6 @@ import {
   ClipboardList,
   AlertCircle,
   CheckCircle2,
-  Activity,
 } from "lucide-react";
 import { Card } from "@k2net/ui";
 import { useTaskSummary } from "@/hooks/useTaskSummary";

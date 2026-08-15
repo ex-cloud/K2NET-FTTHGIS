@@ -21,18 +21,25 @@ interface TaskCommentsSectionProps {
   onCommentAdded?: (comment: TaskComment) => void;
 }
 
+function formatCommentDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("id-ID", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "recent";
+  }
+}
+
 function CommentItem({ comment }: { comment: TaskComment }) {
   const initials = comment.authorId
     ? comment.authorId.substring(0, 2).toUpperCase()
     : "AN";
-  const timeAgo = (() => {
-    const diff = Date.now() - new Date(comment.createdAt).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  })();
+  const timeFormatted = formatCommentDate(comment.createdAt);
 
   return (
     <div className="flex gap-3">
@@ -42,7 +49,7 @@ function CommentItem({ comment }: { comment: TaskComment }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-semibold text-foreground">{comment.authorId?.split("@")[0] ?? "User"}</span>
-          <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
+          <span className="text-[10px] text-muted-foreground">{timeFormatted}</span>
         </div>
         <div className="text-sm text-foreground/85 bg-card border border-border/50 rounded-xl px-3.5 py-2.5 whitespace-pre-wrap leading-relaxed">
           {comment.content}

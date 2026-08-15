@@ -31,7 +31,7 @@ export default function SecurityCompliancePage() {
   const [showToken, setShowToken] = useState<boolean>(false);
 
   // Sync state from settings when loaded
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (settings && settings.length > 0) {
       const timeoutSetting = settings.find(s => s.key === "session_idle_timeout");
@@ -53,7 +53,7 @@ export default function SecurityCompliancePage() {
       if (waTokenSetting) setWaToken(waTokenSetting.value || "");
     }
   }, [settings]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const handleSaveCompliance = async () => {
     try {

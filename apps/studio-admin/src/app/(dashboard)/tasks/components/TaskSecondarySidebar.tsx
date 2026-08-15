@@ -4,22 +4,13 @@ import React, { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
-  LayoutGrid,
   BarChart3,
   Flag,
   Users,
-  Globe,
   BookOpen,
   RefreshCw,
   Loader2,
   FolderKanban,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Layers,
-  Sparkles,
-  Inbox,
-  User,
   Shield,
   Building2,
   FolderOpen,
@@ -113,7 +104,7 @@ function MiniProgressBar({
 export function TaskSecondarySidebar({
   tasks,
   obsidianStatus = "connected",
-  lastSyncTime,
+  lastSyncTime = "Realtime",
   onSelectProject,
 }: TaskSecondarySidebarProps) {
   const router = useRouter();
@@ -121,7 +112,6 @@ export function TaskSecondarySidebar({
   const [isSyncing, setIsSyncing] = useState(false);
 
   const currentScope = searchParams.get("scope");
-  const currentQuick = searchParams.get("quick") ?? "all";
 
   // ── Project Breakdown (100% Dynamic from tasks in database) ─────────────────
 
@@ -295,7 +285,6 @@ export function TaskSecondarySidebar({
         <div className="space-y-0.5 pt-1">
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
             const count = derived.statusMap[key] ?? 0;
-            const Icon = cfg.icon;
             return (
               <MiniProgressBar
                 key={key}
@@ -355,15 +344,18 @@ export function TaskSecondarySidebar({
             <BookOpen className="h-4 w-4 text-purple-400" />
             <span className="text-xs font-bold text-foreground">Obsidian Vault</span>
           </div>
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full capitalize">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            Connected
+            {obsidianStatus}
           </span>
         </div>
 
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           Projek internal disinkronkan secara otomatis ke <code className="text-primary font-mono text-[10px]">K2NET_Engineering_Vault</code>.
         </p>
+        {lastSyncTime && (
+          <p className="text-[10px] text-muted-foreground/60">Last sync: {lastSyncTime}</p>
+        )}
 
         <button
           onClick={handleSyncObsidian}

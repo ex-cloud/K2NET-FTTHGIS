@@ -78,9 +78,15 @@ func main() {
 				bucket = c.DefaultQuery("bucket", "")
 			}
 
+			// Baca folder/prefix dinamis (e.g. "tasks/attachments", "tenants/isp-a/tasks")
+			folder := c.DefaultPostForm("folder", "")
+			if folder == "" {
+				folder = c.DefaultQuery("folder", "")
+			}
+
 			contentType := header.Header.Get("Content-Type")
 
-			url, err := storageService.UploadFile(c.Request.Context(), file, header.Filename, header.Size, contentType, bucket)
+			url, err := storageService.UploadFile(c.Request.Context(), file, header.Filename, header.Size, contentType, bucket, folder)
 			if err != nil {
 				logger.Error(c.Request.Context(), "File upload failed", zap.Error(err), zap.String("filename", header.Filename))
 				audit.LogError(c.Request.Context(),

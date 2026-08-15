@@ -26,7 +26,7 @@ export default function PasswordPolicyPage() {
   const [expiryDays, setExpiryDays] = useState<number>(90);
 
   // Sync state from settings when loaded
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (settings && settings.length > 0) {
       const minLenSetting = settings.find(s => s.key === "password_min_length");
@@ -44,7 +44,7 @@ export default function PasswordPolicyPage() {
       if (expirySetting) setExpiryDays(parseInt(expirySetting.value) || 90);
     }
   }, [settings]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const handleSavePolicies = async () => {
     try {

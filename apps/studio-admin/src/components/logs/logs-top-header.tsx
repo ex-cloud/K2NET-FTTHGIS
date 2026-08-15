@@ -75,7 +75,7 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
     }
   // columnVisibility intentionally excluded: prop change causes parent re-render
   // which re-renders ColumnPicker; only recompute coords on mount / anchor change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [anchorRef]);
 
   React.useEffect(() => {

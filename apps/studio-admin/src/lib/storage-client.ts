@@ -8,22 +8,32 @@ export interface UploadResult {
   compressed?: boolean;
 }
 
+export interface UploadAttachmentOptions {
+  bucket?: string;
+  folder?: string;
+}
+
 /**
  * Uploads an image or document to MinIO S3 via the Go storage-gateway.
  * Images are automatically compressed to WebP by the gateway before persistence.
  *
  * @param file - The browser File object to upload
  * @param token - Keycloak JWT access token
- * @param bucket - Target S3 bucket (defaults to 'task-attachments')
+ * @param bucket - Target S3 bucket (defaults to 'public-contents', supports 'tenant-assets')
+ * @param folder - Target virtual subfolder (defaults to 'tasks/attachments')
  */
 export async function uploadTaskAttachment(
   file: File,
   token?: string,
-  bucket = "task-attachments"
+  bucket = "public-contents",
+  folder = "tasks/attachments"
 ): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("bucket", bucket);
+  if (folder) {
+    formData.append("folder", folder);
+  }
 
   const baseUrl = getBackendBaseUrl();
   const res = await httpClient(`${baseUrl}/upload`, {

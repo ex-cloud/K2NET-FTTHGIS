@@ -259,7 +259,11 @@ export default function TasksPage() {
 
   const handleViewModeChange = (mode: "list" | "kanban" | "timeline") => {
     const params = new URLSearchParams(searchParams.toString());
-    mode === "list" ? params.delete("view") : params.set("view", mode);
+    if (mode === "list") {
+      params.delete("view");
+    } else {
+      params.set("view", mode);
+    }
     router.push(`/tasks?${params.toString()}`);
   };
 

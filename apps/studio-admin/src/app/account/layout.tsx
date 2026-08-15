@@ -22,7 +22,7 @@ export default function AccountLayout({
   const [subdomain, setSubdomain] = useState("");
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setMounted(true);
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;

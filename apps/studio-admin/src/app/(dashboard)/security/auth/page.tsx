@@ -53,7 +53,7 @@ export default function SystemAuthPage() {
 
   // Reset page when sessions count changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset pagination when data changes
+     
     setCurrentPage(1);
   }, [sessions.length]);
 
@@ -68,7 +68,7 @@ export default function SystemAuthPage() {
   const [clientSecretInput, setClientSecretInput] = useState("");
 
   // Sync state when data is loaded
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (realmConfig) {
       setRegAllowed(realmConfig.registrationAllowed);
@@ -76,7 +76,7 @@ export default function SystemAuthPage() {
       setResetAllowed(realmConfig.resetPasswordAllowed);
     }
   }, [realmConfig]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const handleSaveRealmConfig = async () => {
     try {

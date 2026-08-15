@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   ExternalLink,
@@ -14,7 +14,6 @@ import {
   SheetClose,
 } from "@k2net/ui";
 import { type Task, type TaskComment } from "@/hooks/useTasksQuery";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ScopeBadge } from "./ScopeBadge";
 import { TaskEmojiPicker } from "./TaskEmojiPicker";
@@ -37,7 +36,7 @@ export function TaskDetailSheet({
   open,
   onOpenChange,
   onSave,
-  onDelete,
+  onDelete: _onDelete,
   assigneesList = [],
 }: TaskDetailSheetProps) {
   // Local edit states

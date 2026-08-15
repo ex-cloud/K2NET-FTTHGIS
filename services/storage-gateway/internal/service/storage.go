@@ -73,7 +73,7 @@ func NewStorageService(cfg config.Config) *StorageService {
 	}
 }
 
-func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filename string, size int64, mimeType string, targetBucket string) (string, error) {
+func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filename string, size int64, mimeType string, targetBucket string, folder string) (string, error) {
 	statsMutex.Lock()
 	stats, _ := s.readStats()
 	stats.TotalFiles++
@@ -167,6 +167,14 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 		}
 		// Gunakan nama file asli yang aman dengan timestamp
 		finalKey = fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(filename))
+	}
+
+	// Jika subfolder ditentukan (misal: "tasks/attachments", "tenants/isp-a/tasks"), bersihkan dan tambahkan prefix
+	if folder != "" {
+		cleanedFolder := strings.Trim(filepath.ToSlash(folder), "/")
+		if cleanedFolder != "" {
+			finalKey = cleanedFolder + "/" + finalKey
+		}
 	}
 
 	if s.localStore {

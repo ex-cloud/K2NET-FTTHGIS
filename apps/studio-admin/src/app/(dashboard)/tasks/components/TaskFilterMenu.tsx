@@ -5,8 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@k2net/ui";
 import { Filter, Check, Search, X } from "lucide-react";

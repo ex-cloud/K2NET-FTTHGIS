@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   Switch,
 } from "@k2net/ui";

@@ -95,7 +95,8 @@ export function TaskLabelPicker({
   };
 
   const handleSelectColorAndFinishLabel = (colorItem: typeof LABEL_COLORS[0]) => {
-    const id = newLabelDraft.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || `lbl-${Date.now()}`;
+    const rawSlug = newLabelDraft.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const id = rawSlug || "custom-label";
     const newLbl: TaskLabel = {
       id,
       name: newLabelDraft.name,
@@ -206,7 +207,7 @@ export function TaskLabelPicker({
                   className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-semibold text-left transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">Create new label: "{labelSearch.trim()}"</span>
+                  <span className="truncate">Create new label: &ldquo;{labelSearch.trim()}&rdquo;</span>
                 </button>
               </div>
             )}
