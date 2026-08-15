@@ -105,7 +105,7 @@ fi
 # 1e. Truncate file log container Docker yang membengkak (> 10MB)
 log "🗑️  Memeriksa log container Docker yang membengkak (>10MB)..."
 LARGE_LOGS=$(find /var/lib/docker/containers -name "*-json.log" -size +10M 2>/dev/null || true)
-LARGE_LOG_COUNT=$(echo "$LARGE_LOGS" | grep -v '^$' | wc -l | tr -d ' ')
+LARGE_LOG_COUNT=$(echo "$LARGE_LOGS" | (grep -v '^$' || true) | wc -l | tr -d ' ')
 LARGE_LOG_COUNT=${LARGE_LOG_COUNT:-0}
 log "   Ditemukan $LARGE_LOG_COUNT container log file > 10MB"
 if [ "$DRY_RUN" = false ] && [ "$LARGE_LOG_COUNT" -gt 0 ]; then
