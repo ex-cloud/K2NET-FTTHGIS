@@ -176,23 +176,33 @@ export function SystemSecondarySidebar() {
                         const pathMatch =
                           pathname === itemPath ||
                           pathname === `/system${itemPath}`;
+                        const itemKeys = Array.from(itemParams.keys());
+                        const searchKeys = Array.from(searchParams.keys());
                         isActive =
                           pathMatch &&
-                          Array.from(itemParams.entries()).every(
-                            ([k, v]) => searchParams.get(k) === v
-                          );
+                          itemKeys.every((k) => searchParams.get(k) === itemParams.get(k)) &&
+                          searchKeys.every((k) => itemParams.get(k) === searchParams.get(k));
                       } else {
-                        // No query params: only active if we're on this exact path
-                        // AND no task-specific filter params are active
+                        // No query params: active if on exact path or child route (e.g. /tasks/projects)
+                        const isProjectsRoute =
+                          item.url === "/tasks/projects" &&
+                          (pathname.startsWith("/tasks/projects") ||
+                            pathname.startsWith("/system/tasks/projects"));
                         const pathMatch =
                           pathname === item.url ||
-                          pathname === `/system${item.url}`;
+                          pathname === `/system${item.url}` ||
+                          isProjectsRoute;
                         const hasTaskFilter =
-                          searchParams.has("quick") || searchParams.has("scope");
-                        // For /tasks (All Issues), only active when no filters applied
+                          searchParams.has("quick") ||
+                          searchParams.has("scope") ||
+                          searchParams.has("type") ||
+                          searchParams.has("project");
+                        // For /tasks (All Issues), only active when on exact /tasks and no query filters applied
                         isActive =
                           pathMatch &&
-                          (item.url.startsWith("/tasks") ? !hasTaskFilter : true);
+                          (item.url === "/tasks"
+                            ? !hasTaskFilter && (pathname === "/tasks" || pathname === "/system/tasks")
+                            : true);
                       }
                       const Icon = ICON_MAP[item.icon] || FileText;
                       return (

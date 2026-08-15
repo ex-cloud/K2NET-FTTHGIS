@@ -152,7 +152,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       {
         title: "Workspace",
         items: [
-          { title: "Projects & Plans", url: "/tasks?scope=PLATFORM_INTERNAL&type=PROJECT", icon: "FolderKanban" },
+          { title: "Projects & Plans", url: "/tasks/projects", icon: "FolderKanban" },
           { title: "Internal Tasks", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
           { title: "B2B Mitra Tickets", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2" },
         ],

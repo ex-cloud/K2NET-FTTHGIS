@@ -133,34 +133,42 @@ export default function TaskDetailPage() {
   return (
     <>
       <div className="relative flex flex-col w-full h-full bg-background overflow-hidden">
-
-        {/* ── Top Bar ─────────────────────────────────────────────────── */}
+        {/* ── Top Bar with Linear Breadcrumbs ─────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-border/60 bg-background/95 backdrop-blur-sm shrink-0">
-          <button
-            onClick={() => router.push("/tasks")}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Tasks & Tickets
-          </button>
-
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="font-mono bg-muted px-2 py-0.5 rounded">{task.type}</span>
-            {task.obsidianRef && (
-              <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">{task.obsidianRef}</span>
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => router.push(task.type === "PROJECT" ? "/tasks/projects" : "/tasks")}
+              className="text-muted-foreground hover:text-foreground font-medium transition-colors flex items-center gap-1"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>{task.type === "PROJECT" ? "Projects" : "Tasks & Tickets"}</span>
+            </button>
+            <span className="text-muted-foreground/50">›</span>
+            {task.obsidianRef ? (
+              <span className="text-foreground/80 font-medium font-mono">
+                {task.obsidianRef}
+              </span>
+            ) : (
+              <span className="text-foreground/80 font-medium">
+                {task.scope === "PLATFORM_INTERNAL" ? "Internal K2NET" : "B2B Mitra"}
+              </span>
             )}
+            <span className="text-muted-foreground/50">›</span>
+            <span className="font-semibold text-foreground truncate max-w-[220px]">
+              {task.title}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
             <ScopeBadge scope={task.scope} />
             {saving && (
-              <span className="flex items-center gap-1 text-muted-foreground/60">
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
                 <Loader2 className="h-3 w-3 animate-spin" /> Saving...
               </span>
             )}
             {isDirty && !saving && (
               <span className="text-amber-500 text-[10px]">● Unsaved</span>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
             {task.obsidianRef && (
               <a
                 href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${task.obsidianRef}`}

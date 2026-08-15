@@ -287,12 +287,17 @@ export default function TasksPage() {
 
   // ── Labels ─────────────────────────────────────────────────────────────────
 
-  const pageTitle = VIEW_LABELS[quickParam] ?? "Tasks & Tickets";
+  const pageTitle =
+    scopeParam === "PLATFORM_INTERNAL" && quickParam === "all"
+      ? "Internal Tasks"
+      : scopeParam === "TENANT_TO_PLATFORM" && quickParam === "all"
+      ? "B2B Mitra Tickets"
+      : VIEW_LABELS[quickParam] ?? "Tasks & Tickets";
   const scopeDescription =
     scopeParam === "PLATFORM_INTERNAL"
-      ? "Platform & DevOps projects"
+      ? "Platform & DevOps internal engineering tasks"
       : scopeParam === "TENANT_TO_PLATFORM"
-      ? "Incoming B2B partner tickets"
+      ? "Incoming B2B partner support tickets"
       : "Internal + B2B Inbox";
 
   // ── Render ──────────────────────────────────────────────────────────────────

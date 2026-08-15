@@ -192,7 +192,7 @@ SORT length(rows) DESC
 ```
 MDEOF
 
-# Infrastructure Map (unchanged)
+# Infrastructure Map (Rich Badges)
 cat > "$TMPDIR_VAULT/infrastructure_map.md" << 'MDEOF'
 # 🏗️ K2NET — Infrastructure Service Map
 
@@ -200,11 +200,12 @@ cat > "$TMPDIR_VAULT/infrastructure_map.md" << 'MDEOF'
 
 ```dataview
 TABLE WITHOUT ID
-  file.name AS "Service",
-  environment AS "Environment",
+  file.link AS "Service",
+  choice(environment = "production", "🔵 production", choice(environment = "staging", "🟡 staging", "🟣 testing")) AS "Environment",
   infrastructure_type AS "Tipe",
+  platform AS "Platform",
   ip_addresses AS "IP / Port",
-  status AS "Status"
+  choice(status = "active", "🟢 active", choice(status = "degraded", "🟡 degraded", "🔴 offline")) AS "Status"
 FROM "03_Infrastructure"
 SORT file.name ASC
 ```
@@ -275,9 +276,66 @@ yang mengharuskan NOC membuat tiket B2B baru secara sadar dan manual.
 - **Alasan SSE**: komunikasi one-way (server → client), konsisten dengan Live Audit Log Feed
 MDEOF
 
-# ─── 3. Upload Files ─────────────────────────────────────────────────────────
+# ─── 3. Infrastructure Service Definition Generator ────────────────────────
 echo ""
-echo "Step 2: Uploading dashboard files..."
+echo "Step 2: Generating infrastructure service definitions..."
+
+create_service_doc() {
+  local filename=$1
+  local name=$2
+  local env=$3
+  local type=$4
+  local platform=$5
+  local ipport=$6
+  local status=$7
+  local desc=$8
+
+  cat > "$TMPDIR_VAULT/${filename}.md" << EOF
+---
+environment: $env
+infrastructure_type: $type
+platform: $platform
+ip_addresses: "$ipport"
+status: $status
+---
+
+# $name
+
+> **Environment**: \`$env\` | **Type**: \`$type\` | **Platform**: \`$platform\` | **Status**: \`$status\`
+
+$desc
+
+---
+
+## 🔌 Connection & Endpoints
+- **Host / Port**: \`$ipport\`
+- **Platform Hostname**: \`http://${filename}:...\`
+
+## 🔗 Related Components
+- [[📌 Infrastructure Map|Infrastructure Map]]
+- [[📌 Project Dashboard|Platform Engineering Projects]]
+EOF
+
+  upload_nextcloud "${VAULT_DIR}/03_Infrastructure/${filename}.md" "$TMPDIR_VAULT/${filename}.md"
+}
+
+create_service_doc "kong-gateway" "🚪 Kong API Gateway" "production" "API Gateway" "Docker (Kong DB-less)" "172.18.0.x:8000 / 8001" "active" "External edge router, rate limiting, and Keycloak JWT validation proxy."
+create_service_doc "traefik-proxy" "🌐 Traefik Edge Reverse Proxy" "production" "Edge Reverse Proxy" "Docker Container" "172.18.0.x:80 / 443" "active" "SSL Termination, Let's Encrypt automated certificates, and dynamic domain routing."
+create_service_doc "keycloak-iam" "🔐 Keycloak Identity & Access Management" "production" "IAM / OAuth2" "Docker (Keycloak 26)" "http://keycloak:8081" "active" "Single Sign-On (SSO), RBAC permissions, and realm authentication for Super Admin and ISP Tenants."
+create_service_doc "ftth-backend" "☕ Spring Boot Core API" "production" "Core Application Backend" "Spring Boot 3.x (Java 21)" "http://backend:9090" "active" "Core FTTH GIS business logic, PostGIS spatial queries, task engine, and RESTful APIs."
+create_service_doc "ftth-postgres" "🗄️ PostgreSQL + PostGIS" "production" "Relational & Spatial DB" "PostgreSQL 17 + PostGIS" "http://ftth-postgres:5432" "active" "Primary transactional store, audit logs, and spatial GIS polygon geometry."
+create_service_doc "ftth-redis" "⚡ Redis Cache & Queue" "production" "In-Memory Cache & Broker" "Redis 7.x" "http://ftth-redis:6379" "active" "Session state, rate limit tokens, OLT telemetry cache, and background task queues."
+create_service_doc "minio-storage" "🪣 MinIO Object Storage" "production" "S3 Object Storage" "MinIO S3" "100.110.205.109:9005 (API) / 9006" "active" "Disaster recovery DB dumps, tenant attachments, map tiles, and backup archives."
+create_service_doc "ftth-poller" "📡 FTTH OLT Poller Gateway" "production" "Telemetry Engine" "Go Microservice (5010)" "http://ftth-poller:5010" "active" "Real-time SNMP/SSH polling engine for OLT hardware and ONU/ONT subscriber links."
+create_service_doc "notification-gateway" "💬 Notification Gateway" "production" "Messaging Gateway" "Go Microservice (5001)" "http://notification-gateway:5001" "active" "Multi-channel notification dispatcher (Twilio WhatsApp, SMS OTP, SMTP Email)."
+create_service_doc "payment-gateway" "💳 Payment Gateway" "production" "Payment Gateway" "Go Microservice (5002)" "http://payment-gateway:5002" "active" "Xendit invoice generation, virtual accounts, QRIS, and webhook reconciliation."
+create_service_doc "map-gateway" "🗺️ Spatial Map Gateway" "production" "GIS Mapping Gateway" "Go Microservice (5003)" "http://map-gateway:5003" "active" "Vector tile caching, spatial indexing, geocoding, and map routing services."
+create_service_doc "storage-gateway" "📂 Storage Gateway" "production" "Storage Bridge" "Go Microservice (5004)" "http://storage-gateway:5004" "active" "Presigned URL generator, chunked upload orchestrator, and MinIO S3 bridge."
+create_service_doc "prometheus-grafana" "📊 Observability Suite" "production" "Metrics & Monitoring" "Prometheus + Grafana" "100.110.205.109:3002 (Grafana)" "active" "Time-series metrics collection, alertmanager, and infrastructure telemetry dashboards."
+
+# ─── 4. Upload Files ─────────────────────────────────────────────────────────
+echo ""
+echo "Step 3: Uploading dashboard files..."
 
 upload_nextcloud "${VAULT_DIR}/📌 Project Dashboard.md" "$TMPDIR_VAULT/project_dashboard.md"
 upload_nextcloud "${VAULT_DIR}/📌 Ticket Dashboard.md" "$TMPDIR_VAULT/ticket_dashboard.md"

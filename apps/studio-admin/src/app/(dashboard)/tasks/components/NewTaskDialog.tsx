@@ -139,13 +139,13 @@ export function NewTaskDialog({
       const baseUrl = getBackendBaseUrl();
       
       const payload: Record<string, any> = {
-        type: selectedProject ? "PROJECT" : type,
+        type: defaultValues?.type ?? type,
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
         status,
         assigneeId: assigneeId || undefined,
-        scope: "PLATFORM_INTERNAL",
+        scope: defaultValues?.scope ?? "PLATFORM_INTERNAL",
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       };
 
