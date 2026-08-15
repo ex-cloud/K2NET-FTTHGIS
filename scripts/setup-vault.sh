@@ -433,25 +433,25 @@ upload_nextcloud "${VAULT_DIR}/00_AI_Agent/skills/task-management/SKILL.md" "$TM
 
 # ─── 5. Sync Documentation (/opt/project5/docs/ -> 05_Documentation/) ────────
 echo ""
-echo "Step 4: Syncing technical documentation from /opt/project5/docs/..."
+echo "Step 4: Syncing technical documentation recursively from /opt/project5/docs/..."
 
-for doc in /opt/project5/docs/*.md; do
-  if [ -f "$doc" ]; then
-    fname=$(basename "$doc")
-    upload_nextcloud "${VAULT_DIR}/05_Documentation/${fname}" "$doc"
-    echo "  📄 Synced docs: ${fname}"
+find /opt/project5/docs -type f -name "*.md" | while read -r filepath; do
+  rel_path="${filepath#/opt/project5/docs/}"
+  rel_dir=$(dirname "$rel_path")
+  
+  if [ "$rel_dir" != "." ]; then
+    # Ensure nested subdirectories are created in Nextcloud
+    IFS='/' read -ra ADDR <<< "$rel_dir"
+    curr_path="${VAULT_DIR}/05_Documentation"
+    for segment in "${ADDR[@]}"; do
+      curr_path="${curr_path}/${segment}"
+      mkdir_nextcloud "$curr_path"
+    done
   fi
+  
+  upload_nextcloud "${VAULT_DIR}/05_Documentation/${rel_path}" "$filepath"
+  echo "  📄 Synced docs: ${rel_path}"
 done
-
-# Sync server recommendation plans if any
-if [ -d "/opt/project5/docs/Server" ]; then
-  for doc in /opt/project5/docs/Server/*.md; do
-    if [ -f "$doc" ]; then
-      fname=$(basename "$doc")
-      upload_nextcloud "${VAULT_DIR}/05_Documentation/Server_Plans/${fname}" "$doc"
-    fi
-  done
-fi
 
 # ─── 6. Upload Dashboards ───────────────────────────────────────────────────
 echo ""
