@@ -114,7 +114,7 @@ export function TaskTable({
       columnHelper.accessor("type", {
         header: "Type",
         cell: (info) => (
-          <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider whitespace-nowrap">
             {info.getValue()}
           </span>
         ),
@@ -239,7 +239,7 @@ export function TaskTable({
         cell: (info) => {
           const task = info.row.original;
           const formattedDate = task.dueDate
-            ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })
             : "Set Date";
           return (
             <div onClick={(e) => e.stopPropagation()}>
@@ -247,7 +247,7 @@ export function TaskTable({
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-all",
+                      "inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-all whitespace-nowrap",
                       task.dueDate
                         ? "border-border bg-card text-foreground"
                         : "border-dashed border-border text-muted-foreground hover:bg-muted"
@@ -330,10 +330,10 @@ export function TaskTable({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[960px] flex flex-col">
+      <div className="min-w-[1000px] flex flex-col">
 
         {/* ── Sticky Column Headers ──────────────────────────────────────── */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
           {table.getFlatHeaders().map((header) => {
             if (header.isPlaceholder) return <div key={header.id} />;
             const canSort = header.column.getCanSort();
@@ -392,7 +392,7 @@ export function TaskTable({
             Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={`skeleton-${i}`}
-                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
               >
                 <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
                 <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
@@ -414,7 +414,7 @@ export function TaskTable({
               <div
                 key={row.id}
                 onClick={() => onRowClick(row.original)}
-                className="grid grid-cols-[1fr_110px_80px_100px_130px_140px_120px_70px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
               >
                 {row.getVisibleCells().map((cell) => (
                   <div

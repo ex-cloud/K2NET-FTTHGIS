@@ -359,8 +359,10 @@ export default function TasksPage() {
           <TaskKpiStrip />
         </div>
 
-        {/* ── Content area: Toolbar + Table/Kanban/Timeline ─────────────── */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden border-t border-border/50">
+        {/* ── Content area: Toolbar + Table — identical structure to query-performance ── */}
+        <div className="flex-1 min-h-0 flex flex-col px-6 pb-6">
+          {/* Inner rounded card — matches QP border/bg-card/10/rounded-xl/overflow-hidden */}
+          <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
 
           {/* Sticky Toolbar — matches query-performance toolbar exactly */}
           <TaskToolbar
@@ -391,8 +393,8 @@ export default function TasksPage() {
             </div>
           )}
 
-          {/* Scrollable content — this is the scroll viewport */}
-          <div className="flex-1 overflow-y-auto min-h-0" onScroll={() => {}}>
+            {/* Scrollable content — bounded inside card, identical to QP pattern */}
+            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
 
             {/* ── List View ─────────────────────────────────────────── */}
             {viewMode === "list" && (
@@ -455,9 +457,10 @@ export default function TasksPage() {
                 }}
               />
             )}
-          </div>
-        </div>
-      </div>
+            </div>   {/* end scrollable */}
+          </div>     {/* end rounded card */}
+        </div>       {/* end px-6 pb-6 wrapper */}
+      </div>         {/* end outer flex-col */}
 
       {/* ── Linear-style Task Detail Sheet ──────────────────────────────── */}
       <TaskDetailSheet
