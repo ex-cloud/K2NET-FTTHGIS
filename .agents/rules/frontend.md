@@ -136,5 +136,51 @@ Setiap kali melakukan pembaruan atau penambahan visualisasi pada Global Log Expl
 * **Informasi Tambahan Detail Drawer**:
   - Detail drawer log wajib menampilkan parameter `tenantSlug`, `serviceSource` (container asal), dan `logGroup` secara rapi dan terformat.
 
+---
+
+## 🎯 9. Standardisasi Modul Task Management & Linear App Mental Model
+
+Seluruh pengembangan modul manajemen tugas (*Task Management / Issue Tracker*) pada `apps/studio-admin` maupun `apps/studio-tenant` **wajib** mengikuti hierarki dan pola interaksi **Linear App (`linear.app`)**:
+
+### A. Hierarki Entitas (Projects vs Issues)
+* **Workspace**: Ruang kerja organisasi K2NET (`PLATFORM_INTERNAL` untuk Studio Admin, `TENANT_INTERNAL` untuk Studio Tenant).
+* **Projects (Inisiatif / Plan Besar)**: Entitas payung untuk rencana kerja skala besar (contoh: *"Rancang Bangun FTTH Garut"*, *"Migrasi OLT Cluster Bandung"*, *"Website CMS"*). Memiliki target date, progress percentage, dan health status.
+* **Issues / Tasks / Tickets (Unit Kerja Terkecil)**:
+  * `type: "PROJECT"` (Pekerjaan bagian dari project plan)
+  * `type: "TICKET"` (Tiket gangguan / permintaan bantuan B2B tenant)
+  * `parent_task_id` (Relasi anak tugas / *Sub-issue*)
+  * `obsidian_ref` (ID referensi unik / Obsidian vault sync)
+  * `labels` (Tag kategori: `Bug`, `GIS Spasial`, `Fiber Routing`, `FO Cut`, dll.)
+
+### B. Floating Pill Modal "New Issue" (`NewTaskDialog`)
+Dialog pembuatan tugas **dilarang** menggunakan form bertingkat panjang. Wajib menggunakan floating window minimalis dengan **Pill Button Bar** di bagian bawah:
+1. **Title & Description Canvas**: Input judul borderless besar + textarea deskripsi auto-resize.
+2. **Pill Buttons Row**:
+   * `[⭕ Status Pill]` — Backlog, Todo, In Progress, In Review, Done, Canceled
+   * `[🔴 Priority Pill]` — Urgent, High, Normal, Low
+   * `[👤 Assignee Pill]` — Dropdown anggota tim
+   * `[📁 Project Pill]` — Dropdown pilihan project aktif atau *"No project"*
+   * `[🏷️ Labels Pill]` — Checklist tag kategori
+3. **Footer Actions**: Tombol lampiran `📎`, switch toggle `Create more`, dan tombol submit `Create Issue`.
+
+### C. Full-Page & Side-Sheet Task Canvas (`/tasks/[id]` & `TaskDetailSheet`)
+* **Header Bar**: Breadcrumb navigasi `Projects › [Project Name] › [Task Ref]` + tombol aksi full-page / close.
+* **Left Canvas**:
+  * Title inline-editable + Emoji icon trigger (`😀`).
+  * Description markdown textarea dengan auto-save debounced (1.5 detik).
+  * **Sub-issues Section**: Kotak daftar sub-tasks + tombol `+ Add sub-issues` (otomatis terikat ke parent task).
+  * **Activity & Comments**: Linimasa riwayat status + kotak komentar dengan shortcut `Ctrl+Enter`, tombol lampiran file, dan emoji.
+* **Right Properties Sidebar (w-72)**:
+  * Status, Priority, Assignee, Due Date (semua inline dropdown editable).
+  * Labels chip manager.
+  * Project link badge (menampilkan nama project terkait dan tautan langsung).
+
+### D. Pola Bounded Scroll Table (Query-Performance Pattern)
+* **Root Container**: Return root `div` langsung dengan `flex flex-col w-full h-full bg-background overflow-hidden` (jangan bungkus dengan `<PageLayout>` jika ingin layout fixed viewport).
+* **Inner Card Wrapper**: `border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col`.
+* **Sticky Toolbar**: Ditempatkan di bagian atas card wrapper.
+* **Scroll Area**: `div.flex-1.min-h-0.overflow-auto.custom-scrollbar-thin` — scroll hanya terjadi di dalam tabel data, bukan seluruh halaman.
+* **Infinite Scroll**: Wajib menggunakan `IntersectionObserver` pada sentinel di bawah tabel dengan page size default `20`.
+
 
 

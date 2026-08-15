@@ -262,3 +262,12 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Aturan bypass**: API paths `/api/*` dan berkas statis secara eksplisit di-bypass di middleware agar request rewrite langsung diteruskan ke Spring Boot Core Backend.
 - **Validasi Unduhan Berkas**: Endpoint binary download `/api/v1/system/backup-status/download` harus diakses melalui *client-side secure AJAX fetch blob* (dengan menyertakan header `Authorization: Bearer <token>`) agar terotentikasi secara native di filter Spring Security core dan aman dari Cloudflare WAF parameter injection block.
 
+### 📋 Standardisasi Modul Task Management & Linear App Architecture (Agustus 2026)
+- **Mental Model**: Hierarki 2-tingkat ala Linear App:
+  1. **Projects (Inisiatif/Plan Besar)**: Payung proyek (misal: "Rancang Bangun FTTH Garut", "Website CMS") dengan halaman Hub khusus (`Overview`, `Activity`, `Issues`).
+  2. **Issues/Tasks (Unit Kerja Terkecil)**: `type: PROJECT` (pekerjaan internal) vs `type: TICKET` (tiket mitra B2B), `parent_task_id` (sub-issues), dan `labels`.
+- **Floating Pill Modal (`NewTaskDialog.tsx`)**: Form pembuatan tugas dilarang kaku bertingkat; wajib menggunakan floating window dengan **Pill Button Bar** di bawah (`Status Pill`, `Priority Pill`, `Assignee Pill`, `Project Pill`, `Labels Pill`, `Attachment 📎`, toggle `Create more`).
+- **Canvas Editor Penuh (`/tasks/[id]` & `TaskDetailSheet.tsx`)**: Header breadcrumb, title inline-editable + Emoji picker (`😀`), description markdown auto-save (1.5s debounce), sub-issues box, comments timeline dengan shortcut `Ctrl+Enter`, dan properties panel kanan (`w-72`).
+- **Pola Bounded Scroll Table (Query-Performance Pattern)**: Root page dilarang dibungkus `<PageLayout>` jika ingin layout fixed viewport. Return root `div.h-full.overflow-hidden` langsung, card `border rounded-xl bg-card/10 overflow-hidden`, dan scroll hanya pada `div.flex-1.overflow-auto` dengan infinite scroll `IntersectionObserver` (page size `20`).
+- **Secondary Sidebar (`TaskSecondarySidebar.tsx`)**: Mengelompokkan navigasi ke dalam **`PERSONAL`** (Inbox, My Issues, Created by Me), **`WORKSPACE`** (Projects & Views), dan **`SCOPE/TEAMS`** (`Platform Internal` vs `B2B Inbox`).
+
