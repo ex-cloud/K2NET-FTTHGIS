@@ -119,6 +119,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 5. **Aturan Gaya UI & Konsistensi Tema**: [rules/styles.md](file:///opt/project5/.agents/rules/styles.md)
    *Membahas: Sistem warna global (Tailwind v4), style card, button, typografi, serta perbedaan aksen portal utama vs portal tenant.*
 
+6. **Aturan Knowledge Base AI**: [rules/ai-knowledge.md](file:///opt/project5/.agents/rules/ai-knowledge.md)
+   *Membahas: Taksonomi 6 kategori pengetahuan, chunking 500 token pgvector, Multi-Tenant isolation scope, serta alur penambahan berkas SOP.*
+
 ---
 
 ## 🧠 Pembelajaran Masalah Terselesaikan (Knowledge Base)
