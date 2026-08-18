@@ -329,126 +329,123 @@ export function TaskTable({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[1000px] flex flex-col">
+    <div className="min-w-[1000px] flex flex-col">
+      {/* ── Sticky Column Headers (Pinned to top on scroll) ────────────── */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+        {table.getFlatHeaders().map((header) => {
+          if (header.isPlaceholder) return <div key={header.id} />;
+          const canSort = header.column.getCanSort();
+          const isSorted = header.column.getIsSorted();
 
-        {/* ── Sticky Column Headers ──────────────────────────────────────── */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-medium text-muted-foreground/80">
-          {table.getFlatHeaders().map((header) => {
-            if (header.isPlaceholder) return <div key={header.id} />;
-            const canSort = header.column.getCanSort();
-            const isSorted = header.column.getIsSorted();
-
-            return (
-              <div
-                key={header.id}
-                className="min-w-0 px-4 py-2.5 flex items-center justify-start text-left"
-              >
-                {canSort && header.column.id !== "actions" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
-                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                        <span className="flex items-center">
-                          {isSorted === "asc" ? (
-                            <ArrowUp className="h-3 w-3 text-primary shrink-0" />
-                          ) : isSorted === "desc" ? (
-                            <ArrowDown className="h-3 w-3 text-primary shrink-0" />
-                          ) : (
-                            <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
-                          )}
-                        </span>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
-                      <DropdownMenuItem
-                        onClick={() => header.column.toggleSorting(false)}
-                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
-                      >
-                        <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>Sort Ascending</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => header.column.toggleSorting(true)}
-                        className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
-                      >
-                        <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>Sort Descending</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <span className="font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Table Body ─────────────────────────────────────────────────── */}
-        <div className="divide-y divide-border/40">
-          {loading && tasks.length === 0 ? (
-            // Skeleton rows
-            Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
-              >
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-                <div className="min-w-0 px-4 py-4 flex items-center justify-center"><div className="h-3.5 bg-muted/60 rounded w-6" /></div>
-              </div>
-            ))
-          ) : tasks.length === 0 ? (
-            <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
-              <ClipboardList className="h-10 w-10 opacity-30" />
-              <p className="text-sm">No tasks found for this view.</p>
+          return (
+            <div
+              key={header.id}
+              className="min-w-0 px-4 py-2.5 flex items-center justify-start text-left"
+            >
+              {canSort && header.column.id !== "actions" ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                      <span className="flex items-center">
+                        {isSorted === "asc" ? (
+                          <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                        ) : isSorted === "desc" ? (
+                          <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                        )}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                    <DropdownMenuItem
+                      onClick={() => header.column.toggleSorting(false)}
+                      className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Sort Ascending</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => header.column.toggleSorting(true)}
+                      className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>Sort Descending</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <span className="font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</span>
+              )}
             </div>
-          ) : (
-            table.getRowModel().rows.map((row) => (
-              <div
-                key={row.id}
-                onClick={() => onRowClick(row.original)}
-                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <div
-                    key={cell.id}
-                    className="min-w-0 px-4 py-3.5 flex items-center justify-start"
-                  >
-                    <div className="w-full min-w-0">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </div>
+          );
+        })}
+      </div>
+
+      {/* ── Table Body ─────────────────────────────────────────────────── */}
+      <div className="divide-y divide-border/40">
+        {loading && tasks.length === 0 ? (
+          // Skeleton rows
+          Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+            >
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center justify-center"><div className="h-3.5 bg-muted/60 rounded w-6" /></div>
+            </div>
+          ))
+        ) : tasks.length === 0 ? (
+          <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
+            <ClipboardList className="h-10 w-10 opacity-30" />
+            <p className="text-sm">No tasks found for this view.</p>
+          </div>
+        ) : (
+          table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              onClick={() => onRowClick(row.original)}
+              className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+            >
+              {row.getVisibleCells().map((cell) => (
+                <div
+                  key={cell.id}
+                  className="min-w-0 px-4 py-3.5 flex items-center justify-start"
+                >
+                  <div className="w-full min-w-0">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* ── Infinite Scroll Sentinel ────────────────────────────────────── */}
-        <div ref={sentinelRef} className="h-1" />
-
-        {/* ── Loading more indicator ─────────────────────────────────────── */}
-        {loadingMore && (
-          <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground border-t border-border/30">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-            <span>Loading more tasks...</span>
-          </div>
-        )}
-
-        {/* ── End of list indicator ──────────────────────────────────────── */}
-        {!hasMore && tasks.length > 0 && !loading && (
-          <div className="flex items-center justify-center py-3 text-[11px] text-muted-foreground/60 border-t border-border/30">
-            <span>All {tasks.length} tasks loaded</span>
-          </div>
+                </div>
+              ))}
+            </div>
+          ))
         )}
       </div>
+
+      {/* ── Infinite Scroll Sentinel ────────────────────────────────────── */}
+      <div ref={sentinelRef} className="h-1" />
+
+      {/* ── Loading more indicator ─────────────────────────────────────── */}
+      {loadingMore && (
+        <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground border-t border-border/30">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          <span>Loading more tasks...</span>
+        </div>
+      )}
+
+      {/* ── End of list indicator ──────────────────────────────────────── */}
+      {!hasMore && tasks.length > 0 && !loading && (
+        <div className="flex items-center justify-center py-3 text-[11px] text-muted-foreground/60 border-t border-border/30">
+          <span>All {tasks.length} tasks loaded</span>
+        </div>
+      )}
     </div>
   );
 }

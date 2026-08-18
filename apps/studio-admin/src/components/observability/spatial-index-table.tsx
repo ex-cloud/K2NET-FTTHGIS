@@ -11,18 +11,17 @@ interface SpatialIndexTableProps {
 export function SpatialIndexTable({ spatialIndexes }: SpatialIndexTableProps) {
   return (
     <div className="flex-1 min-h-0 flex flex-col px-4 md:px-6 pb-6">
-      <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden overflow-y-auto overflow-x-auto custom-scrollbar-thin">
+      <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-auto custom-scrollbar-thin">
         <div className="min-w-[800px] w-full p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-transparent text-[11px] font-medium text-muted-foreground/85">
-                  <th className="py-2.5 px-4">Table</th>
-                  <th className="py-2.5 px-4">Index Definition</th>
-                  <th className="py-2.5 px-4 text-center">Status</th>
-                  <th className="py-2.5 px-4 text-right">Size</th>
-                </tr>
-              </thead>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border shadow-xs">
+              <tr className="text-[11px] font-semibold text-muted-foreground/80 tracking-wider uppercase">
+                <th className="py-2.5 px-4">Table</th>
+                <th className="py-2.5 px-4">Index Definition</th>
+                <th className="py-2.5 px-4 text-center">Status</th>
+                <th className="py-2.5 px-4 text-right">Size</th>
+              </tr>
+            </thead>
               <tbody className="divide-y divide-border/40">
                 {spatialIndexes.length === 0 ? (
                   <tr>
@@ -46,7 +45,6 @@ export function SpatialIndexTable({ spatialIndexes }: SpatialIndexTableProps) {
                 )}
               </tbody>
             </table>
-          </div>
         </div>
       </div>
     </div>

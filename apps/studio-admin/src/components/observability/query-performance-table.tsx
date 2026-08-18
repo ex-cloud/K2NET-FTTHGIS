@@ -182,9 +182,9 @@ export function QueryPerformanceTable({
   });
 
   return (
-    <div className="min-w-[1340px] border border-border/40 rounded-xl overflow-hidden bg-card/10">
-      {/* Table Head */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-medium text-muted-foreground/80">
+    <div className="min-w-[1340px] flex flex-col">
+      {/* Table Head (Sticky pinned to top on vertical scroll) */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[380px_180px_80px_90px_90px_90px_110px_110px_100px_110px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-muted-foreground/80 shadow-xs">
         {table.getFlatHeaders().map((header) => {
           if (header.isPlaceholder) return <div key={header.id} />;
 
