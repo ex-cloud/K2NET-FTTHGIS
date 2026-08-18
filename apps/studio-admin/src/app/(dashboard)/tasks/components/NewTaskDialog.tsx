@@ -34,6 +34,7 @@ export interface NewTaskDefaultValues {
   scope?: TaskScope;
   type?: "TICKET" | "PROJECT";
   project?: string;
+  parentTaskId?: string;
   priority?: "URGENT" | "HIGH" | "NORMAL" | "LOW";
   status?: string;
 }
@@ -148,6 +149,9 @@ export function NewTaskDialog({
         assigneeId: assigneeId || undefined,
         scope: defaultValues?.scope ?? "PLATFORM_INTERNAL",
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        parentTaskId: defaultValues?.parentTaskId || undefined,
+        referenceType: defaultValues?.parentTaskId ? "PROJECT" : undefined,
+        referenceId: defaultValues?.parentTaskId || undefined,
       };
 
       if (selectedProject) {

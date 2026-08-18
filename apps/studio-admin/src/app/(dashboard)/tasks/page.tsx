@@ -32,7 +32,14 @@ import { TaskDetailSheet } from "./components/TaskDetailSheet";
 import { TaskBulkActionBar } from "./components/TaskBulkActionBar";
 import { TaskHeaderStatsBar } from "./components/TaskHeaderStatsBar";
 import { TaskShortcutsHelpDialog } from "./components/TaskShortcutsHelpDialog";
+import { TaskBatchDeleteDialog } from "./components/TaskBatchDeleteDialog";
 import { applyViewFilter, VIEW_LABELS, type QuickView } from "./components/taskViewFilters";
+import {
+  type DisplayPropertiesState,
+  type ViewGrouping,
+  type ViewOrdering,
+  type ShowClosedFilter,
+} from "./components/LinearDisplayOptionsPopover";
 
 export default function TasksPage() {
   const router = useRouter();
@@ -63,6 +70,25 @@ export default function TasksPage() {
     scope: [],
     assigneeId: null,
   });
+
+  const [displayProperties, setDisplayProperties] = useState<DisplayPropertiesState>({
+    priority: true,
+    status: true,
+    assignee: true,
+    dueDate: true,
+    scope: true,
+    type: true,
+    obsidianRef: true,
+    created: true,
+  });
+
+  const [ordering, setOrdering] = useState<ViewOrdering>("manual");
+  const [grouping, setGrouping] = useState<ViewGrouping>("none");
+  const [showClosed, setShowClosed] = useState<ShowClosedFilter>("all");
+
+  const handleToggleDisplayProperty = (prop: keyof DisplayPropertiesState) => {
+    setDisplayProperties((prev) => ({ ...prev, [prop]: !prev[prop] }));
+  };
 
   // ── Data fetching ───────────────────────────────────────────────────────────
   const {
@@ -136,8 +162,29 @@ export default function TasksPage() {
       );
     }
 
+    if (showClosed === "open") {
+      result = result.filter((t) => t.status !== "RESOLVED" && t.status !== "CLOSED");
+    } else if (showClosed === "closed") {
+      result = result.filter((t) => t.status === "RESOLVED" || t.status === "CLOSED");
+    }
+
+    if (ordering === "created") {
+      result = [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (ordering === "dueDate") {
+      result = [...result].sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+    } else if (ordering === "priority") {
+      const pWeights: Record<string, number> = { URGENT: 4, HIGH: 3, NORMAL: 2, LOW: 1 };
+      result = [...result].sort((a, b) => (pWeights[b.priority] ?? 0) - (pWeights[a.priority] ?? 0));
+    } else if (ordering === "title") {
+      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+    }
+
     return result;
-  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, typeParam]);
+  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, typeParam, ordering, showClosed]);
 
   // Local optimistic state for Kanban
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
@@ -207,6 +254,9 @@ export default function TasksPage() {
   // ── Batch Actions Hook ──────────────────────────────────────────────────────
   const {
     selectedTaskIds,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    deleteLoading,
     handleToggleSelectTask,
     handleSelectAllTasks,
     handleClearSelection,
@@ -214,7 +264,8 @@ export default function TasksPage() {
     handleBatchUpdatePriority,
     handleBatchUpdateAssignee,
     handleBatchUpdateScope,
-    handleBatchDelete,
+    handleRequestBatchDelete,
+    handleConfirmBatchDelete,
   } = useTaskBatchActions({
     filteredTasks,
     sessionToken: session?.accessToken,
@@ -323,6 +374,14 @@ export default function TasksPage() {
               onRefresh={() => { refresh(); toast.info("Refreshing tasks..."); }}
               viewMode={viewMode}
               onViewModeChange={handleViewModeChange}
+              displayProperties={displayProperties}
+              onToggleDisplayProperty={handleToggleDisplayProperty}
+              grouping={grouping}
+              onGroupingChange={setGrouping}
+              ordering={ordering}
+              onOrderingChange={setOrdering}
+              showClosed={showClosed}
+              onShowClosedChange={setShowClosed}
             />
 
             {/* Active quick-filter or project chip */}
@@ -375,6 +434,7 @@ export default function TasksPage() {
                   onToggleSelectTask={handleToggleSelectTask}
                   onSelectAllTasks={handleSelectAllTasks}
                   focusedIndex={focusedIndex}
+                  displayProperties={displayProperties}
                 />
               )}
 
@@ -409,17 +469,8 @@ export default function TasksPage() {
               {viewMode === "timeline" && (
                 <TaskTimelineView
                   tasks={filteredTasks}
-                  onRowClick={(id) => {
-                    const t = filteredTasks.find((x) => x.id === id);
-                    if (t) handleOpenSheet(t);
-                  }}
-                  displayProperties={{
-                    priority: true,
-                    status: true,
-                    assignee: true,
-                    dueDate: true,
-                    obsidianRef: true,
-                  }}
+                  onRowClick={(task) => handleOpenSheet(task)}
+                  displayProperties={displayProperties}
                 />
               )}
             </div>
@@ -453,7 +504,16 @@ export default function TasksPage() {
         onBatchUpdatePriority={handleBatchUpdatePriority}
         onBatchUpdateAssignee={handleBatchUpdateAssignee}
         onBatchUpdateScope={handleBatchUpdateScope}
-        onBatchDelete={handleBatchDelete}
+        onBatchDelete={handleRequestBatchDelete}
+      />
+
+      {/* Custom Batch Delete Confirmation Dialog */}
+      <TaskBatchDeleteDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        selectedCount={selectedTaskIds.size}
+        onConfirmDelete={handleConfirmBatchDelete}
+        loading={deleteLoading}
       />
 
       {/* Keyboard Shortcuts Help Dialog */}

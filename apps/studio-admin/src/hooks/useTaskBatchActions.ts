@@ -23,6 +23,8 @@ export function useTaskBatchActions({
 }: UseTaskBatchActionsProps) {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleToggleSelectTask = useCallback(
     (id: string, shiftKey?: boolean) => {
@@ -159,18 +161,23 @@ export function useTaskBatchActions({
     [selectedTaskIds, onSaveTask, refresh, setLocalTasks]
   );
 
-  const handleBatchDelete = useCallback(async () => {
+  // Trigger modal confirmation
+  const handleRequestBatchDelete = useCallback(() => {
+    if (selectedTaskIds.size === 0) return;
+    setDeleteConfirmOpen(true);
+  }, [selectedTaskIds.size]);
+
+  // Execute actual deletion after user confirms in dialog
+  const handleConfirmBatchDelete = useCallback(async () => {
     const ids = Array.from(selectedTaskIds);
     if (ids.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${ids.length} selected tasks?`)) return;
 
     const count = ids.length;
-    toast.info(`Deleting ${count} tasks...`);
-    setLocalTasks((prev) => prev.filter((t) => !selectedTaskIds.has(t.id)));
+    setDeleteLoading(true);
 
     try {
       const baseUrl = getBackendBaseUrl();
-      await Promise.all(
+      const responses = await Promise.all(
         ids.map((id) =>
           httpClient(`${baseUrl}/tasks/${id}`, {
             method: "DELETE",
@@ -178,17 +185,30 @@ export function useTaskBatchActions({
           })
         )
       );
-      toast.success(`Deleted ${count} tasks`);
+
+      const failedResponses = responses.filter((r) => !r.ok);
+      if (failedResponses.length > 0) {
+        throw new Error(`Gagal menghapus ${failedResponses.length} task (HTTP ${failedResponses[0].status})`);
+      }
+
+      setLocalTasks((prev) => prev.filter((t) => !selectedTaskIds.has(t.id)));
+      toast.success(`Berhasil menghapus ${count} task`);
       setSelectedTaskIds(new Set());
+      setDeleteConfirmOpen(false);
       refresh();
     } catch (err: any) {
-      toast.error("Batch delete failed: " + err.message);
+      toast.error("Gagal menghapus tugas: " + err.message);
       refresh();
+    } finally {
+      setDeleteLoading(false);
     }
   }, [selectedTaskIds, sessionToken, refresh, setLocalTasks]);
 
   return {
     selectedTaskIds,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    deleteLoading,
     handleToggleSelectTask,
     handleSelectAllTasks,
     handleClearSelection,
@@ -196,6 +216,7 @@ export function useTaskBatchActions({
     handleBatchUpdatePriority,
     handleBatchUpdateAssignee,
     handleBatchUpdateScope,
-    handleBatchDelete,
+    handleRequestBatchDelete,
+    handleConfirmBatchDelete,
   };
 }

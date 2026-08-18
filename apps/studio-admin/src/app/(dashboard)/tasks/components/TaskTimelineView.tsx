@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import { type Task } from "@/hooks/useTasksQuery";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import { cn } from "@/lib/utils";
-import { FolderKanban, ClipboardList } from "lucide-react";
+import { FolderKanban, ClipboardList, Crosshair, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TaskTimelineViewProps {
   tasks: Task[];
-  onRowClick: (id: string) => void;
-  displayProperties: {
+  onRowClick: (task: Task) => void;
+  displayProperties?: {
     priority: boolean;
     status: boolean;
     assignee: boolean;
@@ -18,189 +18,319 @@ interface TaskTimelineViewProps {
   };
 }
 
+interface TimelineMonth {
+  year: number;
+  monthIndex: number;
+  name: string;
+  shortName: string;
+  weeks: number[];
+  startMs: number;
+  endMs: number;
+}
+
 export function TaskTimelineView({
   tasks,
   onRowClick,
   displayProperties,
 }: TaskTimelineViewProps) {
-  // ── Setup Timeline Window: 3 months ago to 3 months ahead ─────────────────
-  const { start, end, totalMs, months } = useMemo(() => {
-    const now = new Date();
-    
-    // Start window: 3 months ago (first day of that month)
-    const start = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    
-    // End window: 3 months ahead (last day of that month)
-    const end = new Date(now.getFullYear(), now.getMonth() + 4, 0);
-    
-    const totalMs = end.getTime() - start.getTime();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const monthColWidth = 180;
 
-    // Generate list of months in between for grid headers
-    const months: { label: string; year: number }[] = [];
-    let current = new Date(start);
-    while (current <= end) {
-      months.push({
-        label: current.toLocaleString("default", { month: "short" }),
-        year: current.getFullYear(),
+  // ── Setup 18-Month Timeline Window (Past 4 months to Future 14 months) ──────
+  const { timelineMonths, startTimelineMs, endTimelineMs, totalTimelineMs } = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const startDate = new Date(currentYear, currentMonth - 4, 1);
+    const endDate = new Date(currentYear, currentMonth + 14, 0, 23, 59, 59);
+
+    const startTimelineMs = startDate.getTime();
+    const endTimelineMs = endDate.getTime();
+    const totalTimelineMs = endTimelineMs - startTimelineMs;
+
+    const timelineMonths: TimelineMonth[] = [];
+    let cur = new Date(startDate);
+
+    const MONTH_SHORTS = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    while (cur <= endDate) {
+      const year = cur.getFullYear();
+      const monthIndex = cur.getMonth();
+      const mStart = new Date(year, monthIndex, 1).getTime();
+      const mEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59).getTime();
+
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      const weeks: number[] = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dObj = new Date(year, monthIndex, day);
+        if (dObj.getDay() === 1 || day === 1 || day === 15) {
+          if (!weeks.includes(day)) weeks.push(day);
+        }
+      }
+      weeks.sort((a, b) => a - b);
+
+      timelineMonths.push({
+        year,
+        monthIndex,
+        name: MONTH_SHORTS[monthIndex],
+        shortName: MONTH_SHORTS[monthIndex],
+        weeks: weeks.slice(0, 4),
+        startMs: mStart,
+        endMs: mEnd,
       });
-      // Move to next month
-      current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+
+      cur = new Date(year, monthIndex + 1, 1);
     }
 
-    return { start, end, totalMs, months };
+    return { timelineMonths, startTimelineMs, endTimelineMs, totalTimelineMs };
   }, []);
 
-  // Today marker percent position
-  const todayPercent = useMemo(() => {
-    const now = new Date();
-    if (now < start || now > end) return -1;
-    return ((now.getTime() - start.getTime()) / totalMs) * 100;
-  }, [start, end, totalMs]);
+  const totalGridWidth = timelineMonths.length * monthColWidth;
 
-  // Bar colors mapped by status
-  const barColors: Record<string, string> = {
-    BACKLOG: "bg-muted-foreground/30 border-muted-foreground/45",
-    TODO: "bg-foreground/20 border-foreground/35",
-    IN_PROGRESS: "bg-primary/20 border-primary/40 text-primary",
-    WAITING_ON_CLIENT: "bg-amber-500/20 border-amber-500/40 text-amber-500",
-    RESOLVED: "bg-[hsl(151_55%_42%)]/20 border-[hsl(151_55%_42%)]/40 text-[hsl(151_55%_42%)]",
-    CLOSED: "bg-muted-foreground/15 border-muted-foreground/25",
+  // ── Today Marker Position ──────────────────────────────────────────────────
+  const nowMs = Date.now();
+  const todayLeftPx = useMemo(() => {
+    if (nowMs < startTimelineMs || nowMs > endTimelineMs) return -1;
+    const progress = (nowMs - startTimelineMs) / totalTimelineMs;
+    return progress * totalGridWidth;
+  }, [nowMs, startTimelineMs, endTimelineMs, totalTimelineMs, totalGridWidth]);
+
+  // ── Scroll to Today ────────────────────────────────────────────────────────
+  const scrollToToday = (smooth = true) => {
+    if (!scrollContainerRef.current || todayLeftPx < 0) return;
+    const containerWidth = scrollContainerRef.current.clientWidth;
+    const targetScrollLeft = todayLeftPx - containerWidth / 2 + 150;
+    scrollContainerRef.current.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: smooth ? "smooth" : "auto",
+    });
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => scrollToToday(false), 80);
+    return () => clearTimeout(timer);
+  }, [todayLeftPx]);
+
+  // ── Compute Task Duration Bar ──────────────────────────────────────────────
+  const computeBarGeometry = (createdAt?: string, dueDate?: string) => {
+    const defaultStart = createdAt ? new Date(createdAt).getTime() : nowMs - 7 * 86400000;
+    const defaultEnd = dueDate ? new Date(dueDate).getTime() : defaultStart + 14 * 86400000;
+
+    const clampedStart = Math.max(startTimelineMs, defaultStart);
+    const clampedEnd = Math.min(endTimelineMs, Math.max(defaultEnd, clampedStart + 86400000));
+
+    const leftFrac = (clampedStart - startTimelineMs) / totalTimelineMs;
+    const widthFrac = (clampedEnd - clampedStart) / totalTimelineMs;
+
+    const leftPx = Math.max(0, leftFrac * totalGridWidth);
+    const widthPx = Math.max(48, widthFrac * totalGridWidth);
+
+    return { leftPx, widthPx };
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border/80 rounded-xl overflow-hidden">
-      {/* ── Timeline Grid Header ── */}
-      <div className="flex border-b border-border/60 shrink-0 select-none bg-muted/30">
-        {/* Left task list spacer */}
-        <div className="w-80 border-r border-border/60 p-3 shrink-0 flex items-center">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Task Name
-          </span>
+    <div className="flex flex-col h-full bg-card border border-border/80 rounded-xl overflow-hidden select-none">
+      {/* ── Top Header Controls Bar ── */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/70 bg-muted/40 shrink-0 text-xs z-30">
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-foreground">Timeline View</span>
+          <span className="text-muted-foreground/30">|</span>
+          <button
+            type="button"
+            onClick={() => scrollToToday(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-semibold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Scroll to today"
+          >
+            <Crosshair className="w-3.5 h-3.5 text-primary" />
+            <span>Today</span>
+          </button>
         </div>
 
-        {/* Right timeline month slots */}
-        <div className="flex-1 flex min-w-0 relative">
-          {months.map((m, idx) => (
-            <div
-              key={idx}
-              className="flex-1 border-r border-border/40 last:border-r-0 py-3 text-center shrink-0 min-w-[100px]"
-            >
-              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/80 dark:text-muted-foreground">
-                {m.label} <span className="opacity-60">{m.year}</span>
-              </span>
-            </div>
-          ))}
+        <div className="text-[11px] text-muted-foreground font-mono">
+          {tasks.length} tasks scheduled
         </div>
       </div>
 
-      {/* ── Scrollable rows container ── */}
-      <div className="flex-1 overflow-y-auto relative min-h-0">
-        
-        {/* Today Marker Line (Vertical through all rows) */}
-        {todayPercent >= 0 && (
-          <div
-            className="absolute top-0 bottom-0 w-[2px] bg-primary z-10 pointer-events-none shadow-[0_0_8px_var(--primary)]"
-            style={{ left: `calc(320px + (100% - 320px) * ${todayPercent / 100})` }}
-          >
-            {/* Today indicator flag */}
-            <span className="absolute top-0 -translate-x-1/2 bg-primary text-primary-foreground text-[9px] font-bold uppercase px-1 rounded shadow-md z-20">
-              Today
-            </span>
-          </div>
-        )}
+      {/* ── Unified Dual-Axis Scroll Container ── */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-auto relative custom-scrollbar-thin bg-background/50"
+      >
+        <div
+          className="relative flex flex-col"
+          style={{ width: `${300 + totalGridWidth}px` }}
+        >
+          {/* ── Sticky Header Bar ── */}
+          <div className="sticky top-0 z-40 flex border-b border-border/80 bg-background/95 backdrop-blur-md shadow-xs">
+            {/* Frozen Left Title Header */}
+            <div className="sticky left-0 z-50 w-[300px] shrink-0 px-4 py-3 border-r border-border/70 bg-background/95 backdrop-blur-md flex items-center justify-between shadow-xs">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Task Name
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">
+                Status
+              </span>
+            </div>
 
-        {tasks.length === 0 ? (
-          <div className="p-8 text-center text-xs text-muted-foreground italic">
-            Belum ada task dalam rentang waktu ini.
-          </div>
-        ) : (
-          tasks.map((task) => {
-            const taskStart = new Date(task.createdAt);
-            // Default to 1 week duration if dueDate is missing
-            const taskEnd = task.dueDate
-              ? new Date(task.dueDate)
-              : new Date(taskStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+            {/* Horizontal Months + Weeks Scale Header */}
+            <div className="flex relative" style={{ width: `${totalGridWidth}px` }}>
+              {timelineMonths.map((m) => {
+                const isCurrentMonth =
+                  new Date().getFullYear() === m.year && new Date().getMonth() === m.monthIndex;
 
-            // Clamp positions to viewport start/end
-            const clampedStart = new Date(Math.max(taskStart.getTime(), start.getTime()));
-            const clampedEnd = new Date(Math.min(taskEnd.getTime(), end.getTime()));
-
-            const leftOffset = ((clampedStart.getTime() - start.getTime()) / totalMs) * 100;
-            const barWidth = Math.max(
-              ((clampedEnd.getTime() - clampedStart.getTime()) / totalMs) * 100,
-              1.5 // Ensure bar has at least a tiny visible width
-            );
-
-            const isProject = task.type === "PROJECT";
-            const statusCfg = STATUS_CONFIG[task.status];
-            const priorityCfg = PRIORITY_CONFIG[task.priority];
-
-            return (
-              <div
-                key={task.id}
-                onClick={() => onRowClick(task.id)}
-                className="flex border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer"
-              >
-                {/* Left side: Info column */}
-                <div className="w-80 border-r border-border/60 px-4 py-3 shrink-0 flex items-center justify-between min-w-0">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {isProject ? (
-                      <FolderKanban className="h-4 w-4 text-primary shrink-0" />
-                    ) : (
-                      <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
+                return (
+                  <div
+                    key={`${m.year}-${m.monthIndex}`}
+                    style={{ width: `${monthColWidth}px` }}
+                    className={cn(
+                      "shrink-0 border-r border-border/40 last:border-r-0 flex flex-col justify-between py-1.5 px-2 text-center",
+                      isCurrentMonth && "bg-primary/5"
                     )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-foreground truncate">
-                        {task.title}
-                      </p>
-                      {displayProperties.obsidianRef && task.obsidianRef && (
-                        <p className="text-[10px] text-muted-foreground/75 font-mono">
-                          {task.obsidianRef}
-                        </p>
-                      )}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className={cn(
+                        "text-[11px] font-bold uppercase tracking-wider",
+                        isCurrentMonth ? "text-primary" : "text-foreground"
+                      )}>
+                        {m.shortName}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60 font-mono">
+                        {m.year}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 text-[10px] text-muted-foreground/60 font-mono pt-1">
+                      {m.weeks.map((wDay) => (
+                        <span key={wDay} className="w-5 text-center">
+                          {wDay}
+                        </span>
+                      ))}
                     </div>
                   </div>
+                );
+              })}
 
-                  {/* Badges */}
-                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                    {displayProperties.priority && priorityCfg && (
-                      <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded", priorityCfg.className)}>
-                        {priorityCfg.label}
-                      </span>
-                    )}
-                    {displayProperties.status && statusCfg && (
-                      <span className={cn("text-[9px] font-semibold px-1.5 py-0.5 rounded", statusCfg.className)}>
-                        {statusCfg.label}
-                      </span>
-                    )}
-                  </div>
+              {/* Today Pill Header Marker */}
+              {todayLeftPx >= 0 && (
+                <div
+                  className="absolute top-1 -translate-x-1/2 z-30 pointer-events-none"
+                  style={{ left: `${todayLeftPx}px` }}
+                >
+                  <span className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md">
+                    {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+                  </span>
                 </div>
+              )}
+            </div>
+          </div>
 
-                {/* Right side: Gantt plot area */}
-                <div className="flex-1 flex min-w-0 relative items-center py-2 bg-card/20">
-                  
-                  {/* Task Bar */}
-                  <div
-                    className={cn(
-                      "h-7 rounded-lg border px-2 flex items-center relative text-[10px] font-bold transition-all shadow-sm truncate",
-                      barColors[task.status] ?? "bg-muted/40 border-border"
-                    )}
-                    style={{
-                      marginLeft: `${leftOffset}%`,
-                      width: `${barWidth}%`,
-                    }}
-                    title={`${task.title} (${taskStart.toLocaleDateString()} - ${taskEnd.toLocaleDateString()})`}
-                  >
-                    <span className="truncate pr-1">
-                      {task.obsidianRef ?? `…${task.id.slice(-8)}`}
-                    </span>
-                  </div>
+          {/* ── Rows Container ── */}
+          <div className="relative divide-y divide-border/30">
+            {/* Global Vertical Grid Lines & Today Line */}
+            <div
+              className="absolute top-0 bottom-0 left-[300px] pointer-events-none z-10 flex"
+              style={{ width: `${totalGridWidth}px` }}
+            >
+              {timelineMonths.map((m) => (
+                <div
+                  key={`grid-${m.year}-${m.monthIndex}`}
+                  style={{ width: `${monthColWidth}px` }}
+                  className="shrink-0 border-r border-border/20 last:border-r-0 h-full"
+                />
+              ))}
 
-                </div>
+              {todayLeftPx >= 0 && (
+                <div
+                  className="absolute top-0 bottom-0 w-[2px] bg-primary z-20 pointer-events-none shadow-[0_0_10px_var(--primary)]"
+                  style={{ left: `${todayLeftPx}px` }}
+                />
+              )}
+            </div>
+
+            {/* Task Rows */}
+            {tasks.length === 0 ? (
+              <div className="py-20 text-center text-xs text-muted-foreground italic w-full">
+                Belum ada task dalam rentang waktu ini.
               </div>
-            );
-          })
-        )}
+            ) : (
+              tasks.map((task) => {
+                const { leftPx, widthPx } = computeBarGeometry(task.createdAt, task.dueDate);
+                const statusCfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
+                const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
+                const StatusIcon = statusCfg.icon;
+
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-stretch hover:bg-muted/10 transition-colors group relative"
+                  >
+                    {/* Frozen Left Info (Sticky Left) */}
+                    <div
+                      onClick={() => onRowClick(task)}
+                      className="sticky left-0 z-30 w-[300px] shrink-0 px-4 py-3 border-r border-border/70 bg-background/95 backdrop-blur-md flex items-center justify-between min-w-0 cursor-pointer shadow-xs group-hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="min-w-0 pr-3 flex-1">
+                        <div className="flex items-center gap-2">
+                          <StatusIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span className="font-semibold text-xs text-foreground truncate group-hover:text-primary transition-colors">
+                            {task.title}
+                          </span>
+                        </div>
+                        {task.obsidianRef && (
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {task.obsidianRef}
+                          </span>
+                        )}
+                      </div>
+
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0",
+                          priorityCfg.className
+                        )}
+                      >
+                        {task.priority}
+                      </span>
+                    </div>
+
+                    {/* Right Timeline Canvas Row with Duration Bar */}
+                    <div
+                      className="relative h-14 flex items-center"
+                      style={{ width: `${totalGridWidth}px` }}
+                    >
+                      <div
+                        onClick={() => onRowClick(task)}
+                        style={{
+                          left: `${leftPx}px`,
+                          width: `${widthPx}px`,
+                        }}
+                        className={cn(
+                          "absolute h-8 rounded-xl border flex items-center px-3 text-[11px] font-semibold shadow-sm transition-all cursor-pointer hover:brightness-110 hover:shadow-md z-15 active:scale-[0.99]",
+                          task.status === "RESOLVED" || task.status === "CLOSED"
+                            ? "bg-primary/20 border-primary/60 text-foreground dark:text-primary"
+                            : task.priority === "URGENT" || task.priority === "HIGH"
+                            ? "bg-amber-500/20 border-amber-500/60 text-foreground dark:text-amber-400"
+                            : "bg-muted/60 border-border text-foreground hover:border-primary/50"
+                        )}
+                      >
+                        <span className="truncate relative z-10 font-semibold">{task.title}</span>
+                        {task.dueDate && (
+                          <span className="ml-auto text-[10px] font-mono opacity-80 pl-2 shrink-0 relative z-10">
+                            {new Date(task.dueDate).toLocaleDateString("id-ID", { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

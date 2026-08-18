@@ -30,7 +30,32 @@ export default function ProjectHubDetailPage() {
   const { users: teamUsers } = useTeamUsers();
 
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
-  const { task: projectTask, tasks: allTasks, loading, refresh } = useTasksQuery(id);
+  const { task: projectTask, loading, refresh } = useTasksQuery(id);
+  const [subtasks, setSubtasks] = useState<Task[]>([]);
+  const [subtasksLoading, setSubtasksLoading] = useState(true);
+
+  const fetchSubtasks = React.useCallback(async () => {
+    if (!session?.accessToken || !id) return;
+    try {
+      setSubtasksLoading(true);
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${id}/subtasks`, {
+        token: session.accessToken,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubtasks(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch project subtasks:", e);
+    } finally {
+      setSubtasksLoading(false);
+    }
+  }, [id, session?.accessToken]);
+
+  useEffect(() => {
+    fetchSubtasks();
+  }, [fetchSubtasks]);
 
   // Editable fields
   const [title, setTitle] = useState("");
@@ -64,16 +89,7 @@ export default function ProjectHubDetailPage() {
   }, [projectTask]);
 
   // All issues associated with this project
-  const projectIssues = useMemo(() => {
-    if (!projectTask) return [];
-    return allTasks.filter(
-      (t) =>
-        t.id !== projectTask.id &&
-        ((projectTask.obsidianRef && t.obsidianRef === projectTask.obsidianRef) ||
-          t.parentTaskId === projectTask.id ||
-          t.title.toLowerCase().includes(projectTask.title.toLowerCase()))
-    );
-  }, [allTasks, projectTask]);
+  const projectIssues = subtasks;
 
   const resolvedIssuesCount = projectIssues.filter(
     (t) => t.status === "RESOLVED" || t.status === "CLOSED"
@@ -148,6 +164,7 @@ export default function ProjectHubDetailPage() {
       });
       if (res.ok) {
         toast.success("Issue updated");
+        fetchSubtasks();
         refresh();
       } else {
         toast.error("Failed to update issue");
@@ -158,7 +175,6 @@ export default function ProjectHubDetailPage() {
   };
 
   const handleDeleteIssue = async (issueId: string) => {
-    if (!confirm("Are you sure you want to delete this issue?")) return;
     try {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(`${baseUrl}/tasks/${issueId}`, {
@@ -167,6 +183,7 @@ export default function ProjectHubDetailPage() {
       });
       if (res.ok) {
         toast.success("Issue deleted successfully");
+        fetchSubtasks();
         refresh();
       } else {
         toast.error("Failed to delete issue");
@@ -336,10 +353,14 @@ export default function ProjectHubDetailPage() {
       <NewTaskDialog
         open={newIssueOpen}
         onOpenChange={setNewIssueOpen}
-        onSuccess={refresh}
+        onSuccess={() => {
+          fetchSubtasks();
+          refresh();
+        }}
         defaultValues={{
-          project: projectTask.obsidianRef || projectTask.title,
-          scope: projectTask.scope,
+          parentTaskId: id,
+          project: projectTask?.obsidianRef || projectTask?.title,
+          scope: projectTask?.scope,
         }}
       />
     </div>

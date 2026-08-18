@@ -197,13 +197,15 @@ public class TaskController {
         return ResponseEntity.ok(taskService.resolveTask(id));
     }
 
-    // ─── Delete task (Super Admin only) ────────────────────────────────────────
+    // ─── Delete task ────────────────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
     ) {
+        applyTenantFilter(jwt);
         taskService.delete(id);
         return ResponseEntity.noContent().build();
     }

@@ -212,7 +212,7 @@ export function LinearDatePicker({
 
           {/* ── View 1: Day Calendar (Using Shared @k2net/ui Calendar Component) ──────── */}
           {granularity === "Day" && (
-            <div className="flex justify-center">
+            <div className="relative flex justify-center w-full">
               <Calendar
                 mode="single"
                 selected={parsedSelectedDate || undefined}
@@ -222,7 +222,7 @@ export function LinearDatePicker({
                     handleSelectDate(dStr);
                   }
                 }}
-                className="p-0 border-0 shadow-none bg-transparent"
+                className="p-0 border-0 shadow-none bg-transparent w-full"
               />
             </div>
           )}

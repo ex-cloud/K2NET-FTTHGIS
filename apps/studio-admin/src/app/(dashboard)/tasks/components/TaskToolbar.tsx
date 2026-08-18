@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, ChevronDown, RefreshCw, List, Trello, GanttChart } from "lucide-react";
+import { Search, ChevronDown, RefreshCw, Filter } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,6 +11,13 @@ import {
 import { cn } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import type { TaskFilterState } from "./TaskFilterMenu";
+import {
+  LinearDisplayOptionsPopover,
+  type DisplayPropertiesState,
+  type ViewGrouping,
+  type ViewOrdering,
+  type ShowClosedFilter,
+} from "./LinearDisplayOptionsPopover";
 
 interface TaskToolbarProps {
   searchQuery: string;
@@ -22,6 +29,14 @@ interface TaskToolbarProps {
   onRefresh: () => void;
   viewMode: "list" | "kanban" | "timeline";
   onViewModeChange: (mode: "list" | "kanban" | "timeline") => void;
+  displayProperties: DisplayPropertiesState;
+  onToggleDisplayProperty: (prop: keyof DisplayPropertiesState) => void;
+  grouping?: ViewGrouping;
+  onGroupingChange?: (g: ViewGrouping) => void;
+  ordering?: ViewOrdering;
+  onOrderingChange?: (o: ViewOrdering) => void;
+  showClosed?: ShowClosedFilter;
+  onShowClosedChange?: (sc: ShowClosedFilter) => void;
 }
 
 const SCOPE_OPTIONS = [
@@ -39,6 +54,14 @@ export function TaskToolbar({
   onRefresh,
   viewMode,
   onViewModeChange,
+  displayProperties,
+  onToggleDisplayProperty,
+  grouping,
+  onGroupingChange,
+  ordering,
+  onOrderingChange,
+  showClosed,
+  onShowClosedChange,
 }: TaskToolbarProps) {
   const activeCount =
     filters.status.length +
@@ -184,57 +207,33 @@ export function TaskToolbar({
           )}
         </div>
 
-        {/* RIGHT GROUP: View toggle + Refresh */}
+        {/* RIGHT GROUP: Linear Display Options Cluster + Refresh */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* View mode toggle buttons */}
-          <div className="flex items-center border border-border rounded-lg overflow-hidden divide-x divide-border/60 bg-card">
-            <button
-              onClick={() => onViewModeChange("list")}
-              title="List View"
-              className={cn(
-                "p-1.5 transition-colors",
-                viewMode === "list"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              )}
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onViewModeChange("kanban")}
-              title="Kanban View"
-              className={cn(
-                "p-1.5 transition-colors",
-                viewMode === "kanban"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              )}
-            >
-              <Trello className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onViewModeChange("timeline")}
-              title="Timeline View"
-              className={cn(
-                "p-1.5 transition-colors",
-                viewMode === "timeline"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              )}
-            >
-              <GanttChart className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          {/* Linear Display Options Popover */}
+          <LinearDisplayOptionsPopover
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+            grouping={grouping}
+            onGroupingChange={onGroupingChange}
+            ordering={ordering}
+            onOrderingChange={onOrderingChange}
+            showClosed={showClosed}
+            onShowClosedChange={onShowClosedChange}
+            displayProperties={displayProperties}
+            onToggleDisplayProperty={onToggleDisplayProperty}
+            availableViews={["list", "kanban", "timeline"]}
+            entityType="tasks"
+          />
 
-          {/* Refresh */}
+          {/* Refresh button */}
           <button
             onClick={onRefresh}
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden disabled:opacity-50"
-            title="Refresh"
+            title="Refresh tasks"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
-            {loading ? "Loading..." : "Refresh"}
+            <span className="hidden sm:inline">{loading ? "Loading..." : "Refresh"}</span>
           </button>
         </div>
       </div>

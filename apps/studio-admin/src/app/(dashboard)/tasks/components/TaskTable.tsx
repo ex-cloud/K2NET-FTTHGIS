@@ -20,6 +20,7 @@ import {
   createColumnHelper,
   flexRender,
   SortingState,
+  VisibilityState,
 } from "@tanstack/react-table";
 import { type Task } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ import {
   Calendar,
 } from "@k2net/ui";
 import { TaskContextMenu } from "./TaskContextMenu";
+import { type DisplayPropertiesState } from "./LinearDisplayOptionsPopover";
 
 interface TaskTableProps {
   tasks: Task[];
@@ -48,6 +50,7 @@ interface TaskTableProps {
   onToggleSelectTask?: (id: string, shiftKey?: boolean) => void;
   onSelectAllTasks?: () => void;
   focusedIndex?: number;
+  displayProperties?: DisplayPropertiesState;
 }
 
 const columnHelper = createColumnHelper<Task>();
@@ -66,6 +69,7 @@ export function TaskTable({
   onToggleSelectTask,
   onSelectAllTasks,
   focusedIndex = -1,
+  displayProperties,
 }: TaskTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -111,27 +115,34 @@ export function TaskTable({
                 ref={(el) => {
                   if (el) el.indeterminate = Boolean(isSomeSelected);
                 }}
-                onChange={() => onSelectAllTasks?.()}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onSelectAllTasks?.();
+                }}
                 className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary"
               />
             </div>
           );
         },
         cell: (info) => {
-          const isSelected = selectedTaskIds?.has(info.row.original.id);
+          const taskId = info.row.original.id;
+          const isSelected = selectedTaskIds?.has(taskId);
           return (
             <div
-              className="flex items-center justify-center w-full"
+              className="flex items-center justify-center w-full h-full cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
-                onToggleSelectTask?.(info.row.original.id, (e as any).shiftKey);
+                onToggleSelectTask?.(taskId, (e as any).shiftKey);
               }}
             >
               <input
                 type="checkbox"
                 checked={Boolean(isSelected)}
-                onChange={() => {}}
-                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary"
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onToggleSelectTask?.(taskId, (e.nativeEvent as any).shiftKey);
+                }}
+                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary pointer-events-auto"
               />
             </div>
           );
@@ -340,34 +351,63 @@ export function TaskTable({
         },
       }),
     ],
-    [assigneesList, onUpdateTask]
+    [assigneesList, onUpdateTask, selectedTaskIds, onToggleSelectTask, onSelectAllTasks, tasks]
   );
+
+  const columnVisibility = React.useMemo<VisibilityState>(() => {
+    const visibility: VisibilityState = {};
+    if (displayProperties) {
+      visibility.scope = displayProperties.scope !== false;
+      visibility.type = displayProperties.type !== false;
+      visibility.priority = displayProperties.priority !== false;
+      visibility.status = displayProperties.status !== false;
+      visibility.assigneeId = displayProperties.assignee !== false;
+      visibility.dueDate = displayProperties.dueDate !== false;
+      visibility.createdAt = displayProperties.created !== false;
+    }
+    return visibility;
+  }, [displayProperties]);
 
   const table = useReactTable({
     data: tasks,
     columns,
-    state: { sorting },
+    state: { sorting, columnVisibility },
+    meta: { selectedTaskIds },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const COLUMN_CLASSES: Record<string, string> = {
+    select: "w-9 shrink-0 justify-center",
+    title: "flex-1 min-w-[200px] justify-start",
+    scope: "w-28 shrink-0 justify-start",
+    type: "w-20 shrink-0 justify-start",
+    priority: "w-28 shrink-0 justify-start",
+    status: "w-32 shrink-0 justify-start",
+    assigneeId: "w-36 shrink-0 justify-start",
+    dueDate: "w-28 shrink-0 justify-start",
+    createdAt: "w-28 shrink-0 justify-start",
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-w-[1000px] flex flex-col">
       {/* ── Sticky Column Headers (Pinned to top on scroll) ────────────── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md flex border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
         {table.getFlatHeaders().map((header) => {
-          if (header.isPlaceholder) return <div key={header.id} />;
+          if (header.isPlaceholder) return null;
           const canSort = header.column.getCanSort();
           const isSorted = header.column.getIsSorted();
+          const colClass = COLUMN_CLASSES[header.column.id] ?? "w-28 shrink-0 justify-start";
 
           return (
             <div
               key={header.id}
               className={cn(
                 "min-w-0 py-2.5 flex items-center",
+                colClass,
                 header.column.id === "select" ? "px-1 justify-center" : "px-4 justify-start text-left"
               )}
             >
@@ -421,17 +461,17 @@ export function TaskTable({
           Array.from({ length: 8 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+              className="flex items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
             >
-              <div className="min-w-0 px-2 py-4 flex items-center justify-center"><div className="h-3.5 w-3.5 bg-muted/60 rounded" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
+              <div className="w-9 shrink-0 px-2 py-4 flex items-center justify-center"><div className="h-3.5 w-3.5 bg-muted/60 rounded" /></div>
+              <div className="flex-1 min-w-[200px] px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
+              {displayProperties?.scope !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
+              {displayProperties?.type !== false && <div className="w-20 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>}
+              {displayProperties?.priority !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
+              {displayProperties?.status !== false && <div className="w-32 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+              {displayProperties?.assignee !== false && <div className="w-36 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+              {displayProperties?.dueDate !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+              {displayProperties?.created !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
             </div>
           ))
         ) : tasks.length === 0 ? (
@@ -454,24 +494,28 @@ export function TaskTable({
               <div
                 onClick={() => onRowClick(row.original)}
                 className={cn(
-                  "grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch hover:bg-muted/10 cursor-pointer transition-all border-b border-border/30 divide-x divide-border/25 group bg-card/5",
+                  "flex items-stretch hover:bg-muted/10 cursor-pointer transition-all border-b border-border/30 divide-x divide-border/25 group bg-card/5",
                   focusedIndex === index && "ring-1 ring-primary/80 bg-primary/5 shadow-xs",
                   selectedTaskIds?.has(row.original.id) && "bg-primary/10"
                 )}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <div
-                    key={cell.id}
-                    className={cn(
-                      "min-w-0 py-3.5 flex items-center",
-                      cell.column.id === "select" ? "px-1 justify-center" : "px-4 justify-start"
-                    )}
-                  >
-                    <div className="w-full min-w-0">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {row.getVisibleCells().map((cell) => {
+                  const colClass = COLUMN_CLASSES[cell.column.id] ?? "w-28 shrink-0 justify-start";
+                  return (
+                    <div
+                      key={cell.id}
+                      className={cn(
+                        "min-w-0 py-3.5 flex items-center",
+                        colClass,
+                        cell.column.id === "select" ? "px-1 justify-center" : "px-4 justify-start"
+                      )}
+                    >
+                      <div className="w-full min-w-0">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </TaskContextMenu>
           ))
