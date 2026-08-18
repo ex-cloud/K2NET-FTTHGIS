@@ -74,6 +74,10 @@ export default function GatewaysOverviewPage() {
         return { throughput: "120 logs/min", latency: "4ms", extra: "Compliance Enforced" };
       case "ftth-poller":
         return { throughput: "60 cycles/min", latency: "15ms", extra: "Poller Engine Ready" };
+      case "ftth-task-gateway":
+        return { throughput: "22 tasks/min", latency: "10ms", extra: "Linear & Obsidian Sync OK" };
+      case "ftth-ai-gateway":
+        return { throughput: "35 req/min", latency: "120ms", extra: "RAG & LLM Engine OK" };
       default:
         return { throughput: "-", latency: "-", extra: "OK" };
     }

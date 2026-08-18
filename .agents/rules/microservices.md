@@ -18,6 +18,7 @@ Semua service internal berjalan pada port statis berikut:
 * `5009` - audit-gateway (Database audit logs)
 * `5010` - go-poller (SNMP live status tracking API & Prometheus Metrics)
 * `5011` - gateway-task (Obsidian Sync Worker)
+* `5012` - **gateway-ai** (AI Assistant FastAPI Python — RAG + SSE + pgvector)
 
 *Saat membuat service atau port baru, pastikan didaftarkan juga di `docker/prometheus/prometheus.yml` untuk monitoring.*
 
@@ -53,3 +54,33 @@ Setiap mikroservis Go baru atau lama yang memodifikasi state data (write operati
 * **Graceful Fallback**: Client wajib mendeteksi parameter `AUDIT_GATEWAY_URL`. Jika kosong, client harus otomatis dinonaktifkan (no-op) secara aman untuk mencegah crash pada development environment.
 * **Noise Control pada Ingress Audit**: Endpoint penerima log audit (seperti log HTTP dari Kong) wajib menyaring dan mengabaikan request baca-saja (`GET`, `HEAD`, `OPTIONS`) guna mencegah membengkaknya ukuran database log.
 
+---
+
+## 🐍 6. Python FastAPI Microservice (`gateway-ai` Port 5012)
+
+Aturan khusus untuk microservice Python yang berjalan berdampingan dengan service Go:
+
+### Struktur Proyek
+* Setiap microservice Python baru wajib mengikuti layout: `app/{api,core,db,models,services}/` dan `tests/`.
+* Gunakan **Pydantic Settings** (`pydantic-settings`) untuk semua konfigurasi ENV — tidak boleh ada hardcoded credentials.
+
+### Multi-Tenant Isolation (KRITIS)
+* **SETIAP** query database PostgreSQL `pgvector` wajib menyertakan klausa `WHERE tenant_id = :tenant_id`.
+* Gunakan dependency `verify_gateway_and_tenant()` (FastAPI Depends) yang memvalidasi `X-Gateway-Token` dari Kong dan mengekstrak `tenant_id` dari header `X-Tenant-ID`.
+* Double-lock pada JOIN: jika query melibatkan join tabel, pastikan **kedua** tabel difilter dengan `tenant_id`.
+
+### SSE Streaming
+* Endpoint streaming wajib mengembalikan `StreamingResponse` dengan header `X-Accel-Buffering: no` untuk mencegah buffering di Traefik/Nginx.
+* Format event SSE: `data: {"type": "sources"|"token"|"usage"|"error"|"done", ...}\n\n`
+
+### pgvector & HNSW Index
+* Gunakan dimensi embedding `1536` (OpenAI text-embedding-3-small / Gemini text-embedding-004).
+* HNSW index dibuat dengan parameter `m=16, ef_construction=64` untuk balance antara kecepatan dan akurasi.
+* Jangan pernah store atau query embedding tanpa filter tenant_id — ini adalah pelanggaran Zero Data Leakage.
+
+### Pre-Deployment Checklist Python
+```bash
+cd services/gateway-ai
+python -m py_compile app/**/*.py     # Syntax check
+python -m pytest tests/ -v            # Unit tests
+```

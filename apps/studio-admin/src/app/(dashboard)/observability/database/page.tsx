@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AreaChart, Area, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -150,11 +150,12 @@ export default function DatabaseCachePage() {
   const [persistenceError, setPersistenceError] = useState(false);
 
   const fetchPersistence = async () => {
-    if (!session?.accessToken) { setLoadingPersistence(false); return; }
+    const token = (session as any)?.accessToken;
+    if (!token) { setLoadingPersistence(false); return; }
     setLoadingPersistence(true); setPersistenceError(false);
     try {
       const res = await fetch("/api/v1/system/devops-stats", {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
+        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`devops-stats: ${res.status}`);
@@ -176,7 +177,9 @@ export default function DatabaseCachePage() {
   };
 
   // Load persistence on session ready
-  useState(() => { if (session?.accessToken) fetchPersistence(); });
+  useEffect(() => {
+    if ((session as any)?.accessToken) fetchPersistence();
+  }, [(session as any)?.accessToken]);
 
   const handleRefresh = () => {
     systemData.loadData(true);

@@ -95,6 +95,13 @@ scrape_configs:
         labels:
           application: "gateway-task"
 
+  - job_name: "gateway-ai"
+    metrics_path: "/health"
+    static_configs:
+      - targets: ["ftth-ai-gateway:5012"]
+        labels:
+          application: "gateway-ai"
+
   - job_name: "node-exporter"
     static_configs:
       - targets: ["node-exporter:9100"]

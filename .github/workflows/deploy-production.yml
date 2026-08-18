@@ -56,6 +56,7 @@ jobs:
       gateway-olt: ${{ steps.filter.outputs.gateway-olt }}
       gateway-audit: ${{ steps.filter.outputs.gateway-audit }}
       gateway-task: ${{ steps.filter.outputs.gateway-task }}
+      gateway-ai: ${{ steps.filter.outputs.gateway-ai }}
       poller: ${{ steps.filter.outputs.poller }}
       gateways_matrix: ${{ steps.set-matrix.outputs.gateways_matrix }}
       any_gateway_changed: ${{ steps.set-matrix.outputs.any_gateway_changed }}
@@ -100,6 +101,8 @@ jobs:
               - 'services/gateway-audit/**'
             gateway-task:
               - 'services/gateway-task/**'
+            gateway-ai:
+              - 'services/gateway-ai/**'
             poller:
               - 'services/poller/**'
 
@@ -112,7 +115,7 @@ jobs:
           MANUAL_SERVICE="${{ github.event.inputs.service }}"
           
           if [[ "$SHARED" == "true" || ( "$EVENT_NAME" == "workflow_dispatch" && ( "$MANUAL_SERVICE" == "all" || "$MANUAL_SERVICE" == "gateways" ) ) ]]; then
-            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller")
+            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller" "gateway-ai")
           else
             if [[ "${{ steps.filter.outputs.map-gateway }}" == "true" ]]; then SERVICES+=("map-gateway"); fi
             if [[ "${{ steps.filter.outputs.notification-gateway }}" == "true" ]]; then SERVICES+=("notification-gateway"); fi
@@ -124,6 +127,7 @@ jobs:
             if [[ "${{ steps.filter.outputs.gateway-olt }}" == "true" ]]; then SERVICES+=("gateway-olt"); fi
             if [[ "${{ steps.filter.outputs.gateway-audit }}" == "true" ]]; then SERVICES+=("gateway-audit"); fi
             if [[ "${{ steps.filter.outputs.gateway-task }}" == "true" ]]; then SERVICES+=("gateway-task"); fi
+            if [[ "${{ steps.filter.outputs.gateway-ai }}" == "true" ]]; then SERVICES+=("gateway-ai"); fi
             if [[ "${{ steps.filter.outputs.poller }}" == "true" ]]; then SERVICES+=("poller"); fi
           fi
           
@@ -239,8 +243,12 @@ jobs:
       - name: Test Service
         run: |
           cd services/${{ matrix.service }}
-          go vet ./...
-          go test ./...
+          if [ -f "go.mod" ]; then
+            go vet ./...
+            go test ./...
+          elif [ -f "requirements.txt" ]; then
+            python3 -m py_compile app/**/*.py
+          fi
 
 # ============================================================
 # JOB 2: DOCKER BUILD — Dijalankan di Runner GitHub, BUKAN di Server
@@ -434,8 +442,8 @@ jobs:
               bash scripts/deploy.sh production backend
             fi
 
-            # Deploy Go gateways if changed or manually triggered
-            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller"
+            # Deploy Go & Python gateways if changed or manually triggered
+            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai"
             for svc in $SERVICES_LIST; do
               CHANGED="false"
               if [ "$svc" == "map-gateway" ] && [ "${{ needs.changes.outputs.map-gateway }}" == "true" ]; then CHANGED="true"; fi
@@ -448,6 +456,7 @@ jobs:
               if [ "$svc" == "gateway-olt" ] && [ "${{ needs.changes.outputs.gateway-olt }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "gateway-audit" ] && [ "${{ needs.changes.outputs.gateway-audit }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "gateway-task" ] && [ "${{ needs.changes.outputs.gateway-task }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "gateway-ai" ] && [ "${{ needs.changes.outputs.gateway-ai }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "poller" ] && [ "${{ needs.changes.outputs.poller }}" == "true" ]; then CHANGED="true"; fi
 
               # If shared libraries changed, we build/deploy all gateways
@@ -457,7 +466,7 @@ jobs:
               if [ "${{ github.event.inputs.service }}" == "all" ] || [ "${{ github.event.inputs.service }}" == "gateways" ]; then CHANGED="true"; fi
 
               if [ "$CHANGED" == "true" ]; then
-                echo "Deploying Go gateway: $svc..."
+                echo "Deploying gateway: $svc..."
                 docker pull ghcr.io/ex-cloud/k2net-ftthgis/$svc:latest || true
                 docker compose -f docker-compose.gateways.yml up -d --no-build $svc
               fi

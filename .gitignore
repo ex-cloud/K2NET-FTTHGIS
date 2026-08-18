@@ -47,6 +47,17 @@ services/poller/poller-test.exe
 **/*.exe
 **/*.out
 
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+env/
+
 # Maven local repository
 .m2/
 

@@ -286,6 +286,31 @@ services:
           - /api/auth
         strip_path: false
 
+  # ─── 11. AI Assistant Gateway (Python FastAPI - Port 5012) ────────────────
+  - name: ai-gateway
+    url: http://ftth-ai-gateway:5012
+    routes:
+      - name: ai-chat-route
+        paths:
+          - /api/v1/ai
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Gateway-Token:$(GATEWAY_INTERNAL_TOKEN)"
+
 # ====================================================
 # Global Plugins
 # ====================================================

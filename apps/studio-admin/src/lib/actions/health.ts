@@ -81,6 +81,8 @@ export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
       "olt-gateway": "OLT",
       "whatsapp-gateway": "WhatsApp",
       "go-poller": "Poller",
+      "gateway-task": "Task",
+      "gateway-ai": "AI Assistant",
       "spring-boot": "Backend API",
       "node-exporter": "Node Exporter",
     };
@@ -209,6 +211,8 @@ export async function getDetailedServicesHealth(token: string): Promise<Record<s
       "olt-gateway",
       "whatsapp-gateway",
       "go-poller",
+      "gateway-task",
+      "gateway-ai",
       "spring-boot",
       "node-exporter",
     ];

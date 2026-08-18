@@ -48,6 +48,8 @@ const GATEWAY_URL_MAP: Record<string, string> = {
   olt:          process.env.OLT_GATEWAY_URL           || "http://127.0.0.1:5008",
   audit:        process.env.AUDIT_GATEWAY_URL         || "http://127.0.0.1:5009",
   poller:       process.env.POLLER_GATEWAY_URL        || "http://127.0.0.1:5010",
+  task:         process.env.TASK_GATEWAY_URL          || "http://127.0.0.1:5011",
+  ai:           process.env.AI_GATEWAY_URL            || "http://127.0.0.1:5012",
 };
 
 async function verifySuperAdmin() {

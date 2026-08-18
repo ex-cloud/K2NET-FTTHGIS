@@ -263,6 +263,34 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  gateway-ai:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-ai:latest
+    build:
+      context: ./services/gateway-ai
+      dockerfile: Dockerfile
+    container_name: ftth-ai-gateway
+    restart: always
+    env_file:
+      - ./services/.env
+    environment:
+      - PORT=5012
+      - DATABASE_URL=postgresql+asyncpg://ftth_user:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - GATEWAY_INTERNAL_TOKEN=${GATEWAY_TOKEN}
+      - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-openai}
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
+    ports:
+      - "127.0.0.1:5012:5012"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 384M
+
 networks:
   default:
     name: project5_default

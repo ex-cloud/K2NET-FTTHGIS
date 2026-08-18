@@ -1,0 +1,106 @@
+"""
+K2NET FTTH AI Gateway — Pydantic Request/Response Schemas
+"""
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
+from datetime import datetime
+import uuid
+
+
+# ─── Chat Request & Response ─────────────────────────────────────────────────
+
+class ChatHistoryMessage(BaseModel):
+    role: Literal["user", "assistant", "system"]
+    content: str
+
+
+class ChatStreamRequest(BaseModel):
+    session_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="UUID sesi yang sudah ada. Jika None, buat sesi baru."
+    )
+    message: str = Field(..., min_length=1, max_length=4000)
+    scope: str = Field(
+        default="GENERAL",
+        description="Konteks query: GENERAL | GIS_MAP | OLT_DIAGNOSTICS | TASK_COPILOT | BILLING"
+    )
+    model: str = Field(
+        default="",
+        description="Override model LLM: gpt-4o | gpt-4o-mini | gemini-1.5-flash | gemini-1.5-pro. Kosong = pakai default."
+    )
+    history: list[ChatHistoryMessage] = Field(
+        default=[],
+        description="Riwayat percakapan sebelumnya (max 10 pesan terakhir).",
+        max_length=20
+    )
+    system_prompt: Optional[str] = Field(
+        default=None,
+        description="Override system prompt (hanya admin)."
+    )
+
+
+class DocumentSource(BaseModel):
+    document_id: str
+    title: str
+    chunk_index: int
+    similarity_score: float
+    content_preview: str
+
+
+# ─── Document Upload ──────────────────────────────────────────────────────────
+
+class DocumentUploadResponse(BaseModel):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    title: str
+    category: str
+    status: str
+    chunk_count: int
+    created_at: datetime
+
+
+# ─── Chat Session ─────────────────────────────────────────────────────────────
+
+class ChatSessionCreate(BaseModel):
+    title: str = Field(default="Percakapan Baru", max_length=255)
+    context_scope: str = Field(default="GENERAL")
+    model_used: str = Field(default="gpt-4o-mini")
+
+
+class ChatSessionResponse(BaseModel):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    user_id: uuid.UUID
+    title: str
+    context_scope: str
+    model_used: str
+    is_archived: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChatMessageResponse(BaseModel):
+    id: uuid.UUID
+    session_id: uuid.UUID
+    role: str
+    content: str
+    sources: list
+    tokens_used: int
+    latency_ms: int
+    created_at: datetime
+
+
+# ─── Health ───────────────────────────────────────────────────────────────────
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str = "ftth-ai-gateway"
+    version: str = "1.0.0"
+    port: int
+    llm_provider: str
+    db_connected: bool
+
+
+class ReadyResponse(BaseModel):
+    ready: bool
+    checks: dict[str, bool]

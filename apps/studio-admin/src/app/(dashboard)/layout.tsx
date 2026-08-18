@@ -11,6 +11,7 @@ import * as React from "react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getLogoUrl } from "@/lib/domain";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
+import { FloatingAiAssistant } from "@/components/ai/FloatingAiAssistant";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -64,6 +65,8 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+      {/* K2NET AI Assistant — Floating Chat (Ctrl+J) */}
+      <FloatingAiAssistant />
     </div>
   );
 }
