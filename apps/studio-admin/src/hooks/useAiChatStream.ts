@@ -3,7 +3,7 @@
 /**
  * K2NET AI Chat Stream Hook
  * Mengelola koneksi SSE ke /api/v1/ai/chat/stream via Kong API Gateway.
- * Features: streaming token rendering, optimistic updates, abort, retry, session history.
+ * Features: streaming token rendering, thinking / chain-of-thought parsing, optimistic updates, abort, retry.
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -13,6 +13,9 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  thought?: string;
+  thinkingStage?: string;
+  isThinking?: boolean;
   sources?: DocumentSource[];
   isStreaming?: boolean;
   tokensUsed?: number;
@@ -65,7 +68,14 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
       setMessages((prev) => [
         ...prev,
         { id: userMsgId, role: "user", content: userMessage },
-        { id: assistantMsgId, role: "assistant", content: "", isStreaming: true },
+        { 
+          id: assistantMsgId, 
+          role: "assistant", 
+          content: "", 
+          isStreaming: true, 
+          isThinking: true, 
+          thinkingStage: "Memindai basis pengetahuan pgvector..." 
+        },
       ]);
 
       // Batasi riwayat ke 10 pesan terakhir untuk efisiensi token
@@ -103,7 +113,8 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
         // ── Baca SSE stream ────────────────────────────────────────────────
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let accumulatedContent = "";
+        let accumulatedRaw = "";
+        let currentStage = "Memindai basis pengetahuan pgvector...";
         let pendingSources: DocumentSource[] = [];
 
         while (true) {
@@ -121,14 +132,56 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
             try {
               const event = JSON.parse(jsonStr);
 
-              if (event.type === "sources") {
-                pendingSources = event.sources || [];
-              } else if (event.type === "token") {
-                accumulatedContent += event.content;
+              if (event.type === "status") {
+                currentStage = event.message || "Memproses...";
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsgId
-                      ? { ...m, content: accumulatedContent, sources: pendingSources }
+                      ? { ...m, thinkingStage: currentStage, isThinking: true }
+                      : m
+                  )
+                );
+              } else if (event.type === "sources") {
+                pendingSources = event.sources || [];
+                if (event.message) currentStage = event.message;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId
+                      ? { ...m, sources: pendingSources, thinkingStage: currentStage }
+                      : m
+                  )
+                );
+              } else if (event.type === "token") {
+                accumulatedRaw += event.content;
+
+                // Parse <think>...</think> reasoning tags if present
+                let thoughtText = "";
+                let answerText = accumulatedRaw;
+
+                if (accumulatedRaw.includes("<think>")) {
+                  if (accumulatedRaw.includes("</think>")) {
+                    const parts = accumulatedRaw.split("</think>");
+                    thoughtText = parts[0].replace("<think>", "").trim();
+                    answerText = parts.slice(1).join("</think>").trim();
+                  } else {
+                    thoughtText = accumulatedRaw.replace("<think>", "").trim();
+                    answerText = "";
+                  }
+                }
+
+                const isStillThinking = answerText.length === 0;
+
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId
+                      ? {
+                          ...m,
+                          content: answerText,
+                          thought: thoughtText || undefined,
+                          isThinking: isStillThinking,
+                          thinkingStage: isStillThinking ? currentStage : undefined,
+                          sources: pendingSources,
+                        }
                       : m
                   )
                 );
@@ -139,6 +192,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
                       ? {
                           ...m,
                           isStreaming: false,
+                          isThinking: false,
                           tokensUsed: event.tokens,
                           latencyMs: event.latency_ms,
                         }
@@ -150,7 +204,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
               } else if (event.type === "done") {
                 setMessages((prev) =>
                   prev.map((m) =>
-                    m.id === assistantMsgId ? { ...m, isStreaming: false } : m
+                    m.id === assistantMsgId ? { ...m, isStreaming: false, isThinking: false } : m
                   )
                 );
               }
@@ -170,8 +224,9 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
             m.id === assistantMsgId
               ? {
                   ...m,
-                  content: `❌ Gagal mendapatkan respons: ${errorMsg}`,
+                  content: `[Error] ${errorMsg}`,
                   isStreaming: false,
+                  isThinking: false,
                 }
               : m
           )
@@ -181,24 +236,23 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [isStreaming, messages, session, options]
+    [isStreaming, messages, options.model, options.scope, options.sessionId, session]
   );
 
-  /** Hentikan streaming yang sedang berjalan */
+  /** Batalkan streaming yang sedang berjalan */
   const stopStreaming = useCallback(() => {
-    abortControllerRef.current?.abort();
-    setIsStreaming(false);
-    setMessages((prev) =>
-      prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m))
-    );
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsStreaming(false);
+    }
   }, []);
 
-  /** Hapus semua pesan */
+  /** Hapus seluruh riwayat chat sesi ini */
   const clearMessages = useCallback(() => {
-    stopStreaming();
     setMessages([]);
     setError(null);
-  }, [stopStreaming]);
+  }, []);
 
   return {
     messages,

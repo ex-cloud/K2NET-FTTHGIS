@@ -2,8 +2,9 @@
 
 /**
  * K2NET Floating AI Assistant
- * - Floating Action Button (kanan bawah) dengan ambient glow & shortcut Cmd+J / Ctrl+J
+ * - Top Navbar Trigger [ Ask AI ❖ Ctrl+J ] & Keyboard shortcut Cmd+J / Ctrl+J
  * - Slide-over Drawer dengan SSE streaming chat
+ * - Agent Reasoning & Thinking Accordion (Linear & Supabase AI style)
  * - Markdown renderer + citation badges + model selector
  */
 
@@ -31,6 +32,7 @@ import {
   Copy,
   Check,
   ChevronRight,
+  ChevronDown,
   BookOpen,
   Zap,
   MapPin,
@@ -38,6 +40,8 @@ import {
   Database,
   GitPullRequest,
   ShieldCheck,
+  BrainCircuit,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAiChatStream, ChatMessage, DocumentSource } from "@/hooks/useAiChatStream";
@@ -94,6 +98,7 @@ const MODELS = [
 // ─── Message Bubble Component ─────────────────────────────────────────────────
 function MessageBubble({ message }: { message: ChatMessage }) {
   const [copied, setCopied] = useState(false);
+  const [showThinking, setShowThinking] = useState(true);
   const isUser = message.role === "user";
 
   const handleCopy = useCallback(async () => {
@@ -118,6 +123,39 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
       {/* Content */}
       <div className={cn("flex-1 min-w-0", isUser && "flex flex-col items-end")}>
+        
+        {/* ── Collapsible Agent Thinking Process (Linear & Supabase AI style) ── */}
+        {!isUser && (message.isThinking || message.thought || (message.isStreaming && !message.content)) && (
+          <div className="mb-2.5 rounded-xl border border-border/70 bg-card text-xs overflow-hidden max-w-[95%] shadow-xs">
+            <button
+              type="button"
+              onClick={() => setShowThinking(!showThinking)}
+              className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <BrainCircuit className={cn("w-3.5 h-3.5 text-purple-400", message.isStreaming && "animate-pulse")} />
+                <span>
+                  {message.isStreaming && !message.content
+                    ? message.thinkingStage || "Thinking..."
+                    : "Proses Penalaran (Thinking Process)"}
+                </span>
+                {message.isStreaming && !message.content && (
+                  <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />
+                )}
+              </span>
+              <ChevronDown
+                className={cn("w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground", showThinking ? "rotate-180" : "")}
+              />
+            </button>
+            {showThinking && (
+              <div className="px-3.5 py-2.5 border-t border-border/40 font-mono text-[11px] text-muted-foreground/90 whitespace-pre-wrap bg-background/50 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar">
+                {message.thought || message.thinkingStage || "Mengevaluasi parameter teknis dan merumuskan jawaban..."}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Message Main Bubble */}
         <div
           className={cn(
             "rounded-2xl px-4 py-3 max-w-[85%] text-sm",
@@ -130,7 +168,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (
             <>
-              {message.isStreaming && !message.content && (
+              {message.isStreaming && !message.content && !message.thought && (
                 <div className="flex gap-1.5 items-center h-5">
                   <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0ms]" />
                   <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:150ms]" />
@@ -181,7 +219,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             )}
             <button
               onClick={handleCopy}
-              className="p-1 rounded hover:bg-muted transition-colors"
+              className="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
               title="Salin ke clipboard"
             >
               {copied ? (
@@ -252,7 +290,7 @@ export function FloatingAiAssistant() {
   }, [input, isStreaming, sendMessage]);
 
   const handleKeyPress = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
@@ -263,10 +301,11 @@ export function FloatingAiAssistant() {
 
   return (
     <>
-      {/* ── Slide-Over Drawer (Triggered by Top Header or Ctrl+J / Cmd+J) ── */}
+      {/* ── Slide-Over Drawer (showCloseButton={false} suppresses Radix default close button to prevent double X) ── */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="right"
+          showCloseButton={false}
           className="w-full sm:max-w-[480px] p-0 flex flex-col bg-background border-l border-border"
         >
           {/* Header */}
@@ -305,7 +344,7 @@ export function FloatingAiAssistant() {
                   </SelectContent>
                 </Select>
 
-                {/* Clear + Close */}
+                {/* Clear + Single Close */}
                 {messages.length > 0 && (
                   <button
                     onClick={clearMessages}
@@ -317,9 +356,10 @@ export function FloatingAiAssistant() {
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+                  title="Tutup (Esc)"
                 >
-                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -409,54 +449,46 @@ export function FloatingAiAssistant() {
                 onKeyDown={handleKeyPress}
                 placeholder="Tanya tentang OLT, redaman, GIS... (Enter untuk kirim)"
                 rows={1}
-                disabled={isStreaming}
                 className={cn(
-                  "flex-1 resize-none rounded-xl px-3 py-2.5 text-sm",
-                  "bg-muted/40 border border-border/60",
-                  "text-foreground placeholder:text-muted-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "min-h-[40px] max-h-[120px] overflow-y-auto transition-all"
+                  "flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs",
+                  "bg-muted/40 border border-border",
+                  "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
+                  "placeholder:text-muted-foreground text-foreground",
+                  "max-h-28 overflow-y-auto leading-relaxed"
                 )}
                 style={{ height: "auto" }}
                 onInput={(e) => {
-                  const el = e.currentTarget;
-                  el.style.height = "auto";
-                  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height = `${Math.min(target.scrollHeight, 112)}px`;
                 }}
               />
-              {isStreaming ? (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={stopStreaming}
-                  className="h-10 w-10 p-0 rounded-xl flex-shrink-0"
-                  title="Hentikan streaming"
-                >
-                  <Square className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  className="h-10 w-10 p-0 rounded-xl flex-shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 border-0 shadow-xs"
-                  title="Kirim (Enter)"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              )}
+              <Button
+                size="sm"
+                onClick={isStreaming ? stopStreaming : handleSend}
+                disabled={!input.trim() && !isStreaming}
+                className={cn(
+                  "h-9 w-9 p-0 rounded-xl flex-shrink-0 shadow-xs cursor-pointer",
+                  isStreaming
+                    ? "bg-rose-500 hover:bg-rose-600 text-white"
+                    : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                )}
+              >
+                {isStreaming ? (
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+              </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-              <kbd className="px-1 py-0.5 rounded border border-border/50 text-[9px] bg-muted">
-                Ctrl+J
-              </kbd>{" "}
-              untuk toggle •{" "}
-              <kbd className="px-1 py-0.5 rounded border border-border/50 text-[9px] bg-muted">
-                Shift+Enter
-              </kbd>{" "}
-              untuk baris baru
-            </p>
+            <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
+              <span>
+                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px]">Ctrl+J</kbd> untuk toggle
+              </span>
+              <span>
+                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px]">Shift+Enter</kbd> untuk baris baru
+              </span>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

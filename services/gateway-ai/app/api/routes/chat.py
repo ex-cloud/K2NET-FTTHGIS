@@ -58,7 +58,10 @@ async def stream_chat_response(
         accumulated_content = ""
 
         try:
-            # ── 1. RAG Retrieval (Konteks Knowledge Base, Terisolasi per Tenant) ──
+            # ── 1. Status: Searching pgvector ─────────────────────────────────
+            yield f"data: {json.dumps({'type': 'status', 'stage': 'searching', 'message': 'Memindai basis pengetahuan pgvector...'})}\n\n"
+
+            # ── 2. RAG Retrieval (Konteks Knowledge Base, Terisolasi per Tenant) ──
             retriever = RAGRetriever(tenant_id=ctx.tenant_id, provider=provider)
             contexts, sources = await retriever.retrieve_context(
                 query=payload.message,
@@ -66,11 +69,15 @@ async def stream_chat_response(
                 scope=payload.scope,
             )
 
-            # ── 2. Kirim metadata sumber sitasi ke client ──────────────────────
+            # ── 3. Kirim metadata sumber sitasi ke client ──────────────────────
             if sources:
-                yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
+                yield f"data: {json.dumps({'type': 'sources', 'sources': sources, 'stage': 'retrieved', 'message': f'Ditemukan {len(sources)} dokumen teknis relevan'})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'sources', 'sources': [], 'stage': 'general', 'message': 'Menggunakan penalaran internal model'})}\n\n"
 
-            # ── 3. Stream token dari LLM ───────────────────────────────────────
+            yield f"data: {json.dumps({'type': 'status', 'stage': 'reasoning', 'message': 'Menganalisis konteks & merumuskan solusi teknis...'})}\n\n"
+
+            # ── 4. Stream token dari LLM ───────────────────────────────────────
             engine = LLMEngine(provider=provider, model=model_override)
             async for token in engine.stream_chat(
                 user_message=payload.message,
