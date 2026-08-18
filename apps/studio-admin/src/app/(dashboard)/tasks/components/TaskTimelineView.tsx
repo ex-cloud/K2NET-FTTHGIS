@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { type Task } from "@/hooks/useTasksQuery";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import { cn } from "@/lib/utils";
-import { FolderKanban, ClipboardList, Crosshair, ChevronLeft, ChevronRight } from "lucide-react";
+import { Crosshair } from "lucide-react";
 
 interface TaskTimelineViewProps {
   tasks: Task[];
@@ -31,7 +31,7 @@ interface TimelineMonth {
 export function TaskTimelineView({
   tasks,
   onRowClick,
-  displayProperties,
+  displayProperties: _displayProperties,
 }: TaskTimelineViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const monthColWidth = 180;
@@ -92,7 +92,7 @@ export function TaskTimelineView({
   const totalGridWidth = timelineMonths.length * monthColWidth;
 
   // ── Today Marker Position ──────────────────────────────────────────────────
-  const nowMs = Date.now();
+  const nowMs = useMemo(() => Date.now(), []);
   const todayLeftPx = useMemo(() => {
     if (nowMs < startTimelineMs || nowMs > endTimelineMs) return -1;
     const progress = (nowMs - startTimelineMs) / totalTimelineMs;
@@ -113,6 +113,7 @@ export function TaskTimelineView({
   useEffect(() => {
     const timer = setTimeout(() => scrollToToday(false), 80);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayLeftPx]);
 
   // ── Compute Task Duration Bar ──────────────────────────────────────────────
