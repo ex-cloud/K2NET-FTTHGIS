@@ -121,7 +121,7 @@ export function ProjectTimelineView({
   const totalGridWidth = timelineMonths.length * monthColWidth;
 
   // ── Today Marker Position ──────────────────────────────────────────────────
-  const nowMs = Date.now();
+  const nowMs = useMemo(() => Date.now(), []);
   const todayLeftPx = useMemo(() => {
     if (nowMs < startTimelineMs || nowMs > endTimelineMs) return -1;
     const progress = (nowMs - startTimelineMs) / totalTimelineMs;
