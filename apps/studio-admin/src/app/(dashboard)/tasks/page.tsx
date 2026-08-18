@@ -6,12 +6,16 @@ import { useSession } from "next-auth/react";
 import { KanbanBoard } from "@k2net/ui";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { ClipboardList, Plus, PanelRight, HelpCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { X } from "lucide-react";
+
+// Hooks & Stores
 import { useTasksQuery, type Task, type TaskScope } from "@/hooks/useTasksQuery";
 import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
-import { cn } from "@/lib/utils";
+import { useLinearShortcuts } from "@/hooks/useLinearShortcuts";
+import { useTaskLiveStream } from "@/hooks/useTaskLiveStream";
+import { useTaskBatchActions } from "@/hooks/useTaskBatchActions";
 import { useTaskStore } from "@/store/task-store";
 
 // Sub-components & configurations
@@ -25,66 +29,10 @@ import { type TaskFilterState } from "./components/TaskFilterMenu";
 import { TaskTimelineView } from "./components/TaskTimelineView";
 import { NewTaskDialog } from "./components/NewTaskDialog";
 import { TaskDetailSheet } from "./components/TaskDetailSheet";
-
-// ─── Quick-view filter ────────────────────────────────────────────────────────
-
-type QuickView =
-  | "all"
-  | "active"
-  | "overdue"
-  | "no-assignee"
-  | "upcoming"
-  | "resolved"
-  | "my-issues"
-  | "created-by-me";
-
-const VIEW_LABELS: Record<QuickView, string> = {
-  "all": "All Issues",
-  "active": "Active Tasks",
-  "overdue": "Overdue",
-  "no-assignee": "No Assignee",
-  "upcoming": "Upcoming 7 Days",
-  "resolved": "Resolved & Closed",
-  "my-issues": "My Issues",
-  "created-by-me": "Created by Me",
-};
-
-function applyViewFilter(tasks: Task[], view: QuickView, userId: string): Task[] {
-  const now = new Date();
-  const in7d = new Date();
-  in7d.setDate(now.getDate() + 7);
-
-  switch (view) {
-    case "active":
-      return tasks.filter((t) => !["RESOLVED", "CLOSED"].includes(t.status));
-    case "overdue":
-      return tasks.filter(
-        (t) => t.dueDate && new Date(t.dueDate) < now && !["RESOLVED", "CLOSED"].includes(t.status)
-      );
-    case "no-assignee":
-      return tasks.filter((t) => !t.assigneeId);
-    case "upcoming":
-      return tasks.filter(
-        (t) =>
-          t.dueDate &&
-          new Date(t.dueDate) >= now &&
-          new Date(t.dueDate) <= in7d &&
-          !["RESOLVED", "CLOSED"].includes(t.status)
-      );
-    case "resolved":
-      return tasks.filter((t) => ["RESOLVED", "CLOSED"].includes(t.status));
-    case "my-issues":
-      return tasks.filter(
-        (t) => t.assigneeId === userId && !["RESOLVED", "CLOSED"].includes(t.status)
-      );
-    case "created-by-me":
-      return tasks.filter((t) => t.reporterId === userId);
-    default:
-      return tasks;
-  }
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+import { TaskBulkActionBar } from "./components/TaskBulkActionBar";
+import { TaskHeaderStatsBar } from "./components/TaskHeaderStatsBar";
+import { TaskShortcutsHelpDialog } from "./components/TaskShortcutsHelpDialog";
+import { applyViewFilter, VIEW_LABELS, type QuickView } from "./components/taskViewFilters";
 
 export default function TasksPage() {
   const router = useRouter();
@@ -97,9 +45,11 @@ export default function TasksPage() {
   const projectParam = searchParams.get("project");
   const typeParam = searchParams.get("type");
 
-  // Dialog / panel state
+  // Dialog / panel / focus state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   // Linear-style detail sheet state
   const [sheetTask, setSheetTask] = useState<Task | null>(null);
@@ -115,7 +65,6 @@ export default function TasksPage() {
   });
 
   // ── Data fetching ───────────────────────────────────────────────────────────
-
   const {
     tasks,
     loading,
@@ -131,9 +80,7 @@ export default function TasksPage() {
 
   // B2B badge sync
   const { tasks: b2bTasks } = useTasksQuery(undefined, "TENANT_TO_PLATFORM");
-  const b2bCount = b2bTasks.filter(
-    (t) => t.status !== "RESOLVED" && t.status !== "CLOSED"
-  ).length;
+  const b2bCount = b2bTasks.filter((t) => t.status !== "RESOLVED" && t.status !== "CLOSED").length;
   const setUnreadCount = useTaskStore((state) => state.setUnreadCount);
   useEffect(() => { setUnreadCount(b2bCount); }, [b2bCount, setUnreadCount]);
 
@@ -141,8 +88,14 @@ export default function TasksPage() {
 
   const { users: teamUsers } = useTeamUsers();
 
-  // ── Derived unique assignees (Combines active Keycloak users + task assignees) ────
+  // ── Real-time live stream hook ──────────────────────────────────────────────
+  useTaskLiveStream({
+    onTaskUpdated: () => refresh(),
+    onTaskCreated: () => refresh(),
+    onTaskDeleted: () => refresh(),
+  });
 
+  // ── Derived unique assignees & projects ─────────────────────────────────────
   const assigneesList = useMemo(() => {
     const ids = new Set<string>();
     teamUsers.forEach((u) => { if (u.email) ids.add(u.email); });
@@ -153,17 +106,13 @@ export default function TasksPage() {
   const dynamicProjectsList = useMemo(() => {
     const names = new Set<string>();
     tasks.forEach((t) => {
-      if (t.obsidianRef && t.obsidianRef.length > 2) {
-        names.add(t.obsidianRef);
-      } else if (t.type === "PROJECT" && t.title) {
-        names.add(t.title);
-      }
+      if (t.obsidianRef && t.obsidianRef.length > 2) names.add(t.obsidianRef);
+      else if (t.type === "PROJECT" && t.title) names.add(t.title);
     });
     return Array.from(names);
   }, [tasks]);
 
   // ── Filtered tasks ──────────────────────────────────────────────────────────
-
   const userId = session?.user?.id ?? session?.user?.email ?? "";
 
   const filteredTasks = useMemo(() => {
@@ -195,7 +144,6 @@ export default function TasksPage() {
   useEffect(() => { setLocalTasks(filteredTasks); }, [filteredTasks]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
-
   const handleOpenSheet = useCallback((task: Task) => {
     setSheetTask(task);
     setSheetOpen(true);
@@ -256,6 +204,46 @@ export default function TasksPage() {
     [session?.accessToken, filteredTasks, refresh]
   );
 
+  // ── Batch Actions Hook ──────────────────────────────────────────────────────
+  const {
+    selectedTaskIds,
+    handleToggleSelectTask,
+    handleSelectAllTasks,
+    handleClearSelection,
+    handleBatchUpdateStatus,
+    handleBatchUpdatePriority,
+    handleBatchUpdateAssignee,
+    handleBatchUpdateScope,
+    handleBatchDelete,
+  } = useTaskBatchActions({
+    filteredTasks,
+    sessionToken: session?.accessToken,
+    onSaveTask: handleSaveTask,
+    refresh,
+    setLocalTasks,
+  });
+
+  // ── Keyboard Shortcuts (Linear Power-User Keybindings) ─────────────────────
+  useLinearShortcuts({
+    onNewTask: () => setDialogOpen(true),
+    onNewProject: () => router.push("/tasks/projects"),
+    onNextRow: () => setFocusedIndex((prev) => Math.min(filteredTasks.length - 1, prev + 1)),
+    onPrevRow: () => setFocusedIndex((prev) => Math.max(0, prev - 1)),
+    onOpenSelected: () => {
+      if (focusedIndex >= 0 && filteredTasks[focusedIndex]) {
+        handleOpenSheet(filteredTasks[focusedIndex]);
+      }
+    },
+    onToggleSelectRow: () => {
+      if (focusedIndex >= 0 && filteredTasks[focusedIndex]) {
+        handleToggleSelectTask(filteredTasks[focusedIndex].id);
+      }
+    },
+    onClearSelection: handleClearSelection,
+    onToggleHelp: () => setShortcutsHelpOpen((prev) => !prev),
+    enabled: !dialogOpen && !sheetOpen,
+  });
+
   const handleCardDrop = useCallback(
     (itemId: string, targetStatus: string) => {
       handleUpdateTask(itemId, { status: targetStatus });
@@ -265,19 +253,14 @@ export default function TasksPage() {
 
   const handleViewModeChange = (mode: "list" | "kanban" | "timeline") => {
     const params = new URLSearchParams(searchParams.toString());
-    if (mode === "list") {
-      params.delete("view");
-    } else {
-      params.set("view", mode);
-    }
+    if (mode === "list") params.delete("view");
+    else params.set("view", mode);
     router.push(`/tasks?${params.toString()}`);
   };
 
   const handleToggleFilter = (type: keyof TaskFilterState, value: string) => {
     setFilters((prev) => {
-      if (type === "assigneeId") {
-        return { ...prev, assigneeId: prev.assigneeId === value ? null : value };
-      }
+      if (type === "assigneeId") return { ...prev, assigneeId: prev.assigneeId === value ? null : value };
       const list = prev[type] as string[];
       const newList = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
       return { ...prev, [type]: newList };
@@ -289,8 +272,7 @@ export default function TasksPage() {
     setSearchQuery("");
   };
 
-  // ── Labels ─────────────────────────────────────────────────────────────────
-
+  // ── Page Titles ─────────────────────────────────────────────────────────────
   const pageTitle =
     scopeParam === "PLATFORM_INTERNAL" && quickParam === "all"
       ? "Internal Tasks"
@@ -304,102 +286,33 @@ export default function TasksPage() {
       ? "Incoming B2B partner support tickets"
       : "Internal + B2B Inbox";
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-  // NOTE: No PageLayout wrapper — return root div directly like query-performance page.
-  // PageLayout variant="workspace" adds overflow-y-auto which breaks fixed-height layout.
-
   return (
     <>
-      {/* ── Root container: identical pattern to query-performance ── */}
+      {/* ── Root container ────────────────────────────────────────── */}
       <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
+        
+        {/* ── Page Header & Stats Bar ───────────────────────────────── */}
+        <TaskHeaderStatsBar
+          pageTitle={pageTitle}
+          scopeDescription={scopeDescription}
+          rightPanelOpen={rightPanelOpen}
+          onToggleRightPanel={() => setRightPanelOpen((v) => !v)}
+          onOpenShortcutsHelp={() => setShortcutsHelpOpen(true)}
+          onOpenNewTask={() => setDialogOpen(true)}
+          summary={summary}
+          totalElements={totalElements}
+        />
 
-        {/* ── Page Header ─────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 md:px-6 shrink-0">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              {pageTitle}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{scopeDescription}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setRightPanelOpen((v) => !v)}
-              className={cn(
-                "p-2 rounded-lg border border-border bg-card transition-colors",
-                rightPanelOpen
-                  ? "text-primary border-primary/30 bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title={rightPanelOpen ? "Hide overview panel" : "Show overview panel"}
-            >
-              <PanelRight className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setDialogOpen(true)}
-              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all"
-              title="New Task"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Inline KPI Stats Bar ────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-foreground font-mono">{summary?.totalOpen ?? "—"}</span>
-            <span>Active Tasks</span>
-            <span title="Total open non-terminal tasks" className="cursor-help text-muted-foreground/60 hover:text-foreground">
-              <HelpCircle className="h-3.5 w-3.5" />
-            </span>
-          </div>
-          <span className="text-muted-foreground/30 px-1">/</span>
-          <div className="flex items-center gap-1.5">
-            <span className={cn(
-              "font-bold font-mono",
-              (summary?.urgentCount ?? 0) > 0 ? "text-destructive" : "text-foreground"
-            )}>
-              {summary?.urgentCount ?? "—"}
-            </span>
-            <span>Urgent</span>
-            <span title="Tasks marked URGENT priority" className="cursor-help text-muted-foreground/60 hover:text-foreground">
-              <HelpCircle className="h-3.5 w-3.5" />
-            </span>
-          </div>
-          <span className="text-muted-foreground/30 px-1">/</span>
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-foreground font-mono">{summary?.resolvedToday ?? "—"}</span>
-            <span>Resolved Today</span>
-            <span title="Tickets resolved or closed today" className="cursor-help text-muted-foreground/60 hover:text-foreground">
-              <HelpCircle className="h-3.5 w-3.5" />
-            </span>
-          </div>
-          {totalElements > 0 && (
-            <>
-              <span className="text-muted-foreground/30 px-1">/</span>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-foreground font-mono">{totalElements}</span>
-                <span>Total</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ── KPI Cards ───────────────────────────────────────────── */}
+        {/* ── KPI Cards ─────────────────────────────────────────────── */}
         <div className="px-4 md:px-6 shrink-0">
           <TaskKpiStrip />
         </div>
 
-        {/* ── Main content area + optional right sidebar ───────────── */}
+        {/* ── Main content area + optional right sidebar ─────────────── */}
         <div className="flex-1 min-h-0 flex gap-4 px-4 md:px-6 pb-6 overflow-hidden">
-
-          {/* ── Table / Kanban / Timeline card ── */}
-          {/* Identical structure to query-performance:                */}
-          {/* border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col */}
+          
+          {/* Table / Kanban / Timeline card */}
           <div className="flex-1 min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden flex flex-col">
-
-            {/* Sticky Toolbar inside card */}
             <TaskToolbar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -438,18 +351,15 @@ export default function TasksPage() {
                 )}
                 <button
                   onClick={() => router.push("/tasks")}
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors underline ml-1"
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors underline ml-1 cursor-pointer"
                 >
                   Reset filter
                 </button>
               </div>
             )}
 
-            {/* ── Scrollable Table Container ─────────────────────── */}
-            {/* overflow-auto here bounds scroll to this card only    */}
+            {/* Scrollable Table / Kanban / Timeline Container */}
             <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
-
-              {/* List View */}
               {viewMode === "list" && (
                 <TaskTable
                   tasks={filteredTasks}
@@ -461,10 +371,13 @@ export default function TasksPage() {
                   onDeleteTask={handleDeleteTask}
                   onFetchMore={fetchMore}
                   assigneesList={assigneesList}
+                  selectedTaskIds={selectedTaskIds}
+                  onToggleSelectTask={handleToggleSelectTask}
+                  onSelectAllTasks={handleSelectAllTasks}
+                  focusedIndex={focusedIndex}
                 />
               )}
 
-              {/* Kanban View */}
               {viewMode === "kanban" && (
                 <div className="w-full p-4 overflow-x-auto">
                   {loading && localTasks.length === 0 ? (
@@ -493,7 +406,6 @@ export default function TasksPage() {
                 </div>
               )}
 
-              {/* Timeline View */}
               {viewMode === "timeline" && (
                 <TaskTimelineView
                   tasks={filteredTasks}
@@ -510,17 +422,17 @@ export default function TasksPage() {
                   }}
                 />
               )}
-            </div> {/* end scrollable */}
-          </div>   {/* end table card */}
+            </div>
+          </div>
 
-          {/* ── Optional Right Sidebar ─────────────────────────────── */}
+          {/* Optional Right Sidebar */}
           {rightPanelOpen && (
             <div className="w-72 shrink-0 flex flex-col min-h-0 border border-border bg-card/10 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overview</span>
                 <button
                   onClick={() => setRightPanelOpen(false)}
-                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -530,10 +442,27 @@ export default function TasksPage() {
               </div>
             </div>
           )}
-        </div> {/* end main content area */}
-      </div>   {/* end root container */}
+        </div>
+      </div>
 
-      {/* ── Linear-style Task Detail Sheet ──────────────────────── */}
+      {/* Floating Multi-Select Batch Actions Toolbar */}
+      <TaskBulkActionBar
+        selectedCount={selectedTaskIds.size}
+        onClearSelection={handleClearSelection}
+        onBatchUpdateStatus={handleBatchUpdateStatus}
+        onBatchUpdatePriority={handleBatchUpdatePriority}
+        onBatchUpdateAssignee={handleBatchUpdateAssignee}
+        onBatchUpdateScope={handleBatchUpdateScope}
+        onBatchDelete={handleBatchDelete}
+      />
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <TaskShortcutsHelpDialog
+        open={shortcutsHelpOpen}
+        onOpenChange={setShortcutsHelpOpen}
+      />
+
+      {/* Linear-style Task Detail Sheet */}
       <TaskDetailSheet
         task={sheetTask}
         open={sheetOpen}
@@ -546,7 +475,7 @@ export default function TasksPage() {
         assigneesList={assigneesList}
       />
 
-      {/* ── New Task Modal Dialog ────────────────────────────────── */}
+      {/* New Task Modal Dialog */}
       <NewTaskDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

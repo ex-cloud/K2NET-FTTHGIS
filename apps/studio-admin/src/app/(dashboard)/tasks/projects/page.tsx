@@ -36,6 +36,7 @@ import { getBackendBaseUrl } from "@/lib/api-config";
 import { useTasksQuery, type Task } from "@/hooks/useTasksQuery";
 import { NewProjectDialog } from "../components/NewProjectDialog";
 import { ProjectContextMenu } from "../components/ProjectContextMenu";
+import { ProjectTimelineView } from "./components/ProjectTimelineView";
 import { cn } from "@/lib/utils";
 
 interface ProjectPlanItem {
@@ -73,6 +74,7 @@ export default function ProjectsHubPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "timeline">("table");
 
   // ── Column Sorting State ───────────────────────────────────────────────────
   const [sortField, setSortField] = useState<SortField | null>("createdAt");
@@ -623,9 +625,32 @@ export default function ProjectsHubPage() {
                   </DropdownMenu>
                 </div>
 
-                {/* RIGHT GROUP: Count + Refresh Button */}
+                {/* RIGHT GROUP: View Mode Switcher + Count + Refresh Button */}
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground font-mono">
+                  <div className="flex items-center bg-card border border-border/60 rounded-lg p-0.5 h-8">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("table")}
+                      className={cn(
+                        "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
+                        viewMode === "table" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Table
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("timeline")}
+                      className={cn(
+                        "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer",
+                        viewMode === "timeline" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Roadmap Timeline
+                    </button>
+                  </div>
+
+                  <span className="text-xs text-muted-foreground font-mono hidden md:inline">
                     Showing {filteredProjects.length} project plans
                   </span>
                   <button
@@ -644,12 +669,18 @@ export default function ProjectsHubPage() {
               </div>
             </div>
 
-            {/* ── Scrollable Table Container ─────────────────────────── */}
-            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
-              <div className="min-w-[1000px] flex flex-col">
+            {/* ── Scrollable Table / Timeline Container ──────────────── */}
+            {viewMode === "timeline" ? (
+              <ProjectTimelineView
+                projects={filteredProjects}
+                onProjectClick={(id) => router.push(`/tasks/projects/${id}`)}
+              />
+            ) : (
+              <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin">
+                <div className="min-w-[1000px] flex flex-col">
 
-                {/* ── Sticky Column Headers (Pinned to top on vertical & horizontal scroll) ── */}
-                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1.5fr_110px_90px_130px_110px_110px_70px_90px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+                  {/* ── Sticky Column Headers (Pinned to top on vertical & horizontal scroll) ── */}
+                  <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1.5fr_110px_90px_130px_110px_110px_70px_90px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
                   {/* Name Header */}
                   <div className="px-4 py-2.5 flex items-center min-w-0">
                     <DropdownMenu>
@@ -1045,6 +1076,7 @@ export default function ProjectsHubPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
 

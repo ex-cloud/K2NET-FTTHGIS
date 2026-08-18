@@ -44,6 +44,10 @@ interface TaskTableProps {
   onDeleteTask: (id: string) => void;
   onFetchMore: () => void;
   assigneesList: string[];
+  selectedTaskIds?: Set<string>;
+  onToggleSelectTask?: (id: string, shiftKey?: boolean) => void;
+  onSelectAllTasks?: () => void;
+  focusedIndex?: number;
 }
 
 const columnHelper = createColumnHelper<Task>();
@@ -58,6 +62,10 @@ export function TaskTable({
   onDeleteTask,
   onFetchMore,
   assigneesList,
+  selectedTaskIds,
+  onToggleSelectTask,
+  onSelectAllTasks,
+  focusedIndex = -1,
 }: TaskTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -90,6 +98,45 @@ export function TaskTable({
 
   const columns = React.useMemo(
     () => [
+      columnHelper.display({
+        id: "select",
+        header: () => {
+          const isAllSelected = tasks.length > 0 && selectedTaskIds && selectedTaskIds.size === tasks.length;
+          const isSomeSelected = selectedTaskIds && selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
+          return (
+            <div className="flex items-center justify-center w-full" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={Boolean(isAllSelected)}
+                ref={(el) => {
+                  if (el) el.indeterminate = Boolean(isSomeSelected);
+                }}
+                onChange={() => onSelectAllTasks?.()}
+                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary"
+              />
+            </div>
+          );
+        },
+        cell: (info) => {
+          const isSelected = selectedTaskIds?.has(info.row.original.id);
+          return (
+            <div
+              className="flex items-center justify-center w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelectTask?.(info.row.original.id, (e as any).shiftKey);
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(isSelected)}
+                onChange={() => {}}
+                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary"
+              />
+            </div>
+          );
+        },
+      }),
       columnHelper.accessor("title", {
         header: "Title",
         cell: (info) => {
@@ -310,7 +357,7 @@ export function TaskTable({
   return (
     <div className="min-w-[1000px] flex flex-col">
       {/* ── Sticky Column Headers (Pinned to top on scroll) ────────────── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
         {table.getFlatHeaders().map((header) => {
           if (header.isPlaceholder) return <div key={header.id} />;
           const canSort = header.column.getCanSort();
@@ -319,9 +366,12 @@ export function TaskTable({
           return (
             <div
               key={header.id}
-              className="min-w-0 px-4 py-2.5 flex items-center justify-start text-left"
+              className={cn(
+                "min-w-0 py-2.5 flex items-center",
+                header.column.id === "select" ? "px-1 justify-center" : "px-4 justify-start text-left"
+              )}
             >
-              {canSort ? (
+              {canSort && header.column.id !== "select" ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
@@ -355,7 +405,9 @@ export function TaskTable({
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <span className="font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                <div className="w-full flex items-center justify-center">
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </div>
               )}
             </div>
           );
@@ -369,8 +421,9 @@ export function TaskTable({
           Array.from({ length: 8 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+              className="grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
             >
+              <div className="min-w-0 px-2 py-4 flex items-center justify-center"><div className="h-3.5 w-3.5 bg-muted/60 rounded" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>
@@ -387,7 +440,7 @@ export function TaskTable({
             <p className="text-sm">No tasks found for this view.</p>
           </div>
         ) : (
-          table.getRowModel().rows.map((row) => (
+          table.getRowModel().rows.map((row, index) => (
             <TaskContextMenu
               key={row.id}
               task={row.original}
@@ -400,12 +453,19 @@ export function TaskTable({
             >
               <div
                 onClick={() => onRowClick(row.original)}
-                className="grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+                className={cn(
+                  "grid grid-cols-[36px_1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch hover:bg-muted/10 cursor-pointer transition-all border-b border-border/30 divide-x divide-border/25 group bg-card/5",
+                  focusedIndex === index && "ring-1 ring-primary/80 bg-primary/5 shadow-xs",
+                  selectedTaskIds?.has(row.original.id) && "bg-primary/10"
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <div
                     key={cell.id}
-                    className="min-w-0 px-4 py-3.5 flex items-center justify-start"
+                    className={cn(
+                      "min-w-0 py-3.5 flex items-center",
+                      cell.column.id === "select" ? "px-1 justify-center" : "px-4 justify-start"
+                    )}
                   >
                     <div className="w-full min-w-0">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

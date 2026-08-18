@@ -2,7 +2,7 @@
 
 import React from "react";
 import { TrendingUp, Loader2 } from "lucide-react";
-import { Card } from "@k2net/ui";
+import { Card, TracingBeam } from "@k2net/ui";
 import { type TaskComment } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,8 @@ export function ProjectActivityTab({
   onPostUpdate,
 }: ProjectActivityTabProps) {
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-150">
+    <TracingBeam className="pl-4 md:pl-10">
+      <div className="space-y-6 animate-in fade-in-50 duration-150">
       {/* Update Composer */}
       <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-border/40 pb-2">
@@ -115,7 +116,8 @@ export function ProjectActivityTab({
             </div>
           ))
         )}
+        </div>
       </div>
-    </div>
+    </TracingBeam>
   );
 }

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import { type Task } from "@/hooks/useTasksQuery";
 import { ScopeBadge } from "./ScopeBadge";
+import { TaskSpatialMiniMap } from "./TaskSpatialMiniMap";
 
 interface TaskPropertiesPanelProps {
   task: Task;
@@ -250,6 +251,15 @@ export function TaskPropertiesPanel({
           <span className="text-xs text-muted-foreground">No project</span>
         )}
       </div>
+
+      {/* ── Spatial GIS Location Preview (Dynamic Auto-detect) ─────── */}
+      <TaskSpatialMiniMap
+        latitude={(task as any).latitude}
+        longitude={(task as any).longitude}
+        assetCode={(task as any).assetCode}
+        textContext={`${task.title} ${task.description ?? ""}`}
+        title={task.title}
+      />
     </div>
   );
 }
