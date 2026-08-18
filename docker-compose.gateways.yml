@@ -266,8 +266,8 @@ services:
   gateway-ai:
     image: ghcr.io/ex-cloud/k2net-ftthgis/gateway-ai:latest
     build:
-      context: ./services/gateway-ai
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: gateway-ai/Dockerfile
     container_name: ftth-ai-gateway
     restart: always
     env_file:

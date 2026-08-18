@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY gateway-ai/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --prefix=/install -r requirements.txt
 
@@ -33,7 +33,7 @@ RUN groupadd -r aigateway && useradd -r -g aigateway -s /bin/false aigateway
 COPY --from=builder /install /usr/local
 
 # Copy application code
-COPY app/ ./app/
+COPY gateway-ai/app/ ./app/
 
 # Ownership
 RUN chown -R aigateway:aigateway /app
