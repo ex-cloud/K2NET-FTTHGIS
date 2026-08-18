@@ -1,19 +1,44 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { 
   Search, 
   BookOpen, 
   UploadCloud, 
   FolderSync, 
-  FileText, 
   Trash2, 
   CheckCircle2, 
   AlertCircle, 
   Clock, 
-  Loader2 
+  Loader2,
+  Copy,
+  Check,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  BrainCircuit,
+  Database,
+  HelpCircle,
+  HardDrive,
+  RefreshCw
 } from "lucide-react";
-import { Card, Button, Input, Badge } from "@k2net/ui";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  createColumnHelper,
+  flexRender,
+  SortingState,
+} from "@tanstack/react-table";
+import { 
+  Card, 
+  Button, 
+  Input, 
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { AiDocumentItem } from "@/lib/actions/gateways";
 import { CATEGORIES, formatBytes } from "./types";
@@ -21,6 +46,11 @@ import { CATEGORIES, formatBytes } from "./types";
 interface AiKnowledgeTableProps {
   documents: AiDocumentItem[];
   docsLoading: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  totalCount: number;
+  totalChunks: number;
+  totalBytes: number;
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
   searchQuery: string;
@@ -29,11 +59,21 @@ interface AiKnowledgeTableProps {
   onDelete: (id: string, title: string) => void;
   onGoToUpload: () => void;
   onSyncServerDocs: () => void;
+  onRefresh: () => void;
+  onFetchMore?: () => void;
+  isSyncing?: boolean;
 }
+
+const columnHelper = createColumnHelper<AiDocumentItem>();
 
 export function AiKnowledgeTable({
   documents,
   docsLoading,
+  loadingMore = false,
+  hasMore = false,
+  totalCount,
+  totalChunks,
+  totalBytes,
   selectedCategory,
   setSelectedCategory,
   searchQuery,
@@ -42,12 +82,242 @@ export function AiKnowledgeTable({
   onDelete,
   onGoToUpload,
   onSyncServerDocs,
+  onRefresh,
+  onFetchMore,
+  isSyncing = false,
 }: AiKnowledgeTableProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Intersection Observer for Infinite Scrolling
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !docsLoading && onFetchMore) {
+          onFetchMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [hasMore, loadingMore, docsLoading, onFetchMore, documents.length]);
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("title", {
+        header: "Judul Pengetahuan",
+        cell: (info) => {
+          const doc = info.row.original;
+          return (
+            <div className="min-w-0 flex items-center gap-2.5 py-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopy(doc.file_name || doc.title, doc.id);
+                }}
+                className="p-1 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground shrink-0 transition-colors cursor-pointer"
+                title="Salin nama file / judul"
+              >
+                {copiedId === doc.id ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-foreground truncate hover:text-primary transition-colors">
+                  {doc.title}
+                </div>
+                {doc.file_name && (
+                  <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[260px]">
+                    {doc.file_name}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("category", {
+        header: "Kategori",
+        cell: (info) => {
+          const catMeta = CATEGORIES.find((c) => c.id === info.getValue());
+          return (
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap ${catMeta?.color || "text-foreground/80 border-border bg-muted/60"}`}>
+              {catMeta?.label || info.getValue()}
+            </span>
+          );
+        },
+      }),
+      columnHelper.accessor("file_size_bytes", {
+        header: "Ukuran Berkas",
+        cell: (info) => (
+          <span className="block text-xs font-mono text-muted-foreground text-right">
+            {formatBytes(info.getValue())}
+          </span>
+        ),
+      }),
+      columnHelper.accessor("chunk_count", {
+        header: "Vector Chunks",
+        cell: (info) => {
+          const count = info.getValue();
+          return (
+            <div className="flex flex-col gap-1 items-end w-full">
+              <div className="flex items-center justify-end gap-1.5 text-xs font-mono font-semibold text-purple-400">
+                <BrainCircuit className="w-3.5 h-3.5" />
+                <span>{count} Chunks</span>
+              </div>
+              <div className="h-1.5 w-20 bg-muted/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(count * 15, 100)}%` }}
+                />
+              </div>
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("status", {
+        header: "Status Indeks",
+        cell: (info) => {
+          const status = info.getValue();
+          const doc = info.row.original;
+          return (
+            <div className="flex items-center gap-1.5">
+              {status === "INDEXED" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Terindeks
+                </span>
+              )}
+              {status === "PROCESSING" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Memproses...
+                </span>
+              )}
+              {status === "PENDING" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400">
+                  <Clock className="w-3.5 h-3.5" /> Antrean
+                </span>
+              )}
+              {status === "FAILED" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-400" title={doc.error_message || ""}>
+                  <AlertCircle className="w-3.5 h-3.5" /> Gagal
+                </span>
+              )}
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("updated_at", {
+        header: "Tanggal Diperbarui",
+        cell: (info) => {
+          const raw = info.getValue() || info.row.original.created_at;
+          return (
+            <span className="block text-[11px] text-muted-foreground font-mono">
+              {new Date(raw).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          );
+        },
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Aksi",
+        cell: (info) => {
+          const doc = info.row.original;
+          return (
+            <div className="flex items-center justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(doc.id, doc.title)}
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-md cursor-pointer"
+                title="Hapus dari memori AI"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          );
+        },
+      }),
+    ],
+    [copiedId, onDelete]
+  );
+
+  const table = useReactTable({
+    data: documents,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
   return (
     <div className="space-y-4">
-      {/* Search & Category Filter */}
+      {/* ── Supabase-style Inline KPI Stats Summary Bar ────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground/90 font-medium px-1">
+        <div className="flex items-center gap-1.5">
+          <Database className="w-3.5 h-3.5 text-primary" />
+          <span className="font-bold text-foreground font-mono">{totalCount}</span>
+          <span>Dokumen Terdaftar</span>
+          <span title="Total berkas SOP dan dokumen panduan yang terindeks di database PostgreSQL." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3 w-3" />
+          </span>
+        </div>
+        <span className="text-muted-foreground/30">/</span>
+        <div className="flex items-center gap-1.5">
+          <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
+          <span className="font-bold text-foreground font-mono">{totalChunks}</span>
+          <span>Vector Chunks</span>
+          <span title="Jumlah pecahan token berdimensi 1536 yang siap dicari secara semantik." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3 w-3" />
+          </span>
+        </div>
+        <span className="text-muted-foreground/30">/</span>
+        <div className="flex items-center gap-1.5">
+          <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="font-bold text-foreground font-mono">{formatBytes(totalBytes)}</span>
+          <span>Ukuran Disk</span>
+          <span title="Total ukuran file fisik dokumen SOP." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+            <HelpCircle className="h-3 w-3" />
+          </span>
+        </div>
+        <span className="text-muted-foreground/30">/</span>
+        <div className="flex items-center gap-1.5 text-emerald-400 font-mono font-semibold">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>HNSW 1536 dim Ready</span>
+        </div>
+      </div>
+
+      {/* ── Filter Bar & Actions ───────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 custom-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 custom-scrollbar">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
@@ -64,135 +334,184 @@ export function AiKnowledgeTable({
           ))}
         </div>
 
-        <form onSubmit={onSearchSubmit} className="relative w-full sm:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Cari judul dokumen..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-xs pl-8 pr-4 h-9 bg-card border-border"
-          />
-        </form>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <form onSubmit={onSearchSubmit} className="relative w-full sm:w-72">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Cari judul dokumen..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="text-xs pl-8 pr-4 h-9 bg-card border-border"
+            />
+          </form>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+            title="Refresh tabel dokumen"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin text-primary" : ""}`} />
+          </Button>
+        </div>
       </div>
 
-      {/* Table Container */}
-      <Card className="border-border bg-card overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-muted/50 border-b border-border text-foreground/75 dark:text-muted-foreground uppercase text-[10px] font-semibold tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Judul Pengetahuan</th>
-                <th className="py-3 px-4">Kategori</th>
-                <th className="py-3 px-4">Ukuran</th>
-                <th className="py-3 px-4">Vector Chunks</th>
-                <th className="py-3 px-4">Status Indeks</th>
-                <th className="py-3 px-4">Tanggal Diperbarui</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {docsLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
-                    Memuat data knowledge base...
-                  </td>
-                </tr>
-              ) : documents.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">
-                    <BookOpen className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
-                    Belum ada dokumen terindeks pada kategori ini.
-                    <div className="mt-3 flex justify-center gap-2">
-                      <Button size="sm" variant="outline" onClick={onGoToUpload}>
-                        <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Unggah Berkas
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={onSyncServerDocs}>
-                        <FolderSync className="w-3.5 h-3.5 mr-1.5" /> Sinkronkan Server Docs
-                      </Button>
+      {/* ── Enterprise Card & Table Container with Effects ─────────────────── */}
+      <Card className="border border-border/80 bg-card/60 backdrop-blur-md rounded-xl shadow-xs overflow-hidden">
+        {/* Fixed Viewport with Infinite Scroll */}
+        <div className="max-h-[580px] overflow-y-auto overflow-x-auto custom-scrollbar relative">
+          <div className="min-w-[960px] flex flex-col">
+            
+            {/* Sticky Header with Sorting Menus */}
+            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-muted-foreground/80 shadow-xs">
+              {table.getFlatHeaders().map((header) => {
+                if (header.isPlaceholder) return <div key={header.id} />;
+
+                const canSort = header.column.getCanSort();
+                const isSorted = header.column.getIsSorted();
+                const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(header.column.id);
+
+                return (
+                  <div
+                    key={header.id}
+                    className={`min-w-0 px-4 py-2.5 flex items-center ${
+                      isRightAligned ? "justify-end text-right" : "justify-start text-left"
+                    }`}
+                  >
+                    {canSort && header.column.id !== "actions" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
+                            <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                            <span className="flex items-center">
+                              {isSorted === "asc" ? (
+                                <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                              ) : isSorted === "desc" ? (
+                                <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                              )}
+                            </span>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isRightAligned ? "end" : "start"} className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                          <DropdownMenuItem 
+                            onClick={() => header.column.toggleSorting(false)}
+                            className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Urutkan Naik (Ascending)</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => header.column.toggleSorting(true)}
+                            className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>Urutkan Turun (Descending)</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Table Rows Body */}
+            <div className="divide-y divide-border/40">
+              {docsLoading && documents.length === 0 ? (
+                /* Animated Shimmer Skeleton Loading Rows */
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={`skeleton-${i}`}
+                    className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+                  >
+                    <div className="min-w-0 px-4 py-3 flex items-center gap-2">
+                      <div className="h-4 w-4 bg-muted/60 rounded-md" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3.5 bg-muted/70 rounded w-3/4" />
+                        <div className="h-2.5 bg-muted/50 rounded w-1/2" />
+                      </div>
                     </div>
-                  </td>
-                </tr>
+                    <div className="px-4 py-3 flex items-center">
+                      <div className="h-4 bg-muted/60 rounded w-20" />
+                    </div>
+                    <div className="px-4 py-3 flex items-center justify-end">
+                      <div className="h-3 bg-muted/60 rounded w-12" />
+                    </div>
+                    <div className="px-4 py-3 flex items-center justify-end">
+                      <div className="h-3 bg-muted/60 rounded w-14" />
+                    </div>
+                    <div className="px-4 py-3 flex items-center">
+                      <div className="h-4 bg-muted/60 rounded w-16" />
+                    </div>
+                    <div className="px-4 py-3 flex items-center">
+                      <div className="h-3 bg-muted/60 rounded w-24" />
+                    </div>
+                    <div className="px-4 py-3 flex items-center justify-end">
+                      <div className="h-5 w-5 bg-muted/60 rounded" />
+                    </div>
+                  </div>
+                ))
+              ) : documents.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
+                  <div className="text-xs font-semibold text-foreground">Belum ada dokumen terindeks pada kategori ini</div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Unggah dokumen SOP baru atau sinkronkan folder server untuk memulai.</p>
+                  <div className="mt-4 flex justify-center gap-2">
+                    <Button size="sm" variant="outline" onClick={onGoToUpload} className="text-xs gap-1.5">
+                      <UploadCloud className="w-3.5 h-3.5" /> Unggah Berkas
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={onSyncServerDocs} disabled={isSyncing} className="text-xs gap-1.5 cursor-pointer">
+                      <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+                      {isSyncing ? "Menyinkronkan..." : "Sinkronkan Server Docs"}
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                documents.map((doc) => {
-                  const catMeta = CATEGORIES.find((c) => c.id === doc.category);
-                  return (
-                    <tr key={doc.id} className="hover:bg-muted/30 transition-colors group">
-                      <td className="py-3 px-4 font-medium text-foreground">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-primary shrink-0" />
-                          <div>
-                            <div className="font-semibold text-foreground">{doc.title}</div>
-                            {doc.file_name && (
-                              <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[220px]">
-                                {doc.file_name}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${catMeta?.color || "text-foreground/80 border-border bg-muted/60"}`}>
-                          {catMeta?.label || doc.category}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground font-mono">
-                        {formatBytes(doc.file_size_bytes)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge variant="secondary" className="text-[10px] font-mono">
-                          {doc.chunk_count} chunk
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        {doc.status === "INDEXED" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Terindeks
-                          </span>
-                        )}
-                        {doc.status === "PROCESSING" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Memproses...
-                          </span>
-                        )}
-                        {doc.status === "PENDING" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400">
-                            <Clock className="w-3.5 h-3.5" /> Antrean
-                          </span>
-                        )}
-                        {doc.status === "FAILED" && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-400" title={doc.error_message || ""}>
-                            <AlertCircle className="w-3.5 h-3.5" /> Gagal
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {new Date(doc.updated_at || doc.created_at).toLocaleDateString("id-ID", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDelete(doc.id, doc.title)}
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-md"
-                          title="Hapus dari memori AI"
+                table.getRowModel().rows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/30 transition-colors group"
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);
+                      return (
+                        <div
+                          key={cell.id}
+                          className={`px-4 py-2.5 flex items-center ${
+                            isRightAligned ? "justify-end text-right" : "justify-start text-left"
+                          }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
               )}
-            </tbody>
-          </table>
+
+              {/* Infinite Scroll Sentinel & Loading More Spinner */}
+              <div ref={sentinelRef} className="py-2 flex items-center justify-center">
+                {loadingMore && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2 font-mono">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    <span>Memuat dokumen berikutnya...</span>
+                  </div>
+                )}
+                {!hasMore && documents.length > 0 && !docsLoading && (
+                  <div className="text-[10px] text-muted-foreground/60 font-mono py-1">
+                    — Menampilkan seluruh {documents.length} dokumen terindeks —
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
         </div>
       </Card>
     </div>

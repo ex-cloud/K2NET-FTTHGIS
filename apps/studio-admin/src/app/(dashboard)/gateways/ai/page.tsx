@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useCallback } from "react";
 import { Sparkles } from "lucide-react";
 import { Badge } from "@k2net/ui";
 import { toast } from "sonner";
@@ -39,9 +39,12 @@ export default function AiGatewayPage() {
   const [documents, setDocuments] = useState<AiDocumentItem[]>([]);
   const [docsTotal, setDocsTotal] = useState(0);
   const [docsLoading, setDocsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const hasMore = documents.length < docsTotal;
 
   // Semantic Search Simulator State (Real-time pgvector testing)
   const [simQuery, setSimQuery] = useState("Standar redaman GPON ZTE C320");
@@ -74,7 +77,7 @@ export default function AiGatewayPage() {
   const [configSaving, setConfigSaving] = useState(false);
 
   // ── Load Real-Time Stats & Documents from PostgreSQL pgvector ─────────────
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setStatsLoading(true);
       const data = await getAiKnowledgeStats();
@@ -84,15 +87,16 @@ export default function AiGatewayPage() {
     } finally {
       setStatsLoading(false);
     }
-  };
+  }, []);
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     try {
       setDocsLoading(true);
       const res = await getAiDocuments({
         category: selectedCategory === "ALL" ? undefined : selectedCategory,
         search: searchQuery.trim() || undefined,
-        limit: 50,
+        limit: 30,
+        offset: 0,
       });
       setDocuments(res.documents || []);
       setDocsTotal(res.total || 0);
@@ -101,9 +105,30 @@ export default function AiGatewayPage() {
     } finally {
       setDocsLoading(false);
     }
+  }, [selectedCategory, searchQuery]);
+
+  const handleFetchMore = async () => {
+    if (loadingMore || !hasMore || docsLoading) return;
+    try {
+      setLoadingMore(true);
+      const res = await getAiDocuments({
+        category: selectedCategory === "ALL" ? undefined : selectedCategory,
+        search: searchQuery.trim() || undefined,
+        limit: 30,
+        offset: documents.length,
+      });
+      if (res.documents && res.documents.length > 0) {
+        setDocuments((prev) => [...prev, ...res.documents]);
+      }
+      setDocsTotal(res.total || 0);
+    } catch (err) {
+      console.error("Gagal memuat dokumen tambahan:", err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setConfigLoading(true);
       const res = await getGatewayConfigByKey("ai");
@@ -121,12 +146,12 @@ export default function AiGatewayPage() {
     } finally {
       setConfigLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadStats();
     loadDocuments();
-  }, [selectedCategory]);
+  }, [loadStats, loadDocuments]);
 
   // ── Event Handlers ──────────────────────────────────────────────────────────
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -328,6 +353,11 @@ export default function AiGatewayPage() {
             <AiKnowledgeTable
               documents={documents}
               docsLoading={docsLoading}
+              loadingMore={loadingMore}
+              hasMore={hasMore}
+              totalCount={stats?.total_documents || docsTotal}
+              totalChunks={stats?.total_chunks || 0}
+              totalBytes={stats?.total_size_bytes || 0}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
               searchQuery={searchQuery}
@@ -336,6 +366,12 @@ export default function AiGatewayPage() {
               onDelete={handleDelete}
               onGoToUpload={() => setActiveTab("UPLOAD")}
               onSyncServerDocs={handleSyncServerDocs}
+              onRefresh={() => {
+                loadDocuments();
+                loadStats();
+              }}
+              onFetchMore={handleFetchMore}
+              isSyncing={isPending}
             />
           )}
 

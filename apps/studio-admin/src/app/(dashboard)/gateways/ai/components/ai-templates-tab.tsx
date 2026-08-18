@@ -5,8 +5,7 @@ import {
   FileCode, 
   Copy, 
   Check, 
-  ArrowRight, 
-  Sparkles 
+  ArrowRight 
 } from "lucide-react";
 import { 
   Card, 

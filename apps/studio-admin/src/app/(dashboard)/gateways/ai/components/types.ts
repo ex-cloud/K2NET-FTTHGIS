@@ -5,7 +5,6 @@ import {
   ShieldCheck, 
   LucideIcon 
 } from "lucide-react";
-import { AiKnowledgeStats, AiDocumentItem } from "@/lib/actions/gateways";
 
 export type AiTabType = "KNOWLEDGE" | "SIMULATOR" | "TEMPLATES" | "UPLOAD" | "MANUAL" | "CONFIG";
 

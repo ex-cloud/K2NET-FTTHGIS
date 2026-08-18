@@ -6,8 +6,7 @@ import {
   Search, 
   Loader2, 
   Database, 
-  BrainCircuit, 
-  Sliders 
+  BrainCircuit 
 } from "lucide-react";
 import { 
   Card, 
@@ -20,7 +19,6 @@ import {
   Label, 
   Badge 
 } from "@k2net/ui";
-import { cn } from "@/lib/utils";
 import { CATEGORIES } from "./types";
 
 interface AiSemanticSimulatorProps {

@@ -122,8 +122,15 @@ async def get_ai_stats(ctx: TenantContext = Depends(verify_gateway_and_tenant)):
         db_ok = False
 
     provider = settings.DEFAULT_LLM_PROVIDER
-    chat_model = settings.GEMINI_CHAT_MODEL if provider == "gemini" else settings.OPENAI_CHAT_MODEL
-    emb_model = settings.GEMINI_EMBEDDING_MODEL if provider == "gemini" else settings.OPENAI_EMBEDDING_MODEL
+    if provider == "gemini":
+        chat_model = settings.GEMINI_CHAT_MODEL
+        emb_model = settings.GEMINI_EMBEDDING_MODEL
+    elif provider in ("ollama", "local"):
+        chat_model = settings.OLLAMA_CHAT_MODEL
+        emb_model = settings.OLLAMA_EMBEDDING_MODEL
+    else:
+        chat_model = settings.OPENAI_CHAT_MODEL
+        emb_model = settings.OPENAI_EMBEDDING_MODEL
 
     return AiStatsResponse(
         total_documents=total_docs,

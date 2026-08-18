@@ -263,31 +263,7 @@ export function FloatingAiAssistant() {
 
   return (
     <>
-      {/* ── Floating Trigger Button (FAB with Emerald Radar Pulse) ──────── */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed bottom-6 right-6 z-50",
-          "w-14 h-14 rounded-full",
-          "bg-gradient-to-br from-emerald-600 via-primary to-teal-700",
-          "text-white shadow-2xl",
-          "flex items-center justify-center",
-          "transition-all duration-300",
-          "hover:scale-105 hover:shadow-emerald-500/40",
-          "focus:outline-none focus:ring-4 focus:ring-emerald-500/30",
-          // Radar pulse glow
-          "before:absolute before:inset-0 before:rounded-full",
-          "before:bg-emerald-500",
-          "before:animate-ping before:opacity-20",
-          isOpen && "scale-0 opacity-0 pointer-events-none"
-        )}
-        title="K2NET AI Assistant (Ctrl+J)"
-        aria-label="Buka AI Assistant"
-      >
-        <Sparkles className="w-6 h-6 relative z-10" />
-      </button>
-
-      {/* ── Slide-Over Drawer ────────────────────────────────────────────── */}
+      {/* ── Slide-Over Drawer (Triggered by Top Header or Ctrl+J / Cmd+J) ── */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="right"
@@ -333,7 +309,7 @@ export function FloatingAiAssistant() {
                 {messages.length > 0 && (
                   <button
                     onClick={clearMessages}
-                    className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                    className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
                     title="Hapus percakapan"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -341,7 +317,7 @@ export function FloatingAiAssistant() {
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
@@ -373,7 +349,7 @@ export function FloatingAiAssistant() {
                     </p>
                   </div>
 
-                  {/* Ideas Cards */}
+                  {/* Ideas Cards (Supabase Style: clicks insert into input textarea) */}
                   <div className="space-y-2">
                     <div className="text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase">
                       IDEAS & QUICK ACTIONS
@@ -381,7 +357,11 @@ export function FloatingAiAssistant() {
                     {SUPABASE_IDEAS.map((idea, i) => (
                       <button
                         key={i}
-                        onClick={() => sendMessage(idea.prompt)}
+                        type="button"
+                        onClick={() => {
+                          setInput(idea.prompt);
+                          setTimeout(() => inputRef.current?.focus(), 50);
+                        }}
                         className={cn(
                           "w-full flex items-start gap-3 p-2.5 rounded-xl text-left",
                           "bg-card hover:bg-muted/60 border border-border hover:border-primary/40",

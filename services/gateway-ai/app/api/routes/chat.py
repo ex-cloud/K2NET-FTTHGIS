@@ -43,10 +43,15 @@ async def stream_chat_response(
     provider = None
     model_override = payload.model or None
     if model_override:
-        if "gemini" in model_override.lower():
+        m_lower = model_override.lower()
+        if "gemini" in m_lower:
             provider = "gemini"
-        else:
+        elif "llama" in m_lower or "deepseek" in m_lower or "ollama" in m_lower or "qwen" in m_lower:
+            provider = "ollama"
+        elif "gpt" in m_lower or "openai" in m_lower or "o1" in m_lower or "o3" in m_lower:
             provider = "openai"
+        else:
+            provider = "ollama"
 
     async def event_generator():
         total_tokens = 0
