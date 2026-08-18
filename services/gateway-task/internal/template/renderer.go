@@ -14,31 +14,50 @@ type: PROJECT
 scope: {{.Scope}}
 status: {{.Status}}
 priority: {{.Priority}}
-tenant: {{.TenantName}}
-assignee: {{.AssigneeName}}
-reporter: {{.ReporterName}}
-geom_ref: "{{.ReferenceID}}"
-due_date: "{{.DueDate}}"
+lead: {{if .AssigneeName}}{{.AssigneeName}}{{else}}Unassigned{{end}}
+target_date: "{{.DueDate}}"
 created_at: "{{.CreatedAt}}"
-environment: production
-infrastructure_type: ftth-project
+tags:
+  - project/{{.Scope}}
+  - status/{{.Status}}
 ---
 
-# {{.Title}}
+# 🚀 {{.Title}}
 
-## Deskripsi Proyek
-{{.Description}}
+> [!abstract] 📌 Executive Summary & Scope
+> {{if .Description}}{{.Description}}{{else}}*Belum ada deskripsi inisiatif project.*{{end}}
 
-## Sub-Tasks
-{{range .SubTasks}}- [ ] {{.}}
+---
+
+### 🎯 Key Milestones & Deliverables
+{{if .SubTasks}}{{range .SubTasks}}- [ ] {{.}}
+{{end}}{{else}}- [ ] **M1 — Discovery & Requirements**: Analisa kebutuhan dan arsitektur awal
+- [ ] **M2 — Implementation & Testing**: Pengerjaan teknis dan pengujian sistem
+- [ ] **M3 — Production Rollout & Handover**: Deployment dan operasionalisasi
 {{end}}
-## Lokasi
-- Referensi GIS: {{.ReferenceType}} — {{.ReferenceID}}
-- Koordinat: [Lihat di Peta](https://system-gis.k2net.id/tasks/{{.TaskID}})
 
-## Links
-- Dashboard K2NET: [{{.TaskID}}](https://system-gis.k2net.id/tasks/{{.TaskID}})
-- Buka Obsidian: [obsidian://open?vault=K2NET_Engineering_Vault&file={{.TaskID}}](obsidian://open?vault=K2NET_Engineering_Vault&file={{.TaskID}})
+---
+
+### 📊 Linked Issues & Tickets (Dataview)
+> [!info] Daftar issue dan tugas teknis yang terhubung secara otomatis:
+` + "```dataview" + `
+TABLE status, priority, assignee, due_date
+FROM "02_Tickets"
+WHERE contains(project_ref, "{{.TaskID}}") OR contains(file.tags, "{{.TaskID}}")
+SORT priority desc
+` + "```" + `
+
+---
+
+### 📝 Architecture Decisions & Engineering Notes
+- **Decisions**: *(Catat RFC / keputusan desain teknis di sini)*
+- **Dependencies**: *(Catat dependensi antar modul atau gateway)*
+
+---
+
+### 🔗 Quick Access
+- 🌐 [Buka Project Hub di Web Studio](https://system-gis.k2net.id/tasks/projects/{{.TaskID}})
+- 📈 [Buka Project Dashboard](obsidian://open?vault=K2NET_Engineering_Vault&file=Excalidraw/Project%20Dashboard)
 `
 
 const ticketTemplateStr = `---
@@ -48,26 +67,50 @@ scope: {{.Scope}}
 status: {{.Status}}
 priority: {{.Priority}}
 tenant: {{.TenantName}}
-assignee: {{.AssigneeName}}
-geom_ref: "{{.ReferenceID}}"
-due_date: "{{.DueDate}}"
+assignee: {{if .AssigneeName}}{{.AssigneeName}}{{else}}Unassigned{{end}}
+{{if .ReferenceID}}geom_ref: "{{.ReferenceID}}"
+{{end}}due_date: "{{.DueDate}}"
 created_at: "{{.CreatedAt}}"
-environment: production
-infrastructure_type: support-ticket
+tags:
+  - ticket/{{.Scope}}
+  - priority/{{.Priority}}
+  - status/{{.Status}}
 ---
 
-# {{.Title}}
+# 🎫 {{.Title}}
 
-## Detail Gangguan
-{{.Description}}
+> [!warning] ⚠️ Detail Masalah & Instruksi Kerja
+> {{if .Description}}{{.Description}}{{else}}*Belum ada rincian gangguan.*{{end}}
 
-## Timeline
+---
+
+### 📋 Technical Checklist
+{{if .SubTasks}}{{range .SubTasks}}- [ ] {{.}}
+{{end}}{{else}}- [ ] Verifikasi gangguan & identifikasi titik root cause
+- [ ] Lakukan perbaikan teknis / penggantian perangkat
+- [ ] Uji performa & pastikan parameter redaman / koneksi normal
+- [ ] Konfirmasi ke pelapor dan tutup tiket
+{{end}}
+
+{{if .ReferenceID}}
+---
+
+### 📍 Lokasi Geospasial GIS
+- **Objek GIS**: {{.ReferenceType}} (ID: ` + "`{{.ReferenceID}}`" + `)
+- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.k2net.id/tasks/{{.TaskID}})
+{{end}}
+
+---
+
+### ⏱️ Timeline & SLA
 - **Dilaporkan**: {{.CreatedAt}}
-- **Penanggung Jawab**: {{.AssigneeName}}
-- **Target Selesai (SLA)**: {{.DueDate}}
+- **Penanggung Jawab**: {{if .AssigneeName}}{{.AssigneeName}}{{else}}Belum ditugaskan{{end}}
+- **Batas Waktu (SLA)**: {{if .DueDate}}{{.DueDate}}{{else}}Standard SLA{{end}}
 
-## Links
-- Dashboard K2NET: [{{.TaskID}}](https://system-gis.k2net.id/tasks/{{.TaskID}})
+---
+
+### 🔗 Quick Links
+- 🌐 [Buka Tiket di Web Studio](https://system-gis.k2net.id/tasks/{{.TaskID}})
 `
 
 type TaskPayload struct {

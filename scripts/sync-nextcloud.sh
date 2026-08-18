@@ -144,7 +144,14 @@ else
   echo "Tidak ada file arsip audit_logs ditemukan."
 fi
 
-# 7. Bersihkan berkas cadangan di Nextcloud yang berusia lebih dari 30 hari (Retensi 30 hari)
+# 7. Sinkronisasi dokumentasi lokal ke Obsidian Vault (05_Documentation)
+echo "--- Sinkronisasi dokumentasi ke Obsidian Vault ---"
+if [ -f "/opt/project5/scripts/sync-docs-obsidian.sh" ]; then
+  /bin/bash /opt/project5/scripts/sync-docs-obsidian.sh || true
+  echo "Obsidian Docs sync: OK"
+fi
+
+# 8. Bersihkan berkas cadangan di Nextcloud yang berusia lebih dari 30 hari (Retensi 30 hari)
 echo "--- Membersihkan berkas cadangan lama di Nextcloud (Retensi 30 hari) ---"
 rclone delete "${REMOTE}:${REMOTE_BASE}/" --min-age 30d --rmdirs -v 2>&1 | tail -5
 
