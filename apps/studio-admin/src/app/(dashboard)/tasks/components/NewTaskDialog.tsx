@@ -26,6 +26,7 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import { type TaskScope } from "@/hooks/useTasksQuery";
 import { TaskLabelPicker } from "./TaskLabelPicker";
 import { TaskProjectPicker } from "./TaskProjectPicker";
+import { LinearDatePicker } from "./LinearDatePicker";
 
 export interface NewTaskDefaultValues {
   title?: string;
@@ -362,7 +363,14 @@ export function NewTaskDialog({
               onChange={setSelectedProject}
             />
 
-            {/* 5. Labels Pill (Modular Sub-component with 3-Step Linear Wizard) */}
+            {/* 5. Due Date Pill (Linear Standard Date Picker) */}
+            <LinearDatePicker
+              type="due"
+              value={dueDate}
+              onChange={(d) => setDueDate(d || "")}
+            />
+
+            {/* 6. Labels Pill (Modular Sub-component with 3-Step Linear Wizard) */}
             <TaskLabelPicker
               selectedLabelIds={selectedLabels}
               onChange={setSelectedLabels}

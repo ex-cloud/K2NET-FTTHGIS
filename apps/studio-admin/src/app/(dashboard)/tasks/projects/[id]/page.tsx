@@ -297,6 +297,7 @@ export default function ProjectHubDetailPage() {
               assigneeId={assigneeId}
               setAssigneeId={setAssigneeId}
               dueDate={dueDate}
+              setDueDate={setDueDate}
               healthStatus={healthStatus}
               projectTask={projectTask}
               teamUsers={teamUsers}

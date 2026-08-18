@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Box, TrendingUp, CheckCircle2, Flame } from "lucide-react";
 import {
   Card,
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 } from "@k2net/ui";
 import { type Task } from "@/hooks/useTasksQuery";
 import { type TeamUser } from "@/hooks/useTeamUsers";
+import { LinearDatePicker } from "../../../components/LinearDatePicker";
 import { cn } from "@/lib/utils";
 
 interface ProjectOverviewTabProps {
@@ -25,6 +26,7 @@ interface ProjectOverviewTabProps {
   assigneeId: string | null;
   setAssigneeId: (assigneeId: string | null) => void;
   dueDate?: string;
+  setDueDate?: (dueDate: string | undefined) => void;
   healthStatus: "On track" | "At risk" | "Off track";
   projectTask: Task;
   teamUsers: TeamUser[];
@@ -43,6 +45,7 @@ export function ProjectOverviewTab({
   assigneeId,
   setAssigneeId,
   dueDate,
+  setDueDate,
   healthStatus,
   projectTask,
   teamUsers,
@@ -62,41 +65,36 @@ export function ProjectOverviewTab({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => onSaveField({ title })}
-              className="text-xl md:text-2xl font-bold text-foreground bg-transparent border-none outline-none focus:ring-0 w-full"
-              placeholder="Project title..."
+              className="text-2xl font-bold text-foreground bg-transparent border-0 outline-none w-full tracking-tight hover:bg-muted/20 px-2 py-1 rounded-lg transition-colors"
             />
           </div>
         </div>
-
-        <p className="text-xs text-muted-foreground/80 pl-13">
-          {description ? description.slice(0, 120) + "..." : "Add a short summary..."}
-        </p>
       </div>
 
-      {/* Properties Bar (Interactive Dropdown Controls) */}
-      <div className="p-3 rounded-xl border border-border/50 bg-card/40 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+      {/* Interactive Properties Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-card/40 border border-border/60 rounded-xl p-3 text-xs">
         {/* Status */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Status</span>
-              <div className="mt-1 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                <span className="font-semibold text-foreground capitalize">{status.toLowerCase().replace("_", " ")}</span>
+              <div className="mt-1 font-semibold flex items-center gap-1.5 text-foreground">
+                <div className={cn("w-2 h-2 rounded-full", status === "RESOLVED" || status === "CLOSED" ? "bg-emerald-500" : "bg-amber-500")} />
+                <span>{status}</span>
               </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-36 z-[100]">
-            {["TODO", "IN_PROGRESS", "RESOLVED", "CLOSED"].map((st) => (
+          <DropdownMenuContent align="start" className="w-40 z-[100]">
+            {["BACKLOG", "TODO", "IN_PROGRESS", "RESOLVED", "CLOSED"].map((st) => (
               <DropdownMenuItem
                 key={st}
                 onClick={() => {
                   setStatus(st);
                   onSaveField({ status: st });
                 }}
-                className={cn("text-xs capitalize cursor-pointer", status === st ? "bg-primary/10 text-primary font-bold" : "")}
+                className={cn("text-xs cursor-pointer", status === st ? "bg-primary/10 text-primary font-bold" : "")}
               >
-                {st.toLowerCase().replace("_", " ")}
+                {st}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -107,11 +105,14 @@ export function ProjectOverviewTab({
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Priority</span>
-              <div className="mt-1 font-semibold text-foreground">{priority}</div>
+              <div className="mt-1 font-semibold flex items-center gap-1.5 text-foreground">
+                <Flame className={cn("w-3.5 h-3.5", priority === "URGENT" ? "text-destructive" : priority === "HIGH" ? "text-amber-500" : "text-muted-foreground")} />
+                <span>{priority}</span>
+              </div>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-36 z-[100]">
-            {["NORMAL", "LOW", "HIGH", "URGENT"].map((pr) => (
+          <DropdownMenuContent align="start" className="w-40 z-[100]">
+            {["URGENT", "HIGH", "NORMAL", "LOW"].map((pr) => (
               <DropdownMenuItem
                 key={pr}
                 onClick={() => {
@@ -170,11 +171,17 @@ export function ProjectOverviewTab({
         </DropdownMenu>
 
         {/* Target Date */}
-        <div className="p-2 rounded-lg">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Target date</span>
-          <div className="mt-1 font-mono text-foreground font-semibold">
-            {dueDate ? new Date(dueDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "No target date"}
-          </div>
+        <div className="p-2 rounded-lg hover:bg-muted/40 transition-colors border border-transparent hover:border-border/40 flex flex-col justify-center">
+          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Target date</span>
+          <LinearDatePicker
+            type="target"
+            value={dueDate || undefined}
+            onChange={(val) => {
+              setDueDate?.(val);
+              onSaveField({ dueDate: val ? new Date(val).toISOString() : undefined });
+            }}
+            buttonClassName="border-0 bg-transparent p-0 hover:bg-transparent text-xs font-mono font-semibold"
+          />
         </div>
       </div>
 

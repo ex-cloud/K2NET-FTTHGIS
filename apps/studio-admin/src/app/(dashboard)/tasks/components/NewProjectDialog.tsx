@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { type TaskScope } from "@/hooks/useTasksQuery";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { TaskLabelPicker } from "./TaskLabelPicker";
+import { LinearDatePicker } from "./LinearDatePicker";
 
 interface NewProjectDialogProps {
   open: boolean;
@@ -137,6 +138,26 @@ export function NewProjectDialog({
     ]);
     setNewMilestoneText("");
     setShowMilestoneInput(false);
+  };
+
+  const handleStartDateChange = (val: string | undefined) => {
+    setStartDate(val || "");
+    if (val && targetDate) {
+      if (new Date(val) > new Date(targetDate)) {
+        setTargetDate(val);
+        toast.info("Target date disesuaikan agar sama atau setelah Start date");
+      }
+    }
+  };
+
+  const handleTargetDateChange = (val: string | undefined) => {
+    setTargetDate(val || "");
+    if (val && startDate) {
+      if (new Date(val) < new Date(startDate)) {
+        setStartDate(val);
+        toast.info("Start date disesuaikan agar sama atau sebelum Target date");
+      }
+    }
   };
 
   const handleRemoveMilestone = (id: string) => {
@@ -385,46 +406,20 @@ export function NewProjectDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Start Date Pill */}
-              <div className="relative inline-flex items-center">
-                <label
-                  htmlFor="project-start-date"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>{startDate ? startDate : "Start"}</span>
-                </label>
-                <input
-                  id="project-start-date"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
+              {/* Start Date Picker (Linear Standard Popover) */}
+              <LinearDatePicker
+                type="start"
+                value={startDate}
+                onChange={handleStartDateChange}
+              />
 
-              {/* Target Date Pill */}
-              <div className="relative inline-flex items-center">
-                <label
-                  htmlFor="project-target-date"
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer",
-                    targetDate
-                      ? "bg-amber-500/10 border-amber-500/40 text-amber-500 font-semibold"
-                      : "bg-muted/40 hover:bg-muted/80 text-foreground border-border/50"
-                  )}
-                >
-                  <Target className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>{targetDate ? `Target: ${targetDate}` : "Target"}</span>
-                </label>
-                <input
-                  id="project-target-date"
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
+              {/* Target Date Picker (Linear Standard Popover) */}
+              <LinearDatePicker
+                type="target"
+                value={targetDate}
+                referenceDate={startDate}
+                onChange={handleTargetDateChange}
+              />
 
               {/* Labels Pill (Modular Component) */}
               <TaskLabelPicker
