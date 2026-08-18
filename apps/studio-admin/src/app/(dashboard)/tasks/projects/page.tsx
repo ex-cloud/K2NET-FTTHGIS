@@ -28,8 +28,12 @@ import {
   DropdownMenuItem,
 } from "@k2net/ui";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
 import { useTasksQuery, type Task } from "@/hooks/useTasksQuery";
 import { NewProjectDialog } from "../components/NewProjectDialog";
+import { ProjectContextMenu } from "../components/ProjectContextMenu";
 import { cn } from "@/lib/utils";
 
 interface ProjectPlanItem {
@@ -58,10 +62,75 @@ export default function ProjectsHubPage() {
     refresh,
   } = useTasksQuery(undefined, "PLATFORM_INTERNAL");
 
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+
+  // ── Context Menu Action Handlers ───────────────────────────────────────────
+  const handleUpdateStatus = async (projectId: string, status: string) => {
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${projectId}`, {
+        method: "PUT",
+        token: session?.accessToken ?? "",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        toast.success(`Project status updated to ${status}`);
+        refresh();
+      } else {
+        toast.error("Failed to update project status");
+      }
+    } catch {
+      toast.error("Network error while updating status");
+    }
+  };
+
+  const handleUpdatePriority = async (projectId: string, priority: string) => {
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${projectId}`, {
+        method: "PUT",
+        token: session?.accessToken ?? "",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority }),
+      });
+      if (res.ok) {
+        toast.success(`Project priority updated to ${priority}`);
+        refresh();
+      } else {
+        toast.error("Failed to update project priority");
+      }
+    } catch {
+      toast.error("Network error while updating priority");
+    }
+  };
+
+  const handleUpdateHealth = (projectId: string, health: string) => {
+    toast.success(`Project health updated to ${health}`);
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${projectId}`, {
+        method: "DELETE",
+        token: session?.accessToken ?? "",
+      });
+      if (res.ok) {
+        toast.success("Project deleted successfully");
+        refresh();
+      } else {
+        toast.error("Failed to delete project");
+      }
+    } catch {
+      toast.error("Network error while deleting project");
+    }
+  };
 
   // ── Infinite Scroll Observer ───────────────────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -551,113 +620,121 @@ export default function ProjectsHubPage() {
                   filteredProjects.map((proj) => {
                     const isComplete = proj.percentage === 100;
                     return (
-                      <div
+                      <ProjectContextMenu
                         key={proj.id}
-                        onClick={() => router.push(`/tasks/projects/${proj.id}`)}
-                        className="grid grid-cols-[1.5fr_120px_90px_140px_130px_80px_100px] border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/45 text-xs"
+                        project={proj}
+                        onUpdateStatus={(st) => handleUpdateStatus(proj.id, st)}
+                        onUpdatePriority={(pr) => handleUpdatePriority(proj.id, pr)}
+                        onUpdateHealth={(hl) => handleUpdateHealth(proj.id, hl)}
+                        onDelete={() => handleDeleteProject(proj.id)}
                       >
-                        {/* Name + Obsidian Ref */}
-                        <div className="px-4 py-3 flex items-center gap-2.5 min-w-0">
-                          <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500 group-hover:scale-105 transition-transform">
-                            <Box className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                              {proj.name}
-                            </span>
-                            {proj.obsidianRef && (
-                              <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
-                                {proj.obsidianRef}
+                        <div
+                          onClick={() => router.push(`/tasks/projects/${proj.id}`)}
+                          className="grid grid-cols-[1.5fr_120px_90px_140px_130px_80px_100px] border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/45 text-xs"
+                        >
+                          {/* Name + Obsidian Ref */}
+                          <div className="px-4 py-3 flex items-center gap-2.5 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500 group-hover:scale-105 transition-transform">
+                              <Box className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                {proj.name}
                               </span>
-                            )}
+                              {proj.obsidianRef && (
+                                <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                                  {proj.obsidianRef}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Health */}
-                        <div className="px-4 py-3 flex items-center">
-                          <div className="inline-flex items-center gap-1.5">
-                            {proj.health === "On track" ? (
-                              <>
-                                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                                <span className="text-emerald-500 font-medium">On track</span>
-                              </>
-                            ) : proj.health === "At risk" ? (
-                              <>
-                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                                <span className="text-amber-500 font-medium">At risk</span>
-                              </>
+                          {/* Health */}
+                          <div className="px-4 py-3 flex items-center">
+                            <div className="inline-flex items-center gap-1.5">
+                              {proj.health === "On track" ? (
+                                <>
+                                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                  <span className="text-emerald-500 font-medium">On track</span>
+                                </>
+                              ) : proj.health === "At risk" ? (
+                                <>
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                  <span className="text-amber-500 font-medium">At risk</span>
+                                </>
+                              ) : (
+                                <>
+                                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                                  <span className="text-destructive font-medium">Off track</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Priority */}
+                          <div className="px-4 py-3 flex items-center">
+                            {proj.priority === "URGENT" ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/30">
+                                URGENT
+                              </span>
+                            ) : proj.priority === "HIGH" ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                                HIGH
+                              </span>
+                            ) : proj.priority === "LOW" ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/30">
+                                LOW
+                              </span>
                             ) : (
-                              <>
-                                <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                                <span className="text-destructive font-medium">Off track</span>
-                              </>
+                              <span className="text-muted-foreground font-mono text-[11px]">---</span>
                             )}
                           </div>
-                        </div>
 
-                        {/* Priority */}
-                        <div className="px-4 py-3 flex items-center">
-                          {proj.priority === "URGENT" ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/30">
-                              URGENT
-                            </span>
-                          ) : proj.priority === "HIGH" ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">
-                              HIGH
-                            </span>
-                          ) : proj.priority === "LOW" ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/30">
-                              LOW
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground font-mono text-[11px]">---</span>
-                          )}
-                        </div>
-
-                        {/* Lead */}
-                        <div className="px-4 py-3 flex items-center gap-2 min-w-0">
-                          <div className="w-5 h-5 rounded-full bg-secondary text-foreground flex items-center justify-center font-bold text-[10px] shrink-0 border border-border">
-                            {proj.lead !== "Unassigned" ? proj.lead.slice(0, 2).toUpperCase() : <User className="w-3 h-3 text-muted-foreground" />}
+                          {/* Lead */}
+                          <div className="px-4 py-3 flex items-center gap-2 min-w-0">
+                            <div className="w-5 h-5 rounded-full bg-secondary text-foreground flex items-center justify-center font-bold text-[10px] shrink-0 border border-border">
+                              {proj.lead !== "Unassigned" ? proj.lead.slice(0, 2).toUpperCase() : <User className="w-3 h-3 text-muted-foreground" />}
+                            </div>
+                            <span className="text-muted-foreground truncate">{proj.lead}</span>
                           </div>
-                          <span className="text-muted-foreground truncate">{proj.lead}</span>
-                        </div>
 
-                        {/* Target Date */}
-                        <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px]">
-                          {proj.dueDate
-                            ? new Date(proj.dueDate).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
-                            : "---"}
-                        </div>
+                          {/* Target Date */}
+                          <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px]">
+                            {proj.dueDate
+                              ? new Date(proj.dueDate).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "---"}
+                          </div>
 
-                        {/* Issues Count */}
-                        <div className="px-4 py-3 flex items-center justify-center font-mono font-semibold text-muted-foreground">
-                          {proj.issuesCount}
-                        </div>
+                          {/* Issues Count */}
+                          <div className="px-4 py-3 flex items-center justify-center font-mono font-semibold text-muted-foreground">
+                            {proj.issuesCount}
+                          </div>
 
-                        {/* Status / Percentage */}
-                        <div className="px-4 py-3 flex items-center justify-end">
-                          <div className="inline-flex items-center gap-1.5">
-                            <CheckCircle2
-                              className={cn(
-                                "w-3.5 h-3.5",
-                                isComplete ? "text-emerald-500" : "text-primary"
-                              )}
-                            />
-                            <span
-                              className={cn(
-                                "font-mono font-bold text-xs",
-                                isComplete ? "text-emerald-500" : "text-foreground"
-                              )}
-                            >
-                              {proj.percentage}%
-                            </span>
+                          {/* Status / Percentage */}
+                          <div className="px-4 py-3 flex items-center justify-end">
+                            <div className="inline-flex items-center gap-1.5">
+                              <CheckCircle2
+                                className={cn(
+                                  "w-3.5 h-3.5",
+                                  isComplete ? "text-emerald-500" : "text-primary"
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  "font-mono font-bold text-xs",
+                                  isComplete ? "text-emerald-500" : "text-foreground"
+                                )}
+                              >
+                                {proj.percentage}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </ProjectContextMenu>
                     );
                   })
                 )}

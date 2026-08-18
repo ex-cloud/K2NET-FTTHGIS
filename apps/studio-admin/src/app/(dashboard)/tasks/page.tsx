@@ -10,6 +10,7 @@ import { ClipboardList, Plus, PanelRight, HelpCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskScope } from "@/hooks/useTasksQuery";
 import { useTaskSummary } from "@/hooks/useTaskSummary";
+import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
 
@@ -138,13 +139,16 @@ export default function TasksPage() {
 
   if (error) toast.error("Failed to load tasks: " + error);
 
-  // ── Derived unique assignees ────────────────────────────────────────────────
+  const { users: teamUsers } = useTeamUsers();
+
+  // ── Derived unique assignees (Combines active Keycloak users + task assignees) ────
 
   const assigneesList = useMemo(() => {
     const ids = new Set<string>();
+    teamUsers.forEach((u) => { if (u.email) ids.add(u.email); });
     tasks.forEach((t) => { if (t.assigneeId) ids.add(t.assigneeId); });
     return Array.from(ids);
-  }, [tasks]);
+  }, [teamUsers, tasks]);
 
   const dynamicProjectsList = useMemo(() => {
     const names = new Set<string>();

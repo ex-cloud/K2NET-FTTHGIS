@@ -39,6 +39,8 @@ import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { cn } from "@/lib/utils";
 import { type TaskScope } from "@/hooks/useTasksQuery";
+import { useTeamUsers } from "@/hooks/useTeamUsers";
+import { TaskLabelPicker } from "./TaskLabelPicker";
 
 interface NewProjectDialogProps {
   open: boolean;
@@ -88,6 +90,7 @@ export function NewProjectDialog({
   defaultValues,
 }: NewProjectDialogProps) {
   const { data: session } = useSession();
+  const { users: teamUsers } = useTeamUsers();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
@@ -97,7 +100,8 @@ export function NewProjectDialog({
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("TODO");
   const [priority, setPriority] = useState<"URGENT" | "HIGH" | "NORMAL" | "LOW">("NORMAL");
-  const [leadName, setLeadName] = useState(session?.user?.name || "andiansyah0425");
+  const [leadName, setLeadName] = useState(session?.user?.name || session?.user?.email || "andiansyah");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [milestones, setMilestones] = useState<{ id: string; title: string }[]>([]);
@@ -176,6 +180,7 @@ export function NewProjectDialog({
         priority: priority === "NORMAL" ? "NORMAL" : priority,
         status: status === "PLANNED" ? "TODO" : status,
         scope: defaultValues?.scope || "PLATFORM_INTERNAL",
+        assigneeId: leadName || undefined,
         dueDate: targetDate ? new Date(targetDate).toISOString() : undefined,
       };
 
@@ -345,28 +350,38 @@ export function NewProjectDialog({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
                   >
                     <User className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>Lead: {leadName}</span>
+                    <span>Lead: {leadName ? leadName.split("@")[0] : "Unassigned"}</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52">
-                  <DropdownMenuItem
-                    onClick={() => setLeadName("andiansyah0425")}
-                    className="flex items-center gap-2 text-xs py-2 cursor-pointer"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">
-                      A
-                    </div>
-                    <span>andiansyah0425 (Super Admin)</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setLeadName("devops.noc")}
-                    className="flex items-center gap-2 text-xs py-2 cursor-pointer"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-500 flex items-center justify-center font-bold text-[10px]">
-                      D
-                    </div>
-                    <span>devops.noc (Lead Engineer)</span>
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="start" className="w-56 max-h-60 overflow-y-auto z-[100]">
+                  {teamUsers.length === 0 ? (
+                    <DropdownMenuItem
+                      onClick={() => setLeadName(session?.user?.name || session?.user?.email || "andiansyah")}
+                      className="flex items-center gap-2 text-xs py-2 cursor-pointer"
+                    >
+                      <User className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>{session?.user?.name || session?.user?.email || "Current User"}</span>
+                    </DropdownMenuItem>
+                  ) : (
+                    teamUsers.map((u) => (
+                      <DropdownMenuItem
+                        key={u.id}
+                        onClick={() => setLeadName(u.name || u.email)}
+                        className={cn(
+                          "flex items-center gap-2 text-xs py-2 cursor-pointer",
+                          leadName === (u.name || u.email) ? "bg-primary/10 text-primary font-semibold" : "text-foreground"
+                        )}
+                      >
+                        <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px] shrink-0">
+                          {(u.name || u.email).substring(0, 1).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate">{u.name || u.email}</span>
+                          <span className="text-[10px] text-muted-foreground">{u.role}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -411,15 +426,11 @@ export function NewProjectDialog({
                 />
               </div>
 
-              {/* Labels Pill */}
-              <button
-                type="button"
-                onClick={() => toast.info("Label akan dikaitkan otomatis dengan scope PLATFORM_INTERNAL")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
-              >
-                <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Labels</span>
-              </button>
+              {/* Labels Pill (Modular Component) */}
+              <TaskLabelPicker
+                selectedLabelIds={selectedLabels}
+                onChange={setSelectedLabels}
+              />
 
               {/* Dependencies Pill */}
               <button

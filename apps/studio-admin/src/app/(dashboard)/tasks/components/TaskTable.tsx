@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   Calendar,
 } from "@k2net/ui";
+import { TaskContextMenu } from "./TaskContextMenu";
 
 interface TaskTableProps {
   tasks: Task[];
@@ -409,22 +410,30 @@ export function TaskTable({
           </div>
         ) : (
           table.getRowModel().rows.map((row) => (
-            <div
+            <TaskContextMenu
               key={row.id}
-              onClick={() => onRowClick(row.original)}
-              className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+              task={row.original}
+              onUpdateStatus={(st) => onUpdateTask(row.original.id, { status: st })}
+              onUpdatePriority={(pr) => onUpdateTask(row.original.id, { priority: pr })}
+              onUpdateScope={(sc) => onUpdateTask(row.original.id, { scope: sc })}
+              onDelete={() => onDeleteTask(row.original.id)}
             >
-              {row.getVisibleCells().map((cell) => (
-                <div
-                  key={cell.id}
-                  className="min-w-0 px-4 py-3.5 flex items-center justify-start"
-                >
-                  <div className="w-full min-w-0">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              <div
+                onClick={() => onRowClick(row.original)}
+                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <div
+                    key={cell.id}
+                    className="min-w-0 px-4 py-3.5 flex items-center justify-start"
+                  >
+                    <div className="w-full min-w-0">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </TaskContextMenu>
           ))
         )}
       </div>
