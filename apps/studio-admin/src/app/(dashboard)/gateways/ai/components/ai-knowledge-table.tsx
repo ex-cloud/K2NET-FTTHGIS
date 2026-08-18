@@ -37,11 +37,12 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem
+  DropdownMenuItem,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { AiDocumentItem } from "@/lib/actions/gateways";
 import { CATEGORIES, formatBytes } from "./types";
+import { AiDocumentContextMenu } from "./ai-document-context-menu";
 
 interface AiKnowledgeTableProps {
   documents: AiDocumentItem[];
@@ -62,6 +63,8 @@ interface AiKnowledgeTableProps {
   onRefresh: () => void;
   onFetchMore?: () => void;
   isSyncing?: boolean;
+  onInspectVector?: (doc: AiDocumentItem) => void;
+  onTestSimulator?: (title: string) => void;
 }
 
 const columnHelper = createColumnHelper<AiDocumentItem>();
@@ -85,6 +88,8 @@ export function AiKnowledgeTable({
   onRefresh,
   onFetchMore,
   isSyncing = false,
+  onInspectVector,
+  onTestSimulator,
 }: AiKnowledgeTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -474,24 +479,31 @@ export function AiKnowledgeTable({
                 </div>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <div
+                  <AiDocumentContextMenu
                     key={row.id}
-                    className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/30 transition-colors group"
+                    document={row.original}
+                    onDelete={onDelete}
+                    onInspectVector={onInspectVector}
+                    onTestSimulator={onTestSimulator}
                   >
-                    {row.getVisibleCells().map((cell) => {
-                      const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);
-                      return (
-                        <div
-                          key={cell.id}
-                          className={`px-4 py-2.5 flex items-center ${
-                            isRightAligned ? "justify-end text-right" : "justify-start text-left"
-                          }`}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <div
+                      className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/40 transition-colors group cursor-context-menu"
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);
+                        return (
+                          <div
+                            key={cell.id}
+                            className={`px-4 py-2.5 flex items-center ${
+                              isRightAligned ? "justify-end text-right" : "justify-start text-left"
+                            }`}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AiDocumentContextMenu>
                 ))
               )}
 

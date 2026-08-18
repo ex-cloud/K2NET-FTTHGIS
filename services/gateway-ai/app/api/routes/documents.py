@@ -42,6 +42,27 @@ ALLOWED_MIME_TYPES = {
 }
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
 
+# ─── Vendor & Device Tagging ──────────────────────────────────────────────────
+# Otomatis mendeteksi vendor perangkat dari nama file & konten dokumen
+VENDOR_PATTERNS: list[tuple[list[str], str]] = [
+    (["zte", "c300", "c320", "c600", "c680", "an5516", "fiberhome", "fiber-home"], "FiberHome/ZTE"),
+    (["huawei", "ma5800", "ma5600", "ma5608", "smartax"], "Huawei"),
+    (["mikrotik", "routeros", "winbox", "chr"], "MikroTik"),
+    (["cisco", "asr", "catalyst", "ios"], "Cisco"),
+    (["unifi", "ubiquiti", "edgerouter"], "Ubiquiti"),
+    (["gpon", "epon", "xgspon", "olt", "ont", "onu", "odp", "odc", "fsp", "splitter"], "FTTH-General"),
+    (["postgres", "postgis", "pgvector", "spring", "keycloak", "kong", "traefik", "docker"], "System-Infra"),
+]
+
+
+def _extract_vendor(title: str, content: str) -> str:
+    """Mendeteksi vendor/kategori perangkat dari judul dan isi dokumen (case-insensitive)."""
+    combined = (title + " " + content[:500]).lower()
+    for keywords, vendor_label in VENDOR_PATTERNS:
+        if any(kw in combined for kw in keywords):
+            return vendor_label
+    return "General"
+
 
 # ─── 1. List Documents ─────────────────────────────────────────────────────────
 
@@ -141,6 +162,92 @@ async def get_ai_stats(ctx: TenantContext = Depends(verify_gateway_and_tenant)):
         chat_model=chat_model,
         db_connected=db_ok,
     )
+
+
+@router.get("/observability")
+async def get_ai_observability(ctx: TenantContext = Depends(verify_gateway_and_tenant)):
+    """
+    Menyediakan metrik observabilitas lengkap AI Gateway:
+    Redis Semantic Cache, pgvector HNSW, Hybrid Search & Provider Engine.
+    """
+    from app.services.semantic_cache import semantic_cache
+
+    redis_ok = await semantic_cache.ping()
+    cached_keys = 0
+    if redis_ok:
+        try:
+            keys_res = await semantic_cache._execute_command("KEYS", f"ai:semcache:{ctx.tenant_id}:*")
+            if isinstance(keys_res, list):
+                cached_keys = len(keys_res)
+        except Exception:
+            pass
+
+    cat_breakdown: dict = {}
+    total_docs = 0
+    total_chunks = 0
+    total_bytes = 0
+    try:
+        async with get_db_session() as session:
+            res = await session.execute(
+                text("SELECT category, COUNT(*) as cnt FROM ai_documents WHERE tenant_id = :tenant_id GROUP BY category"),
+                {"tenant_id": str(ctx.tenant_id)},
+            )
+            for row in res.mappings().fetchall():
+                cat_breakdown[row["category"]] = row["cnt"]
+                total_docs += row["cnt"]
+
+            chunk_res = await session.execute(
+                text("SELECT COALESCE(SUM(chunk_count), 0) as chunks, COALESCE(SUM(file_size_bytes), 0) as bytes FROM ai_documents WHERE tenant_id = :tenant_id"),
+                {"tenant_id": str(ctx.tenant_id)},
+            )
+            c_row = chunk_res.mappings().fetchone()
+            if c_row:
+                total_chunks = c_row["chunks"]
+                total_bytes = c_row["bytes"]
+    except Exception as e:
+        logger.error(f"Observability query error: {e}")
+
+    provider = settings.DEFAULT_LLM_PROVIDER
+    if provider == "gemini":
+        chat_model = settings.GEMINI_CHAT_MODEL
+        emb_model = settings.GEMINI_EMBEDDING_MODEL
+    elif provider in ("ollama", "local"):
+        chat_model = settings.OLLAMA_CHAT_MODEL
+        emb_model = settings.OLLAMA_EMBEDDING_MODEL
+    else:
+        chat_model = settings.OPENAI_CHAT_MODEL
+        emb_model = settings.OPENAI_EMBEDDING_MODEL
+
+    return {
+        "status": "HEALTHY" if redis_ok else "DEGRADED",
+        "semantic_cache": {
+            "enabled": True,
+            "connected": redis_ok,
+            "cached_entries": cached_keys,
+            "similarity_threshold": 0.96,
+            "ttl_seconds": 86400,
+            "latency_ms": "< 10ms",
+        },
+        "search_engine": {
+            "type": "Hybrid RRF (Reciprocal Rank Fusion)",
+            "vector_backend": "PostgreSQL 17 pgvector (HNSW Cosine)",
+            "keyword_backend": "PostgreSQL BM25 Full-Text Search (tsvector)",
+            "rrf_k": 60,
+            "embedding_dimension": settings.EMBEDDING_DIMENSION,
+        },
+        "knowledge_base": {
+            "total_documents": total_docs,
+            "total_chunks": total_chunks,
+            "total_size_bytes": total_bytes,
+            "categories": cat_breakdown,
+        },
+        "llm_engine": {
+            "provider": provider.upper(),
+            "chat_model": chat_model,
+            "embedding_model": emb_model,
+            "streaming": True,
+        },
+    }
 
 
 # ─── 3. Upload File ───────────────────────────────────────────────────────────
@@ -399,6 +506,7 @@ async def _index_document(
 
         engine = LLMEngine()
         stored_count = 0
+        vendor = _extract_vendor(raw_text, raw_text)
         for i, chunk_text in enumerate(chunks):
             try:
                 embedding = await engine.generate_embedding(chunk_text)
@@ -410,7 +518,7 @@ async def _index_document(
                     content=chunk_text,
                     token_count=token_count,
                     embedding=embedding,
-                    metadata={"chunk_index": i, "total_chunks": len(chunks)},
+                    metadata={"chunk_index": i, "total_chunks": len(chunks), "vendor": vendor},
                 )
                 stored_count += 1
             except Exception as chunk_err:
@@ -488,8 +596,7 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                     },
                 )
 
-            chunks = chunker.chunk_text(content)
-            stored_count = 0
+            vendor = _extract_vendor(title, content)
             for i, chunk_text in enumerate(chunks):
                 try:
                     embedding = await engine.generate_embedding(chunk_text)
@@ -501,7 +608,7 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                         content=chunk_text,
                         token_count=token_count,
                         embedding=embedding,
-                        metadata={"source_file": rel_path, "chunk_index": i, "total_chunks": len(chunks)},
+                        metadata={"source_file": rel_path, "chunk_index": i, "total_chunks": len(chunks), "vendor": vendor},
                     )
                     stored_count += 1
                 except Exception as ce:

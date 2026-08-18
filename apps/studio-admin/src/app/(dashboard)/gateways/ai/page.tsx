@@ -305,16 +305,16 @@ export default function AiGatewayPage() {
 
   return (
     <GatewayPageWrapper>
-      <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto custom-scrollbar">
-        <div className="w-full max-w-6xl mx-auto space-y-8 pb-20">
-          
-          {/* Header Banner */}
-          <div className="flex items-center gap-4 border-b border-border pb-6">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-              <Sparkles className="w-6 h-6" />
+      <div className="flex-1 flex flex-col pt-6 pb-16 px-4 md:px-6 bg-background h-full overflow-y-auto custom-scrollbar w-full gap-6 select-none">
+        
+        {/* Header Banner */}
+        <div className="flex items-center justify-between border-b border-border/80 pb-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
+              <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
                 AI Assistant Gateway
                 <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 font-mono">
                   Port 5012
@@ -325,55 +325,61 @@ export default function AiGatewayPage() {
               </p>
             </div>
           </div>
-        
-          {/* Top KPI Metrics */}
-          <AiKpiCards 
-            stats={stats} 
-            loading={statsLoading} 
-            onOpenExplorer={() => setIsExplorerOpen(true)} 
-          />
+        </div>
+      
+        {/* Top KPI Metrics */}
+        <AiKpiCards 
+          stats={stats} 
+          loading={statsLoading} 
+          onOpenExplorer={() => setIsExplorerOpen(true)} 
+        />
 
-          {/* Navigation Tabs */}
-          <AiNavTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            docsTotal={docsTotal}
+        {/* Navigation Tabs */}
+        <AiNavTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          docsTotal={docsTotal}
+          onSyncServerDocs={handleSyncServerDocs}
+          onRefresh={() => {
+            loadDocuments();
+            loadStats();
+          }}
+          isSyncing={isPending}
+          docsLoading={docsLoading}
+          onLoadConfig={loadConfig}
+        />
+
+        {/* TAB 1: KNOWLEDGE LIST */}
+        {activeTab === "KNOWLEDGE" && (
+          <AiKnowledgeTable
+            documents={documents}
+            docsLoading={docsLoading}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            totalCount={stats?.total_documents || docsTotal}
+            totalChunks={stats?.total_chunks || 0}
+            totalBytes={stats?.total_size_bytes || 0}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSearchSubmit={handleSearchSubmit}
+            onDelete={handleDelete}
+            onGoToUpload={() => setActiveTab("UPLOAD")}
             onSyncServerDocs={handleSyncServerDocs}
             onRefresh={() => {
               loadDocuments();
               loadStats();
             }}
+            onFetchMore={handleFetchMore}
             isSyncing={isPending}
-            docsLoading={docsLoading}
-            onLoadConfig={loadConfig}
+            onInspectVector={() => setIsExplorerOpen(true)}
+            onTestSimulator={(title) => {
+              setSimQuery(title);
+              setActiveTab("SIMULATOR");
+            }}
           />
-
-          {/* TAB 1: KNOWLEDGE LIST */}
-          {activeTab === "KNOWLEDGE" && (
-            <AiKnowledgeTable
-              documents={documents}
-              docsLoading={docsLoading}
-              loadingMore={loadingMore}
-              hasMore={hasMore}
-              totalCount={stats?.total_documents || docsTotal}
-              totalChunks={stats?.total_chunks || 0}
-              totalBytes={stats?.total_size_bytes || 0}
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              onSearchSubmit={handleSearchSubmit}
-              onDelete={handleDelete}
-              onGoToUpload={() => setActiveTab("UPLOAD")}
-              onSyncServerDocs={handleSyncServerDocs}
-              onRefresh={() => {
-                loadDocuments();
-                loadStats();
-              }}
-              onFetchMore={handleFetchMore}
-              isSyncing={isPending}
-            />
-          )}
+        )}
 
           {/* TAB 2: RAG SEMANTIC SIMULATOR & VECTOR SEARCH INSPECTOR */}
           {activeTab === "SIMULATOR" && (
@@ -452,7 +458,6 @@ export default function AiGatewayPage() {
             }}
           />
 
-        </div>
       </div>
     </GatewayPageWrapper>
   );

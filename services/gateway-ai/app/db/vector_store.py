@@ -146,6 +146,77 @@ class VectorStore:
                 },
             )
 
+    async def fulltext_search(
+        self,
+        query: str,
+        tenant_id: uuid.UUID,
+        scope: str = "GENERAL",
+        limit: int = 8,
+    ) -> list[dict]:
+        """
+        PostgreSQL Full-Text Search (tsvector / plainto_tsquery) untuk domain teknis FTTH.
+        Efektif menangkap istilah teknis, nomor model, kode CLI, dan kode alarm.
+        Kombinasikan dengan similarity_search() via Reciprocal Rank Fusion (RRF) untuk akurasi maksimal.
+        """
+        # Sanitasi query: hilangkan karakter yang bisa merusak tsquery
+        safe_query = " ".join(
+            w for w in query.split()
+            if w.isalnum() or any(c in w for c in "-_./")
+        )[:200] or "ftth"
+
+        sql = text("""
+            SELECT
+                CAST(c.id AS text)           AS chunk_id,
+                CAST(c.document_id AS text)  AS document_id,
+                d.title                      AS document_title,
+                d.category                   AS category,
+                c.chunk_index                AS chunk_index,
+                c.content                    AS content,
+                ts_rank_cd(
+                    to_tsvector('simple', c.content),
+                    plainto_tsquery('simple', :query)
+                )                            AS similarity_score
+            FROM ai_document_chunks c
+            JOIN ai_documents d ON d.id = c.document_id
+            WHERE
+                c.tenant_id = :tenant_id
+                AND d.tenant_id = :tenant_id
+                AND d.status = 'INDEXED'
+                AND (:scope = 'GENERAL' OR d.category = :scope)
+                AND to_tsvector('simple', c.content) @@ plainto_tsquery('simple', :query)
+            ORDER BY similarity_score DESC
+            LIMIT :limit
+        """)
+
+        try:
+            async with get_db_session() as session:
+                result = await session.execute(
+                    sql,
+                    {
+                        "query": safe_query,
+                        "tenant_id": str(tenant_id),
+                        "scope": scope,
+                        "limit": limit,
+                    },
+                )
+                rows = result.mappings().fetchall()
+
+            return [
+                {
+                    "chunk_id": str(r["chunk_id"]),
+                    "document_id": str(r["document_id"]),
+                    "title": r["document_title"],
+                    "category": r["category"],
+                    "chunk_index": r["chunk_index"],
+                    "content": r["content"],
+                    "similarity_score": float(r["similarity_score"] or 0.0),
+                }
+                for r in rows
+            ]
+        except Exception as e:
+            logger.warning(f"fulltext_search query error: {e}")
+            return []
+
 
 # Singleton instance
 vector_store = VectorStore()

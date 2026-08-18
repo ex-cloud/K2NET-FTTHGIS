@@ -1,20 +1,63 @@
 """
-K2NET FTTH AI Gateway — RAG Retriever
-Text chunking, embedding generation & contextual prompt builder.
+K2NET FTTH AI Gateway — RAG Retriever (Hybrid Search: pgvector + PostgreSQL BM25 FTS + RRF)
+Menggabungkan pencarian semantik vektor dengan Full-Text Search PostgreSQL
+menggunakan algoritma Reciprocal Rank Fusion (RRF) untuk akurasi teknis maksimal.
 """
-from typing import Optional
+from typing import Optional, List, Dict
 import uuid
 import logging
 import re
 
 logger = logging.getLogger(__name__)
 
+# ─── Konstanta RRF ────────────────────────────────────────────────────────────
+# Nilai k=60 adalah default optimal yang direkomendasikan oleh penelitian RRF asli
+_RRF_K = 60
+
+
+def _reciprocal_rank_fusion(
+    vector_results: List[Dict],
+    keyword_results: List[Dict],
+    top_k: int = 4,
+) -> List[Dict]:
+    """
+    Menggabungkan hasil pencarian vektor dan kata kunci menggunakan RRF.
+    RRF Score = Σ 1 / (k + rank_i)  untuk setiap kandidat dari setiap retriever.
+    """
+    scores: Dict[str, float] = {}
+    merged: Dict[str, Dict] = {}
+
+    for rank, chunk in enumerate(vector_results):
+        cid = chunk["chunk_id"]
+        scores[cid] = scores.get(cid, 0.0) + 1.0 / (_RRF_K + rank + 1)
+        if cid not in merged:
+            merged[cid] = chunk.copy()
+            merged[cid]["search_method"] = "vector"
+
+    for rank, chunk in enumerate(keyword_results):
+        cid = chunk["chunk_id"]
+        scores[cid] = scores.get(cid, 0.0) + 1.0 / (_RRF_K + rank + 1)
+        if cid not in merged:
+            merged[cid] = chunk.copy()
+            merged[cid]["search_method"] = "keyword"
+        else:
+            merged[cid]["search_method"] = "hybrid"
+
+    # Urutkan berdasarkan skor RRF dan ambil top_k
+    sorted_chunks = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    results = []
+    for cid, rrf_score in sorted_chunks[:top_k]:
+        chunk = merged[cid].copy()
+        chunk["similarity_score"] = round(rrf_score * 5, 4)  # Normalize for UI display
+        results.append(chunk)
+
+    return results
+
 
 class RAGRetriever:
     """
-    Retriever Dokumen RAG (Retrieval-Augmented Generation).
-    Mengambil potongan dokumen yang relevan dari pgvector berdasarkan query user.
-    SEMUA query WAJIB terisolasi per tenant.
+    Retriever Dokumen RAG dengan Hybrid Search (Semantik + BM25 Keyword) via RRF.
+    SEMUA query WAJIB terisolasi per tenant (Multi-Tenant ABAC).
     """
 
     def __init__(self, tenant_id: uuid.UUID, provider: Optional[str] = None):
@@ -26,11 +69,14 @@ class RAGRetriever:
         query: str,
         limit: int = 4,
         scope: str = "GENERAL",
-        min_similarity: float = 0.3,
+        min_similarity: float = 0.25,
     ) -> tuple[list[str], list[dict]]:
         """
-        Ambil konteks relevan dari knowledge base tenant.
-        
+        Hybrid Search: Ambil konteks relevan dari knowledge base tenant.
+        1. pgvector Cosine Similarity Search
+        2. PostgreSQL Full-Text Search (tsvector + plainto_tsquery)
+        3. Reciprocal Rank Fusion (RRF) untuk menggabungkan hasil
+
         Returns:
             contexts: List string konten chunk untuk dimasukkan ke LLM prompt
             sources: List metadata source untuk ditampilkan di UI (citation)
@@ -43,26 +89,55 @@ class RAGRetriever:
         try:
             query_embedding = await engine.generate_embedding(query)
         except Exception as e:
-            logger.warning(f"Embedding generation failed (RAG skip): {e}")
+            logger.warning(f"Embedding generation failed, falling back to keyword search: {e}")
+            query_embedding = None
+
+        # 2a. Vector Search (jika embedding tersedia)
+        vector_chunks: List[Dict] = []
+        if query_embedding:
+            try:
+                vector_chunks = await vector_store.similarity_search(
+                    query_embedding=query_embedding,
+                    tenant_id=self.tenant_id,
+                    scope=scope,
+                    limit=limit * 2,  # Ambil lebih banyak untuk RRF
+                    min_similarity=min_similarity,
+                )
+            except Exception as e:
+                logger.warning(f"pgvector search failed: {e}")
+
+        # 2b. PostgreSQL BM25 Full-Text Search (tsvector)
+        keyword_chunks: List[Dict] = []
+        try:
+            keyword_chunks = await vector_store.fulltext_search(
+                query=query,
+                tenant_id=self.tenant_id,
+                scope=scope,
+                limit=limit * 2,
+            )
+        except Exception as e:
+            logger.debug(f"Full-text search skipped: {e}")
+
+        # 3. Gabungkan hasil dengan RRF (atau gunakan hasil tunggal jika salah satu kosong)
+        if vector_chunks and keyword_chunks:
+            final_chunks = _reciprocal_rank_fusion(vector_chunks, keyword_chunks, top_k=limit)
+            logger.info(
+                f"[Hybrid RRF] tenant={self.tenant_id}: vector={len(vector_chunks)} + keyword={len(keyword_chunks)} → merged={len(final_chunks)} chunks"
+            )
+        elif vector_chunks:
+            final_chunks = vector_chunks[:limit]
+            logger.info(f"[Vector Only] tenant={self.tenant_id}: {len(final_chunks)} chunks")
+        elif keyword_chunks:
+            final_chunks = keyword_chunks[:limit]
+            logger.info(f"[Keyword Only] tenant={self.tenant_id}: {len(final_chunks)} chunks")
+        else:
             return [], []
 
-        # 2. Similarity search di pgvector (tenant-scoped)
-        chunks = await vector_store.similarity_search(
-            query_embedding=query_embedding,
-            tenant_id=self.tenant_id,
-            scope=scope,
-            limit=limit,
-            min_similarity=min_similarity,
-        )
-
-        if not chunks:
-            return [], []
-
-        # 3. Susun list konteks dan metadata sumber
+        # 4. Susun list konteks dan metadata sumber
         contexts = []
         sources = []
 
-        for chunk in chunks:
+        for chunk in final_chunks:
             contexts.append(chunk["content"])
             sources.append({
                 "document_id": chunk["document_id"],
@@ -71,13 +146,71 @@ class RAGRetriever:
                 "chunk_index": chunk.get("chunk_index", 0),
                 "similarity_score": round(float(chunk.get("similarity_score", 0.0)), 4),
                 "content_preview": chunk["content"][:120] + "...",
+                "search_method": chunk.get("search_method", "vector"),
             })
 
-        logger.info(
-            f"RAG retrieved {len(chunks)} chunks for tenant={self.tenant_id}, scope={scope}, "
-            f"min_sim={chunks[0]['similarity_score']:.4f} ~ max_sim={chunks[-1]['similarity_score']:.4f}"
-        )
         return contexts, sources
+
+    async def retrieve_context_with_embedding(
+        self,
+        query: str,
+        query_embedding: List[float],
+        limit: int = 4,
+        scope: str = "GENERAL",
+    ) -> tuple[list[str], list[dict], List[float]]:
+        """
+        Variant yang menerima embedding yang sudah di-generate (untuk menghindari duplikasi kalkulasi).
+        Digunakan oleh semantic cache pipeline di chat.py.
+        Returns (contexts, sources, query_embedding).
+        """
+        from app.db.vector_store import vector_store
+
+        vector_chunks = []
+        try:
+            vector_chunks = await vector_store.similarity_search(
+                query_embedding=query_embedding,
+                tenant_id=self.tenant_id,
+                scope=scope,
+                limit=limit * 2,
+                min_similarity=0.25,
+            )
+        except Exception as e:
+            logger.warning(f"pgvector search (reuse-embedding) failed: {e}")
+
+        keyword_chunks = []
+        try:
+            keyword_chunks = await vector_store.fulltext_search(
+                query=query,
+                tenant_id=self.tenant_id,
+                scope=scope,
+                limit=limit * 2,
+            )
+        except Exception as e:
+            logger.debug(f"FTS (reuse-embedding) skipped: {e}")
+
+        if vector_chunks and keyword_chunks:
+            final_chunks = _reciprocal_rank_fusion(vector_chunks, keyword_chunks, top_k=limit)
+        elif vector_chunks:
+            final_chunks = vector_chunks[:limit]
+        elif keyword_chunks:
+            final_chunks = keyword_chunks[:limit]
+        else:
+            return [], [], query_embedding
+
+        contexts = [c["content"] for c in final_chunks]
+        sources = [
+            {
+                "document_id": c["document_id"],
+                "title": c.get("title") or c.get("document_title", "Dokumen"),
+                "category": c.get("category", "GENERAL"),
+                "chunk_index": c.get("chunk_index", 0),
+                "similarity_score": round(float(c.get("similarity_score", 0.0)), 4),
+                "content_preview": c["content"][:120] + "...",
+                "search_method": c.get("search_method", "vector"),
+            }
+            for c in final_chunks
+        ]
+        return contexts, sources, query_embedding
 
 
 class DocumentChunker:

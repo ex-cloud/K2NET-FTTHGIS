@@ -3,11 +3,14 @@
 /**
  * K2NET AI Chat Stream Hook
  * Mengelola koneksi SSE ke /api/v1/ai/chat/stream via Kong API Gateway.
- * Features: streaming token rendering, thinking / chain-of-thought parsing, optimistic updates, abort, retry.
+ * Features: streaming token rendering, thinking/chain-of-thought parsing,
+ * Redis Semantic Cache badge, localStorage session persistence, Markdown export.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
+
+const STORAGE_KEY = "k2net_ai_chat_session";
 
 export interface ChatMessage {
   id: string;
@@ -16,10 +19,50 @@ export interface ChatMessage {
   thought?: string;
   thinkingStage?: string;
   isThinking?: boolean;
+  cacheHit?: boolean;
   sources?: DocumentSource[];
   isStreaming?: boolean;
   tokensUsed?: number;
   latencyMs?: number;
+}
+
+/** Ekspor seluruh percakapan sebagai file Markdown untuk SOP Ticket */
+export function exportChatToMarkdown(messages: ChatMessage[]): void {
+  const lines: string[] = [
+    "# 📋 K2NET FTTH AI Diagnostic Report",
+    `> Diekspor pada: ${new Date().toLocaleString("id-ID")}`,
+    "",
+  ];
+  messages.forEach((m) => {
+    if (m.role === "user") {
+      lines.push(`## 🧑‍💻 Pertanyaan Teknisi`);
+      lines.push(m.content);
+      lines.push("");
+    } else if (m.content) {
+      const badge = m.cacheHit ? " ⚡ *[Redis Cache]*" : "";
+      lines.push(`## 🤖 Jawaban AI${badge}`);
+      if (m.thought) {
+        lines.push("<details><summary>Proses Penalaran (Chain of Thought)</summary>\n");
+        lines.push(m.thought);
+        lines.push("\n</details>\n");
+      }
+      lines.push(m.content);
+      if (m.sources?.length) {
+        lines.push("");
+        lines.push("**📄 Sumber Referensi:**");
+        m.sources.forEach((s, i) => lines.push(`${i + 1}. ${s.title} (${s.category}, sim=${(s.similarity_score * 100).toFixed(0)}%)`));
+      }
+      if (m.latencyMs) lines.push(`\n*Waktu respons: ${m.latencyMs}ms*`);
+      lines.push("");
+    }
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `k2net-diagnosa-${new Date().toISOString().slice(0, 10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export interface DocumentSource {
@@ -41,10 +84,36 @@ const AI_GATEWAY_URL = "/api/v1/ai/chat/stream";
 
 export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
   const { data: session } = useSession();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // ── Load dari localStorage saat pertama mount ─────────────────────────────
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+      const parsed: ChatMessage[] = JSON.parse(stored);
+      // Bersihkan state streaming yang tersimpan (tidak valid saat reload)
+      return parsed.map((m) => ({ ...m, isStreaming: false, isThinking: false }));
+    } catch {
+      return [];
+    }
+  });
+
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // ── Simpan ke localStorage setiap kali messages berubah ──────────────────
+  useEffect(() => {
+    if (messages.length === 0) return;
+    try {
+      // Simpan hanya pesan yang sudah selesai (bukan sedang streaming)
+      const toStore = messages.filter((m) => !m.isStreaming && !m.isThinking);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore.slice(-40)));
+    } catch {
+      // Abaikan jika storage penuh
+    }
+  }, [messages]);
 
   /** Buat ID unik untuk message */
   const createId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -193,6 +262,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
                           ...m,
                           isStreaming: false,
                           isThinking: false,
+                          cacheHit: event.cache_hit === true,
                           tokensUsed: event.tokens,
                           latencyMs: event.latency_ms,
                         }
@@ -248,10 +318,15 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
     }
   }, []);
 
-  /** Hapus seluruh riwayat chat sesi ini */
+  /** Hapus seluruh riwayat chat sesi ini (termasuk localStorage) */
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }, []);
 
   return {

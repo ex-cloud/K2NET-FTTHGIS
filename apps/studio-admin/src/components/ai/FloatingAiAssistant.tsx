@@ -42,9 +42,10 @@ import {
   ShieldCheck,
   BrainCircuit,
   Loader2,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAiChatStream, ChatMessage, DocumentSource } from "@/hooks/useAiChatStream";
+import { useAiChatStream, ChatMessage, DocumentSource, exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -189,6 +190,15 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           )}
         </div>
 
+        {/* Cache Hit Badge */}
+        {!isUser && message.cacheHit && (
+          <div className="text-[10px] text-amber-500 flex items-center gap-1 mb-1.5">
+            <Zap className="w-2.5 h-2.5" />
+            <span className="font-semibold">Redis Cache</span>
+            <span className="text-muted-foreground">• respons instan</span>
+          </div>
+        )}
+
         {/* Citation Sources */}
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2 max-w-[85%]">
@@ -262,11 +272,22 @@ export function FloatingAiAssistant() {
       setIsOpen((prev) => !prev);
     };
 
+    const handlePromptInput = (e: Event) => {
+      const customEvent = e as CustomEvent<{ prompt: string }>;
+      if (customEvent.detail?.prompt) {
+        setInput(customEvent.detail.prompt);
+        setIsOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 150);
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("k2net-toggle-ai-assistant", handleCustomToggle);
+    window.addEventListener("k2net-ai-prompt-input", handlePromptInput);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("k2net-toggle-ai-assistant", handleCustomToggle);
+      window.removeEventListener("k2net-ai-prompt-input", handlePromptInput);
     };
   }, [isOpen]);
 
@@ -344,15 +365,24 @@ export function FloatingAiAssistant() {
                   </SelectContent>
                 </Select>
 
-                {/* Clear + Single Close */}
+                {/* Clear + Export + Single Close */}
                 {messages.length > 0 && (
-                  <button
-                    onClick={clearMessages}
-                    className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
-                    title="Hapus percakapan"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => exportChatToMarkdown(messages)}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                      title="Export percakapan ke Markdown (.md)"
+                    >
+                      <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={clearMessages}
+                      className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                      title="Hapus percakapan"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
