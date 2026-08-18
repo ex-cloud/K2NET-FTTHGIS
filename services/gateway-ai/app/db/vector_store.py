@@ -36,14 +36,14 @@ class VectorStore:
         """
         sql = text("""
             SELECT
-                c.id::text               AS chunk_id,
-                c.document_id::text      AS document_id,
-                d.title                  AS document_title,
-                d.category               AS category,
-                c.chunk_index            AS chunk_index,
-                c.content                AS content,
-                c.metadata               AS metadata,
-                1 - (c.embedding <=> :query_vec::vector) AS similarity_score
+                CAST(c.id AS text)               AS chunk_id,
+                CAST(c.document_id AS text)      AS document_id,
+                d.title                          AS document_title,
+                d.category                       AS category,
+                c.chunk_index                    AS chunk_index,
+                c.content                        AS content,
+                c.metadata                       AS metadata,
+                1 - (c.embedding <=> CAST(:query_vec AS vector)) AS similarity_score
             FROM ai_document_chunks c
             JOIN ai_documents d ON d.id = c.document_id
             WHERE
@@ -51,8 +51,8 @@ class VectorStore:
                 AND d.tenant_id = :tenant_id       -- Double-lock pada join
                 AND d.status = 'INDEXED'
                 AND (:scope = 'GENERAL' OR d.category = :scope)
-                AND 1 - (c.embedding <=> :query_vec::vector) >= :min_similarity
-            ORDER BY c.embedding <=> :query_vec::vector
+                AND 1 - (c.embedding <=> CAST(:query_vec AS vector)) >= :min_similarity
+            ORDER BY c.embedding <=> CAST(:query_vec AS vector)
             LIMIT :limit
         """)
 
@@ -67,9 +67,20 @@ class VectorStore:
                     "limit": limit,
                 },
             )
-            rows = result.mappings().all()
+            rows = result.mappings().fetchall()
 
-        return [dict(row) for row in rows]
+        return [
+            {
+                "chunk_id": str(r["chunk_id"]),
+                "document_id": str(r["document_id"]),
+                "title": r["document_title"],
+                "category": r["category"],
+                "chunk_index": r["chunk_index"],
+                "content": r["content"],
+                "similarity_score": float(r["similarity_score"]),
+            }
+            for r in rows
+        ]
 
     async def store_chunk(
         self,
@@ -86,7 +97,7 @@ class VectorStore:
             INSERT INTO ai_document_chunks
                 (document_id, tenant_id, chunk_index, content, token_count, embedding, metadata)
             VALUES
-                (:document_id, :tenant_id, :chunk_index, :content, :token_count, :embedding::vector, :metadata::jsonb)
+                (:document_id, :tenant_id, :chunk_index, :content, :token_count, CAST(:embedding AS vector), CAST(:metadata AS jsonb))
             RETURNING id
         """)
         import json

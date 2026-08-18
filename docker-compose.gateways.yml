@@ -274,22 +274,24 @@ services:
       - ./services/.env
     environment:
       - PORT=5012
-      - DATABASE_URL=postgresql+asyncpg://ftth_user:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
       - GATEWAY_INTERNAL_TOKEN=${GATEWAY_TOKEN}
       - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-openai}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
       - ENV_FILE_PATH=/opt/project5/services/.env
+      - DOCS_ROOT_PATH=/opt/project5/docs
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
+      - /opt/project5/docs:/opt/project5/docs:ro
     ports:
       - "127.0.0.1:5012:5012"
     deploy:
       resources:
         limits:
-          cpus: '0.50'
-          memory: 384M
+          cpus: '0.75'
+          memory: 768M
 
 networks:
   default:

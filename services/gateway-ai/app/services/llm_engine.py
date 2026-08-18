@@ -114,12 +114,26 @@ class LLMEngine:
     ) -> AsyncGenerator[str, None]:
         """Google Gemini streaming dengan async generator."""
         try:
+            import os
             import google.generativeai as genai
             from app.core.config import settings
 
-            genai.configure(api_key=settings.GEMINI_API_KEY)
+            gemini_key = (
+                settings.GEMINI_API_KEY
+                or settings.GOOGLE_API_KEY
+                or os.getenv("GEMINI_API_KEY")
+                or os.getenv("GOOGLE_API_KEY")
+            )
+            if not gemini_key:
+                raise ValueError("Gemini API Key belum dikonfigurasi.")
+
+            genai.configure(api_key=gemini_key)
+            model_name = self.model or settings.GEMINI_CHAT_MODEL
+            if not model_name.startswith("models/") and "/" not in model_name:
+                model_name = f"models/{model_name}"
+
             model = genai.GenerativeModel(
-                model_name=self.model,
+                model_name=model_name,
                 system_instruction=system_prompt,
             )
 
@@ -160,13 +174,30 @@ class LLMEngine:
             return response.data[0].embedding
 
         elif self.provider == "gemini":
+            import os
             import google.generativeai as genai
-            genai.configure(api_key=settings.GEMINI_API_KEY)
+            gemini_key = (
+                settings.GEMINI_API_KEY
+                or settings.GOOGLE_API_KEY
+                or os.getenv("GEMINI_API_KEY")
+                or os.getenv("GOOGLE_API_KEY")
+            )
+            if not gemini_key:
+                raise ValueError("Gemini API Key belum dikonfigurasi (setel GEMINI_API_KEY atau GOOGLE_API_KEY).")
+
+            genai.configure(api_key=gemini_key)
+            model_name = settings.GEMINI_EMBEDDING_MODEL
+            if not model_name.startswith("models/"):
+                model_name = f"models/{model_name}"
+
             result = genai.embed_content(
-                model=settings.GEMINI_EMBEDDING_MODEL,
+                model=model_name,
                 content=text,
                 task_type="retrieval_document",
             )
-            return result["embedding"]
+            emb = result["embedding"]
+            if len(emb) < 1536:
+                emb = emb + [0.0] * (1536 - len(emb))
+            return emb[:1536]
 
         raise ValueError(f"Provider '{self.provider}' tidak didukung untuk embedding.")

@@ -39,8 +39,9 @@ class Settings(BaseSettings):
     OPENAI_CHAT_MODEL: str = Field(default="gpt-4o-mini")
 
     GEMINI_API_KEY: str = Field(default="")
-    GEMINI_EMBEDDING_MODEL: str = Field(default="models/text-embedding-004")
-    GEMINI_CHAT_MODEL: str = Field(default="gemini-1.5-flash")
+    GOOGLE_API_KEY: str = Field(default="")
+    GEMINI_EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
+    GEMINI_CHAT_MODEL: str = Field(default="models/gemini-2.5-flash")
 
     # ── RAG Configuration ─────────────────────────────────────────
     RAG_CHUNK_SIZE: int = Field(default=500)       # tokens per chunk

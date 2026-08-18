@@ -47,7 +47,7 @@ class DocumentSource(BaseModel):
     content_preview: str
 
 
-# ─── Document Upload ──────────────────────────────────────────────────────────
+# ─── Document Management & Knowledge Base ────────────────────────────────────
 
 class DocumentUploadResponse(BaseModel):
     id: uuid.UUID
@@ -57,6 +57,42 @@ class DocumentUploadResponse(BaseModel):
     status: str
     chunk_count: int
     created_at: datetime
+
+
+class ManualDocumentCreate(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255)
+    category: str = Field(default="GENERAL")
+    content: str = Field(..., min_length=10)
+
+
+class DocumentItem(BaseModel):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    title: str
+    category: str
+    file_name: Optional[str] = None
+    file_size_bytes: int = 0
+    mime_type: Optional[str] = None
+    status: str
+    chunk_count: int = 0
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocumentListResponse(BaseModel):
+    total: int
+    documents: list[DocumentItem]
+
+
+class AiStatsResponse(BaseModel):
+    total_documents: int
+    total_chunks: int
+    total_size_bytes: int
+    llm_provider: str
+    embedding_model: str
+    chat_model: str
+    db_connected: bool
 
 
 # ─── Chat Session ─────────────────────────────────────────────────────────────

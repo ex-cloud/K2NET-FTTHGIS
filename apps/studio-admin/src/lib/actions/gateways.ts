@@ -565,3 +565,155 @@ export async function triggerPaymentReconciliation(): Promise<{ success: boolean
   return res.json();
 }
 
+// ─── AI Assistant Gateway & Knowledge Base Actions ──────────────────────────
+
+export type AiKnowledgeStats = {
+  total_documents: number;
+  total_chunks: number;
+  total_size_bytes: number;
+  llm_provider: string;
+  embedding_model: string;
+  chat_model: string;
+  db_connected: boolean;
+};
+
+export type AiDocumentItem = {
+  id: string;
+  tenant_id: string;
+  title: string;
+  category: string;
+  file_name?: string | null;
+  file_size_bytes: number;
+  mime_type?: string | null;
+  status: "PENDING" | "PROCESSING" | "INDEXED" | "FAILED";
+  chunk_count: number;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiDocumentListResponse = {
+  total: number;
+  documents: AiDocumentItem[];
+};
+
+export async function getAiKnowledgeStats(): Promise<AiKnowledgeStats> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/stats`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI knowledge stats: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function getAiDocuments(params?: {
+  category?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AiDocumentListResponse> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+
+  const query = new URLSearchParams();
+  if (params?.category) query.set("category", params.category);
+  if (params?.search) query.set("search", params.search);
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents?${query.toString()}`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI documents: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function createManualAiDocument(payload: {
+  title: string;
+  category: string;
+  content: string;
+}): Promise<{ id: string; status: string; title: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/text`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal membuat dokumen manual");
+  }
+
+  return res.json();
+}
+
+export async function deleteAiDocument(docId: string): Promise<{ status: string; message: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+    method: "DELETE",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal menghapus dokumen");
+  }
+
+  return res.json();
+}
+
+export async function triggerServerDocsSync(): Promise<{ status: string; message: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-server`, {
+    method: "POST",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal memicu sinkronisasi dokumen server");
+  }
+
+  return res.json();
+}
+
