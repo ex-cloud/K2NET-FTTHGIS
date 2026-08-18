@@ -276,46 +276,24 @@ export function TaskTable({
           );
         },
       }),
-      columnHelper.display({
-        id: "actions",
-        header: "Actions",
+      columnHelper.accessor("createdAt", {
+        header: "Created",
         cell: (info) => {
-          const task = info.row.original;
+          const val = info.getValue();
+          if (!val) return <span className="text-muted-foreground text-xs">—</span>;
           return (
-            <div onClick={(e) => e.stopPropagation()} className="flex justify-center w-full">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-1 rounded-md border border-transparent hover:border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[130px]">
-                  <DropdownMenuItem
-                    onClick={() => onRowClick(task)}
-                    className="text-xs font-semibold cursor-pointer flex items-center gap-2"
-                  >
-                    <Edit className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>Edit / Detail</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to delete this task?")) {
-                        onDeleteTask(task.id);
-                      }
-                    }}
-                    className="text-xs font-semibold cursor-pointer text-destructive focus:text-destructive flex items-center gap-2"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+              {new Date(val).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
           );
         },
       }),
     ],
-    [assigneesList, onRowClick, onUpdateTask, onDeleteTask]
+    [assigneesList, onUpdateTask]
   );
 
   const table = useReactTable({
@@ -332,7 +310,7 @@ export function TaskTable({
   return (
     <div className="min-w-[1000px] flex flex-col">
       {/* ── Sticky Column Headers (Pinned to top on scroll) ────────────── */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
         {table.getFlatHeaders().map((header) => {
           if (header.isPlaceholder) return <div key={header.id} />;
           const canSort = header.column.getCanSort();
@@ -343,7 +321,7 @@ export function TaskTable({
               key={header.id}
               className="min-w-0 px-4 py-2.5 flex items-center justify-start text-left"
             >
-              {canSort && header.column.id !== "actions" ? (
+              {canSort ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
@@ -391,7 +369,7 @@ export function TaskTable({
           Array.from({ length: 8 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+              className="grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
             >
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>
@@ -400,7 +378,7 @@ export function TaskTable({
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
               <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
-              <div className="min-w-0 px-4 py-4 flex items-center justify-center"><div className="h-3.5 bg-muted/60 rounded w-6" /></div>
+              <div className="min-w-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>
             </div>
           ))
         ) : tasks.length === 0 ? (
@@ -415,12 +393,14 @@ export function TaskTable({
               task={row.original}
               onUpdateStatus={(st) => onUpdateTask(row.original.id, { status: st })}
               onUpdatePriority={(pr) => onUpdateTask(row.original.id, { priority: pr })}
+              onUpdateAssignee={(assigneeId) => onUpdateTask(row.original.id, { assigneeId })}
+              onUpdateDueDate={(dueDate) => onUpdateTask(row.original.id, { dueDate })}
               onUpdateScope={(sc) => onUpdateTask(row.original.id, { scope: sc })}
               onDelete={() => onDeleteTask(row.original.id)}
             >
               <div
                 onClick={() => onRowClick(row.original)}
-                className="grid grid-cols-[1fr_110px_70px_110px_140px_150px_130px_60px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
+                className="grid grid-cols-[1fr_100px_70px_100px_130px_140px_110px_110px] items-stretch hover:bg-muted/10 cursor-pointer transition-colors border-b border-border/30 divide-x divide-border/25 group bg-card/5"
               >
                 {row.getVisibleCells().map((cell) => (
                   <div

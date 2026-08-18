@@ -19,6 +19,8 @@ import {
   AlertCircle,
   ChevronDown,
   CircleDot,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   Card,
@@ -44,11 +46,15 @@ interface ProjectPlanItem {
   priority: string;
   lead: string;
   dueDate?: string;
+  createdAt?: string;
   issuesCount: number;
   completedCount: number;
   percentage: number;
   status: string;
 }
+
+type SortField = "name" | "health" | "priority" | "lead" | "dueDate" | "createdAt" | "issuesCount" | "percentage";
+type SortDir = "asc" | "desc";
 
 export default function ProjectsHubPage() {
   const router = useRouter();
@@ -67,6 +73,10 @@ export default function ProjectsHubPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+
+  // ── Column Sorting State ───────────────────────────────────────────────────
+  const [sortField, setSortField] = useState<SortField | null>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // ── Context Menu Action Handlers ───────────────────────────────────────────
   const handleUpdateStatus = async (projectId: string, status: string) => {
@@ -106,6 +116,46 @@ export default function ProjectsHubPage() {
       }
     } catch {
       toast.error("Network error while updating priority");
+    }
+  };
+
+  const handleUpdateLead = async (projectId: string, lead: string) => {
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${projectId}`, {
+        method: "PUT",
+        token: session?.accessToken ?? "",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeId: lead === "Unassigned" ? null : lead }),
+      });
+      if (res.ok) {
+        toast.success(`Project lead updated to ${lead}`);
+        refresh();
+      } else {
+        toast.error("Failed to update project lead");
+      }
+    } catch {
+      toast.error("Network error while updating lead");
+    }
+  };
+
+  const handleUpdateDueDate = async (projectId: string, dueDate?: string) => {
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/tasks/${projectId}`, {
+        method: "PUT",
+        token: session?.accessToken ?? "",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dueDate: dueDate || null }),
+      });
+      if (res.ok) {
+        toast.success("Target date updated");
+        refresh();
+      } else {
+        toast.error("Failed to update target date");
+      }
+    } catch {
+      toast.error("Network error while updating target date");
     }
   };
 
@@ -205,6 +255,7 @@ export default function ProjectsHubPage() {
         priority: p.priority || "NORMAL",
         lead: p.assigneeId || "Unassigned",
         dueDate: p.dueDate,
+        createdAt: p.createdAt,
         issuesCount: totalChildren,
         completedCount: completedChildren,
         percentage: pct,
@@ -228,6 +279,7 @@ export default function ProjectsHubPage() {
           priority: hasUrgent ? "HIGH" : "NORMAL",
           lead: children[0].assigneeId || "Unassigned",
           dueDate: children[0].dueDate,
+          createdAt: children[0].createdAt,
           issuesCount: total,
           completedCount: completed,
           percentage: pct,
@@ -241,7 +293,7 @@ export default function ProjectsHubPage() {
 
   // ── Filters & Search ───────────────────────────────────────────────────────
   const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
+    const list = projects.filter((p) => {
       const matchSearch =
         searchQuery === "" ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -259,7 +311,21 @@ export default function ProjectsHubPage() {
 
       return matchSearch && matchStatus && matchPriority;
     });
-  }, [projects, searchQuery, statusFilter, priorityFilter]);
+
+    if (sortField) {
+      list.sort((a, b) => {
+        let valA: any = a[sortField] ?? "";
+        let valB: any = b[sortField] ?? "";
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
+        if (valA < valB) return sortDir === "asc" ? -1 : 1;
+        if (valA > valB) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [projects, searchQuery, statusFilter, priorityFilter, sortField, sortDir]);
 
   // ── KPI Summary Calculations ───────────────────────────────────────────────
   const activeCount = useMemo(
@@ -583,14 +649,230 @@ export default function ProjectsHubPage() {
               <div className="min-w-[1000px] flex flex-col">
 
                 {/* ── Sticky Column Headers (Pinned to top on vertical & horizontal scroll) ── */}
-                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1.5fr_120px_90px_140px_130px_80px_100px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 uppercase shadow-xs">
-                  <div className="px-4 py-2.5 flex items-center">Name</div>
-                  <div className="px-4 py-2.5 flex items-center">Health</div>
-                  <div className="px-4 py-2.5 flex items-center">Priority</div>
-                  <div className="px-4 py-2.5 flex items-center">Lead</div>
-                  <div className="px-4 py-2.5 flex items-center">Target Date</div>
-                  <div className="px-4 py-2.5 flex items-center justify-center">Issues</div>
-                  <div className="px-4 py-2.5 flex items-center justify-end">Status</div>
+                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[1.5fr_110px_90px_130px_110px_110px_70px_90px] border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
+                  {/* Name Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Name</span>
+                          <span className="flex items-center">
+                            {sortField === "name" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("name"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("name"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Health Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Health</span>
+                          <span className="flex items-center">
+                            {sortField === "health" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("health"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("health"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Priority Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Priority</span>
+                          <span className="flex items-center">
+                            {sortField === "priority" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("priority"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("priority"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Lead Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Lead</span>
+                          <span className="flex items-center">
+                            {sortField === "lead" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("lead"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("lead"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Target Date Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Target Date</span>
+                          <span className="flex items-center">
+                            {sortField === "dueDate" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("dueDate"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("dueDate"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Created Header */}
+                  <div className="px-4 py-2.5 flex items-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Created</span>
+                          <span className="flex items-center">
+                            {sortField === "createdAt" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("createdAt"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("createdAt"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Issues Header */}
+                  <div className="px-4 py-2.5 flex items-center justify-center min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Issues</span>
+                          <span className="flex items-center">
+                            {sortField === "issuesCount" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("issuesCount"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("issuesCount"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Status Header */}
+                  <div className="px-4 py-2.5 flex items-center justify-end min-w-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                          <span>Status</span>
+                          <span className="flex items-center">
+                            {sortField === "percentage" ? (
+                              sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary shrink-0" /> : <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                            )}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                        <DropdownMenuItem onClick={() => { setSortField("percentage"); setSortDir("asc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Ascending</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSortField("percentage"); setSortDir("desc"); }} className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground">
+                          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Sort Descending</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 {/* ── Rows ──────────────────────────────────────────────── */}
@@ -626,11 +908,13 @@ export default function ProjectsHubPage() {
                         onUpdateStatus={(st) => handleUpdateStatus(proj.id, st)}
                         onUpdatePriority={(pr) => handleUpdatePriority(proj.id, pr)}
                         onUpdateHealth={(hl) => handleUpdateHealth(proj.id, hl)}
+                        onUpdateLead={(ld) => handleUpdateLead(proj.id, ld)}
+                        onUpdateDueDate={(dd) => handleUpdateDueDate(proj.id, dd)}
                         onDelete={() => handleDeleteProject(proj.id)}
                       >
                         <div
                           onClick={() => router.push(`/tasks/projects/${proj.id}`)}
-                          className="grid grid-cols-[1.5fr_120px_90px_140px_130px_80px_100px] border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/45 text-xs"
+                          className="grid grid-cols-[1.5fr_110px_90px_130px_110px_110px_70px_90px] border-b border-border/40 hover:bg-muted/30 transition-colors group cursor-pointer items-stretch divide-x divide-border/45 text-xs"
                         >
                           {/* Name + Obsidian Ref */}
                           <div className="px-4 py-3 flex items-center gap-2.5 min-w-0">
@@ -702,6 +986,17 @@ export default function ProjectsHubPage() {
                           <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px]">
                             {proj.dueDate
                               ? new Date(proj.dueDate).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "---"}
+                          </div>
+
+                          {/* Created Date */}
+                          <div className="px-4 py-3 flex items-center text-muted-foreground font-mono text-[11px] whitespace-nowrap">
+                            {proj.createdAt
+                              ? new Date(proj.createdAt).toLocaleDateString("id-ID", {
                                   day: "numeric",
                                   month: "short",
                                   year: "numeric",
