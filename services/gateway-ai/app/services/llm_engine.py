@@ -40,6 +40,8 @@ class LLMEngine:
         from app.core.config import settings
         if self.provider == "openai":
             return settings.OPENAI_CHAT_MODEL
+        elif self.provider in ("ollama", "local"):
+            return settings.OLLAMA_CHAT_MODEL
         return settings.GEMINI_CHAT_MODEL
 
     async def stream_chat(
@@ -68,6 +70,9 @@ class LLMEngine:
         elif self.provider == "gemini":
             async for token in self._stream_gemini(user_message, history, final_system):
                 yield token
+        elif self.provider in ("ollama", "local"):
+            async for token in self._stream_ollama(user_message, history, final_system):
+                yield token
         else:
             yield f"[Error] Provider '{self.provider}' tidak dikenal."
 
@@ -85,7 +90,7 @@ class LLMEngine:
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             messages = [{"role": "system", "content": system_prompt}]
-            for msg in history[-10:]:  # Ambil max 10 pesan terakhir
+            for msg in history[-10:]:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             messages.append({"role": "user", "content": user_message})
 
@@ -93,7 +98,7 @@ class LLMEngine:
                 model=self.model,
                 messages=messages,
                 stream=True,
-                temperature=0.3,        # Rendah = lebih faktual untuk teknis
+                temperature=0.3,
                 max_tokens=2048,
             )
 
@@ -105,6 +110,44 @@ class LLMEngine:
         except Exception as e:
             logger.error(f"OpenAI streaming error: {e}")
             yield f"\n\n[Error] Gagal mendapatkan respons dari OpenAI: {str(e)}"
+
+    async def _stream_ollama(
+        self,
+        user_message: str,
+        history: list[dict],
+        system_prompt: str,
+    ) -> AsyncGenerator[str, None]:
+        """Local Ollama / On-Premise model streaming via OpenAI-compatible endpoint."""
+        try:
+            from openai import AsyncOpenAI
+            from app.core.config import settings
+
+            client = AsyncOpenAI(
+                base_url=settings.OLLAMA_BASE_URL,
+                api_key="ollama",
+            )
+
+            messages = [{"role": "system", "content": system_prompt}]
+            for msg in history[-10:]:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+            messages.append({"role": "user", "content": user_message})
+
+            stream = await client.chat.completions.create(
+                model=self.model or settings.OLLAMA_CHAT_MODEL,
+                messages=messages,
+                stream=True,
+                temperature=0.3,
+                max_tokens=2048,
+            )
+
+            async for chunk in stream:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield delta.content
+
+        except Exception as e:
+            logger.error(f"Ollama streaming error: {e}")
+            yield f"\n\n[Error] Gagal terhubung ke Local Ollama Engine ({settings.OLLAMA_BASE_URL}): {str(e)}"
 
     async def _stream_gemini(
         self,
@@ -137,7 +180,6 @@ class LLMEngine:
                 system_instruction=system_prompt,
             )
 
-            # Susun history untuk Gemini format
             gemini_history = []
             for msg in history[-10:]:
                 gemini_history.append({
@@ -157,8 +199,15 @@ class LLMEngine:
                     yield chunk.text
 
         except Exception as e:
-            logger.error(f"Gemini streaming error: {e}")
-            yield f"\n\n[Error] Gagal mendapatkan respons dari Gemini: {str(e)}"
+            logger.warning(f"Gemini streaming failed ({e}), attempting fallback to Local Ollama...")
+            # Otomatis beralih ke Local Ollama on-premise jika kuota Gemini habis
+            try:
+                yield f"\n\n*(Mengalihkan ke Local On-Premise Engine karena kuota cloud terbatas...)*\n\n"
+                async for chunk in self._stream_ollama(user_message, history, system_prompt):
+                    yield chunk
+            except Exception as fallback_err:
+                logger.error(f"Fallback to Ollama also failed: {fallback_err}")
+                yield f"\n\n[Error] Gagal mendapatkan respons dari Gemini ({str(e)}) dan Local Fallback ({str(fallback_err)})."
 
     async def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding vector untuk teks (digunakan saat indexing dokumen)."""
@@ -172,6 +221,21 @@ class LLMEngine:
                 input=text,
             )
             return response.data[0].embedding
+
+        elif self.provider in ("ollama", "local"):
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(
+                base_url=settings.OLLAMA_BASE_URL,
+                api_key="ollama",
+            )
+            response = await client.embeddings.create(
+                model=settings.OLLAMA_EMBEDDING_MODEL,
+                input=text,
+            )
+            emb = response.data[0].embedding
+            if len(emb) < 1536:
+                emb = emb + [0.0] * (1536 - len(emb))
+            return emb[:1536]
 
         elif self.provider == "gemini":
             import os

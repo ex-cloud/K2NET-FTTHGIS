@@ -269,6 +269,36 @@ async def create_manual_document(
     return DocumentUploadResponse(**dict(row))
 
 
+@router.post("/simulate-search")
+async def simulate_vector_search(
+    payload: dict,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """Simulasi pencarian semantik vektor untuk inspeksi dan testing RAG secara visual di UI."""
+    from app.services.rag_retriever import RAGRetriever
+
+    query = payload.get("query", "")
+    limit = int(payload.get("limit", 5))
+    min_sim = float(payload.get("min_similarity", 0.1))
+    scope = payload.get("scope", "GENERAL")
+
+    if not query:
+        return {"query": "", "total_matches": 0, "results": []}
+
+    retriever = RAGRetriever(tenant_id=ctx.tenant_id)
+    contexts, sources = await retriever.retrieve_context(
+        query=query,
+        limit=limit,
+        scope=scope,
+        min_similarity=min_sim,
+    )
+    return {
+        "query": query,
+        "total_matches": len(sources),
+        "results": sources,
+    }
+
+
 # ─── 5. Delete Document ───────────────────────────────────────────────────────
 
 @router.delete("/{doc_id}", status_code=200)
@@ -333,8 +363,8 @@ async def sync_server_docs(
     )
 
     return {
-        "status": "accepted",
-        "message": "Sinkronisasi folder server docs telah dimulai di latar belakang.",
+        "status": "QUEUED",
+        "message": "Sinkronisasi direktori server /opt/project5/docs telah dipicu di latar belakang.",
     }
 
 

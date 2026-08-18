@@ -37,21 +37,17 @@ async def verify_gateway_and_tenant(
             detail="Forbidden: Invalid or missing internal gateway token",
         )
 
-    # 2. Validasi keberadaan Tenant ID
-    if not x_tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bad Request: Missing required X-Tenant-ID header",
-        )
-
-    # 3. Validasi format UUID Tenant ID
-    try:
-        tenant_uuid = uuid.UUID(x_tenant_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Bad Request: Malformed X-Tenant-ID — not a valid UUID: '{x_tenant_id}'",
-        )
+    # 2. Validasi keberadaan Tenant ID (fallback ke Global Platform Scope jika kosong)
+    if not x_tenant_id or x_tenant_id.strip() == "" or x_tenant_id == "null":
+        tenant_uuid = uuid.UUID("00000000-0000-0000-0000-000000000000")
+    else:
+        try:
+            tenant_uuid = uuid.UUID(x_tenant_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Bad Request: Malformed X-Tenant-ID — not a valid UUID: '{x_tenant_id}'",
+            )
 
     return TenantContext(
         tenant_id=tenant_uuid,

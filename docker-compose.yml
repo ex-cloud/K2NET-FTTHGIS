@@ -458,6 +458,8 @@ services:
       - OLT_GATEWAY_URL=http://ftth-olt-gateway:5008
       - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
       - POLLER_GATEWAY_URL=http://ftth-poller:5010
+      - TASK_GATEWAY_URL=http://ftth-task-gateway:5011
+      - AI_GATEWAY_URL=http://ftth-ai-gateway:5012
       - GATEWAY_TOKEN=${GATEWAY_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"

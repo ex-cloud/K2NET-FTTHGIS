@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     )
 
     # ── LLM Provider Configuration ────────────────────────────────
-    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini"] = Field(default="openai")
+    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini", "ollama", "local"] = Field(default="gemini")
 
     OPENAI_API_KEY: str = Field(default="")
     OPENAI_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str = Field(default="")
     GEMINI_EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
     GEMINI_CHAT_MODEL: str = Field(default="models/gemini-2.5-flash")
+
+    # Local / On-Premise Ollama Engine
+    OLLAMA_BASE_URL: str = Field(default="http://host.docker.internal:11434/v1")
+    OLLAMA_CHAT_MODEL: str = Field(default="llama3.2")
+    OLLAMA_EMBEDDING_MODEL: str = Field(default="nomic-embed-text")
 
     # ── RAG Configuration ─────────────────────────────────────────
     RAG_CHUNK_SIZE: int = Field(default=500)       # tokens per chunk

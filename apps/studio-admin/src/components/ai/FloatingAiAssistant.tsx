@@ -8,7 +8,6 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import {
   Button,
   ScrollArea,
@@ -31,27 +30,65 @@ import {
   Trash2,
   Copy,
   Check,
-  ChevronDown,
+  ChevronRight,
   BookOpen,
   Zap,
+  MapPin,
+  Activity,
+  Database,
+  GitPullRequest,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAiChatStream, ChatMessage, DocumentSource } from "@/hooks/useAiChatStream";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-// ─── Quick Action Chips ────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { icon: Zap, label: "Status OLT ZTE C320 LOS", message: "Bagaimana cara troubleshooting OLT ZTE C320 jika port PON statusnya LOS?" },
-  { icon: BookOpen, label: "Panduan konfigurasi GPON", message: "Jelaskan langkah-langkah konfigurasi GPON untuk ONU baru di ZTE C320." },
-  { icon: Sparkles, label: "Hitung redaman optik", message: "Bagaimana cara menghitung link budget redaman optik untuk distribusi 1:64?" },
+// ─── Supabase-Style Ideas & Quick Action Cards ─────────────────────────────────
+const SUPABASE_IDEAS = [
+  {
+    icon: Zap,
+    title: "Diagnosa OLT & Redaman Optik",
+    desc: "Troubleshooting OLT ZTE C320/Huawei, status LOS & redaman nominal",
+    prompt: "Bagaimana cara troubleshooting OLT ZTE C320 jika port PON statusnya LOS dan berapa standar redaman optik nominalnya?",
+  },
+  {
+    icon: MapPin,
+    title: "Analisis Jaringan Spasial GIS & ODP",
+    desc: "Standar koordinat PostGIS EPSG:4326, kapasitas splitter 1:8 / 1:16",
+    prompt: "Jelaskan arsitektur database spasial PostGIS SRID 4326 dan standar penempatan ODP pada jaringan distribusi FTTH.",
+  },
+  {
+    icon: Activity,
+    title: "Health Check 12 Microservices",
+    desc: "Verifikasi status poller, kong, postgres, keycloak, minio, audit",
+    prompt: "Jelaskan port map dan arsitektur 12 microservices gateway internal K2NET.",
+  },
+  {
+    icon: Database,
+    title: "Panduan Backup & Disaster Recovery",
+    desc: "SOP 3-Layer backup lokal, MinIO S3, dan Nextcloud offsite cloud",
+    prompt: "Jelaskan strategi 3-layer disaster recovery backup database dan file di K2NET.",
+  },
+  {
+    icon: GitPullRequest,
+    title: "Buat Linear Project & DevOps Task",
+    desc: "Integrasi sistem tugas, alur tiket B2B, dan sinkronisasi Obsidian",
+    prompt: "Jelaskan cara membuat tiket atau proyek DevOps baru yang otomatis tersinkronisasi ke Obsidian Vault.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Keamanan Multi-Tenant & RBAC",
+    desc: "One Realm per Org Keycloak, Superadmin God Mode, dan X-Tenant-ID",
+    prompt: "Jelaskan arsitektur isolasi multi-tenant dan sistem Hybrid RBAC di K2NET FTTH GIS.",
+  },
 ];
 
 const MODELS = [
-  { value: "gpt-4o-mini", label: "GPT-4o Mini", badge: "Fast" },
-  { value: "gpt-4o", label: "GPT-4o", badge: "Smart" },
-  { value: "gemini-1.5-flash", label: "Gemini Flash", badge: "Fast" },
-  { value: "gemini-1.5-pro", label: "Gemini Pro", badge: "Deep" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", badge: "Google" },
+  { value: "gpt-4o-mini", label: "GPT-4o Mini", badge: "OpenAI" },
+  { value: "llama3.2", label: "Local Ollama (Llama 3)", badge: "Local" },
+  { value: "deepseek-r1:7b", label: "Local DeepSeek-R1", badge: "Local" },
 ];
 
 // ─── Message Bubble Component ─────────────────────────────────────────────────
@@ -73,7 +110,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-violet-500 to-purple-600 text-white"
+            : "bg-gradient-to-br from-emerald-600 via-primary to-teal-700 text-white shadow-xs"
         )}
       >
         {isUser ? "U" : <Sparkles className="w-4 h-4" />}
@@ -148,7 +185,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               title="Salin ke clipboard"
             >
               {copied ? (
-                <Check className="w-3 h-3 text-green-500" />
+                <Check className="w-3 h-3 text-emerald-500" />
               ) : (
                 <Copy className="w-3 h-3 text-muted-foreground" />
               )}
@@ -164,14 +201,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export function FloatingAiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
     useAiChatStream({ model: selectedModel });
 
-  // ── Keyboard shortcut: Cmd+J / Ctrl+J ─────────────────────────────────────
+  // ── Keyboard shortcut: Cmd+J / Ctrl+J & Custom Event Listener ─────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "j") {
@@ -182,8 +219,17 @@ export function FloatingAiAssistant() {
         setIsOpen(false);
       }
     };
+
+    const handleCustomToggle = () => {
+      setIsOpen((prev) => !prev);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("k2net-toggle-ai-assistant", handleCustomToggle);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("k2net-toggle-ai-assistant", handleCustomToggle);
+    };
   }, [isOpen]);
 
   // ── Auto scroll ke bawah saat ada pesan baru ───────────────────────────────
@@ -217,21 +263,21 @@ export function FloatingAiAssistant() {
 
   return (
     <>
-      {/* ── Floating Trigger Button ─────────────────────────────────────── */}
+      {/* ── Floating Trigger Button (FAB with Emerald Radar Pulse) ──────── */}
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
           "fixed bottom-6 right-6 z-50",
           "w-14 h-14 rounded-full",
-          "bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600",
+          "bg-gradient-to-br from-emerald-600 via-primary to-teal-700",
           "text-white shadow-2xl",
           "flex items-center justify-center",
           "transition-all duration-300",
-          "hover:scale-110 hover:shadow-violet-500/40",
-          "focus:outline-none focus:ring-4 focus:ring-violet-500/30",
-          // Ambient pulse glow
+          "hover:scale-105 hover:shadow-emerald-500/40",
+          "focus:outline-none focus:ring-4 focus:ring-emerald-500/30",
+          // Radar pulse glow
           "before:absolute before:inset-0 before:rounded-full",
-          "before:bg-gradient-to-br before:from-violet-600 before:to-indigo-600",
+          "before:bg-emerald-500",
           "before:animate-ping before:opacity-20",
           isOpen && "scale-0 opacity-0 pointer-events-none"
         )}
@@ -251,8 +297,8 @@ export function FloatingAiAssistant() {
           <SheetHeader className="px-4 py-3 border-b border-border bg-background/95 backdrop-blur-md flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-600 via-primary to-teal-700 flex items-center justify-center text-white shadow-xs">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
                   <SheetTitle className="text-sm font-semibold text-foreground">
@@ -307,35 +353,53 @@ export function FloatingAiAssistant() {
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-4 py-4 space-y-4">
               {messages.length === 0 ? (
-                /* Empty State */
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center mb-4">
-                    <Sparkles className="w-8 h-8 text-violet-500" />
+                /* Supabase-Style Empty State */
+                <div className="space-y-4 py-2">
+                  {/* Banner */}
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs flex items-start gap-2.5 text-primary">
+                    <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <div className="flex-1 text-[12px] leading-relaxed text-foreground/90">
+                      <span className="font-semibold text-primary">K2NET FTTH Copilot</span> — Terhubung langsung ke 160+ dokumen arsitektur, SOP OLT, dan database spasial pgvector.
+                    </div>
                   </div>
-                  <h3 className="text-sm font-semibold text-foreground mb-1">
-                    Hai! Saya K2NET AI
-                  </h3>
-                  <p className="text-xs text-muted-foreground max-w-[240px] mb-6">
-                    Tanyakan apapun tentang OLT, ONT, kabel fiber, GIS, atau
-                    operasional jaringan FTTH.
-                  </p>
-                  {/* Quick Action Chips */}
-                  <div className="flex flex-col gap-2 w-full max-w-[300px]">
-                    {QUICK_ACTIONS.map((action, i) => (
+
+                  {/* Heading */}
+                  <div className="pt-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      How can I assist you? <span className="text-primary">❖</span>
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Pilih ide pertanyaan di bawah atau ketik langsung kebutuhan Anda:
+                    </p>
+                  </div>
+
+                  {/* Ideas Cards */}
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase">
+                      IDEAS & QUICK ACTIONS
+                    </div>
+                    {SUPABASE_IDEAS.map((idea, i) => (
                       <button
                         key={i}
-                        onClick={() => sendMessage(action.message)}
+                        onClick={() => sendMessage(idea.prompt)}
                         className={cn(
-                          "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left",
-                          "bg-muted/40 hover:bg-muted border border-border/40 hover:border-border",
-                          "transition-all duration-150 group"
+                          "w-full flex items-start gap-3 p-2.5 rounded-xl text-left",
+                          "bg-card hover:bg-muted/60 border border-border hover:border-primary/40",
+                          "transition-all duration-150 group cursor-pointer shadow-xs"
                         )}
                       >
-                        <action.icon className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-                        <span className="text-xs text-foreground/80 group-hover:text-foreground">
-                          {action.label}
-                        </span>
-                        <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto -rotate-90" />
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
+                          <idea.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                            {idea.title}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {idea.desc}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
                       </button>
                     ))}
                   </div>
@@ -370,7 +434,7 @@ export function FloatingAiAssistant() {
                   "flex-1 resize-none rounded-xl px-3 py-2.5 text-sm",
                   "bg-muted/40 border border-border/60",
                   "text-foreground placeholder:text-muted-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/40",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                   "min-h-[40px] max-h-[120px] overflow-y-auto transition-all"
                 )}
@@ -396,7 +460,7 @@ export function FloatingAiAssistant() {
                   size="sm"
                   onClick={handleSend}
                   disabled={!input.trim()}
-                  className="h-10 w-10 p-0 rounded-xl flex-shrink-0 bg-gradient-to-br from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 border-0"
+                  className="h-10 w-10 p-0 rounded-xl flex-shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 border-0 shadow-xs"
                   title="Kirim (Enter)"
                 >
                   <Send className="w-4 h-4" />

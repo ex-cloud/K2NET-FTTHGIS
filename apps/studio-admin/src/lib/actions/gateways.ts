@@ -47,9 +47,9 @@ const GATEWAY_URL_MAP: Record<string, string> = {
   export:       process.env.EXPORT_GATEWAY_URL        || "http://127.0.0.1:5007",
   olt:          process.env.OLT_GATEWAY_URL           || "http://127.0.0.1:5008",
   audit:        process.env.AUDIT_GATEWAY_URL         || "http://127.0.0.1:5009",
-  poller:       process.env.POLLER_GATEWAY_URL        || "http://127.0.0.1:5010",
-  task:         process.env.TASK_GATEWAY_URL          || "http://127.0.0.1:5011",
-  ai:           process.env.AI_GATEWAY_URL            || "http://127.0.0.1:5012",
+  poller:       process.env.POLLER_GATEWAY_URL        || "http://ftth-poller:5010",
+  task:         process.env.TASK_GATEWAY_URL          || "http://ftth-task-gateway:5011",
+  ai:           process.env.AI_GATEWAY_URL            || "http://ftth-ai-gateway:5012",
 };
 
 async function verifySuperAdmin() {
@@ -600,7 +600,7 @@ export type AiDocumentListResponse = {
 export async function getAiKnowledgeStats(): Promise<AiKnowledgeStats> {
   await verifySuperAdmin();
   const token = getGatewayToken();
-  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/stats`, {
     headers: {
@@ -625,7 +625,7 @@ export async function getAiDocuments(params?: {
 }): Promise<AiDocumentListResponse> {
   await verifySuperAdmin();
   const token = getGatewayToken();
-  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
@@ -655,7 +655,7 @@ export async function createManualAiDocument(payload: {
 }): Promise<{ id: string; status: string; title: string }> {
   await verifySuperAdmin();
   const token = getGatewayToken();
-  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/text`, {
     method: "POST",
@@ -678,7 +678,7 @@ export async function createManualAiDocument(payload: {
 export async function deleteAiDocument(docId: string): Promise<{ status: string; message: string }> {
   await verifySuperAdmin();
   const token = getGatewayToken();
-  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
     method: "DELETE",
@@ -699,7 +699,7 @@ export async function deleteAiDocument(docId: string): Promise<{ status: string;
 export async function triggerServerDocsSync(): Promise<{ status: string; message: string }> {
   await verifySuperAdmin();
   const token = getGatewayToken();
-  const aiGatewayUrl = process.env.AI_GATEWAY_URL || "http://127.0.0.1:5012";
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-server`, {
     method: "POST",
@@ -712,6 +712,33 @@ export async function triggerServerDocsSync(): Promise<{ status: string; message
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || "Gagal memicu sinkronisasi dokumen server");
+  }
+
+  return res.json();
+}
+
+export async function simulateVectorSearch(payload: {
+  query: string;
+  limit?: number;
+  min_similarity?: number;
+  scope?: string;
+}): Promise<{ query: string; total_matches: number; results: any[] }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/simulate-search`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    return { query: payload.query, total_matches: 0, results: [] };
   }
 
   return res.json();

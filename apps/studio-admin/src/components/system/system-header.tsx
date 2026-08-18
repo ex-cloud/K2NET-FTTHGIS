@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HelpCircle, MessageSquare, ShieldCheck, Menu, Search } from "lucide-react";
+import { HelpCircle, MessageSquare, ShieldCheck, Menu, Search, Sparkles } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { Separator } from "@k2net/ui";
 import { Sheet, SheetContent, SheetTrigger } from "@k2net/ui";
@@ -101,7 +101,7 @@ export function SystemHeader() {
         {/* Global Command Palette Trigger Button (Fake Search Input on Right Header) */}
         <button
           onClick={() => openCommandPalette()}
-          className="hidden md:flex items-center justify-between w-56 lg:w-64 px-3 py-1.5 text-xs rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
+          className="hidden md:flex items-center justify-between w-48 lg:w-56 px-3 py-1.5 text-xs rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
         >
           <div className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -109,6 +109,23 @@ export function SystemHeader() {
           </div>
           <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground shrink-0">
             ⌘K
+          </kbd>
+        </button>
+
+        {/* Supabase-Style Top Header Ask AI Copilot Button */}
+        <button
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+            }
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all shadow-xs cursor-pointer mr-1"
+          title="K2NET AI Copilot (Ctrl+J)"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="hidden sm:inline">Ask AI</span>
+          <kbd className="pointer-events-none inline-flex h-4 select-none items-center rounded border border-primary/30 bg-primary/10 px-1 font-mono text-[9px] text-primary">
+            Ctrl+J
           </kbd>
         </button>
 

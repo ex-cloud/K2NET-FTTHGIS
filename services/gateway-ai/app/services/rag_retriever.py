@@ -66,10 +66,10 @@ class RAGRetriever:
             contexts.append(chunk["content"])
             sources.append({
                 "document_id": chunk["document_id"],
-                "title": chunk["document_title"],
-                "category": chunk["category"],
-                "chunk_index": chunk["chunk_index"],
-                "similarity_score": round(float(chunk["similarity_score"]), 4),
+                "title": chunk.get("title") or chunk.get("document_title", "Dokumen"),
+                "category": chunk.get("category", "GENERAL"),
+                "chunk_index": chunk.get("chunk_index", 0),
+                "similarity_score": round(float(chunk.get("similarity_score", 0.0)), 4),
                 "content_preview": chunk["content"][:120] + "...",
             })
 

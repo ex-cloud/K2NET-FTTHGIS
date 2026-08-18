@@ -309,7 +309,8 @@ services:
             config:
               add:
                 headers:
-                  - "X-Gateway-Token:$(GATEWAY_INTERNAL_TOKEN)"
+                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
+                  - "X-Tenant-ID:00000000-0000-0000-0000-000000000000"
 
 # ====================================================
 # Global Plugins
