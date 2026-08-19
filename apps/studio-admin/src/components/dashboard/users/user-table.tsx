@@ -9,6 +9,9 @@ import {
   UserPlus,
   ShieldAlert,
   History,
+  Copy,
+  Sparkles,
+  FileCode,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -18,10 +21,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  Button,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  ActionTooltip,
+  UniversalContextMenu,
+  ContextMenuGroupConfig,
 } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Avatar, AvatarFallback, AvatarImage } from "@k2net/ui";
-import { Badge } from "@k2net/ui";
 import { PaginatedResponse, User } from "@/types/user";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -71,6 +79,86 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
     setIsResetPasswordDialogOpen(true);
   };
 
+  const getUserContextMenuGroups = (user: User): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI tentang Pengguna",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Tampilkan ringkasan akses, role, dan organisasi pengguna: "${user.fullName || user.username}" (${user.email}) - Role: ${user.roleDisplayName}.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+        {
+          label: "Ubah Profil & Role",
+          icon: Edit,
+          shortcut: "Alt+E",
+          onClick: () => handleEdit(user),
+          disabled: !canManageUsers,
+        },
+        {
+          label: "Reset Password",
+          icon: Key,
+          shortcut: "Alt+R",
+          onClick: () => handleResetPassword(user),
+          disabled: !canManageUsers,
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Email",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(user.email || "");
+            toast.success(`Email ${user.email} disalin ke clipboard!`);
+          },
+        },
+        {
+          label: "Salin User ID",
+          icon: FileCode,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(user.id || "");
+            toast.success(`User ID disalin ke clipboard!`);
+          },
+        },
+        {
+          label: "Lihat Log Audit Sesi",
+          icon: History,
+          shortcut: "Alt+L",
+          onClick: () => {
+            const userTarget = user.email || user.username || "";
+            window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Putus Sesi Keycloak",
+          icon: ShieldAlert,
+          variant: "destructive",
+          shortcut: "Alt+X",
+          onClick: () => {
+            toast.success(`Keycloak active session revoked for ${user.email}`);
+          },
+        },
+      ],
+    },
+  ];
+
   return (
     <>
       <div className="flex flex-col h-full space-y-4">
@@ -84,15 +172,17 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
               Docs
             </Button>
             {canInviteUsers && (
-              <Button 
-                onClick={() => setIsInviteWizardOpen(true)}
-                variant="default"
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                <UserPlus className="w-4 h-4 mr-1.5" />
-                Add User
-              </Button>
+              <ActionTooltip label="Undang / Tambah Pengguna Baru" shortcut="C">
+                <Button 
+                  onClick={() => setIsInviteWizardOpen(true)}
+                  variant="default"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Add User
+                </Button>
+              </ActionTooltip>
             )}
           </div>
         </div>
@@ -137,128 +227,133 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                 </TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    className="border-border hover:bg-accent/40 transition-colors group h-12"
-                  >
-                    <TableCell className="px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-7 w-7 rounded-full border border-border">
-                          <AvatarImage
-                            src={user.avatarUrl}
-                            alt={user.fullName || "User"}
-                          />
-                          <AvatarFallback className="rounded-full text-[10px]">
-                            {(user.fullName || user.username || user.email || "U").substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-medium text-foreground leading-tight">
-                            {user.fullName || user.username || user.email || "Unknown User"}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground leading-tight">
-                            {user.email}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "rounded-md font-bold text-[10px]",
-                          user.roleName === "super_admin" &&
-                            "bg-primary/10 text-primary border-primary/20",
-                          user.roleName === "admin" &&
-                            "bg-sky-500/10 text-sky-500 border-sky-500/20",
-                          user.roleName === "technician" &&
-                            "bg-purple-500/10 text-purple-400 border-purple-500/20",
-                          user.roleName === "viewer" &&
-                            "bg-gray-500/10 text-gray-400 border-gray-500/20",
-                        )}
-                      >
-                        {user.roleDisplayName}
-                      </Badge>
-                    </TableCell>
-                    {isGlobalView && (
+                  <UniversalContextMenu key={user.id} groups={getUserContextMenuGroups(user)}>
+                    <TableRow
+                      className="border-border hover:bg-accent/40 transition-colors group h-12 cursor-pointer"
+                    >
                       <TableCell className="px-4 py-2">
-                        <div className="text-[12px] text-muted-foreground flex items-center gap-2">
-                          <Building2 className="w-3.5 h-3.5 text-muted-foreground/80" />
-                          {user.organizationId ? (
-                            <Link href={`/org/${user.organizationId}`} className="hover:text-primary hover:underline font-medium transition-colors">
-                              {user.organizationName}
-                            </Link>
-                          ) : (
-                            <span>{user.organizationName || "System"}</span>
-                          )}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-7 w-7 rounded-full border border-border">
+                            <AvatarImage
+                              src={user.avatarUrl}
+                              alt={user.fullName || "User"}
+                            />
+                            <AvatarFallback className="rounded-full text-[10px]">
+                              {(user.fullName || user.username || user.email || "U").substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-[13px] font-medium text-foreground leading-tight">
+                              {user.fullName || user.username || user.email || "Unknown User"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground leading-tight">
+                              {user.email}
+                            </span>
+                          </div>
                         </div>
                       </TableCell>
-                    )}
-                    <TableCell className="px-4 py-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-red-500"}`}
-                        ></span>
-                        <span className="text-[12px] text-muted-foreground capitalize">
-                          {user.status.toLowerCase()}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-2">
-                      <div className="text-[12px] font-mono text-muted-foreground">
-                        {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-2 text-right">
-                      <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {canManageUsers && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Edit User"
-                            onClick={() => handleEdit(user)}
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {canManageUsers && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Reset Password"
-                            onClick={() => handleResetPassword(user)}
-                          >
-                            <Key className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
-                          title="Revoke Active Keycloak Session"
-                          onClick={() => {
-                            toast.success(`Keycloak active session revoked for ${user.email}`);
-                          }}
+                      <TableCell className="px-4 py-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "rounded-md font-bold text-[10px]",
+                            user.roleName === "super_admin" &&
+                              "bg-primary/10 text-primary border-primary/20",
+                            user.roleName === "admin" &&
+                              "bg-sky-500/10 text-sky-500 border-sky-500/20",
+                            user.roleName === "technician" &&
+                              "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                            user.roleName === "viewer" &&
+                              "bg-gray-500/10 text-gray-400 border-gray-500/20",
+                          )}
                         >
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
-                          title="Audit User Logins & Events"
-                          onClick={() => {
-                            const userTarget = user.email || user.username || "";
-                            window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
-                          }}
-                        >
-                          <History className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                          {user.roleDisplayName}
+                        </Badge>
+                      </TableCell>
+                      {isGlobalView && (
+                        <TableCell className="px-4 py-2">
+                          <div className="text-[12px] text-muted-foreground flex items-center gap-2">
+                            <Building2 className="w-3.5 h-3.5 text-muted-foreground/80" />
+                            {user.organizationId ? (
+                              <Link href={`/org/${user.organizationId}`} className="hover:text-primary hover:underline font-medium transition-colors">
+                                {user.organizationName}
+                              </Link>
+                            ) : (
+                              <span>{user.organizationName || "System"}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                      <TableCell className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-red-500"}`}
+                          ></span>
+                          <span className="text-[12px] text-muted-foreground capitalize">
+                            {user.status.toLowerCase()}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2">
+                        <div className="text-[12px] font-mono text-muted-foreground">
+                          {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canManageUsers && (
+                            <ActionTooltip label="Ubah Profil & Role" shortcut="Alt+E">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleEdit(user)}
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                            </ActionTooltip>
+                          )}
+                          {canManageUsers && (
+                            <ActionTooltip label="Reset Password" shortcut="Alt+R">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => handleResetPassword(user)}
+                              >
+                                <Key className="w-3.5 h-3.5" />
+                              </Button>
+                            </ActionTooltip>
+                          )}
+                          <ActionTooltip label="Putus Sesi Keycloak">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
+                              onClick={() => {
+                                toast.success(`Keycloak active session revoked for ${user.email}`);
+                              }}
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Lihat Riwayat Audit" shortcut="Alt+L">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                              onClick={() => {
+                                const userTarget = user.email || user.username || "";
+                                window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
+                              }}
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </UniversalContextMenu>
                 ))
               )}
             </TableBody>

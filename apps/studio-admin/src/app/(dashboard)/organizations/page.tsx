@@ -13,10 +13,21 @@ import {
   Plus,
   ArrowRight,
   Loader2,
-  ShieldAlert
+  ShieldAlert,
+  Copy,
+  Trash2,
+  Sparkles,
+  FileCode,
 } from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";
-import { Button, Input, Card } from "@k2net/ui";
+import { 
+  Button, 
+  Input, 
+  Card,
+  ActionTooltip,
+  UniversalContextMenu,
+  ContextMenuGroupConfig,
+} from "@k2net/ui";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -159,6 +170,68 @@ export default function AdminOrganizationsPage() {
     );
   }, [organizations, searchQuery]);
 
+  // Context Menu Groups configuration per organization
+  const getOrgContextMenuGroups = (org: Organization): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Akses Portal Tenant",
+          icon: Globe,
+          shortcut: "Enter",
+          onClick: () => window.location.assign(getTenantUrl(org.slug)),
+        },
+        {
+          label: "Tanya AI tentang Tenant",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Tampilkan ringkasan status dan informasi tenant: "${org.name}" (Slug: ${org.slug}, Plan: ${org.subscriptionPlan?.name || "Free"}).`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Domain Slug",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(org.slug);
+            toast.success(`Slug ${org.slug} disalin ke clipboard!`);
+          },
+        },
+        {
+          label: "Salin Tenant ID",
+          icon: FileCode,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(org.id || "");
+            toast.success(`Tenant ID disalin ke clipboard!`);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Hapus Organisasi",
+          icon: Trash2,
+          variant: "destructive",
+          shortcut: "Del",
+          onClick: () => setOrgToDelete(org),
+        },
+      ],
+    },
+  ];
+
   return (
     <OrganizationPageWrapper>
       <PageLayout variant="dashboard" spaceY="space-y-12" showLogoWatermark={true}>
@@ -172,13 +245,15 @@ export default function AdminOrganizationsPage() {
             Global oversight of all tenant environments and subscriptions.
           </p>
         </div>
-        <Button 
-          onClick={() => setWizardOpen(true)}
-          variant="default"
-          size="sm"
-        >
-          <Plus className="h-4 w-4" /> New organization
-        </Button>
+        <ActionTooltip label="Buat Organisasi Baru" shortcut="C">
+          <Button 
+            onClick={() => setWizardOpen(true)}
+            variant="default"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" /> New organization
+          </Button>
+        </ActionTooltip>
       </div>
 
       {/* Filters & View Switcher */}
@@ -196,30 +271,36 @@ export default function AdminOrganizationsPage() {
         </div>
 
         <div className="flex items-center p-1 bg-muted/20 rounded-lg border border-border">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setViewMode("grid")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setViewMode("list")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-          >
-            <ListIcon className="h-3.5 w-3.5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setViewMode("table")}
-            className={cn("h-7 w-7 rounded-md transition-all", viewMode === "table" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-          >
-            <TableIcon className="h-3.5 w-3.5" />
-          </Button>
+          <ActionTooltip label="Tampilan Grid">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setViewMode("grid")}
+              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip label="Tampilan List">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setViewMode("list")}
+              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            >
+              <ListIcon className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip label="Tampilan Tabel">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setViewMode("table")}
+              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "table" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 
@@ -253,77 +334,79 @@ export default function AdminOrganizationsPage() {
           {viewMode === "grid" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredOrgs.map((org: Organization) => (
-                  <div key={org.id} className="group relative">
-                    <Card
-                      glowingEffect
-                      onClick={() => window.location.assign(getTenantUrl(org.slug))}
-                      className="flex flex-row items-center gap-4 p-5 cursor-pointer h-24"
-                    >
-                      <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
-                        <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
-                          <Building2 className={cn("h-3.5 w-3.5 transition-colors", 
-                            org.status === 'SUSPENDED' ? "text-amber-500" : "text-muted-foreground group-hover:text-primary"
-                          )} />
+                  <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
+                    <div className="group relative">
+                      <Card
+                        glowingEffect
+                        onClick={() => window.location.assign(getTenantUrl(org.slug))}
+                        className="flex flex-row items-center gap-4 p-5 cursor-pointer h-24"
+                      >
+                        <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
+                          <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
+                            <Building2 className={cn("h-3.5 w-3.5 transition-colors", 
+                              org.status === 'SUSPENDED' ? "text-amber-500" : "text-muted-foreground group-hover:text-primary"
+                            )} />
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-8">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("font-medium transition-colors", 
-                             org.status === 'SUSPENDED' ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
-                          )}>
-                            {org.name}
-                          </span>
-                          {(org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED') && (
-                            <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase font-bold tracking-wider">
-                              Suspended
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-8">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("font-medium transition-colors", 
+                               org.status === 'SUSPENDED' ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
+                            )}>
+                              {org.name}
                             </span>
-                          )}
+                            {(org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED') && (
+                              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase font-bold tracking-wider">
+                                Suspended
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="font-mono">{org.slug}{displaySuffix}</span>
+                            <span className="text-border">•</span>
+                            <span className="capitalize">{org.subscriptionPlan?.name || "Free"} Plan</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span className="font-mono">{org.slug}{displaySuffix}</span>
-                          <span className="text-border">•</span>
-                          <span className="capitalize">{org.subscriptionPlan?.name || "Free"} Plan</span>
+
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                           <ArrowRight className="h-4 w-4 text-primary" />
                         </div>
-                      </div>
+                      </Card>
 
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                         <ArrowRight className="h-4 w-4 text-primary" />
-                      </div>
-                    </Card>
-
-                    <div className="absolute top-2.5 right-2.5 z-10">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
-                            onClick={(e) => {
+                      <div className="absolute top-2.5 right-2.5 z-10">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation();
-                              e.preventDefault();
-                            }}
-                          >
-                            <MoreHorizontal className="size-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.assign(getTenantUrl(org.slug));
-                          }}>
-                            Access Tenant
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => {
-                            e.stopPropagation();
-                            setOrgToDelete(org);
-                          }}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                              window.location.assign(getTenantUrl(org.slug));
+                            }}>
+                              Access Tenant
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => {
+                              e.stopPropagation();
+                              setOrgToDelete(org);
+                            }}>
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                  </div>
+                  </UniversalContextMenu>
                 ))}
               </div>
           )}
@@ -332,35 +415,37 @@ export default function AdminOrganizationsPage() {
           {viewMode === "list" && (
             <div className="flex flex-col gap-2">
               {filteredOrgs.map((org: Organization) => (
-                <div key={org.id} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                      <Building2 className="size-4" />
+                <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
+                  <div className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
+                        <Building2 className="size-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-medium text-foreground">{org.name}</h3>
+                        <p className="text-[10px] text-muted-foreground font-mono">{org.slug}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xs font-medium text-foreground">{org.name}</h3>
-                      <p className="text-[10px] text-muted-foreground font-mono">{org.slug}</p>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", org.status === 'ACTIVE' ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500")}>
+                        {org.status || 'ACTIVE'}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="text-xs">
+                          <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-6">
-                    <div className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", org.status === 'ACTIVE' ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500")}>
-                      {org.status || 'ACTIVE'}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
-                        <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                </UniversalContextMenu>
               ))}
             </div>
           )}
@@ -379,45 +464,47 @@ export default function AdminOrganizationsPage() {
                 </thead>
                 <tbody className="divide-y divide-border/50 text-xs">
                   {filteredOrgs.map((org: Organization) => (
-                    <tr key={org.id} className="hover:bg-muted/30 transition-colors group">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="size-7 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                            <Building2 className="size-3.5" />
+                    <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
+                      <tr className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="size-7 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
+                              <Building2 className="size-3.5" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{org.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{org.slug}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{org.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{org.slug}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("size-1.5 rounded-full", org.status === 'ACTIVE' ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_50%,transparent)]" : "bg-amber-500")} />
+                            <span className="text-muted-foreground capitalize">{org.status?.toLowerCase() || 'active'}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className={cn("size-1.5 rounded-full", org.status === 'ACTIVE' ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_50%,transparent)]" : "bg-amber-500")} />
-                          <span className="text-muted-foreground capitalize">{org.status?.toLowerCase() || 'active'}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                          <div className="flex items-center gap-1"><Globe className="size-3" /> {org.website || "-"}</div>
-                          <div className="flex items-center gap-1"><MapPin className="size-3" /> {org.address || "-"}</div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="text-xs">
-                            <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                            <div className="flex items-center gap-1"><Globe className="size-3" /> {org.website || "-"}</div>
+                            <div className="flex items-center gap-1"><MapPin className="size-3" /> {org.address || "-"}</div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="text-xs">
+                              <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    </UniversalContextMenu>
                   ))}
                 </tbody>
               </table>

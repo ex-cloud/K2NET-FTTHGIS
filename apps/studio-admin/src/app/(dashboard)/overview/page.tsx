@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge, Button, PageLayout } from "@k2net/ui";
+import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { throughputData } from "@/lib/system-overview-data";
@@ -70,18 +70,20 @@ export default function SystemOverviewPage() {
                 Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
               </p>
             </div>
-            <Button
-              onClick={() => {
-                data.loadData(true);
-                refreshTasks();
-              }}
-              disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
-              Refresh Dashboard
-            </Button>
+            <ActionTooltip label="Segarkan Dashboard" shortcut="R">
+              <Button
+                onClick={() => {
+                  data.loadData(true);
+                  refreshTasks();
+                }}
+                disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
+                Refresh Dashboard
+              </Button>
+            </ActionTooltip>
           </div>
 
           {/* Status banner — only visible when there are issues */}
