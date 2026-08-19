@@ -20,7 +20,8 @@ import {
   Database,
   HelpCircle,
   HardDrive,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from "lucide-react";
 import {
   useReactTable,
@@ -373,8 +374,8 @@ export function AiKnowledgeTable({
         <div className="max-h-[600px] overflow-auto custom-scrollbar relative">
           <div className="min-w-[1000px] flex flex-col">
             
-            {/* Sticky Header with Sorting Menus */}
-            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-muted-foreground/80 shadow-xs">
+            {/* Sticky Header with Sorting Menus — Solid 100% Opaque bg-card without transparency bleed */}
+            <div className="sticky top-0 z-20 bg-card grid grid-cols-[minmax(320px,1fr)_170px_110px_130px_120px_150px_70px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-muted-foreground/90 dark:text-muted-foreground/75 shadow-xs">
               {table.getFlatHeaders().map((header) => {
                 if (header.isPlaceholder) return <div key={header.id} />;
 
@@ -437,7 +438,7 @@ export function AiKnowledgeTable({
                 Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={`skeleton-${i}`}
-                    className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+                    className="grid grid-cols-[minmax(320px,1fr)_170px_110px_130px_120px_150px_70px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
                   >
                     <div className="min-w-0 px-4 py-3 flex items-center gap-2">
                       <div className="h-4 w-4 bg-muted/60 rounded-md" />
@@ -450,33 +451,54 @@ export function AiKnowledgeTable({
                       <div className="h-4 bg-muted/60 rounded w-20" />
                     </div>
                     <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-3 bg-muted/60 rounded w-12" />
+                      <div className="h-4 bg-muted/60 rounded w-12" />
                     </div>
                     <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-3 bg-muted/60 rounded w-14" />
+                      <div className="h-4 bg-muted/60 rounded w-16" />
                     </div>
                     <div className="px-4 py-3 flex items-center">
                       <div className="h-4 bg-muted/60 rounded w-16" />
                     </div>
                     <div className="px-4 py-3 flex items-center">
-                      <div className="h-3 bg-muted/60 rounded w-24" />
+                      <div className="h-4 bg-muted/60 rounded w-24" />
                     </div>
                     <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-5 w-5 bg-muted/60 rounded" />
+                      <div className="h-4 bg-muted/60 rounded w-6" />
                     </div>
                   </div>
                 ))
-              ) : documents.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  <BookOpen className="w-10 h-10 mx-auto mb-2 text-muted-foreground/40" />
-                  <div className="text-xs font-semibold text-foreground">Belum ada dokumen terindeks pada kategori ini</div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Unggah dokumen SOP baru atau sinkronkan folder server untuk memulai.</p>
-                  <div className="mt-4 flex justify-center gap-2">
-                    <Button size="sm" variant="outline" onClick={onGoToUpload} className="text-xs gap-1.5">
-                      <UploadCloud className="w-3.5 h-3.5" /> Unggah Berkas
+              ) : table.getRowModel().rows.length === 0 ? (
+                /* Empty State */
+                <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground border border-border/60">
+                    <Database className="w-6 h-6 opacity-60" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Tidak Ada Dokumen SOP Ditemukan</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      {searchQuery 
+                        ? `Tidak ada hasil untuk pencarian "${searchQuery}". Coba kata kunci lain atau reset filter kategori.`
+                        : "Belum ada dokumen panduan SOP atau manual hardware yang terindeks di sistem."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onGoToUpload}
+                      className="text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Tambah Dokumen Pertama
                     </Button>
-                    <Button size="sm" variant="outline" onClick={onSyncServerDocs} disabled={isSyncing} className="text-xs gap-1.5 cursor-pointer">
-                      <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onSyncServerDocs}
+                      disabled={isSyncing}
+                      className="text-xs gap-1.5"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
                       {isSyncing ? "Menyinkronkan..." : "Sinkronkan Server Docs"}
                     </Button>
                   </div>
@@ -491,7 +513,7 @@ export function AiKnowledgeTable({
                     onTestSimulator={onTestSimulator}
                   >
                     <div
-                      className="grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/40 transition-colors group cursor-context-menu"
+                      className="grid grid-cols-[minmax(320px,1fr)_170px_110px_130px_120px_150px_70px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/40 transition-colors group cursor-context-menu"
                     >
                       {row.getVisibleCells().map((cell) => {
                         const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);

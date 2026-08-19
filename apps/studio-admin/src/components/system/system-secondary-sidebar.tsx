@@ -47,6 +47,9 @@ import {
   Building2,
   Sparkles,
   Bot,
+  UploadCloud,
+  FlaskConical,
+  FileCode,
 } from "lucide-react";
 import {
   Collapsible,
@@ -98,6 +101,9 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Building2,
   Sparkles,
   Bot,
+  UploadCloud,
+  FlaskConical,
+  FileCode,
 };
 
 export function SystemSecondarySidebar() {
@@ -112,7 +118,9 @@ export function SystemSecondarySidebar() {
 
   // Determine active config key based on URL pathname
   let activeKey: string | null = null;
-  if (pathname?.includes("/users")) {
+  if (pathname?.startsWith("/ai")) {
+    activeKey = "ai";
+  } else if (pathname?.includes("/users")) {
     activeKey = "users";
   } else if (pathname?.includes("/security")) {
     activeKey = "security";

@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Terminal,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import {
   Tooltip,
@@ -42,6 +43,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Global Logs", icon: Terminal, href: "/logs" },
   { title: "Security", icon: Lock, href: "/security" },
   { title: "Gateways", icon: Cpu, href: "/gateways/overview" },
+  { title: "AI Assistant", icon: Sparkles, href: "/ai" },
   { title: "Settings", icon: Settings, href: "/settings" },
 ];
 
@@ -50,6 +52,7 @@ const DIVIDER_AFTER = ["/tasks"];
 
 export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
+  if (href.startsWith("/ai")) return pathname.startsWith("/ai");
   if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
   if (href === "/observability") return pathname.startsWith("/observability");
   if (href === "/tasks") return pathname === "/tasks" || pathname.startsWith("/tasks/");

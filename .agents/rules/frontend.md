@@ -182,5 +182,25 @@ Dialog pembuatan tugas **dilarang** menggunakan form bertingkat panjang. Wajib m
 * **Scroll Area**: `div.flex-1.min-h-0.overflow-auto.custom-scrollbar-thin` — scroll hanya terjadi di dalam tabel data, bukan seluruh halaman.
 * **Infinite Scroll**: Wajib menggunakan `IntersectionObserver` pada sentinel di bawah tabel dengan page size default `20`.
 
+---
 
+## 📱 10. Standar Desain Responsif Multi-Perangkat (Mobile, Tablet, Desktop, Ultra-Wide)
 
+Setiap halaman dan komponen di `apps/studio-admin` maupun `apps/studio-tenant` **wajib** responsif dan nyaman dioperasikan di seluruh resolusi layar:
+
+### A. Breakpoints Baku (Tailwind CSS Scale)
+| Breakpoint | Resolusi Layar | Target Perangkat | Aturan Layout & Penataan |
+| :--- | :--- | :--- | :--- |
+| **Mobile (`< 768px`)** | Smartphone (360px – 430px) | iPhone, Android phone | - Sidebar otomatis tersembunyi (*off-canvas / drawer*).<br>- Padding halaman: `px-3.5 py-4` (hemat ruang).<br>- Form & Card: 1-kolom tumpuk vertikal (`grid-cols-1`).<br>- Tabel data: Pembungkus `overflow-x-auto custom-scrollbar` dengan *touch drag*.<br>- Target sentuh tombol: Minimal tinggi `h-9` / `h-10` ($36\text{px} - 40\text{px}$) agar mudah ditekan jari. |
+| **Tablet (`768px - 1023px`)** | Tablet Portrait/Landscape (768px – 1024px) | iPad, Samsung Galaxy Tab | - Main Sidebar icon-only (50px), Secondary Sidebar dapat di-collapse (*toggle button*).<br>- Padding: `px-4 md:px-6`.<br>- Grid form: 2-kolom seimbang (`md:grid-cols-2`).<br>- Tabel data: Menampilkan kolom prioritas dengan responsivitas lebar proporsional. |
+| **Desktop / Laptop (`1024px - 1439px`)** | Laptop & Monitor Kantor (1280px – 1440px) | MacBook, ThinkPad, 1080p | - Main Sidebar (50px / 200px hover) + Secondary Sidebar (240px).<br>- Layout Form: **2-Kolom Master-Detail (`lg:grid-cols-12` -> `lg:col-span-7` editor + `lg:col-span-5` info guide)**.<br>- Tabel data: Lebar penuh dengan kolom dinamis `minmax(320px, 1fr)`. |
+| **Ultra-Wide (`≥ 1440px / 1920px`)** | Monitor Lebar / Display NOC (1920px – 4K) | Monitor 24"-34", TV NOC | - Kontainer utama merenggang elastis (*1fr dynamic stretch*) atau dibatasi secara anggun (`max-w-[95rem]` / `max-w-6xl` terpusat).<br>- **Dilarang Celah Kosong**: Seluruh tabel wajib memanfaatkan 100% lebar kanvas (`minmax(320px, 1fr)`) sehingga tidak menyisakan ruang kosong hitam (*black void*) di sisi kanan. |
+
+### B. Aturan Khusus Komponen Visual & Interaktif
+1. **Interactive 2D Canvas (Obsidian Graph)**:
+   - Wajib menangani event mouse (*click, pan, wheel zoom*) serta *touch gestures* di layar sentuh mobile/tablet.
+   - Toolbar zoom/pan diposisikan mengambang (*floating*) di sudut kanan atas agar mudah dijangkau jari.
+2. **Solid Sticky Headers**:
+   - Header tabel wajib menggunakan solid 100% opaque (`bg-card` atau `bg-background`) dengan `z-20` agar baris data di bawahnya tidak tembus pandang di semua perangkat.
+3. **Form Segmented Switcher & Pill Tabs**:
+   - Wajib menggunakan `overflow-x-auto` dan `whitespace-nowrap` pada tab bar agar tidak patah/terpotong di layar smartphone sempit.

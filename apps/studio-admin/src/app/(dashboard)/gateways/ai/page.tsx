@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import { Badge } from "@k2net/ui";
+import { Badge, Button } from "@k2net/ui";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { 
@@ -307,7 +308,7 @@ export default function AiGatewayPage() {
       <div className="flex-1 flex flex-col pt-6 pb-16 px-4 md:px-6 bg-background h-full overflow-y-auto custom-scrollbar w-full gap-6 select-none">
         
         {/* Header Banner */}
-        <div className="flex items-center justify-between border-b border-border/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-4">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
               <Sparkles className="w-5 h-5" />
@@ -323,6 +324,15 @@ export default function AiGatewayPage() {
                 Orkestrasi pgvector RAG Knowledge Base, SOP indexing, Google Gemini/OpenAI engines, dan SSE streaming copilot.
               </p>
             </div>
+          </div>
+
+          <div>
+            <Link href="/ai">
+              <Button size="sm" className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs">
+                <Sparkles className="w-3.5 h-3.5" />
+                Buka AI Workspace Mandiri
+              </Button>
+            </Link>
           </div>
         </div>
       

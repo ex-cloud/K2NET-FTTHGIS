@@ -147,6 +147,32 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  ai: {
+    title: "AI Assistant & Copilot",
+    sections: [
+      {
+        title: "Basis Pengetahuan (RAG)",
+        items: [
+          { title: "Daftar Pengetahuan", url: "/ai", icon: "Database" },
+          { title: "Graf Pengetahuan 2D", url: "/ai/graph", icon: "Network" },
+          { title: "Tambah Pengetahuan", url: "/ai/add", icon: "UploadCloud" },
+        ],
+      },
+      {
+        title: "Simulasi & Panduan",
+        items: [
+          { title: "RAG Simulator", url: "/ai/simulator", icon: "FlaskConical" },
+          { title: "Template & Panduan SOP", url: "/ai/templates", icon: "FileCode" },
+        ],
+      },
+      {
+        title: "Engine & Orkestrasi",
+        items: [
+          { title: "Multi-Provider Hub", url: "/ai/config", icon: "Cpu" },
+        ],
+      },
+    ],
+  },
   tasks: {
     title: "Tasks & Tickets",
     sections: [
