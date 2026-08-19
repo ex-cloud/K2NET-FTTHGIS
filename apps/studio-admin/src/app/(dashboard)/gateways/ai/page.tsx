@@ -18,15 +18,14 @@ import {
   AiDocumentItem 
 } from "@/lib/actions/gateways";
 
-// Modular Sub-Components
 import { AiTabType, KnowledgeTemplateItem } from "./components/types";
 import { AiKpiCards } from "./components/ai-kpi-cards";
 import { AiNavTabs } from "./components/ai-nav-tabs";
 import { AiKnowledgeTable } from "./components/ai-knowledge-table";
+import { AiKnowledgeGraphTab } from "./components/ai-knowledge-graph-tab";
 import { AiSemanticSimulator } from "./components/ai-semantic-simulator";
 import { AiTemplatesTab } from "./components/ai-templates-tab";
-import { AiUploadTab } from "./components/ai-upload-tab";
-import { AiManualNoteTab } from "./components/ai-manual-note-tab";
+import { AiAddKnowledgeTab } from "./components/ai-add-knowledge-tab";
 import { AiConfigTab } from "./components/ai-config-tab";
 import { AiVectorExplorerModal } from "./components/ai-vector-explorer-modal";
 
@@ -299,7 +298,7 @@ export default function AiGatewayPage() {
     setManualTitle(template.title);
     setManualCategory(template.category);
     setManualContent(template.content);
-    setActiveTab("MANUAL");
+    setActiveTab("ADD_KNOWLEDGE");
     toast.info(`Template '${template.title}' dimuat ke editor manual.`);
   };
 
@@ -365,7 +364,7 @@ export default function AiGatewayPage() {
             setSearchQuery={setSearchQuery}
             onSearchSubmit={handleSearchSubmit}
             onDelete={handleDelete}
-            onGoToUpload={() => setActiveTab("UPLOAD")}
+            onGoToUpload={() => setActiveTab("ADD_KNOWLEDGE")}
             onSyncServerDocs={handleSyncServerDocs}
             onRefresh={() => {
               loadDocuments();
@@ -381,8 +380,19 @@ export default function AiGatewayPage() {
           />
         )}
 
-          {/* TAB 2: RAG SEMANTIC SIMULATOR & VECTOR SEARCH INSPECTOR */}
-          {activeTab === "SIMULATOR" && (
+        {/* TAB 2: 2D OBSIDIAN-STYLE INTERACTIVE KNOWLEDGE GRAPH */}
+        {activeTab === "GRAPH" && (
+          <AiKnowledgeGraphTab
+            onTestSimulator={(title) => {
+              setSimQuery(title);
+              setActiveTab("SIMULATOR");
+            }}
+            onOpenExplorer={() => setIsExplorerOpen(true)}
+          />
+        )}
+
+        {/* TAB 3: RAG SEMANTIC SIMULATOR & VECTOR SEARCH INSPECTOR */}
+        {activeTab === "SIMULATOR" && (
             <AiSemanticSimulator
               simQuery={simQuery}
               setSimQuery={setSimQuery}
@@ -405,9 +415,9 @@ export default function AiGatewayPage() {
             <AiTemplatesTab onUseTemplate={handleUseTemplate} />
           )}
 
-          {/* TAB 4: UNGGAH BERKAS SOP */}
-          {activeTab === "UPLOAD" && (
-            <AiUploadTab
+          {/* TAB 4: TAMBAH PENGETAHUAN (UNIFIED: UPLOAD + MANUAL NOTE) */}
+          {activeTab === "ADD_KNOWLEDGE" && (
+            <AiAddKnowledgeTab
               uploadTitle={uploadTitle}
               setUploadTitle={setUploadTitle}
               uploadCategory={uploadCategory}
@@ -416,13 +426,6 @@ export default function AiGatewayPage() {
               setSelectedFile={setSelectedFile}
               uploading={uploading}
               onUploadSubmit={handleUploadSubmit}
-              onCancel={() => setActiveTab("KNOWLEDGE")}
-            />
-          )}
-
-          {/* TAB 5: TULIS MANUAL (QUICK NOTE) */}
-          {activeTab === "MANUAL" && (
-            <AiManualNoteTab
               manualTitle={manualTitle}
               setManualTitle={setManualTitle}
               manualCategory={manualCategory}
@@ -432,10 +435,11 @@ export default function AiGatewayPage() {
               manualSubmitting={manualSubmitting}
               onManualSubmit={handleManualSubmit}
               onCancel={() => setActiveTab("KNOWLEDGE")}
+              onGoToTemplates={() => setActiveTab("TEMPLATES")}
             />
           )}
 
-          {/* TAB 6: ENGINE CONFIGURATION */}
+          {/* TAB 5: ENGINE CONFIGURATION */}
           {activeTab === "CONFIG" && (
             <AiConfigTab
               config={config}

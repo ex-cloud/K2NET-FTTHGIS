@@ -140,3 +140,71 @@ class HealthResponse(BaseModel):
 class ReadyResponse(BaseModel):
     ready: bool
     checks: dict[str, bool]
+
+
+# ─── Multi-Provider Hub & Connection Testing ──────────────────────────────────
+
+class ProviderTestRequest(BaseModel):
+    provider: Literal["gemini", "openai", "deepseek", "custom", "ollama"]
+    api_key: Optional[str] = ""
+    base_url: Optional[str] = ""
+    model: Optional[str] = ""
+
+
+class ProviderTestResponse(BaseModel):
+    provider: str
+    success: bool
+    latency_ms: int
+    message: str
+    tested_at: datetime
+    models_available: list[str] = []
+    error_detail: Optional[str] = None
+
+
+class ProviderStatusItem(BaseModel):
+    id: str
+    name: str
+    is_active: bool
+    is_fallback: bool
+    is_configured: bool
+    model: str
+    base_url: Optional[str] = None
+    last_tested: Optional[datetime] = None
+    last_latency_ms: Optional[int] = None
+    status: Literal["CONNECTED", "NOT_CONFIGURED", "ERROR", "OFFLINE"]
+
+
+class ProviderStatusListResponse(BaseModel):
+    active_primary: str
+    active_fallback: str
+    providers: list[ProviderStatusItem]
+
+
+# ─── Knowledge Graph 2D (Obsidian-Style Semantic Graph) ──────────────────────
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    title: str
+    category: str
+    chunk_count: int
+    file_size_bytes: int
+    vendor: str
+    status: str
+    degree: int = 0
+    group: int = 1
+    val: float = 5.0  # Node size for force graph
+
+
+class GraphLink(BaseModel):
+    source: str
+    target: str
+    similarity: float
+    value: float
+    relation: str = "semantic_cluster"
+
+
+class KnowledgeGraphResponse(BaseModel):
+    nodes: list[GraphNode]
+    links: list[GraphLink]
+    stats: dict

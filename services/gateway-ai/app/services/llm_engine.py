@@ -40,6 +40,8 @@ class LLMEngine:
         from app.core.config import settings
         if self.provider == "openai":
             return settings.OPENAI_CHAT_MODEL
+        elif self.provider in ("deepseek", "custom"):
+            return settings.DEEPSEEK_CHAT_MODEL
         elif self.provider in ("ollama", "local"):
             return settings.OLLAMA_CHAT_MODEL
         return settings.GEMINI_CHAT_MODEL
@@ -70,11 +72,54 @@ class LLMEngine:
         elif self.provider == "gemini":
             async for token in self._stream_gemini(user_message, history, final_system):
                 yield token
+        elif self.provider in ("deepseek", "custom"):
+            async for token in self._stream_custom(user_message, history, final_system):
+                yield token
         elif self.provider in ("ollama", "local"):
             async for token in self._stream_ollama(user_message, history, final_system):
                 yield token
         else:
             yield f"[Error] Provider '{self.provider}' tidak dikenal."
+
+    async def _stream_custom(
+        self,
+        user_message: str,
+        history: list[dict],
+        system_prompt: str,
+    ) -> AsyncGenerator[str, None]:
+        """DeepSeek / Groq / OpenRouter / Custom OpenAI-compatible streaming."""
+        try:
+            from openai import AsyncOpenAI
+            from app.core.config import settings
+            import os
+
+            api_key = settings.DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY") or "sk-probe"
+            base_url = settings.DEEPSEEK_BASE_URL or "https://api.deepseek.com/v1"
+            model_name = self.model or settings.DEEPSEEK_CHAT_MODEL
+
+            client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=30.0)
+
+            messages = [{"role": "system", "content": system_prompt}]
+            for msg in history[-10:]:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+            messages.append({"role": "user", "content": user_message})
+
+            stream = await client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                stream=True,
+                temperature=0.3,
+                max_tokens=2048,
+            )
+
+            async for chunk in stream:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield delta.content
+
+        except Exception as e:
+            logger.error(f"Custom LLM streaming error: {e}")
+            yield f"\n\n[Error] Gagal mendapatkan respons dari Custom LLM ({settings.DEEPSEEK_BASE_URL}): {str(e)}"
 
     async def _stream_openai(
         self,
@@ -199,15 +244,27 @@ class LLMEngine:
                     yield chunk.text
 
         except Exception as e:
-            logger.warning(f"Gemini streaming failed ({e}), attempting fallback to Local Ollama...")
-            # Otomatis beralih ke Local Ollama on-premise jika kuota Gemini habis
+            logger.warning(f"Gemini streaming failed ({e}), attempting fallback...")
+            from app.core.config import settings
+            fb_provider = settings.FALLBACK_LLM_PROVIDER
             try:
-                yield f"\n\n*(Mengalihkan ke Local On-Premise Engine karena kuota cloud terbatas...)*\n\n"
-                async for chunk in self._stream_ollama(user_message, history, system_prompt):
-                    yield chunk
+                if fb_provider == "openai" and settings.OPENAI_API_KEY:
+                    yield f"\n\n*(Mengalihkan otomatis ke OpenAI Backup karena koneksi/kuota Gemini terbatas...)*\n\n"
+                    async for chunk in self._stream_openai(user_message, history, system_prompt):
+                        yield chunk
+                elif fb_provider in ("deepseek", "custom") and settings.DEEPSEEK_API_KEY:
+                    yield f"\n\n*(Mengalihkan otomatis ke DeepSeek Backup karena koneksi/kuota Gemini terbatas...)*\n\n"
+                    async for chunk in self._stream_custom(user_message, history, system_prompt):
+                        yield chunk
+                elif fb_provider in ("ollama", "local"):
+                    yield f"\n\n*(Mengalihkan ke Local On-Premise Engine...)*\n\n"
+                    async for chunk in self._stream_ollama(user_message, history, system_prompt):
+                        yield chunk
+                else:
+                    yield f"\n\n[Error] Gagal mendapatkan respons dari Gemini: {str(e)}"
             except Exception as fallback_err:
-                logger.error(f"Fallback to Ollama also failed: {fallback_err}")
-                yield f"\n\n[Error] Gagal mendapatkan respons dari Gemini ({str(e)}) dan Local Fallback ({str(fallback_err)})."
+                logger.error(f"Fallback to {fb_provider} also failed: {fallback_err}")
+                yield f"\n\n[Error] Gagal mendapatkan respons dari Gemini ({str(e)}) dan Fallback ({str(fallback_err)})."
 
     async def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding vector untuk teks (digunakan saat indexing dokumen)."""

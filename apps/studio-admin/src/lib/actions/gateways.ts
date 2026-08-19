@@ -744,3 +744,96 @@ export async function simulateVectorSearch(payload: {
   return res.json();
 }
 
+export async function testAiProviderConnection(payload: {
+  provider: string;
+  api_key?: string;
+  base_url?: string;
+  model?: string;
+}): Promise<{
+  provider: string;
+  success: boolean;
+  latency_ms: number;
+  message: string;
+  models_available?: string[];
+  error_detail?: string;
+}> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/providers/test`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    return {
+      provider: payload.provider,
+      success: false,
+      latency_ms: 0,
+      message: err.detail || "Gagal menguji koneksi provider.",
+      error_detail: err.detail,
+    };
+  }
+
+  return res.json();
+}
+
+export type KnowledgeGraphData = {
+  nodes: Array<{
+    id: string;
+    label: string;
+    title: string;
+    category: string;
+    chunk_count: number;
+    file_size_bytes: number;
+    vendor: string;
+    status: string;
+    degree: number;
+    group: number;
+    val: number;
+  }>;
+  links: Array<{
+    source: string;
+    target: string;
+    similarity: number;
+    value: number;
+    relation: string;
+  }>;
+  stats: {
+    total_nodes: number;
+    total_links: number;
+    categories_count: number;
+    max_chunks: number;
+    top_categories: Array<{ category: string; count: number }>;
+  };
+};
+
+export async function getKnowledgeGraphData(): Promise<KnowledgeGraphData> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/knowledge/graph`, {
+    method: "GET",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal memuat visualisasi Knowledge Graph.");
+  }
+
+  return res.json();
+}
+

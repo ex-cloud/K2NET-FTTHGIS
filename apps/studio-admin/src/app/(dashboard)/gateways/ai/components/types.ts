@@ -6,7 +6,7 @@ import {
   LucideIcon 
 } from "lucide-react";
 
-export type AiTabType = "KNOWLEDGE" | "SIMULATOR" | "TEMPLATES" | "UPLOAD" | "MANUAL" | "CONFIG";
+export type AiTabType = "KNOWLEDGE" | "GRAPH" | "ADD_KNOWLEDGE" | "SIMULATOR" | "TEMPLATES" | "CONFIG";
 
 export interface CategoryItem {
   id: string;

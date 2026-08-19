@@ -31,7 +31,6 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { 
-  Card, 
   Button, 
   Input, 
   DropdownMenu,
@@ -364,10 +363,15 @@ export function AiKnowledgeTable({
       </div>
 
       {/* ── Enterprise Card & Table Container with Effects ─────────────────── */}
-      <Card className="border border-border/80 bg-card/60 backdrop-blur-md rounded-xl shadow-xs overflow-hidden">
-        {/* Fixed Viewport with Infinite Scroll */}
-        <div className="max-h-[580px] overflow-y-auto overflow-x-auto custom-scrollbar relative">
-          <div className="min-w-[960px] flex flex-col">
+      {/* overflow-clip: clips visual content for border-radius WITHOUT creating a CSS scroll container,
+          which allows position:sticky inside the inner overflow-auto to work correctly */}
+      <div
+        className="border border-border/80 bg-card/60 backdrop-blur-md rounded-xl shadow-xs"
+        style={{ overflow: "clip" }}
+      >
+        {/* Single overflow-auto container — both axes — is the scroll reference for sticky header */}
+        <div className="max-h-[600px] overflow-auto custom-scrollbar relative">
+          <div className="min-w-[1000px] flex flex-col">
             
             {/* Sticky Header with Sorting Menus */}
             <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[280px_160px_110px_130px_120px_140px_60px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-muted-foreground/80 shadow-xs">
@@ -525,7 +529,7 @@ export function AiKnowledgeTable({
 
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

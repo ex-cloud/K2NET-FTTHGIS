@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     )
 
     # ── LLM Provider Configuration ────────────────────────────────
-    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini", "ollama", "local"] = Field(default="gemini")
+    DEFAULT_LLM_PROVIDER: Literal["openai", "gemini", "deepseek", "custom", "ollama", "local"] = Field(default="gemini")
+    FALLBACK_LLM_PROVIDER: Literal["openai", "gemini", "deepseek", "custom", "ollama", "none"] = Field(default="openai")
 
     OPENAI_API_KEY: str = Field(default="")
     OPENAI_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
@@ -42,6 +43,11 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str = Field(default="")
     GEMINI_EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
     GEMINI_CHAT_MODEL: str = Field(default="models/gemini-2.5-flash")
+
+    # DeepSeek Cloud / Groq / OpenRouter / Custom OpenAI-Compatible
+    DEEPSEEK_API_KEY: str = Field(default="")
+    DEEPSEEK_BASE_URL: str = Field(default="https://api.deepseek.com/v1")
+    DEEPSEEK_CHAT_MODEL: str = Field(default="deepseek-chat")
 
     # Local / On-Premise Ollama Engine
     OLLAMA_BASE_URL: str = Field(default="http://host.docker.internal:11434/v1")
