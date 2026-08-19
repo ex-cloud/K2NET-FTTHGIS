@@ -373,13 +373,13 @@ export function AiKnowledgeTable({
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         "w-2 h-2 rounded-full shrink-0",
-                        cat.id === "ALL" && "bg-slate-400",
+                        cat.id === "ALL" && "bg-emerald-400",
                         cat.id === "TROUBLESHOOTING" && "bg-amber-400",
-                        cat.id === "ARCHITECTURE" && "bg-blue-400",
-                        cat.id === "GIS_SPATIAL" && "bg-emerald-400",
+                        cat.id === "NETWORK_CONFIG" && "bg-blue-400",
+                        cat.id === "GIS_MANUAL" && "bg-emerald-400",
                         cat.id === "INFRASTRUCTURE" && "bg-purple-400",
-                        cat.id === "PLANNING" && "bg-cyan-400",
-                        cat.id === "GENERAL_SOP" && "bg-slate-400",
+                        cat.id === "PLANS" && "bg-cyan-400",
+                        cat.id === "GENERAL" && "bg-rose-400",
                       )} />
                       <span>{cat.label}</span>
                     </div>
@@ -393,58 +393,56 @@ export function AiKnowledgeTable({
           </DropdownMenu>
         </div>
 
-        {/* Right Toolbar: Icon-Only Action Buttons with Tooltips */}
+        {/* Right Toolbar: Linear-Style Borderless Action Buttons (Sinkron -> Refresh -> Tambah) */}
         <TooltipProvider delayDuration={150}>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-            {/* Action 1: Tambah Pengetahuan (Plus Icon) */}
+          <div className="flex items-center gap-1 w-full sm:w-auto justify-end shrink-0">
+            {/* 1. Sinkronkan Server Docs (FolderSync) */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  onClick={onGoToUpload}
-                  className="h-8 w-8 p-0 shrink-0 bg-primary text-primary-foreground font-semibold hover:bg-primary/90 cursor-pointer shadow-xs"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
-                Tambah Pengetahuan (Upload / Tulis)
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Action 2: Sinkronkan Server Docs (FolderSync Icon) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={onSyncServerDocs}
                   disabled={isSyncing}
-                  className="h-8 w-8 p-0 shrink-0 border-border bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+                  aria-label="Sinkronkan Direktori Server Docs"
                 >
-                  <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-primary" : ""}`} />
-                </Button>
+                  <FolderSync className={`w-4 h-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+                </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
+              <TooltipContent side="bottom" sideOffset={6}>
                 {isSyncing ? "Menyinkronkan Berkas Server..." : "Sinkronkan Direktori Server Docs"}
               </TooltipContent>
             </Tooltip>
 
-            {/* Action 3: Refresh Data (RefreshCw Icon) */}
+            {/* 2. Refresh Data pgvector (RefreshCw) */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={onRefresh}
                   disabled={docsLoading}
-                  className="h-8 w-8 p-0 shrink-0 border-border bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+                  aria-label="Segarkan Data pgvector"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin text-primary" : ""}`} />
-                </Button>
+                  <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
+                </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
+              <TooltipContent side="bottom" sideOffset={6}>
                 Segarkan Data pgvector
+              </TooltipContent>
+            </Tooltip>
+
+            {/* 3. Tambah Pengetahuan (Plus) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onGoToUpload}
+                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden"
+                  aria-label="Tambah Pengetahuan (Upload / Tulis)"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                Tambah Pengetahuan (Upload / Tulis)
               </TooltipContent>
             </Tooltip>
           </div>

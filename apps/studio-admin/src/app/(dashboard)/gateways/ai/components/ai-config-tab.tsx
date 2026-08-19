@@ -12,19 +12,10 @@ import {
   Server, 
   Sparkles, 
   Zap, 
-  ExternalLink,
-  ShieldCheck,
-  Check,
-  Sliders,
-  Radio,
-  Layers
+  ShieldCheck, 
+  Sliders
 } from "lucide-react";
 import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
   Button, 
   Input, 
   Label,
@@ -32,7 +23,6 @@ import {
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { testAiProviderConnection } from "@/lib/actions/gateways";
-import { cn } from "@/lib/utils";
 
 interface AiConfigTabProps {
   config: Record<string, string>;
@@ -138,42 +128,7 @@ export function AiConfigTab({
   const fallbackProvider = config["FALLBACK_LLM_PROVIDER"] || "openai";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      
-      {/* ── Top Master Control Bar ─────────────────────────────────────────── */}
-      <div className="p-4 md:p-5 rounded-2xl bg-card border border-border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
-            <Cpu className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm md:text-base font-bold text-foreground">
-                AI Engine & Multi-Provider Hub
-              </h2>
-              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 font-mono">
-                Multi-LLM Active
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Atur prioritas mesin penalaran utama dan cadangan otomatis dengan validasi API token live.
-            </p>
-          </div>
-        </div>
-
-        {/* Priority Selectors */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 bg-muted/40 border border-border/80 px-3 py-1.5 rounded-xl text-xs">
-            <span className="text-muted-foreground">Utama (Primary):</span>
-            <span className="font-bold text-primary capitalize font-mono">{defaultProvider}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-muted/40 border border-border/80 px-3 py-1.5 rounded-xl text-xs">
-            <span className="text-muted-foreground">Cadangan (Fallback):</span>
-            <span className="font-bold text-amber-500 capitalize font-mono">{fallbackProvider}</span>
-          </div>
-        </div>
-      </div>
-
+    <div className="w-full space-y-6">
       {configLoading ? (
         <div className="text-center py-16 text-muted-foreground text-xs">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
@@ -188,18 +143,18 @@ export function AiConfigTab({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             
             {/* ── CARD 1: GOOGLE GEMINI ────────────────────────────────────── */}
-            <Card glowingEffect className="border-border bg-card shadow-xs flex flex-col justify-between overflow-hidden">
+            <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
-                <CardHeader className="border-b border-border/70 bg-muted/10 p-4 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <CardTitle className="text-sm font-bold text-foreground">
+                        <h3 className="text-sm font-bold text-foreground">
                           1. Google Gemini
-                        </CardTitle>
+                        </h3>
                         {defaultProvider === "gemini" && (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] font-mono px-1.5 py-0">
                             Primary
@@ -211,9 +166,9 @@ export function AiConfigTab({
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         Cloud Reasoning (1.500 req/hari gratis)
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
 
@@ -237,10 +192,10 @@ export function AiConfigTab({
                       </Badge>
                     )}
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="p-4 space-y-3.5">
-                  <div className="space-y-1">
+                <div className="p-5 space-y-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="geminiKey" className="text-xs font-medium text-foreground">
                       Gemini API Key
                     </Label>
@@ -263,7 +218,7 @@ export function AiConfigTab({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Label htmlFor="geminiModel" className="text-xs font-medium text-foreground">
                       Model Generasi
                     </Label>
@@ -278,11 +233,11 @@ export function AiConfigTab({
                       <option value="models/gemini-1.5-pro">models/gemini-1.5-pro (Penalaran Kompleks)</option>
                     </select>
                   </div>
-                </CardContent>
+                </div>
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-3 border-t border-border/70 bg-muted/5 flex items-center justify-between gap-2">
+              <div className="px-5 py-3 border-t border-border/70 bg-muted/10 flex items-center justify-between gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -311,21 +266,21 @@ export function AiConfigTab({
                   </Button>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* ── CARD 2: OPENAI ──────────────────────────────────────────── */}
-            <Card glowingEffect className="border-border bg-card shadow-xs flex flex-col justify-between overflow-hidden">
+            <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
-                <CardHeader className="border-b border-border/70 bg-muted/10 p-4 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                       <Zap className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <CardTitle className="text-sm font-bold text-foreground">
+                        <h3 className="text-sm font-bold text-foreground">
                           2. OpenAI (GPT-4o)
-                        </CardTitle>
+                        </h3>
                         {defaultProvider === "openai" && (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] font-mono px-1.5 py-0">
                             Primary
@@ -337,9 +292,9 @@ export function AiConfigTab({
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         Standar Industri & Auto-Fallback
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
 
@@ -363,10 +318,10 @@ export function AiConfigTab({
                       </Badge>
                     )}
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="p-4 space-y-3.5">
-                  <div className="space-y-1">
+                <div className="p-5 space-y-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="openaiKey" className="text-xs font-medium text-foreground">
                       OpenAI API Key
                     </Label>
@@ -389,7 +344,7 @@ export function AiConfigTab({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Label htmlFor="openaiModel" className="text-xs font-medium text-foreground">
                       Model Generasi
                     </Label>
@@ -404,11 +359,11 @@ export function AiConfigTab({
                       <option value="gpt-3.5-turbo">gpt-3.5-turbo (Legacy)</option>
                     </select>
                   </div>
-                </CardContent>
+                </div>
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-3 border-t border-border/70 bg-muted/5 flex items-center justify-between gap-2">
+              <div className="px-5 py-3 border-t border-border/70 bg-muted/10 flex items-center justify-between gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -437,30 +392,30 @@ export function AiConfigTab({
                   </Button>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* ── CARD 3: DEEPSEEK CLOUD / CUSTOM OPENAI-COMPATIBLE ───────── */}
-            <Card glowingEffect className="border-border bg-card shadow-xs flex flex-col justify-between overflow-hidden">
+            <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
-                <CardHeader className="border-b border-border/70 bg-muted/10 p-4 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
                       <Cpu className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <CardTitle className="text-sm font-bold text-foreground">
+                        <h3 className="text-sm font-bold text-foreground">
                           3. DeepSeek / Custom API
-                        </CardTitle>
+                        </h3>
                         {defaultProvider === "deepseek" && (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] font-mono px-1.5 py-0">
                             Primary
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         OpenAI-Compatible Custom Endpoint
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
 
@@ -484,10 +439,10 @@ export function AiConfigTab({
                       </Badge>
                     )}
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-1">
+                <div className="p-5 space-y-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="deepseekUrl" className="text-xs font-medium text-foreground">
                       Base URL Endpoint
                     </Label>
@@ -502,7 +457,7 @@ export function AiConfigTab({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor="deepseekKey" className="text-xs font-medium text-foreground">
                         API Key
                       </Label>
@@ -525,7 +480,7 @@ export function AiConfigTab({
                       </div>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor="deepseekModel" className="text-xs font-medium text-foreground">
                         Model Name
                       </Label>
@@ -539,11 +494,11 @@ export function AiConfigTab({
                       />
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-3 border-t border-border/70 bg-muted/5 flex items-center justify-between gap-2">
+              <div className="px-5 py-3 border-t border-border/70 bg-muted/10 flex items-center justify-between gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -570,30 +525,30 @@ export function AiConfigTab({
                   {defaultProvider === "deepseek" ? "✓ Utama" : "Set Utama"}
                 </Button>
               </div>
-            </Card>
+            </div>
 
             {/* ── CARD 4: LOCAL OLLAMA ON-PREMISE ─────────────────────────── */}
-            <Card glowingEffect className="border-border bg-card shadow-xs flex flex-col justify-between overflow-hidden">
+            <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
-                <CardHeader className="border-b border-border/70 bg-muted/10 p-4 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
                       <Server className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <CardTitle className="text-sm font-bold text-foreground">
+                        <h3 className="text-sm font-bold text-foreground">
                           4. Local Ollama Engine
-                        </CardTitle>
+                        </h3>
                         {defaultProvider === "ollama" && (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] font-mono px-1.5 py-0">
                             Primary
                           </Badge>
                         )}
                       </div>
-                      <CardDescription className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         On-Premise Private AI (No Cloud Keys)
-                      </CardDescription>
+                      </p>
                     </div>
                   </div>
 
@@ -613,10 +568,10 @@ export function AiConfigTab({
                       </Badge>
                     )}
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-1">
+                <div className="p-5 space-y-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="ollamaUrl" className="text-xs font-medium text-foreground">
                       Ollama Base URL Endpoint
                     </Label>
@@ -630,7 +585,7 @@ export function AiConfigTab({
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Label htmlFor="ollamaModel" className="text-xs font-medium text-foreground">
                       Model Name
                     </Label>
@@ -643,11 +598,11 @@ export function AiConfigTab({
                       className="text-xs h-8 font-mono bg-background border-border"
                     />
                   </div>
-                </CardContent>
+                </div>
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-3 border-t border-border/70 bg-muted/5 flex items-center justify-between gap-2">
+              <div className="px-5 py-3 border-t border-border/70 bg-muted/10 flex items-center justify-between gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -674,25 +629,23 @@ export function AiConfigTab({
                   {defaultProvider === "ollama" ? "✓ Utama" : "Set Utama"}
                 </Button>
               </div>
-            </Card>
+            </div>
 
           </div>
 
           {/* ═════════════════════════════════════════════════════════════════ */}
           {/* GLOBAL RAG PARAMETERS & AUTO-FALLBACK                            */}
           {/* ═════════════════════════════════════════════════════════════════ */}
-          <Card className="border-border bg-card shadow-xs">
-            <CardHeader className="p-4 border-b border-border/70 bg-muted/10">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-primary" />
-                <CardTitle className="text-sm font-bold text-foreground">
-                  Parameter Pencarian Semantik & Auto-Fallback
-                </CardTitle>
-              </div>
-            </CardHeader>
+          <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-border/70 bg-muted/20 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">
+                Parameter Pencarian Semantik & Auto-Fallback
+              </h3>
+            </div>
 
-            <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1">
+            <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
                 <Label htmlFor="maxChunks" className="text-xs font-medium text-foreground">
                   Max RAG Chunks
                 </Label>
@@ -708,7 +661,7 @@ export function AiConfigTab({
                 <p className="text-[10px] text-muted-foreground">Jumlah potongan dokumen yang disuntikkan ke prompt.</p>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label htmlFor="minSim" className="text-xs font-medium text-foreground">
                   Min Similarity Threshold
                 </Label>
@@ -725,7 +678,7 @@ export function AiConfigTab({
                 <p className="text-[10px] text-muted-foreground">Ambang batas skor kemiripan kosinus (0.1 - 0.9).</p>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
                   Auto-Fallback Status
                 </Label>
@@ -735,11 +688,11 @@ export function AiConfigTab({
                 </div>
                 <p className="text-[10px] text-muted-foreground">Beralih ke OpenAI jika kuota Gemini habis.</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* ── Save Bottom Actions Bar ───────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-card border border-border shadow-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border shadow-xs">
             <div className="text-xs text-muted-foreground flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
               <span>Perubahan konfigurasi provider tersimpan di database dan aktif secara real-time.</span>
