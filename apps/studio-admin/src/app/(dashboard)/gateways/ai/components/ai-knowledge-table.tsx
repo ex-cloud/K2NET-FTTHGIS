@@ -43,6 +43,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  ActionTooltip,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { AiDocumentItem } from "@/lib/actions/gateways";
@@ -394,68 +395,42 @@ export function AiKnowledgeTable({
         </div>
 
         {/* Right Toolbar: Linear-Style Borderless Action Buttons (Sinkron -> Refresh -> Tambah) */}
-        <TooltipProvider delayDuration={150}>
-          <div className="flex items-center gap-1 w-full sm:w-auto justify-end shrink-0">
-            {/* 1. Sinkronkan Server Docs (FolderSync) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onSyncServerDocs}
-                  disabled={isSyncing}
-                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
-                  aria-label="Sinkronkan Direktori Server Docs"
-                >
-                  <FolderSync className={`w-4 h-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
-                <span>{isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Direktori Server"}</span>
-                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
-                  S
-                </span>
-              </TooltipContent>
-            </Tooltip>
+        <div className="flex items-center gap-1 w-full sm:w-auto justify-end shrink-0">
+          {/* 1. Sinkronkan Server Docs (FolderSync) */}
+          <ActionTooltip label={isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Direktori Server"} shortcut="S">
+            <button
+              onClick={onSyncServerDocs}
+              disabled={isSyncing}
+              className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+              aria-label="Sinkronkan Direktori Server Docs"
+            >
+              <FolderSync className={`w-4 h-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+            </button>
+          </ActionTooltip>
 
-            {/* 2. Refresh Data pgvector (RefreshCw) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onRefresh}
-                  disabled={docsLoading}
-                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
-                  aria-label="Segarkan Data pgvector"
-                >
-                  <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
-                <span>Segarkan Data</span>
-                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
-                  R
-                </span>
-              </TooltipContent>
-            </Tooltip>
+          {/* 2. Refresh Data pgvector (RefreshCw) */}
+          <ActionTooltip label="Segarkan Data pgvector" shortcut="R">
+            <button
+              onClick={onRefresh}
+              disabled={docsLoading}
+              className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+              aria-label="Segarkan Data pgvector"
+            >
+              <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
+            </button>
+          </ActionTooltip>
 
-            {/* 3. Tambah Pengetahuan (Plus) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onGoToUpload}
-                  className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden"
-                  aria-label="Tambah Pengetahuan (Upload / Tulis)"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
-                <span>Tambah Pengetahuan</span>
-                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
-                  C
-                </span>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
+          {/* 3. Tambah Pengetahuan (Plus) */}
+          <ActionTooltip label="Tambah Pengetahuan (Upload / Tulis)" shortcut="C">
+            <button
+              onClick={onGoToUpload}
+              className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden"
+              aria-label="Tambah Pengetahuan (Upload / Tulis)"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </ActionTooltip>
+        </div>
       </div>
 
       {/* ── Enterprise Card & Table Container with Effects ─────────────────── */}
