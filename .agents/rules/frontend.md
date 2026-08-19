@@ -326,3 +326,20 @@ const contextMenuGroups: ContextMenuGroupConfig[] = [
   </tr>
 </UniversalContextMenu>
 ```
+
+---
+
+## 💡 13. Standar Wajib KPI Cards & Efek Glow Interaktif (GlowingEffect)
+
+Seluruh baris KPI Cards / Metric Summary Strip di bagian atas dashboard (`/tasks`, `/observability/*`, `/gateways/*`, `/organizations`, `/users`, `/ai`) **WAJIB** menerapkan efek border glow dinamis:
+
+### A. Kaidah Implementasi:
+1. **Penggunaan `<Card glowingEffect>`**:
+   * Komponen `<Card glowingEffect>` dari `@k2net/ui` mendeteksi pergerakan kursor mouse secara otomatis (*mouse-tracking dynamic rainbow/primary border glow*).
+   * Dilarang menggunakan styling border hover statis (`hover:border-primary/60`) pada KPI summary cards utama.
+2. **Struktur Grid Baku**:
+   * Grid KPI responsif: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full`.
+3. **Anatomi Internal KPI Card**:
+   * Header: Label kategori (`text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase`) + Status Icon.
+   * Nilai Utama: Angka/Statistik besar (`text-2xl font-bold text-foreground font-mono`).
+   * Sub-keterangan / Progress Bar: Progress status (`h-1.5 bg-muted rounded-full overflow-hidden`).

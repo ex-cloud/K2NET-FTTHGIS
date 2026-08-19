@@ -289,3 +289,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
   3. Aksi Salin Data Cepat (`Ctrl+C` untuk judul, `Alt+C` untuk UUID).
   4. Aksi Destruktif Hapus (`variant="destructive"`, shortcut `Del` / `Ctrl+Del`).
 
+### 💡 Standardisasi GlowingEffect pada KPI Summary Cards (Agustus 2026)
+- **Komponen Shared**: `<Card glowingEffect>` diekspor dari `@k2net/ui`.
+- **Wajib di Semua Top Metrics**: Seluruh baris KPI Cards / Metric Summary Strip di bagian atas halaman (`/tasks`, `/observability/*`, `/gateways/*`, `/organizations`, `/users`, `/ai`) **wajib** menggunakan `<Card glowingEffect className="p-5 flex flex-col gap-3">`.
+- **Interaksi Hidup**: Menghasilkan efek border gradient mouse-tracking otomatis yang elegan dan seragam, menggantikan efek border statis.
+- **Pencegahan Bug Overlap**: Dilarang menggunakan `overflow-hidden` di card terluar jika card memiliki konten berlatar gelap yang menempel pada tepi garis border.
+

@@ -83,11 +83,18 @@ grep -rn "text-zinc-\|bg-zinc-\|border-zinc-\|text-white\|bg-emerald-\|text-emer
 
 ## 📦 4. Panduan Desain Komponen (Component Styling)
 
-### A. Kartu & Panel (Cards)
+### A. Kartu, KPI Metrics, & GlowingEffect (Cards)
 
 * **Gunakan `<Card>` dari `@k2net/ui`** — Dilarang membuat wrapper card HTML/CSS independen per halaman.
-* **GlowingEffect**: `<Card glowingEffect>` — Mengaktifkan glow mouse-tracking, otomatis menonaktifkan `hover:shadow-*`.
-  * **DILARANG**: `<Card animatedBeam>` / `<Card beamColor="...">` — props ini sudah **dihapus**.
+* **GlowingEffect pada KPI Strip (WAJIB)**: Seluruh baris KPI Cards / Metric Summary Strip di bagian atas halaman (seperti di `/tasks`, `/observability/*`, `/gateways/*`, `/organizations`, `/users`, `/ai`) **WAJIB** menggunakan `<Card glowingEffect>`:
+  * Menghasilkan efek border gradient yang mengikuti pergerakan kursor mouse secara dinamis (*mouse-tracking subtle rainbow/primary glow*).
+  * Struktur baku KPI: `<Card glowingEffect className="p-5 flex flex-col gap-3">`.
+* **Standard `<Card>` Tanpa GlowingEffect**:
+  * Digunakan untuk container tabel data, panel konfigurasi bertingkat (seperti Multi-Provider Hub), form editor panjang, atau dialog modal.
+  * Gunakan interaksi border standar: `hover:border-primary/40 transition-colors`.
+* **Pencegahan Bug Overlap/Clipped Glow**:
+  * Pada `<Card glowingEffect>`, dilarang menambahkan `overflow-hidden` jika card memiliki elemen anak yang menempel pada tepi border, agar efek glow tidak terpotong.
+* **DILARANG**: `<Card animatedBeam>` / `<Card beamColor="...">` — props ini sudah **dihapus**.
 * **TracingBeam**: Untuk halaman berkonten panjang (settings, compliance, wizard form), gunakan:
   ```tsx
   import { TracingBeam } from "@k2net/ui";

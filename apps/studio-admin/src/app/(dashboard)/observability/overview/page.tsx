@@ -56,7 +56,7 @@ function KpiCard({
   label: string; value: string; sub: string; icon: React.ElementType;
 }) {
   return (
-    <Card className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
+    <Card glowingEffect className="p-5 flex flex-col gap-2 bg-card/60 backdrop-blur-sm border-border">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
         <Icon className="h-4 w-4 text-muted-foreground" />
