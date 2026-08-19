@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -357,7 +358,7 @@ func (h *ConfigHandler) GetGatewayStatus(c *gin.Context) {
 
 	var results []serviceStatus
 	for _, svc := range services {
-		address := fmt.Sprintf("%s:%d", svc.name, svc.port)
+		address := net.JoinHostPort(svc.name, strconv.Itoa(svc.port))
 		conn, err := net.DialTimeout("tcp", address, 300*time.Millisecond)
 		active := err == nil
 		status := "active"

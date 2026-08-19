@@ -123,6 +123,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 6. **Aturan Knowledge Base AI**: [rules/ai-knowledge.md](file:///opt/project5/.agents/rules/ai-knowledge.md)
    *Membahas: Taksonomi 6 kategori pengetahuan, chunking 500 token pgvector, Multi-Tenant isolation scope, serta alur penambahan berkas SOP.*
 
+7. **Standar Audit & Quality Gate per Service (PENTING)**: [rules/service-audit-standards.md](file:///opt/project5/.agents/rules/service-audit-standards.md)
+   *Membahas: Matriks prasyarat wajib 5 pilar (Frontend, Spring Boot, 12 Go Gateways, Python AI, Docker Infra) serta perintah verifikasi cepat `pnpm verify`.*
+
 ---
 
 ## 🧠 Pembelajaran Masalah Terselesaikan (Knowledge Base)

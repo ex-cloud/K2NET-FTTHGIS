@@ -7,7 +7,12 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "verify:admin": "bash scripts/verify-all.sh",
+    "verify": "bash scripts/verify-all.sh all",
+    "verify:admin": "bash scripts/verify-all.sh frontend",
+    "verify:frontend": "bash scripts/verify-all.sh frontend",
+    "verify:backend": "bash scripts/verify-all.sh backend",
+    "verify:gateways": "bash scripts/verify-all.sh gateways",
+    "verify:infra": "bash scripts/verify-all.sh infra",
     "audit:colors": "grep -rn 'text-zinc-\\|bg-zinc-\\|border-zinc-\\|text-white\\|bg-emerald-\\|text-emerald-\\|border-emerald-' apps/studio-admin/src --include='*.tsx' --include='*.ts' | grep -v 'node_modules'"
   },
   "devDependencies": {
