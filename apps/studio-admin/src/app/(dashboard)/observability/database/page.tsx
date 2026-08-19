@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import {
   Card, CardContent, CardHeader, CardTitle,
-  Badge, Button, PageLayout
+  Badge, Button, PageLayout, ActionTooltip
 } from "@k2net/ui";
 import {
   Database, RefreshCw, CheckCircle2, Archive,
@@ -82,7 +82,7 @@ function KpiCard({
   accent?: boolean;
 }) {
   return (
-    <Card className="p-5 flex flex-col gap-3">
+    <Card glowingEffect className="p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
           {label}
@@ -139,10 +139,10 @@ export default function DatabaseCachePage() {
     migrationApplied: "—",
     backupStatus: "UNKNOWN" as "SUCCESS" | "FAILED" | "UNKNOWN",
     backupLastRun: "—",
-    backupNextRun: "—",
-    minioSyncStatus: "UNKNOWN" as "SUCCESS" | "UNKNOWN",
+    backupNextRun: "Tonight 00:00 UTC",
+    minioSyncStatus: "UNKNOWN" as "SUCCESS" | "FAILED" | "UNKNOWN",
     minioSyncTime: "—",
-    nextcloudStatus: "UNKNOWN" as "SUCCESS" | "UNKNOWN",
+    nextcloudStatus: "UNKNOWN" as "SUCCESS" | "FAILED" | "UNKNOWN",
     nextcloudSyncTime: "—",
   });
 
@@ -150,23 +150,18 @@ export default function DatabaseCachePage() {
   const [persistenceError, setPersistenceError] = useState(false);
 
   const fetchPersistence = async () => {
-    const token = (session as any)?.accessToken;
-    if (!token) { setLoadingPersistence(false); return; }
-    setLoadingPersistence(true); setPersistenceError(false);
     try {
-      const res = await fetch("/api/v1/system/devops-stats", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error(`devops-stats: ${res.status}`);
+      setLoadingPersistence(true);
+      const res = await fetch("/api/v1/system/devops-stats");
+      if (!res.ok) throw new Error("Failed to fetch persistence info");
       const d = await res.json();
       setPersistence({
         migrationVersion: d?.lastMigration?.version ?? "—",
-        migrationStatus: d?.lastMigration?.success ? "SUCCESS" : "UNKNOWN",
-        migrationApplied: d?.lastMigration?.installedOn ?? "—",
+        migrationStatus: d?.lastMigration?.success ? "SUCCESS" : "FAILED",
+        migrationApplied: d?.lastMigration?.appliedAt ?? "—",
         backupStatus: d?.lastBackup?.status ?? "UNKNOWN",
         backupLastRun: d?.lastBackup?.lastBackupTime ?? "—",
-        backupNextRun: d?.lastBackup?.nextBackupTime ?? "—",
+        backupNextRun: "Tonight 00:00 UTC",
         minioSyncStatus: d?.lastBackup?.minioStatus ?? "UNKNOWN",
         minioSyncTime: d?.lastBackup?.minioSyncTime ?? "—",
         nextcloudStatus: d?.lastBackup?.nextcloudStatus ?? "UNKNOWN",
@@ -257,14 +252,16 @@ export default function DatabaseCachePage() {
             )}
           </p>
         </div>
-        <Button
-          variant="outline" size="sm"
-          onClick={handleRefresh}
-          disabled={systemData.refreshing || loading || loadingPersistence}
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${(systemData.refreshing || loading) ? "animate-spin text-primary" : ""}`} />
-          Refresh
-        </Button>
+        <ActionTooltip label="Segarkan Database & Cache" shortcut="R">
+          <Button
+            variant="outline" size="sm"
+            onClick={handleRefresh}
+            disabled={systemData.refreshing || loading || loadingPersistence}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${(systemData.refreshing || loading) ? "animate-spin text-primary" : ""}`} />
+            Refresh
+          </Button>
+        </ActionTooltip>
       </div>
 
       {/* ── 6 KPI Cards ── */}

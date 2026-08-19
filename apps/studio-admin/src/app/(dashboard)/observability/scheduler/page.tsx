@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, PageLayout } from "@k2net/ui";
+import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { CalendarClock, RefreshCw, XCircle, ExternalLink } from "lucide-react";
 import { useSchedulerStatus } from "@/hooks/useSchedulerStatus";
 import { SchedulerKpiCards } from "./components/scheduler-kpi-cards";
@@ -53,10 +53,12 @@ export default function SchedulerPage() {
           <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
             {loading ? "LOADING…" : "LIVE DATA"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Status Cron & Scheduler" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

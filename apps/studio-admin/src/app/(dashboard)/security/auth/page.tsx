@@ -14,15 +14,27 @@ import {
   AlertTriangle,
   Monitor,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Copy,
 } from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
-import { Switch } from "@k2net/ui";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@k2net/ui";
-import { Skeleton } from "@k2net/ui";
-import { Separator } from "@k2net/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Switch,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  Separator,
+  ActionTooltip,
+  UniversalContextMenu,
+  ContextMenuGroupConfig,
+} from "@k2net/ui";
 
 export default function SystemAuthPage() {
   const {
@@ -126,6 +138,69 @@ export default function SystemAuthPage() {
       emailVerify !== realmConfig.verifyEmail ||
       resetAllowed !== realmConfig.resetPasswordAllowed);
 
+  const getSessionContextMenuGroups = (sessionItem: any): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Analisis Sesi Ini",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisis aktivitas dan keabsahan sesi pengguna: "${sessionItem.username}" (IP: ${sessionItem.ipAddress}, Tenant: ${sessionItem.tenant || "System"}). Login: ${sessionItem.start}, Last access: ${sessionItem.lastAccess}. Identifikasi potensi ancaman keamanan atau anomali IP.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Username",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(sessionItem.username || "");
+            toast.success(`Username ${sessionItem.username} disalin!`);
+          },
+        },
+        {
+          label: "Salin IP Address",
+          icon: Globe,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(sessionItem.ipAddress || "");
+            toast.success(`IP ${sessionItem.ipAddress} disalin!`);
+          },
+        },
+        {
+          label: "Salin Session ID",
+          icon: Fingerprint,
+          shortcut: "Alt+I",
+          onClick: () => {
+            navigator.clipboard.writeText(sessionItem.id || "");
+            toast.success(`Session ID disalin!`);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Putus Sesi Pengguna",
+          icon: Trash2,
+          shortcut: "Del",
+          onClick: () => handleRevokeSession(sessionItem.id),
+        },
+      ],
+    },
+  ];
+
   if (loadingRealmConfig || loadingSessions || loadingSsoProviders) {
     return (
       <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background min-h-screen text-foreground overflow-y-auto">
@@ -163,7 +238,7 @@ export default function SystemAuthPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Card 1: Keycloak Settings */}
-          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-border/40">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" /> Global Realm Security
@@ -231,19 +306,21 @@ export default function SystemAuthPage() {
 
             </CardContent>
             <CardFooter className="border-t border-border pt-4 flex justify-end">
-              <Button
-                onClick={handleSaveRealmConfig}
-                disabled={isUpdatingRealmConfig || !isConfigChanged}
-                variant="default"
-                size="sm"
-              >
-                {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null} Save Security Policies
-              </Button>
+              <ActionTooltip label={isConfigChanged ? "Simpan Perubahan Keamanan Realm" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+                <Button
+                  onClick={handleSaveRealmConfig}
+                  disabled={isUpdatingRealmConfig || !isConfigChanged}
+                  variant="default"
+                  size="sm"
+                >
+                  {isUpdatingRealmConfig ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null} Save Security Policies
+                </Button>
+              </ActionTooltip>
             </CardFooter>
           </Card>
 
           {/* Card 2: Social SSO Providers */}
-          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-border/40">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Fingerprint className="w-4 h-4 text-primary" /> Identity Providers (SSO)
@@ -313,13 +390,15 @@ export default function SystemAuthPage() {
                         className="bg-muted/60 border-border text-foreground text-xs h-8"
                       />
                     </div>
-                    <Button
-                      onClick={() => handleSaveSso(selectedProvider)}
-                      disabled={isUpdatingSsoProvider}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 font-medium transition-all"
-                    >
-                      {isUpdatingSsoProvider ? "Connecting..." : "Enable Provider"}
-                    </Button>
+                    <ActionTooltip label={`Aktifkan Integrasi SSO ${selectedProvider}`} shortcut="Enter">
+                      <Button
+                        onClick={() => handleSaveSso(selectedProvider)}
+                        disabled={isUpdatingSsoProvider}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8 font-medium transition-all"
+                      >
+                        {isUpdatingSsoProvider ? "Connecting..." : "Enable Provider"}
+                      </Button>
+                    </ActionTooltip>
                   </div>
                 </div>
               )}
@@ -330,7 +409,7 @@ export default function SystemAuthPage() {
         </div>
 
         {/* Card 3: Active User Sessions */}
-        <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+        <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
           <CardHeader className="border-b border-border/40 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-foreground flex items-center gap-2">
@@ -367,42 +446,46 @@ export default function SystemAuthPage() {
                     </thead>
                     <tbody>
                       {currentSessions.map((session) => (
-                        <tr key={session.id} className="border-b border-border/40 hover:bg-muted/10 text-muted-foreground">
-                          <td className="p-4 font-medium flex items-center gap-2">
-                            <Monitor className="w-3.5 h-3.5 text-muted-foreground" /> {session.username}
-                          </td>
-                          <td className="p-4">
-                            <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded text-muted-foreground font-medium font-sans">
-                              {session.tenant || "System/Root"}
-                            </span>
-                          </td>
-                          <td className="p-4 font-mono text-muted-foreground">{session.ipAddress}</td>
-                          <td className="p-4">
-                            {new Date(session.start).toLocaleString("id-ID", { hour12: false })}
-                          </td>
-                          <td className="p-4">
-                            {new Date(session.lastAccess).toLocaleString("id-ID", { hour12: false })}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex flex-wrap gap-1">
-                              {session.clients.map((client) => (
-                                <span key={client} className="text-[9px] bg-muted border border-border px-1.5 py-0.5 rounded font-mono text-muted-foreground">
-                                  {client}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="p-4 text-right">
-                            <Button
-                              variant="destructive"
-                              onClick={() => handleRevokeSession(session.id)}
-                              disabled={isRevokingSession}
-                              className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
-                            >
-                              <Trash2 className="w-3 h-3 mr-1" /> Revoke
-                            </Button>
-                          </td>
-                        </tr>
+                        <UniversalContextMenu key={session.id} groups={getSessionContextMenuGroups(session)}>
+                          <tr className="border-b border-border/40 hover:bg-muted/10 text-muted-foreground cursor-context-menu">
+                            <td className="p-4 font-medium flex items-center gap-2">
+                              <Monitor className="w-3.5 h-3.5 text-muted-foreground" /> {session.username}
+                            </td>
+                            <td className="p-4">
+                              <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded text-muted-foreground font-medium font-sans">
+                                {session.tenant || "System/Root"}
+                              </span>
+                            </td>
+                            <td className="p-4 font-mono text-muted-foreground">{session.ipAddress}</td>
+                            <td className="p-4">
+                              {new Date(session.start).toLocaleString("id-ID", { hour12: false })}
+                            </td>
+                            <td className="p-4">
+                              {new Date(session.lastAccess).toLocaleString("id-ID", { hour12: false })}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex flex-wrap gap-1">
+                                {session.clients.map((client) => (
+                                  <span key={client} className="text-[9px] bg-muted border border-border px-1.5 py-0.5 rounded font-mono text-muted-foreground">
+                                    {client}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="p-4 text-right">
+                              <ActionTooltip label="Putus Sesi Pengguna" shortcut="Del">
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => handleRevokeSession(session.id)}
+                                  disabled={isRevokingSession}
+                                  className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" /> Revoke
+                                </Button>
+                              </ActionTooltip>
+                            </td>
+                          </tr>
+                        </UniversalContextMenu>
                       ))}
                     </tbody>
                   </table>
@@ -414,27 +497,31 @@ export default function SystemAuthPage() {
                       Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, sessions.length)} of {sessions.length} sessions
                     </span>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
+                      <ActionTooltip label="Halaman Sebelumnya" shortcut="Alt+Left">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                      </ActionTooltip>
                       <span className="text-xs text-muted-foreground px-2 font-medium">
                         Page {currentPage} of {totalPages}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
+                      <ActionTooltip label="Halaman Berikutnya" shortcut="Alt+Right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="h-8 w-8 p-0 bg-muted border-border text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </ActionTooltip>
                     </div>
                   </div>
                 )}

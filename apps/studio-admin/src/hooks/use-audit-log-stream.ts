@@ -32,8 +32,8 @@ export const LOG_GROUPS: Record<LogGroupKey, {
   NETWORK: {
     label: "Jaringan GIS",
     description: "OLT gateway, Poller SNMP, Map/Geocoding",
-    color: "text-emerald-400",
-    accentBg: "bg-emerald-500/10",
+    color: "text-primary/80",
+    accentBg: "bg-primary/10",
     types: ["olt", "poller", "map"],
   },
   MESSAGING: {

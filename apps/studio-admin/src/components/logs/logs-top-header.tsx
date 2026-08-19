@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import {
   Search,
   X,
@@ -407,10 +407,12 @@ export function LogsTopHeader({
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 backdrop-blur-md shrink-0 h-12 w-full font-mono text-xs select-none">
       {/* Sidebar toggle */}
-      <button onClick={() => setIsSidebarCollapsed((prev) => !prev)} title="Toggle Filter Sidebar"
-        className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-        <PanelLeft className="w-4 h-4" />
-      </button>
+      <ActionTooltip label="Toggle Filter Panel" shortcut="Alt+S">
+        <button onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+          className="shrink-0 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+          <PanelLeft className="w-4 h-4" />
+        </button>
+      </ActionTooltip>
 
       {/* Search + Filter pills */}
       <div
@@ -442,17 +444,18 @@ export function LogsTopHeader({
               placeholder={hasActivePills ? "Add more filters..." : "Filter by Log Type, Level, Status..."}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 text-xs font-mono"
             />
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowFilterBuilder((prev) => !prev); }}
-              title="Add structured filter"
-              className={cn(
-                "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors",
-                showFilterBuilder
-                  ? "bg-primary/15 border-primary/40 text-primary"
-                  : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
-              )}>
-              <SlidersHorizontal className="w-3 h-3" />
-            </button>
+            <ActionTooltip label="Filter Lanjutan" shortcut="Alt+F">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowFilterBuilder((prev) => !prev); }}
+                className={cn(
+                  "shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] border transition-colors",
+                  showFilterBuilder
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-muted/40"
+                )}>
+                <SlidersHorizontal className="w-3 h-3" />
+              </button>
+            </ActionTooltip>
           </div>
         </div>
         {searchQuery && (
@@ -465,42 +468,48 @@ export function LogsTopHeader({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-1.5 shrink-0 pl-2">
-        <Button variant="ghost" size="sm"
-          onClick={() => { clearLogs(); toast.info("Refreshing real-time log feed..."); }}
-          title="Refresh Log Feed"
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
-          <RefreshCw className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="sm"
-          onClick={() => setShowHistogram((prev) => !prev)}
-          title="Toggle Histogram"
-          className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showHistogram ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
-          <BarChart2 className="w-3.5 h-3.5" />
-        </Button>
-        <Button ref={columnBtnRef} variant="ghost" size="sm"
-          onClick={() => setShowColumnPicker((prev) => !prev)}
-          title="Column Visibility"
-          className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showColumnPicker ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
-          <Columns3 className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleExportJson}
-          title="Download Filtered JSON"
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
-          <Download className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="outline" size="sm"
-          onClick={() => setIsLivePaused((prev) => !prev)}
-          className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${
-            isLivePaused
-              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-          }`}>
-          {isLivePaused
-            ? <Play className="w-3 h-3 fill-current" />
-            : <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          }
-          {isLivePaused ? "Paused" : "Live"}
-        </Button>
+        <ActionTooltip label="Segarkan Log" shortcut="R">
+          <Button variant="ghost" size="sm"
+            onClick={() => { clearLogs(); toast.info("Refreshing real-time log feed..."); }}
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+        </ActionTooltip>
+        <ActionTooltip label="Toggle Histogram" shortcut="H">
+          <Button variant="ghost" size="sm"
+            onClick={() => setShowHistogram((prev) => !prev)}
+            className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showHistogram ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
+            <BarChart2 className="w-3.5 h-3.5" />
+          </Button>
+        </ActionTooltip>
+        <ActionTooltip label="Kolom Tampilan" shortcut="C">
+          <Button ref={columnBtnRef} variant="ghost" size="sm"
+            onClick={() => setShowColumnPicker((prev) => !prev)}
+            className={`h-7 w-7 p-0 border border-border/60 rounded-md ${showColumnPicker ? "bg-muted text-foreground" : "text-muted-foreground"}`}>
+            <Columns3 className="w-3.5 h-3.5" />
+          </Button>
+        </ActionTooltip>
+        <ActionTooltip label="Ekspor JSON" shortcut="Alt+E">
+          <Button variant="ghost" size="sm" onClick={handleExportJson}
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border border-border/60 rounded-md">
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+        </ActionTooltip>
+        <ActionTooltip label={isLivePaused ? "Lanjutkan Stream" : "Jeda Stream"} shortcut="Space">
+          <Button variant="outline" size="sm"
+            onClick={() => setIsLivePaused((prev) => !prev)}
+            className={`h-7 text-xs font-mono gap-1.5 border-border/80 rounded-md px-2.5 ${
+              isLivePaused
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                : "bg-primary/10 text-primary/80 border-primary/20"
+            }`}>
+            {isLivePaused
+              ? <Play className="w-3 h-3 fill-current" />
+              : <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            }
+            {isLivePaused ? "Paused" : "Live"}
+          </Button>
+        </ActionTooltip>
       </div>
 
       {showFilterBuilder && (

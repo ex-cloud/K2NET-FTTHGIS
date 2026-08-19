@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FlaskConical, Plus, Network, Database } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { simulateVectorSearch } from "@/lib/actions/gateways";
@@ -68,7 +68,7 @@ function AiSimulatorContent() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
             <FlaskConical className="w-5 h-5" />
           </div>
           <div>
@@ -76,7 +76,7 @@ function AiSimulatorContent() {
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                 RAG Semantic Simulator
               </h1>
-              <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-blue-500/30 text-blue-400 bg-blue-500/10">
+              <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
                 Live Vector Probe
               </Badge>
             </div>
@@ -87,32 +87,38 @@ function AiSimulatorContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/ai")}
-            className="text-xs gap-1.5 cursor-pointer"
-          >
-            <Database className="w-3.5 h-3.5" />
-            Daftar Dokumen
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/ai/graph")}
-            className="text-xs gap-1.5 border-purple-500/30 text-purple-400 hover:bg-purple-500/10 cursor-pointer"
-          >
-            <Network className="w-3.5 h-3.5" />
-            Graf 2D
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => router.push("/ai/add")}
-            className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Tambah Dokumen
-          </Button>
+          <ActionTooltip label="Daftar Dokumen" shortcut="Esc">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/ai")}
+              className="text-xs gap-1.5 cursor-pointer"
+            >
+              <Database className="w-3.5 h-3.5" />
+              Daftar Dokumen
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip label="Graf Pengetahuan 2D" shortcut="G">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/ai/graph")}
+              className="text-xs gap-1.5 cursor-pointer"
+            >
+              <Network className="w-3.5 h-3.5" />
+              Graf 2D
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip label="Tambah Dokumen Baru" shortcut="C">
+            <Button
+              size="sm"
+              onClick={() => router.push("/ai/add")}
+              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tambah Dokumen
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

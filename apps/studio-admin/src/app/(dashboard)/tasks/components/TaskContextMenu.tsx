@@ -122,9 +122,9 @@ export function TaskContextMenu({
             </ContextMenuItem>
             <ContextMenuItem
               onClick={() => onUpdateStatus?.("RESOLVED")}
-              className="cursor-pointer font-medium text-emerald-500"
+              className="cursor-pointer font-medium text-primary"
             >
-              <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-primary" />
               <span>Resolved</span>
             </ContextMenuItem>
             <ContextMenuItem
@@ -320,7 +320,7 @@ export function TaskContextMenu({
               onClick={() => onUpdateScope?.("TENANT_TO_PLATFORM")}
               className="cursor-pointer"
             >
-              <Building2 className="mr-2 h-3.5 w-3.5 text-emerald-400" />
+              <Building2 className="mr-2 h-3.5 w-3.5 text-primary/80" />
               <span>B2B Tenant Ticket</span>
             </ContextMenuItem>
           </ContextMenuSubContent>

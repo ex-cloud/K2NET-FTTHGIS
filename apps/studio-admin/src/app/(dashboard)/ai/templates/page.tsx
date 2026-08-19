@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FileCode, ArrowLeft, Plus, Database } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiTemplatesTab } from "../../gateways/ai/components/ai-templates-tab";
 import { KnowledgeTemplateItem } from "../../gateways/ai/components/types";
@@ -40,23 +40,27 @@ export default function AiTemplatesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai")}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              <Database className="w-3.5 h-3.5" />
-              Daftar Dokumen
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => router.push("/ai/add")}
-              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Tulis SOP Baru
-            </Button>
+            <ActionTooltip label="Kembali ke Daftar Dokumen AI">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5" />
+                Daftar Dokumen
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Tulis Dokumen SOP Baru" shortcut="N">
+              <Button
+                size="sm"
+                onClick={() => router.push("/ai/add")}
+                className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tulis SOP Baru
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 

@@ -6,15 +6,13 @@ import {
   Clock, 
   Save, 
   Loader2, 
-  Server,
-  Lock
+  Server, 
+  Lock,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -171,7 +169,40 @@ export default function SchedulerGatewayPage() {
     }
   };
 
-  // Jobs data loaded dynamically from getSchedulerJobs()
+  const getSchedulerJobContextMenuGroups = (job: SchedulerJob): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Diagnosa Job",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa background job cron "${job.name}". Cron Expression: ${job.cronExpr}, Status: ${job.isActive ? "Aktif" : "Non-aktif"}, Terakhir jalan: ${job.lastRunAt || "Belum pernah"}. Berikan analisa efisiensi penjadwalan.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Cron Expression",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(job.cronExpr);
+            toast.success(`Cron expression ${job.cronExpr} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <GatewayPageWrapper>
@@ -202,7 +233,7 @@ export default function SchedulerGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
@@ -238,7 +269,7 @@ export default function SchedulerGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Worker Settings
@@ -275,28 +306,32 @@ export default function SchedulerGatewayPage() {
               </Card>
 
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Scheduler Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Daftar Cron Job Aktif
@@ -314,33 +349,35 @@ export default function SchedulerGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada cron job terdaftar.</p>
                   ) : (
                     jobs.map((job) => (
-                      <div key={job.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground">{job.name}</span>
-                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                            job.isActive
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-muted/10 text-muted-foreground border-border"
-                          }`}>
-                            {job.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span>Cron: {job.cronExpr}</span>
-                          <span>{formatRelativeTime(job.lastRunAt)}</span>
-                        </div>
-                        {job.nextRunAt && (
-                          <div className="text-[9px] text-muted-foreground/60">
-                            Next: {formatRelativeTime(job.nextRunAt)}
+                      <UniversalContextMenu key={job.id} groups={getSchedulerJobContextMenuGroups(job)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground">{job.name}</span>
+                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                              job.isActive
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-muted/10 text-muted-foreground border-border"
+                            }`}>
+                              {job.isActive ? "Active" : "Inactive"}
+                            </Badge>
                           </div>
-                        )}
-                      </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span>Cron: {job.cronExpr}</span>
+                            <span>{formatRelativeTime(job.lastRunAt)}</span>
+                          </div>
+                          {job.nextRunAt && (
+                            <div className="text-[9px] text-muted-foreground/60 font-mono">
+                              Next: {formatRelativeTime(job.nextRunAt)}
+                            </div>
+                          )}
+                        </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status Task Scheduler</CardTitle>
                 </CardHeader>

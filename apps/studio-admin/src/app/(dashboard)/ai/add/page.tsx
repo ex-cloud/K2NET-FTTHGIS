@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Database, FileCode } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { createManualAiDocument } from "@/lib/actions/gateways";
@@ -91,7 +91,7 @@ export default function AiAddPage() {
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
               <UploadCloud className="w-5 h-5" />
             </div>
             <div>
@@ -99,7 +99,7 @@ export default function AiAddPage() {
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                   Tambah Basis Pengetahuan
                 </h1>
-                <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
                   Ingestion Studio
                 </Badge>
               </div>
@@ -110,24 +110,28 @@ export default function AiAddPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai")}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              <Database className="w-3.5 h-3.5" />
-              Lihat Daftar Dokumen
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai/templates")}
-              className="text-xs gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 cursor-pointer"
-            >
-              <FileCode className="w-3.5 h-3.5" />
-              Katalog Template SOP
-            </Button>
+            <ActionTooltip label="Lihat Daftar Dokumen" shortcut="Esc">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5" />
+                Lihat Daftar Dokumen
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Katalog Template SOP" shortcut="T">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai/templates")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                Katalog Template SOP
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 

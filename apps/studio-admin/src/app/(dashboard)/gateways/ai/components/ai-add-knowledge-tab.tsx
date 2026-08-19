@@ -197,7 +197,7 @@ export function AiAddKnowledgeTab({
                         {selectedFile ? (
                           <div>
                             <p className="text-sm font-semibold text-primary flex items-center justify-center gap-1.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                              <CheckCircle2 className="w-4 h-4 text-primary" />
                               {selectedFile.name}
                             </p>
                             <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">

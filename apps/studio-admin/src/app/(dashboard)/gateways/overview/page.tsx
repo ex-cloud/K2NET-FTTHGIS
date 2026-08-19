@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getGatewayStatus, GatewayServiceStatus } from "@/lib/actions/gateways";
+import Link from "next/link";
 import { 
   Cpu, 
   RefreshCw, 
@@ -10,12 +11,11 @@ import {
   HardDrive, 
   ArrowRight,
   Sparkles,
-  ServerCrash
+  ServerCrash,
+  Copy,
+  ExternalLink
 } from "lucide-react";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageLayout } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Badge } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageLayout, Button, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
@@ -83,6 +83,61 @@ export default function GatewaysOverviewPage() {
     }
   };
 
+  const getGatewayContextMenuGroups = (svc: GatewayServiceStatus): ContextMenuGroupConfig[] => {
+    const nameClean = svc.name.replace("ftth-", "").replace("-gateway", "");
+    return [
+      {
+        items: [
+          {
+            label: "Tanya AI Diagnosa Gateway",
+            icon: Sparkles,
+            shortcut: "Ctrl+J",
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent("k2net-ai-prompt-input", {
+                  detail: {
+                    prompt: `Lakukan pemeriksaan diagnosa kesehatan dan metrik service ${svc.name} pada port ${svc.port}. Status saat ini: ${svc.status}. Berikan ringkasan troubleshooting dan rekomendasi optimasi port microservice.`,
+                  },
+                })
+              );
+              window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+            },
+          },
+        ],
+      },
+      {
+        items: [
+          {
+            label: `Buka Konfigurasi ${nameClean}`,
+            icon: ExternalLink,
+            shortcut: "Enter",
+            onClick: () => {
+              window.location.href = `/gateways/${nameClean}`;
+            },
+          },
+          {
+            label: "Salin Port Gateway",
+            icon: Copy,
+            shortcut: "Ctrl+C",
+            onClick: () => {
+              navigator.clipboard.writeText(String(svc.port));
+              toast.success(`Port ${svc.port} disalin!`);
+            },
+          },
+          {
+            label: "Salin Nama Service",
+            icon: Cpu,
+            shortcut: "Alt+C",
+            onClick: () => {
+              navigator.clipboard.writeText(svc.name);
+              toast.success(`Nama service ${svc.name} disalin!`);
+            },
+          },
+        ],
+      },
+    ];
+  };
+
   return (
     <GatewayPageWrapper>
       <PageLayout>
@@ -102,15 +157,17 @@ export default function GatewaysOverviewPage() {
             </p>
           </div>
           
-          <Button 
-            onClick={() => fetchStatus(true)} 
-            disabled={refreshing || loading}
-            variant="outline"
-            className="border-border/10 hover:border-primary/30 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground text-xs gap-2 transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
-            Refresh Status
-          </Button>
+          <ActionTooltip label="Muat Ulang Status Gateway" shortcut="R">
+            <Button 
+              onClick={() => fetchStatus(true)} 
+              disabled={refreshing || loading}
+              variant="outline"
+              className="border-border/10 hover:border-primary/30 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground text-xs gap-2 transition-all"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+              Refresh Status
+            </Button>
+          </ActionTooltip>
         </div>
 
         {loading ? (
@@ -236,7 +293,7 @@ export default function GatewaysOverviewPage() {
                   <div key={idx} className="flex-1 flex flex-col justify-end h-full group/bar relative">
                     <div 
                       style={{ height: `${(val / 140) * 100}%` }} 
-                      className="w-full bg-gradient-to-t from-emerald-500/30 to-emerald-500/70 hover:to-emerald-400 rounded-t transition-all duration-300"
+                      className="w-full bg-gradient-to-t from-primary/30 to-primary/70 hover:to-primary rounded-t transition-all duration-300"
                     />
                     {/* Tooltip on Hover */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-background border border-border/10 rounded px-1.5 py-0.5 text-[9px] text-foreground opacity-0 pointer-events-none group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 font-mono">
@@ -261,65 +318,68 @@ export default function GatewaysOverviewPage() {
                   const metrics = getServiceMetrics(svc.name);
                   
                   return (
-                    <Card 
-                      key={svc.name} 
-                      glowingEffect 
-                      className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6"
-                    >
-                      {/* Name & Status */}
-                      <div className="flex items-center gap-4 min-w-[250px]">
-                        <div className={`w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground group`}>
-                          <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-primary" : "text-muted-foreground/40"}`} />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-medium text-foreground capitalize">{nameClean} Gateway</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-muted-foreground font-mono">Port {svc.port}</span>
-                            <span className="text-border">•</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${svc.active ? "bg-primary" : "bg-rose-500"}`} />
-                              <span className="text-[10px] text-muted-foreground capitalize">{svc.status}</span>
+                    <UniversalContextMenu key={svc.name} groups={getGatewayContextMenuGroups(svc)}>
+                      <Card 
+                        glowingEffect 
+                        className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-context-menu"
+                      >
+                        {/* Name & Status */}
+                        <div className="flex items-center gap-4 min-w-[250px]">
+                          <div className={`w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground group`}>
+                            <Cpu className={`w-5 h-5 transition-colors ${svc.active ? "text-primary" : "text-muted-foreground/40"}`} />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium text-foreground capitalize">{nameClean} Gateway</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-muted-foreground font-mono">Port {svc.port}</span>
+                              <span className="text-border">•</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${svc.active ? "bg-primary" : "bg-rose-500"}`} />
+                                <span className="text-[10px] text-muted-foreground capitalize">{svc.status}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Performance Details */}
-                      <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
-                        <div>
-                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Throughput</p>
-                          <p className="text-xs font-mono text-foreground mt-0.5">
-                            {svc.active 
-                              ? (svc.throughput !== undefined && svc.throughput > 0 
-                                  ? `${svc.throughput} req/min` 
-                                  : metrics.throughput) 
-                              : "-"}
-                          </p>
+                        {/* Performance Details */}
+                        <div className="grid grid-cols-3 gap-6 flex-1 max-w-md">
+                          <div>
+                            <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Throughput</p>
+                            <p className="text-xs font-mono text-foreground mt-0.5">
+                              {svc.active 
+                                ? (svc.throughput !== undefined && svc.throughput > 0 
+                                    ? `${svc.throughput} req/min` 
+                                    : metrics.throughput) 
+                                : "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Latency</p>
+                            <p className="text-xs font-mono text-foreground mt-0.5">
+                              {svc.active ? metrics.latency : "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Telemetry State</p>
+                            <p className="text-xs font-mono text-foreground mt-0.5">
+                              {svc.active ? metrics.extra : "Offline"}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Latency</p>
-                          <p className="text-xs font-mono text-foreground mt-0.5">
-                            {svc.active ? metrics.latency : "-"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-foreground/75 dark:text-muted-foreground/70 uppercase tracking-wider font-bold">Telemetry State</p>
-                          <p className="text-xs font-mono text-foreground mt-0.5">
-                            {svc.active ? metrics.extra : "Offline"}
-                          </p>
-                        </div>
-                      </div>
 
-                      {/* Action */}
-                      <div className="flex items-center gap-3 border-t md:border-t-0 border-border pt-3 md:pt-0">
-                        <Link 
-                          href={`/gateways/${nameClean}`} 
-                          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium"
-                        >
-                          Configure <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </Card>
+                        {/* Action */}
+                        <div className="flex items-center gap-3 border-t md:border-t-0 border-border pt-3 md:pt-0">
+                          <ActionTooltip label={`Buka Konfigurasi ${nameClean}`} shortcut="Enter">
+                            <Link 
+                              href={`/gateways/${nameClean}`} 
+                              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-medium"
+                            >
+                              Configure <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                          </ActionTooltip>
+                        </div>
+                      </Card>
+                    </UniversalContextMenu>
                   );
                 })}
               </div>
@@ -327,12 +387,12 @@ export default function GatewaysOverviewPage() {
             
             {/* Troubleshooting Alert */}
             {!allActive && (
-              <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4 flex items-start gap-3">
-                <ServerCrash className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="border border-rose-500/20 bg-rose-500/5 rounded-xl p-4 flex items-start gap-3">
+                <ServerCrash className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <h4 className="text-xs font-semibold text-red-400">Troubleshooting Alert</h4>
+                  <h4 className="text-xs font-semibold text-rose-400">Troubleshooting Alert</h4>
                   <p className="text-[10px] text-foreground/75 dark:text-muted-foreground/80">
-                    Salah satu atau lebih layanan gateway terhenti. Mohon periksa log systemd via SSH dengan perintah: <code className="bg-background px-1 py-0.5 rounded font-mono text-red-300 text-[9px]">journalctl -u ftth-[service-name] -f</code> untuk memeriksa penyebab error.
+                    Salah satu atau lebih layanan gateway terhenti. Mohon periksa log systemd via SSH dengan perintah: <code className="bg-background px-1 py-0.5 rounded font-mono text-rose-300 text-[9px]">journalctl -u ftth-[service-name] -f</code> untuk memeriksa penyebab error.
                   </p>
                 </div>
               </div>

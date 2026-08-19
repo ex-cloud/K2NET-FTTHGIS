@@ -43,7 +43,7 @@ export function ResetConfirmModal({
             onClick={() => {
               onConfirm();
             }}
-            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
           >
             Reset stats
           </button>

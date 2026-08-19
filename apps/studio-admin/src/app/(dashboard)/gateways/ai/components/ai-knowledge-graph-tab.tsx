@@ -539,7 +539,7 @@ export function AiKnowledgeGraphTab({
               <span>Obsidian Semantic Graph</span>
             </div>
             <div className="flex items-center gap-3 text-muted-foreground text-[10px]">
-              <span>Nodes: <strong className="text-emerald-400">{graphData?.stats.total_nodes || 0}</strong></span>
+              <span>Nodes: <strong className="text-primary">{graphData?.stats.total_nodes || 0}</strong></span>
               <span>Links: <strong className="text-purple-400">{graphData?.stats.total_links || 0}</strong></span>
               <span>Clusters: <strong className="text-cyan-400">{graphData?.stats.categories_count || 0}</strong></span>
             </div>
@@ -572,7 +572,7 @@ export function AiKnowledgeGraphTab({
                 </div>
                 <div>
                   <span className="text-muted-foreground block">Vendor Tag:</span>
-                  <span className="text-emerald-400 font-bold">{selectedNode.vendor}</span>
+                  <span className="text-primary font-bold">{selectedNode.vendor}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block">File Size:</span>

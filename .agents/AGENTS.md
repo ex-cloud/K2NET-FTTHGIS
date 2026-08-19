@@ -26,10 +26,11 @@ Sebelum mengirimkan perubahan (*commit/push/deploy*) ke server, seluruh kode **W
 
 ### 1. Frontend Next.js (`apps/studio-admin` & `apps/studio-tenant`)
 ```bash
-pnpm --filter @k2net/ui build          # Memastikan paket UI terkompilasi
-pnpm --filter @k2net/studio-admin lint # Memeriksa standar penulisan kode linter
-pnpm --filter @k2net/studio-admin build# Memastikan Next.js terkompilasi 100% tanpa error
+pnpm verify:admin                      # [REKOMENDASI CEPAT] Cek 0 pelanggaran warna + UI build + TypeScript typecheck (<20s, aman untuk RAM server)
+pnpm audit:colors                      # Khusus audit 0 pelanggaran warna hardcode (zinc, white, emerald)
+pnpm --filter @k2net/studio-admin typecheck # Pemeriksaan tipe data TypeScript tanpa memicu Webpack bundling
 ```
+*Catatan: Dilarang menjalankan `next build` langsung di server pengembangan jika resource CPU/RAM sedang tinggi karena proses bundling 67 rute halaman Next.js dijalankan secara otomatis oleh GitHub Actions Runner di cloud.*
 
 ### 2. Backend Spring Boot (`apps/api`)
 ```bash

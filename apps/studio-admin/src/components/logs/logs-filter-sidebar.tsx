@@ -62,7 +62,7 @@ const GROUP_ICONS: Record<LogGroupKey, React.ElementType> = {
 
 // Level display config
 const LEVEL_OPTIONS = [
-  { key: "success", label: "Success", badge: "2xx", color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  { key: "success", label: "Success", badge: "2xx", color: "text-primary/80", bg: "bg-primary/10" },
   { key: "warning", label: "Warning", badge: "4xx", color: "text-amber-400",   bg: "bg-amber-500/10"   },
   { key: "error",   label: "Error",   badge: "5xx", color: "text-rose-400",    bg: "bg-rose-500/10"    },
 ];

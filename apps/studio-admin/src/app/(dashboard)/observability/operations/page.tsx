@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Wrench, CheckCircle2, Clock, RefreshCw, AlertCircle } from "lucide-react";
 import { useSchedulerStatus } from "@/hooks/useSchedulerStatus";
 
@@ -46,10 +46,12 @@ export default function OperationsPage() {
           <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
             {loading ? "LOADING…" : "LIVE DATA"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Layanan Operasi" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 
@@ -61,10 +63,10 @@ export default function OperationsPage() {
           { label: "Payment Webhooks (24h)", value: "—",                                          sub: "payment-gateway · Xendit" },
           { label: "Audit Logs Ingestion",   value: "—",                                          sub: "via ftth-audit-gateway:5006" },
         ].map((c) => (
-          <Card key={c.label} className="p-5 flex flex-col gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{c.label}</span>
-            <p className="text-xl font-bold text-foreground">{c.value}</p>
-            <p className="text-xs text-muted-foreground">{c.sub}</p>
+          <Card glowingEffect key={c.label} className="p-5 flex flex-col gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">{c.label}</span>
+            <p className="text-xl font-bold text-foreground font-mono">{c.value}</p>
+            <p className="text-xs text-foreground/75 dark:text-muted-foreground">{c.sub}</p>
           </Card>
         ))}
       </div>

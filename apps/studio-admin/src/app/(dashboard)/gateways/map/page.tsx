@@ -12,13 +12,8 @@ import {
   Compass,
   DollarSign
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, Progress, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
-import { Progress } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -160,7 +155,7 @@ export default function MapGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Google Maps API Keys */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Globe className="w-4 h-4 text-primary" /> Google Maps API
@@ -195,7 +190,7 @@ export default function MapGatewayPage() {
               </Card>
 
               {/* HERE Maps API Keys (Failover) */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Compass className="w-4 h-4 text-primary" /> HERE Maps API (Failover Provider)
@@ -231,22 +226,26 @@ export default function MapGatewayPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Map Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
@@ -255,7 +254,7 @@ export default function MapGatewayPage() {
             <div className="space-y-6">
               
               {/* Cache Hit Ratio Circular Progress Indicator */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Redis Cache Performance</CardTitle>
                   <CardDescription className="text-[10px] text-muted-foreground">
@@ -300,7 +299,7 @@ export default function MapGatewayPage() {
               </Card>
 
               {/* Provider Health */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status Provider</CardTitle>
                 </CardHeader>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Badge, Button, Input, PageLayout } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Palette, Save, RefreshCw, Upload, ShieldCheck } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
@@ -84,22 +84,26 @@ export default function SettingsBrandingPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => refresh()}
-              disabled={loading}
-              className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isUpdating || loading}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium gap-2 shadow-sm"
-            >
-              {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              Save Changes
-            </Button>
+            <ActionTooltip label="Muat Ulang Pengaturan Branding" shortcut="R">
+              <Button
+                variant="outline"
+                onClick={() => refresh()}
+                disabled={loading}
+                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Simpan Perubahan Branding" shortcut="Ctrl+S">
+              <Button
+                onClick={handleSave}
+                disabled={isUpdating || loading}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium gap-2 shadow-sm"
+              >
+                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Save Changes
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 

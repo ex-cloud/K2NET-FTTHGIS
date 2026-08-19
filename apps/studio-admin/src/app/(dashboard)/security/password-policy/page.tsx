@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam } from "@k2net/ui";
+import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam, ActionTooltip } from "@k2net/ui";
 
 export default function PasswordPolicyPage() {
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
@@ -115,7 +115,7 @@ export default function PasswordPolicyPage() {
         <TracingBeam className="pl-4 md:pl-10">
           <div className="grid grid-cols-1 gap-8">
           
-          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-border/40">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" /> Complexity & Validation Constraints
@@ -143,7 +143,7 @@ export default function PasswordPolicyPage() {
                   max="32"
                   value={minLength}
                   onChange={(e) => setMinLength(parseInt(e.target.value))}
-                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
 
@@ -236,14 +236,16 @@ export default function PasswordPolicyPage() {
 
             </CardContent>
             <CardFooter className="border-t border-border/40 pt-4 flex justify-end gap-3">
-              <Button
-                onClick={handleSavePolicies}
-                disabled={isUpdating || !isChanged()}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
-              >
-                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                Apply Password Policies
-              </Button>
+              <ActionTooltip label={isChanged() ? "Simpan Perubahan Kebijakan Password" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+                <Button
+                  onClick={handleSavePolicies}
+                  disabled={isUpdating || !isChanged()}
+                  className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                >
+                  {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                  Apply Password Policies
+                </Button>
+              </ActionTooltip>
             </CardFooter>
           </Card>
 

@@ -148,7 +148,7 @@ export function AiKnowledgeTable({
                 title="Salin nama file / judul"
               >
                 {copiedId === doc.id ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  <Check className="h-3.5 w-3.5 text-primary" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
@@ -214,7 +214,7 @@ export function AiKnowledgeTable({
           return (
             <div className="flex items-center gap-1.5">
               {status === "INDEXED" && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Terindeks
                 </span>
               )}
@@ -320,7 +320,7 @@ export function AiKnowledgeTable({
           </span>
         </div>
         <span className="text-muted-foreground/30">/</span>
-        <div className="flex items-center gap-1.5 text-emerald-400 font-mono font-semibold">
+        <div className="flex items-center gap-1.5 text-primary font-mono font-semibold">
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span>HNSW 1536 dim Ready</span>
         </div>
@@ -374,10 +374,10 @@ export function AiKnowledgeTable({
                     <div className="flex items-center gap-2">
                       <span className={cn(
                         "w-2 h-2 rounded-full shrink-0",
-                        cat.id === "ALL" && "bg-emerald-400",
+                        cat.id === "ALL" && "bg-primary",
                         cat.id === "TROUBLESHOOTING" && "bg-amber-400",
                         cat.id === "NETWORK_CONFIG" && "bg-blue-400",
-                        cat.id === "GIS_MANUAL" && "bg-emerald-400",
+                        cat.id === "GIS_MANUAL" && "bg-primary",
                         cat.id === "INFRASTRUCTURE" && "bg-purple-400",
                         cat.id === "PLANS" && "bg-cyan-400",
                         cat.id === "GENERAL" && "bg-rose-400",

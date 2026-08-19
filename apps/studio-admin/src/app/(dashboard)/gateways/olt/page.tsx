@@ -6,17 +6,15 @@ import {
   Network, 
   Save, 
   Loader2, 
-  Server,
-  Lock,
-  Eye,
-  EyeOff
+  Server, 
+  Lock, 
+  Eye, 
+  EyeOff,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { z } from "zod";
 
@@ -147,9 +145,40 @@ export default function OltGatewayPage() {
     }
   };
 
-
-
-  // OLT devices loaded dynamically from getOltDevices()
+  const getOltContextMenuGroups = (dev: OLTDevice): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Status Perangkat",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa perangkat OLT ${dev.name || dev.host} vendor ${dev.vendor} IP ${dev.host}:${dev.port || 161}. Berikan diagnosa konektivitas perangkat.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin IP/Host OLT",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(dev.host);
+            toast.success(`Host ${dev.host} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <GatewayPageWrapper>
@@ -180,13 +209,13 @@ export default function OltGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
                   </CardTitle>
                   <CardDescription className="text-[10px] text-muted-foreground">
-                    Koneksi database PostgreSQL dan broker Redis OLT polling worker.
+                    Koneksi database PostgreSQL dan Redis Queue untuk komunikasi OLT device workers.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -216,19 +245,19 @@ export default function OltGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-primary" /> Security & Performance Settings
+                    <Lock className="w-4 h-4 text-primary" /> Keamanan & Batas Koneksi OLT
                   </CardTitle>
                   <CardDescription className="text-[10px] text-muted-foreground">
-                    Key enkripsi data kredensial perangkat OLT dan limitasi konkurensi hardware polling.
+                    Kunci enkripsi AES-256 untuk kredensial OLT serta batasan waktu koneksi SNMP/SSH.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label htmlFor="OLT_ENCRYPTION_KEY" className="text-xs text-muted-foreground">OLT credentials encryption key (AES-256)</Label>
+                      <Label htmlFor="OLT_ENCRYPTION_KEY" className="text-xs text-muted-foreground">OLT Encryption Master Key</Label>
                       <button
                         type="button"
                         onClick={() => setShowOltKey(!showOltKey)}
@@ -243,14 +272,14 @@ export default function OltGatewayPage() {
                       type={showOltKey ? "text" : "password"}
                       value={config.OLT_ENCRYPTION_KEY || ""}
                       onChange={(e) => handleInputChange("OLT_ENCRYPTION_KEY", e.target.value)}
-                      placeholder="AES-256 hex key..."
+                      placeholder="Master Key Baru..."
                       className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="SNMP_TIMEOUT_SECONDS" className="text-xs text-muted-foreground">SNMP Timeout (s)</Label>
+                      <Label htmlFor="SNMP_TIMEOUT_SECONDS" className="text-xs text-muted-foreground">SNMP Timeout (Seconds)</Label>
                       <Input
                         id="SNMP_TIMEOUT_SECONDS"
                         type="number"
@@ -262,7 +291,7 @@ export default function OltGatewayPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="SSH_TIMEOUT_SECONDS" className="text-xs text-muted-foreground">SSH Timeout (s)</Label>
+                      <Label htmlFor="SSH_TIMEOUT_SECONDS" className="text-xs text-muted-foreground">SSH Timeout (Seconds)</Label>
                       <Input
                         id="SSH_TIMEOUT_SECONDS"
                         type="number"
@@ -272,45 +301,49 @@ export default function OltGatewayPage() {
                         className="bg-input border-border text-foreground text-xs focus:border-primary/50"
                       />
                     </div>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="MAX_CONCURRENT_OLT_CONNECTIONS" className="text-xs text-muted-foreground">Max Concurrent</Label>
-                      <Input
-                        id="MAX_CONCURRENT_OLT_CONNECTIONS"
-                        type="number"
-                        value={config.MAX_CONCURRENT_OLT_CONNECTIONS || ""}
-                        onChange={(e) => handleInputChange("MAX_CONCURRENT_OLT_CONNECTIONS", e.target.value)}
-                        placeholder="20"
-                        className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="MAX_CONCURRENT_OLT_CONNECTIONS" className="text-xs text-muted-foreground">Max Concurrent Connections</Label>
+                    <Input
+                      id="MAX_CONCURRENT_OLT_CONNECTIONS"
+                      type="number"
+                      value={config.MAX_CONCURRENT_OLT_CONNECTIONS || ""}
+                      onChange={(e) => handleInputChange("MAX_CONCURRENT_OLT_CONNECTIONS", e.target.value)}
+                      placeholder="50"
+                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
+                    />
                   </div>
                 </CardContent>
               </Card>
 
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi OLT Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     OLT Node State
@@ -328,24 +361,26 @@ export default function OltGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada perangkat OLT terdaftar.</p>
                   ) : (
                     oltDevices.map((dev) => (
-                      <div key={dev.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground">{dev.name || dev.host}</span>
-                          <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px] px-1.5 py-0.5 border capitalize">
-                            {dev.vendor}
-                          </Badge>
+                      <UniversalContextMenu key={dev.id} groups={getOltContextMenuGroups(dev)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground">{dev.name || dev.host}</span>
+                            <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px] px-1.5 py-0.5 border capitalize">
+                              {dev.vendor}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span>{dev.host}:{dev.port || 161}</span>
+                            <span className="text-muted-foreground/60">{new Date(dev.updatedAt).toLocaleDateString("id-ID")}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span>{dev.host}:{dev.port || 161}</span>
-                          <span className="text-muted-foreground/60">{new Date(dev.updatedAt).toLocaleDateString("id-ID")}</span>
-                        </div>
-                      </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statistik Perangkat</CardTitle>
                 </CardHeader>
@@ -358,7 +393,7 @@ export default function OltGatewayPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Vendor Unik</span>
-                    <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[9px]">
+                    <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/20 text-[9px]">
                       {devicesLoading ? "..." : new Set(oltDevices.map(d => d.vendor)).size}
                     </Badge>
                   </div>

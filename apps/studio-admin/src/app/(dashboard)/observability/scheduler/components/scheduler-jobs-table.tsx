@@ -12,11 +12,11 @@ export type JobStatus = "SUCCESS" | "FAILED" | "RUNNING" | "SKIPPED" | "UNKNOWN"
 
 function StatusBadge({ status }: { status: SchedulerJob["lastStatus"] }) {
   const map: Record<JobStatus, { label: string; cls: string }> = {
-    SUCCESS: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+    SUCCESS: { label: "SUCCESS", cls: "border-primary/30 bg-primary/10 text-primary/80" },
     FAILED:  { label: "FAILED",  cls: "border-rose-500/30 bg-rose-500/10 text-rose-400" },
     RUNNING: { label: "RUNNING", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400 animate-pulse" },
-    SKIPPED: { label: "SKIPPED", cls: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground" },
-    UNKNOWN: { label: "SUCCESS", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+    SKIPPED: { label: "SKIPPED", cls: "border-border/30 bg-muted/10 text-muted-foreground" },
+    UNKNOWN: { label: "SUCCESS", cls: "border-primary/30 bg-primary/10 text-primary/80" },
   };
   const s = map[status] ?? map.SUCCESS;
   return (
@@ -31,7 +31,7 @@ function CategoryIcon({ cat }: { cat: SchedulerJob["category"] }) {
     backup:      <HardDrive className="w-3.5 h-3.5 text-violet-400" />,
     sync:        <CloudUpload className="w-3.5 h-3.5 text-blue-400" />,
     maintenance: <RefreshCw className="w-3.5 h-3.5 text-amber-400" />,
-    poller:      <Timer className="w-3.5 h-3.5 text-emerald-400" />,
+    poller:      <Timer className="w-3.5 h-3.5 text-primary/80" />,
   };
   return map[cat] ?? null;
 }
@@ -174,16 +174,16 @@ function LiveLogModal({ job, onClose }: LiveLogModalProps) {
         <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between shrink-0">
           <div className="space-y-0.5">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="flex h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
               Live Logs: {job.scriptFile}
             </CardTitle>
             <p className="text-[10px] text-foreground/75 dark:text-muted-foreground">Streaming stdout/stderr from background daemon.</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-8">Close</Button>
         </CardHeader>
-        <CardContent className="flex-1 bg-zinc-950 p-4 font-mono text-[11px] overflow-y-auto text-zinc-300 flex flex-col gap-1 rounded-b-lg">
+        <CardContent className="flex-1 bg-card p-4 font-mono text-[11px] overflow-y-auto text-foreground/80 flex flex-col gap-1 rounded-b-lg">
           {loading ? (
-            <div className="flex items-center gap-2 text-zinc-500">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               Connecting to daemon...
             </div>

@@ -34,7 +34,7 @@ export function SpatialKpiCards({ stats, loading }: SpatialKpiCardsProps) {
           sub: "PostGIS connections in use",
         },
       ].map((c) => (
-        <Card key={c.label} className="p-5 flex flex-col gap-2">
+        <Card glowingEffect key={c.label} className="p-5 flex flex-col gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
             {c.label}
           </span>

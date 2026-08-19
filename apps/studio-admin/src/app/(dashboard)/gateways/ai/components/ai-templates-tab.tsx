@@ -90,7 +90,7 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
                     className="text-xs h-8 gap-1.5 text-muted-foreground hover:text-foreground"
                   >
                     {copiedId === tmpl.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <Check className="w-3.5 h-3.5 text-primary" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}

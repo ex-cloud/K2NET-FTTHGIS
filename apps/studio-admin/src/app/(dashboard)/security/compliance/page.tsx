@@ -13,7 +13,7 @@ import {
   EyeOff,
   AlertTriangle
 } from "lucide-react";
-import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam } from "@k2net/ui";
+import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam, ActionTooltip } from "@k2net/ui";
 
 export default function SecurityCompliancePage() {
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
@@ -132,7 +132,7 @@ export default function SecurityCompliancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Card 1: Session & Lock Durations */}
-          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-border/40">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" /> Timeout & Inactivity Rules
@@ -161,7 +161,7 @@ export default function SecurityCompliancePage() {
                   step="5"
                   value={sessionTimeout}
                   onChange={(e) => setSessionTimeout(parseInt(e.target.value))}
-                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
 
@@ -185,7 +185,7 @@ export default function SecurityCompliancePage() {
                   step="2"
                   value={mapLockDuration}
                   onChange={(e) => setMapLockDuration(parseInt(e.target.value))}
-                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
 
@@ -226,7 +226,7 @@ export default function SecurityCompliancePage() {
           </Card>
 
           {/* Card 2: WhatsApp Notification & OTP Gateway Settings */}
-          <Card className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
+          <Card glowingEffect className="bg-card/40 border-border shadow-xl backdrop-blur-sm">
             <CardHeader className="border-b border-border/40">
               <CardTitle className="text-foreground flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" /> WhatsApp API Gateway Config
@@ -290,8 +290,8 @@ export default function SecurityCompliancePage() {
 
               {/* Compliance Precaution banner */}
               {!waEnabled && (
-                <div className="p-3 rounded-lg border border-yellow-500/10 bg-yellow-500/5 flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground leading-normal">
                     <strong>Developer Sandbox Fallback:</strong> WhatsApp API gateway is disabled. All OTP authentication and service messages will be routed straight to the backend debug console/logs.
                   </p>
@@ -300,14 +300,16 @@ export default function SecurityCompliancePage() {
 
             </CardContent>
             <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
-              <Button
-                onClick={handleSaveCompliance}
-                disabled={isUpdating || !isChanged()}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
-              >
-                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                Apply Configuration Settings
-              </Button>
+              <ActionTooltip label={isChanged() ? "Simpan Perubahan Pengaturan Compliance" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+                <Button
+                  onClick={handleSaveCompliance}
+                  disabled={isUpdating || !isChanged()}
+                  className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                >
+                  {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                  Apply Configuration Settings
+                </Button>
+              </ActionTooltip>
             </CardFooter>
           </Card>
 

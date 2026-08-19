@@ -62,7 +62,7 @@ interface NewProjectDialogProps {
 const PROJECT_ICONS = [
   { id: "box", icon: Box, label: "Default Box", color: "text-amber-500 bg-amber-500/10 border-amber-500/30" },
   { id: "layers", icon: Layers, label: "Layers", color: "text-blue-500 bg-blue-500/10 border-blue-500/30" },
-  { id: "globe", icon: Globe, label: "Globe", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" },
+  { id: "globe", icon: Globe, label: "Globe", color: "text-primary bg-primary/10 border-primary/30" },
   { id: "sparkles", icon: Sparkles, label: "Sparkles", color: "text-purple-500 bg-purple-500/10 border-purple-500/30" },
   { id: "cpu", icon: Cpu, label: "Core Infra", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/30" },
   { id: "shield", icon: ShieldCheck, label: "Security", color: "text-rose-500 bg-rose-500/10 border-rose-500/30" },
@@ -74,7 +74,7 @@ const PROJECT_STATUSES = [
   { id: "TODO", label: "Backlog", icon: CircleDot, color: "text-muted-foreground" },
   { id: "PLANNED", label: "Planned", icon: Clock, color: "text-cyan-500" },
   { id: "IN_PROGRESS", label: "In Progress", icon: Sparkles, color: "text-amber-500" },
-  { id: "RESOLVED", label: "Completed", icon: CheckCircle2, color: "text-emerald-500" },
+  { id: "RESOLVED", label: "Completed", icon: CheckCircle2, color: "text-primary" },
 ];
 
 const PROJECT_PRIORITIES = [

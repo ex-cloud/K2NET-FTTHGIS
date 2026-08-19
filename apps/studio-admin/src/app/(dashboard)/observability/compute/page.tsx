@@ -8,7 +8,7 @@ import {
   XCircle, Circle,
 } from "lucide-react";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area,
@@ -291,10 +291,12 @@ export default function ComputeHostPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               Auto-refresh dalam {countdown}s · Update: {lastUpdatedStr}
             </span>
-            <Button variant="outline" size="sm" onClick={() => { refresh(); fetchNode(); }} disabled={loading}>
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-              Refresh
-            </Button>
+            <ActionTooltip label="Segarkan Host Metrics" shortcut="R">
+              <Button variant="outline" size="sm" onClick={() => { refresh(); fetchNode(); }} disabled={loading}>
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+                Refresh
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
@@ -485,7 +487,7 @@ export default function ComputeHostPage() {
                 Status pengarsipan 3 layer backup lokal, MinIO S3 bucket, dan sinkronisasi Nextcloud WebDAV.
               </p>
             </div>
-            <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">
+            <Badge className="border-primary/20 bg-primary/10 text-primary font-mono text-[10px]">
               Target Tailscale: 100.110.205.109:9005
             </Badge>
           </div>
@@ -499,7 +501,7 @@ export default function ComputeHostPage() {
               schedule="Daily 20:00 WIB"
               status={backup.minioStatus ?? "UNKNOWN"}
               script="backup.sh"
-              colorClass="border-emerald-500/20 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+              colorClass="border-primary/20 text-primary bg-primary/5"
             />
             <BucketCard
               name="code-backups"

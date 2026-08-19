@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ClipboardList, Plus, PanelRight, HelpCircle, Keyboard } from "lucide-react";
+import { ActionTooltip } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 
 interface TaskHeaderStatsBarProps {
@@ -41,34 +42,40 @@ export function TaskHeaderStatsBar({
           <p className="text-xs text-muted-foreground mt-0.5">{scopeDescription}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenShortcutsHelp}
-            className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
-            title="Keyboard Shortcuts (?)"
-          >
-            <Keyboard className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onToggleRightPanel}
-            className={cn(
-              "p-2 rounded-lg border border-border bg-card transition-colors cursor-pointer",
-              rightPanelOpen
-                ? "text-primary border-primary/30 bg-primary/5"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            title={rightPanelOpen ? "Hide overview panel" : "Show overview panel"}
-          >
-            <PanelRight className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onOpenNewTask}
-            className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer"
-            title="New Task (C)"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="text-xs font-semibold hidden sm:inline">New Issue</span>
-            <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
-          </button>
+          <ActionTooltip label="Keyboard Shortcuts" shortcut="?">
+            <button
+              onClick={onOpenShortcutsHelp}
+              className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
+              aria-label="Keyboard Shortcuts"
+            >
+              <Keyboard className="h-4 w-4" />
+            </button>
+          </ActionTooltip>
+          <ActionTooltip label={rightPanelOpen ? "Tutup Panel Overview" : "Buka Panel Overview"}>
+            <button
+              onClick={onToggleRightPanel}
+              className={cn(
+                "p-2 rounded-lg border border-border bg-card transition-colors cursor-pointer",
+                rightPanelOpen
+                  ? "text-primary border-primary/30 bg-primary/5"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label={rightPanelOpen ? "Hide overview panel" : "Show overview panel"}
+            >
+              <PanelRight className="h-4 w-4" />
+            </button>
+          </ActionTooltip>
+          <ActionTooltip label="Buat Issue / Tugas Baru" shortcut="C">
+            <button
+              onClick={onOpenNewTask}
+              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer"
+              aria-label="New Task"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="text-xs font-semibold hidden sm:inline">New Issue</span>
+              <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
+            </button>
+          </ActionTooltip>
         </div>
       </div>
 

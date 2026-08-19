@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   Radio, Network, AlertTriangle, RefreshCw, AlertCircle,
   CheckCircle2, XCircle, Clock, Cpu, Database,
@@ -88,10 +88,12 @@ export default function OltPollerPage() {
           <Badge className={`text-[10px] ${pollerRunning ? "border-primary/20 bg-primary/10 text-primary" : "border-rose-500/20 bg-rose-500/10 text-rose-500"}`}>
             {loading ? "LOADING…" : pollerRunning ? "LIVE DATA" : "OFFLINE"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Telemetri OLT & Poller" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

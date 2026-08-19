@@ -80,7 +80,7 @@ export function AiNavTabs({
               : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          <UploadCloud className="w-4 h-4 text-emerald-400" />
+          <UploadCloud className="w-4 h-4 text-primary" />
           <span>Tambah Pengetahuan (Upload / Tulis)</span>
         </button>
 

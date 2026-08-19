@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, PageLayout } from "@k2net/ui";
+import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Map as MapIcon, RefreshCw, AlertCircle } from "lucide-react";
 import { SpatialDiagnosticsMap } from "@/components/map/spatial-diagnostics-map";
 import { useMapGatewayStats } from "@/hooks/useMapGatewayStats";
@@ -37,10 +37,12 @@ export default function SpatialMapPage() {
           <Badge className="border-primary/20 bg-primary/10 text-primary text-[10px]">
             {loading ? "LOADING…" : stats.status === "fallback" || stats.status === "degraded" ? "ESTIMATED" : "LIVE DATA"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Metrik Spatial Gateway" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

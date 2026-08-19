@@ -16,13 +16,8 @@ import {
   FileCheck2,
   AlertTriangle
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, Progress, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
-import { Progress } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 function formatBytes(bytes: number): string {
@@ -202,7 +197,7 @@ export default function StorageGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* S3/R2 Bucket Connection Details */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Cloud className="w-4 h-4 text-primary" /> Koneksi Bucket S3 / Cloudflare R2
@@ -253,7 +248,7 @@ export default function StorageGatewayPage() {
               </Card>
 
               {/* AWS / R2 Credentials */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> AWS Credentials / Access Keys
@@ -311,22 +306,26 @@ export default function StorageGatewayPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Storage Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
@@ -335,19 +334,21 @@ export default function StorageGatewayPage() {
             <div className="space-y-6">
               
               {/* Storage Space Saved Card - Real Data */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">WebP Image Optimizer</CardTitle>
-                    <button
-                      type="button"
-                      onClick={fetchStats}
-                      disabled={statsLoading}
-                      className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                      title="Refresh statistik"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${statsLoading ? "animate-spin" : ""}`} />
-                    </button>
+                    <ActionTooltip label="Muat Ulang Statistik WebP" shortcut="R">
+                      <button
+                        type="button"
+                        onClick={fetchStats}
+                        disabled={statsLoading}
+                        className="text-muted-foreground/60 hover:text-muted-foreground transition-colors p-1"
+                        title="Refresh statistik"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${statsLoading ? "animate-spin" : ""}`} />
+                      </button>
+                    </ActionTooltip>
                   </div>
                   <CardDescription className="text-[10px] text-muted-foreground">
                     Layanan pemrosesan gambar mendeteksi tipe mime gambar secara otomatis, melakukan kompresi ke format WebP.
@@ -388,7 +389,7 @@ export default function StorageGatewayPage() {
                         </div>
                         <div>
                           <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold">Tingkat Kegagalan</p>
-                          <p className={`text-sm font-semibold font-mono mt-0.5 ${stats.failure_rate_percent > 1 ? "text-red-400" : "text-primary"}`}>
+                          <p className={`text-sm font-semibold font-mono mt-0.5 ${stats.failure_rate_percent > 1 ? "text-rose-400" : "text-primary"}`}>
                             {stats.failure_rate_percent.toFixed(2)}%
                           </p>
                         </div>
@@ -412,7 +413,7 @@ export default function StorageGatewayPage() {
               </Card>
 
               {/* Bucket details */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Informasi Layanan</CardTitle>
                 </CardHeader>

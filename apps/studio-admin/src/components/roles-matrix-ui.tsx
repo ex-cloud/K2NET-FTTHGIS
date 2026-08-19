@@ -14,8 +14,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Button,
+  ActionTooltip,
 } from "@k2net/ui";
-import { Button } from "@k2net/ui";
 
 type Permission = {
   id: number;
@@ -282,39 +283,43 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
 
           {/* View Mode Switcher */}
           <div className="flex bg-muted p-1 rounded-lg border border-border">
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "table" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Table View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-md transition-all ${
-                viewMode === "grid" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Card Grid View"
-            >
-              <List className="w-4 h-4" />
-            </button>
+            <ActionTooltip label="Tampilan Tabel Matrix" shortcut="Alt+T">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-md transition-all ${
+                  viewMode === "table" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </ActionTooltip>
+            <ActionTooltip label="Tampilan Grid Card" shortcut="Alt+G">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-md transition-all ${
+                  viewMode === "grid" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </ActionTooltip>
           </div>
 
           {/* Master Save Button */}
-          <button
-            onClick={handleSaveAll}
-            disabled={batchSaving || !hasAnyModifiedRoles || !canAccess('roles.update')}
-            className={`flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg transition-all shadow-lg ${
-              hasAnyModifiedRoles && canAccess('roles.update')
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
-                : "bg-muted text-muted-foreground cursor-not-allowed shadow-none"
-            }`}
-          >
-            {batchSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Simpan Perubahan
-          </button>
+          <ActionTooltip label={hasAnyModifiedRoles ? "Simpan Seluruh Perubahan Matrix" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+            <button
+              onClick={handleSaveAll}
+              disabled={batchSaving || !hasAnyModifiedRoles || !canAccess('roles.update')}
+              className={`flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-lg transition-all shadow-lg ${
+                hasAnyModifiedRoles && canAccess('roles.update')
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+                  : "bg-muted text-muted-foreground cursor-not-allowed shadow-none"
+              }`}
+            >
+              {batchSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Simpan Perubahan
+            </button>
+          </ActionTooltip>
         </div>
       </div>
 
@@ -489,7 +494,7 @@ export function RolesMatrixUI({ context }: { context: "system" | "tenant" }) {
                               <div className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${
                                 isChecked ? "bg-primary border-primary text-primary-foreground" : "border-border bg-muted"
                               } ${!canEdit ? "opacity-60" : ""}`}>
-                                {isChecked && <Check className="w-3 h-3 text-black stroke-[3]" />}
+                                {isChecked && <Check className="w-3 h-3 text-primary-foreground stroke-[3]" />}
                               </div>
                             </div>
                           );

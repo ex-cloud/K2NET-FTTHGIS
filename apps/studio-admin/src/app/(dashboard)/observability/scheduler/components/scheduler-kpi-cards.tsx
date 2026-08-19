@@ -58,7 +58,7 @@ export function SchedulerKpiCards({
           sub: nextJob?.name ?? "—",
         },
       ].map((c) => (
-        <Card key={c.label} className="p-5 flex flex-col gap-2">
+        <Card glowingEffect key={c.label} className="p-5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
               {c.label}

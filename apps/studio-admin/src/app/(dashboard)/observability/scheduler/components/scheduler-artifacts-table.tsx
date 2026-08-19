@@ -60,13 +60,13 @@ function ChecksumModal({ artifact, onClose }: ChecksumModalProps) {
             </span>
             <button onClick={handleCopy} className="shrink-0 p-1 rounded hover:bg-muted transition-colors">
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-primary" />
               ) : (
                 <Copy className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded p-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-primary/80 bg-primary/10 border border-primary/20 rounded p-2.5">
             <ShieldCheck className="w-4 h-4 shrink-0" />
             <span>Checksum verified match with on-premise MinIO storage archive.</span>
           </div>

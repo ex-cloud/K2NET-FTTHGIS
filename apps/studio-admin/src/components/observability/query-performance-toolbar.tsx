@@ -296,7 +296,7 @@ export function QueryPerformanceToolbar({
                   <Button variant="ghost" size="sm" onClick={handleClearTotalTime} className="h-7 text-xs px-2.5">
                     Clear
                   </Button>
-                  <Button size="sm" onClick={handleApplyTotalTime} className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                  <Button size="sm" onClick={handleApplyTotalTime} className="h-7 text-xs px-3 font-medium">
                     Apply
                   </Button>
                 </div>
@@ -346,7 +346,7 @@ export function QueryPerformanceToolbar({
                   <Button variant="ghost" size="sm" onClick={handleClearRoles} className="h-7 text-xs px-2.5">
                     Clear
                   </Button>
-                  <Button size="sm" onClick={handleSaveRoles} className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                  <Button size="sm" onClick={handleSaveRoles} className="h-7 text-xs px-3 font-medium">
                     Save
                   </Button>
                 </div>
@@ -395,7 +395,7 @@ export function QueryPerformanceToolbar({
                   <Button variant="ghost" size="sm" onClick={handleClearSource} className="h-7 text-xs px-2.5">
                     Clear
                   </Button>
-                  <Button size="sm" onClick={handleApplySource} className="h-7 text-xs px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium">
+                  <Button size="sm" onClick={handleApplySource} className="h-7 text-xs px-3 font-medium">
                     Apply
                   </Button>
                 </div>

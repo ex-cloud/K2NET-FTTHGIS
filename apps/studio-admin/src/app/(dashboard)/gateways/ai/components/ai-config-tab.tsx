@@ -175,7 +175,7 @@ export function AiConfigTab({
                   {/* Status Badge */}
                   <div>
                     {testStates["gemini"]?.success ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] gap-1 font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] gap-1 font-mono">
                         <CheckCircle2 className="w-3 h-3" /> {testStates["gemini"].latency_ms}ms
                       </Badge>
                     ) : testStates["gemini"]?.error ? (
@@ -183,7 +183,7 @@ export function AiConfigTab({
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
                     ) : config["GEMINI_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
                         Ready
                       </Badge>
                     ) : (
@@ -273,7 +273,7 @@ export function AiConfigTab({
               <div>
                 <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                       <Zap className="w-4 h-4" />
                     </div>
                     <div>
@@ -301,7 +301,7 @@ export function AiConfigTab({
                   {/* Status Badge */}
                   <div>
                     {testStates["openai"]?.success ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] gap-1 font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] gap-1 font-mono">
                         <CheckCircle2 className="w-3 h-3" /> {testStates["openai"].latency_ms}ms
                       </Badge>
                     ) : testStates["openai"]?.error ? (
@@ -309,7 +309,7 @@ export function AiConfigTab({
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
                     ) : config["OPENAI_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
                         Ready
                       </Badge>
                     ) : (
@@ -375,7 +375,7 @@ export function AiConfigTab({
                   {testStates["openai"]?.loading ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
-                    <Zap className="w-3 h-3 text-emerald-400" />
+                    <Zap className="w-3 h-3 text-primary" />
                   )}
                   <span>Tes Koneksi</span>
                 </Button>
@@ -422,7 +422,7 @@ export function AiConfigTab({
                   {/* Status Badge */}
                   <div>
                     {testStates["deepseek"]?.success ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] gap-1 font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] gap-1 font-mono">
                         <CheckCircle2 className="w-3 h-3" /> {testStates["deepseek"].latency_ms}ms
                       </Badge>
                     ) : testStates["deepseek"]?.error ? (
@@ -430,7 +430,7 @@ export function AiConfigTab({
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
                     ) : config["DEEPSEEK_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
                         Ready
                       </Badge>
                     ) : (
@@ -555,7 +555,7 @@ export function AiConfigTab({
                   {/* Status Badge */}
                   <div>
                     {testStates["ollama"]?.success ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] gap-1 font-mono">
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] gap-1 font-mono">
                         <CheckCircle2 className="w-3 h-3" /> Online ({testStates["ollama"].latency_ms}ms)
                       </Badge>
                     ) : testStates["ollama"]?.error ? (
@@ -683,7 +683,7 @@ export function AiConfigTab({
                   Auto-Fallback Status
                 </Label>
                 <div className="flex items-center gap-2 h-8 px-3 rounded-lg bg-background border border-border">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <span className="text-xs font-semibold text-foreground">Aktif Otomatis</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Beralih ke OpenAI jika kuota Gemini habis.</p>

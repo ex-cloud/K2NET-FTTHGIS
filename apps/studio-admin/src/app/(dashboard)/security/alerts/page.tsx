@@ -15,12 +15,23 @@ import {
   ShieldAlert as ShieldIcon,
   X,
   Radio,
+  Sparkles,
+  Copy,
 } from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Skeleton } from "@k2net/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  ActionTooltip,
+  UniversalContextMenu,
+  ContextMenuGroupConfig,
+} from "@k2net/ui";
 import Map, { Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -184,6 +195,118 @@ export default function SecurityAlertsPage() {
     }
   };
 
+  const getAlertContextMenuGroups = (alertItem: SecurityEvent): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Analisis Ancaman",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisis insiden keamanan: ${alertItem.eventType} (${alertItem.severity}) oleh pengguna "${alertItem.username}" dari IP ${alertItem.ipAddress} (${alertItem.location || "Unknown"}). Detail: ${alertItem.details}. Berikan rekomendasi mitigasi dan langkah pembatasan akses.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin IP Address",
+          icon: Globe,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(alertItem.ipAddress || "");
+            toast.success(`IP ${alertItem.ipAddress} disalin!`);
+          },
+        },
+        {
+          label: "Salin Event Type",
+          icon: ShieldAlert,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(alertItem.eventType || "");
+            toast.success(`Event ${alertItem.eventType} disalin!`);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Blokir IP di Firewall",
+          icon: ShieldIcon,
+          shortcut: "Alt+B",
+          onClick: () => {
+            setIpInput(alertItem.ipAddress);
+            setReasonInput(`Blokir otomatis respon terhadap anomali ${alertItem.eventType}`);
+            toast.info(`IP ${alertItem.ipAddress} dimasukkan ke form blokir firewall.`);
+          },
+        },
+      ],
+    },
+  ];
+
+  const getFirewallContextMenuGroups = (rule: { id: number; ipAddressOrCidr: string; reason: string }): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Evaluasi Rule Firewall",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Evaluasi rule firewall IP/CIDR: ${rule.ipAddressOrCidr}. Alasan pemblokiran: ${rule.reason}. Apakah subnet atau IP ini aman untuk di-unblock atau perlu dipertahankan?`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin IP / Subnet CIDR",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(rule.ipAddressOrCidr || "");
+            toast.success(`IP ${rule.ipAddressOrCidr} disalin!`);
+          },
+        },
+        {
+          label: "Salin Alasan Blokir",
+          icon: ShieldIcon,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(rule.reason || "");
+            toast.success(`Alasan disalin!`);
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Buka Blokir IP (Hapus Rule)",
+          icon: Trash2,
+          shortcut: "Del",
+          onClick: () => handleUnblockIp(rule.id),
+        },
+      ],
+    },
+  ];
+
   if (!mounted) return null;
 
   return (
@@ -201,20 +324,22 @@ export default function SecurityAlertsPage() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button
-              onClick={handleClearLogs}
-              disabled={alerts.length === 0}
-              variant="destructive"
-              className="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-400 text-xs h-9 px-4 font-medium transition-all"
-            >
-              Clear Live Feed
-            </Button>
+            <ActionTooltip label="Bersihkan Log Threat Feed" shortcut="Alt+C">
+              <Button
+                onClick={handleClearLogs}
+                disabled={alerts.length === 0}
+                variant="destructive"
+                className="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-400 text-xs h-9 px-4 font-medium transition-all"
+              >
+                Clear Live Feed
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
         {/* Threat Level Indicator */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-          <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
+          <Card glowingEffect className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground font-medium">Global Threats Status</p>
@@ -225,7 +350,7 @@ export default function SecurityAlertsPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
+          <Card glowingEffect className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground font-medium">Critical Alerts</p>
@@ -234,7 +359,7 @@ export default function SecurityAlertsPage() {
               <p className="text-2xl font-bold mt-2 text-rose-500 font-mono">{criticalCount}</p>
             </CardContent>
           </Card>
-          <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
+          <Card glowingEffect className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground font-medium">Warning Anomalies</p>
@@ -243,7 +368,7 @@ export default function SecurityAlertsPage() {
               <p className="text-2xl font-bold mt-2 text-amber-500 font-mono">{warningCount}</p>
             </CardContent>
           </Card>
-          <Card className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
+          <Card glowingEffect className="bg-muted/35 border-border shadow-md backdrop-blur-sm">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground font-medium">Blocked IP/CIDR Rules</p>
@@ -259,7 +384,7 @@ export default function SecurityAlertsPage() {
 
           {/* Left Column: IP CIDR Manager */}
           <div className="lg:col-span-4 space-y-6">
-            <Card className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
+            <Card glowingEffect className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
               <CardHeader className="border-b border-border">
                 <CardTitle className="text-foreground text-sm font-semibold flex items-center gap-2">
                   <ShieldIcon className="w-4 h-4 text-primary" /> Firewall Block List
@@ -290,13 +415,15 @@ export default function SecurityAlertsPage() {
                       className="bg-background/60 border-border text-foreground text-xs h-9"
                     />
                   </div>
-                  <Button
-                    type="submit"
-                    disabled={isBlockingIp}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 font-medium transition-all shadow-md gap-2"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Block Network IP
-                  </Button>
+                  <ActionTooltip label="Tambahkan Rule Blokir Firewall" shortcut="Enter">
+                    <Button
+                      type="submit"
+                      disabled={isBlockingIp}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 font-medium transition-all shadow-md gap-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Block Network IP
+                    </Button>
+                  </ActionTooltip>
                 </form>
 
                 <div className="border-t border-border pt-4">
@@ -323,18 +450,22 @@ export default function SecurityAlertsPage() {
                         </thead>
                         <tbody>
                           {blockedIps.map((rule) => (
-                            <tr key={rule.id} className="border-b border-border/40 text-muted-foreground hover:bg-muted/10">
-                              <td className="p-2 font-mono text-[10px] text-foreground">{rule.ipAddressOrCidr}</td>
-                              <td className="p-2 text-[10px] text-muted-foreground max-w-[120px] truncate" title={rule.reason}>{rule.reason}</td>
-                              <td className="p-2 text-right">
-                                <button
-                                  onClick={() => handleUnblockIp(rule.id)}
-                                  className="text-rose-400 hover:text-rose-300 p-1 transition-all"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
+                            <UniversalContextMenu key={rule.id} groups={getFirewallContextMenuGroups(rule)}>
+                              <tr className="border-b border-border/40 text-muted-foreground hover:bg-muted/10 cursor-context-menu">
+                                <td className="p-2 font-mono text-[10px] text-foreground">{rule.ipAddressOrCidr}</td>
+                                <td className="p-2 text-[10px] text-muted-foreground max-w-[120px] truncate" title={rule.reason}>{rule.reason}</td>
+                                <td className="p-2 text-right">
+                                  <ActionTooltip label="Buka Blokir IP" shortcut="Del">
+                                    <button
+                                      onClick={() => handleUnblockIp(rule.id)}
+                                      className="text-rose-400 hover:text-rose-300 p-1 transition-all"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </ActionTooltip>
+                                </td>
+                              </tr>
+                            </UniversalContextMenu>
                           ))}
                         </tbody>
                       </table>
@@ -347,7 +478,7 @@ export default function SecurityAlertsPage() {
 
           {/* Middle Column: Live Alert Feed */}
           <div className="lg:col-span-4 space-y-6">
-            <Card className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
+            <Card glowingEffect className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
               <CardHeader className="border-b border-border flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-foreground text-sm font-semibold flex items-center gap-2">
@@ -376,40 +507,41 @@ export default function SecurityAlertsPage() {
                   <div className="max-h-[500px] overflow-y-auto custom-scrollbar space-y-3 pr-1">
                     {alerts.map((alert) => {
                       return (
-                        <div
-                          key={alert.id}
-                          onClick={() => focusOnAlert(alert)}
-                          className={`p-3.5 border rounded-xl cursor-pointer transition-all ${
-                            selectedAlert?.id === alert.id
-                              ? "border-rose-500 bg-rose-500/5 ring-1 ring-rose-500/30"
-                              : "border-border bg-background/45 hover:border-border hover:bg-muted/10"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider font-mono ${severityColor(alert.severity)}`}>
-                                {alert.eventType.replace("_", " ")}
+                        <UniversalContextMenu key={alert.id} groups={getAlertContextMenuGroups(alert)}>
+                          <div
+                            onClick={() => focusOnAlert(alert)}
+                            className={`p-3.5 border rounded-xl cursor-pointer transition-all ${
+                              selectedAlert?.id === alert.id
+                                ? "border-rose-500 bg-rose-500/5 ring-1 ring-rose-500/30"
+                                : "border-border bg-background/45 hover:border-border hover:bg-muted/10"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider font-mono ${severityColor(alert.severity)}`}>
+                                  {alert.eventType.replace("_", " ")}
+                                </span>
+                                <h4 className="text-xs font-semibold text-foreground mt-1">{alert.username}</h4>
+                                <p className="text-[10px] text-muted-foreground font-mono">{alert.ipAddress} ({alert.location || "Unknown"})</p>
+                              </div>
+                              <span className="text-[9px] text-muted-foreground font-mono">
+                                {new Date(alert.createdAt).toLocaleTimeString("id-ID", { hour12: false })}
                               </span>
-                              <h4 className="text-xs font-semibold text-foreground mt-1">{alert.username}</h4>
-                              <p className="text-[10px] text-muted-foreground font-mono">{alert.ipAddress} ({alert.location || "Unknown"})</p>
                             </div>
-                            <span className="text-[9px] text-muted-foreground font-mono">
-                              {new Date(alert.createdAt).toLocaleTimeString("id-ID", { hour12: false })}
-                            </span>
+                            
+                            {selectedAlert?.id === alert.id && (
+                              <div className="mt-3 pt-3 border-t border-border/60 text-[10px] text-muted-foreground leading-relaxed font-sans space-y-2">
+                                <p className="text-muted-foreground bg-background/80 p-2 rounded-lg border border-border/40">{alert.details}</p>
+                                {alert.os && (
+                                  <div className="grid grid-cols-2 gap-2 text-[9px] font-mono text-muted-foreground pt-1">
+                                    <span>OS: {alert.os}</span>
+                                    <span>Browser: {alert.browser}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          
-                          {selectedAlert?.id === alert.id && (
-                            <div className="mt-3 pt-3 border-t border-border/60 text-[10px] text-muted-foreground leading-relaxed font-sans space-y-2">
-                              <p className="text-muted-foreground bg-background/80 p-2 rounded-lg border border-border/40">{alert.details}</p>
-                              {alert.os && (
-                                <div className="grid grid-cols-2 gap-2 text-[9px] font-mono text-muted-foreground pt-1">
-                                  <span>OS: {alert.os}</span>
-                                  <span>Browser: {alert.browser}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        </UniversalContextMenu>
                       );
                     })}
                   </div>
@@ -422,7 +554,7 @@ export default function SecurityAlertsPage() {
           <div className="lg:col-span-4 space-y-6">
             
             {/* Attack Map Card */}
-            <Card className="bg-card/30 border-border shadow-xl backdrop-blur-sm overflow-hidden">
+            <Card glowingEffect className="bg-card/30 border-border shadow-xl backdrop-blur-sm overflow-hidden">
               <CardHeader className="border-b border-border pb-4">
                 <CardTitle className="text-foreground text-sm font-semibold flex items-center gap-2">
                   <Globe className="w-4 h-4 text-rose-500" /> Geographic Threat Map
@@ -485,7 +617,7 @@ export default function SecurityAlertsPage() {
             </Card>
 
             {/* Simulators Card */}
-            <Card className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
+            <Card glowingEffect className="bg-card/30 border-border shadow-xl backdrop-blur-sm">
               <CardHeader className="border-b border-border">
                 <CardTitle className="text-foreground text-sm font-semibold flex items-center gap-2">
                   <Play className="w-4 h-4 text-primary" /> Incident Simulator
@@ -528,13 +660,15 @@ export default function SecurityAlertsPage() {
                       className="bg-background/60 border-border text-muted-foreground text-[10px] h-7"
                     />
                   </div>
-                  <Button
-                    onClick={handleSimulateTravel}
-                    disabled={isSimulating}
-                    className="w-full bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/35 text-rose-400 text-xs h-8 font-medium transition-all shadow-md gap-2"
-                  >
-                    Simulate Travel Anomaly
-                  </Button>
+                  <ActionTooltip label="Jalankan Simulasi Anomali Impossible Travel" shortcut="Alt+T">
+                    <Button
+                      onClick={handleSimulateTravel}
+                      disabled={isSimulating}
+                      className="w-full bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/35 text-rose-400 text-xs h-8 font-medium transition-all shadow-md gap-2"
+                    >
+                      Simulate Travel Anomaly
+                    </Button>
+                  </ActionTooltip>
                 </div>
 
                 <div className="border-t border-border/60 pt-4 space-y-3">
@@ -563,13 +697,15 @@ export default function SecurityAlertsPage() {
                       />
                     </div>
                   </div>
-                  <Button
-                    onClick={handleSimulateFail}
-                    disabled={isSimulating}
-                    className="w-full bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/35 text-rose-400 text-xs h-8 font-medium transition-all shadow-md gap-2"
-                  >
-                    Simulate Brute Force
-                  </Button>
+                  <ActionTooltip label="Jalankan Simulasi Percobaan Brute Force" shortcut="Alt+B">
+                    <Button
+                      onClick={handleSimulateFail}
+                      disabled={isSimulating}
+                      className="w-full bg-rose-950/30 hover:bg-rose-900/50 border border-rose-900/35 text-rose-400 text-xs h-8 font-medium transition-all shadow-md gap-2"
+                    >
+                      Simulate Brute Force
+                    </Button>
+                  </ActionTooltip>
                 </div>
 
               </CardContent>

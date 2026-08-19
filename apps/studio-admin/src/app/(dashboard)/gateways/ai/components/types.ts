@@ -18,7 +18,7 @@ export const CATEGORIES: CategoryItem[] = [
   { id: "ALL", label: "Semua Kategori" },
   { id: "TROUBLESHOOTING", label: "Troubleshooting OLT/Optical", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
   { id: "NETWORK_CONFIG", label: "Arsitektur & Jaringan", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-  { id: "GIS_MANUAL", label: "GIS & Survey Spasial", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { id: "GIS_MANUAL", label: "GIS & Survey Spasial", color: "text-primary border-primary/30 bg-primary/10" },
   { id: "INFRASTRUCTURE", label: "DevOps & Server", color: "text-purple-400 border-purple-500/30 bg-purple-500/10" },
   { id: "PLANS", label: "Plans & Roadmap", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
   { id: "GENERAL", label: "General & SOP", color: "text-foreground/80 border-border bg-muted/60" },

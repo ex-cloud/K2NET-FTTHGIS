@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Cpu, Database } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Cpu, Database, RefreshCw } from "lucide-react";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
@@ -73,7 +73,7 @@ export default function AiConfigPage() {
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
               <Cpu className="w-5 h-5" />
             </div>
             <div>
@@ -81,7 +81,7 @@ export default function AiConfigPage() {
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                   Multi-Provider Hub & AI Config
                 </h1>
-                <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-cyan-500/30 text-cyan-400 bg-cyan-500/10">
+                <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5 border-primary/30 text-primary bg-primary/10">
                   Model Router
                 </Badge>
               </div>
@@ -92,23 +92,28 @@ export default function AiConfigPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai")}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              <Database className="w-3.5 h-3.5" />
-              Daftar Pengetahuan
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadConfig}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              Reload Config
-            </Button>
+            <ActionTooltip label="Daftar Pengetahuan" shortcut="Esc">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5" />
+                Daftar Pengetahuan
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Reload Konfigurasi" shortcut="R">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadConfig}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reload Config
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 

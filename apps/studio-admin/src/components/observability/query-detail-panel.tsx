@@ -62,7 +62,7 @@ function formatSql(sql: string): React.ReactNode[] {
         );
       case "string":
         return (
-          <span key={i} className="text-emerald-400">
+          <span key={i} className="text-primary/80">
             {token.value}
           </span>
         );
@@ -195,8 +195,8 @@ export function QueryDetailPanel({ selectedQuery, onClose }: QueryDetailPanelPro
                   >
                     {copied ? (
                       <>
-                        <Check className="h-3 w-3 text-emerald-500" />
-                        <span className="text-emerald-500">Copied!</span>
+                        <Check className="h-3 w-3 text-primary" />
+                        <span className="text-primary">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -208,7 +208,7 @@ export function QueryDetailPanel({ selectedQuery, onClose }: QueryDetailPanelPro
                 </div>
 
                 {/* SQL Code Block */}
-                <div className="relative rounded-xl bg-zinc-950 border border-border/60 overflow-hidden">
+                <div className="relative rounded-xl bg-background border border-border/60 overflow-hidden">
                   <div
                     className={cn(
                       "overflow-hidden transition-all duration-300",
@@ -221,7 +221,7 @@ export function QueryDetailPanel({ selectedQuery, onClose }: QueryDetailPanelPro
                   </div>
 
                   {/* Collapse / Expand Button */}
-                  <div className="flex justify-center border-t border-border/40 bg-zinc-950/80">
+                  <div className="flex justify-center border-t border-border/40 bg-background/80">
                     <button
                       onClick={() => setExpanded((prev) => !prev)}
                       className="flex items-center gap-1.5 text-[10px] py-1.5 px-4 text-muted-foreground hover:text-foreground transition-colors w-full justify-center hover:bg-white/5"
@@ -284,10 +284,10 @@ export function QueryDetailPanel({ selectedQuery, onClose }: QueryDetailPanelPro
                     value={`${selectedQuery.cacheHitRate.toFixed(2)}%`}
                     valueClassName={
                       selectedQuery.cacheHitRate >= 99
-                        ? "text-emerald-500"
+                        ? "text-primary"
                         : selectedQuery.cacheHitRate >= 95
                         ? "text-amber-500"
-                        : "text-rose-500"
+                        : "text-destructive"
                     }
                   />
                   <MetadataRow

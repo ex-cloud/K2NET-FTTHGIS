@@ -275,7 +275,7 @@ export default function ObservabilityOverviewPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {key === "up"   && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />}
+                  {key === "up"   && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
                   {key === "down" && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse inline-block" />}
                   {label}
                   {key === "down" && downCount > 0 && (
@@ -354,7 +354,7 @@ export default function ObservabilityOverviewPage() {
                     <span
                       className={`h-2.5 w-2.5 rounded-full shrink-0 ${
                         svc.status === "up"
-                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                          ? "bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb,16,185,129),0.5)]"
                           : svc.status === "down"
                           ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]"
                           : "bg-muted-foreground"
@@ -406,7 +406,7 @@ export default function ObservabilityOverviewPage() {
                         <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border">
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
-                              svc.status === "up" ? "bg-emerald-500 animate-pulse" : svc.status === "down" ? "bg-rose-500" : "bg-muted-foreground"
+                              svc.status === "up" ? "bg-primary animate-pulse" : svc.status === "down" ? "bg-rose-500" : "bg-muted-foreground"
                             }`}
                           />
                           {svc.status}
@@ -457,7 +457,7 @@ export default function ObservabilityOverviewPage() {
                     <Badge
                       className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border ${
                         svc.status === "up"
-                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                          ? "bg-primary/10 border-primary/20 text-primary"
                           : svc.status === "down"
                           ? "bg-rose-500/10 border-rose-500/20 text-rose-500 animate-pulse"
                           : "bg-muted text-muted-foreground"

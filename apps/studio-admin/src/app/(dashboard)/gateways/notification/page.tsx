@@ -6,18 +6,16 @@ import {
   MessageSquare, 
   Save, 
   Loader2, 
-  Eye,
-  EyeOff,
-  Server,
-  Lock,
-  MessageCircle
+  Eye, 
+  EyeOff, 
+  Server, 
+  Lock, 
+  MessageCircle,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -166,7 +164,49 @@ export default function NotificationGatewayPage() {
     }
   };
 
-  // Notification logs loaded dynamically from getNotificationLogs()
+  const getNotifContextMenuGroups = (log: NotificationLog): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Status Notifikasi",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa log pengiriman notifikasi ke ${log.recipient} via channel ${log.channel}. Status: ${log.status}. ${log.errorMessage ? `Error: ${log.errorMessage}` : "Pengiriman berhasil."}`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Nomor Tujuan",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(log.recipient);
+            toast.success(`Nomor ${log.recipient} disalin!`);
+          },
+        },
+        {
+          label: "Salin ID Pengiriman",
+          icon: MessageSquare,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(log.id);
+            toast.success(`ID log ${log.id} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <GatewayPageWrapper>
@@ -200,7 +240,7 @@ export default function NotificationGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Internal Auth Details */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Keamanan & Akses Internal
@@ -235,7 +275,7 @@ export default function NotificationGatewayPage() {
               </Card>
 
               {/* Redis Connection Details */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Broker Antrean (Redis)
@@ -260,7 +300,7 @@ export default function NotificationGatewayPage() {
               </Card>
 
               {/* Twilio Credentials */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-primary" /> Twilio Provider Credentials
@@ -320,29 +360,33 @@ export default function NotificationGatewayPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Notification Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             {/* Live Logs / Info Column */}
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Antrean Pesan Terakhir
@@ -360,31 +404,33 @@ export default function NotificationGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log pengiriman tersimpan.</p>
                   ) : (
                     notifLogs.map((log) => (
-                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
-                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                            log.status === "sent"
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-red-500/10 text-red-500 border-red-500/20"
-                          }`}>
-                            {log.status}
-                          </Badge>
+                      <UniversalContextMenu key={log.id} groups={getNotifContextMenuGroups(log)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
+                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                              log.status === "sent"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                            }`}>
+                              {log.status}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span className="capitalize">{log.channel} • {log.id.slice(0, 8)}</span>
+                            <span>{formatRelativeTime(log.sentAt)}</span>
+                          </div>
+                          {log.errorMessage && (
+                            <p className="text-[9px] text-rose-400 mt-1 truncate">{log.errorMessage}</p>
+                          )}
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span className="capitalize">{log.channel} • {log.id.slice(0, 8)}</span>
-                          <span>{formatRelativeTime(log.sentAt)}</span>
-                        </div>
-                        {log.errorMessage && (
-                          <p className="text-[9px] text-red-400 mt-1 truncate">{log.errorMessage}</p>
-                        )}
-                      </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Statistik Pengiriman</CardTitle>
                 </CardHeader>
@@ -399,7 +445,7 @@ export default function NotificationGatewayPage() {
                     <span className="text-muted-foreground">Total Gagal</span>
                     <Badge className={`text-[9px] ${
                       !logsLoading && notifLogs.filter(l => l.status === "failed").length > 0
-                        ? "bg-red-500/10 text-red-500 border-red-500/20"
+                        ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
                         : "bg-muted/10 text-muted-foreground border-border"
                     }`}>
                       {logsLoading ? "..." : notifLogs.filter(l => l.status === "failed").length}

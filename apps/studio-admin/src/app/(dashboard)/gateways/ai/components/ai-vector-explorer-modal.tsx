@@ -68,7 +68,7 @@ export function AiVectorExplorerModal({
             </div>
             <div className="p-3 rounded-xl bg-card border border-border space-y-1">
               <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Indeks Algoritma</div>
-              <div className="text-xs font-mono font-semibold text-emerald-400 mt-1">HNSW Cosine Distance</div>
+              <div className="text-xs font-mono font-semibold text-primary mt-1">HNSW Cosine Distance</div>
             </div>
           </div>
 

@@ -26,27 +26,27 @@ export function AiKpiCards({ stats, loading, onOpenExplorer }: AiKpiCardsProps) 
           </span>
           <div className="flex items-center gap-1">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
             </span>
-            <Cpu className="h-4 w-4 text-emerald-500 ml-1" />
+            <Cpu className="h-4 w-4 text-primary ml-1" />
           </div>
         </div>
         <div>
           <p className="text-2xl font-bold text-foreground font-mono">Port 5012</p>
           <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
             FastAPI • pgvector 0.8.6
           </p>
         </div>
         <div>
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>Gateway Health</span>
-            <span className="text-emerald-500 font-semibold font-mono">100% Online</span>
+            <span className="text-primary font-semibold font-mono">100% Online</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+              className="h-full rounded-full bg-primary transition-all duration-700"
               style={{ width: "100%" }}
             />
           </div>

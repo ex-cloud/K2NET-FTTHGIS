@@ -6,21 +6,19 @@ import {
   CreditCard, 
   Save, 
   Loader2, 
-  Eye,
-  EyeOff,
-  Server,
-  Lock,
-  RefreshCw,
-  Clock,
-  CheckCircle2,
-  AlertTriangle
+  Eye, 
+  EyeOff, 
+  Server, 
+  Lock, 
+  RefreshCw, 
+  Clock, 
+  CheckCircle2, 
+  AlertTriangle,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 import { z } from "zod";
 
@@ -178,8 +176,49 @@ export default function PaymentGatewayPage() {
     }
   };
 
-  // Live transactions loaded from database
-
+  const getPaymentContextMenuGroups = (tx: PaymentTransaction): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Status Transaksi",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa status transaksi pembayaran tagihan invoice ID ${tx.externalId}. Status: ${tx.status}, Tenant: ${tx.orgSlug}, Nominal: Rp ${tx.amount.toLocaleString("id-ID")}, Paket: ${tx.planName}. Berikan ringkasan audit rekonsiliasi.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin External ID",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(tx.externalId);
+            toast.success(`External ID ${tx.externalId} disalin!`);
+          },
+        },
+        {
+          label: "Salin Nominal Pembayaran",
+          icon: CreditCard,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(String(tx.amount));
+            toast.success(`Nominal Rp ${tx.amount.toLocaleString("id-ID")} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <GatewayPageWrapper>
@@ -213,7 +252,7 @@ export default function PaymentGatewayPage() {
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
               {/* Xendit Keys */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Kredensial Provider Xendit
@@ -270,7 +309,7 @@ export default function PaymentGatewayPage() {
               </Card>
 
               {/* Core System Integration */}
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Integrasi Core System
@@ -296,22 +335,26 @@ export default function PaymentGatewayPage() {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Payment Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
@@ -320,7 +363,7 @@ export default function PaymentGatewayPage() {
             <div className="space-y-6">
               
               {/* Reconciliation Panel */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
                   <CardDescription className="text-[10px] text-muted-foreground">
@@ -328,16 +371,18 @@ export default function PaymentGatewayPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button 
-                    type="button"
-                    onClick={handleReconciliation}
-                    disabled={reconciling}
-                    variant="outline"
-                    className="w-full border-border/10 hover:border-primary/30 bg-background text-muted-foreground hover:text-foreground text-xs gap-2 transition-all py-5"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-primary" : ""}`} />
-                    Trigger Reconciliation
-                  </Button>
+                  <ActionTooltip label="Picukan Sinkronisasi Rekonsiliasi Xendit" shortcut="R">
+                    <Button 
+                      type="button"
+                      onClick={handleReconciliation}
+                      disabled={reconciling}
+                      variant="outline"
+                      className="w-full border-border/10 hover:border-primary/30 bg-background text-muted-foreground hover:text-foreground text-xs gap-2 transition-all py-5"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-primary" : ""}`} />
+                      Trigger Reconciliation
+                    </Button>
+                  </ActionTooltip>
                   <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
                     <Clock className="w-3.5 h-3.5" />
                     <span>Terakhir berjalan otomatis: 15 menit yang lalu</span>
@@ -346,7 +391,7 @@ export default function PaymentGatewayPage() {
               </Card>
 
               {/* Transactions list */}
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Transaksi Terkini
@@ -364,32 +409,34 @@ export default function PaymentGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada riwayat transaksi.</p>
                   ) : (
                     transactions.map((tx) => (
-                      <div key={tx.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground truncate max-w-[140px] font-mono">
-                            {tx.externalId.split(":").pop()?.slice(0, 12)}
-                          </span>
-                          <span className="text-xs text-muted-foreground font-mono">
-                            Rp {tx.amount.toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground">
-                          <span>Org: {tx.orgSlug} ({tx.planName})</span>
-                          <div className="flex items-center gap-1.5">
-                            <Badge className={`text-[8px] px-1 py-0 border ${
-                              tx.status === "PAID" || tx.status === "SUCCESS"
-                                ? "bg-primary/10 text-primary border-primary/20"
-                                : tx.status === "PENDING"
-                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                : "bg-red-500/10 text-red-500 border-red-500/20"
-                            }`}>
-                              {tx.status}
-                            </Badge>
-                            <span>{formatRelativeTime(tx.createdAt)}</span>
+                      <UniversalContextMenu key={tx.id} groups={getPaymentContextMenuGroups(tx)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[140px] font-mono">
+                              {tx.externalId.split(":").pop()?.slice(0, 12)}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              Rp {tx.amount.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground">
+                            <span>Org: {tx.orgSlug} ({tx.planName})</span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={`text-[8px] px-1 py-0 border ${
+                                tx.status === "PAID" || tx.status === "SUCCESS"
+                                  ? "bg-primary/10 text-primary border-primary/20"
+                                  : tx.status === "PENDING"
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                              }`}>
+                                {tx.status}
+                              </Badge>
+                              <span>{formatRelativeTime(tx.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>

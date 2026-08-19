@@ -46,8 +46,8 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
       <div className="space-y-0.5">
         {success > 0 && (
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-emerald-400">Success</span>
+            <span className="w-2 h-2 rounded-full bg-primary/80 shrink-0" />
+            <span className="text-primary/80">Success</span>
             <span className="text-foreground font-bold ml-auto">{success}</span>
           </div>
         )}

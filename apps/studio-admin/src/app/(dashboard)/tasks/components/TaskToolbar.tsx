@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  ActionTooltip,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
@@ -226,15 +227,17 @@ export function TaskToolbar({
           />
 
           {/* Refresh button */}
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden disabled:opacity-50"
-            title="Refresh tasks"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
-            <span className="hidden sm:inline">{loading ? "Loading..." : "Refresh"}</span>
-          </button>
+          <ActionTooltip label="Segarkan Tugas & Tiket" shortcut="R">
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden disabled:opacity-50"
+              aria-label="Refresh tasks"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
+              <span className="hidden sm:inline">{loading ? "Loading..." : "Refresh"}</span>
+            </button>
+          </ActionTooltip>
         </div>
       </div>
     </div>

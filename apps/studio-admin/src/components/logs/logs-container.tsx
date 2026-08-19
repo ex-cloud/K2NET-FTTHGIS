@@ -2,7 +2,16 @@
 
 import { useState, useMemo, useEffect } from "react";
 import React from "react";
-import { Button, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@k2net/ui";
+import {
+  Button,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+  UniversalContextMenu,
+  ContextMenuGroupConfig,
+  ActionTooltip,
+} from "@k2net/ui";
 import {
   Terminal,
   Copy,
@@ -16,6 +25,7 @@ import {
   Shield,
   Send,
   Database,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -45,7 +55,7 @@ function getSourceIcon(source: string) {
     return <Send className="w-3.5 h-3.5 text-sky-400 shrink-0" />;
   }
   if (src.includes("db") || src.includes("postgres")) {
-    return <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+    return <Database className="w-3.5 h-3.5 text-primary/80 shrink-0" />;
   }
   if (src.includes("backend")) {
     return <Server className="w-3.5 h-3.5 text-violet-400 shrink-0" />;
@@ -298,6 +308,69 @@ export function LogsContainer() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const getLogContextMenuGroups = (log: AuditStreamEntry): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Analisis Log Ini",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisis event log [${log.serviceSource || "system"}] ${log.method || ""} ${log.pathname || ""}: "${log.message || log.action || ""}". Status: ${log.status || "-"}, Tenant: ${log.tenantSlug || "global"}. Identifikasi potensi masalah atau anomali.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+        {
+          label: selectedLog?.id === log.id ? "Tutup Detail Panel" : "Buka Detail Panel",
+          icon: FileCode,
+          shortcut: "Enter",
+          onClick: () => setSelectedLog(selectedLog?.id === log.id ? null : log),
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Log JSON",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(JSON.stringify(log, null, 2));
+            toast.success("Log event JSON disalin ke clipboard!");
+          },
+        },
+        {
+          label: "Salin Event ID / Trace ID",
+          icon: Copy,
+          shortcut: "Alt+C",
+          onClick: () => {
+            const id = (log as any).traceId || (log as any).requestId || log.id || "";
+            navigator.clipboard.writeText(id);
+            toast.success(`ID ${id} disalin ke clipboard!`);
+          },
+        },
+        {
+          label: "Salin Pathname URL",
+          icon: Globe,
+          shortcut: "Alt+P",
+          onClick: () => {
+            if (log.pathname) {
+              navigator.clipboard.writeText(log.pathname);
+              toast.success(`Path ${log.pathname} disalin!`);
+            }
+          },
+          disabled: !log.pathname,
+        },
+      ],
+    },
+  ];
+
   return (
     <div className="flex flex-col h-full w-full bg-background font-mono text-xs overflow-hidden select-none">
       <LogsTopHeader
@@ -390,7 +463,7 @@ export function LogsContainer() {
               const statusColor = statusNum
                 ? statusNum >= 500 ? "text-rose-400"
                 : statusNum >= 400 ? "text-amber-400"
-                : statusNum >= 200 ? "text-emerald-400"
+                : statusNum >= 200 ? "text-primary/80"
                 : "text-muted-foreground/50"
                 : "text-muted-foreground/30";
 
@@ -398,7 +471,7 @@ export function LogsContainer() {
                 log.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
                 : log.method === "PUT" || log.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
                 : log.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
-                : log.method === "GET" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                : log.method === "GET" ? "text-primary/80 bg-primary/10 border-primary/20"
                 : "text-muted-foreground/60 bg-muted/20 border-border/30";
 
               const visibleCols = new Set(
@@ -406,155 +479,156 @@ export function LogsContainer() {
               );
 
               return (
-                <div
-                  key={log.id}
-                  onClick={() => setSelectedLog(isSelected ? null : log)}
-                  className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${
-                    isSelected
-                      ? "bg-primary/10 text-foreground border-l-2 border-primary"
-                      : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {/* Checkbox */}
-                  <div className="w-[42px] shrink-0 flex items-center">
-                    <input type="checkbox" onClick={(e) => e.stopPropagation()}
-                      className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer" />
-                  </div>
-
-                  {/* Level dot */}
-                  <div className="w-[16px] mr-2 shrink-0 flex items-center justify-center">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                      isError ? "bg-rose-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"
-                    }`} />
-                  </div>
-
-                  {/* Date Column with Supabase-style Date details Tooltip */}
-                  {visibleCols.has("date") && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
-                            {formattedDate}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="z-50 p-3 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl w-[260px] select-none [&_svg]:!hidden">
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground font-semibold">UTC</span>
-                              <span className="text-right font-medium">{timeDetails.utc}</span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground font-semibold">{timeDetails.tzName}</span>
-                              <span className="text-right font-medium">{timeDetails.local}</span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground font-semibold">Relative</span>
-                              <span className="text-right font-medium">{timeDetails.relative}</span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground font-semibold">Timestamp</span>
-                              <span className="text-right font-medium">{timeDetails.timestamp}</span>
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-
-                  {/* Source Column — icon only in narrow w-[28px], full badge tooltip on hover */}
-                  {visibleCols.has("source") && (
-                    <div className="w-[28px] shrink-0 flex items-center justify-center">
-                      {log.serviceSource ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex items-center justify-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
-                                {getSourceIcon(log.serviceSource)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
-                              <span className="flex items-center gap-1.5">
-                                {getSourceIcon(log.serviceSource)}
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-                                  log.logGroup
-                                    ? `${LOG_GROUPS[log.logGroup]?.color ?? "text-muted-foreground"} ${LOG_GROUPS[log.logGroup]?.accentBg ?? "bg-muted/20"} border-current/20`
-                                    : "text-muted-foreground/60 bg-muted/20 border-border/30"
-                                }`}>
-                                  {log.serviceSource}
-                                </span>
-                              </span>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <span className="text-muted-foreground/20">—</span>
-                      )}
+                <UniversalContextMenu key={log.id} groups={getLogContextMenuGroups(log)}>
+                  <div
+                    onClick={() => setSelectedLog(isSelected ? null : log)}
+                    className={`flex items-center px-4 py-1.5 font-mono text-[11px] transition-colors cursor-pointer group ${
+                      isSelected
+                        ? "bg-primary/10 text-foreground border-l-2 border-primary"
+                        : "hover:bg-muted/30 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <div className="w-[42px] shrink-0 flex items-center">
+                      <input type="checkbox" onClick={(e) => e.stopPropagation()}
+                        className="w-3.5 h-3.5 rounded border-border text-primary accent-primary cursor-pointer" />
                     </div>
-                  )}
 
-                   {/* Status Column + Copy Icon */}
-                  {visibleCols.has("status") && (
-                    <React.Fragment>
-                      <div className="w-[52px] shrink-0">
-                        {statusNum ? (
-                          <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
+                    {/* Level dot */}
+                    <div className="w-[16px] mr-2 shrink-0 flex items-center justify-center">
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        isError ? "bg-rose-500" : isWarn ? "bg-amber-500" : "bg-primary/70"
+                      }`} />
+                    </div>
+
+                    {/* Date Column with Supabase-style Date details Tooltip */}
+                    {visibleCols.has("date") && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="w-[148px] shrink-0 text-muted-foreground text-[11px] font-mono flex items-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
+                              {formattedDate}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="z-50 p-3 bg-popover border border-border text-foreground font-mono text-[10px] rounded-lg shadow-xl w-[260px] select-none [&_svg]:!hidden">
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground font-semibold">UTC</span>
+                                <span className="text-right font-medium">{timeDetails.utc}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground font-semibold">{timeDetails.tzName}</span>
+                                <span className="text-right font-medium">{timeDetails.local}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground font-semibold">Relative</span>
+                                <span className="text-right font-medium">{timeDetails.relative}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-muted-foreground font-semibold">Timestamp</span>
+                                <span className="text-right font-medium">{timeDetails.timestamp}</span>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    {/* Source Column — icon only in narrow w-[28px], full badge tooltip on hover */}
+                    {visibleCols.has("source") && (
+                      <div className="w-[28px] shrink-0 flex items-center justify-center">
+                        {log.serviceSource ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="flex items-center justify-center cursor-default outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-none select-none">
+                                  {getSourceIcon(log.serviceSource)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[11px] font-mono px-2 py-1.5 bg-popover border border-border text-foreground [&_svg]:!hidden">
+                                <span className="flex items-center gap-1.5">
+                                  {getSourceIcon(log.serviceSource)}
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono border ${
+                                    log.logGroup
+                                      ? `${LOG_GROUPS[log.logGroup]?.color ?? "text-muted-foreground"} ${LOG_GROUPS[log.logGroup]?.accentBg ?? "bg-muted/20"} border-current/20`
+                                      : "text-muted-foreground/60 bg-muted/20 border-border/30"
+                                  }`}>
+                                    {log.serviceSource}
+                                  </span>
+                                </span>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <span className="text-muted-foreground/20">—</span>
                         )}
                       </div>
-                      {/* Copy Icon — occupies w-7 space to keep alignment */}
-                      <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
-                        className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                        {copiedId === log.id
-                          ? <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          : <Copy className="w-3.5 h-3.5" />
-                        }
-                      </button>
-                    </React.Fragment>
-                  )}
+                    )}
 
-                  {/* Tenant Column — no dash separator */}
-                  {visibleCols.has("tenant") && (
-                    <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
-                      {log.tenantSlug ? (
-                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
-                          {log.tenantSlug}
+                     {/* Status Column + Copy Icon */}
+                    {visibleCols.has("status") && (
+                      <React.Fragment>
+                        <div className="w-[52px] shrink-0">
+                          {statusNum ? (
+                            <span className={`font-mono text-[11px] font-semibold ${statusColor}`}>{statusNum}</span>
+                          ) : (
+                            <span className="text-muted-foreground/20">—</span>
+                          )}
+                        </div>
+                        {/* Copy Icon — occupies w-7 space to keep alignment */}
+                        <button onClick={(e) => handleCopyLog(log, e)} title="Copy Log JSON"
+                          className="w-7 shrink-0 flex items-center justify-center p-0.5 rounded hover:bg-muted/80 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                          {copiedId === log.id
+                            ? <Check className="w-3.5 h-3.5 text-primary" />
+                            : <Copy className="w-3.5 h-3.5" />
+                          }
+                        </button>
+                      </React.Fragment>
+                    )}
+
+                    {/* Tenant Column — no dash separator */}
+                    {visibleCols.has("tenant") && (
+                      <div className="w-[88px] shrink-0 font-mono text-[10px] truncate">
+                        {log.tenantSlug ? (
+                          <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-mono text-[9px] border border-primary/20">
+                            {log.tenantSlug}
+                          </span>
+                        ) : <span className="text-muted-foreground/20">—</span>}
+                      </div>
+                    )}
+
+                    {/* Method Column */}
+                    {visibleCols.has("method") && (
+                      <div className="w-[56px] shrink-0">
+                        {log.method ? (
+                          <span className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold border ${methodColor}`}>
+                            {log.method}
+                          </span>
+                        ) : <span className="text-muted-foreground/20">—</span>}
+                      </div>
+                    )}
+
+                    {/* Pathname Column */}
+                    {visibleCols.has("pathname") && (
+                      <div className="w-[140px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80">
+                        {log.pathname ? (
+                          <span title={log.pathname}>{log.pathname}</span>
+                        ) : <span className="text-muted-foreground/20">—</span>}
+                      </div>
+                    )}
+
+                    {/* Event Message Column */}
+                    {visibleCols.has("message") && (
+                      <div className="flex-1 min-w-0 truncate font-mono text-[11px]">
+                        <span className={
+                          isError ? "text-rose-400" : isWarn ? "text-amber-400" : "text-foreground/90"
+                        }>
+                          {getEventMessageDisplay(log)}
                         </span>
-                      ) : <span className="text-muted-foreground/20">—</span>}
-                    </div>
-                  )}
-
-                  {/* Method Column */}
-                  {visibleCols.has("method") && (
-                    <div className="w-[56px] shrink-0">
-                      {log.method ? (
-                        <span className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold border ${methodColor}`}>
-                          {log.method}
-                        </span>
-                      ) : <span className="text-muted-foreground/20">—</span>}
-                    </div>
-                  )}
-
-                  {/* Pathname Column */}
-                  {visibleCols.has("pathname") && (
-                    <div className="w-[140px] shrink-0 font-mono text-[10px] truncate text-muted-foreground/80">
-                      {log.pathname ? (
-                        <span title={log.pathname}>{log.pathname}</span>
-                      ) : <span className="text-muted-foreground/20">—</span>}
-                    </div>
-                  )}
-
-                  {/* Event Message Column */}
-                  {visibleCols.has("message") && (
-                    <div className="flex-1 min-w-0 truncate font-mono text-[11px]">
-                      <span className={
-                        isError ? "text-rose-400" : isWarn ? "text-amber-400" : "text-foreground/90"
-                      }>
-                        {getEventMessageDisplay(log)}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
+                </UniversalContextMenu>
               );
             })
           )}
@@ -575,7 +649,7 @@ export function LogsContainer() {
               </>
             ) : (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <span>Kong API Gateway Ingestion Active</span>
               </>
             )}
@@ -617,7 +691,7 @@ export function LogsContainer() {
                         ? "bg-rose-500"
                         : getLevel(selectedLog) === "warning"
                         ? "bg-amber-500"
-                        : "bg-emerald-500"
+                        : "bg-primary/70"
                     }`}
                   />
                   <span className="text-foreground capitalize text-xs font-mono">
@@ -688,7 +762,7 @@ export function LogsContainer() {
                           selectedLog.method === "POST" ? "text-sky-400 bg-sky-500/10 border-sky-500/20"
                           : selectedLog.method === "DELETE" ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
                           : selectedLog.method === "PUT" || selectedLog.method === "PATCH" ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
-                          : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                          : "text-primary/80 bg-primary/10 border-primary/20"
                         }`}>{selectedLog.method}</span>
                       </div>
                     )}
@@ -698,7 +772,7 @@ export function LogsContainer() {
                         <span className={`font-mono text-[11px] font-semibold ${
                           Number(selectedLog.status) >= 500 ? "text-rose-400"
                           : Number(selectedLog.status) >= 400 ? "text-amber-400"
-                          : "text-emerald-400"
+                          : "text-primary/80"
                         }`}>{selectedLog.status}</span>
                       </div>
                     )}
@@ -720,7 +794,7 @@ export function LogsContainer() {
 
               <div className="space-y-1">
                 <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Raw JSON Payload</label>
-                <pre className="bg-background p-3 rounded border border-border text-[10px] text-emerald-400 overflow-x-auto whitespace-pre-wrap font-mono">
+                <pre className="bg-background p-3 rounded border border-border text-[10px] text-foreground/80 overflow-x-auto whitespace-pre-wrap font-mono">
                   {JSON.stringify(selectedLog, null, 2)}
                 </pre>
               </div>

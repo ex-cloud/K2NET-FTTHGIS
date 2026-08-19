@@ -6,15 +6,13 @@ import {
   Download, 
   Save, 
   Loader2, 
-  Server,
-  Lock
+  Server, 
+  Lock,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -160,6 +158,50 @@ export default function ExportGatewayPage() {
     }
   };
 
+  const getExportContextMenuGroups = (exp: ExportJob): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Status Export",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa job export tipe ${exp.type} untuk tenant ${exp.tenantSlug}. Status: ${exp.status}. Dibuat pada: ${exp.createdAt}. ${exp.downloadUrl ? `Download URL: ${exp.downloadUrl}` : ""}`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Job ID",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(exp.jobId);
+            toast.success(`Job ID ${exp.jobId} disalin!`);
+          },
+        },
+        ...(exp.downloadUrl ? [{
+          label: "Salin URL Unduh",
+          icon: Download,
+          shortcut: "Alt+C",
+          onClick: () => {
+            navigator.clipboard.writeText(exp.downloadUrl || "");
+            toast.success(`URL unduhan disalin!`);
+          },
+        }] : []),
+      ],
+    },
+  ];
+
   return (
     <GatewayPageWrapper>
     <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
@@ -189,7 +231,7 @@ export default function ExportGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Infrastructure Connections
@@ -237,7 +279,7 @@ export default function ExportGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Export System Resources
@@ -300,28 +342,32 @@ export default function ExportGatewayPage() {
               </Card>
 
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Export Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Antrean Export Terkini
@@ -339,39 +385,41 @@ export default function ExportGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada riwayat export.</p>
                   ) : (
                     exportJobs.map((exp) => (
-                      <div key={exp.jobId} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground truncate max-w-[150px] capitalize">
-                            {exp.type} Export
-                          </span>
-                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                            exp.status === "done"
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : exp.status === "failed"
-                              ? "bg-red-500/10 text-red-500 border-red-500/20"
-                              : exp.status === "processing"
-                              ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                              : "bg-muted/10 text-muted-foreground border-border"
-                          }`}>
-                            {exp.status}
-                          </Badge>
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span>Tenant: {exp.tenantSlug}</span>
-                          <span>{formatRelativeTime(exp.createdAt)}</span>
-                        </div>
-                        {exp.downloadUrl && exp.status === "done" && (
-                          <div className="text-[9px] text-primary truncate">
-                            ↓ {exp.downloadUrl.split("/").pop()}
+                      <UniversalContextMenu key={exp.jobId} groups={getExportContextMenuGroups(exp)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[150px] capitalize">
+                              {exp.type} Export
+                            </span>
+                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                              exp.status === "done"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : exp.status === "failed"
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                : exp.status === "processing"
+                                ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                                : "bg-muted/10 text-muted-foreground border-border"
+                            }`}>
+                              {exp.status}
+                            </Badge>
                           </div>
-                        )}
-                      </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span>Tenant: {exp.tenantSlug}</span>
+                            <span>{formatRelativeTime(exp.createdAt)}</span>
+                          </div>
+                          {exp.downloadUrl && exp.status === "done" && (
+                            <div className="text-[9px] text-primary truncate">
+                              ↓ {exp.downloadUrl.split("/").pop()}
+                            </div>
+                          )}
+                        </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Storage Integration</CardTitle>
                 </CardHeader>

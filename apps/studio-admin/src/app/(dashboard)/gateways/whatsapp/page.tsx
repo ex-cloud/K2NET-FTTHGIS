@@ -6,16 +6,14 @@ import {
   MessageCircle, 
   Save, 
   Loader2, 
-  Eye,
-  EyeOff,
-  Lock
+  Eye, 
+  EyeOff, 
+  Lock,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -160,6 +158,41 @@ export default function WhatsappGatewayPage() {
 
   // WA logs loaded dynamically from getNotificationLogs() (filtered channel=whatsapp)
 
+  const getWaContextMenuGroups = (log: NotificationLog): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Status Pengiriman",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Analisa pengiriman WhatsApp ke nomor ${log.recipient}. Subject: ${log.subject || "Notifikasi"}. Status: ${log.status}. Berikan diagnosa pesan.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Nomor WA",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(log.recipient);
+            toast.success(`Nomor ${log.recipient} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
+
   return (
     <GatewayPageWrapper>
     <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
@@ -189,7 +222,7 @@ export default function WhatsappGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> WhatsApp Cloud API Credentials
@@ -270,28 +303,32 @@ export default function WhatsappGatewayPage() {
               </Card>
 
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi WhatsApp Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Metrik Delivery WA
@@ -309,28 +346,30 @@ export default function WhatsappGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log WhatsApp tersimpan.</p>
                   ) : (
                     waLogs.map((log) => (
-                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
-                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                            log.status === "sent"
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-red-500/10 text-red-500 border-red-500/20"
-                          }`}>
-                            {log.status}
-                          </Badge>
+                      <UniversalContextMenu key={log.id} groups={getWaContextMenuGroups(log)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
+                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                              log.status === "sent"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                            }`}>
+                              {log.status}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span className="truncate max-w-[120px]">{log.subject || "WA Notification"}</span>
+                            <span>{formatRelativeTime(log.sentAt)}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span className="truncate max-w-[120px]">{log.subject || "WA Notification"}</span>
-                          <span>{formatRelativeTime(log.sentAt)}</span>
-                        </div>
-                      </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status API Meta</CardTitle>
                 </CardHeader>

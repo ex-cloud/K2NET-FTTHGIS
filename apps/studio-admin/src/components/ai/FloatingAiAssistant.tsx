@@ -116,7 +116,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-emerald-600 via-primary to-teal-700 text-white shadow-xs"
+            : "bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground shadow-xs"
         )}
       >
         {isUser ? "U" : <Sparkles className="w-4 h-4" />}
@@ -233,7 +233,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
               title="Salin ke clipboard"
             >
               {copied ? (
-                <Check className="w-3 h-3 text-emerald-500" />
+                <Check className="w-3 h-3 text-primary" />
               ) : (
                 <Copy className="w-3 h-3 text-muted-foreground" />
               )}
@@ -333,7 +333,7 @@ export function FloatingAiAssistant() {
           <SheetHeader className="px-4 py-3 border-b border-border bg-background/95 backdrop-blur-md flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-600 via-primary to-teal-700 flex items-center justify-center text-white shadow-xs">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
@@ -500,7 +500,7 @@ export function FloatingAiAssistant() {
                 className={cn(
                   "h-9 w-9 p-0 rounded-xl flex-shrink-0 shadow-xs cursor-pointer",
                   isStreaming
-                    ? "bg-rose-500 hover:bg-rose-600 text-white"
+                    ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                     : "bg-primary hover:bg-primary/90 text-primary-foreground"
                 )}
               >

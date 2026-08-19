@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   Globe,
   ShieldCheck,
@@ -118,10 +118,12 @@ export default function ApiGatewayPage() {
           >
             {isKongUp ? "LIVE" : "OFFLINE"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Metrik API Gateway" shortcut="R">
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 
@@ -167,7 +169,7 @@ export default function ApiGatewayPage() {
             icon: Cpu,
           },
         ].map((c) => (
-          <Card key={c.label} className="p-5 flex flex-col gap-2">
+          <Card glowingEffect key={c.label} className="p-5 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground">
                 {c.label}

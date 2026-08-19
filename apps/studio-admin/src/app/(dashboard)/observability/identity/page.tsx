@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   KeyRound, Users, ShieldAlert, CheckCircle2, XCircle,
   Info, RefreshCw, AlertCircle, Unplug,
@@ -103,10 +103,12 @@ export default function IdentityPage() {
           <Badge className={`text-[10px] ${keycloakHealthy ? "border-primary/20 bg-primary/10 text-primary" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
             {loading ? "LOADING…" : keycloakHealthy ? "LIVE DATA" : "DEGRADED"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Data Keycloak IAM" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

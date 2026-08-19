@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Network, ArrowLeft, Plus, FlaskConical } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiKnowledgeGraphTab } from "../../gateways/ai/components/ai-knowledge-graph-tab";
 
@@ -35,32 +35,38 @@ export default function AiGraphPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai")}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Kembali ke Tabel
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/ai/simulator")}
-              className="text-xs gap-1.5 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 cursor-pointer"
-            >
-              <FlaskConical className="w-3.5 h-3.5" />
-              Buka RAG Simulator
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => router.push("/ai/add")}
-              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Tambah Dokumen
-            </Button>
+            <ActionTooltip label="Kembali ke Daftar Dokumen SOP">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Kembali ke Tabel
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Buka Pengujian Semantic RAG Simulator" shortcut="S">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai/simulator")}
+                className="text-xs gap-1.5 border-sky-500/30 text-sky-400 hover:bg-sky-500/10 cursor-pointer"
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+                Buka RAG Simulator
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Tulis Dokumen SOP Baru" shortcut="N">
+              <Button
+                size="sm"
+                onClick={() => router.push("/ai/add")}
+                className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tulis SOP Baru
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 

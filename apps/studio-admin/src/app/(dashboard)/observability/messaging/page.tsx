@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   MessageSquare, CheckCircle2, Clock, XCircle, RefreshCw,
   AlertCircle, Radio, Mail, MessageCircle, Send,
@@ -79,10 +79,12 @@ export default function MessagingPage() {
           <Badge className={`text-[10px] ${isHealthy ? "border-primary/20 bg-primary/10 text-primary" : "border-rose-500/20 bg-rose-500/10 text-rose-500"}`}>
             {loading ? "LOADING…" : isHealthy ? "LIVE DATA" : "OFFLINE"}
           </Badge>
-          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            Refresh
-          </Button>
+          <ActionTooltip label="Segarkan Status Messaging" shortcut="R">
+            <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+              Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 

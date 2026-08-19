@@ -135,9 +135,9 @@ export function ProjectContextMenu({
             </ContextMenuItem>
             <ContextMenuItem
               onClick={() => onUpdateStatus?.("RESOLVED")}
-              className="cursor-pointer font-medium text-emerald-500"
+              className="cursor-pointer font-medium text-primary"
             >
-              <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-primary" />
               <span>Completed</span>
             </ContextMenuItem>
             <ContextMenuItem
@@ -315,9 +315,9 @@ export function ProjectContextMenu({
           <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
             <ContextMenuItem
               onClick={() => onUpdateHealth?.("On track")}
-              className="text-emerald-500 font-medium cursor-pointer"
+              className="text-primary font-medium cursor-pointer"
             >
-              <TrendingUp className="mr-2 h-3.5 w-3.5 text-emerald-500" />
+              <TrendingUp className="mr-2 h-3.5 w-3.5 text-primary" />
               <span>On track</span>
             </ContextMenuItem>
             <ContextMenuItem

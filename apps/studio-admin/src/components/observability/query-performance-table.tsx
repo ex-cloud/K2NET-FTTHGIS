@@ -53,7 +53,7 @@ export function QueryPerformanceTable({
                 title="Copy SQL Query"
               >
                 {copiedIdx === rowIdx ? (
-                  <Check className="h-3 w-3 text-emerald-500" />
+                  <Check className="h-3 w-3 text-primary" />
                 ) : (
                   <Copy className="h-3 w-3" />
                 )}
@@ -141,7 +141,7 @@ export function QueryPerformanceTable({
       columnHelper.accessor("cacheHitRate", {
         header: "Cache hit rate",
         cell: (info) => (
-          <span className="block text-xs font-mono text-muted-foreground text-right select-all font-medium text-emerald-500/90">
+          <span className="block text-xs font-mono text-muted-foreground text-right select-all font-medium text-primary/80">
             {info.getValue().toFixed(3)}%
           </span>
         ),

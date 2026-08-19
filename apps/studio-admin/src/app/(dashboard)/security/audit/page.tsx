@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout } from "@k2net/ui";
+import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { History, Save, RefreshCw, Database, Clock, Play, CheckCircle2, XCircle } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSecurityWrapper } from "@/components/page-guards/system-security-wrapper";
@@ -83,22 +83,26 @@ export default function SecurityAuditLogsPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => refresh()}
-              disabled={loading}
-              className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isUpdating || loading}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium gap-2 shadow-sm"
-            >
-              {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              Save Changes
-            </Button>
+            <ActionTooltip label="Muat Ulang Pengaturan" shortcut="R">
+              <Button
+                variant="outline"
+                onClick={() => refresh()}
+                disabled={loading}
+                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
+              </Button>
+            </ActionTooltip>
+            <ActionTooltip label="Simpan Kebijakan Audit & CORS" shortcut="Ctrl+S">
+              <Button
+                onClick={handleSave}
+                disabled={isUpdating || loading}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium gap-2 shadow-sm"
+              >
+                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Save Changes
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
@@ -214,26 +218,28 @@ export default function SecurityAuditLogsPage() {
                   Uji konektivitas socket ke host MinIO S3 untuk memverifikasi endpoint drain log tersedia.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestDrain}
-                disabled={isTestingEmail}
-                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-4 gap-2 shrink-0"
-              >
-                {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                Run Drain Test
-              </Button>
+              <ActionTooltip label="Uji Koneksi Drain MinIO S3" shortcut="Alt+T">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestDrain}
+                  disabled={isTestingEmail}
+                  className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-4 gap-2 shrink-0"
+                >
+                  {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                  Run Drain Test
+                </Button>
+              </ActionTooltip>
             </div>
 
             {smtpDrainResult && (
               <div className={`p-4 rounded-lg border text-xs font-mono flex items-start gap-3 transition-all ${
                 smtpDrainResult.success
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  ? "bg-primary/10 text-primary/80 border-primary/20"
                   : "bg-rose-500/10 text-rose-400 border-rose-500/20"
               }`}>
                 {smtpDrainResult.success ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
                 ) : (
                   <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 )}

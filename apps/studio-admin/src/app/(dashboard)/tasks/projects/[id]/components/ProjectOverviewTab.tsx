@@ -79,7 +79,7 @@ export function ProjectOverviewTab({
             <div className="cursor-pointer hover:bg-muted/40 p-2 rounded-lg transition-colors border border-transparent hover:border-border/40">
               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Status</span>
               <div className="mt-1 font-semibold flex items-center gap-1.5 text-foreground">
-                <div className={cn("w-2 h-2 rounded-full", status === "RESOLVED" || status === "CLOSED" ? "bg-emerald-500" : "bg-amber-500")} />
+                <div className={cn("w-2 h-2 rounded-full", status === "RESOLVED" || status === "CLOSED" ? "bg-primary" : "bg-amber-500")} />
                 <span>{status}</span>
               </div>
             </div>

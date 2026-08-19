@@ -6,15 +6,13 @@ import {
   FileText, 
   Save, 
   Loader2, 
-  Server,
-  Lock
+  Server, 
+  Lock,
+  Sparkles,
+  Copy
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
-import { Badge } from "@k2net/ui";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 
 import { z } from "zod";
@@ -150,7 +148,40 @@ export default function AuditGatewayPage() {
     }
   };
 
-  // Audit logs loaded dynamically from getAuditEvents()
+  const getAuditContextMenuGroups = (log: AuditEvent): ContextMenuGroupConfig[] => [
+    {
+      items: [
+        {
+          label: "Tanya AI Investigasi Audit",
+          icon: Sparkles,
+          shortcut: "Ctrl+J",
+          onClick: () => {
+            window.dispatchEvent(
+              new CustomEvent("k2net-ai-prompt-input", {
+                detail: {
+                  prompt: `Investigasi log audit aktivitas "${log.action}" oleh user ${log.username || log.userId}. Status: ${log.status}, Target: ${log.target || "N/A"}, Waktu: ${log.createdAt}.`,
+                },
+              })
+            );
+            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
+          },
+        },
+      ],
+    },
+    {
+      items: [
+        {
+          label: "Salin Aksi",
+          icon: Copy,
+          shortcut: "Ctrl+C",
+          onClick: () => {
+            navigator.clipboard.writeText(log.action);
+            toast.success(`Aksi ${log.action} disalin!`);
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <GatewayPageWrapper>
@@ -181,7 +212,7 @@ export default function AuditGatewayPage() {
             
             <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
               
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Server className="w-4 h-4 text-primary" /> Database Connection
@@ -205,7 +236,7 @@ export default function AuditGatewayPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/60 border-border shadow-xl">
+              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Lock className="w-4 h-4 text-primary" /> Retention & Compliance
@@ -230,28 +261,32 @@ export default function AuditGatewayPage() {
               </Card>
 
               <div className="flex items-center justify-end gap-3">
-                <Button 
-                  type="button" 
-                  onClick={fetchConfig} 
-                  variant="outline"
-                  className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                >
-                  Reset Form
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Save Configuration
-                </Button>
+                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
+                  <Button 
+                    type="button" 
+                    onClick={fetchConfig} 
+                    variant="outline"
+                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+                  >
+                    Reset Form
+                  </Button>
+                </ActionTooltip>
+                <ActionTooltip label="Simpan Konfigurasi Audit Gateway" shortcut="Ctrl+S">
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    Save Configuration
+                  </Button>
+                </ActionTooltip>
               </div>
 
             </form>
 
             <div className="space-y-6">
-              <Card className="bg-card border-border shadow-xl">
+              <Card glowingEffect className="bg-card border-border shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     Aktivitas Audit Terkini
@@ -269,27 +304,29 @@ export default function AuditGatewayPage() {
                     <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log audit tercatat.</p>
                   ) : (
                     auditLogs.map((log) => (
-                      <div key={log.id} className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-foreground font-mono">{log.action}</span>
-                          <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                            log.status === "success"
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : log.status === "denied"
-                              ? "bg-red-500/10 text-red-500 border-red-500/20"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          }`}>
-                            {log.status}
-                          </Badge>
+                      <UniversalContextMenu key={log.id} groups={getAuditContextMenuGroups(log)}>
+                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-foreground font-mono">{log.action}</span>
+                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
+                              log.status === "success"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : log.status === "denied"
+                                ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            }`}>
+                              {log.status}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
+                            <span>@{log.username || log.userId}</span>
+                            <span>{formatRelativeTime(log.createdAt)}</span>
+                          </div>
+                          {log.target && (
+                            <div className="text-[9px] text-muted-foreground/60 truncate font-mono">Target: {log.target}</div>
+                          )}
                         </div>
-                        <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                          <span>@{log.username || log.userId}</span>
-                          <span>{formatRelativeTime(log.createdAt)}</span>
-                        </div>
-                        {log.target && (
-                          <div className="text-[9px] text-muted-foreground/60 truncate">Target: {log.target}</div>
-                        )}
-                      </div>
+                      </UniversalContextMenu>
                     ))
                   )}
                 </CardContent>
