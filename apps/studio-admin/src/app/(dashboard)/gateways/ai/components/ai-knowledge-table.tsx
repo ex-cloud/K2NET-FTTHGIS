@@ -408,8 +408,11 @@ export function AiKnowledgeTable({
                   <FolderSync className={`w-4 h-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6}>
-                {isSyncing ? "Menyinkronkan Berkas Server..." : "Sinkronkan Direktori Server Docs"}
+              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
+                <span>{isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Direktori Server"}</span>
+                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
+                  S
+                </span>
               </TooltipContent>
             </Tooltip>
 
@@ -425,8 +428,11 @@ export function AiKnowledgeTable({
                   <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6}>
-                Segarkan Data pgvector
+              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
+                <span>Segarkan Data</span>
+                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
+                  R
+                </span>
               </TooltipContent>
             </Tooltip>
 
@@ -441,8 +447,11 @@ export function AiKnowledgeTable({
                   <Plus className="w-4 h-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6}>
-                Tambah Pengetahuan (Upload / Tulis)
+              <TooltipContent side="bottom" sideOffset={6} className="flex items-center gap-2">
+                <span>Tambah Pengetahuan</span>
+                <span className="text-[9px] text-muted-foreground font-mono bg-muted/60 px-1 py-0.5 rounded border border-border/60">
+                  C
+                </span>
               </TooltipContent>
             </Tooltip>
           </div>
