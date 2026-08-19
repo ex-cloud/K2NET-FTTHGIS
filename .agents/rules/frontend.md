@@ -204,3 +204,125 @@ Setiap halaman dan komponen di `apps/studio-admin` maupun `apps/studio-tenant` *
    - Header tabel wajib menggunakan solid 100% opaque (`bg-card` atau `bg-background`) dengan `z-20` agar baris data di bawahnya tidak tembus pandang di semua perangkat.
 3. **Form Segmented Switcher & Pill Tabs**:
    - Wajib menggunakan `overflow-x-auto` dan `whitespace-nowrap` pada tab bar agar tidak patah/terpotong di layar smartphone sempit.
+
+---
+
+## 🎯 11. Standar Wajib Tooltip Global (Linear-Style Tooltip Pattern)
+
+Seluruh tombol aksi (terutama *icon-only buttons*, tombol toolbar, dan shortcut actions) di `apps/studio-admin` dan `apps/studio-tenant` **WAJIB** dibungkus dengan komponen `<ActionTooltip>` atau `<TooltipContent>` dari `@k2net/ui`.
+
+### A. Aturan Visual & Perilaku Tooltip:
+1. **Zero Arrow (Bebas Panah/Segitiga Putih)**:
+   - Tooltip dilarang menampilkan panah segitiga putih default (`showArrow=false`).
+   - Tampilan visual wajib menggunakan kapsul gelap (*dark pill*) minimalis: `bg-popover text-popover-foreground border border-border shadow-xl rounded-lg px-2.5 py-1 text-[11px] font-medium tracking-tight`.
+2. **Badge Shortcut Keyboard Dinamis (`shortcut`)**:
+   - Jika tombol memiliki shortcut keyboard bawaan, properti `shortcut` **wajib** diisi (misal: `"S"` untuk sync, `"R"` untuk refresh, `"C"` untuk create/add, `"⌘K"` untuk global search, `"Del"` untuk hapus, `"Alt+F"` untuk favorit).
+   - Jika tombol tidak memiliki shortcut, kosongkan properti `shortcut` (tooltip akan otomatis hanya menampilkan teks label bersih tanpa kotak badge kosong).
+3. **Offset & Penempatan Presisi**:
+   - Default offset: `sideOffset={6}` di bawah tombol (`side="bottom"`).
+
+### B. Contoh Penggunaan Baku:
+```tsx
+import { ActionTooltip } from "@k2net/ui";
+
+// 1. Tombol dengan single-key shortcut
+<ActionTooltip label="Tambah Pengetahuan" shortcut="C">
+  <button onClick={handleCreate} className="h-8 w-8 rounded-lg ...">
+    <Plus className="w-4 h-4" />
+  </button>
+</ActionTooltip>
+
+// 2. Tombol dengan status dinamis
+<ActionTooltip label={isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Direktori Server"} shortcut="S">
+  <button onClick={handleSync} className="h-8 w-8 rounded-lg ...">
+    <FolderSync className="w-4 h-4" />
+  </button>
+</ActionTooltip>
+
+// 3. Tombol tanpa shortcut
+<ActionTooltip label="Pengaturan Gateway">
+  <button onClick={handleSettings} className="h-8 w-8 rounded-lg ...">
+    <Settings className="w-4 h-4" />
+  </button>
+</ActionTooltip>
+```
+
+---
+
+## 🖱️ 12. Standar Wajib Right-Click Context Menu Global (Enterprise Action Drawer)
+
+Setiap tabel data enterprise, kartu inventaris, dan daftar entitas (seperti Daftar SOP AI, Tasks & Tickets, Pengguna Global, dan OLT Device Table) **WAJIB** mendukung interaksi klik kanan (*Right-Click Context Menu*) menggunakan `<UniversalContextMenu>` dari `@k2net/ui`.
+
+### A. Anatomi Standar Context Menu:
+1. **Grup 1 — Aksi Utama & AI Copilot**:
+   * Aksi Tanya AI tentang entitas terkait (Ikon `Sparkles`, teks berwarna `text-primary`, shortcut `Ctrl+J`).
+   * Aksi Inspeksi Vektor / Quick View (Ikon `BrainCircuit`/`Eye`, shortcut `Alt+I`).
+2. **Grup 2 — Sub-Menu Bertingkat (Jika Relevan)**:
+   * Pilihan status (Backlog, Todo, In Progress, Resolved).
+   * Pilihan prioritas, assignee, atau kategori.
+3. **Grup 3 — Aksi Salin Data Cepat (Clipboard)**:
+   * Salin Judul / Nama (shortcut `Ctrl+C`).
+   * Salin UUID / Kode Perangkat (shortcut `Alt+C`).
+4. **Grup 4 — Aksi Destruktif (Hapus/Arsipkan)**:
+   * Wajib menggunakan `variant="destructive"` (teks dan ikon merah).
+   * Shortcut `Del` atau `Ctrl+Del`.
+   * Wajib memunculkan konfirmasi dialog / toast konfirmasi sebelum eksekusi fisik.
+
+### B. Contoh Penggunaan Baku:
+```tsx
+import { UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
+
+const contextMenuGroups: ContextMenuGroupConfig[] = [
+  {
+    items: [
+      {
+        label: "Tanya AI tentang Dokumen",
+        icon: Sparkles,
+        shortcut: "Ctrl+J",
+        onClick: () => handleAskAi(item),
+      },
+      {
+        label: "Inspeksi Vektor (Explorer)",
+        icon: BrainCircuit,
+        shortcut: "Alt+I",
+        onClick: () => handleInspect(item),
+      },
+    ],
+  },
+  {
+    items: [
+      {
+        label: "Salin Judul",
+        icon: Copy,
+        shortcut: "Ctrl+C",
+        onClick: () => copyToClipboard(item.title),
+      },
+      {
+        label: "Salin ID (UUID)",
+        icon: FileCode,
+        shortcut: "Alt+C",
+        onClick: () => copyToClipboard(item.id),
+      },
+    ],
+  },
+  {
+    items: [
+      {
+        label: "Hapus dari Database",
+        icon: Trash2,
+        variant: "destructive",
+        shortcut: "Del",
+        onClick: () => handleDelete(item.id),
+      },
+    ],
+  },
+];
+
+// Bungkus baris tabel / kartu
+<UniversalContextMenu groups={contextMenuGroups}>
+  <tr className="hover:bg-muted/40 cursor-pointer">
+    <td>{item.title}</td>
+    ...
+  </tr>
+</UniversalContextMenu>
+```

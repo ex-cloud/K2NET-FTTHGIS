@@ -274,3 +274,18 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Pola Bounded Scroll Table (Query-Performance Pattern)**: Root page dilarang dibungkus `<PageLayout>` jika ingin layout fixed viewport. Return root `div.h-full.overflow-hidden` langsung, card `border rounded-xl bg-card/10 overflow-hidden`, dan scroll hanya pada `div.flex-1.overflow-auto` dengan infinite scroll `IntersectionObserver` (page size `20`).
 - **Secondary Sidebar (`TaskSecondarySidebar.tsx`)**: Mengelompokkan navigasi ke dalam **`PERSONAL`** (Inbox, My Issues, Created by Me), **`WORKSPACE`** (Projects & Views), dan **`SCOPE/TEAMS`** (`Platform Internal` vs `B2B Inbox`).
 
+### 🎯 Standardisasi Tooltip Global Ala Linear App (Agustus 2026)
+- **Komponen Shared**: `<ActionTooltip label="..." shortcut="...">` dan `<TooltipContent shortcut="...">` diekspor dari `@k2net/ui`.
+- **Zero Arrow**: Segitiga/panah putih bawaan Radix UI dimatikan secara default (`showArrow=false`).
+- **Dark Pill Styling**: Format visual gelap minimalis (`bg-popover text-popover-foreground border border-border shadow-xl rounded-lg px-2.5 py-1 text-[11px] font-medium tracking-tight`).
+- **Shortcut Dinamis**: Properti `shortcut` otomatis menampilkan badge hotkey keyboard monospaced jika disediakan (misal: `"S"` sync, `"R"` refresh, `"C"` create, `"⌘K"` search, `"Del"` delete), dan otomatis menjadi teks bersih jika tidak ada shortcut.
+
+### 🖱️ Standardisasi Universal Context Menu (Right-Click Drawer) (Agustus 2026)
+- **Komponen Shared**: `<UniversalContextMenu groups={...}>` diekspor dari `@k2net/ui`.
+- **Wajib di Semua Tabel Enterprise**: Setiap baris tabel data (Daftar SOP, Tasks & Tickets, Users, OLT) wajib mendukung interaksi klik kanan.
+- **Struktur Anatomi Baku**:
+  1. Aksi Utama & AI Copilot (`Ctrl+J` / `Alt+I`).
+  2. Sub-menu bertingkat (Status, Prioritas, Kategori) jika diperlukan.
+  3. Aksi Salin Data Cepat (`Ctrl+C` untuk judul, `Alt+C` untuk UUID).
+  4. Aksi Destruktif Hapus (`variant="destructive"`, shortcut `Del` / `Ctrl+Del`).
+

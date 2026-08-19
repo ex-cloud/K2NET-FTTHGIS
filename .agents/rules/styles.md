@@ -186,3 +186,22 @@ Konfigurasi tema dikelola langsung di CSS via `@theme inline` di `packages/desig
 File `apps/studio-admin/src/app/globals.css` berisi override `.light` selektor sebagai **safety net fallback** untuk kelas `zinc-*` yang belum dimigrasi. Ini bukan pengganti migrasi di level komponen — migrasi token semantik tetap wajib.
 
 *Referensi lengkap: [design_tokens_spec.md](file:///opt/project5/docs/Server/UI/theme/design_tokens_spec.md)*
+
+---
+
+## 🎯 7. Standar Wajib Tooltip Global (Linear-Style Pill)
+
+Seluruh tombol aksi (khususnya *icon-only buttons*) **wajib** dibungkus menggunakan `<ActionTooltip>` dari `@k2net/ui`.
+
+* **Zero Arrow**: Dilarang menggunakan panah segitiga putih default (`showArrow=false`).
+* **Dark Pill**: Background `bg-popover text-popover-foreground border border-border shadow-xl rounded-lg px-2.5 py-1 text-[11px] font-medium`.
+* **Shortcut Dinamis (`shortcut`)**: Wajib menyertakan shortcut keyboard jika aksi memiliki hotkey (misal: `"S"` sync, `"R"` refresh, `"C"` create, `"⌘K"` search, `"Del"` delete).
+
+---
+
+## 🖱️ 8. Standar Wajib Right-Click Context Menu Global (Enterprise Action Drawer)
+
+Seluruh tabel data dan entitas enterprise **wajib** mendukung klik kanan (*Right-Click Context Menu*) menggunakan `<UniversalContextMenu>` dari `@k2net/ui`.
+
+* **Struktur Baku**: (1) AI Copilot / Quick Action (`Ctrl+J`), (2) Inspect / Edit (`Alt+I`), (3) Sub-menus bertingkat (Status/Prioritas), (4) Copy ID/Judul (`Ctrl+C`), (5) Destructive Action (`variant="destructive"` + `Del`).
+* **Aksesibilitas & Feedback**: Menyediakan feedback instan (toast / dialog konfirmasi) setelah aksi dieksekusi.

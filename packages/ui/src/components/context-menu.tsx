@@ -234,6 +234,120 @@ function ContextMenuShortcut({
   );
 }
 
+export interface ContextMenuItemConfig {
+  id?: string;
+  label: React.ReactNode;
+  icon?: React.ComponentType<{ className?: string }>;
+  shortcut?: string;
+  onClick?: () => void;
+  variant?: "default" | "destructive";
+  disabled?: boolean;
+  separatorAfter?: boolean;
+  subItems?: {
+    id?: string;
+    label: React.ReactNode;
+    icon?: React.ComponentType<{ className?: string }>;
+    onClick?: () => void;
+    checked?: boolean;
+    disabled?: boolean;
+  }[];
+}
+
+export interface ContextMenuGroupConfig {
+  title?: string;
+  items: ContextMenuItemConfig[];
+}
+
+export interface UniversalContextMenuProps {
+  children: React.ReactNode;
+  groups?: ContextMenuGroupConfig[];
+  items?: ContextMenuItemConfig[];
+  className?: string;
+  disabled?: boolean;
+}
+
+/**
+ * Universal Context Menu (Right-Click Drawer) component.
+ * Allows declarative right-click context menus on table rows, cards, or list items.
+ */
+function UniversalContextMenu({
+  children,
+  groups,
+  items,
+  className,
+  disabled = false,
+}: UniversalContextMenuProps) {
+  if (disabled) return <>{children}</>;
+
+  const effectiveGroups: ContextMenuGroupConfig[] = groups || (items ? [{ items }] : []);
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className={cn("w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl", className)}>
+        {effectiveGroups.map((group, groupIdx) => (
+          <React.Fragment key={group.title || groupIdx}>
+            {group.title && (
+              <ContextMenuLabel className="text-[10px] tracking-wider text-muted-foreground/80 font-bold px-2 py-1">
+                {group.title}
+              </ContextMenuLabel>
+            )}
+            {group.items.map((item, itemIdx) => (
+              <React.Fragment key={item.id || itemIdx}>
+                {item.subItems && item.subItems.length > 0 ? (
+                  <ContextMenuSub>
+                    <ContextMenuSubTrigger className="cursor-pointer">
+                      {item.icon && <item.icon className="mr-2 h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                      <span>{item.label}</span>
+                    </ContextMenuSubTrigger>
+                    <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl rounded-xl p-1">
+                      {item.subItems.map((sub, subIdx) => (
+                        <ContextMenuItem
+                          key={sub.id || subIdx}
+                          onClick={sub.onClick}
+                          disabled={sub.disabled}
+                          className="cursor-pointer text-xs"
+                        >
+                          {sub.icon && <sub.icon className="mr-2 h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                          <span>{sub.label}</span>
+                        </ContextMenuItem>
+                      ))}
+                    </ContextMenuSubContent>
+                  </ContextMenuSub>
+                ) : (
+                  <ContextMenuItem
+                    onClick={item.onClick}
+                    disabled={item.disabled}
+                    variant={item.variant}
+                    className="cursor-pointer"
+                  >
+                    {item.icon && (
+                      <item.icon
+                        className={cn(
+                          "mr-2 h-3.5 w-3.5 shrink-0",
+                          item.variant === "destructive" ? "text-destructive" : "text-muted-foreground"
+                        )}
+                      />
+                    )}
+                    <span>{item.label}</span>
+                    {item.shortcut && (
+                      <ContextMenuShortcut>{item.shortcut}</ContextMenuShortcut>
+                    )}
+                  </ContextMenuItem>
+                )}
+                {item.separatorAfter && <ContextMenuSeparator className="my-1 bg-border/60" />}
+              </React.Fragment>
+            ))}
+            {groupIdx < effectiveGroups.length - 1 && (
+              <ContextMenuSeparator className="my-1 bg-border/60" />
+            )}
+          </React.Fragment>
+        ))}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
 export {
   ContextMenu,
   ContextMenuTrigger,
@@ -250,4 +364,5 @@ export {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuRadioGroup,
+  UniversalContextMenu,
 };
