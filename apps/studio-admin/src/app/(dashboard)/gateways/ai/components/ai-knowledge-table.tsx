@@ -21,7 +21,8 @@ import {
   HelpCircle,
   HardDrive,
   RefreshCw,
-  Plus
+  Plus,
+  Filter
 } from "lucide-react";
 import {
   useReactTable,
@@ -38,6 +39,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { AiDocumentItem } from "@/lib/actions/gateways";
@@ -320,26 +325,10 @@ export function AiKnowledgeTable({
         </div>
       </div>
 
-      {/* ── Filter Bar & Actions ───────────────────────────────────────────── */}
+      {/* ── Query-Performance Style Unified Toolbar ─────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 custom-scrollbar">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={cn(
-                "text-xs px-3 py-1.5 rounded-lg whitespace-nowrap transition-all border cursor-pointer",
-                selectedCategory === cat.id
-                  ? "bg-primary/10 text-primary border-primary/30 font-semibold shadow-xs"
-                  : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60 hover:text-foreground"
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        {/* Left Toolbar: Search + Category Filter Dropdown */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1">
           <form onSubmit={onSearchSubmit} className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -347,20 +336,119 @@ export function AiKnowledgeTable({
               placeholder="Cari judul dokumen..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs pl-8 pr-4 h-9 bg-card border-border"
+              className="text-xs pl-8 pr-4 h-8 bg-card border-border"
             />
           </form>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-            title="Refresh tabel dokumen"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin text-primary" : ""}`} />
-          </Button>
+
+          {/* Category Filter Single Button with Dropdown Modal */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden shrink-0",
+                selectedCategory !== "ALL"
+                  ? "bg-primary/10 text-primary border-primary/40 shadow-xs"
+                  : "bg-card border-border hover:bg-muted/40 text-foreground"
+              )}>
+                <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>{CATEGORIES.find(c => c.id === selectedCategory)?.label || "Kategori"}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-60 z-50">
+              <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-2 py-1.5">
+                Filter Kategori Pengetahuan
+              </p>
+              <div className="space-y-0.5">
+                {CATEGORIES.map((cat) => (
+                  <DropdownMenuItem
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={cn(
+                      "flex items-center justify-between text-xs py-2 px-2.5 rounded-lg cursor-pointer transition-colors",
+                      selectedCategory === cat.id
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        cat.id === "ALL" && "bg-slate-400",
+                        cat.id === "TROUBLESHOOTING" && "bg-amber-400",
+                        cat.id === "ARCHITECTURE" && "bg-blue-400",
+                        cat.id === "GIS_SPATIAL" && "bg-emerald-400",
+                        cat.id === "INFRASTRUCTURE" && "bg-purple-400",
+                        cat.id === "PLANNING" && "bg-cyan-400",
+                        cat.id === "GENERAL_SOP" && "bg-slate-400",
+                      )} />
+                      <span>{cat.label}</span>
+                    </div>
+                    {selectedCategory === cat.id && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+
+        {/* Right Toolbar: Icon-Only Action Buttons with Tooltips */}
+        <TooltipProvider delayDuration={150}>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+            {/* Action 1: Tambah Pengetahuan (Plus Icon) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={onGoToUpload}
+                  className="h-8 w-8 p-0 shrink-0 bg-primary text-primary-foreground font-semibold hover:bg-primary/90 cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
+                Tambah Pengetahuan (Upload / Tulis)
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Action 2: Sinkronkan Server Docs (FolderSync Icon) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onSyncServerDocs}
+                  disabled={isSyncing}
+                  className="h-8 w-8 p-0 shrink-0 border-border bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
+                {isSyncing ? "Menyinkronkan Berkas Server..." : "Sinkronkan Direktori Server Docs"}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Action 3: Refresh Data (RefreshCw Icon) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  disabled={docsLoading}
+                  className="h-8 w-8 p-0 shrink-0 border-border bg-card hover:bg-muted/40 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin text-primary" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border border-border shadow-md">
+                Segarkan Data pgvector
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       {/* ── Enterprise Card & Table Container with Effects ─────────────────── */}

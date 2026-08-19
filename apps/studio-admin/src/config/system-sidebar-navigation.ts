@@ -112,7 +112,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "OLT Gateway", url: "/gateways/olt", icon: "Network" },
           { title: "Audit Gateway", url: "/gateways/audit", icon: "FileText" },
           { title: "Poller Gateway", url: "/gateways/poller", icon: "Activity" },
-          { title: "AI Assistant Gateway", url: "/gateways/ai", icon: "Sparkles" },
         ],
       },
     ],

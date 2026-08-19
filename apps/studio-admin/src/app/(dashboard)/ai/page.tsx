@@ -137,7 +137,7 @@ export default function AiKnowledgePage() {
       <div className="flex-1 w-full bg-background overflow-y-auto custom-scrollbar p-6 space-y-6">
         
         {/* Top Header Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="flex items-center justify-between border-b border-border pb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
               <Sparkles className="w-5 h-5" />
@@ -155,40 +155,6 @@ export default function AiKnowledgePage() {
                 Basis data pengetahuan teknis FTTH, manual hardware OLT/ONT, dan prosedur operasional jaringan K2NET.
               </p>
             </div>
-          </div>
-
-          {/* Quick Header Actions */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncServerDocs}
-              disabled={isPending}
-              className="text-xs gap-1.5 border-primary/40 hover:bg-primary/10 text-primary font-medium cursor-pointer"
-            >
-              <FolderSync className={`w-3.5 h-3.5 ${isPending ? "animate-spin" : ""}`} />
-              {isPending ? "Menyinkronkan..." : "Sinkronkan Server Docs"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                loadDocuments();
-                loadStats();
-              }}
-              className="text-xs gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${docsLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => router.push("/ai/add")}
-              className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Tambah Pengetahuan
-            </Button>
           </div>
         </div>
 
