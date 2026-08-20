@@ -30,6 +30,8 @@ import {
   XCircle,
   ShieldCheck,
   FileText,
+  Eye,
+  Sparkles,
 } from "lucide-react";
 import {
   useReactTable,
@@ -55,8 +57,16 @@ import {
   DialogFooter,
   Badge,
 } from "@k2net/ui";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { AiDocumentItem, ServerSyncStatus } from "@/lib/actions/gateways";
+import { 
+  AiDocumentItem, 
+  ServerSyncStatus,
+  ServerFilePreview,
+  previewAiServerFile,
+  rejectAiServerFile,
+  indexSingleAiServerFile,
+} from "@/lib/actions/gateways";
 import { 
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
@@ -135,8 +145,83 @@ export function AiKnowledgeTable({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isUnindexedModalOpen, setIsUnindexedModalOpen] = useState(false);
+
+  // Server Files Preview & Rejection State
+  const [previewData, setPreviewData] = useState<ServerFilePreview | null>(null);
+  const [previewLoadingPath, setPreviewLoadingPath] = useState<string | null>(null);
+  const [actionLoadingPath, setActionLoadingPath] = useState<string | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [fileToReject, setFileToReject] = useState<{ path: string; title: string; category?: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [isRejecting, setIsRejecting] = useState(false);
+
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const handlePreviewServerFile = async (filePath: string) => {
+    setPreviewLoadingPath(filePath);
+    try {
+      const preview = await previewAiServerFile(filePath);
+      setPreviewData(preview);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal memuat pratinjau berkas");
+    } finally {
+      setPreviewLoadingPath(null);
+    }
+  };
+
+  const handleRejectClick = (file: { path: string; title: string; category?: string }) => {
+    setFileToReject(file);
+    setRejectReason("");
+    setRejectDialogOpen(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!fileToReject) return;
+    setIsRejecting(true);
+    setActionLoadingPath(fileToReject.path);
+    try {
+      await rejectAiServerFile({
+        path: fileToReject.path,
+        title: fileToReject.title,
+        category: fileToReject.category,
+        reason: rejectReason.trim() || undefined,
+      });
+      toast.success(`Berkas "${fileToReject.title}" ditolak dan tidak akan diindeks.`);
+      setRejectDialogOpen(false);
+      setFileToReject(null);
+      if (previewData && previewData.path === fileToReject.path) {
+        setPreviewData(null);
+      }
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menolak berkas");
+    } finally {
+      setIsRejecting(false);
+      setActionLoadingPath(null);
+    }
+  };
+
+  const handleIndexSingle = async (file: { path: string; title?: string; category?: string }) => {
+    setActionLoadingPath(file.path);
+    try {
+      const res = await indexSingleAiServerFile({
+        path: file.path,
+        title: file.title,
+        category: file.category,
+        scope: "GLOBAL",
+      });
+      toast.success(`Berkas "${res.title || file.title}" berhasil diindeks ke pgvector!`);
+      if (previewData && previewData.path === file.path) {
+        setPreviewData(null);
+      }
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengindeks berkas");
+    } finally {
+      setActionLoadingPath(null);
+    }
+  };
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -866,7 +951,7 @@ export function AiKnowledgeTable({
 
       {/* ── Dialog Modal: Daftar Berkas Server Belum Terindeks ─────────────── */}
       <Dialog open={isUnindexedModalOpen} onOpenChange={setIsUnindexedModalOpen}>
-        <DialogContent className="max-w-2xl bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
+        <DialogContent className="max-w-3xl bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
           <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
@@ -883,24 +968,77 @@ export function AiKnowledgeTable({
             </div>
           </DialogHeader>
 
-          <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2 divide-y divide-border/40 custom-scrollbar">
+          <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2.5 divide-y divide-border/40 custom-scrollbar">
             {syncStatus?.unindexed_files && syncStatus.unindexed_files.length > 0 ? (
               syncStatus.unindexed_files.map((file, idx) => (
-                <div key={idx} className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-start gap-2.5 min-w-0">
+                <div key={idx} className="pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <FileText className="w-4 h-4 text-foreground/75 dark:text-muted-foreground shrink-0 mt-0.5" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-foreground truncate">{file.title}</p>
                       <p className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono truncate">{file.path}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground/80">
-                      {file.category}
-                    </Badge>
-                    <span className="text-[11px] font-mono text-foreground/75 dark:text-muted-foreground">
-                      {formatBytes(file.size_bytes)}
-                    </span>
+                  
+                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground/80">
+                        {file.category}
+                      </Badge>
+                      <span className="text-[11px] font-mono text-foreground/75 dark:text-muted-foreground mr-1">
+                        {formatBytes(file.size_bytes)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {/* Tombol Pratinjau */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePreviewServerFile(file.path)}
+                        disabled={previewLoadingPath === file.path || actionLoadingPath === file.path}
+                        className="h-7 px-2 text-[11px] gap-1 border-border/80 hover:bg-muted/60 text-foreground"
+                      >
+                        {previewLoadingPath === file.path ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                        ) : (
+                          <Eye className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+                        )}
+                        <span>Pratinjau</span>
+                      </Button>
+
+                      {/* Tombol Tolak */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRejectClick(file)}
+                        disabled={actionLoadingPath === file.path || previewLoadingPath === file.path}
+                        className="h-7 px-2 text-[11px] gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
+                      >
+                        {actionLoadingPath === file.path ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <XCircle className="w-3 h-3" />
+                        )}
+                        <span>Tolak</span>
+                      </Button>
+
+                      {/* Tombol Indeks 1-Click */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleIndexSingle(file)}
+                        disabled={actionLoadingPath === file.path || previewLoadingPath === file.path}
+                        className="h-7 px-2 text-[11px] gap-1 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 font-medium"
+                      >
+                        {actionLoadingPath === file.path ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3 h-3" />
+                        )}
+                        <span>Indeks</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -934,9 +1072,176 @@ export function AiKnowledgeTable({
                 className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground font-semibold"
               >
                 <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-                {isSyncing ? "Menyinkronkan..." : "Mulai Indexing Sekarang"}
+                {isSyncing ? "Menyinkronkan..." : "Indeks Semua Berkas Sekaligus"}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Modal: Pratinjau Isi Dokumen Server ─────────────── */}
+      <Dialog open={!!previewData} onOpenChange={(open) => { if (!open) setPreviewData(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl flex flex-col">
+          <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20 pr-10">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+                <Eye className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-base font-bold text-foreground truncate">
+                    {previewData?.title || "Pratinjau Dokumen"}
+                  </DialogTitle>
+                  {previewData?.category && (
+                    <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/40 text-foreground/80">
+                      {previewData.category}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-[10px] font-mono border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    {previewData?.scope || "GLOBAL"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5 font-mono truncate">
+                  {previewData?.path}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Metadata summary bar */}
+          <div className="px-5 py-2 bg-muted/40 border-b border-border/60 flex items-center justify-between text-[11px] text-foreground/80 flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <span>Karakter: <strong className="font-mono text-foreground">{previewData?.char_count.toLocaleString() || 0}</strong></span>
+              <span>•</span>
+              <span>Kata: <strong className="font-mono text-foreground">{previewData?.word_count.toLocaleString() || 0}</strong></span>
+              <span>•</span>
+              <span>Baris: <strong className="font-mono text-foreground">{previewData?.line_count.toLocaleString() || 0}</strong></span>
+            </div>
+            <div className="text-foreground/75 dark:text-muted-foreground font-mono">
+              Ukuran: {formatBytes(previewData?.size_bytes || 0)}
+            </div>
+          </div>
+
+          {/* Content viewer */}
+          <div className="p-5 flex-1 overflow-y-auto max-h-[55vh] custom-scrollbar bg-card">
+            <div className="rounded-lg border border-border/70 bg-muted/20 p-4 font-mono text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed select-text selection:bg-primary/20">
+              {previewData?.content}
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 border-t border-border/80 bg-muted/20 flex flex-row items-center justify-between gap-2">
+            <span className="text-[11px] text-foreground/75 dark:text-muted-foreground hidden sm:inline">
+              Status: <span className="text-amber-500 font-semibold">Belum Terindeks</span>
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPreviewData(null)}
+                className="text-xs h-8"
+              >
+                Tutup
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (previewData) {
+                    handleRejectClick({
+                      path: previewData.path,
+                      title: previewData.title,
+                      category: previewData.category,
+                    });
+                  }
+                }}
+                disabled={actionLoadingPath === previewData?.path}
+                className="text-xs h-8 gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                Tolak Berkas
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (previewData) {
+                    handleIndexSingle({
+                      path: previewData.path,
+                      title: previewData.title,
+                      category: previewData.category,
+                    });
+                  }
+                }}
+                disabled={actionLoadingPath === previewData?.path}
+                className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground font-semibold"
+              >
+                {actionLoadingPath === previewData?.path ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5" />
+                )}
+                Indeks Berkas Ini
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Modal: Konfirmasi Tolak Berkas Server ─────────────── */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="max-w-md bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
+          <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shrink-0">
+                <XCircle className="w-4 h-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-foreground">
+                  Tolak Berkas Server?
+                </DialogTitle>
+                <DialogDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+                  Berkas tidak akan diindeks ke pgvector dan akan dipindahkan ke status Ditolak.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="p-5 space-y-4">
+            <div className="p-3 rounded-lg border border-border bg-muted/30 text-xs">
+              <p className="font-semibold text-foreground">{fileToReject?.title}</p>
+              <p className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono mt-0.5">{fileToReject?.path}</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Alasan Penolakan (Opsional)</label>
+              <Input
+                placeholder="Contoh: Berkas draf internal / belum siap publik"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="text-xs h-9 bg-background"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 border-t border-border/80 bg-muted/20 flex flex-row items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRejectDialogOpen(false)}
+              disabled={isRejecting}
+              className="text-xs h-8"
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleConfirmReject}
+              disabled={isRejecting}
+              className="text-xs h-8 gap-1.5 font-semibold"
+            >
+              {isRejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+              {isRejecting ? "Menolak..." : "Ya, Tolak Berkas"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

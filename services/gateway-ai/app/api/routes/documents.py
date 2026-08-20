@@ -24,6 +24,9 @@ from app.models.schemas import (
     AiStatsResponse,
     ServerSyncStatusResponse,
     UnindexedFileItem,
+    ServerFilePreviewResponse,
+    ServerFileRejectRequest,
+    ServerFileIndexSingleRequest,
 )
 from app.db.session import get_db_session
 from app.db.vector_store import vector_store
@@ -36,6 +39,7 @@ import logging
 import os
 import re
 import glob
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -326,6 +330,221 @@ async def get_server_sync_status(
     )
 
 
+@router.get("/server-file/preview", response_model=ServerFilePreviewResponse)
+async def preview_server_file(
+    path: str = Query(..., description="Path relatif berkas Markdown di /opt/project5/docs"),
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Membaca dan mempratinjau isi berkas Markdown fisik di server sebelum diindeks atau ditolak.
+    Dilengkapi perlindungan anti directory traversal.
+    """
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    clean_path = os.path.normpath(path).lstrip("/\\")
+    full_path = os.path.abspath(os.path.join(docs_base, clean_path))
+
+    if not full_path.startswith(os.path.abspath(docs_base)):
+        raise HTTPException(status_code=403, detail="Akses direktori di luar batas tidak diizinkan.")
+
+    if not os.path.exists(full_path) or not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail=f"Berkas '{clean_path}' tidak ditemukan di server.")
+
+    try:
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal membaca berkas: {e}")
+
+    top_folder = clean_path.split(os.sep)[0] if os.sep in clean_path else "GENERAL"
+    category = FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
+    title = Path(full_path).stem.replace("-", " ").replace("_", " ").title()
+
+    if category in ("INFRASTRUCTURE", "ARCHITECTURE", "PLANS"):
+        scope_val = "PLATFORM_INTERNAL"
+    elif category in ("TROUBLESHOOTING",):
+        scope_val = "TENANT_INTERNAL"
+    else:
+        scope_val = "GLOBAL"
+
+    lines = content.splitlines()
+    words = content.split()
+
+    return ServerFilePreviewResponse(
+        path=clean_path,
+        title=title,
+        category=category,
+        scope=scope_val,
+        content=content,
+        size_bytes=len(content.encode("utf-8")),
+        line_count=len(lines),
+        word_count=len(words),
+        char_count=len(content),
+    )
+
+
+@router.post("/server-file/reject", status_code=200)
+async def reject_server_file(
+    payload: ServerFileRejectRequest,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Menolak / mengabaikan berkas server agar tidak diindeks ke pgvector
+    dan tidak lagi muncul pada daftar berkas unindexed.
+    """
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    clean_path = os.path.normpath(payload.path).lstrip("/\\")
+    full_path = os.path.abspath(os.path.join(docs_base, clean_path))
+
+    if not full_path.startswith(os.path.abspath(docs_base)):
+        raise HTTPException(status_code=403, detail="Akses direktori di luar batas tidak diizinkan.")
+
+    content = ""
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except Exception:
+            pass
+
+    top_folder = clean_path.split(os.sep)[0] if os.sep in clean_path else "GENERAL"
+    category = payload.category or FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
+    title = payload.title or Path(full_path).stem.replace("-", " ").replace("_", " ").title()
+
+    doc_id = uuid.uuid4()
+    async with get_db_session() as session:
+        check = await session.execute(
+            text("SELECT id FROM ai_documents WHERE tenant_id = :tenant_id AND file_name = :fn"),
+            {"tenant_id": str(ctx.tenant_id), "fn": clean_path},
+        )
+        existing = check.scalar()
+        if existing:
+            await session.execute(
+                text("UPDATE ai_documents SET status = 'REJECTED', updated_at = NOW() WHERE id = :id"),
+                {"id": str(existing)},
+            )
+            doc_id = existing
+        else:
+            await session.execute(
+                text("""
+                    INSERT INTO ai_documents
+                        (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type, status, raw_content, created_by)
+                    VALUES
+                        (:id, :tenant_id, :title, :category, 'GLOBAL', :fn, :size, 'text/markdown', 'REJECTED', :raw_content, :created_by)
+                """),
+                {
+                    "id": str(doc_id),
+                    "tenant_id": str(ctx.tenant_id),
+                    "title": title,
+                    "category": category,
+                    "fn": clean_path,
+                    "size": len(content.encode("utf-8")),
+                    "raw_content": content,
+                    "created_by": ctx.actor_id,
+                },
+            )
+
+    audit_client.log(
+        tenant_id=ctx.tenant_id,
+        actor_id=ctx.actor_id,
+        action="AI_SERVER_DOC_REJECTED",
+        resource_type="KNOWLEDGE_BASE",
+        resource_id=title,
+        log_group="OPERATIONS",
+        metadata={"file_path": clean_path, "reason": payload.reason or "Ditolak / diabaikan oleh pengguna"},
+    )
+
+    return {
+        "status": "REJECTED",
+        "id": str(doc_id),
+        "message": f"Berkas '{title}' berhasil ditolak dan diabaikan dari indeks.",
+    }
+
+
+@router.post("/server-file/index-single", response_model=DocumentUploadResponse, status_code=201)
+async def index_single_server_file(
+    payload: ServerFileIndexSingleRequest,
+    background_tasks: BackgroundTasks,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Mengindeks satu berkas spesifik dari server secara instan.
+    """
+    docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+    clean_path = os.path.normpath(payload.path).lstrip("/\\")
+    full_path = os.path.abspath(os.path.join(docs_base, clean_path))
+
+    if not full_path.startswith(os.path.abspath(docs_base)):
+        raise HTTPException(status_code=403, detail="Akses direktori di luar batas tidak diizinkan.")
+
+    if not os.path.exists(full_path) or not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail=f"Berkas '{clean_path}' tidak ditemukan di server.")
+
+    with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+        content = f.read()
+
+    top_folder = clean_path.split(os.sep)[0] if os.sep in clean_path else "GENERAL"
+    category = payload.category or FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
+    title = payload.title or Path(full_path).stem.replace("-", " ").replace("_", " ").title()
+    scope_val = payload.scope or ("PLATFORM_INTERNAL" if category in ("INFRASTRUCTURE", "ARCHITECTURE", "PLANS") else "GLOBAL")
+
+    doc_id = uuid.uuid4()
+    raw_bytes = content.encode("utf-8")
+
+    async with get_db_session() as session:
+        check = await session.execute(
+            text("SELECT id FROM ai_documents WHERE tenant_id = :tenant_id AND file_name = :fn"),
+            {"tenant_id": str(ctx.tenant_id), "fn": clean_path},
+        )
+        existing = check.scalar()
+        if existing:
+            doc_id = existing
+            await session.execute(
+                text("UPDATE ai_documents SET status = 'PENDING', raw_content = :rc, scope = :scope, updated_at = NOW() WHERE id = :id"),
+                {"id": str(doc_id), "rc": content, "scope": scope_val},
+            )
+        else:
+            await session.execute(
+                text("""
+                    INSERT INTO ai_documents
+                        (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type, status, raw_content, created_by)
+                    VALUES
+                        (:id, :tenant_id, :title, :category, :scope, :fn, :size, 'text/markdown', 'PENDING', :raw_content, :created_by)
+                """),
+                {
+                    "id": str(doc_id),
+                    "tenant_id": str(ctx.tenant_id),
+                    "title": title,
+                    "category": category,
+                    "scope": scope_val,
+                    "fn": clean_path,
+                    "size": len(raw_bytes),
+                    "raw_content": content,
+                    "created_by": ctx.actor_id,
+                },
+            )
+
+    background_tasks.add_task(
+        _index_document,
+        doc_id=doc_id,
+        tenant_id=ctx.tenant_id,
+        file_bytes=raw_bytes,
+        content_type="text/markdown",
+        scope=scope_val,
+    )
+
+    return DocumentUploadResponse(
+        id=doc_id,
+        tenant_id=ctx.tenant_id,
+        title=title,
+        category=category,
+        scope=scope_val,
+        status="PENDING",
+        chunk_count=0,
+        created_at=datetime.utcnow(),
+    )
+
+
+
 @router.get("/observability")
 async def get_ai_observability(ctx: TenantContext = Depends(verify_gateway_and_tenant)):
     """
@@ -612,7 +831,69 @@ async def get_document_detail(
     if not row:
         raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
 
-    return DocumentDetailResponse(**dict(row))
+    doc_data = dict(row)
+
+    # ── Fallback 1: Jika raw_content kosong di database, baca dari file fisik di server ──
+    if not doc_data.get("raw_content") and doc_data.get("file_name"):
+        docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
+        fn = doc_data["file_name"]
+        candidate_paths = [
+            os.path.join(docs_base, fn),
+            os.path.join(docs_base, os.path.basename(fn)),
+        ]
+
+        for candidate in candidate_paths:
+            if os.path.exists(candidate) and os.path.isfile(candidate):
+                try:
+                    with open(candidate, "r", encoding="utf-8", errors="replace") as f:
+                        doc_data["raw_content"] = f.read()
+                    break
+                except Exception as fe:
+                    logger.warning(f"Gagal membaca file fisik {candidate}: {fe}")
+
+        if not doc_data.get("raw_content"):
+            base_name = os.path.basename(fn)
+            matched = glob.glob(os.path.join(docs_base, f"**/{base_name}"), recursive=True)
+            if matched and os.path.isfile(matched[0]):
+                try:
+                    with open(matched[0], "r", encoding="utf-8", errors="replace") as f:
+                        doc_data["raw_content"] = f.read()
+                except Exception as fe:
+                    logger.warning(f"Gagal membaca file matched {matched[0]}: {fe}")
+
+    # ── Fallback 2: Jika file fisik tidak ada, rekonstruksi dari tabel ai_document_chunks ──
+    if not doc_data.get("raw_content"):
+        async with get_db_session() as session:
+            chunks_res = await session.execute(
+                text("""
+                    SELECT content
+                    FROM ai_document_chunks
+                    WHERE document_id = :doc_id
+                    ORDER BY chunk_index ASC
+                """),
+                {"doc_id": str(doc_id)},
+            )
+            chunk_rows = chunks_res.mappings().fetchall()
+            if chunk_rows:
+                doc_data["raw_content"] = "\n\n".join([c["content"] for c in chunk_rows if c.get("content")])
+
+    # ── Auto-cache: Simpan kembali ke ai_documents.raw_content jika berhasil dipulihkan ──
+    if doc_data.get("raw_content") and not row.get("raw_content"):
+        try:
+            async with get_db_session() as session:
+                await session.execute(
+                    text("UPDATE ai_documents SET raw_content = :rc, file_size_bytes = :sz WHERE id = :doc_id AND tenant_id = :tenant_id"),
+                    {
+                        "rc": doc_data["raw_content"],
+                        "sz": len(doc_data["raw_content"].encode("utf-8")),
+                        "doc_id": str(doc_id),
+                        "tenant_id": str(ctx.tenant_id),
+                    },
+                )
+        except Exception as ue:
+            logger.warning(f"Gagal memperbarui cache raw_content untuk doc_id={doc_id}: {ue}")
+
+    return DocumentDetailResponse(**doc_data)
 
 
 # ─── 6. Update / Edit Document ────────────────────────────────────────────────

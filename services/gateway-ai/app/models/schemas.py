@@ -273,3 +273,30 @@ class ServerSyncStatusResponse(BaseModel):
     unindexed_files: list[UnindexedFileItem]
     is_synced: bool
 
+
+class ServerFilePreviewResponse(BaseModel):
+    path: str
+    title: str
+    category: str
+    scope: str
+    content: str
+    size_bytes: int
+    line_count: int
+    word_count: int
+    char_count: int
+
+
+class ServerFileRejectRequest(BaseModel):
+    path: str
+    title: Optional[str] = None
+    category: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class ServerFileIndexSingleRequest(BaseModel):
+    path: str
+    title: Optional[str] = None
+    category: Optional[str] = None
+    scope: Optional[str] = None
+
+

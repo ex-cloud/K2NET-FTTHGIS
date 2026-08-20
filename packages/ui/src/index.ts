@@ -38,6 +38,7 @@ export * from "./components/floating-banner";
 export * from "./components/command-palette";
 export * from "./components/markdown";
 export * from "./components/kanban-board";
+export * from "./components/rich-text-editor";
 
 // Error Pages
 export * from "./components/errors/NotFoundError";

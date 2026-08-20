@@ -17,7 +17,6 @@ import {
   KNOWLEDGE_SCOPES,
   KnowledgeScope,
   KnowledgeStatus,
-  formatBytes,
 } from "./types";
 import {
   AiDocumentItem,
@@ -29,13 +28,9 @@ import {
   FileEdit,
   Loader2,
   CheckCircle2,
-  FileText,
-  Eye,
-  Edit3,
   Sparkles,
-  Layers,
-  Calendar,
 } from "lucide-react";
+import { AiRichEditor } from "./ai-rich-editor";
 
 interface AiEditKnowledgeModalProps {
   document: AiDocumentItem | null;
@@ -57,32 +52,43 @@ export function AiEditKnowledgeModal({
   const [category, setCategory] = useState("GENERAL");
   const [scope, setScope] = useState<KnowledgeScope>("GLOBAL");
   const [content, setContent] = useState("");
-  const [activeTab, setActiveTab] = useState<"write" | "preview">("write");
 
   // Load detail whenever modal opens with a document
   useEffect(() => {
-    if (!document || !isOpen) return;
+    if (!document || !isOpen) {
+      setTitle("");
+      setContent("");
+      return;
+    }
 
     setTitle(document.title);
     setCategory(document.category || "GENERAL");
     setScope(document.scope || "GLOBAL");
-    setActiveTab("write");
+    setContent(document.raw_content || "");
 
-    if (document.raw_content) {
-      setContent(document.raw_content);
-    } else {
-      setFetchingDetail(true);
-      getAiDocumentDetail(document.id)
-        .then((detail) => {
-          setContent(detail.raw_content || "");
-        })
-        .catch((err) => {
-          toast.error("Gagal memuat isi dokumen asli: " + err.message);
-        })
-        .finally(() => {
-          setFetchingDetail(false);
-        });
-    }
+    setFetchingDetail(true);
+    getAiDocumentDetail(document.id)
+      .then((detail) => {
+        if (detail && detail.raw_content) {
+          setContent(detail.raw_content);
+        }
+        if (detail && detail.title) {
+          setTitle(detail.title);
+        }
+        if (detail && detail.category) {
+          setCategory(detail.category);
+        }
+        if (detail && detail.scope) {
+          setScope(detail.scope as KnowledgeScope);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal memuat detail dokumen:", err);
+        toast.error("Gagal memuat isi dokumen: " + err.message);
+      })
+      .finally(() => {
+        setFetchingDetail(false);
+      });
   }, [document, isOpen]);
 
   const handleSave = async (targetStatus: KnowledgeStatus, shouldReindex: boolean) => {
@@ -121,16 +127,12 @@ export function AiEditKnowledgeModal({
     }
   };
 
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const charCount = content.length;
-  const estimatedTokens = Math.round(wordCount * 1.3);
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
-      <DialogContent className="sm:max-w-4xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card border-border shadow-2xl">
+      <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card border-border shadow-2xl">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                 <FileEdit className="h-5 w-5" />
@@ -146,7 +148,7 @@ export function AiEditKnowledgeModal({
               </div>
             </div>
 
-            {/* Scope Badge Preview */}
+            {/* Scope Badge Preview (Offset from close X icon with pr-8) */}
             {document && (
               <div className="flex items-center gap-2">
                 <div className="text-right hidden sm:block">
@@ -163,11 +165,11 @@ export function AiEditKnowledgeModal({
         </DialogHeader>
 
         {/* Body Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {fetchingDetail ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-foreground/75 dark:text-muted-foreground">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
+          {fetchingDetail && !content ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3 text-foreground/75 dark:text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm font-medium">Memuat isi dokumen asli...</p>
+              <p className="text-sm font-medium">Memuat isi dokumen asli dari memori AI...</p>
             </div>
           ) : (
             <>
@@ -222,32 +224,28 @@ export function AiEditKnowledgeModal({
                         key={item.id}
                         type="button"
                         onClick={() => setScope(item.id)}
-                        className={`p-3 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                        className={`p-3 rounded-lg border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                           isSelected
                             ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
                             : "border-border bg-background hover:bg-muted/40 text-foreground"
                         }`}
                       >
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <Icon className={`h-4 w-4 ${item.color}`} />
-                              <span className="text-xs font-semibold text-foreground">
-                                {item.shortLabel}
-                              </span>
-                            </div>
-                            {isSelected && (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                            )}
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Icon className={`h-4 w-4 ${item.color}`} />
+                            <span className="text-xs font-semibold text-foreground">
+                              {item.label}
+                            </span>
                           </div>
-                          <p className="text-[11px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
-                            {item.description}
-                          </p>
+                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                         </div>
-                        <div className="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between text-[10px]">
-                          <span className={`font-mono font-medium ${item.color}`}>
-                            {item.badge}
-                          </span>
+                        <p className="text-[11px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+                          {item.description}
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono font-medium text-foreground/80">
+                          {item.id === "PLATFORM_INTERNAL" && "Super Admin Only"}
+                          {item.id === "TENANT_INTERNAL" && "Mitra ISP Scope"}
+                          {item.id === "GLOBAL" && "Global Knowledge"}
                         </div>
                       </button>
                     );
@@ -255,67 +253,24 @@ export function AiEditKnowledgeModal({
                 </div>
               </div>
 
-              {/* Content Editor with Tab Bar & Metadata */}
+              {/* Content Editor Section (TipTap Rich Headless Markdown & Table Editor) */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-primary" />
-                    <span>Isi Dokumen (Format Markdown / Teks)</span>
-                  </Label>
-
-                  {/* Write vs Preview Toggle */}
-                  <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("write")}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                        activeTab === "write"
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Edit3 className="h-3 w-3" />
-                      Tulis
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("preview")}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                        activeTab === "preview"
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Eye className="h-3 w-3" />
-                      Preview
-                    </button>
+                <Label htmlFor="edit-content" className="text-xs font-semibold text-foreground flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span>Isi Dokumen (Editor Visual WYSIWYG / Markdown)</span>
+                    <span className="text-destructive">*</span>
                   </div>
-                </div>
-
-                {activeTab === "write" ? (
-                  <div className="relative">
-                    <textarea
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="# Tuliskan judul dan SOP teknis di sini...&#10;&#10;## Langkah Pengerjaan:&#10;1. Verifikasi konfigurasi...&#10;2. Gunakan perintah CLI..."
-                      rows={12}
-                      className="w-full p-3 rounded-lg bg-background border border-border text-foreground font-mono text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-                    />
-                    <div className="absolute bottom-3 right-3 px-2 py-0.5 rounded bg-muted/80 backdrop-blur border border-border text-[10px] text-foreground/75 dark:text-muted-foreground font-mono">
-                      {wordCount} kata • {charCount} karakter • ~{estimatedTokens} token
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-lg bg-background border border-border min-h-[280px] max-h-[360px] overflow-y-auto text-xs leading-relaxed text-foreground prose prose-invert max-w-none">
-                    {content ? (
-                      <pre className="font-sans whitespace-pre-wrap">{content}</pre>
-                    ) : (
-                      <p className="text-foreground/75 dark:text-muted-foreground italic">
-                        Belum ada konten untuk ditampilkan.
-                      </p>
-                    )}
-                  </div>
-                )}
+                  <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
+                    Format Markdown murni otomatis diselaraskan untuk pgvector RAG
+                  </span>
+                </Label>
+                <AiRichEditor
+                  value={content}
+                  onChange={(val) => setContent(val)}
+                  placeholder="# Tuliskan judul dan SOP teknis di sini...&#10;&#10;## Langkah Pengerjaan:&#10;1. Verifikasi konfigurasi...&#10;2. Gunakan tabel untuk parameter..."
+                  disabled={fetchingDetail || loading}
+                  minHeight="320px"
+                />
               </div>
 
               {/* Status & Re-index notice */}
@@ -342,7 +297,7 @@ export function AiEditKnowledgeModal({
             size="sm"
             onClick={onClose}
             disabled={loading}
-            className="text-xs border-border text-foreground hover:bg-muted"
+            className="text-xs border-border text-foreground hover:bg-muted cursor-pointer"
           >
             Batal
           </Button>
@@ -354,7 +309,7 @@ export function AiEditKnowledgeModal({
               size="sm"
               onClick={() => handleSave("DRAFT", false)}
               disabled={loading || fetchingDetail}
-              className="text-xs"
+              className="text-xs cursor-pointer"
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
               Simpan sebagai Draft
@@ -366,7 +321,7 @@ export function AiEditKnowledgeModal({
               size="sm"
               onClick={() => handleSave("INDEXED", true)}
               disabled={loading || fetchingDetail}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs"
             >
               {loading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />

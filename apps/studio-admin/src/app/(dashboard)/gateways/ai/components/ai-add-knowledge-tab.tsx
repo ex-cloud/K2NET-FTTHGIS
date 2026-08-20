@@ -27,6 +27,7 @@ import {
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, KNOWLEDGE_SCOPES, KnowledgeScope } from "./types";
+import { AiRichEditor } from "./ai-rich-editor";
 
 interface AiAddKnowledgeTabProps {
   // Upload State & Handlers
@@ -458,77 +459,33 @@ export function AiAddKnowledgeTab({
                     </label>
                   </div>
 
-                  {/* Content Editor with Tab Bar & Metadata */}
+                  {/* Content Editor with TipTap Headless Editor */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="manualDocContent" className="text-xs font-medium text-foreground">
-                        Konten Markdown <span className="text-destructive">*</span>
+                      <Label htmlFor="manualDocContent" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                        <span>Konten SOP / Manual (Format Markdown)</span>
+                        <span className="text-destructive">*</span>
                       </Label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={onGoToTemplates}
-                          className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          Gunakan Template SOP
-                        </button>
-                        <div className="flex items-center gap-0.5 bg-muted/40 p-0.5 rounded-lg border border-border">
-                          <button
-                            type="button"
-                            onClick={() => setManualPreviewTab("write")}
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
-                              manualPreviewTab === "write"
-                                ? "bg-card text-foreground shadow-xs"
-                                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            Tulis
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setManualPreviewTab("preview")}
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
-                              manualPreviewTab === "preview"
-                                ? "bg-card text-foreground shadow-xs"
-                                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <Eye className="h-3 w-3" />
-                            Preview
-                          </button>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={onGoToTemplates}
+                        className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Gunakan Template SOP
+                      </button>
                     </div>
 
-                    {manualPreviewTab === "write" ? (
-                      <textarea
-                        id="manualDocContent"
-                        rows={10}
-                        placeholder={`# Standar Redaman GPON 1:64\n\n- Batas minimum: -27 dBm\n- Batas ideal: -15 s/d -22 dBm\n- Prosedur perbaikan FO cut...`}
-                        value={manualContent}
-                        onChange={(e) => setManualContent(e.target.value)}
-                        required
-                        className="w-full rounded-lg border border-border bg-background p-3 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed resize-y custom-scrollbar"
-                      />
-                    ) : (
-                      <div className="p-4 rounded-lg bg-background border border-border min-h-[220px] max-h-[300px] overflow-y-auto text-xs leading-relaxed text-foreground prose prose-invert max-w-none">
-                        {manualContent ? (
-                          <pre className="font-sans whitespace-pre-wrap">{manualContent}</pre>
-                        ) : (
-                          <p className="text-foreground/75 dark:text-muted-foreground italic">
-                            Belum ada konten untuk ditampilkan.
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    <AiRichEditor
+                      value={manualContent}
+                      onChange={(val) => setManualContent(val)}
+                      placeholder="# Standar Redaman GPON 1:64&#10;&#10;- Batas minimum: -27 dBm&#10;- Batas ideal: -15 s/d -22 dBm&#10;- Prosedur perbaikan FO cut..."
+                      disabled={manualSubmitting}
+                      minHeight="280px"
+                    />
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono">
-                      {wordCount} Kata • {manualContent.length} Karakter • ~{estimatedTokens} Token
-                    </div>
+                  <div className="flex items-center justify-end pt-3 border-t border-border">
 
                     <div className="flex items-center gap-2">
                       <Button

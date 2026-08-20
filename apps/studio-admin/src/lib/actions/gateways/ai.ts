@@ -1,0 +1,569 @@
+"use server";
+
+import {
+  getGatewayToken,
+  verifySuperAdmin,
+  GATEWAY_URL_MAP,
+} from "./common";
+
+// ─── AI Assistant Gateway & Knowledge Base Actions ──────────────────────────
+
+export type AiKnowledgeStats = {
+  total_documents: number;
+  total_chunks: number;
+  total_size_bytes: number;
+  llm_provider: string;
+  embedding_model: string;
+  chat_model: string;
+  db_connected: boolean;
+};
+
+export type AiDocumentItem = {
+  id: string;
+  tenant_id: string;
+  title: string;
+  category: string;
+  scope: "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL";
+  file_name?: string | null;
+  file_size_bytes: number;
+  mime_type?: string | null;
+  status: "INDEXED" | "PENDING_REVIEW" | "DRAFT" | "PROCESSING" | "PENDING" | "REJECTED" | "FAILED";
+  chunk_count: number;
+  raw_content?: string | null;
+  error_message?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiDocumentDetail = AiDocumentItem;
+
+export type AiDocumentListResponse = {
+  total: number;
+  documents: AiDocumentItem[];
+};
+
+export async function getAiKnowledgeStats(): Promise<AiKnowledgeStats> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/stats`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI knowledge stats: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function getAiDocuments(params?: {
+  category?: string;
+  scope?: string;
+  status?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AiDocumentListResponse> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const query = new URLSearchParams();
+  if (params?.category) query.set("category", params.category);
+  if (params?.scope) query.set("scope", params.scope);
+  if (params?.status) query.set("status", params.status);
+  if (params?.search) query.set("search", params.search);
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents?${query.toString()}`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI documents: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function getAiDocumentDetail(docId: string): Promise<AiDocumentDetail> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal memuat detail dokumen AI");
+  }
+
+  return res.json();
+}
+
+export async function createManualAiDocument(payload: {
+  title: string;
+  category: string;
+  content: string;
+  scope?: "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL";
+  is_draft?: boolean;
+  auto_approve?: boolean;
+}): Promise<{ id: string; status: string; title: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/text`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal membuat dokumen manual");
+  }
+
+  return res.json();
+}
+
+export async function updateAiDocument(
+  docId: string,
+  payload: {
+    title?: string;
+    category?: string;
+    scope?: "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL";
+    content?: string;
+    status?: string;
+    reindex?: boolean;
+  }
+): Promise<AiDocumentDetail> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal mengupdate dokumen");
+  }
+
+  return res.json();
+}
+
+export async function approveAiDocument(
+  docId: string,
+  payload?: { scope?: "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL" }
+): Promise<{ id: string; status: string; title: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}/approve`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload || {}),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal menyetujui dokumen");
+  }
+
+  return res.json();
+}
+
+export async function rejectAiDocument(
+  docId: string,
+  payload?: { reason?: string }
+): Promise<{ id: string; status: string; title: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}/reject`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload || {}),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal menolak dokumen");
+  }
+
+  return res.json();
+}
+
+export async function deleteAiDocument(docId: string): Promise<{ status: string; message: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+    method: "DELETE",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal menghapus dokumen");
+  }
+
+  return res.json();
+}
+
+export async function triggerServerDocsSync(): Promise<{ status: string; message: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-server`, {
+    method: "POST",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal memicu sinkronisasi dokumen server");
+  }
+
+  return res.json();
+}
+
+export async function simulateVectorSearch(payload: {
+  query: string;
+  limit?: number;
+  min_similarity?: number;
+  scope?: string;
+}): Promise<{ query: string; total_matches: number; results: any[] }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/simulate-search`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    return { query: payload.query, total_matches: 0, results: [] };
+  }
+
+  return res.json();
+}
+
+export async function testAiProviderConnection(payload: {
+  provider: string;
+  api_key?: string;
+  base_url?: string;
+  model?: string;
+}): Promise<{
+  provider: string;
+  success: boolean;
+  latency_ms: number;
+  message: string;
+  models_available?: string[];
+  error_detail?: string;
+}> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/providers/test`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    return {
+      provider: payload.provider,
+      success: false,
+      latency_ms: 0,
+      message: err.detail || "Gagal menguji koneksi provider.",
+      error_detail: err.detail,
+    };
+  }
+
+  return res.json();
+}
+
+export type KnowledgeGraphData = {
+  nodes: Array<{
+    id: string;
+    label: string;
+    title: string;
+    category: string;
+    chunk_count: number;
+    file_size_bytes: number;
+    vendor: string;
+    status: string;
+    degree: number;
+    group: number;
+    val: number;
+  }>;
+  links: Array<{
+    source: string;
+    target: string;
+    similarity: number;
+    value: number;
+    relation: string;
+  }>;
+  stats: {
+    total_nodes: number;
+    total_links: number;
+    categories_count: number;
+    max_chunks: number;
+    top_categories: Array<{ category: string; count: number }>;
+  };
+};
+
+export async function getKnowledgeGraphData(): Promise<KnowledgeGraphData> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/knowledge/graph`, {
+    method: "GET",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error("Gagal memuat visualisasi Knowledge Graph.");
+  }
+
+  return res.json();
+}
+
+export type ServerSyncStatus = {
+  total_server_files: number;
+  indexed_count: number;
+  unindexed_count: number;
+  unindexed_files: Array<{
+    path: string;
+    title: string;
+    category: string;
+    size_bytes: number;
+  }>;
+  is_synced: boolean;
+};
+
+export async function getAiServerSyncStatus(): Promise<ServerSyncStatus> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  try {
+    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-status`, {
+      method: "GET",
+      headers: {
+        "X-Gateway-Token": token,
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return {
+        total_server_files: 0,
+        indexed_count: 0,
+        unindexed_count: 0,
+        unindexed_files: [],
+        is_synced: true,
+      };
+    }
+
+    return res.json();
+  } catch (err) {
+    console.warn("Gagal memuat status sync dokumen server:", err);
+    return {
+      total_server_files: 0,
+      indexed_count: 0,
+      unindexed_count: 0,
+      unindexed_files: [],
+      is_synced: true,
+    };
+  }
+}
+
+export interface ServerFilePreview {
+  path: string;
+  title: string;
+  category: string;
+  scope: string;
+  content: string;
+  size_bytes: number;
+  line_count: number;
+  word_count: number;
+  char_count: number;
+}
+
+export async function previewAiServerFile(filePath: string): Promise<ServerFilePreview> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(
+    `${aiGatewayUrl}/api/v1/ai/documents/server-file/preview?path=${encodeURIComponent(filePath)}`,
+    {
+      headers: {
+        "X-Gateway-Token": token,
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+      next: { revalidate: 0 },
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal mempratinjau berkas server");
+  }
+
+  return res.json();
+}
+
+export async function rejectAiServerFile(payload: {
+  path: string;
+  title?: string;
+  category?: string;
+  reason?: string;
+}): Promise<{ status: string; message: string; id: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/server-file/reject`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal menolak berkas server");
+  }
+
+  return res.json();
+}
+
+export async function indexSingleAiServerFile(payload: {
+  path: string;
+  title?: string;
+  category?: string;
+  scope?: string;
+}): Promise<{ id: string; status: string; title: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/server-file/index-single`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || "Gagal mengindeks berkas server");
+  }
+
+  return res.json();
+}
+
+export async function uploadKnowledgeImage(formData: FormData): Promise<{ url: string; filename: string }> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const storageGatewayUrl = GATEWAY_URL_MAP["storage"] || "http://ftth-storage-gateway:5004";
+
+  if (!formData.has("bucket")) {
+    formData.append("bucket", "public-contents");
+  }
+  if (!formData.has("folder")) {
+    formData.append("folder", "knowledge/images");
+  }
+
+  const res = await fetch(`${storageGatewayUrl}/api/v1/upload`, {
+    method: "POST",
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || "Gagal mengunggah gambar ke MinIO S3");
+  }
+
+  return res.json();
+}
