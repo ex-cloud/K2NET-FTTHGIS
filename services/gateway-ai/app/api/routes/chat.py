@@ -6,7 +6,7 @@ Fitur: Redis Semantic Cache (< 10ms) + Hybrid Search RAG (pgvector + BM25 RRF) +
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from app.api.dependencies import verify_gateway_and_tenant, TenantContext
-from app.models.schemas import ChatStreamRequest
+from app.models.schemas import ChatStreamRequest, SopGenerateRequest
 from app.services.llm_engine import LLMEngine
 from app.services.rag_retriever import RAGRetriever
 from app.services.semantic_cache import semantic_cache
@@ -234,3 +234,231 @@ async def _save_messages(
             )
     except Exception as e:
         logger.warning(f"Failed to save chat messages to DB (non-critical): {e}")
+
+
+# ─── Domain Knowledge Context Guidelines ───────────────────────────────────────
+CATEGORY_DOMAIN_CONTEXTS: dict[str, str] = {
+    "GIS_MANUAL": (
+        "STANDAR BAKU PEMETAAN FTTH & GIS (K2NET):\n"
+        "- Konvensi Penamaan Aset (Naming Convention):\n"
+        "  * OLT: OLT-<KODE_KOTA>-<SITE_NOC>-<NO_RACK> (Contoh: OLT-JKT-SBY01-01)\n"
+        "  * ODC / FDT: ODC-<KAPASITAS_CORE>-<AREA_KODE>-<NO_URUT> (Contoh: ODC-144-KLG-001)\n"
+        "  * ODP: ODP-<TIPE_SPLITTER>-<PARENT_ODC>-<NO_ODP> (Contoh: ODP-SOLID-KLG01-08)\n"
+        "  * Joint Closure (FJC): FJC-<CORE>-<RUTE>-<NO_CLOSURE> (Contoh: FJC-24-RUT01-002)\n"
+        "  * Drop Cable: DC-<PARENT_ODP>-<PORT_NO>-<ID_PELANGGAN>\n"
+        "  * Tiang / Pole: POL-<PROVIDER>-<AREA>-<NO_TIANG>\n"
+        "- Geospasial: Proyeksi EPSG:4326 (WGS84 Lat/Long), toleransi deviasi GPS < 3 meter.\n"
+        "- Evidence & QA: Foto open-box splitter, closed-box, tagging label QR fisik, dan tracing jalur kabel optik."
+    ),
+    "TROUBLESHOOTING": (
+        "STANDAR OPTIK & TROUBLESHOOTING GPON (ITU-T G.984):\n"
+        "- Link Budget GPON:\n"
+        "  * Transmit Power OLT (Class B+/C+): +1.5 dBm s/d +7.0 dBm\n"
+        "  * Receiver Sensitivity ONT: -8.0 dBm s/d -28.0 dBm\n"
+        "  * Redaman Ideal Operasional (Drop to ONT): -15.0 dBm s/d -22.0 dBm\n"
+        "  * Batas Kritis / Redaman Drop: Maksimal -27.0 dBm (Redaman > -27 dBm = Wajib Perbaikan)\n"
+        "  * Standar Redaman Splitter: 1:2 (~3.5 dB), 1:4 (~7.2 dB), 1:8 (~10.5 dB), 1:16 (~13.8 dB), 1:32 (~17.0 dB), 1:64 (~20.5 dB)\n"
+        "  * Redaman Fusion Splicing: Maksimal 0.05 dB per titik sambung.\n"
+        "- Alarm Kritis: LOS (Loss of Signal), Dying Gasp (Power Outage ONT), High Optical Power, Rogues ONT."
+    ),
+    "NETWORK_CONFIG": (
+        "STANDAR KONFIGURASI PERANGKAT JARINGAN FTTH:\n"
+        "- Vendor OLT: ZTE C300/C320/C600, Huawei MA5608T/MA5800, FiberHome AN5516.\n"
+        "- Profiling: VLAN Management, VLAN Internet (PPPoE/IPoE), VLAN IPTV/VoIP, T-CONT & GEM Port, DBA profile, Traffic Table QoS, dan CLI ONT provisioning."
+    ),
+    "INFRASTRUCTURE": (
+        "STANDAR INFRASTRUKTUR & DEVOPS PLATFORM K2NET:\n"
+        "- Stack: Docker Compose, Traefik v3 Proxy, Kong API Gateway (DB-less), PostgreSQL 17 + PostGIS + pgvector, MinIO S3, Keycloak 26 IAM, Redis Cache, Go Gateways, Spring Boot.\n"
+        "- Backup 3-Layer: Local Storage (/opt/project5/backups), MinIO S3, Offsite Nextcloud WebDAV."
+    ),
+    "PLANS": (
+        "STANDAR PERENCANAAN JARINGAN & ROADMAP:\n"
+        "- Feasibility Study, Bill of Quantity (BOQ), penentuan Homepass, rasio utilisasi port ODP, core allocation feeder & distribution, mitigasi perizinan jalur publik."
+    ),
+    "GENERAL": (
+        "STANDAR OPERASIONAL UMUM & TIKET:\n"
+        "- Manajemen Tiket Gangguan, SLA Penanganan (Critical < 2 Jam, Major < 4 Jam, Minor < 24 Jam), tata tertib teknisi, administrasi Berita Acara Serah Terima (BAST)."
+    ),
+}
+
+SCOPE_DOMAIN_CONTEXTS: dict[str, str] = {
+    "PLATFORM_INTERNAL": "OTORITAS: Platform Super Admin (Arsitektur platform internal K2NET, orkestrasi server, multi-tenant isolation, database PostGIS, Kong & Keycloak IAM).",
+    "TENANT_INTERNAL": "OTORITAS: Mitra ISP / Tenant Internal (Operasional teknis NOC & Teknisi Lapangan ISP: konfigurasi OLT, penataan ODC/ODP, redaman drop, splicing fiber, survey lapangan).",
+    "GLOBAL": "OTORITAS: Publik / Global (Panduan operasional umum, tata cara penggunaan sistem GIS, pelaporan tiket gangguan).",
+}
+
+
+# ─── Dedicated SOP Generator Route (RAG + Synthesis) ───────────────────────────
+@router.post("/generate-sop/stream")
+async def stream_sop_generation(
+    payload: SopGenerateRequest,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Dedicated SOP Generator Streaming Endpoint:
+    1. Melakukan RAG Retrieval dari Knowledge Base server (pgvector + BM25 FTS).
+    2. Menggabungkan konteks internal K2NET dengan standar telekomunikasi FTTH internasional (ITU-T G.984/G.987, TIA/EIA-598-C).
+    3. Menghilangkan redundansi dan melengkapi kekurangan data teknis.
+    4. Mengalirkan draf dokumen Markdown terstruktur 7 bab via SSE real-time.
+    """
+    start_time = time.time()
+
+    audit_client.log(
+        tenant_id=ctx.tenant_id,
+        actor_id=ctx.actor_id,
+        action="AI_SOP_GENERATE",
+        resource_type="AI_KNOWLEDGE_BASE",
+        resource_id=payload.title,
+        log_group="OPERATIONS",
+        metadata={"category": payload.category, "scope": payload.scope},
+    )
+
+    provider = None
+    model_override = payload.model or None
+    if model_override:
+        m_lower = model_override.lower()
+        if "gemini" in m_lower:
+            provider = "gemini"
+        elif "gpt" in m_lower or "openai" in m_lower:
+            provider = "openai"
+        elif "deepseek" in m_lower:
+            provider = "deepseek"
+        else:
+            provider = "ollama"
+
+    async def sop_event_generator():
+        total_tokens = 0
+        try:
+            # ── 1. Status: Memindai Knowledge Base Internal Server K2NET ─────────
+            yield f"data: {json.dumps({'type': 'status', 'stage': 'searching', 'message': f'Memindai Knowledge Base server untuk topik: {payload.title}...' })}\n\n"
+
+            # ── 2. Hybrid RAG Retrieval dari database pgvector + BM25 ───────────
+            retriever = RAGRetriever(tenant_id=ctx.tenant_id, provider=provider)
+            search_query = f"{payload.title} {payload.category} {payload.scope} FTTH GIS K2NET standard operational procedure"
+            
+            contexts, sources = await retriever.retrieve_context(
+                query=search_query,
+                limit=6,
+                scope=payload.scope if payload.scope != "GLOBAL" else "GENERAL",
+                category=payload.category if payload.category != "GENERAL" else "ALL",
+            )
+
+            if sources:
+                yield f"data: {json.dumps({'type': 'sources', 'sources': sources, 'stage': 'retrieved', 'message': f'Ditemukan {len(sources)} dokumen referensi internal server K2NET' })}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'sources', 'sources': [], 'stage': 'synthesizing', 'message': 'Menghubungkan standar telekomunikasi FTTH internasional...' })}\n\n"
+
+            # ── 3. Susun Konteks Domain & Instruksi Sintesis ─────────────────────
+            category_guide = CATEGORY_DOMAIN_CONTEXTS.get(
+                payload.category,
+                CATEGORY_DOMAIN_CONTEXTS["GENERAL"]
+            )
+            scope_guide = SCOPE_DOMAIN_CONTEXTS.get(
+                payload.scope,
+                SCOPE_DOMAIN_CONTEXTS["GLOBAL"]
+            )
+
+            system_instruction = (
+                "Kamu adalah Senior FTTH Network Architect, GIS Specialist & Chief Technical Documentation Officer K2NET.\n"
+                "Tugasmu adalah menghasilkan dokumen SOP (Standard Operating Procedure) resmi yang sangat mendalam, akurat, dan komprehensif untuk ekosistem FTTH GIS K2NET.\n\n"
+                "PRINSIP SINTESIS PENGETAHUAN:\n"
+                "1. Gabungkan informasi dari Knowledge Base internal server K2NET (jika ada) dengan standar telekomunikasi FTTH internasional (ITU-T G.984 GPON, ITU-T G.987 XGS-PON, IEEE 802.3ah, TIA/EIA-598-C).\n"
+                "2. Lengkapi setiap bagian yang belum ada di server dengan best practice industri telekomunikasi riil sehingga dokumen menjadi utuh, solutif, dan siap pakai.\n"
+                "3. Jangan membuat data duplikat yang bertentangan dengan standar baku FTTH.\n"
+                "4. JANGAN gunakan placeholder generik seperti '[isi di sini]', '...', atau kalimat mengambang. Berikan data teknis, format kode penamaan aset nyata, nilai angka threshold dBm riil, perintah CLI/sintaks konfigurasi nyata, dan alur langkah kerja konkret.\n"
+                "5. DILARANG KERAS menyapa atau berbasa-basi di awal (seperti 'Berikut adalah draf...') dan dilarang menulis penutup obrolan.\n"
+                "6. Mulai baris PERTAMA langsung dengan: '# " + payload.title + "'.\n"
+                "7. Selesaikan seluruh 7 seksi secara lengkap dan tuntas tanpa terpotong."
+            )
+
+            generation_prompt = f"""Hasilkan dokumen SOP teknis resmi yang mendalam dan tuntas untuk:
+
+- **Judul Dokumen**: {payload.title}
+- **Kategori Bidang**: {payload.category}
+- **Otoritas & Ruang Lingkup**: {payload.scope}
+
+{category_guide}
+
+{scope_guide}
+
+---
+
+SUSUNAN STRUKTUR DOKUMEN WAJIB (Seluruh 7 Seksi Harus Diisi Substansi Teknis Nyata):
+
+# {payload.title}
+
+## 1. Tujuan & Ringkasan Eksekutif
+Jelaskan tujuan operasional dokumen ini dibuat, target SLA, dan jaminan mutu teknis yang ingin dicapai bagi jaringan K2NET.
+
+## 2. Ruang Lingkup & Otoritas Akses
+- Cakupan wilayah dan infrastruktur yang terdampak.
+- Matriks peran & tanggung jawab pelaksana ({payload.scope}): RACI (Responsible, Accountable, Consulted, Informed).
+
+## 3. Prasyarat & Alat Kerja Lapangan (Prerequisites)
+- Peralatan Hardware / Instrumen Ukur Lapangan (sertakan tipe spesifik seperti OPM, OTDR, Fusion Splicer, VFL).
+- Perangkat Lunak / Platform GIS / Akses Kredensial CLI perangkat.
+- Standar K3 (Keselamatan dan Kesehatan Kerja) teknisi lapangan & APD wajib.
+
+## 4. Prosedur Kerja Langkah demi Langkah
+1. **Tahap 1 — Persiapan & Pra-Verifikasi**: Cek izin kerja, review topologi spasial pada GIS K2NET, dan kalibrasi alat.
+2. **Tahap 2 — Eksekusi Teknis Lapangan / Konfigurasi**:
+   - Jelaskan langkah teknis mendalam dan terperinci.
+   - Sertakan format konvensi penamaan aset / format penomoran / sintaks konfigurasi perangkat yang relevan dengan judul.
+   - Prosedur penarikan, penyambungan (splicing), labeling fisik QR code, dan tagging atribut spasial.
+3. **Tahap 3 — Pengujian & Validasi Mutu (Quality Assurance)**: Prosedur pengetesan link optik / validasi konektivitas.
+
+## 5. Batas Parameter Teknis & Threshold Kritis
+Buat tabel parameter teknis standar, rentang toleransi batas kritis, dan tindakan perbaikan langsung:
+| Parameter / Indikator Teknis | Nilai Standar / Ideal | Batas Toleransi Kritis | Tindakan Korektif (Troubleshooting) |
+|---|---|---|---|
+| (Tuliskan parameter 1 sesuai judul) | ... | ... | ... |
+| (Tuliskan parameter 2 sesuai judul) | ... | ... | ... |
+| (Tuliskan parameter 3 sesuai judul) | ... | ... | ... |
+| (Tuliskan parameter 4 sesuai judul) | ... | ... | ... |
+
+## 6. Penanganan Masalah & Prosedur Eskalasi (Troubleshooting)
+- Identifikasi 3-4 skenario kendala/anomali yang paling sering terjadi dan solusi cepat di lapangan.
+- Prosedur eskalasi berjenjang (Level 1 Teknisi -> Level 2 NOC -> Level 3 Core / Vendor).
+
+## 7. Checklist Penyelesaian & Berita Acara (Sign-Off)
+- [ ] Verifikasi fisik, kerapian instalasi, dan penutupan enclosure (ODC/ODP/FJC).
+- [ ] Pengukuran redaman optik end-to-end terverifikasi dalam batas toleransi.
+- [ ] Sinkronisasi dan update data atribut aset pada platform K2NET FTTH GIS.
+- [ ] Upload foto dokumentasi evidence (Open-box, Closed-box, Label Tag).
+- [ ] Penerbitan Berita Acara Serah Terima (BAST) pekerjaan.
+
+Tuliskan dokumen lengkap sekarang secara mendalam:"""
+
+            yield f"data: {json.dumps({'type': 'status', 'stage': 'generating', 'message': 'Menulis dokumen SOP teknis komprehensif...' })}\n\n"
+
+            # ── 4. Streaming Output dari LLM Engine ──────────────────────────────
+            engine = LLMEngine(provider=provider, model=model_override)
+            async for token in engine.stream_chat(
+                user_message=generation_prompt,
+                history=[],
+                contexts=contexts,
+                system_prompt=system_instruction,
+            ):
+                total_tokens += len(token.split())
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+            latency_ms = int((time.time() - start_time) * 1000)
+            yield f"data: {json.dumps({'type': 'usage', 'tokens': total_tokens, 'latency_ms': latency_ms, 'sources_count': len(sources)})}\n\n"
+
+        except Exception as e:
+            logger.error(f"SOP generation error for tenant={ctx.tenant_id}: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(
+        sop_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+

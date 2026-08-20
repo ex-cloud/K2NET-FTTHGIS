@@ -1,6 +1,6 @@
 /**
  * POST /api/ai/generate-sop
- * Proxy ke gateway-ai untuk generate draft SOP via streaming SSE.
+ * Proxy ke gateway-ai untuk generate draft SOP berbasis sintesis RAG internal server + standar industri FTTH.
  * Request body: { title, category, scope }
  * Response: text/event-stream (SSE) — mengalirkan token Markdown ke client
  */
@@ -9,23 +9,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGatewayToken, GATEWAY_URL_MAP } from "@/lib/actions/gateways/common";
 
 const AI_GATEWAY_URL = GATEWAY_URL_MAP.ai || process.env.AI_GATEWAY_URL || "http://ftth-ai-gateway:5012";
-
-// Peta kategori untuk memperkaya prompt
-const CATEGORY_LABELS: Record<string, string> = {
-  TROUBLESHOOTING: "Troubleshooting & Penanganan Gangguan OLT/Optical",
-  NETWORK_CONFIG: "Arsitektur & Konfigurasi Jaringan",
-  GIS_MANUAL: "GIS, Survey Spasial & Pemetaan Aset",
-  INFRASTRUCTURE: "DevOps & Infrastruktur Server",
-  PLANS: "Perencanaan & Roadmap Jaringan",
-  GENERAL: "General & Standar SOP Operasional",
-};
-
-// Peta scope untuk memperkaya prompt
-const SCOPE_LABELS: Record<string, string> = {
-  PLATFORM_INTERNAL: "Platform Super Admin (Dokumen internal rahasia K2NET)",
-  TENANT_INTERNAL: "Mitra ISP / Tenant Internal (NOC & Teknisi Lapangan ISP)",
-  GLOBAL: "Publik / Global (Semua Pengguna Platform)",
-};
 
 export async function POST(req: NextRequest) {
   // Auth check: hanya Super Admin
@@ -53,66 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Judul SOP tidak boleh kosong" }, { status: 400 });
   }
 
-  const categoryLabel = CATEGORY_LABELS[category] || category;
-  const scopeLabel = SCOPE_LABELS[scope] || scope;
   const gatewayToken = getGatewayToken();
 
-  const systemPrompt = `Kamu adalah Senior FTTH Network Architect & Technical Documentation Writer K2NET.
-Tugasmu adalah menghasilkan dokumen SOP (Standard Operating Procedure) resmi secara instan dalam format Markdown standar untuk sistem FTTH GIS K2NET.
-
-ATURAN MUTLAK PENULISAN:
-1. DILARANG KERAS menyapa atau menulis kalimat pengantar seperti "Berikut adalah draf...", "Tentu...", "Berikut ini...".
-2. DILARANG KERAS menulis kalimat penutup obrolan seperti "Semoga membantu...", "Jika butuh revisi...".
-3. Mulai LANGSUNG pada baris pertama dengan "# ${title}".
-4. Tuliskan SELURUH 7 seksi secara lengkap, padat, teknis, dan tuntas hingga seksi 7 selesai.
-5. Gunakan bahasa Indonesia teknis yang baku dan profesional.`;
-
-  const generationPrompt = `Buatkan dokumen SOP resmi lengkap untuk:
-- Judul: ${title}
-- Kategori: ${categoryLabel}
-- Target Otoritas / Visibilitas: ${scopeLabel}
-
-Struktur Dokumen (Wajib lengkap seluruh 7 seksi):
-
-# ${title}
-
-## 1. Tujuan & Ringkasan Eksekutif
-Jelaskan tujuan operasional dokumen ini dan standar mutu yang dicapai.
-
-## 2. Ruang Lingkup & Otoritas Akses
-Sebutkan pihak/role pelaksana (${scopeLabel}) dan tanggung jawab masing-masing.
-
-## 3. Prasyarat & Alat Kerja Lapangan (Prerequisites)
-- Peralatan hardware / software / tools lapangan (OPM, OTDR, Fusion Splicer, CLI)
-- Hak akses sistem & kredensial
-- Standar K3 dan keselamatan kerja
-
-## 4. Prosedur Kerja Langkah demi Langkah
-1. **Tahap Persiapan & Verifikasi Awal**: Langkah-langkah cek awal.
-2. **Tahap Eksekusi Teknis**: Prosedur teknis terperinci dengan format penamaan / konfigurasi / langkah fisik.
-3. **Tahap Validasi & Pengujian**: Pengujian fungsi dan verifikasi hasil.
-
-## 5. Batas Parameter Teknis & Threshold Kritis
-Buat tabel acuan standar parameter teknis, redaman optik (dBm), status LED, atau error code yang relevan:
-| Parameter / Indikator | Nilai Standar / Ideal | Batas Toleransi Kritis | Tindakan Korektif |
-|---|---|---|---|
-| Redaman ODP / Drop Cable | -15 s/d -22 dBm | Max -27 dBm | Re-splicing / cek konektor |
-| ... | ... | ... | ... |
-
-## 6. Penanganan Masalah & Prosedur Eskalasi (Troubleshooting)
-Sebutkan skenario gangguan umum beserta langkah penanganan cepat dan alur eskalasi.
-
-## 7. Checklist Penyelesaian & Catatan Kepatuhan
-- [ ] Checklist verifikasi fisik dan konfigurasi
-- [ ] Checklist dokumentasi dan tagging aset pada GIS
-- [ ] Serah terima pekerjaan
-
-Tuliskan dokumen lengkap sekarang:`;
-
-  // Panggil gateway-ai chat/stream dengan SSE
+  // Panggil endpoint dedicated generate-sop/stream di gateway-ai
   let upstreamRes: Response;
   try {
-    upstreamRes = await fetch(`${AI_GATEWAY_URL}/api/v1/ai/chat/stream`, {
+    upstreamRes = await fetch(`${AI_GATEWAY_URL}/api/v1/ai/generate-sop/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -122,12 +51,10 @@ Tuliskan dokumen lengkap sekarang:`;
         "X-Actor-Role": "super_admin",
       },
       body: JSON.stringify({
-        message: generationPrompt,
-        system_prompt: systemPrompt,
-        history: [],
-        scope: "GENERAL",
+        title,
+        category,
+        scope,
         model: "",
-        session_id: null,
       }),
     });
   } catch (err) {

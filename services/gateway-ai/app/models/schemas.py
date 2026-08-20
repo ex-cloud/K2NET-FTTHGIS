@@ -39,6 +39,13 @@ class ChatStreamRequest(BaseModel):
     )
 
 
+class SopGenerateRequest(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255, description="Judul SOP / Prosedur Teknis")
+    category: str = Field(default="GENERAL", description="Kategori SOP: GIS_MANUAL | TROUBLESHOOTING | NETWORK_CONFIG | INFRASTRUCTURE | PLANS | GENERAL")
+    scope: str = Field(default="GLOBAL", description="Scope Otoritas: PLATFORM_INTERNAL | TENANT_INTERNAL | GLOBAL")
+    model: str = Field(default="", description="Override model LLM (kosong = pakai default)")
+
+
 class DocumentSource(BaseModel):
     document_id: str
     title: str
