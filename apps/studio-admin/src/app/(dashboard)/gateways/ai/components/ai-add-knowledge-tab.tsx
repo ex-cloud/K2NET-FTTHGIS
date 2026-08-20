@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { 
   UploadCloud, 
   FileText, 
@@ -15,6 +15,9 @@ import {
   Check,
   Eye,
   Edit3,
+  Wand2,
+  StopCircle,
+  BrainCircuit,
 } from "lucide-react";
 import { 
   Card, 
@@ -97,8 +100,106 @@ export function AiAddKnowledgeTab({
   const [entryMode, setEntryMode] = useState<"UPLOAD" | "MANUAL">("UPLOAD");
   const [manualPreviewTab, setManualPreviewTab] = useState<"write" | "preview">("write");
 
+  // ── AI Generate State ──────────────────────────────────────────────────────
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratedChars, setAiGeneratedChars] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  /**
+   * Stream-generate SOP content from AI gateway using SSE.
+   * Requires: manualTitle, manualCategory, manualScope to be filled.
+   */
+  const generateWithAi = useCallback(async () => {
+    if (!manualTitle.trim()) {
+      // Tidak akan dipanggil karena tombol disabled, tapi sebagai guard
+      return;
+    }
+
+    // Abort previous if running
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setAiGenerating(true);
+    setAiGeneratedChars(0);
+    // Reset editor content sebelum mulai streaming
+    setManualContent("");
+
+    try {
+      const res = await fetch("/api/ai/generate-sop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: manualTitle.trim(),
+          category: manualCategory,
+          scope: manualScope,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("Response body tidak tersedia");
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw || raw === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.token) {
+              accumulated += parsed.token;
+              setManualContent(accumulated);
+              setAiGeneratedChars(accumulated.length);
+            }
+          } catch {
+            // ignore malformed SSE lines
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        // Tampilkan pesan error di editor supaya user tahu
+        setManualContent(
+          `> ⚠️ **Gagal generate konten AI**\n>\n> ${err.message}\n\nSilakan periksa koneksi ke layanan AI gateway atau tulis manual.`
+        );
+      }
+    } finally {
+      setAiGenerating(false);
+      abortControllerRef.current = null;
+    }
+  }, [manualTitle, manualCategory, manualScope, setManualContent]);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setAiGenerating(false);
+  }, []);
+  // ──────────────────────────────────────────────────────────────────────────
+
   const wordCount = manualContent.trim() ? manualContent.trim().split(/\s+/).length : 0;
   const estimatedTokens = Math.round(wordCount * 1.3);
+
+  const canGenerateAi = manualTitle.trim().length >= 5 && !aiGenerating && !manualSubmitting;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -461,26 +562,73 @@ export function AiAddKnowledgeTab({
 
                   {/* Content Editor with TipTap Headless Editor */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
+                    {/* Editor Label + Action Buttons */}
+                    <div className="flex items-center justify-between gap-2">
                       <Label htmlFor="manualDocContent" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                         <span>Konten SOP / Manual (Format Markdown)</span>
                         <span className="text-destructive">*</span>
                       </Label>
-                      <button
-                        type="button"
-                        onClick={onGoToTemplates}
-                        className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        Gunakan Template SOP
-                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        {/* Template SOP Link */}
+                        <button
+                          type="button"
+                          onClick={onGoToTemplates}
+                          className="text-[11px] text-primary/80 hover:text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Gunakan Template SOP
+                        </button>
+
+                        <span className="text-border text-[11px]">|</span>
+
+                        {/* AI Generate Button */}
+                        {aiGenerating ? (
+                          <button
+                            type="button"
+                            onClick={stopGeneration}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                          >
+                            <StopCircle className="w-3 h-3 animate-pulse" />
+                            Hentikan ({aiGeneratedChars} karakter)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={generateWithAi}
+                            disabled={!canGenerateAi}
+                            title={!manualTitle.trim() || manualTitle.trim().length < 5
+                              ? "Isi judul minimal 5 karakter terlebih dahulu"
+                              : "Generate draft SOP dengan AI berdasarkan judul, kategori & visibilitas"
+                            }
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Wand2 className="w-3 h-3" />
+                            Generate dengan AI
+                          </button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* AI Generating Status Banner */}
+                    {aiGenerating && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-primary">
+                        <BrainCircuit className="w-3.5 h-3.5 animate-pulse shrink-0" />
+                        <span>
+                          AI sedang menyusun draft SOP berdasarkan:{" "}
+                          <span className="font-semibold">{manualTitle}</span>
+                          {" · "}
+                          <span className="opacity-75">{manualCategory} · {manualScope}</span>
+                        </span>
+                        <span className="ml-auto font-mono text-primary/60">{aiGeneratedChars} kar</span>
+                      </div>
+                    )}
 
                     <AiRichEditor
                       value={manualContent}
                       onChange={(val) => setManualContent(val)}
                       placeholder="# Standar Redaman GPON 1:64&#10;&#10;- Batas minimum: -27 dBm&#10;- Batas ideal: -15 s/d -22 dBm&#10;- Prosedur perbaikan FO cut..."
-                      disabled={manualSubmitting}
+                      disabled={manualSubmitting || aiGenerating}
                       minHeight="280px"
                     />
                   </div>

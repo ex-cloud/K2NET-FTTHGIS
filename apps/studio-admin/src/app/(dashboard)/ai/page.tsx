@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from "react";
-import { Sparkles, Plus } from "lucide-react";
-import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import { Sparkles } from "lucide-react";
+import { Badge, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
@@ -224,18 +224,6 @@ export default function AiKnowledgePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <ActionTooltip label="Tulis Dokumen SOP Baru" shortcut="N">
-              <Button
-                size="sm"
-                onClick={() => router.push("/ai/add")}
-                className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Tulis SOP Baru
-              </Button>
-            </ActionTooltip>
-          </div>
         </div>
 
         {/* KPI Metrics Cards */}

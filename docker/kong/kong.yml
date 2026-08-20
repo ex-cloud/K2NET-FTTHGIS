@@ -285,6 +285,14 @@ services:
         paths:
           - /api/auth
         strip_path: false
+      - name: frontend-ai-api-route
+        paths:
+          - /api/ai
+        strip_path: false
+      - name: frontend-system-api-route
+        paths:
+          - /api/system
+        strip_path: false
 
   # ─── 11. AI Assistant Gateway (Python FastAPI - Port 5012) ────────────────
   - name: ai-gateway
