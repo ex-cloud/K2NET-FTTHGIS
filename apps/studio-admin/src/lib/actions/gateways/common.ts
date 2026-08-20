@@ -1,5 +1,3 @@
-"use server";
-
 import fs from "fs";
 import { auth } from "@/auth";
 

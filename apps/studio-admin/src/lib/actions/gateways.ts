@@ -1,5 +1,3 @@
-"use server";
-
 /**
  * 🌐 K2NET Gateway Actions Modular Barrel
  * Split into domain-specific action modules:
