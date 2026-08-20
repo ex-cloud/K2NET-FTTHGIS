@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Network, ArrowLeft, Plus, FlaskConical } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
-import { AiKnowledgeGraphTab } from "../../gateways/ai/components/ai-knowledge-graph-tab";
+import { AiKnowledgeGraphTab } from "@/components/ai/ai-knowledge-graph-tab";
 
 export default function AiGraphPage() {
   const router = useRouter();

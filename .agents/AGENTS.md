@@ -309,3 +309,26 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Notification Banner & Modal di Studio Admin**:
   - Jika terdapat file unindexed (`unindexed_count > 0`), UI secara dinamis menampilkan banner amber dengan tombol *"Lihat Berkas"* (modal detail berkas, kategori, ukuran) dan *"Sinkronkan Sekarang"* (1-click trigger indexing background).
 
+### ✍️ Standardisasi TipTap Editor & AI SOP Synthesis (Agustus 2026)
+- **Shared Component**: Komponen editor TipTap wajib ditaruh di `@k2net/ui` (`packages/ui/src/components/rich-editor.tsx`) — bukan diinstall langsung di `apps/studio-admin` guna mencegah duplikasi dependensi dan bundle bloat.
+- **Styling**: Headless TipTap menggunakan custom toolbar dengan semantic tokens (`bg-card`, `text-foreground`, `border-border`).
+- **AI SOP Generator Modal**: `AiGenerateSopModal` memanggil endpoint streaming `POST /api/v1/ai/generate-sop/stream` di `gateway-ai:5012`.
+- **Max Token & Preamble Stripping**: Parameter `max_output_tokens: 8192` dengan filter pembersih preamble (menghapus intro conversational seperti "Tentu, ini SOP-nya:") agar output markdown terstruktur 7-seksi langsung terisi ke dalam TipTap.
+
+### 🤖 Standardisasi Floating AI Assistant (Agustus 2026)
+- **Komponen**: `FloatingAiAssistant.tsx` di `apps/studio-admin/src/components/ai/`.
+- **Shortcut & Trigger**: Tombol trigger di navbar atas dan shortcut keyboard universal `Ctrl+J` / `Cmd+J`.
+- **Resizable Drawer**: Drawer dapat digeser secara fleksibel dengan drag handle di sisi kiri (min 440px, default 540px, wide mode 860px, max 1200px) dan lebarnya tersimpan di `localStorage`.
+- **Header Toolbar**: Wajib memiliki tombol aksi: *New Chat*, *Wide Mode Toggle*, *Export to Markdown* (`.md`), *Clear History*, dan *Close*.
+- **Step-by-Step Reasoning Accordion**: Menampilkan jejak proses berpikir AI secara visual (`load_knowledge`, `search_docs`, `Thinking`) yang dapat di-expand/collapse.
+- **Rich Markdown Renderer**: Menggunakan `AiMarkdownRenderer.tsx` dengan syntax highlighting, header blok kode (ikon SQL, PostGIS, Bash, JSON), tombol *Copy*, dan format tabel data responsif.
+
+### 📁 Two-Way Disk Persistence & Permission Volume Docker (Agustus 2026)
+- **Volume Mount RW**: Mount `/opt/project5/docs` pada service `gateway-ai` di `docker-compose.gateways.yml` **wajib berstatus Read-Write** (`/opt/project5/docs:/opt/project5/docs` tanpa `:ro`) agar service Python AI dapat menulis dan memperbarui berkas fisik `.md`.
+- **Approve Document Endpoint**: Saat dokumen disetujui melalui ikon centang atau modal (`POST /api/v1/ai/documents/{doc_id}/approve`), backend wajib memanggil `_save_markdown_to_disk()` untuk memastikan berkas fisik `.md` tersimpan di direktori kategori yang tepat (`02_SOP_Troubleshooting`, `04_GIS_Mapping`, dsb.).
+
+### 📜 Pola Infinite Scroll & De-duplication Table (Agustus 2026)
+- **Hook Standar**: Pengambilan data tabel dengan infinite scroll wajib menggunakan pola hook (seperti `useAiKnowledge.ts` dan `useDbPerformance.ts`) dengan proteksi `offsetRef`, `isFetchingRef`, dan de-duplikasi ID menggunakan `Set(prev.map(d => d.id))`.
+- **Sentinel IntersectionObserver**: Gunakan elemen `<div ref={sentinelRef} />` di bawah baris tabel dengan `rootMargin: "200px"`.
+- **Visual Feedback**: Wajib menampilkan skeleton loader atau spinner halus di bagian bawah tabel saat `loadingMore === true` agar pengguna mengetahui proses fetching sedang berjalan.
+

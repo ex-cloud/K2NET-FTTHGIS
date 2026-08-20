@@ -7,7 +7,7 @@ import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { getGatewayConfigByKey, updateGatewayConfigByKey } from "@/lib/actions/gateways";
-import { AiConfigTab } from "../../gateways/ai/components/ai-config-tab";
+import { AiConfigTab } from "@/components/ai/ai-config-tab";
 
 export default function AiConfigPage() {
   const router = useRouter();

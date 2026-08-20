@@ -7,7 +7,7 @@ import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { simulateVectorSearch } from "@/lib/actions/gateways";
-import { AiSemanticSimulator } from "../../gateways/ai/components/ai-semantic-simulator";
+import { AiSemanticSimulator } from "@/components/ai/ai-semantic-simulator";
 
 function AiSimulatorContent() {
   const searchParams = useSearchParams();

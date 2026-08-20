@@ -11,7 +11,7 @@ import {
 } from "@k2net/ui";
 import { type Task } from "@/hooks/useTasksQuery";
 import { type TeamUser } from "@/hooks/useTeamUsers";
-import { LinearDatePicker } from "../../../components/LinearDatePicker";
+import { LinearDatePicker } from "@/components/tasks/LinearDatePicker";
 import { cn } from "@/lib/utils";
 
 interface ProjectOverviewTabProps {

@@ -12,11 +12,11 @@ import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskComment } from "@/hooks/useTasksQuery";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { ScopeBadge } from "../components/ScopeBadge";
-import { TaskEmojiPicker } from "../components/TaskEmojiPicker";
-import { TaskCommentsSection } from "../components/TaskCommentsSection";
-import { TaskPropertiesPanel } from "../components/TaskPropertiesPanel";
-import { TaskSubIssuesSection } from "../components/TaskSubIssuesSection";
+import { ScopeBadge } from "@/components/tasks/ScopeBadge";
+import { TaskEmojiPicker } from "@/components/tasks/TaskEmojiPicker";
+import { TaskCommentsSection } from "@/components/tasks/TaskCommentsSection";
+import { TaskPropertiesPanel } from "@/components/tasks/TaskPropertiesPanel";
+import { TaskSubIssuesSection } from "@/components/tasks/TaskSubIssuesSection";
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();

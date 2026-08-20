@@ -1,0 +1,241 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
+import { 
+  getAiKnowledgeStats, 
+  getAiDocuments, 
+  deleteAiDocument, 
+  approveAiDocument,
+  rejectAiDocument,
+  triggerServerDocsSync,
+  getAiServerSyncStatus,
+  AiKnowledgeStats, 
+  AiDocumentItem,
+  ServerSyncStatus,
+} from "@/lib/actions/gateways";
+
+export function useAiKnowledge() {
+  const [stats, setStats] = useState<AiKnowledgeStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<ServerSyncStatus | null>(null);
+  const [syncStatusLoading, setSyncStatusLoading] = useState(false);
+
+  const [documents, setDocuments] = useState<AiDocumentItem[]>([]);
+  const [docsTotal, setDocsTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedScope, setSelectedScope] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const mounted = useRef(true);
+  const offsetRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const limit = 30;
+
+  const fetchStatsAndSync = useCallback(async () => {
+    try {
+      setStatsLoading(true);
+      setSyncStatusLoading(true);
+      const [statsData, syncData] = await Promise.all([
+        getAiKnowledgeStats().catch(() => null),
+        getAiServerSyncStatus().catch(() => null),
+      ]);
+      if (mounted.current) {
+        if (statsData) setStats(statsData);
+        if (syncData) setSyncStatus(syncData);
+      }
+    } finally {
+      if (mounted.current) {
+        setStatsLoading(false);
+        setSyncStatusLoading(false);
+      }
+    }
+  }, []);
+
+  const fetchDocuments = useCallback(
+    async (resetList = true) => {
+      if (isFetchingRef.current && resetList) {
+        // Allow reset to proceed but cancel stale
+      }
+      
+      if (resetList) {
+        setLoading(true);
+        offsetRef.current = 0;
+        // Clear documents so skeleton loader shows immediately on filter/reset
+        setDocuments([]);
+      } else {
+        if (loadingMoreRef.current || !hasMore || loading) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      }
+
+      isFetchingRef.current = true;
+
+      try {
+        const currentOffset = offsetRef.current;
+        const res = await getAiDocuments({
+          category: selectedCategory === "ALL" ? undefined : selectedCategory,
+          scope: selectedScope === "ALL" ? undefined : selectedScope,
+          status: selectedStatus === "ALL" ? undefined : selectedStatus,
+          search: searchQuery.trim() || undefined,
+          limit,
+          offset: currentOffset,
+        });
+
+        if (mounted.current) {
+          const newDocs = res?.documents || [];
+          const total = res?.total || 0;
+
+          if (resetList) {
+            setDocuments(newDocs);
+            offsetRef.current = newDocs.length;
+          } else {
+            setDocuments((prev) => {
+              const existingIds = new Set(prev.map((d) => d.id));
+              const filtered = newDocs.filter((d) => !existingIds.has(d.id));
+              return [...prev, ...filtered];
+            });
+            offsetRef.current += newDocs.length;
+          }
+
+          setDocsTotal(total);
+          setHasMore(offsetRef.current < total && newDocs.length > 0);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (mounted.current) {
+          setError(err.message || "Gagal memuat dokumen AI");
+          if (resetList) setDocuments([]);
+        }
+      } finally {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadingMore(false);
+          loadingMoreRef.current = false;
+          isFetchingRef.current = false;
+        }
+      }
+    },
+    [selectedCategory, selectedScope, selectedStatus, searchQuery, hasMore, loading]
+  );
+
+  // Re-fetch whenever filters change
+  useEffect(() => {
+    mounted.current = true;
+    fetchStatsAndSync();
+    fetchDocuments(true);
+    return () => {
+      mounted.current = false;
+    };
+  }, [selectedCategory, selectedScope, selectedStatus]);
+
+  const fetchMore = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+    await fetchDocuments(false);
+  }, [loading, loadingMore, hasMore, fetchDocuments]);
+
+  const refresh = useCallback(async () => {
+    fetchStatsAndSync();
+    await fetchDocuments(true);
+  }, [fetchStatsAndSync, fetchDocuments]);
+
+  const handleSearchSubmit = useCallback((e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    fetchDocuments(true);
+  }, [fetchDocuments]);
+
+  const approve = useCallback(async (id: string, title: string) => {
+    try {
+      await approveAiDocument(id);
+      toast.success(`Dokumen "${title}" berhasil disetujui dan diindeks ke pgvector!`);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyetujui dokumen");
+    }
+  }, [refresh]);
+
+  const reject = useCallback(async (id: string, title: string) => {
+    try {
+      await rejectAiDocument(id);
+      toast.success(`Dokumen "${title}" ditolak.`);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menolak dokumen");
+    }
+  }, [refresh]);
+
+  const remove = useCallback(async (id: string, title: string) => {
+    if (!confirm(`Hapus dokumen "${title}" beserta seluruh vektor embedding dari database?`)) {
+      return;
+    }
+    try {
+      const res = await deleteAiDocument(id);
+      if (res && (res.status === "SUCCESS" || res.status === "deleted" || res.message)) {
+        toast.success(`Dokumen "${title}" berhasil dihapus dari vector store`);
+        refresh();
+      } else {
+        toast.error("Gagal menghapus dokumen");
+      }
+    } catch {
+      toast.error("Terjadi kesalahan jaringan saat menghapus dokumen");
+    }
+  }, [refresh]);
+
+  const syncServerDocs = useCallback(async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const res = await triggerServerDocsSync();
+      toast.success(res.message || "Sinkronisasi direktori server /opt/project5/docs dimulai di latar belakang!");
+      setTimeout(() => {
+        refresh();
+        setIsSyncing(false);
+      }, 3000);
+    } catch {
+      toast.error("Terjadi kesalahan koneksi saat memicu sinkronisasi");
+      setIsSyncing(false);
+    }
+  }, [isSyncing, refresh]);
+
+  return {
+    documents,
+    docsTotal,
+    totalCount: stats?.total_documents || docsTotal,
+    totalChunks: stats?.total_chunks || 0,
+    totalBytes: stats?.total_size_bytes || 0,
+    stats,
+    statsLoading,
+    syncStatus,
+    syncStatusLoading,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    selectedCategory,
+    setSelectedCategory,
+    selectedScope,
+    setSelectedScope,
+    selectedStatus,
+    setSelectedStatus,
+    searchQuery,
+    setSearchQuery,
+    handleSearchSubmit,
+    fetchMore,
+    refresh,
+    approve,
+    reject,
+    remove,
+    syncServerDocs,
+    isSyncing,
+  };
+}

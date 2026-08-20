@@ -34,16 +34,16 @@ import { useSession } from "next-auth/react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useTasksQuery, type Task } from "@/hooks/useTasksQuery";
-import { NewProjectDialog } from "../components/NewProjectDialog";
-import { ProjectContextMenu } from "../components/ProjectContextMenu";
-import { ProjectTimelineView } from "./components/ProjectTimelineView";
+import { NewProjectDialog } from "@/components/tasks/NewProjectDialog";
+import { ProjectContextMenu } from "@/components/tasks/ProjectContextMenu";
+import { ProjectTimelineView } from "@/components/tasks/projects/ProjectTimelineView";
 import {
   LinearDisplayOptionsPopover,
   type DisplayPropertiesState,
   type ViewGrouping,
   type ViewOrdering,
   type ShowClosedFilter,
-} from "../components/LinearDisplayOptionsPopover";
+} from "@/components/tasks/LinearDisplayOptionsPopover";
 import { cn } from "@/lib/utils";
 
 interface ProjectPlanItem {

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Plus, Circle, User } from "lucide-react";
 import { Card } from "@k2net/ui";
 import { type Task, type TaskScope } from "@/hooks/useTasksQuery";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "../../../components/configs";
-import { TaskContextMenu } from "../../../components/TaskContextMenu";
+import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/components/tasks/configs";
+import { TaskContextMenu } from "@/components/tasks/TaskContextMenu";
 import { cn } from "@/lib/utils";
 
 interface ProjectIssuesTabProps {

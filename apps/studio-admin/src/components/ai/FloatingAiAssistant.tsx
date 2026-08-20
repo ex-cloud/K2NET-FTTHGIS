@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * K2NET Floating AI Assistant
+ * K2NET Floating AI Assistant (Supabase & ChatGPT Pro Style)
  * - Top Navbar Trigger [ Ask AI ❖ Ctrl+J ] & Keyboard shortcut Cmd+J / Ctrl+J
- * - Slide-over Drawer dengan SSE streaming chat
- * - Agent Reasoning & Thinking Accordion (Linear & Supabase AI style)
- * - Markdown renderer + citation badges + model selector
+ * - Resizable Slide-over Drawer (Draggable Left Border, min 440px - max 1200px)
+ * - Supabase AI Header Toolbar (New Chat, Wide/Expand Mode, Export Markdown, Clear, Close)
+ * - Supabase AI Step-by-Step Reasoned Accordion (✓ load_knowledge, ✓ search_docs, ↻ Thinking)
+ * - Rich Markdown Renderer with dark code block header, copy button, and data tables
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -43,11 +44,25 @@ import {
   BrainCircuit,
   Loader2,
   Download,
+  Maximize2,
+  Minimize2,
+  PlusCircle,
+  GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAiChatStream, ChatMessage, DocumentSource, exportChatToMarkdown } from "@/hooks/useAiChatStream";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import {
+  useAiChatStream,
+  ChatMessage,
+  DocumentSource,
+  exportChatToMarkdown,
+} from "@/hooks/useAiChatStream";
+import { AiMarkdownRenderer } from "@/components/ai/AiMarkdownRenderer";
+
+const DEFAULT_DRAWER_WIDTH = 540;
+const MIN_DRAWER_WIDTH = 440;
+const MAX_DRAWER_WIDTH = 1200;
+const WIDE_DRAWER_WIDTH = 860;
+const STORAGE_WIDTH_KEY = "k2net_ai_drawer_width";
 
 // ─── Supabase-Style Ideas & Quick Action Cards ─────────────────────────────────
 const SUPABASE_IDEAS = [
@@ -55,37 +70,43 @@ const SUPABASE_IDEAS = [
     icon: Zap,
     title: "Diagnosa OLT & Redaman Optik",
     desc: "Troubleshooting OLT ZTE C320/Huawei, status LOS & redaman nominal",
-    prompt: "Bagaimana cara troubleshooting OLT ZTE C320 jika port PON statusnya LOS dan berapa standar redaman optik nominalnya?",
+    prompt:
+      "Bagaimana cara troubleshooting OLT ZTE C320 jika port PON statusnya LOS dan berapa standar redaman optik nominalnya?",
   },
   {
     icon: MapPin,
     title: "Analisis Jaringan Spasial GIS & ODP",
     desc: "Standar koordinat PostGIS EPSG:4326, kapasitas splitter 1:8 / 1:16",
-    prompt: "Jelaskan arsitektur database spasial PostGIS SRID 4326 dan standar penempatan ODP pada jaringan distribusi FTTH.",
+    prompt:
+      "Jelaskan arsitektur database spasial PostGIS SRID 4326 dan standar penempatan ODP pada jaringan distribusi FTTH.",
   },
   {
     icon: Activity,
     title: "Health Check 12 Microservices",
     desc: "Verifikasi status poller, kong, postgres, keycloak, minio, audit",
-    prompt: "Jelaskan port map dan arsitektur 12 microservices gateway internal K2NET.",
+    prompt:
+      "Jelaskan port map dan arsitektur 12 microservices gateway internal K2NET.",
   },
   {
     icon: Database,
     title: "Panduan Backup & Disaster Recovery",
     desc: "SOP 3-Layer backup lokal, MinIO S3, dan Nextcloud offsite cloud",
-    prompt: "Jelaskan strategi 3-layer disaster recovery backup database dan file di K2NET.",
+    prompt:
+      "Jelaskan strategi 3-layer disaster recovery backup database dan file di K2NET.",
   },
   {
     icon: GitPullRequest,
     title: "Buat Linear Project & DevOps Task",
     desc: "Integrasi sistem tugas, alur tiket B2B, dan sinkronisasi Obsidian",
-    prompt: "Jelaskan cara membuat tiket atau proyek DevOps baru yang otomatis tersinkronisasi ke Obsidian Vault.",
+    prompt:
+      "Jelaskan cara membuat tiket atau proyek DevOps baru yang otomatis tersinkronisasi ke Obsidian Vault.",
   },
   {
     icon: ShieldCheck,
     title: "Keamanan Multi-Tenant & RBAC",
     desc: "One Realm per Org Keycloak, Superadmin God Mode, dan X-Tenant-ID",
-    prompt: "Jelaskan arsitektur isolasi multi-tenant dan sistem Hybrid RBAC di K2NET FTTH GIS.",
+    prompt:
+      "Jelaskan arsitektur isolasi multi-tenant dan sistem Hybrid RBAC di K2NET FTTH GIS.",
   },
 ];
 
@@ -99,7 +120,7 @@ const MODELS = [
 // ─── Message Bubble Component ─────────────────────────────────────────────────
 function MessageBubble({ message }: { message: ChatMessage }) {
   const [copied, setCopied] = useState(false);
-  const [showThinking, setShowThinking] = useState(true);
+  const [showThinking, setShowThinking] = useState(false);
   const isUser = message.role === "user";
 
   const handleCopy = useCallback(async () => {
@@ -113,10 +134,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       {/* Avatar */}
       <div
         className={cn(
-          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
+          "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-xs",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground shadow-xs"
+            : "bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground"
         )}
       >
         {isUser ? "U" : <Sparkles className="w-4 h-4" />}
@@ -124,49 +145,97 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
       {/* Content */}
       <div className={cn("flex-1 min-w-0", isUser && "flex flex-col items-end")}>
-        
-        {/* ── Collapsible Agent Thinking Process (Linear & Supabase AI style) ── */}
-        {!isUser && (message.isThinking || message.thought || (message.isStreaming && !message.content)) && (
-          <div className="mb-2.5 rounded-xl border border-border/70 bg-card text-xs overflow-hidden max-w-[95%] shadow-xs">
-            <button
-              type="button"
-              onClick={() => setShowThinking(!showThinking)}
-              className="w-full px-3 py-2 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <BrainCircuit className={cn("w-3.5 h-3.5 text-purple-400", message.isStreaming && "animate-pulse")} />
-                <span>
-                  {message.isStreaming && !message.content
-                    ? message.thinkingStage || "Thinking..."
-                    : "Proses Penalaran (Thinking Process)"}
+        {/* ── Supabase-Style Step-by-Step Reasoned Accordion ── */}
+        {!isUser &&
+          (message.isThinking ||
+            message.thought ||
+            message.isStreaming ||
+            (message.sources && message.sources.length > 0)) && (
+            <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden max-w-[95%] shadow-xs">
+              <button
+                type="button"
+                onClick={() => setShowThinking(!showThinking)}
+                className="w-full px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold text-foreground/90 hover:text-foreground bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer border-b border-border/40"
+              >
+                <span className="flex items-center gap-2">
+                  <BrainCircuit
+                    className={cn(
+                      "w-3.5 h-3.5 text-primary",
+                      message.isStreaming && "animate-pulse"
+                    )}
+                  />
+                  <span className="font-semibold text-foreground">
+                    {message.isStreaming && !message.content
+                      ? "Menganalisis & Menalar..."
+                      : "Reasoned & Knowledge Grounding"}
+                  </span>
+                  {message.isStreaming && !message.content && (
+                    <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />
+                  )}
                 </span>
-                {message.isStreaming && !message.content && (
-                  <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />
+                <ChevronDown
+                  className={cn(
+                    "w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground",
+                    showThinking ? "rotate-180" : ""
+                  )}
+                />
+              </button>
+
+              {/* Collapsible Steps list */}
+              <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px]">
+                {/* Step 1: Hybrid RAG Search */}
+                <div className="flex items-center gap-2 text-foreground/80">
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Ran pgvector semantic embedding (HNSW)</span>
+                </div>
+
+                {/* Step 2: BM25 FTS */}
+                <div className="flex items-center gap-2 text-foreground/80">
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span>Ran BM25 Full-Text search across 160+ K2NET documents</span>
+                </div>
+
+                {/* Step 3: Sources count */}
+                {message.sources && message.sources.length > 0 && (
+                  <div className="flex items-center gap-2 text-primary font-medium">
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span>
+                      Retrieved {message.sources.length} matching knowledge chunks
+                    </span>
+                  </div>
                 )}
-              </span>
-              <ChevronDown
-                className={cn("w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground", showThinking ? "rotate-180" : "")}
-              />
-            </button>
-            {showThinking && (
-              <div className="px-3.5 py-2.5 border-t border-border/40 font-mono text-[11px] text-muted-foreground/90 whitespace-pre-wrap bg-background/50 leading-relaxed max-h-48 overflow-y-auto custom-scrollbar">
-                {message.thought || message.thinkingStage || "Mengevaluasi parameter teknis dan merumuskan jawaban..."}
+
+                {/* Step 4: Thinking status */}
+                {message.isStreaming && !message.content && (
+                  <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse">
+                    <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
+                    <span>
+                      {message.thinkingStage || "Mengevaluasi parameter teknis..."}
+                    </span>
+                  </div>
+                )}
+
+                {/* Detailed Thought Logs (if expanded) */}
+                {showThinking && message.thought && (
+                  <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar bg-muted/30 p-2 rounded-md">
+                    {message.thought}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
         {/* Message Main Bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 max-w-[85%] text-sm",
+            "rounded-2xl px-4 py-3 max-w-[92%] text-sm shadow-xs",
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted/60 text-foreground border border-border/40 rounded-tl-sm"
+              ? "bg-primary text-primary-foreground rounded-tr-sm font-medium"
+              : "bg-card text-foreground border border-border rounded-tl-sm"
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
           ) : (
             <>
               {message.isStreaming && !message.content && !message.thought && (
@@ -177,14 +246,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 </div>
               )}
               {message.content && (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-background/80 prose-pre:border prose-pre:border-border">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
+                <AiMarkdownRenderer content={message.content} />
               )}
               {message.isStreaming && message.content && (
-                <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 animate-pulse" />
+                <span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse align-middle" />
               )}
             </>
           )}
@@ -192,26 +257,28 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
         {/* Cache Hit Badge */}
         {!isUser && message.cacheHit && (
-          <div className="text-[10px] text-amber-500 flex items-center gap-1 mb-1.5">
+          <div className="text-[10px] text-amber-500 flex items-center gap-1 mt-1.5 mb-1">
             <Zap className="w-2.5 h-2.5" />
-            <span className="font-semibold">Redis Cache</span>
+            <span className="font-semibold">Redis Semantic Cache</span>
             <span className="text-muted-foreground">• respons instan</span>
           </div>
         )}
 
-        {/* Citation Sources */}
+        {/* Citation Sources Badges */}
         {!isUser && message.sources && message.sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2 max-w-[85%]">
+          <div className="flex flex-wrap gap-1.5 mt-2.5 max-w-[92%]">
             {message.sources.map((src: DocumentSource, i: number) => (
               <Badge
                 key={i}
                 variant="secondary"
-                className="text-[10px] gap-1 cursor-default"
+                className="text-[10px] gap-1 cursor-default py-0.5 px-2 border border-border"
                 title={src.content_preview}
               >
-                <BookOpen className="w-2.5 h-2.5" />
-                {src.title.length > 20 ? src.title.slice(0, 20) + "…" : src.title}
-                <span className="text-muted-foreground">
+                <BookOpen className="w-2.5 h-2.5 text-primary" />
+                <span className="font-medium text-foreground">
+                  {src.title.length > 24 ? src.title.slice(0, 24) + "…" : src.title}
+                </span>
+                <span className="text-muted-foreground font-mono">
                   {(src.similarity_score * 100).toFixed(0)}%
                 </span>
               </Badge>
@@ -221,21 +288,21 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
         {/* Metrics + Copy */}
         {!isUser && !message.isStreaming && message.content && (
-          <div className="flex items-center gap-2 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
             {message.latencyMs && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground font-mono">
                 {message.latencyMs}ms
               </span>
             )}
             <button
               onClick={handleCopy}
-              className="p-1 rounded hover:bg-muted transition-colors cursor-pointer"
-              title="Salin ke clipboard"
+              className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              title="Salin jawaban"
             >
               {copied ? (
-                <Check className="w-3 h-3 text-primary" />
+                <Check className="w-3.5 h-3.5 text-primary" />
               ) : (
-                <Copy className="w-3 h-3 text-muted-foreground" />
+                <Copy className="w-3.5 h-3.5" />
               )}
             </button>
           </div>
@@ -250,11 +317,36 @@ export function FloatingAiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [drawerWidth, setDrawerWidth] = useState<number>(DEFAULT_DRAWER_WIDTH);
+  const [isWide, setIsWide] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
-    useAiChatStream({ model: selectedModel });
+  const {
+    messages,
+    isStreaming,
+    error,
+    sendMessage,
+    stopStreaming,
+    clearMessages,
+  } = useAiChatStream({ model: selectedModel });
+
+  // ── Load saved width on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const savedWidth = localStorage.getItem(STORAGE_WIDTH_KEY);
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (!isNaN(parsed) && parsed >= MIN_DRAWER_WIDTH && parsed <= MAX_DRAWER_WIDTH) {
+          setDrawerWidth(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // ── Keyboard shortcut: Cmd+J / Ctrl+J & Custom Event Listener ─────────────
   useEffect(() => {
@@ -303,10 +395,55 @@ export function FloatingAiAssistant() {
     }
   }, [isOpen]);
 
+  // ── Drag to Resize Handler ────────────────────────────────────────────────
+  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+    mouseDownEvent.preventDefault();
+    setIsDragging(true);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth >= MIN_DRAWER_WIDTH && newWidth <= Math.min(MAX_DRAWER_WIDTH, window.innerWidth - 60)) {
+        setDrawerWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      try {
+        localStorage.setItem(STORAGE_WIDTH_KEY, String(drawerWidth));
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }, [drawerWidth]);
+
+  // ── Toggle Wide Mode ──────────────────────────────────────────────────────
+  const toggleWideMode = useCallback(() => {
+    setIsWide((prev) => {
+      const next = !prev;
+      const targetWidth = next ? WIDE_DRAWER_WIDTH : DEFAULT_DRAWER_WIDTH;
+      setDrawerWidth(targetWidth);
+      try {
+        localStorage.setItem(STORAGE_WIDTH_KEY, String(targetWidth));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
   const handleSend = useCallback(async () => {
     const msg = input.trim();
     if (!msg || isStreaming) return;
     setInput("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     await sendMessage(msg);
   }, [input, isStreaming, sendMessage]);
 
@@ -322,41 +459,66 @@ export function FloatingAiAssistant() {
 
   return (
     <>
-      {/* ── Slide-Over Drawer (showCloseButton={false} suppresses Radix default close button to prevent double X) ── */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-full sm:max-w-[480px] p-0 flex flex-col bg-background border-l border-border"
+          style={{ width: `${drawerWidth}px`, maxWidth: "95vw" }}
+          className={cn(
+            "p-0 flex flex-col bg-background border-l border-border transition-[width] duration-75 select-text",
+            isDragging && "transition-none select-none"
+          )}
         >
-          {/* Header */}
+          {/* ── Drag Resize Handle on Left Border (Supabase Style) ── */}
+          <div
+            onMouseDown={startResizing}
+            className={cn(
+              "absolute -left-1.5 top-0 bottom-0 w-3 cursor-ew-resize group z-50 flex items-center justify-center",
+              isDragging && "bg-primary/20"
+            )}
+            title="Tarik untuk mengubah lebar panel AI"
+          >
+            <div className="w-1 h-12 rounded-full bg-border group-hover:bg-primary/70 transition-colors flex items-center justify-center">
+              <GripVertical className="w-2.5 h-2.5 text-muted-foreground group-hover:text-primary opacity-60" />
+            </div>
+          </div>
+
+          {/* ── Top Header & Toolbar (Supabase AI Style) ── */}
           <SheetHeader className="px-4 py-3 border-b border-border bg-background/95 backdrop-blur-md flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs">
+            <div className="flex items-center justify-between gap-2">
+              {/* Title & Badge */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs shrink-0">
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <div>
-                  <SheetTitle className="text-sm font-semibold text-foreground">
-                    K2NET Ask AI
-                  </SheetTitle>
-                  <p className="text-[11px] text-muted-foreground">
-                    RAG • Multi-Tenant • FTTH Expert
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <SheetTitle className="text-sm font-semibold text-foreground truncate">
+                      K2NET Ask AI
+                    </SheetTitle>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary bg-primary/10">
+                      RAG Live
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    160+ Dokumen FTTH • Spasial PostGIS
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Model Selector */}
+
+              {/* Action Toolbar Icons (Supabase AI style) */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Model Selector Pill */}
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="h-7 text-xs w-[130px] border-border/60">
+                  <SelectTrigger className="h-7 text-xs w-[125px] border-border/60 bg-muted/40 font-medium">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {MODELS.map((m) => (
                       <SelectItem key={m.value} value={m.value} className="text-xs">
-                        <div className="flex items-center gap-2">
-                          {m.label}
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span>{m.label}</span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
                             {m.badge}
                           </Badge>
                         </div>
@@ -365,28 +527,52 @@ export function FloatingAiAssistant() {
                   </SelectContent>
                 </Select>
 
-                {/* Clear + Export + Single Close */}
+                {/* New Chat Button */}
+                <button
+                  onClick={clearMessages}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Mulai percakapan baru (New Chat)"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                </button>
+
+                {/* Toggle Wide / Fullscreen Width */}
+                <button
+                  onClick={toggleWideMode}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title={isWide ? "Kembalikan ke ukuran standar" : "Perlebar layar (Wide Mode)"}
+                >
+                  {isWide ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                </button>
+
+                {/* Export Markdown */}
                 {messages.length > 0 && (
                   <>
                     <button
                       onClick={() => exportChatToMarkdown(messages)}
-                      className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
-                      title="Export percakapan ke Markdown (.md)"
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Ekspor percakapan ke Markdown (.md)"
                     >
-                      <Download className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Download className="w-4 h-4" />
                     </button>
                     <button
                       onClick={clearMessages}
-                      className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
-                      title="Hapus percakapan"
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                      title="Hapus riwayat chat"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </>
                 )}
+
+                {/* Close Button */}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Tutup (Esc)"
                 >
                   <X className="w-4 h-4" />
@@ -395,17 +581,17 @@ export function FloatingAiAssistant() {
             </div>
           </SheetHeader>
 
-          {/* Message List */}
+          {/* ── Message List ── */}
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-4 py-4 space-y-4">
               {messages.length === 0 ? (
                 /* Supabase-Style Empty State */
                 <div className="space-y-4 py-2">
                   {/* Banner */}
-                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs flex items-start gap-2.5 text-primary">
+                  <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/25 text-xs flex items-start gap-3 text-foreground">
                     <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <div className="flex-1 text-[12px] leading-relaxed text-foreground/90">
-                      <span className="font-semibold text-primary">K2NET FTTH Copilot</span> — Terhubung langsung ke 160+ dokumen arsitektur, SOP OLT, dan database spasial pgvector.
+                    <div className="flex-1 text-[12px] leading-relaxed">
+                      <span className="font-semibold text-primary">K2NET FTTH Copilot</span> — Terhubung langsung ke 160+ dokumen arsitektur, SOP konfigurasi OLT, dan basis data spasial pgvector.
                     </div>
                   </div>
 
@@ -419,7 +605,7 @@ export function FloatingAiAssistant() {
                     </p>
                   </div>
 
-                  {/* Ideas Cards (Supabase Style: clicks insert into input textarea) */}
+                  {/* Ideas Cards (Supabase Style) */}
                   <div className="space-y-2">
                     <div className="text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase">
                       IDEAS & QUICK ACTIONS
@@ -433,7 +619,7 @@ export function FloatingAiAssistant() {
                           setTimeout(() => inputRef.current?.focus(), 50);
                         }}
                         className={cn(
-                          "w-full flex items-start gap-3 p-2.5 rounded-xl text-left",
+                          "w-full flex items-start gap-3 p-3 rounded-xl text-left",
                           "bg-card hover:bg-muted/60 border border-border hover:border-primary/40",
                           "transition-all duration-150 group cursor-pointer shadow-xs"
                         )}
@@ -469,7 +655,7 @@ export function FloatingAiAssistant() {
             </div>
           </ScrollArea>
 
-          {/* Input Area */}
+          {/* ── Input Area ── */}
           <div className="px-4 py-3 border-t border-border bg-background/95 backdrop-blur-md flex-shrink-0">
             <div className="flex gap-2 items-end">
               <textarea
@@ -477,10 +663,10 @@ export function FloatingAiAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Tanya tentang OLT, redaman, GIS... (Enter untuk kirim)"
+                placeholder="Tanya tentang OLT, redaman, GIS, konfigurasi... (Enter untuk kirim)"
                 rows={1}
                 className={cn(
-                  "flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs",
+                  "flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs sm:text-[13px]",
                   "bg-muted/40 border border-border",
                   "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
                   "placeholder:text-muted-foreground text-foreground",
@@ -513,10 +699,16 @@ export function FloatingAiAssistant() {
             </div>
             <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
               <span>
-                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px]">Ctrl+J</kbd> untuk toggle
+                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px] font-mono">
+                  Ctrl+J
+                </kbd>{" "}
+                toggle drawer
               </span>
               <span>
-                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px]">Shift+Enter</kbd> untuk baris baru
+                <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px] font-mono">
+                  Shift+Enter
+                </kbd>{" "}
+                baris baru
               </span>
             </div>
           </div>

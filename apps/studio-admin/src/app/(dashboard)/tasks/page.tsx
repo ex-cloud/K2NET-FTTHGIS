@@ -19,27 +19,27 @@ import { useTaskBatchActions } from "@/hooks/useTaskBatchActions";
 import { useTaskStore } from "@/store/task-store";
 
 // Sub-components & configurations
-import { TaskKpiStrip } from "./components/TaskKpiStrip";
-import { TaskTable } from "./components/TaskTable";
-import { TaskCard } from "./components/TaskCard";
-import { TaskSecondarySidebar } from "./components/TaskSecondarySidebar";
-import { KANBAN_COLUMNS } from "./components/configs";
-import { TaskToolbar } from "./components/TaskToolbar";
-import { type TaskFilterState } from "./components/TaskFilterMenu";
-import { TaskTimelineView } from "./components/TaskTimelineView";
-import { NewTaskDialog } from "./components/NewTaskDialog";
-import { TaskDetailSheet } from "./components/TaskDetailSheet";
-import { TaskBulkActionBar } from "./components/TaskBulkActionBar";
-import { TaskHeaderStatsBar } from "./components/TaskHeaderStatsBar";
-import { TaskShortcutsHelpDialog } from "./components/TaskShortcutsHelpDialog";
-import { TaskBatchDeleteDialog } from "./components/TaskBatchDeleteDialog";
-import { applyViewFilter, VIEW_LABELS, type QuickView } from "./components/taskViewFilters";
+import { TaskKpiStrip } from "@/components/tasks/TaskKpiStrip";
+import { TaskTable } from "@/components/tasks/TaskTable";
+import { TaskCard } from "@/components/tasks/TaskCard";
+import { TaskSecondarySidebar } from "@/components/tasks/TaskSecondarySidebar";
+import { KANBAN_COLUMNS } from "@/components/tasks/configs";
+import { TaskToolbar } from "@/components/tasks/TaskToolbar";
+import { type TaskFilterState } from "@/components/tasks/TaskFilterMenu";
+import { TaskTimelineView } from "@/components/tasks/TaskTimelineView";
+import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
+import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
+import { TaskBulkActionBar } from "@/components/tasks/TaskBulkActionBar";
+import { TaskHeaderStatsBar } from "@/components/tasks/TaskHeaderStatsBar";
+import { TaskShortcutsHelpDialog } from "@/components/tasks/TaskShortcutsHelpDialog";
+import { TaskBatchDeleteDialog } from "@/components/tasks/TaskBatchDeleteDialog";
+import { applyViewFilter, VIEW_LABELS, type QuickView } from "@/components/tasks/taskViewFilters";
 import {
   type DisplayPropertiesState,
   type ViewGrouping,
   type ViewOrdering,
   type ShowClosedFilter,
-} from "./components/LinearDisplayOptionsPopover";
+} from "@/components/tasks/LinearDisplayOptionsPopover";
 
 export default function TasksPage() {
   const router = useRouter();

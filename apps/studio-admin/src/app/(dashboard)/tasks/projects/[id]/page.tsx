@@ -15,10 +15,10 @@ import { useTasksQuery, type Task, type TaskComment, type TaskScope } from "@/ho
 import { useTeamUsers } from "@/hooks/useTeamUsers";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { NewTaskDialog } from "../../components/NewTaskDialog";
-import { ProjectOverviewTab } from "./components/ProjectOverviewTab";
-import { ProjectActivityTab } from "./components/ProjectActivityTab";
-import { ProjectIssuesTab } from "./components/ProjectIssuesTab";
+import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
+import { ProjectOverviewTab } from "@/components/tasks/projects/ProjectOverviewTab";
+import { ProjectActivityTab } from "@/components/tasks/projects/ProjectActivityTab";
+import { ProjectIssuesTab } from "@/components/tasks/projects/ProjectIssuesTab";
 import { cn } from "@/lib/utils";
 
 type ProjectTab = "overview" | "activity" | "issues";

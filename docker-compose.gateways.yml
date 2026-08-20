@@ -284,7 +284,7 @@ services:
       - DOCS_ROOT_PATH=/opt/project5/docs
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
-      - /opt/project5/docs:/opt/project5/docs:ro
+      - /opt/project5/docs:/opt/project5/docs
     ports:
       - "127.0.0.1:5012:5012"
     deploy:

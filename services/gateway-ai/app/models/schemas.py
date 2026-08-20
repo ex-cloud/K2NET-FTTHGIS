@@ -93,6 +93,7 @@ class DocumentUpdateRequest(BaseModel):
 
 class DocumentApproveRequest(BaseModel):
     scope: Optional[KnowledgeScopeType] = None
+    override_scope: Optional[KnowledgeScopeType] = None
 
 
 class DocumentRejectRequest(BaseModel):

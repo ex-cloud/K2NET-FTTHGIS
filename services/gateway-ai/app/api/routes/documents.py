@@ -106,17 +106,13 @@ def _save_markdown_to_disk(
     """
     Menyimpan atau memperbarui berkas Markdown fisik di /opt/project5/docs/
     sehingga sinkron dua arah dengan Obsidian dan Server.
-    Mengembalikan relative file_name (e.g. '02_SOP_Troubleshooting/sop-redaman.md').
+    Mengembalikan relative file_name (e.g. '04_GIS_Mapping/sop-pemetaan-standar-penamaan-aset.md').
     """
     docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
     target_folder = CATEGORY_TO_FOLDER.get(category.upper(), "note")
     folder_path = os.path.join(docs_base, target_folder)
-    try:
-        os.makedirs(folder_path, exist_ok=True)
-    except Exception as err:
-        logger.warning(f"[Disk Sync] Gagal membuat direktori {folder_path}: {err}")
 
-    # Tentukan filename
+    # Tentukan filename & path
     if (
         existing_filename 
         and existing_filename not in ("manual-entry.md", "upload.md") 
@@ -131,6 +127,7 @@ def _save_markdown_to_disk(
         rel_path = os.path.join(target_folder, file_name)
 
     try:
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
         with open(full_path, "w", encoding="utf-8") as f:
             f.write(content)
         logger.info(f"[Disk Sync] Berkas Markdown tersimpan di disk: {full_path}")
@@ -1020,16 +1017,29 @@ async def approve_document(
         )
         doc = fetch_res.mappings().fetchone()
 
-    if not doc:
-        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
+    override_scope = None
+    if payload:
+        override_scope = payload.scope or payload.override_scope
+    if not override_scope:
+        override_scope = doc.get("scope", "GLOBAL")
 
-    override_scope = payload.override_scope if payload and payload.override_scope else doc.get("scope", "GLOBAL")
     raw_content = doc.get("raw_content") or ""
+
+    # Two-way persistence: Pastikan berkas fisik tersimpan di disk saat disetujui (approve)
+    rel_filename = doc.get("file_name") or "manual-entry.md"
+    if raw_content:
+        rel_filename = _save_markdown_to_disk(
+            title=doc["title"],
+            category=doc["category"],
+            content=raw_content,
+            existing_filename=doc.get("file_name"),
+        )
 
     update_sql = text("""
         UPDATE ai_documents
         SET status = 'INDEXED',
             scope = :scope,
+            file_name = :file_name,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = :doc_id AND tenant_id = :tenant_id
         RETURNING id, tenant_id, title, category, scope, status, chunk_count, created_at
@@ -1037,7 +1047,12 @@ async def approve_document(
     async with get_db_session() as session:
         res = await session.execute(
             update_sql,
-            {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id), "scope": override_scope},
+            {
+                "doc_id": str(doc_id),
+                "tenant_id": str(ctx.tenant_id),
+                "scope": override_scope,
+                "file_name": rel_filename,
+            },
         )
         updated_row = res.mappings().fetchone()
 
@@ -1048,7 +1063,7 @@ async def approve_document(
         resource_type="KNOWLEDGE_BASE",
         resource_id=str(doc_id),
         log_group="OPERATIONS",
-        metadata={"title": doc["title"], "scope": override_scope, "status": "INDEXED"},
+        metadata={"title": doc["title"], "scope": override_scope, "status": "INDEXED", "file_name": rel_filename},
     )
 
     # Memicu vektorisasi jika chunk_count masih 0 dan raw_content tersedia
@@ -1304,12 +1319,14 @@ async def _index_document(
 async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: Optional[str]) -> None:
     """Memindai seluruh subfolder /opt/project5/docs dan mengindeks per kategori."""
     category_mapping = {
+        "00_AI_Agent": "GENERAL",
         "01_Architecture": "ARCHITECTURE",
         "02_SOP_Troubleshooting": "TROUBLESHOOTING",
         "03_Infrastructure": "INFRASTRUCTURE",
         "04_GIS_Mapping": "GIS_MANUAL",
         "05_Plans_Roadmap": "PLANS",
         "Server": "PLANS",
+        "note": "GENERAL",
     }
 
     files = glob.glob(os.path.join(docs_dir, "**/*.md"), recursive=True)

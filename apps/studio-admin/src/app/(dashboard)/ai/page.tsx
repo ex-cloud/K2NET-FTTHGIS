@@ -19,10 +19,10 @@ import {
   ServerSyncStatus,
 } from "@/lib/actions/gateways";
 
-import { AiKpiCards } from "../gateways/ai/components/ai-kpi-cards";
-import { AiKnowledgeTable } from "../gateways/ai/components/ai-knowledge-table";
-import { AiVectorExplorerModal } from "../gateways/ai/components/ai-vector-explorer-modal";
-import { AiEditKnowledgeModal } from "../gateways/ai/components/ai-edit-knowledge-modal";
+import { AiKpiCards } from "@/components/ai/ai-kpi-cards";
+import { AiKnowledgeTable } from "@/components/ai/ai-knowledge-table";
+import { AiVectorExplorerModal } from "@/components/ai/ai-vector-explorer-modal";
+import { AiEditKnowledgeModal } from "@/components/ai/ai-edit-knowledge-modal";
 
 export default function AiKnowledgePage() {
   const router = useRouter();

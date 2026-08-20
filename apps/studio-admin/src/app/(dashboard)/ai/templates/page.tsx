@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { FileCode, ArrowLeft, Plus, Database } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
-import { AiTemplatesTab } from "../../gateways/ai/components/ai-templates-tab";
-import { KnowledgeTemplateItem } from "../../gateways/ai/components/types";
+import { AiTemplatesTab } from "@/components/ai/ai-templates-tab";
+import { KnowledgeTemplateItem } from "@/components/ai/types";
 
 export default function AiTemplatesPage() {
   const router = useRouter();
