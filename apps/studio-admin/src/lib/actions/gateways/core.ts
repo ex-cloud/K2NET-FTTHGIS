@@ -5,10 +5,33 @@ import {
   verifySuperAdmin,
   GATEWAY_BASE_URL,
   GATEWAY_URL_MAP,
-  ConfigResponse,
-  GatewayServiceStatus,
-  StatusResponse,
 } from "./common";
+
+export type ConfigEntry = {
+  key: string;
+  value: string;
+  censored: string;
+  section: string;
+};
+
+export type ConfigResponse = {
+  status: string;
+  sections: Record<string, ConfigEntry[]>;
+};
+
+export type GatewayServiceStatus = {
+  name: string;
+  port: number;
+  active: boolean;
+  status: string;
+  latency?: number;
+  throughput?: number;
+};
+
+export type StatusResponse = {
+  status: string;
+  services: GatewayServiceStatus[];
+};
 
 const lastMetricsCache: Record<string, { count: number; time: number; throughput: number }> = {};
 

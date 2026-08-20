@@ -1,4 +1,3 @@
-import fs from "fs";
 import { auth } from "@/auth";
 
 export function getGatewayToken(): string {
@@ -10,20 +9,24 @@ export function getGatewayToken(): string {
   // 2. Fallback: read from env file (host-level / development)
   try {
     const envPath = process.env.GATEWAY_ENV_PATH;
-    if (!envPath || !fs.existsSync(envPath)) {
-      console.warn("[Gateway Actions] Gateway env file not configured or not found");
-      return "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN";
-    }
-    const content = fs.readFileSync(envPath, "utf-8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("GATEWAY_TOKEN=")) {
-        return trimmed.substring("GATEWAY_TOKEN=".length).trim();
+    if (envPath && typeof window === "undefined") {
+      // Dynamic require on server-side only to prevent bundler AST analysis issues
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require("fs");
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf-8");
+        for (const line of content.split("\n")) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("GATEWAY_TOKEN=")) {
+            return trimmed.substring("GATEWAY_TOKEN=".length).trim();
+          }
+        }
       }
     }
   } catch (err) {
-    console.error("[Gateway Actions] Error reading gateway token:", err);
+    console.warn("[Gateway Actions] Could not read gateway env file:", err);
   }
+
   return "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN";
 }
 
@@ -56,29 +59,3 @@ export async function verifySuperAdmin() {
     throw new Error("Unauthorized: Superadmin access required");
   }
 }
-
-export type ConfigEntry = {
-  key: string;
-  value: string;
-  censored: string;
-  section: string;
-};
-
-export type ConfigResponse = {
-  status: string;
-  sections: Record<string, ConfigEntry[]>;
-};
-
-export type GatewayServiceStatus = {
-  name: string;
-  port: number;
-  active: boolean;
-  status: string;
-  latency?: number;
-  throughput?: number;
-};
-
-export type StatusResponse = {
-  status: string;
-  services: GatewayServiceStatus[];
-};
