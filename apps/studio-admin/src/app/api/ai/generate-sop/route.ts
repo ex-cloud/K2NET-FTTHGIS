@@ -12,9 +12,9 @@ const AI_GATEWAY_URL = GATEWAY_URL_MAP.ai || process.env.AI_GATEWAY_URL || "http
 
 // Peta kategori untuk memperkaya prompt
 const CATEGORY_LABELS: Record<string, string> = {
-  TROUBLESHOOTING: "Troubleshooting & Penyelesaian Masalah OLT/Optical",
+  TROUBLESHOOTING: "Troubleshooting & Penanganan Gangguan OLT/Optical",
   NETWORK_CONFIG: "Arsitektur & Konfigurasi Jaringan",
-  GIS_MANUAL: "GIS & Survey Spasial",
+  GIS_MANUAL: "GIS, Survey Spasial & Pemetaan Aset",
   INFRASTRUCTURE: "DevOps & Infrastruktur Server",
   PLANS: "Perencanaan & Roadmap Jaringan",
   GENERAL: "General & Standar SOP Operasional",
@@ -22,9 +22,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 // Peta scope untuk memperkaya prompt
 const SCOPE_LABELS: Record<string, string> = {
-  PLATFORM_INTERNAL: "Platform Super Admin (Dokumen rahasia internal K2NET)",
-  TENANT_INTERNAL: "Mitra ISP / Tenant Internal (NOC & Teknisi Jaringan)",
-  GLOBAL: "Publik / Global (Semua Pengguna & Petunjuk Umum)",
+  PLATFORM_INTERNAL: "Platform Super Admin (Dokumen internal rahasia K2NET)",
+  TENANT_INTERNAL: "Mitra ISP / Tenant Internal (NOC & Teknisi Lapangan ISP)",
+  GLOBAL: "Publik / Global (Semua Pengguna Platform)",
 };
 
 export async function POST(req: NextRequest) {
@@ -57,44 +57,57 @@ export async function POST(req: NextRequest) {
   const scopeLabel = SCOPE_LABELS[scope] || scope;
   const gatewayToken = getGatewayToken();
 
-  // Buat prompt yang kaya konteks berdasarkan metadata form
-  const generationPrompt = `Tuliskan draf dokumen SOP (Standard Operating Procedure) dan panduan teknis operasional dalam format Markdown yang terstruktur, komprehensif, dan profesional untuk platform FTTH GIS K2NET:
+  const systemPrompt = `Kamu adalah Senior FTTH Network Architect & Technical Documentation Writer K2NET.
+Tugasmu adalah menghasilkan dokumen SOP (Standard Operating Procedure) resmi secara instan dalam format Markdown standar untuk sistem FTTH GIS K2NET.
 
-**Judul Dokumen**: ${title}
-**Kategori Pengetahuan**: ${categoryLabel}
-**Visibilitas & Hak Akses**: ${scopeLabel}
+ATURAN MUTLAK PENULISAN:
+1. DILARANG KERAS menyapa atau menulis kalimat pengantar seperti "Berikut adalah draf...", "Tentu...", "Berikut ini...".
+2. DILARANG KERAS menulis kalimat penutup obrolan seperti "Semoga membantu...", "Jika butuh revisi...".
+3. Mulai LANGSUNG pada baris pertama dengan "# ${title}".
+4. Tuliskan SELURUH 7 seksi secara lengkap, padat, teknis, dan tuntas hingga seksi 7 selesai.
+5. Gunakan bahasa Indonesia teknis yang baku dan profesional.`;
 
-**Struktur Wajib Dokumen**:
+  const generationPrompt = `Buatkan dokumen SOP resmi lengkap untuk:
+- Judul: ${title}
+- Kategori: ${categoryLabel}
+- Target Otoritas / Visibilitas: ${scopeLabel}
+
+Struktur Dokumen (Wajib lengkap seluruh 7 seksi):
+
 # ${title}
 
 ## 1. Tujuan & Ringkasan Eksekutif
-Jelaskan tujuan dokumen ini dibuat dan manfaat operasionalnya.
+Jelaskan tujuan operasional dokumen ini dan standar mutu yang dicapai.
 
 ## 2. Ruang Lingkup & Otoritas Akses
-Sebutkan pihak/role yang bertanggung jawab menjalankan SOP ini (${scopeLabel}).
+Sebutkan pihak/role pelaksana (${scopeLabel}) dan tanggung jawab masing-masing.
 
-## 3. Prasyarat & Alat Kerja (Prerequisites)
-- Peralatan lapangan / hardware / software
-- Hak akses / kredensial sistem yang dibutuhkan
-- Standar keselamatan kerja (K3) bila berlaku
+## 3. Prasyarat & Alat Kerja Lapangan (Prerequisites)
+- Peralatan hardware / software / tools lapangan (OPM, OTDR, Fusion Splicer, CLI)
+- Hak akses sistem & kredensial
+- Standar K3 dan keselamatan kerja
 
 ## 4. Prosedur Kerja Langkah demi Langkah
-1. Tahap Persiapan & Verifikasi Awal
-2. Tahap Eksekusi Teknis Lapangan / Konfigurasi Sistem
-3. Tahap Pengujian & Validasi Hasil
+1. **Tahap Persiapan & Verifikasi Awal**: Langkah-langkah cek awal.
+2. **Tahap Eksekusi Teknis**: Prosedur teknis terperinci dengan format penamaan / konfigurasi / langkah fisik.
+3. **Tahap Validasi & Pengujian**: Pengujian fungsi dan verifikasi hasil.
 
 ## 5. Batas Parameter Teknis & Threshold Kritis
-Sertakan tabel acuan standar parameter teknis, redaman optik (dBm), status LED, atau error code yang relevan.
+Buat tabel acuan standar parameter teknis, redaman optik (dBm), status LED, atau error code yang relevan:
+| Parameter / Indikator | Nilai Standar / Ideal | Batas Toleransi Kritis | Tindakan Korektif |
+|---|---|---|---|
+| Redaman ODP / Drop Cable | -15 s/d -22 dBm | Max -27 dBm | Re-splicing / cek konektor |
+| ... | ... | ... | ... |
 
-## 6. Penanganan Masalah (Troubleshooting & Eskalasi)
-- Skenario kendala umum beserta solusi cepat
-- Prosedur eskalasi jika masalah berlanjut
+## 6. Penanganan Masalah & Prosedur Eskalasi (Troubleshooting)
+Sebutkan skenario gangguan umum beserta langkah penanganan cepat dan alur eskalasi.
 
 ## 7. Checklist Penyelesaian & Catatan Kepatuhan
-Daftar checklist verifikasi sebelum pekerjaan dinyatakan selesai.
+- [ ] Checklist verifikasi fisik dan konfigurasi
+- [ ] Checklist dokumentasi dan tagging aset pada GIS
+- [ ] Serah terima pekerjaan
 
----
-*Gunakan format Markdown murni, nomor urut jelas, bullet point, dan tabel rapi.*`;
+Tuliskan dokumen lengkap sekarang:`;
 
   // Panggil gateway-ai chat/stream dengan SSE
   let upstreamRes: Response;
@@ -110,6 +123,7 @@ Daftar checklist verifikasi sebelum pekerjaan dinyatakan selesai.
       },
       body: JSON.stringify({
         message: generationPrompt,
+        system_prompt: systemPrompt,
         history: [],
         scope: "GENERAL",
         model: "",

@@ -166,8 +166,11 @@ export function AiAddKnowledgeTab({
             const parsed = JSON.parse(raw);
             if (parsed.token) {
               accumulated += parsed.token;
-              setManualContent(accumulated);
-              setAiGeneratedChars(accumulated.length);
+              // Clean any conversational preamble (e.g. "Berikut adalah...") so it starts strictly at "# "
+              const headerIdx = accumulated.indexOf("# ");
+              const displayContent = headerIdx > 0 ? accumulated.slice(headerIdx) : accumulated;
+              setManualContent(displayContent);
+              setAiGeneratedChars(displayContent.length);
             }
           } catch {
             // ignore malformed SSE lines

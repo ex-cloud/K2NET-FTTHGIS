@@ -109,7 +109,7 @@ class LLMEngine:
                 messages=messages,
                 stream=True,
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=8192,
             )
 
             async for chunk in stream:
@@ -144,7 +144,7 @@ class LLMEngine:
                 messages=messages,
                 stream=True,
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=8192,
             )
 
             async for chunk in stream:
@@ -182,7 +182,7 @@ class LLMEngine:
                 messages=messages,
                 stream=True,
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=8192,
             )
 
             async for chunk in stream:
@@ -236,7 +236,7 @@ class LLMEngine:
             response = await chat.send_message_async(
                 user_message,
                 stream=True,
-                generation_config={"temperature": 0.3, "max_output_tokens": 2048},
+                generation_config={"temperature": 0.3, "max_output_tokens": 8192},
             )
 
             async for chunk in response:
