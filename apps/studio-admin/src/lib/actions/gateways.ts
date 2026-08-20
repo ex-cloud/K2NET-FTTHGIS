@@ -955,3 +955,55 @@ export async function getKnowledgeGraphData(): Promise<KnowledgeGraphData> {
   return res.json();
 }
 
+export type ServerSyncStatus = {
+  total_server_files: number;
+  indexed_count: number;
+  unindexed_count: number;
+  unindexed_files: Array<{
+    path: string;
+    title: string;
+    category: string;
+    size_bytes: number;
+  }>;
+  is_synced: boolean;
+};
+
+export async function getAiServerSyncStatus(): Promise<ServerSyncStatus> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  try {
+    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-status`, {
+      method: "GET",
+      headers: {
+        "X-Gateway-Token": token,
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return {
+        total_server_files: 0,
+        indexed_count: 0,
+        unindexed_count: 0,
+        unindexed_files: [],
+        is_synced: true,
+      };
+    }
+
+    return res.json();
+  } catch (err) {
+    console.warn("Gagal memuat status sync dokumen server:", err);
+    return {
+      total_server_files: 0,
+      indexed_count: 0,
+      unindexed_count: 0,
+      unindexed_files: [],
+      is_synced: true,
+    };
+  }
+}
+
+

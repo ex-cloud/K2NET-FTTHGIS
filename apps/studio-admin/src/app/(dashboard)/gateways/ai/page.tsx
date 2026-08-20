@@ -14,11 +14,13 @@ import {
   approveAiDocument,
   rejectAiDocument,
   triggerServerDocsSync,
+  getAiServerSyncStatus,
   getGatewayConfigByKey,
   updateGatewayConfigByKey,
   simulateVectorSearch,
   AiKnowledgeStats, 
-  AiDocumentItem 
+  AiDocumentItem,
+  ServerSyncStatus,
 } from "@/lib/actions/gateways";
 
 import { AiTabType, KnowledgeScope, KnowledgeTemplateItem } from "./components/types";
@@ -89,6 +91,10 @@ export default function AiGatewayPage() {
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
 
+  // Server Files Sync Detection State
+  const [syncStatus, setSyncStatus] = useState<ServerSyncStatus | null>(null);
+  const [syncStatusLoading, setSyncStatusLoading] = useState(false);
+
   // ── Load Real-Time Stats & Documents from PostgreSQL pgvector ─────────────
   const loadStats = useCallback(async () => {
     try {
@@ -99,6 +105,18 @@ export default function AiGatewayPage() {
       console.error("Gagal memuat stats AI:", err);
     } finally {
       setStatsLoading(false);
+    }
+  }, []);
+
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      setSyncStatusLoading(true);
+      const data = await getAiServerSyncStatus();
+      setSyncStatus(data);
+    } catch (err) {
+      console.error("Gagal memuat status sinkronisasi server docs:", err);
+    } finally {
+      setSyncStatusLoading(false);
     }
   }, []);
 
@@ -168,7 +186,8 @@ export default function AiGatewayPage() {
   useEffect(() => {
     loadStats();
     loadDocuments();
-  }, [loadStats, loadDocuments]);
+    loadSyncStatus();
+  }, [loadStats, loadDocuments, loadSyncStatus]);
 
   // ── Event Handlers ──────────────────────────────────────────────────────────
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -186,6 +205,7 @@ export default function AiGatewayPage() {
       toast.success(`Dokumen "${title}" berhasil disetujui dan diindeks ke pgvector!`);
       loadDocuments();
       loadStats();
+      loadSyncStatus();
     } catch (err: any) {
       toast.error(err.message || "Gagal menyetujui dokumen");
     }
@@ -197,6 +217,7 @@ export default function AiGatewayPage() {
       toast.success(`Dokumen "${title}" ditolak.`);
       loadDocuments();
       loadStats();
+      loadSyncStatus();
     } catch (err: any) {
       toast.error(err.message || "Gagal menolak dokumen");
     }
@@ -211,6 +232,7 @@ export default function AiGatewayPage() {
       toast.success(`Dokumen "${title}" berhasil dihapus dari memori AI!`);
       loadDocuments();
       loadStats();
+      loadSyncStatus();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal menghapus dokumen");
     }
@@ -224,6 +246,7 @@ export default function AiGatewayPage() {
         setTimeout(() => {
           loadStats();
           loadDocuments();
+          loadSyncStatus();
         }, 3000);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Gagal sinkronisasi server docs");
@@ -282,6 +305,7 @@ export default function AiGatewayPage() {
       setActiveTab("KNOWLEDGE");
       loadDocuments();
       loadStats();
+      loadSyncStatus();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal menyimpan catatan");
     } finally {
@@ -322,6 +346,7 @@ export default function AiGatewayPage() {
       setActiveTab("KNOWLEDGE");
       loadDocuments();
       loadStats();
+      loadSyncStatus();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mengunggah file");
     } finally {
@@ -344,6 +369,7 @@ export default function AiGatewayPage() {
       toast.success("Konfigurasi AI Assistant Gateway berhasil diperbarui!");
       loadConfig();
       loadStats();
+      loadSyncStatus();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal menyimpan konfigurasi");
     } finally {
@@ -408,6 +434,7 @@ export default function AiGatewayPage() {
           onRefresh={() => {
             loadDocuments();
             loadStats();
+            loadSyncStatus();
           }}
           isSyncing={isPending}
           docsLoading={docsLoading}
@@ -442,9 +469,12 @@ export default function AiGatewayPage() {
             onRefresh={() => {
               loadDocuments();
               loadStats();
+              loadSyncStatus();
             }}
             onFetchMore={handleFetchMore}
             isSyncing={isPending}
+            syncStatus={syncStatus}
+            syncStatusLoading={syncStatusLoading}
             onInspectVector={() => setIsExplorerOpen(true)}
             onTestSimulator={(title) => {
               setSimQuery(title);

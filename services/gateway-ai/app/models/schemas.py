@@ -255,3 +255,21 @@ class KnowledgeGraphResponse(BaseModel):
     nodes: list[GraphNode]
     links: list[GraphLink]
     stats: dict
+
+
+# ─── Server Sync & Disk Detection ──────────────────────────────────────────
+
+class UnindexedFileItem(BaseModel):
+    path: str
+    title: str
+    category: str
+    size_bytes: int
+
+
+class ServerSyncStatusResponse(BaseModel):
+    total_server_files: int
+    indexed_count: int
+    unindexed_count: int
+    unindexed_files: list[UnindexedFileItem]
+    is_synced: bool
+

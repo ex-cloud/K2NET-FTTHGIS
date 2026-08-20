@@ -29,6 +29,7 @@ import {
   Globe2,
   XCircle,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 import {
   useReactTable,
@@ -46,9 +47,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   ActionTooltip,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Badge,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
-import { AiDocumentItem } from "@/lib/actions/gateways";
+import { AiDocumentItem, ServerSyncStatus } from "@/lib/actions/gateways";
 import { 
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
@@ -85,6 +93,8 @@ interface AiKnowledgeTableProps {
   onRefresh: () => void;
   onFetchMore?: () => void;
   isSyncing?: boolean;
+  syncStatus?: ServerSyncStatus | null;
+  syncStatusLoading?: boolean;
   onInspectVector?: (doc: AiDocumentItem) => void;
   onTestSimulator?: (title: string) => void;
 }
@@ -117,11 +127,14 @@ export function AiKnowledgeTable({
   onRefresh,
   onFetchMore,
   isSyncing = false,
+  syncStatus,
+  syncStatusLoading = false,
   onInspectVector,
   onTestSimulator,
 }: AiKnowledgeTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [isUnindexedModalOpen, setIsUnindexedModalOpen] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -379,6 +392,50 @@ export function AiKnowledgeTable({
           <span>HNSW 1536 dim Ready</span>
         </div>
       </div>
+
+      {/* ── Server Files Detection Banner ──────────────────────────────────── */}
+      {syncStatus && syncStatus.unindexed_count > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/20 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+              <FolderSync className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">
+                  Ditemukan {syncStatus.unindexed_count} berkas SOP baru di direktori server (/opt/project5/docs)
+                </span>
+                <Badge variant="outline" className="text-[10px] bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-mono py-0">
+                  {syncStatus.unindexed_count} Belum Terindeks
+                </Badge>
+              </div>
+              <p className="text-[11px] text-foreground/75 dark:text-muted-foreground mt-0.5">
+                Ada berkas Markdown lokal di server yang belum masuk ke database pgvector. Sinkronkan agar memori AI terbarui.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsUnindexedModalOpen(true)}
+              className="text-xs h-8 border-border text-foreground hover:bg-muted/50 cursor-pointer"
+            >
+              Lihat Berkas ({syncStatus.unindexed_count})
+            </Button>
+            <Button
+              size="sm"
+              onClick={onSyncServerDocs}
+              disabled={isSyncing}
+              className="text-xs h-8 gap-1.5 bg-amber-600 hover:bg-amber-500 text-primary-foreground font-semibold cursor-pointer shadow-xs"
+            >
+              <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+              {isSyncing ? "Menyinkronkan..." : "Sinkronkan Sekarang"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Query-Performance Style Unified Toolbar with Filters ───────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -806,6 +863,83 @@ export function AiKnowledgeTable({
           </div>
         </div>
       </div>
+
+      {/* ── Dialog Modal: Daftar Berkas Server Belum Terindeks ─────────────── */}
+      <Dialog open={isUnindexedModalOpen} onOpenChange={setIsUnindexedModalOpen}>
+        <DialogContent className="max-w-2xl bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
+          <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <FolderSync className="w-4 h-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-foreground">
+                  Berkas Server Belum Terindeks ({syncStatus?.unindexed_count || 0})
+                </DialogTitle>
+                <DialogDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+                  Daftar berkas Markdown (.md) di direktori server (/opt/project5/docs) yang belum masuk ke database & pgvector.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2 divide-y divide-border/40 custom-scrollbar">
+            {syncStatus?.unindexed_files && syncStatus.unindexed_files.length > 0 ? (
+              syncStatus.unindexed_files.map((file, idx) => (
+                <div key={idx} className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <FileText className="w-4 h-4 text-foreground/75 dark:text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate">{file.title}</p>
+                      <p className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono truncate">{file.path}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground/80">
+                      {file.category}
+                    </Badge>
+                    <span className="text-[11px] font-mono text-foreground/75 dark:text-muted-foreground">
+                      {formatBytes(file.size_bytes)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-xs text-foreground/75 dark:text-muted-foreground">
+                Semua berkas server telah terindeks sepenuhnya.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-4 border-t border-border/80 bg-muted/20 flex flex-row items-center justify-between gap-2">
+            <span className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono">
+              Total: {syncStatus?.total_server_files || 0} berkas ({syncStatus?.indexed_count || 0} terindeks)
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsUnindexedModalOpen(false)}
+                className="text-xs h-8"
+              >
+                Tutup
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setIsUnindexedModalOpen(false);
+                  onSyncServerDocs();
+                }}
+                disabled={isSyncing || (syncStatus?.unindexed_count || 0) === 0}
+                className="text-xs h-8 gap-1.5 bg-primary text-primary-foreground font-semibold"
+              >
+                <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Menyinkronkan..." : "Mulai Indexing Sekarang"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
