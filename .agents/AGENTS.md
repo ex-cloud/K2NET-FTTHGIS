@@ -299,3 +299,13 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Interaksi Hidup**: Menghasilkan efek border gradient mouse-tracking otomatis yang elegan dan seragam, menggantikan efek border statis.
 - **Pencegahan Bug Overlap**: Dilarang menggunakan `overflow-hidden` di card terluar jika card memiliki konten berlatar gelap yang menempel pada tepi garis border.
 
+### 🧠 AI Knowledge Base — Two-Way Disk Persistence & Smart Server Sync Detection (Agustus 2026)
+- **Two-Way Disk Persistence**:
+  - Setiap kali dokumen manual dibuat (`POST /api/v1/ai/documents/text`) atau diedit (`PUT /api/v1/ai/documents/{doc_id}`) dari UI, backend Python AI Gateway otomatis menuliskan dan memperbarui berkas fisik `.md` ke subfolder `/opt/project5/docs/{folder}/{slug}.md`.
+  - Pemetaan Folder: `TROUBLESHOOTING` -> `02_SOP_Troubleshooting`, `NETWORK_CONFIG` -> `01_Architecture`, `INFRASTRUCTURE` -> `03_Infrastructure`, `GIS_MANUAL` -> `04_GIS_Mapping`, `PLANS` -> `05_Plans_Roadmap`, `GENERAL` -> `note`.
+  - Kolom `file_name` di `ai_documents` menyimpan relative path berkas fisik server (`02_SOP_Troubleshooting/nama-sop.md`) untuk integrasi mulus dengan Obsidian dan Git version control.
+- **Smart Server Sync Detection (`GET /api/v1/ai/documents/sync-status`)**:
+  - Endpoint backend memindai file `.md` di `/opt/project5/docs` secara rekursif, membandingkannya dengan database `ai_documents`, dan mengembalikan status sinkronisasi beserta daftar file yang belum terindeks (`unindexed_files`).
+- **Notification Banner & Modal di Studio Admin**:
+  - Jika terdapat file unindexed (`unindexed_count > 0`), UI secara dinamis menampilkan banner amber dengan tombol *"Lihat Berkas"* (modal detail berkas, kategori, ukuran) dan *"Sinkronkan Sekarang"* (1-click trigger indexing background).
+
