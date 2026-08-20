@@ -23,23 +23,48 @@ class VectorStore:
         self,
         query_embedding: list[float],
         tenant_id: uuid.UUID,
-        scope: str = "GENERAL",
+        scope: str = "ALL",
+        category: str = "ALL",
+        allowed_scopes: Optional[list[str]] = None,
         limit: int = 4,
-        min_similarity: float = 0.3,
+        min_similarity: float = 0.25,
     ) -> list[dict]:
         """
         Cosine similarity search di pgvector.
         HNSW index otomatis digunakan oleh PostgreSQL untuk query ini.
+        HANYA menarik dokumen yang berstatus 'INDEXED' dan lolos filter scope tenant.
         
         Returns:
-            List of dict: {content, document_id, title, chunk_index, similarity_score}
+            List of dict: {content, document_id, title, category, scope, chunk_index, similarity_score}
         """
-        sql = text("""
+        scope_conditions = []
+        params = {
+            "query_vec": str(query_embedding),
+            "tenant_id": str(tenant_id),
+            "min_similarity": min_similarity,
+            "limit": limit,
+        }
+
+        if allowed_scopes and len(allowed_scopes) > 0:
+            scope_conditions.append("d.scope = ANY(:allowed_scopes)")
+            params["allowed_scopes"] = allowed_scopes
+        elif scope and scope.upper() not in ("ALL", "GENERAL"):
+            scope_conditions.append("(d.scope = :scope OR d.category = :scope)")
+            params["scope"] = scope.upper()
+
+        if category and category.upper() != "ALL":
+            scope_conditions.append("d.category = :category")
+            params["category"] = category.upper()
+
+        extra_filter = ("AND " + " AND ".join(scope_conditions)) if scope_conditions else ""
+
+        sql = text(f"""
             SELECT
                 CAST(c.id AS text)               AS chunk_id,
                 CAST(c.document_id AS text)      AS document_id,
                 d.title                          AS document_title,
                 d.category                       AS category,
+                d.scope                          AS scope,
                 c.chunk_index                    AS chunk_index,
                 c.content                        AS content,
                 c.metadata                       AS metadata,
@@ -47,26 +72,17 @@ class VectorStore:
             FROM ai_document_chunks c
             JOIN ai_documents d ON d.id = c.document_id
             WHERE
-                c.tenant_id = :tenant_id          -- Isolasi Mutlak!
+                c.tenant_id = :tenant_id          -- Isolasi Mutlak Tenant!
                 AND d.tenant_id = :tenant_id       -- Double-lock pada join
-                AND d.status = 'INDEXED'
-                AND (:scope = 'GENERAL' OR d.category = :scope)
+                AND d.status = 'INDEXED'           -- Hanya dokumen terverifikasi
+                {extra_filter}
                 AND 1 - (c.embedding <=> CAST(:query_vec AS vector)) >= :min_similarity
             ORDER BY c.embedding <=> CAST(:query_vec AS vector)
             LIMIT :limit
         """)
 
         async with get_db_session() as session:
-            result = await session.execute(
-                sql,
-                {
-                    "query_vec": str(query_embedding),
-                    "tenant_id": str(tenant_id),
-                    "scope": scope,
-                    "min_similarity": min_similarity,
-                    "limit": limit,
-                },
-            )
+            result = await session.execute(sql, params)
             rows = result.mappings().fetchall()
 
         return [
@@ -75,6 +91,7 @@ class VectorStore:
                 "document_id": str(r["document_id"]),
                 "title": r["document_title"],
                 "category": r["category"],
+                "scope": r.get("scope", "GLOBAL"),
                 "chunk_index": r["chunk_index"],
                 "content": r["content"],
                 "similarity_score": float(r["similarity_score"]),
@@ -150,7 +167,9 @@ class VectorStore:
         self,
         query: str,
         tenant_id: uuid.UUID,
-        scope: str = "GENERAL",
+        scope: str = "ALL",
+        category: str = "ALL",
+        allowed_scopes: Optional[list[str]] = None,
         limit: int = 8,
     ) -> list[dict]:
         """
@@ -164,12 +183,33 @@ class VectorStore:
             if w.isalnum() or any(c in w for c in "-_./")
         )[:200] or "ftth"
 
-        sql = text("""
+        scope_conditions = []
+        params = {
+            "query": safe_query,
+            "tenant_id": str(tenant_id),
+            "limit": limit,
+        }
+
+        if allowed_scopes and len(allowed_scopes) > 0:
+            scope_conditions.append("d.scope = ANY(:allowed_scopes)")
+            params["allowed_scopes"] = allowed_scopes
+        elif scope and scope.upper() not in ("ALL", "GENERAL"):
+            scope_conditions.append("(d.scope = :scope OR d.category = :scope)")
+            params["scope"] = scope.upper()
+
+        if category and category.upper() != "ALL":
+            scope_conditions.append("d.category = :category")
+            params["category"] = category.upper()
+
+        extra_filter = ("AND " + " AND ".join(scope_conditions)) if scope_conditions else ""
+
+        sql = text(f"""
             SELECT
                 CAST(c.id AS text)           AS chunk_id,
                 CAST(c.document_id AS text)  AS document_id,
                 d.title                      AS document_title,
                 d.category                   AS category,
+                d.scope                      AS scope,
                 c.chunk_index                AS chunk_index,
                 c.content                    AS content,
                 ts_rank_cd(
@@ -182,7 +222,7 @@ class VectorStore:
                 c.tenant_id = :tenant_id
                 AND d.tenant_id = :tenant_id
                 AND d.status = 'INDEXED'
-                AND (:scope = 'GENERAL' OR d.category = :scope)
+                {extra_filter}
                 AND to_tsvector('simple', c.content) @@ plainto_tsquery('simple', :query)
             ORDER BY similarity_score DESC
             LIMIT :limit
@@ -190,15 +230,7 @@ class VectorStore:
 
         try:
             async with get_db_session() as session:
-                result = await session.execute(
-                    sql,
-                    {
-                        "query": safe_query,
-                        "tenant_id": str(tenant_id),
-                        "scope": scope,
-                        "limit": limit,
-                    },
-                )
+                result = await session.execute(sql, params)
                 rows = result.mappings().fetchall()
 
             return [
@@ -207,6 +239,7 @@ class VectorStore:
                     "document_id": str(r["document_id"]),
                     "title": r["document_title"],
                     "category": r["category"],
+                    "scope": r.get("scope", "GLOBAL"),
                     "chunk_index": r["chunk_index"],
                     "content": r["content"],
                     "similarity_score": float(r["similarity_score"] or 0.0),

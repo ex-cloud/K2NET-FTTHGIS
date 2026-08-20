@@ -14,6 +14,10 @@ from app.api.dependencies import verify_gateway_and_tenant, TenantContext
 from app.models.schemas import (
     DocumentUploadResponse,
     ManualDocumentCreate,
+    DocumentUpdateRequest,
+    DocumentApproveRequest,
+    DocumentRejectRequest,
+    DocumentDetailResponse,
     DocumentListResponse,
     DocumentItem,
     AiStatsResponse,
@@ -69,6 +73,8 @@ def _extract_vendor(title: str, content: str) -> str:
 @router.get("", response_model=DocumentListResponse)
 async def list_documents(
     category: Optional[str] = Query(None, description="Filter by category"),
+    scope: Optional[str] = Query(None, description="Filter by scope: PLATFORM_INTERNAL | TENANT_INTERNAL | GLOBAL"),
+    status: Optional[str] = Query(None, description="Filter by status: INDEXED | PENDING_REVIEW | DRAFT | REJECTED"),
     search: Optional[str] = Query(None, description="Search by title"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -78,9 +84,17 @@ async def list_documents(
     conditions = ["tenant_id = :tenant_id"]
     params: dict = {"tenant_id": str(ctx.tenant_id), "limit": limit, "offset": offset}
 
-    if category:
+    if category and category.upper() != "ALL":
         conditions.append("category = :category")
         params["category"] = category.upper()
+
+    if scope and scope.upper() != "ALL":
+        conditions.append("scope = :scope")
+        params["scope"] = scope.upper()
+
+    if status and status.upper() != "ALL":
+        conditions.append("status = :status")
+        params["status"] = status.upper()
 
     if search:
         conditions.append("title ILIKE :search")
@@ -90,8 +104,8 @@ async def list_documents(
 
     count_sql = text(f"SELECT COUNT(*) FROM ai_documents WHERE {where_clause}")
     list_sql = text(f"""
-        SELECT id, tenant_id, title, category, file_name, file_size_bytes, mime_type,
-               status, chunk_count, error_message, created_at, updated_at
+        SELECT id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type,
+               status, chunk_count, raw_content, error_message, created_at, updated_at
         FROM ai_documents
         WHERE {where_clause}
         ORDER BY created_at DESC
@@ -252,17 +266,21 @@ async def get_ai_observability(ctx: TenantContext = Depends(verify_gateway_and_t
 
 # ─── 3. Upload File ───────────────────────────────────────────────────────────
 
+# ─── 3. Upload File ───────────────────────────────────────────────────────────
+
 @router.post("", response_model=DocumentUploadResponse, status_code=201)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form(...),
     category: str = Form(default="GENERAL"),
+    scope: str = Form(default="GLOBAL"),
+    auto_approve: bool = Form(default=True),
     ctx: TenantContext = Depends(verify_gateway_and_tenant),
 ):
     """
     Upload dokumen SOP/Manual ke knowledge base tenant.
-    Proses indexing (chunking + embedding) berjalan sebagai background task.
+    Mendukung penentuan scope visibilitas (PLATFORM_INTERNAL, TENANT_INTERNAL, GLOBAL).
     """
     content_type = file.content_type or ""
     if content_type not in ALLOWED_MIME_TYPES:
@@ -275,8 +293,20 @@ async def upload_document(
     if len(file_bytes) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
             status_code=413,
-            detail=f"Ukuran file melebihi batas maksimum 20 MB.",
+            detail="Ukuran file melebihi batas maksimum 20 MB.",
         )
+
+    # Ekstrak raw_content jika format teks/markdown
+    raw_content_str = None
+    if content_type in ("text/plain", "text/markdown", "text/x-markdown"):
+        try:
+            raw_content_str = file_bytes.decode("utf-8", errors="replace")
+        except Exception:
+            pass
+
+    initial_status = "PENDING" if auto_approve else "PENDING_REVIEW"
+    doc_id = uuid.uuid4()
+    scope_val = scope.upper() if scope.upper() in ("PLATFORM_INTERNAL", "TENANT_INTERNAL", "GLOBAL") else "GLOBAL"
 
     audit_client.log(
         tenant_id=ctx.tenant_id,
@@ -285,18 +315,17 @@ async def upload_document(
         resource_type="KNOWLEDGE_BASE",
         resource_id=title,
         log_group="OPERATIONS",
-        metadata={"filename": file.filename, "size_bytes": len(file_bytes), "category": category},
+        metadata={"filename": file.filename, "size_bytes": len(file_bytes), "category": category, "scope": scope_val, "status": initial_status},
     )
 
-    doc_id = uuid.uuid4()
     sql = text("""
         INSERT INTO ai_documents
-            (id, tenant_id, title, category, file_name, file_size_bytes, mime_type,
-             status, created_by)
+            (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type,
+             status, raw_content, created_by)
         VALUES
-            (:id, :tenant_id, :title, :category, :file_name, :file_size,
-             :mime_type, 'PENDING', :created_by)
-        RETURNING id, tenant_id, title, category, status, chunk_count, created_at
+            (:id, :tenant_id, :title, :category, :scope, :file_name, :file_size,
+             :mime_type, :status, :raw_content, :created_by)
+        RETURNING id, tenant_id, title, category, scope, status, chunk_count, created_at
     """)
     async with get_db_session() as session:
         result = await session.execute(
@@ -306,21 +335,26 @@ async def upload_document(
                 "tenant_id": str(ctx.tenant_id),
                 "title": title,
                 "category": category.upper(),
+                "scope": scope_val,
                 "file_name": file.filename,
                 "file_size": len(file_bytes),
                 "mime_type": content_type,
+                "status": initial_status,
+                "raw_content": raw_content_str,
                 "created_by": ctx.actor_id,
             },
         )
         row = result.mappings().fetchone()
 
-    background_tasks.add_task(
-        _index_document,
-        doc_id=doc_id,
-        tenant_id=ctx.tenant_id,
-        file_bytes=file_bytes,
-        content_type=content_type,
-    )
+    if auto_approve:
+        background_tasks.add_task(
+            _index_document,
+            doc_id=doc_id,
+            tenant_id=ctx.tenant_id,
+            file_bytes=file_bytes,
+            content_type=content_type,
+            scope=scope_val,
+        )
 
     return DocumentUploadResponse(**dict(row))
 
@@ -338,6 +372,9 @@ async def create_manual_document(
     """
     raw_bytes = payload.content.encode("utf-8")
     doc_id = uuid.uuid4()
+    scope_val = payload.scope if payload.scope in ("PLATFORM_INTERNAL", "TENANT_INTERNAL", "GLOBAL") else "GLOBAL"
+
+    initial_status = "PENDING" if payload.auto_approve else ("DRAFT" if payload.is_draft else "PENDING_REVIEW")
 
     audit_client.log(
         tenant_id=ctx.tenant_id,
@@ -346,17 +383,17 @@ async def create_manual_document(
         resource_type="KNOWLEDGE_BASE",
         resource_id=payload.title,
         log_group="OPERATIONS",
-        metadata={"title": payload.title, "category": payload.category, "char_count": len(payload.content)},
+        metadata={"title": payload.title, "category": payload.category, "scope": scope_val, "status": initial_status, "char_count": len(payload.content)},
     )
 
     sql = text("""
         INSERT INTO ai_documents
-            (id, tenant_id, title, category, file_name, file_size_bytes, mime_type,
-             status, created_by)
+            (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type,
+             status, raw_content, created_by)
         VALUES
-            (:id, :tenant_id, :title, :category, 'manual-entry.md', :file_size,
-             'text/markdown', 'PENDING', :created_by)
-        RETURNING id, tenant_id, title, category, status, chunk_count, created_at
+            (:id, :tenant_id, :title, :category, :scope, 'manual-entry.md', :file_size,
+             'text/markdown', :status, :raw_content, :created_by)
+        RETURNING id, tenant_id, title, category, scope, status, chunk_count, created_at
     """)
     async with get_db_session() as session:
         result = await session.execute(
@@ -366,22 +403,269 @@ async def create_manual_document(
                 "tenant_id": str(ctx.tenant_id),
                 "title": payload.title,
                 "category": payload.category.upper(),
+                "scope": scope_val,
                 "file_size": len(raw_bytes),
+                "status": initial_status,
+                "raw_content": payload.content,
                 "created_by": ctx.actor_id,
             },
         )
         row = result.mappings().fetchone()
 
-    background_tasks.add_task(
-        _index_document,
-        doc_id=doc_id,
-        tenant_id=ctx.tenant_id,
-        file_bytes=raw_bytes,
-        content_type="text/markdown",
-    )
+    if payload.auto_approve:
+        background_tasks.add_task(
+            _index_document,
+            doc_id=doc_id,
+            tenant_id=ctx.tenant_id,
+            file_bytes=raw_bytes,
+            content_type="text/markdown",
+            scope=scope_val,
+        )
 
     return DocumentUploadResponse(**dict(row))
 
+
+# ─── 5. Document Detail ───────────────────────────────────────────────────────
+
+@router.get("/{doc_id}", response_model=DocumentDetailResponse)
+async def get_document_detail(
+    doc_id: uuid.UUID,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """Mengambil informasi detail dokumen beserta isi teks markdown asli (raw_content)."""
+    sql = text("""
+        SELECT id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type,
+               status, chunk_count, raw_content, error_message, created_by, created_at, updated_at
+        FROM ai_documents
+        WHERE id = :doc_id AND tenant_id = :tenant_id
+    """)
+    async with get_db_session() as session:
+        result = await session.execute(sql, {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id)})
+        row = result.mappings().fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
+
+    return DocumentDetailResponse(**dict(row))
+
+
+# ─── 6. Update / Edit Document ────────────────────────────────────────────────
+
+@router.put("/{doc_id}", response_model=DocumentDetailResponse)
+async def update_document(
+    doc_id: uuid.UUID,
+    payload: DocumentUpdateRequest,
+    background_tasks: BackgroundTasks,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Mengubah metadata (judul, kategori, scope) atau isi konten Markdown dokumen.
+    Jika status adalah INDEXED dan reindex=True, sistem otomatis melakukan re-vectorisasi.
+    """
+    # 1. Ambil dokumen existing
+    async with get_db_session() as session:
+        fetch_res = await session.execute(
+            text("SELECT * FROM ai_documents WHERE id = :doc_id AND tenant_id = :tenant_id"),
+            {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id)},
+        )
+        existing = fetch_res.mappings().fetchone()
+
+    if not existing:
+        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
+
+    new_title = payload.title if payload.title is not None else existing["title"]
+    new_category = payload.category.upper() if payload.category is not None else existing["category"]
+    new_scope = payload.scope if payload.scope is not None else existing.get("scope", "GLOBAL")
+    new_content = payload.content if payload.content is not None else existing.get("raw_content")
+    new_status = payload.status if payload.status is not None else existing["status"]
+
+    content_changed = payload.content is not None and payload.content != existing.get("raw_content")
+    new_file_size = len(new_content.encode("utf-8")) if new_content else existing["file_size_bytes"]
+
+    # 2. Update data master dokumen
+    update_sql = text("""
+        UPDATE ai_documents
+        SET title = :title,
+            category = :category,
+            scope = :scope,
+            raw_content = :raw_content,
+            file_size_bytes = :file_size,
+            status = :status,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :doc_id AND tenant_id = :tenant_id
+        RETURNING id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type,
+                  status, chunk_count, raw_content, error_message, created_by, created_at, updated_at
+    """)
+    async with get_db_session() as session:
+        res = await session.execute(
+            update_sql,
+            {
+                "doc_id": str(doc_id),
+                "tenant_id": str(ctx.tenant_id),
+                "title": new_title,
+                "category": new_category,
+                "scope": new_scope,
+                "raw_content": new_content,
+                "file_size": new_file_size,
+                "status": new_status,
+            },
+        )
+        updated_row = res.mappings().fetchone()
+
+    audit_client.log(
+        tenant_id=ctx.tenant_id,
+        actor_id=ctx.actor_id,
+        action="AI_DOCUMENT_UPDATED",
+        resource_type="KNOWLEDGE_BASE",
+        resource_id=str(doc_id),
+        log_group="OPERATIONS",
+        metadata={"title": new_title, "category": new_category, "scope": new_scope, "content_changed": content_changed},
+    )
+
+    # 3. Trigger re-indexing jika dokumen berstatus INDEXED atau disetujui
+    if (content_changed or payload.reindex) and new_status == "INDEXED" and new_content:
+        # Hapus chunks lama terlebih dahulu
+        async with get_db_session() as session:
+            await session.execute(
+                text("DELETE FROM ai_document_chunks WHERE document_id = :doc_id AND tenant_id = :tenant_id"),
+                {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id)},
+            )
+        background_tasks.add_task(
+            _index_document,
+            doc_id=doc_id,
+            tenant_id=ctx.tenant_id,
+            file_bytes=new_content.encode("utf-8"),
+            content_type="text/markdown",
+            scope=new_scope,
+        )
+
+    return DocumentDetailResponse(**dict(updated_row))
+
+
+# ─── 7. Approve Document (Super Admin) ────────────────────────────────────────
+
+@router.post("/{doc_id}/approve", response_model=DocumentUploadResponse)
+async def approve_document(
+    doc_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    payload: Optional[DocumentApproveRequest] = None,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Super Admin menyetujui dokumen pengetahuan (status -> INDEXED).
+    Memicu proses embedding ke pgvector jika belum diindeks.
+    """
+    async with get_db_session() as session:
+        fetch_res = await session.execute(
+            text("SELECT * FROM ai_documents WHERE id = :doc_id AND tenant_id = :tenant_id"),
+            {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id)},
+        )
+        existing = fetch_res.mappings().fetchone()
+
+    if not existing:
+        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
+
+    final_scope = payload.scope if (payload and payload.scope) else existing.get("scope", "GLOBAL")
+
+    update_sql = text("""
+        UPDATE ai_documents
+        SET status = 'INDEXED',
+            scope = :scope,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = :doc_id AND tenant_id = :tenant_id
+        RETURNING id, tenant_id, title, category, scope, status, chunk_count, created_at
+    """)
+    async with get_db_session() as session:
+        res = await session.execute(
+            update_sql,
+            {
+                "doc_id": str(doc_id),
+                "tenant_id": str(ctx.tenant_id),
+                "scope": final_scope,
+            },
+        )
+        updated_row = res.mappings().fetchone()
+
+    audit_client.log(
+        tenant_id=ctx.tenant_id,
+        actor_id=ctx.actor_id,
+        action="AI_DOCUMENT_APPROVED",
+        resource_type="KNOWLEDGE_BASE",
+        resource_id=str(doc_id),
+        log_group="OPERATIONS",
+        metadata={"title": existing["title"], "scope": final_scope},
+    )
+
+    # Jika belum ada chunk vektor, jalankan indeks dari raw_content
+    if existing["chunk_count"] == 0 and existing.get("raw_content"):
+        background_tasks.add_task(
+            _index_document,
+            doc_id=doc_id,
+            tenant_id=ctx.tenant_id,
+            file_bytes=existing["raw_content"].encode("utf-8"),
+            content_type="text/markdown",
+            scope=final_scope,
+        )
+
+    return DocumentUploadResponse(**dict(updated_row))
+
+
+# ─── 8. Reject Document (Super Admin) ─────────────────────────────────────────
+
+@router.post("/{doc_id}/reject", response_model=DocumentUploadResponse)
+async def reject_document(
+    doc_id: uuid.UUID,
+    payload: Optional[DocumentRejectRequest] = None,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Super Admin menolak dokumen pengetahuan (status -> REJECTED).
+    Menghapus vektor embedding dari pgvector jika sebelumnya ada.
+    """
+    reason = payload.reason if payload and payload.reason else "Dokumen ditolak oleh Super Admin."
+
+    async with get_db_session() as session:
+        # Hapus chunks
+        await session.execute(
+            text("DELETE FROM ai_document_chunks WHERE document_id = :doc_id AND tenant_id = :tenant_id"),
+            {"doc_id": str(doc_id), "tenant_id": str(ctx.tenant_id)},
+        )
+        update_sql = text("""
+            UPDATE ai_documents
+            SET status = 'REJECTED',
+                chunk_count = 0,
+                error_message = :reason,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :doc_id AND tenant_id = :tenant_id
+            RETURNING id, tenant_id, title, category, scope, status, chunk_count, created_at
+        """)
+        res = await session.execute(
+            update_sql,
+            {
+                "doc_id": str(doc_id),
+                "tenant_id": str(ctx.tenant_id),
+                "reason": reason,
+            },
+        )
+        updated_row = res.mappings().fetchone()
+
+    if not updated_row:
+        raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan.")
+
+    audit_client.log(
+        tenant_id=ctx.tenant_id,
+        actor_id=ctx.actor_id,
+        action="AI_DOCUMENT_REJECTED",
+        resource_type="KNOWLEDGE_BASE",
+        resource_id=str(doc_id),
+        log_group="OPERATIONS",
+        metadata={"reason": reason},
+    )
+
+    return DocumentUploadResponse(**dict(updated_row))
+
+
+# ─── 9. Simulate Search ───────────────────────────────────────────────────────
 
 @router.post("/simulate-search")
 async def simulate_vector_search(
@@ -413,7 +697,7 @@ async def simulate_vector_search(
     }
 
 
-# ─── 5. Delete Document ───────────────────────────────────────────────────────
+# ─── 10. Delete Document ──────────────────────────────────────────────────────
 
 @router.delete("/{doc_id}", status_code=200)
 async def delete_document(
@@ -450,7 +734,7 @@ async def delete_document(
     return {"status": "ok", "message": f"Dokumen '{deleted_row['title']}' berhasil dihapus."}
 
 
-# ─── 6. 1-Click Server Docs Sync ──────────────────────────────────────────────
+# ─── 11. 1-Click Server Docs Sync ─────────────────────────────────────────────
 
 @router.post("/sync-server", status_code=202)
 async def sync_server_docs(
@@ -489,9 +773,10 @@ async def _index_document(
     tenant_id: uuid.UUID,
     file_bytes: bytes,
     content_type: str,
+    scope: str = "GLOBAL",
 ) -> None:
     """Ekstrak teks → chunk → embedding → simpan ke pgvector."""
-    logger.info(f"Indexing started for doc_id={doc_id}, tenant={tenant_id}")
+    logger.info(f"Indexing started for doc_id={doc_id}, tenant={tenant_id}, scope={scope}")
     try:
         await vector_store.update_document_status(doc_id, tenant_id, "PROCESSING")
         raw_text = _extract_text(file_bytes, content_type)
@@ -518,7 +803,7 @@ async def _index_document(
                     content=chunk_text,
                     token_count=token_count,
                     embedding=embedding,
-                    metadata={"chunk_index": i, "total_chunks": len(chunks), "vendor": vendor},
+                    metadata={"chunk_index": i, "total_chunks": len(chunks), "vendor": vendor, "scope": scope},
                 )
                 stored_count += 1
             except Exception as chunk_err:
@@ -567,9 +852,17 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
             if len(content) < 10:
                 continue
 
+            # Tentukan scope otomatis berdasarkan kategori folder
+            if category in ("INFRASTRUCTURE", "ARCHITECTURE", "PLANS"):
+                scope_val = "PLATFORM_INTERNAL"
+            elif category in ("TROUBLESHOOTING",):
+                scope_val = "TENANT_INTERNAL"
+            else:
+                scope_val = "GLOBAL"
+
             doc_id = uuid.uuid4()
             async with get_db_session() as session:
-                # Cek apakah judul dokumen sudah ada, jika ada skip atau update
+                # Cek apakah file sudah ada
                 check = await session.execute(
                     text("SELECT id FROM ai_documents WHERE tenant_id = :tenant_id AND file_name = :fn"),
                     {"tenant_id": str(tenant_id), "fn": rel_path},
@@ -581,22 +874,26 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                 await session.execute(
                     text("""
                         INSERT INTO ai_documents
-                            (id, tenant_id, title, category, file_name, file_size_bytes, mime_type, status, created_by)
+                            (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type, status, raw_content, created_by)
                         VALUES
-                            (:id, :tenant_id, :title, :category, :fn, :size, 'text/markdown', 'PROCESSING', :actor)
+                            (:id, :tenant_id, :title, :category, :scope, :fn, :size, 'text/markdown', 'PROCESSING', :raw_content, :actor)
                     """),
                     {
                         "id": str(doc_id),
                         "tenant_id": str(tenant_id),
                         "title": title,
                         "category": category,
+                        "scope": scope_val,
                         "fn": rel_path,
                         "size": len(content.encode("utf-8")),
+                        "raw_content": content,
                         "actor": actor_id or "system-sync",
                     },
                 )
 
+            chunks = chunker.chunk_text(content)
             vendor = _extract_vendor(title, content)
+            stored_count = 0
             for i, chunk_text in enumerate(chunks):
                 try:
                     embedding = await engine.generate_embedding(chunk_text)
@@ -608,7 +905,7 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                         content=chunk_text,
                         token_count=token_count,
                         embedding=embedding,
-                        metadata={"source_file": rel_path, "chunk_index": i, "total_chunks": len(chunks), "vendor": vendor},
+                        metadata={"source_file": rel_path, "chunk_index": i, "total_chunks": len(chunks), "vendor": vendor, "scope": scope_val},
                     )
                     stored_count += 1
                 except Exception as ce:

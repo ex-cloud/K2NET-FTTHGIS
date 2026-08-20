@@ -3,10 +3,131 @@ import {
   Layers, 
   Database, 
   ShieldCheck, 
-  LucideIcon 
+  LucideIcon,
+  Lock,
+  Building2,
+  Globe2,
+  CheckCircle2,
+  Clock,
+  FileEdit,
+  XCircle,
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 
 export type AiTabType = "KNOWLEDGE" | "GRAPH" | "ADD_KNOWLEDGE" | "SIMULATOR" | "TEMPLATES" | "CONFIG";
+
+export type KnowledgeScope = "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL";
+
+export type KnowledgeStatus = "INDEXED" | "PENDING_REVIEW" | "DRAFT" | "PROCESSING" | "PENDING" | "REJECTED" | "FAILED";
+
+export interface ScopeItem {
+  id: KnowledgeScope;
+  label: string;
+  shortLabel: string;
+  badge: string;
+  description: string;
+  icon: LucideIcon;
+  color: string;
+  accentBorder: string;
+  accentBg: string;
+}
+
+export const KNOWLEDGE_SCOPES: ScopeItem[] = [
+  {
+    id: "PLATFORM_INTERNAL",
+    label: "Platform Internal (Super Admin Khusus)",
+    shortLabel: "Platform Super Admin",
+    badge: "Super Admin Only",
+    description: "Dokumen rahasia internal K2NET (DRP, Arsitektur Server Kong/Traefik, Topology Host, Keycloak IAM). Terisolasi mutlak dari tenant.",
+    icon: Lock,
+    color: "text-rose-500 dark:text-rose-400",
+    accentBorder: "border-rose-500/30",
+    accentBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+  },
+  {
+    id: "TENANT_INTERNAL",
+    label: "Mitra ISP / Tenant Internal (NOC & Teknisi)",
+    shortLabel: "Tenant NOC ISP",
+    badge: "Mitra ISP Scope",
+    description: "Dokumen teknis khusus teknisi NOC Tenant (SOP redaman OLT ZTE/Huawei, panduan splicing FO, troubleshooting LOS alarm).",
+    icon: Building2,
+    color: "text-sky-500 dark:text-sky-400",
+    accentBorder: "border-sky-500/30",
+    accentBg: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+  },
+  {
+    id: "GLOBAL",
+    label: "Publik / Global (Semua Pengguna)",
+    shortLabel: "Global / Umum",
+    badge: "Global Knowledge",
+    description: "Pengetahuan umum yang dapat diakses oleh semua pengguna (User Manual GIS, Glosarium FTTH, Panduan Umum Aplikasi).",
+    icon: Globe2,
+    color: "text-primary",
+    accentBorder: "border-primary/30",
+    accentBg: "bg-primary/10 text-primary",
+  },
+];
+
+export interface StatusItem {
+  id: KnowledgeStatus;
+  label: string;
+  badge: string;
+  icon: LucideIcon;
+  color: string;
+}
+
+export const STATUS_ITEMS: Record<KnowledgeStatus, StatusItem> = {
+  INDEXED: {
+    id: "INDEXED",
+    label: "Terindeks & Aktif",
+    badge: "bg-primary/10 text-primary border-primary/20",
+    icon: CheckCircle2,
+    color: "text-primary",
+  },
+  PENDING_REVIEW: {
+    id: "PENDING_REVIEW",
+    label: "Menunggu Review",
+    badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    icon: Clock,
+    color: "text-amber-500",
+  },
+  DRAFT: {
+    id: "DRAFT",
+    label: "Draft Revisi",
+    badge: "bg-muted text-muted-foreground border-border",
+    icon: FileEdit,
+    color: "text-muted-foreground",
+  },
+  PROCESSING: {
+    id: "PROCESSING",
+    label: "Memproses Vektor",
+    badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    icon: Loader2,
+    color: "text-blue-500",
+  },
+  PENDING: {
+    id: "PENDING",
+    label: "Antrian Indeks",
+    badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    icon: Clock,
+    color: "text-amber-500",
+  },
+  REJECTED: {
+    id: "REJECTED",
+    label: "Ditolak / Draf",
+    badge: "bg-destructive/10 text-destructive border-destructive/20",
+    icon: XCircle,
+    color: "text-destructive",
+  },
+  FAILED: {
+    id: "FAILED",
+    label: "Gagal Indeks",
+    badge: "bg-destructive/10 text-destructive border-destructive/20",
+    icon: AlertTriangle,
+    color: "text-destructive",
+  },
+};
 
 export interface CategoryItem {
   id: string;
@@ -16,11 +137,11 @@ export interface CategoryItem {
 
 export const CATEGORIES: CategoryItem[] = [
   { id: "ALL", label: "Semua Kategori" },
-  { id: "TROUBLESHOOTING", label: "Troubleshooting OLT/Optical", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-  { id: "NETWORK_CONFIG", label: "Arsitektur & Jaringan", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
+  { id: "TROUBLESHOOTING", label: "Troubleshooting OLT/Optical", color: "text-amber-500 dark:text-amber-400 border-amber-500/30 bg-amber-500/10" },
+  { id: "NETWORK_CONFIG", label: "Arsitektur & Jaringan", color: "text-sky-500 dark:text-sky-400 border-sky-500/30 bg-sky-500/10" },
   { id: "GIS_MANUAL", label: "GIS & Survey Spasial", color: "text-primary border-primary/30 bg-primary/10" },
-  { id: "INFRASTRUCTURE", label: "DevOps & Server", color: "text-purple-400 border-purple-500/30 bg-purple-500/10" },
-  { id: "PLANS", label: "Plans & Roadmap", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
+  { id: "INFRASTRUCTURE", label: "DevOps & Server", color: "text-purple-500 dark:text-purple-400 border-purple-500/30 bg-purple-500/10" },
+  { id: "PLANS", label: "Plans & Roadmap", color: "text-cyan-500 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
   { id: "GENERAL", label: "General & SOP", color: "text-foreground/80 border-border bg-muted/60" },
 ];
 

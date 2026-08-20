@@ -49,11 +49,18 @@ class DocumentSource(BaseModel):
 
 # ─── Document Management & Knowledge Base ────────────────────────────────────
 
+# ─── Document Management & Knowledge Base ────────────────────────────────────
+
+KnowledgeScopeType = Literal["PLATFORM_INTERNAL", "TENANT_INTERNAL", "GLOBAL"]
+KnowledgeStatusType = Literal["PENDING_REVIEW", "DRAFT", "PROCESSING", "INDEXED", "REJECTED", "FAILED"]
+
+
 class DocumentUploadResponse(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     title: str
     category: str
+    scope: str = "GLOBAL"
     status: str
     chunk_count: int
     created_at: datetime
@@ -62,7 +69,27 @@ class DocumentUploadResponse(BaseModel):
 class ManualDocumentCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     category: str = Field(default="GENERAL")
+    scope: KnowledgeScopeType = Field(default="GLOBAL", description="PLATFORM_INTERNAL | TENANT_INTERNAL | GLOBAL")
     content: str = Field(..., min_length=10)
+    is_draft: bool = Field(default=False, description="True jika disimpan sebagai DRAFT, False jika PENDING_REVIEW")
+    auto_approve: bool = Field(default=False, description="True jika Super Admin ingin langsung publish ke INDEXED")
+
+
+class DocumentUpdateRequest(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=255)
+    category: Optional[str] = None
+    scope: Optional[KnowledgeScopeType] = None
+    content: Optional[str] = Field(None, min_length=10)
+    status: Optional[KnowledgeStatusType] = None
+    reindex: bool = Field(default=True, description="Apakah perlu melakukan re-chunking dan re-embedding jika konten berubah")
+
+
+class DocumentApproveRequest(BaseModel):
+    scope: Optional[KnowledgeScopeType] = None
+
+
+class DocumentRejectRequest(BaseModel):
+    reason: Optional[str] = Field(default="Dokumen ditolak oleh Super Admin.")
 
 
 class DocumentItem(BaseModel):
@@ -70,12 +97,32 @@ class DocumentItem(BaseModel):
     tenant_id: uuid.UUID
     title: str
     category: str
+    scope: str = "GLOBAL"
     file_name: Optional[str] = None
     file_size_bytes: int = 0
     mime_type: Optional[str] = None
     status: str
     chunk_count: int = 0
+    raw_content: Optional[str] = None
     error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocumentDetailResponse(BaseModel):
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    title: str
+    category: str
+    scope: str = "GLOBAL"
+    file_name: Optional[str] = None
+    file_size_bytes: int = 0
+    mime_type: Optional[str] = None
+    status: str
+    chunk_count: int = 0
+    raw_content: Optional[str] = None
+    error_message: Optional[str] = None
+    created_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

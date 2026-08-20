@@ -91,8 +91,16 @@ verify_gateways() {
       (cd "$d" && go vet ./... > /dev/null 2>&1 && go build ./... > /dev/null 2>&1)
     fi
   done
+  
+  # Python AI Gateway check
+  if [ -d "/opt/project5/services/gateway-ai" ]; then
+    echo -e "  🔹 Memvalidasi sintaks Python AI Gateway (services/gateway-ai)..."
+    (cd /opt/project5/services/gateway-ai && python3 -m py_compile app/**/*.py > /dev/null 2>&1)
+    echo -e "  ${GREEN}✓ Python AI Gateway valid.${NC}"
+  fi
+  
   cd /opt/project5
-  echo -e "  ${GREEN}✓ 12 Go Microservices (Notification, Payment, Map, Storage, Poller, dll.) terkompilasi sukses.${NC}\n"
+  echo -e "  ${GREEN}✓ 13 Microservices & Gateways (AI, Notification, Payment, Map, Storage, Poller, dll.) terkompilasi sukses.${NC}\n"
 }
 
 # ------------------------------------------------------------------------------

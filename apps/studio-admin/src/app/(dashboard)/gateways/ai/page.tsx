@@ -11,6 +11,8 @@ import {
   getAiDocuments, 
   createManualAiDocument, 
   deleteAiDocument, 
+  approveAiDocument,
+  rejectAiDocument,
   triggerServerDocsSync,
   getGatewayConfigByKey,
   updateGatewayConfigByKey,
@@ -19,7 +21,7 @@ import {
   AiDocumentItem 
 } from "@/lib/actions/gateways";
 
-import { AiTabType, KnowledgeTemplateItem } from "./components/types";
+import { AiTabType, KnowledgeScope, KnowledgeTemplateItem } from "./components/types";
 import { AiKpiCards } from "./components/ai-kpi-cards";
 import { AiNavTabs } from "./components/ai-nav-tabs";
 import { AiKnowledgeTable } from "./components/ai-knowledge-table";
@@ -29,6 +31,7 @@ import { AiTemplatesTab } from "./components/ai-templates-tab";
 import { AiAddKnowledgeTab } from "./components/ai-add-knowledge-tab";
 import { AiConfigTab } from "./components/ai-config-tab";
 import { AiVectorExplorerModal } from "./components/ai-vector-explorer-modal";
+import { AiEditKnowledgeModal } from "./components/ai-edit-knowledge-modal";
 
 export default function AiGatewayPage() {
   const [activeTab, setActiveTab] = useState<AiTabType>("KNOWLEDGE");
@@ -41,8 +44,13 @@ export default function AiGatewayPage() {
   const [docsLoading, setDocsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedScope, setSelectedScope] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Edit Knowledge Modal state
+  const [editingDoc, setEditingDoc] = useState<AiDocumentItem | null>(null);
 
   const hasMore = documents.length < docsTotal;
 
@@ -62,12 +70,17 @@ export default function AiGatewayPage() {
   // Manual Form State
   const [manualTitle, setManualTitle] = useState("");
   const [manualCategory, setManualCategory] = useState("GENERAL");
+  const [manualScope, setManualScope] = useState<KnowledgeScope>("GLOBAL");
+  const [manualAutoApprove, setManualAutoApprove] = useState(true);
+  const [manualIsDraft, setManualIsDraft] = useState(false);
   const [manualContent, setManualContent] = useState("");
   const [manualSubmitting, setManualSubmitting] = useState(false);
 
   // Upload Form State
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadCategory, setUploadCategory] = useState("GENERAL");
+  const [uploadScope, setUploadScope] = useState<KnowledgeScope>("GLOBAL");
+  const [uploadAutoApprove, setUploadAutoApprove] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -94,6 +107,8 @@ export default function AiGatewayPage() {
       setDocsLoading(true);
       const res = await getAiDocuments({
         category: selectedCategory === "ALL" ? undefined : selectedCategory,
+        scope: selectedScope === "ALL" ? undefined : selectedScope,
+        status: selectedStatus === "ALL" ? undefined : selectedStatus,
         search: searchQuery.trim() || undefined,
         limit: 30,
         offset: 0,
@@ -105,7 +120,7 @@ export default function AiGatewayPage() {
     } finally {
       setDocsLoading(false);
     }
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, selectedScope, selectedStatus, searchQuery]);
 
   const handleFetchMore = async () => {
     if (loadingMore || !hasMore || docsLoading) return;
@@ -113,6 +128,8 @@ export default function AiGatewayPage() {
       setLoadingMore(true);
       const res = await getAiDocuments({
         category: selectedCategory === "ALL" ? undefined : selectedCategory,
+        scope: selectedScope === "ALL" ? undefined : selectedScope,
+        status: selectedStatus === "ALL" ? undefined : selectedStatus,
         search: searchQuery.trim() || undefined,
         limit: 30,
         offset: documents.length,
@@ -157,6 +174,32 @@ export default function AiGatewayPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadDocuments();
+  };
+
+  const handleEdit = (doc: AiDocumentItem) => {
+    setEditingDoc(doc);
+  };
+
+  const handleApprove = async (id: string, title: string) => {
+    try {
+      await approveAiDocument(id);
+      toast.success(`Dokumen "${title}" berhasil disetujui dan diindeks ke pgvector!`);
+      loadDocuments();
+      loadStats();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyetujui dokumen");
+    }
+  };
+
+  const handleReject = async (id: string, title: string) => {
+    try {
+      await rejectAiDocument(id);
+      toast.success(`Dokumen "${title}" ditolak.`);
+      loadDocuments();
+      loadStats();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menolak dokumen");
+    }
   };
 
   const handleDelete = async (id: string, title: string) => {
@@ -224,9 +267,16 @@ export default function AiGatewayPage() {
       await createManualAiDocument({
         title: manualTitle,
         category: manualCategory,
+        scope: manualScope,
         content: manualContent,
+        auto_approve: manualAutoApprove,
+        is_draft: !manualAutoApprove,
       });
-      toast.success("Catatan SOP berhasil disimpan dan diindeks ke pgvector!");
+      toast.success(
+        manualAutoApprove
+          ? "Catatan SOP berhasil disimpan dan diindeks ke pgvector!"
+          : "Catatan SOP berhasil disimpan sebagai draf pending review."
+      );
       setManualTitle("");
       setManualContent("");
       setActiveTab("KNOWLEDGE");
@@ -249,6 +299,8 @@ export default function AiGatewayPage() {
       formData.append("file", selectedFile);
       if (uploadTitle.trim()) formData.append("title", uploadTitle);
       formData.append("category", uploadCategory);
+      formData.append("scope", uploadScope);
+      formData.append("auto_approve", String(uploadAutoApprove));
 
       const res = await fetch("/api/v1/ai/documents", {
         method: "POST",
@@ -260,7 +312,11 @@ export default function AiGatewayPage() {
         throw new Error(err.detail || "Gagal mengunggah file");
       }
 
-      toast.success("Dokumen berhasil diunggah! Indexing pgvector berjalan di latar belakang.");
+      toast.success(
+        uploadAutoApprove
+          ? "Dokumen berhasil diunggah! Indexing pgvector berjalan di latar belakang."
+          : "Dokumen berhasil diunggah sebagai draf pending review."
+      );
       setSelectedFile(null);
       setUploadTitle("");
       setActiveTab("KNOWLEDGE");
@@ -320,7 +376,7 @@ export default function AiGatewayPage() {
                   Port 5012
                 </Badge>
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
                 Orkestrasi pgvector RAG Knowledge Base, SOP indexing, Google Gemini/OpenAI engines, dan SSE streaming copilot.
               </p>
             </div>
@@ -370,9 +426,16 @@ export default function AiGatewayPage() {
             totalBytes={stats?.total_size_bytes || 0}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
+            selectedScope={selectedScope}
+            setSelectedScope={setSelectedScope}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSearchSubmit={handleSearchSubmit}
+            onEdit={handleEdit}
+            onApprove={handleApprove}
+            onReject={handleReject}
             onDelete={handleDelete}
             onGoToUpload={() => setActiveTab("ADD_KNOWLEDGE")}
             onSyncServerDocs={handleSyncServerDocs}
@@ -403,74 +466,95 @@ export default function AiGatewayPage() {
 
         {/* TAB 3: RAG SEMANTIC SIMULATOR & VECTOR SEARCH INSPECTOR */}
         {activeTab === "SIMULATOR" && (
-            <AiSemanticSimulator
-              simQuery={simQuery}
-              setSimQuery={setSimQuery}
-              simMinSimilarity={simMinSimilarity}
-              setSimMinSimilarity={setSimMinSimilarity}
-              simLimit={simLimit}
-              setSimLimit={setSimLimit}
-              simScope={simScope}
-              setSimScope={setSimScope}
-              simResults={simResults}
-              simTotalMatches={simTotalMatches}
-              simSearching={simSearching}
-              hasSearched={hasSearched}
-              onSimulateSearch={handleSimulateSearch}
-            />
-          )}
-
-          {/* TAB 3: CONTOH & TEMPLATE SOP */}
-          {activeTab === "TEMPLATES" && (
-            <AiTemplatesTab onUseTemplate={handleUseTemplate} />
-          )}
-
-          {/* TAB 4: TAMBAH PENGETAHUAN (UNIFIED: UPLOAD + MANUAL NOTE) */}
-          {activeTab === "ADD_KNOWLEDGE" && (
-            <AiAddKnowledgeTab
-              uploadTitle={uploadTitle}
-              setUploadTitle={setUploadTitle}
-              uploadCategory={uploadCategory}
-              setUploadCategory={setUploadCategory}
-              selectedFile={selectedFile}
-              setSelectedFile={setSelectedFile}
-              uploading={uploading}
-              onUploadSubmit={handleUploadSubmit}
-              manualTitle={manualTitle}
-              setManualTitle={setManualTitle}
-              manualCategory={manualCategory}
-              setManualCategory={setManualCategory}
-              manualContent={manualContent}
-              setManualContent={setManualContent}
-              manualSubmitting={manualSubmitting}
-              onManualSubmit={handleManualSubmit}
-              onCancel={() => setActiveTab("KNOWLEDGE")}
-              onGoToTemplates={() => setActiveTab("TEMPLATES")}
-            />
-          )}
-
-          {/* TAB 5: ENGINE CONFIGURATION */}
-          {activeTab === "CONFIG" && (
-            <AiConfigTab
-              config={config}
-              setConfig={setConfig}
-              configLoading={configLoading}
-              configSaving={configSaving}
-              onSaveConfig={handleSaveConfig}
-            />
-          )}
-
-          {/* Vector Chunk Explorer Modal */}
-          <AiVectorExplorerModal
-            isOpen={isExplorerOpen}
-            setIsOpen={setIsExplorerOpen}
-            stats={stats}
-            documents={documents}
-            onOpenSimulator={() => {
-              setIsExplorerOpen(false);
-              setActiveTab("SIMULATOR");
-            }}
+          <AiSemanticSimulator
+            simQuery={simQuery}
+            setSimQuery={setSimQuery}
+            simMinSimilarity={simMinSimilarity}
+            setSimMinSimilarity={setSimMinSimilarity}
+            simLimit={simLimit}
+            setSimLimit={setSimLimit}
+            simScope={simScope}
+            setSimScope={setSimScope}
+            simResults={simResults}
+            simTotalMatches={simTotalMatches}
+            simSearching={simSearching}
+            hasSearched={hasSearched}
+            onSimulateSearch={handleSimulateSearch}
           />
+        )}
+
+        {/* TAB 4: CONTOH & TEMPLATE SOP */}
+        {activeTab === "TEMPLATES" && (
+          <AiTemplatesTab onUseTemplate={handleUseTemplate} />
+        )}
+
+        {/* TAB 5: TAMBAH PENGETAHUAN (UNIFIED: UPLOAD + MANUAL NOTE) */}
+        {activeTab === "ADD_KNOWLEDGE" && (
+          <AiAddKnowledgeTab
+            uploadTitle={uploadTitle}
+            setUploadTitle={setUploadTitle}
+            uploadCategory={uploadCategory}
+            setUploadCategory={setUploadCategory}
+            uploadScope={uploadScope}
+            setUploadScope={setUploadScope}
+            uploadAutoApprove={uploadAutoApprove}
+            setUploadAutoApprove={setUploadAutoApprove}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            uploading={uploading}
+            onUploadSubmit={handleUploadSubmit}
+            manualTitle={manualTitle}
+            setManualTitle={setManualTitle}
+            manualCategory={manualCategory}
+            setManualCategory={setManualCategory}
+            manualScope={manualScope}
+            setManualScope={setManualScope}
+            manualAutoApprove={manualAutoApprove}
+            setManualAutoApprove={setManualAutoApprove}
+            manualIsDraft={manualIsDraft}
+            setManualIsDraft={setManualIsDraft}
+            manualContent={manualContent}
+            setManualContent={setManualContent}
+            manualSubmitting={manualSubmitting}
+            onManualSubmit={handleManualSubmit}
+            onCancel={() => setActiveTab("KNOWLEDGE")}
+            onGoToTemplates={() => setActiveTab("TEMPLATES")}
+          />
+        )}
+
+        {/* TAB 6: ENGINE CONFIGURATION */}
+        {activeTab === "CONFIG" && (
+          <AiConfigTab
+            config={config}
+            setConfig={setConfig}
+            configLoading={configLoading}
+            configSaving={configSaving}
+            onSaveConfig={handleSaveConfig}
+          />
+        )}
+
+        {/* Vector Chunk Explorer Modal */}
+        <AiVectorExplorerModal
+          isOpen={isExplorerOpen}
+          setIsOpen={setIsExplorerOpen}
+          stats={stats}
+          documents={documents}
+          onOpenSimulator={() => {
+            setIsExplorerOpen(false);
+            setActiveTab("SIMULATOR");
+          }}
+        />
+
+        {/* Edit Knowledge Revision Modal */}
+        <AiEditKnowledgeModal
+          document={editingDoc}
+          isOpen={!!editingDoc}
+          onClose={() => setEditingDoc(null)}
+          onSuccess={() => {
+            loadDocuments();
+            loadStats();
+          }}
+        />
 
       </div>
     </GatewayPageWrapper>

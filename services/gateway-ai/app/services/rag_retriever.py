@@ -69,6 +69,8 @@ class RAGRetriever:
         query: str,
         limit: int = 4,
         scope: str = "GENERAL",
+        category: str = "ALL",
+        allowed_scopes: Optional[List[str]] = None,
         min_similarity: float = 0.25,
     ) -> tuple[list[str], list[dict]]:
         """
@@ -100,6 +102,8 @@ class RAGRetriever:
                     query_embedding=query_embedding,
                     tenant_id=self.tenant_id,
                     scope=scope,
+                    category=category,
+                    allowed_scopes=allowed_scopes,
                     limit=limit * 2,  # Ambil lebih banyak untuk RRF
                     min_similarity=min_similarity,
                 )
@@ -113,6 +117,8 @@ class RAGRetriever:
                 query=query,
                 tenant_id=self.tenant_id,
                 scope=scope,
+                category=category,
+                allowed_scopes=allowed_scopes,
                 limit=limit * 2,
             )
         except Exception as e:
@@ -143,6 +149,7 @@ class RAGRetriever:
                 "document_id": chunk["document_id"],
                 "title": chunk.get("title") or chunk.get("document_title", "Dokumen"),
                 "category": chunk.get("category", "GENERAL"),
+                "scope": chunk.get("scope", "GLOBAL"),
                 "chunk_index": chunk.get("chunk_index", 0),
                 "similarity_score": round(float(chunk.get("similarity_score", 0.0)), 4),
                 "content_preview": chunk["content"][:120] + "...",
@@ -157,6 +164,8 @@ class RAGRetriever:
         query_embedding: List[float],
         limit: int = 4,
         scope: str = "GENERAL",
+        category: str = "ALL",
+        allowed_scopes: Optional[List[str]] = None,
     ) -> tuple[list[str], list[dict], List[float]]:
         """
         Variant yang menerima embedding yang sudah di-generate (untuk menghindari duplikasi kalkulasi).
@@ -171,6 +180,8 @@ class RAGRetriever:
                 query_embedding=query_embedding,
                 tenant_id=self.tenant_id,
                 scope=scope,
+                category=category,
+                allowed_scopes=allowed_scopes,
                 limit=limit * 2,
                 min_similarity=0.25,
             )
@@ -183,6 +194,8 @@ class RAGRetriever:
                 query=query,
                 tenant_id=self.tenant_id,
                 scope=scope,
+                category=category,
+                allowed_scopes=allowed_scopes,
                 limit=limit * 2,
             )
         except Exception as e:
@@ -203,6 +216,7 @@ class RAGRetriever:
                 "document_id": c["document_id"],
                 "title": c.get("title") or c.get("document_title", "Dokumen"),
                 "category": c.get("category", "GENERAL"),
+                "scope": c.get("scope", "GLOBAL"),
                 "chunk_index": c.get("chunk_index", 0),
                 "similarity_score": round(float(c.get("similarity_score", 0.0)), 4),
                 "content_preview": c["content"][:120] + "...",

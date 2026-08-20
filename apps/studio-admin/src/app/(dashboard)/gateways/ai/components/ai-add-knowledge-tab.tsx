@@ -7,7 +7,14 @@ import {
   Loader2, 
   Sparkles, 
   FileCode,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  Building2,
+  Globe2,
+  ShieldCheck,
+  Check,
+  Eye,
+  Edit3,
 } from "lucide-react";
 import { 
   Card, 
@@ -19,7 +26,7 @@ import {
   Label 
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
-import { CATEGORIES } from "./types";
+import { CATEGORIES, KNOWLEDGE_SCOPES, KnowledgeScope } from "./types";
 
 interface AiAddKnowledgeTabProps {
   // Upload State & Handlers
@@ -27,6 +34,10 @@ interface AiAddKnowledgeTabProps {
   setUploadTitle: (t: string) => void;
   uploadCategory: string;
   setUploadCategory: (c: string) => void;
+  uploadScope?: KnowledgeScope;
+  setUploadScope?: (s: KnowledgeScope) => void;
+  uploadAutoApprove?: boolean;
+  setUploadAutoApprove?: (a: boolean) => void;
   selectedFile: File | null;
   setSelectedFile: (f: File | null) => void;
   uploading: boolean;
@@ -37,6 +48,12 @@ interface AiAddKnowledgeTabProps {
   setManualTitle: (t: string) => void;
   manualCategory: string;
   setManualCategory: (c: string) => void;
+  manualScope?: KnowledgeScope;
+  setManualScope?: (s: KnowledgeScope) => void;
+  manualAutoApprove?: boolean;
+  setManualAutoApprove?: (a: boolean) => void;
+  manualIsDraft?: boolean;
+  setManualIsDraft?: (d: boolean) => void;
   manualContent: string;
   setManualContent: (c: string) => void;
   manualSubmitting: boolean;
@@ -51,6 +68,10 @@ export function AiAddKnowledgeTab({
   setUploadTitle,
   uploadCategory,
   setUploadCategory,
+  uploadScope = "GLOBAL",
+  setUploadScope,
+  uploadAutoApprove = true,
+  setUploadAutoApprove,
   selectedFile,
   setSelectedFile,
   uploading,
@@ -59,6 +80,12 @@ export function AiAddKnowledgeTab({
   setManualTitle,
   manualCategory,
   setManualCategory,
+  manualScope = "GLOBAL",
+  setManualScope,
+  manualAutoApprove = true,
+  setManualAutoApprove,
+  manualIsDraft = false,
+  setManualIsDraft,
   manualContent,
   setManualContent,
   manualSubmitting,
@@ -67,6 +94,10 @@ export function AiAddKnowledgeTab({
   onGoToTemplates,
 }: AiAddKnowledgeTabProps) {
   const [entryMode, setEntryMode] = useState<"UPLOAD" | "MANUAL">("UPLOAD");
+  const [manualPreviewTab, setManualPreviewTab] = useState<"write" | "preview">("write");
+
+  const wordCount = manualContent.trim() ? manualContent.trim().split(/\s+/).length : 0;
+  const estimatedTokens = Math.round(wordCount * 1.3);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -80,7 +111,7 @@ export function AiAddKnowledgeTab({
             <h2 className="text-sm font-bold text-foreground">
               Tambah Basis Pengetahuan SOP & Panduan Jaringan
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
               Pilih metode input: Unggah berkas dokumen (PDF, MD, TXT) atau tulis catatan SOP langsung melalui editor Markdown.
             </p>
           </div>
@@ -95,7 +126,7 @@ export function AiAddKnowledgeTab({
               "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
               entryMode === "UPLOAD"
                 ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
             )}
           >
             <UploadCloud className="w-3.5 h-3.5" />
@@ -108,7 +139,7 @@ export function AiAddKnowledgeTab({
               "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
               entryMode === "MANUAL"
                 ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
             )}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -153,7 +184,7 @@ export function AiAddKnowledgeTab({
                         placeholder="Default mengikuti nama berkas"
                         value={uploadTitle}
                         onChange={(e) => setUploadTitle(e.target.value)}
-                        className="text-xs h-9 bg-background border-border"
+                        className="text-xs h-9 bg-background border-border text-foreground"
                       />
                     </div>
 
@@ -176,6 +207,69 @@ export function AiAddKnowledgeTab({
                     </div>
                   </div>
 
+                  {/* Scope Visibilitas Selector */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                      <span>Scope Visibilitas & Hak Akses</span>
+                      <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
+                        Isolasi Multi-Tenant
+                      </span>
+                    </Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {KNOWLEDGE_SCOPES.map((item) => {
+                        const isSelected = uploadScope === item.id;
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setUploadScope?.(item.id)}
+                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                              isSelected
+                                ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
+                                : "border-border bg-background hover:bg-muted/40 text-foreground"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <Icon className={`h-3.5 w-3.5 ${item.color}`} />
+                                <span className="text-xs font-semibold text-foreground">
+                                  {item.shortLabel}
+                                </span>
+                              </div>
+                              {isSelected && <Check className="h-3 w-3 text-primary" />}
+                            </div>
+                            <p className="text-[10px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Approval / Draft Mode Toggle */}
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-foreground">Mode Approval Dokumen</p>
+                      <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
+                        {uploadAutoApprove
+                          ? "Langsung dipublikasikan & diindeks ke pgvector (Super Admin)."
+                          : "Simpan sebagai draf pending untuk di-review terlebih dahulu."}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={uploadAutoApprove}
+                        onChange={(e) => setUploadAutoApprove?.(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+
+                  {/* File Upload Box */}
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-foreground">Pilih Berkas Dokumen</Label>
                     <div className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-8 text-center bg-muted/10 cursor-pointer relative group">
@@ -200,7 +294,7 @@ export function AiAddKnowledgeTab({
                               <CheckCircle2 className="w-4 h-4 text-primary" />
                               {selectedFile.name}
                             </p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">
+                            <p className="text-[11px] text-foreground/75 dark:text-muted-foreground mt-0.5 font-mono">
                               {(selectedFile.size / 1024).toFixed(1)} KB • Klik untuk mengganti berkas
                             </p>
                           </div>
@@ -209,7 +303,7 @@ export function AiAddKnowledgeTab({
                             <p className="text-sm font-medium text-foreground">
                               Klik untuk memilih berkas atau geser berkas ke sini
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-1">
                               Format didukung: PDF, Markdown (.md), atau Plain Text (.txt) hingga 20 MB
                             </p>
                           </div>
@@ -224,7 +318,7 @@ export function AiAddKnowledgeTab({
                       variant="ghost"
                       size="sm"
                       onClick={onGoToTemplates}
-                      className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      className="text-xs gap-1.5 text-foreground/75 dark:text-muted-foreground hover:text-foreground"
                     >
                       <FileCode className="w-3.5 h-3.5" />
                       Lihat Contoh & Template SOP
@@ -255,7 +349,7 @@ export function AiAddKnowledgeTab({
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5" />
-                            Unggah & Simpan ke Memori AI
+                            {uploadAutoApprove ? "Unggah & Publikasikan" : "Simpan Dokumen (Draft)"}
                           </>
                         )}
                       </Button>
@@ -279,7 +373,7 @@ export function AiAddKnowledgeTab({
                         value={manualTitle}
                         onChange={(e) => setManualTitle(e.target.value)}
                         required
-                        className="text-xs h-9 bg-background border-border"
+                        className="text-xs h-9 bg-background border-border text-foreground"
                       />
                     </div>
 
@@ -302,34 +396,138 @@ export function AiAddKnowledgeTab({
                     </div>
                   </div>
 
+                  {/* Scope Visibilitas Selector */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                      <span>Scope Visibilitas & Hak Akses</span>
+                      <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
+                        Isolasi Multi-Tenant
+                      </span>
+                    </Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {KNOWLEDGE_SCOPES.map((item) => {
+                        const isSelected = manualScope === item.id;
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setManualScope?.(item.id)}
+                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                              isSelected
+                                ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
+                                : "border-border bg-background hover:bg-muted/40 text-foreground"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <Icon className={`h-3.5 w-3.5 ${item.color}`} />
+                                <span className="text-xs font-semibold text-foreground">
+                                  {item.shortLabel}
+                                </span>
+                              </div>
+                              {isSelected && <Check className="h-3 w-3 text-primary" />}
+                            </div>
+                            <p className="text-[10px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Mode Simpan Draft vs Publikasi */}
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border flex items-center justify-between text-xs">
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-foreground">Mode Approval Dokumen</p>
+                      <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
+                        {manualAutoApprove
+                          ? "Langsung dipublikasikan & diindeks ke pgvector (Super Admin)."
+                          : "Simpan sebagai draf pending untuk di-review terlebih dahulu."}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={manualAutoApprove}
+                        onChange={(e) => setManualAutoApprove?.(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+
+                  {/* Content Editor with Tab Bar & Metadata */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="manualDocContent" className="text-xs font-medium text-foreground">
                         Konten Markdown <span className="text-destructive">*</span>
                       </Label>
-                      <button
-                        type="button"
-                        onClick={onGoToTemplates}
-                        className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        Gunakan Template SOP
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={onGoToTemplates}
+                          className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Gunakan Template SOP
+                        </button>
+                        <div className="flex items-center gap-0.5 bg-muted/40 p-0.5 rounded-lg border border-border">
+                          <button
+                            type="button"
+                            onClick={() => setManualPreviewTab("write")}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                              manualPreviewTab === "write"
+                                ? "bg-card text-foreground shadow-xs"
+                                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            Tulis
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setManualPreviewTab("preview")}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                              manualPreviewTab === "preview"
+                                ? "bg-card text-foreground shadow-xs"
+                                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Eye className="h-3 w-3" />
+                            Preview
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <textarea
-                      id="manualDocContent"
-                      rows={10}
-                      placeholder={`# Standar Redaman GPON 1:64\n\n- Batas minimum: -27 dBm\n- Batas ideal: -15 s/d -22 dBm\n- Prosedur perbaikan FO cut...`}
-                      value={manualContent}
-                      onChange={(e) => setManualContent(e.target.value)}
-                      required
-                      className="w-full rounded-lg border border-border bg-background p-3 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed resize-y custom-scrollbar"
-                    />
+
+                    {manualPreviewTab === "write" ? (
+                      <textarea
+                        id="manualDocContent"
+                        rows={10}
+                        placeholder={`# Standar Redaman GPON 1:64\n\n- Batas minimum: -27 dBm\n- Batas ideal: -15 s/d -22 dBm\n- Prosedur perbaikan FO cut...`}
+                        value={manualContent}
+                        onChange={(e) => setManualContent(e.target.value)}
+                        required
+                        className="w-full rounded-lg border border-border bg-background p-3 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed resize-y custom-scrollbar"
+                      />
+                    ) : (
+                      <div className="p-4 rounded-lg bg-background border border-border min-h-[220px] max-h-[300px] overflow-y-auto text-xs leading-relaxed text-foreground prose prose-invert max-w-none">
+                        {manualContent ? (
+                          <pre className="font-sans whitespace-pre-wrap">{manualContent}</pre>
+                        ) : (
+                          <p className="text-foreground/75 dark:text-muted-foreground italic">
+                            Belum ada konten untuk ditampilkan.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div className="text-[11px] text-muted-foreground font-mono">
-                      {manualContent.length} Karakter • ~{Math.ceil(manualContent.length / 4)} Token Estimasi
+                    <div className="text-[11px] text-foreground/75 dark:text-muted-foreground font-mono">
+                      {wordCount} Kata • {manualContent.length} Karakter • ~{estimatedTokens} Token
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -357,7 +555,7 @@ export function AiAddKnowledgeTab({
                         ) : (
                           <>
                             <Sparkles className="w-3.5 h-3.5" />
-                            Simpan ke Knowledge Base
+                            {manualAutoApprove ? "Simpan & Publikasikan" : "Simpan sebagai Draf"}
                           </>
                         )}
                       </Button>
@@ -369,9 +567,39 @@ export function AiAddKnowledgeTab({
           </Card>
         </div>
 
-        {/* Right Column (Info Guide & Vector Taxonomy - 5 cols) */}
+        {/* Right Column (Info Guide & Scope Taxonomy - 5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Card 1: Taksonomi 6 Kategori */}
+          {/* Card 1: Taksonomi 3 Scope Visibilitas */}
+          <Card className="border-border bg-card shadow-xs p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <ShieldCheck className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-xs font-bold text-foreground">Scope Visibilitas Multi-Tenant</h3>
+                <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Mencegah kebocoran data rahasia platform (Zero Data Leakage)</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {KNOWLEDGE_SCOPES.map((sc) => {
+                const Icon = sc.icon;
+                return (
+                  <div key={sc.id} className="p-2.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className={`w-3.5 h-3.5 ${sc.color}`} />
+                      <p className="text-xs font-semibold text-foreground">{sc.label}</p>
+                    </div>
+                    <p className="text-[11px] text-foreground/75 dark:text-muted-foreground leading-relaxed pl-5">
+                      {sc.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Card 2: Taksonomi 6 Kategori */}
           <Card className="border-border bg-card shadow-xs p-5 space-y-3">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
@@ -379,7 +607,7 @@ export function AiAddKnowledgeTab({
               </span>
               <div>
                 <h3 className="text-xs font-bold text-foreground">Panduan Taksonomi Pengetahuan</h3>
-                <p className="text-[11px] text-muted-foreground">Pilih kategori yang tepat agar agen AI mudah mereferensikan</p>
+                <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Pilih kategori yang tepat agar agen AI mudah mereferensikan</p>
               </div>
             </div>
 
@@ -389,13 +617,13 @@ export function AiAddKnowledgeTab({
                   <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-foreground">{cat.label}</p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
                       {cat.id === "TROUBLESHOOTING" && "Penanganan redaman drop, LOS/Dying Gasp, manual ONT ZTE/Huawei."}
-                      {cat.id === "ARCHITECTURE" && "Topologi OLT, ODC, ODP, VLAN, dan konfigurasi IP uplink."}
-                      {cat.id === "GIS_SPATIAL" && "Panduan pemetaan jalur kabel FO, survey tiang, dan koordinat."}
+                      {cat.id === "NETWORK_CONFIG" && "Topologi OLT, ODC, ODP, VLAN, dan konfigurasi IP uplink."}
+                      {cat.id === "GIS_MANUAL" && "Panduan pemetaan jalur kabel FO, survey tiang, dan koordinat."}
                       {cat.id === "INFRASTRUCTURE" && "Arsitektur server, Docker, Kong, MinIO S3, dan database."}
-                      {cat.id === "PLANNING" && "Rencana ekspansi rute ODP, budget loss fiber, dan mitigasi risiko."}
-                      {cat.id === "GENERAL_SOP" && "SOP administrasi, tiket bantuan, tata tertib lapangan, dan kontak darurat."}
+                      {cat.id === "PLANS" && "Rencana ekspansi rute ODP, budget loss fiber, dan mitigasi risiko."}
+                      {cat.id === "GENERAL" && "SOP administrasi, tiket bantuan, tata tertib lapangan, dan kontak darurat."}
                     </p>
                   </div>
                 </div>
@@ -403,13 +631,13 @@ export function AiAddKnowledgeTab({
             </div>
           </Card>
 
-          {/* Card 2: Vector Pipeline Info */}
+          {/* Card 3: Vector Pipeline Info */}
           <Card className="border-border bg-card/60 shadow-xs p-4 text-xs space-y-2">
             <p className="font-semibold text-foreground flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
               Pipeline Vektorisasi Otomatis (RAG)
             </p>
-            <ul className="text-[11px] text-muted-foreground space-y-1 list-disc pl-4 leading-relaxed">
+            <ul className="text-[11px] text-foreground/75 dark:text-muted-foreground space-y-1 list-disc pl-4 leading-relaxed">
               <li>Dokumen dipotong otomatis menjadi chunk 500 token dengan 50 token overlap.</li>
               <li>Embedding dihitung menggunakan model 1536-dimensi dan disimpan di PostgreSQL <span className="font-mono text-primary">pgvector</span>.</li>
               <li>Kueri dicari menggunakan index <span className="font-mono text-primary">HNSW Cosine</span> dengan latensi di bawah 10ms.</li>

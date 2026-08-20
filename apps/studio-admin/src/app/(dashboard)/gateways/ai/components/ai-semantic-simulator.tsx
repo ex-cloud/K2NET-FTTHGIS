@@ -6,7 +6,8 @@ import {
   Search, 
   Loader2, 
   Database, 
-  BrainCircuit 
+  BrainCircuit,
+  ShieldCheck,
 } from "lucide-react";
 import { 
   Card, 
@@ -19,7 +20,7 @@ import {
   Label, 
   Badge 
 } from "@k2net/ui";
-import { CATEGORIES } from "./types";
+import { CATEGORIES, KNOWLEDGE_SCOPES } from "./types";
 
 interface AiSemanticSimulatorProps {
   simQuery: string;
@@ -75,7 +76,7 @@ export function AiSemanticSimulator({
                   Live pgvector Test
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              <CardDescription className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
                 Uji coba akurasi dan skor kemiripan vektor cosine pgvector secara real-time terhadap dokumen yang telah diindeks.
               </CardDescription>
             </div>
@@ -90,20 +91,20 @@ export function AiSemanticSimulator({
                 Pertanyaan / Kata Kunci Semantik
               </Label>
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/75 dark:text-muted-foreground" />
                 <Input
                   id="simQuery"
                   type="text"
                   placeholder="Ketik pertanyaan untuk diuji ke mesin pgvector..."
                   value={simQuery}
                   onChange={(e) => setSimQuery(e.target.value)}
-                  className="pl-10 pr-24 h-11 text-xs bg-background border-border"
+                  className="pl-10 pr-24 h-11 text-xs bg-background border-border text-foreground"
                 />
                 <Button
                   type="submit"
                   size="sm"
                   disabled={simSearching || !simQuery.trim()}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 text-xs gap-1.5"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 text-xs gap-1.5 bg-primary text-primary-foreground font-semibold"
                 >
                   {simSearching ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -117,7 +118,7 @@ export function AiSemanticSimulator({
 
             {/* Chip Queries */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-muted-foreground">Uji Coba Cepat (Preset):</span>
+              <span className="text-[11px] font-medium text-foreground/75 dark:text-muted-foreground">Uji Coba Cepat (Preset):</span>
               <div className="flex flex-wrap gap-1.5">
                 {PRESET_QUERIES.map((preset, idx) => (
                   <button
@@ -126,7 +127,7 @@ export function AiSemanticSimulator({
                     onClick={() => {
                       setSimQuery(preset);
                     }}
-                    className="text-[11px] px-2.5 py-1 rounded-md border border-border/80 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                    className="text-[11px] px-2.5 py-1 rounded-md border border-border/80 bg-muted/40 hover:bg-muted text-foreground/75 dark:text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                   >
                     {preset}
                   </button>
@@ -138,19 +139,27 @@ export function AiSemanticSimulator({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border/60">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground flex items-center justify-between">
-                  <span>Scope Kategori</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">{simScope}</span>
+                  <span>Scope Visibilitas / Kategori</span>
+                  <span className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono">{simScope}</span>
                 </Label>
                 <select
                   value={simScope}
                   onChange={(e) => setSimScope(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
+                  <optgroup label="Scope Visibilitas Multi-Tenant">
+                    <option value="ALL">Semua Scope (Global + Tenant + Platform)</option>
+                    <option value="PLATFORM_INTERNAL">🔴 Platform Super Admin (Super Admin Only)</option>
+                    <option value="TENANT_INTERNAL">🔵 Tenant NOC ISP (Mitra ISP Scope)</option>
+                    <option value="GLOBAL">🟢 Global Knowledge (Publik)</option>
+                  </optgroup>
+                  <optgroup label="Kategori Spesifik">
+                    {CATEGORIES.filter((c) => c.id !== "ALL").map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -193,7 +202,7 @@ export function AiSemanticSimulator({
           {/* Results Display */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/75 dark:text-muted-foreground flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5 text-primary" />
                 Hasil Pencarian Vektor pgvector ({simTotalMatches} Chunks Cocok)
               </h3>
@@ -207,10 +216,10 @@ export function AiSemanticSimulator({
             {simSearching ? (
               <div className="p-8 text-center border border-border/80 rounded-xl bg-muted/20">
                 <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">Mengalkulasi cosine distance di PostgreSQL pgvector...</p>
+                <p className="text-xs text-foreground/75 dark:text-muted-foreground">Mengalkulasi cosine distance di PostgreSQL pgvector...</p>
               </div>
             ) : simResults.length === 0 ? (
-              <div className="p-8 text-center border border-dashed border-border rounded-xl bg-muted/20 text-muted-foreground text-xs">
+              <div className="p-8 text-center border border-dashed border-border rounded-xl bg-muted/20 text-foreground/75 dark:text-muted-foreground text-xs">
                 {hasSearched
                   ? "Tidak ada dokumen dengan skor kemiripan di atas batas toleransi. Coba turunkan ambang batas similarity."
                   : "Ketik pertanyaan di atas dan klik 'Uji Vektor' untuk melihat peringkat kemiripan semantik."}
@@ -219,6 +228,7 @@ export function AiSemanticSimulator({
               <div className="space-y-3">
                 {simResults.map((res, i) => {
                   const scorePercent = (res.similarity_score * 100).toFixed(1);
+                  const scopeMeta = KNOWLEDGE_SCOPES.find((s) => s.id === res.scope) || KNOWLEDGE_SCOPES[2];
                   return (
                     <div
                       key={i}
@@ -231,8 +241,13 @@ export function AiSemanticSimulator({
                             <Badge variant="secondary" className="text-[9px] font-mono">
                               Chunk #{res.chunk_index}
                             </Badge>
+                            {res.scope && (
+                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-medium border ${scopeMeta.accentBg} ${scopeMeta.accentBorder}`}>
+                                {scopeMeta.shortLabel}
+                              </span>
+                            )}
                           </div>
-                          <span className="text-[10px] text-muted-foreground font-mono">
+                          <span className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono">
                             Kategori: {res.category} • Doc ID: {res.document_id?.slice(0, 8)}...
                           </span>
                         </div>
@@ -253,7 +268,7 @@ export function AiSemanticSimulator({
                       </div>
 
                       {/* Content Preview */}
-                      <div className="p-3 rounded-lg bg-muted/40 text-xs font-mono text-foreground/90 whitespace-pre-wrap leading-relaxed border border-border/40">
+                      <div className="p-3 rounded-lg bg-muted/40 text-xs font-mono text-foreground whitespace-pre-wrap leading-relaxed border border-border/40">
                         {res.content_preview}
                       </div>
                     </div>
