@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition, useCallback } from "react";
-import { Sparkles, FolderSync, RefreshCw, Plus } from "lucide-react";
-import { Badge, Button } from "@k2net/ui";
+import { Sparkles, Plus } from "lucide-react";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
@@ -10,14 +10,19 @@ import {
   getAiKnowledgeStats, 
   getAiDocuments, 
   deleteAiDocument, 
+  approveAiDocument,
+  rejectAiDocument,
   triggerServerDocsSync,
+  getAiServerSyncStatus,
   AiKnowledgeStats, 
-  AiDocumentItem 
+  AiDocumentItem,
+  ServerSyncStatus,
 } from "@/lib/actions/gateways";
 
 import { AiKpiCards } from "../gateways/ai/components/ai-kpi-cards";
 import { AiKnowledgeTable } from "../gateways/ai/components/ai-knowledge-table";
 import { AiVectorExplorerModal } from "../gateways/ai/components/ai-vector-explorer-modal";
+import { AiEditKnowledgeModal } from "../gateways/ai/components/ai-edit-knowledge-modal";
 
 export default function AiKnowledgePage() {
   const router = useRouter();
@@ -30,8 +35,17 @@ export default function AiKnowledgePage() {
   const [docsLoading, setDocsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedScope, setSelectedScope] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Edit Knowledge Modal state
+  const [editingDoc, setEditingDoc] = useState<AiDocumentItem | null>(null);
+
+  // Server Files Sync Detection State
+  const [syncStatus, setSyncStatus] = useState<ServerSyncStatus | null>(null);
+  const [syncStatusLoading, setSyncStatusLoading] = useState(false);
 
   const hasMore = documents.length < docsTotal;
 
@@ -51,8 +65,27 @@ export default function AiKnowledgePage() {
     }
   }, []);
 
+  // Load Sync Status
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      setSyncStatusLoading(true);
+      const data = await getAiServerSyncStatus();
+      setSyncStatus(data);
+    } catch (err) {
+      console.error("Gagal memuat status sinkronisasi server docs:", err);
+    } finally {
+      setSyncStatusLoading(false);
+    }
+  }, []);
+
   // Load Documents from pgvector
-  const loadDocuments = useCallback(async (category = selectedCategory, search = searchQuery, reset = true) => {
+  const loadDocuments = useCallback(async (
+    category = selectedCategory, 
+    scope = selectedScope,
+    status = selectedStatus,
+    search = searchQuery, 
+    reset = true
+  ) => {
     try {
       if (reset) setDocsLoading(true);
       else setLoadingMore(true);
@@ -60,8 +93,10 @@ export default function AiKnowledgePage() {
       const offset = reset ? 0 : documents.length;
       const res = await getAiDocuments({
         category: category === "ALL" ? undefined : category,
+        scope: scope === "ALL" ? undefined : scope,
+        status: status === "ALL" ? undefined : status,
         search: search.trim() || undefined,
-        limit: 50,
+        limit: 30,
         offset,
       });
 
@@ -82,31 +117,64 @@ export default function AiKnowledgePage() {
       setDocsLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedCategory, searchQuery, documents.length]);
+  }, [selectedCategory, selectedScope, selectedStatus, searchQuery, documents.length]);
 
   useEffect(() => {
     loadStats();
     loadDocuments();
-  }, [loadStats, loadDocuments]);
+    loadSyncStatus();
+  }, [loadStats, loadDocuments, loadSyncStatus]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loadDocuments(selectedCategory, searchQuery, true);
+    loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
   };
 
   const handleFetchMore = () => {
     if (!loadingMore && hasMore) {
-      loadDocuments(selectedCategory, searchQuery, false);
+      loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, false);
+    }
+  };
+
+  const handleEdit = (doc: AiDocumentItem) => {
+    setEditingDoc(doc);
+  };
+
+  const handleApprove = async (id: string, title: string) => {
+    try {
+      await approveAiDocument(id);
+      toast.success(`Dokumen "${title}" berhasil disetujui dan diindeks ke pgvector!`);
+      loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
+      loadStats();
+      loadSyncStatus();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyetujui dokumen");
+    }
+  };
+
+  const handleReject = async (id: string, title: string) => {
+    try {
+      await rejectAiDocument(id);
+      toast.success(`Dokumen "${title}" ditolak.`);
+      loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
+      loadStats();
+      loadSyncStatus();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menolak dokumen");
     }
   };
 
   const handleDelete = async (docId: string, title: string) => {
+    if (!confirm(`Hapus dokumen "${title}" beserta seluruh vektor embedding dari database?`)) {
+      return;
+    }
     try {
       const res = await deleteAiDocument(docId);
       if (res && (res.status === "SUCCESS" || res.status === "deleted" || res.message)) {
         toast.success(`Dokumen "${title}" berhasil dihapus dari vector store`);
-        loadDocuments(selectedCategory, searchQuery, true);
+        loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
         loadStats();
+        loadSyncStatus();
       } else {
         toast.error("Gagal menghapus dokumen");
       }
@@ -119,13 +187,12 @@ export default function AiKnowledgePage() {
     startTransition(async () => {
       try {
         const res = await triggerServerDocsSync();
-        if (res && (res.status === "SUCCESS" || res.message)) {
-          toast.success(res.message || "Sinkronisasi direktori server docs berhasil");
-          loadDocuments(selectedCategory, searchQuery, true);
+        toast.success(res.message || "Sinkronisasi direktori server /opt/project5/docs dimulai di latar belakang!");
+        setTimeout(() => {
           loadStats();
-        } else {
-          toast.error("Gagal menyinkronkan berkas server");
-        }
+          loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
+          loadSyncStatus();
+        }, 3000);
       } catch {
         toast.error("Terjadi kesalahan koneksi saat memicu sinkronisasi");
       }
@@ -137,7 +204,7 @@ export default function AiKnowledgePage() {
       <div className="flex-1 w-full bg-background overflow-y-auto custom-scrollbar p-6 space-y-6">
         
         {/* Top Header Banner */}
-        <div className="flex items-center justify-between border-b border-border pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
               <Sparkles className="w-5 h-5" />
@@ -151,10 +218,23 @@ export default function AiKnowledgePage() {
                   pgvector 1536 dim
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
                 Basis data pengetahuan teknis FTTH, manual hardware OLT/ONT, dan prosedur operasional jaringan K2NET.
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ActionTooltip label="Tulis Dokumen SOP Baru" shortcut="N">
+              <Button
+                size="sm"
+                onClick={() => router.push("/ai/add")}
+                className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tulis SOP Baru
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
@@ -177,23 +257,51 @@ export default function AiKnowledgePage() {
           selectedCategory={selectedCategory}
           setSelectedCategory={(cat) => {
             setSelectedCategory(cat);
-            loadDocuments(cat, searchQuery, true);
+            loadDocuments(cat, selectedScope, selectedStatus, searchQuery, true);
+          }}
+          selectedScope={selectedScope}
+          setSelectedScope={(scope) => {
+            setSelectedScope(scope);
+            loadDocuments(selectedCategory, scope, selectedStatus, searchQuery, true);
+          }}
+          selectedStatus={selectedStatus}
+          setSelectedStatus={(st) => {
+            setSelectedStatus(st);
+            loadDocuments(selectedCategory, selectedScope, st, searchQuery, true);
           }}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onSearchSubmit={handleSearchSubmit}
+          onEdit={handleEdit}
+          onApprove={handleApprove}
+          onReject={handleReject}
           onDelete={handleDelete}
           onGoToUpload={() => router.push("/ai/add")}
           onSyncServerDocs={handleSyncServerDocs}
           onRefresh={() => {
-            loadDocuments();
+            loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
             loadStats();
+            loadSyncStatus();
           }}
           onFetchMore={handleFetchMore}
           isSyncing={isPending}
+          syncStatus={syncStatus}
+          syncStatusLoading={syncStatusLoading}
           onInspectVector={() => setIsExplorerOpen(true)}
           onTestSimulator={(title) => {
             router.push(`/ai/simulator?query=${encodeURIComponent(title)}`);
+          }}
+        />
+
+        {/* Edit Knowledge Modal */}
+        <AiEditKnowledgeModal
+          document={editingDoc}
+          isOpen={!!editingDoc}
+          onClose={() => setEditingDoc(null)}
+          onSuccess={() => {
+            loadDocuments(selectedCategory, selectedScope, selectedStatus, searchQuery, true);
+            loadStats();
+            loadSyncStatus();
           }}
         />
 

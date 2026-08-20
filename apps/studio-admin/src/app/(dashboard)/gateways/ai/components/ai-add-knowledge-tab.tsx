@@ -224,7 +224,7 @@ export function AiAddKnowledgeTab({
                             key={item.id}
                             type="button"
                             onClick={() => setUploadScope?.(item.id)}
-                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                               isSelected
                                 ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
                                 : "border-border bg-background hover:bg-muted/40 text-foreground"
@@ -413,7 +413,7 @@ export function AiAddKnowledgeTab({
                             key={item.id}
                             type="button"
                             onClick={() => setManualScope?.(item.id)}
-                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between ${
+                            className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                               isSelected
                                 ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
                                 : "border-border bg-background hover:bg-muted/40 text-foreground"
