@@ -49,6 +49,7 @@ import {
   PlusCircle,
   GripVertical,
 } from "lucide-react";
+import { fetchAiProviderModels, getAiKnowledgeStats } from "@/lib/actions/gateways";
 import { cn } from "@/lib/utils";
 import {
   useAiChatStream,
@@ -111,8 +112,16 @@ const SUPABASE_IDEAS = [
 ];
 
 const MODELS = [
+  { value: "gemini-3.7-flash", label: "Gemini 3.7 Flash", badge: "Google" },
+  { value: "gemini-3.6-flash", label: "Gemini 3.6 Flash", badge: "Google" },
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", badge: "Google" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (2M)", badge: "Google" },
+  { value: "gemini-2.0-flash-thinking-exp", label: "Gemini Thinking", badge: "Reasoning" },
+  { value: "deep-research-preview-04-2026", label: "Gemini Deep Research", badge: "Agent" },
   { value: "gpt-4o-mini", label: "GPT-4o Mini", badge: "OpenAI" },
+  { value: "gpt-4o", label: "GPT-4o", badge: "OpenAI" },
+  { value: "deepseek-chat", label: "DeepSeek V3", badge: "DeepSeek" },
+  { value: "deepseek-reasoner", label: "DeepSeek R1", badge: "DeepSeek" },
   { value: "llama3.2", label: "Local Ollama (Llama 3)", badge: "Local" },
   { value: "deepseek-r1:7b", label: "Local DeepSeek-R1", badge: "Local" },
 ];
@@ -317,6 +326,7 @@ export function FloatingAiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [availableModels, setAvailableModels] = useState<Array<{ value: string; label: string; badge: string }>>(MODELS);
   const [drawerWidth, setDrawerWidth] = useState<number>(DEFAULT_DRAWER_WIDTH);
   const [isWide, setIsWide] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -332,6 +342,44 @@ export function FloatingAiAssistant() {
     stopStreaming,
     clearMessages,
   } = useAiChatStream({ model: selectedModel });
+
+  // ── Fetch dynamic live detected models on mount ───────────────────────────
+  useEffect(() => {
+    async function loadDynamicModels() {
+      try {
+        const [modelsRes, statsRes] = await Promise.allSettled([
+          fetchAiProviderModels("gemini"),
+          getAiKnowledgeStats(),
+        ]);
+
+        if (modelsRes.status === "fulfilled" && modelsRes.value?.models && modelsRes.value.models.length > 0) {
+          const dynamicList = modelsRes.value.models.map((m) => ({
+            value: m.id.replace("models/", ""),
+            label: m.name,
+            badge: m.badge || "Google",
+          }));
+          dynamicList.push(
+            { value: "gpt-4o-mini", label: "GPT-4o Mini", badge: "OpenAI" },
+            { value: "gpt-4o", label: "GPT-4o", badge: "OpenAI" },
+            { value: "deepseek-chat", label: "DeepSeek V3", badge: "DeepSeek" },
+            { value: "deepseek-reasoner", label: "DeepSeek R1", badge: "DeepSeek" },
+            { value: "llama3.2", label: "Local Ollama (Llama 3)", badge: "Local" },
+            { value: "deepseek-r1:7b", label: "Local DeepSeek-R1", badge: "Local" },
+          );
+          setAvailableModels(dynamicList);
+        }
+
+        if (statsRes.status === "fulfilled" && statsRes.value?.chat_model) {
+          const cleanModel = statsRes.value.chat_model.replace("models/", "");
+          setSelectedModel(cleanModel);
+        }
+      } catch (err) {
+        console.debug("Dynamic model load fallback:", err);
+      }
+    }
+
+    loadDynamicModels();
+  }, []);
 
   // ── Load saved width on mount ─────────────────────────────────────────────
   useEffect(() => {
@@ -510,15 +558,15 @@ export function FloatingAiAssistant() {
               <div className="flex items-center gap-1.5 shrink-0">
                 {/* Model Selector Pill */}
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="h-7 text-xs w-[125px] border-border/60 bg-muted/40 font-medium">
+                  <SelectTrigger className="h-7 text-xs w-[145px] border-border/60 bg-muted/40 font-medium">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {MODELS.map((m) => (
+                  <SelectContent className="max-h-72">
+                    {availableModels.map((m) => (
                       <SelectItem key={m.value} value={m.value} className="text-xs">
                         <div className="flex items-center justify-between w-full gap-2">
-                          <span>{m.label}</span>
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
+                          <span className="truncate">{m.label}</span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono shrink-0">
                             {m.badge}
                           </Badge>
                         </div>

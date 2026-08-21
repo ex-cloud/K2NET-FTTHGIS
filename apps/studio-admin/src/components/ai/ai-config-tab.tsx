@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Cpu, 
   Eye, 
@@ -13,7 +13,12 @@ import {
   Sparkles, 
   Zap, 
   ShieldCheck, 
-  Sliders
+  Sliders,
+  RefreshCw,
+  Search,
+  ExternalLink,
+  Bot,
+  Flame
 } from "lucide-react";
 import { 
   Button, 
@@ -22,11 +27,11 @@ import {
   Badge 
 } from "@k2net/ui";
 import { toast } from "sonner";
-import { testAiProviderConnection } from "@/lib/actions/gateways";
+import { testAiProviderConnection, fetchAiProviderModels, ModelCatalogItem } from "@/lib/actions/gateways";
 
 interface AiConfigTabProps {
   config: Record<string, string>;
-  setConfig: (c: Record<string, string>) => void;
+  setConfig: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   configLoading: boolean;
   configSaving: boolean;
   onSaveConfig: (e: React.FormEvent) => void;
@@ -54,6 +59,34 @@ export function AiConfigTab({
   // Per-provider test states
   const [testStates, setTestStates] = useState<Record<string, ProviderTestState>>({});
 
+  // Dynamic Models per provider
+  const [providerModels, setProviderModels] = useState<Record<string, ModelCatalogItem[]>>({});
+  const [loadingModels, setLoadingModels] = useState<Record<string, boolean>>({});
+  const [detectedLiveMap, setDetectedLiveMap] = useState<Record<string, boolean>>({});
+
+  const loadModelsForProvider = useCallback(async (provider: string, apiKey?: string, baseUrl?: string) => {
+    try {
+      setLoadingModels((prev) => ({ ...prev, [provider]: true }));
+      const res = await fetchAiProviderModels(provider, apiKey, baseUrl);
+      if (res && res.models && res.models.length > 0) {
+        setProviderModels((prev) => ({ ...prev, [provider]: res.models }));
+        setDetectedLiveMap((prev) => ({ ...prev, [provider]: res.detected_live }));
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch models for ${provider}:`, err);
+    } finally {
+      setLoadingModels((prev) => ({ ...prev, [provider]: false }));
+    }
+  }, []);
+
+  // Initial fetch for all providers
+  useEffect(() => {
+    loadModelsForProvider("gemini", config["GEMINI_API_KEY"]);
+    loadModelsForProvider("openai", config["OPENAI_API_KEY"]);
+    loadModelsForProvider("deepseek", config["DEEPSEEK_API_KEY"], config["DEEPSEEK_BASE_URL"]);
+    loadModelsForProvider("ollama", undefined, config["OLLAMA_BASE_URL"]);
+  }, [loadModelsForProvider, config]);
+
   const handleTestProvider = async (provider: "gemini" | "openai" | "deepseek" | "ollama") => {
     setTestStates((prev) => ({
       ...prev,
@@ -67,7 +100,7 @@ export function AiConfigTab({
 
       if (provider === "gemini") {
         apiKey = config["GEMINI_API_KEY"] || "";
-        model = config["GEMINI_CHAT_MODEL"] || "models/gemini-2.5-flash";
+        model = config["GEMINI_CHAT_MODEL"] || "gemini-2.5-flash";
       } else if (provider === "openai") {
         apiKey = config["OPENAI_API_KEY"] || "";
         model = config["OPENAI_CHAT_MODEL"] || "gpt-4o-mini";
@@ -98,6 +131,8 @@ export function AiConfigTab({
           },
         }));
         toast.success(`Koneksi ke ${provider.toUpperCase()} berhasil! Latency: ${res.latency_ms}ms`);
+        // Refresh dynamic models list on success
+        loadModelsForProvider(provider, apiKey, baseUrl);
       } else {
         setTestStates((prev) => ({
           ...prev,
@@ -124,8 +159,19 @@ export function AiConfigTab({
     }
   };
 
-  const defaultProvider = config["DEFAULT_LLM_PROVIDER"] || "gemini";
-  const fallbackProvider = config["FALLBACK_LLM_PROVIDER"] || "openai";
+  const defaultProvider = (config["DEFAULT_LLM_PROVIDER"] || "gemini").toLowerCase();
+  const fallbackProvider = (config["FALLBACK_LLM_PROVIDER"] || "openai").toLowerCase();
+
+  const geminiModels = providerModels["gemini"] || [];
+  const openaiModels = providerModels["openai"] || [];
+  const deepseekModels = providerModels["deepseek"] || [];
+  const ollamaModels = providerModels["ollama"] || [];
+
+  // Group Gemini models by category
+  const geminiCategories = Array.from(new Set(geminiModels.map((m) => m.category)));
+
+  // Helper to check if key is set
+  const isKeyConfigured = (key?: string) => Boolean(key && key.trim() !== "");
 
   return (
     <div className="w-full space-y-6">
@@ -167,7 +213,7 @@ export function AiConfigTab({
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Cloud Reasoning (1.500 req/hari gratis)
+                        Google AI Studio & Vertex AI API (Gemini 3 / 2.5)
                       </p>
                     </div>
                   </div>
@@ -182,9 +228,9 @@ export function AiConfigTab({
                       <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/30 text-[10px] gap-1 font-mono">
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
-                    ) : config["GEMINI_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
-                        Ready
+                    ) : isKeyConfigured(config["GEMINI_API_KEY"]) ? (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Configured & Ready
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">
@@ -195,17 +241,29 @@ export function AiConfigTab({
                 </div>
 
                 <div className="p-5 space-y-4">
+                  {/* Gemini API Key */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="geminiKey" className="text-xs font-medium text-foreground">
-                      Gemini API Key
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="geminiKey" className="text-xs font-medium text-foreground">
+                        Gemini API Key
+                      </Label>
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-primary/80 hover:text-primary hover:underline flex items-center gap-1"
+                      >
+                        <span>Dapatkan Key di AI Studio</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
                     <div className="relative">
                       <Input
                         id="geminiKey"
                         type={showGeminiKey ? "text" : "password"}
                         value={config["GEMINI_API_KEY"] || ""}
                         onChange={(e) => setConfig({ ...config, GEMINI_API_KEY: e.target.value })}
-                        placeholder="AIzaSy..."
+                        placeholder="AIzaSy... (atau biarkan jika sudah tersimpan)"
                         className="text-xs h-8 pr-8 font-mono bg-background border-border"
                       />
                       <button
@@ -218,20 +276,74 @@ export function AiConfigTab({
                     </div>
                   </div>
 
+                  {/* Gemini Model Selector with Dynamic Optgroups */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="geminiModel" className="text-xs font-medium text-foreground">
-                      Model Generasi
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="geminiModel" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                        <span>Model Generasi & Penalaran</span>
+                        {detectedLiveMap["gemini"] && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-primary border-primary/30 bg-primary/10">
+                            Live Detected
+                          </Badge>
+                        )}
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => loadModelsForProvider("gemini", config["GEMINI_API_KEY"])}
+                        disabled={loadingModels["gemini"]}
+                        className="text-[11px] text-primary/80 hover:text-primary flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="Scan model terbaru dari Google AI Studio"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${loadingModels["gemini"] ? "animate-spin" : ""}`} />
+                        <span>Scan Model ({geminiModels.length})</span>
+                      </button>
+                    </div>
+
                     <select
                       id="geminiModel"
-                      value={config["GEMINI_CHAT_MODEL"] || "models/gemini-2.5-flash"}
+                      value={config["GEMINI_CHAT_MODEL"] || "gemini-2.5-flash"}
                       onChange={(e) => setConfig({ ...config, GEMINI_CHAT_MODEL: e.target.value })}
-                      className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                      className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
                     >
-                      <option value="models/gemini-2.5-flash">models/gemini-2.5-flash (Ultra Cepat & Akurat)</option>
-                      <option value="models/gemini-1.5-flash">models/gemini-1.5-flash (Ringan & Stabil)</option>
-                      <option value="models/gemini-1.5-pro">models/gemini-1.5-pro (Penalaran Kompleks)</option>
+                      {geminiCategories.length > 0 ? (
+                        geminiCategories.map((category) => (
+                          <optgroup key={category} label={`── ${category} ──`} className="bg-card text-foreground font-sans font-semibold">
+                            {geminiModels
+                              .filter((m) => m.category === category)
+                              .map((m) => {
+                                const cleanId = m.id.replace("models/", "");
+                                return (
+                                  <option key={m.id} value={cleanId} className="font-mono text-xs">
+                                    {cleanId} {m.badge ? `[${m.badge}]` : ""} — {m.name} {m.context_window ? `(${m.context_window})` : ""}
+                                  </option>
+                                );
+                              })}
+                          </optgroup>
+                        ))
+                      ) : (
+                        <>
+                          <optgroup label="── Gemini 3 Series (Next-Gen) ──">
+                            <option value="gemini-3.7-flash">gemini-3.7-flash [New] — Gemini 3.7 Flash (1M tokens)</option>
+                            <option value="gemini-3.6-flash">gemini-3.6-flash [Stable] — Gemini 3.6 Flash (1M tokens)</option>
+                            <option value="gemini-3.5-flash">gemini-3.5-flash [Stable] — Gemini 3.5 Flash (1M tokens)</option>
+                            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite [Stable] — Gemini 3.5 Flash-Lite (1M tokens)</option>
+                            <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview [Preview] — Gemini 3.1 Pro (2M tokens)</option>
+                          </optgroup>
+                          <optgroup label="── Gemini 2.5 Series (Production) ──">
+                            <option value="gemini-2.5-flash">gemini-2.5-flash [Default] — Gemini 2.5 Flash (1M tokens)</option>
+                            <option value="gemini-2.5-pro">gemini-2.5-pro [Stable] — Gemini 2.5 Pro (2M tokens)</option>
+                            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite [Stable] — Gemini 2.5 Flash-Lite (1M tokens)</option>
+                          </optgroup>
+                          <optgroup label="── Deep Reasoning & Agents ──">
+                            <option value="gemini-2.0-flash-thinking-exp">gemini-2.0-flash-thinking-exp [Reasoning] — Chain-of-Thought (1M)</option>
+                            <option value="deep-research-preview-04-2026">deep-research-preview-04-2026 [Agent] — Deep Research (2M)</option>
+                          </optgroup>
+                        </>
+                      )}
                     </select>
+                    <p className="text-[10px] text-muted-foreground">
+                      Pilihan resmi Google AI Studio. Mendukung Gemini 3.7 Flash, 3.6, 2.5 Pro (2M context), dan Deep Research.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -243,7 +355,7 @@ export function AiConfigTab({
                   variant="outline"
                   size="sm"
                   onClick={() => handleTestProvider("gemini")}
-                  disabled={testStates["gemini"]?.loading || !config["GEMINI_API_KEY"]}
+                  disabled={testStates["gemini"]?.loading || (!config["GEMINI_API_KEY"] && !isKeyConfigured(config["GEMINI_API_KEY"]))}
                   className="text-xs h-7 gap-1.5 cursor-pointer font-medium"
                 >
                   {testStates["gemini"]?.loading ? (
@@ -274,12 +386,12 @@ export function AiConfigTab({
                 <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                      <Zap className="w-4 h-4" />
+                      <Bot className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h3 className="text-sm font-bold text-foreground">
-                          2. OpenAI (GPT-4o)
+                          2. OpenAI (GPT-4o / o3-mini)
                         </h3>
                         {defaultProvider === "openai" && (
                           <Badge className="bg-primary/20 text-primary border-primary/30 text-[9px] font-mono px-1.5 py-0">
@@ -293,7 +405,7 @@ export function AiConfigTab({
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Standar Industri & Auto-Fallback
+                        Standar Industri & Auto-Fallback Provider
                       </p>
                     </div>
                   </div>
@@ -308,9 +420,9 @@ export function AiConfigTab({
                       <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/30 text-[10px] gap-1 font-mono">
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
-                    ) : config["OPENAI_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
-                        Ready
+                    ) : isKeyConfigured(config["OPENAI_API_KEY"]) ? (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Ready
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">
@@ -352,11 +464,22 @@ export function AiConfigTab({
                       id="openaiModel"
                       value={config["OPENAI_CHAT_MODEL"] || "gpt-4o-mini"}
                       onChange={(e) => setConfig({ ...config, OPENAI_CHAT_MODEL: e.target.value })}
-                      className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                      className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
                     >
-                      <option value="gpt-4o-mini">gpt-4o-mini (Cepat & Hemat Biaya)</option>
-                      <option value="gpt-4o">gpt-4o (Omni Reasoning Lengkap)</option>
-                      <option value="gpt-3.5-turbo">gpt-3.5-turbo (Legacy)</option>
+                      {openaiModels.length > 0 ? (
+                        openaiModels.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.id} {m.badge ? `[${m.badge}]` : ""} — {m.name}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="gpt-4o-mini">gpt-4o-mini [Fast] — Hemat Biaya & Ringan</option>
+                          <option value="gpt-4o">gpt-4o [Flagship] — Multimodal Kompleks</option>
+                          <option value="o3-mini">o3-mini [Reasoning] — STEM & Logika</option>
+                          <option value="o1">o1 [Deep Reasoning] — Penalaran Maksimal</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -380,27 +503,25 @@ export function AiConfigTab({
                   <span>Tes Koneksi</span>
                 </Button>
 
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    type="button"
-                    variant={fallbackProvider === "openai" ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setConfig({ ...config, FALLBACK_LLM_PROVIDER: "openai" })}
-                    className="text-xs h-7 cursor-pointer"
-                  >
-                    {fallbackProvider === "openai" ? "✓ Auto-Fallback" : "Set Fallback"}
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant={defaultProvider === "openai" ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setConfig({ ...config, DEFAULT_LLM_PROVIDER: "openai" })}
+                  className="text-xs h-7 cursor-pointer"
+                >
+                  {defaultProvider === "openai" ? "✓ Utama" : "Set Utama"}
+                </Button>
               </div>
             </div>
 
-            {/* ── CARD 3: DEEPSEEK CLOUD / CUSTOM OPENAI-COMPATIBLE ───────── */}
+            {/* ── CARD 3: DEEPSEEK / CUSTOM API ──────────────────────────── */}
             <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
                 <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
-                      <Cpu className="w-4 h-4" />
+                      <Flame className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
@@ -414,7 +535,7 @@ export function AiConfigTab({
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        OpenAI-Compatible Custom Endpoint
+                        OpenAI-Compatible Custom Endpoint (Groq / OpenRouter)
                       </p>
                     </div>
                   </div>
@@ -429,9 +550,9 @@ export function AiConfigTab({
                       <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/30 text-[10px] gap-1 font-mono">
                         <AlertCircle className="w-3 h-3" /> Error
                       </Badge>
-                    ) : config["DEEPSEEK_API_KEY"] ? (
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono">
-                        Ready
+                    ) : isKeyConfigured(config["DEEPSEEK_API_KEY"]) ? (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Ready
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">
@@ -443,11 +564,11 @@ export function AiConfigTab({
 
                 <div className="p-5 space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="deepseekUrl" className="text-xs font-medium text-foreground">
+                    <Label htmlFor="deepseekBase" className="text-xs font-medium text-foreground">
                       Base URL Endpoint
                     </Label>
                     <Input
-                      id="deepseekUrl"
+                      id="deepseekBase"
                       type="text"
                       value={config["DEEPSEEK_BASE_URL"] || "https://api.deepseek.com/v1"}
                       onChange={(e) => setConfig({ ...config, DEEPSEEK_BASE_URL: e.target.value })}
@@ -456,7 +577,7 @@ export function AiConfigTab({
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="deepseekKey" className="text-xs font-medium text-foreground">
                         API Key
@@ -473,7 +594,7 @@ export function AiConfigTab({
                         <button
                           type="button"
                           onClick={() => setShowDeepseekKey(!showDeepseekKey)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                           {showDeepseekKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </button>
@@ -484,14 +605,15 @@ export function AiConfigTab({
                       <Label htmlFor="deepseekModel" className="text-xs font-medium text-foreground">
                         Model Name
                       </Label>
-                      <Input
+                      <select
                         id="deepseekModel"
-                        type="text"
                         value={config["DEEPSEEK_CHAT_MODEL"] || "deepseek-chat"}
                         onChange={(e) => setConfig({ ...config, DEEPSEEK_CHAT_MODEL: e.target.value })}
-                        placeholder="deepseek-chat / deepseek-reasoner"
-                        className="text-xs h-8 font-mono bg-background border-border"
-                      />
+                        className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                      >
+                        <option value="deepseek-chat">deepseek-chat (DeepSeek-V3)</option>
+                        <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek-R1)</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -527,7 +649,7 @@ export function AiConfigTab({
               </div>
             </div>
 
-            {/* ── CARD 4: LOCAL OLLAMA ON-PREMISE ─────────────────────────── */}
+            {/* ── CARD 4: LOCAL OLLAMA ENGINE ─────────────────────────────── */}
             <div className="rounded-xl border border-border/80 bg-card text-card-foreground shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between overflow-hidden">
               <div>
                 <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
@@ -586,17 +708,33 @@ export function AiConfigTab({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="ollamaModel" className="text-xs font-medium text-foreground">
-                      Model Name
-                    </Label>
-                    <Input
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="ollamaModel" className="text-xs font-medium text-foreground">
+                        Model Name (Installed on Server)
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => loadModelsForProvider("ollama", undefined, config["OLLAMA_BASE_URL"])}
+                        disabled={loadingModels["ollama"]}
+                        className="text-[11px] text-primary/80 hover:text-primary flex items-center gap-1 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${loadingModels["ollama"] ? "animate-spin" : ""}`} />
+                        <span>Scan Ollama Models ({ollamaModels.length})</span>
+                      </button>
+                    </div>
+
+                    <select
                       id="ollamaModel"
-                      type="text"
                       value={config["OLLAMA_CHAT_MODEL"] || "llama3.2"}
                       onChange={(e) => setConfig({ ...config, OLLAMA_CHAT_MODEL: e.target.value })}
-                      placeholder="llama3.2 / deepseek-r1:7b / qwen2.5"
-                      className="text-xs h-8 font-mono bg-background border-border"
-                    />
+                      className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
+                    >
+                      {ollamaModels.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} — {m.description}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -654,8 +792,8 @@ export function AiConfigTab({
                   type="number"
                   min={1}
                   max={20}
-                  value={config["RAG_MAX_CHUNKS"] || "5"}
-                  onChange={(e) => setConfig({ ...config, RAG_MAX_CHUNKS: e.target.value })}
+                  value={config["RAG_CHUNK_SIZE"] || config["rag_max_chunks"] || "5"}
+                  onChange={(e) => setConfig({ ...config, RAG_CHUNK_SIZE: e.target.value, rag_max_chunks: e.target.value })}
                   className="text-xs h-8 font-mono bg-background border-border"
                 />
                 <p className="text-[10px] text-muted-foreground">Jumlah potongan dokumen yang disuntikkan ke prompt.</p>
@@ -671,8 +809,8 @@ export function AiConfigTab({
                   step="0.05"
                   min={0.1}
                   max={0.9}
-                  value={config["RAG_MIN_SIMILARITY"] || "0.25"}
-                  onChange={(e) => setConfig({ ...config, RAG_MIN_SIMILARITY: e.target.value })}
+                  value={config["RAG_CHUNK_OVERLAP"] || config["rag_min_similarity"] || "0.25"}
+                  onChange={(e) => setConfig({ ...config, RAG_CHUNK_OVERLAP: e.target.value, rag_min_similarity: e.target.value })}
                   className="text-xs h-8 font-mono bg-background border-border"
                 />
                 <p className="text-[10px] text-muted-foreground">Ambang batas skor kemiripan kosinus (0.1 - 0.9).</p>
@@ -695,7 +833,7 @@ export function AiConfigTab({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border shadow-xs">
             <div className="text-xs text-muted-foreground flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-              <span>Perubahan konfigurasi provider tersimpan di database dan aktif secara real-time.</span>
+              <span>Perubahan konfigurasi provider tersimpan di file konfigurasi server dan aktif secara instan.</span>
             </div>
 
             <Button

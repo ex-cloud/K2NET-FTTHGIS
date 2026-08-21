@@ -235,6 +235,49 @@ class ProviderStatusListResponse(BaseModel):
     providers: list[ProviderStatusItem]
 
 
+# ─── Model Catalog & Discovery ───────────────────────────────────────────────
+
+class ModelCatalogItem(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    badge: Optional[str] = None
+    context_window: Optional[str] = None
+    is_default: bool = False
+
+
+class ProviderModelsResponse(BaseModel):
+    provider: str
+    models: list[ModelCatalogItem]
+    detected_live: bool = False
+    source: str = "Google AI Studio API"
+
+
+# ─── Gateway Configuration CRUD ──────────────────────────────────────────────
+
+class ConfigEntry(BaseModel):
+    key: str
+    value: str
+    censored: str
+    section: str
+
+
+class ConfigResponse(BaseModel):
+    status: str = "ok"
+    sections: dict[str, list[ConfigEntry]]
+
+
+class ConfigUpdateRequest(BaseModel):
+    updates: dict[str, str]
+
+
+class ConfigUpdateResponse(BaseModel):
+    status: str = "ok"
+    message: str
+    keys_updated: int
+
+
 # ─── Knowledge Graph 2D (Obsidian-Style Semantic Graph) ──────────────────────
 
 class GraphNode(BaseModel):
