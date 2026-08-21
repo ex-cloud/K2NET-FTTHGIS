@@ -1227,10 +1227,11 @@ async def simulate_search(
     query_vector = await engine.generate_embedding(query)
 
     results = await vector_store.similarity_search(
-        tenant_id=ctx.tenant_id,
         query_embedding=query_vector,
-        top_k=limit,
-        category=None if scope in ("ALL", "GENERAL") else scope,
+        tenant_id=ctx.tenant_id,
+        scope=scope,
+        category=payload.get("category", "ALL"),
+        limit=limit,
         min_similarity=min_sim,
     )
 
@@ -1239,15 +1240,15 @@ async def simulate_search(
         "total_matches": len(results),
         "results": [
             {
-                "chunk_id": str(r["chunk_id"]),
-                "document_id": str(r["document_id"]),
-                "chunk_index": r["chunk_index"],
-                "similarity_score": round(r["similarity"], 4),
-                "category": r["category"],
+                "chunk_id": str(r.get("chunk_id", "")),
+                "document_id": str(r.get("document_id", "")),
+                "chunk_index": r.get("chunk_index", 0),
+                "similarity_score": round(float(r.get("similarity_score") or r.get("similarity", 0.0)), 4),
+                "category": r.get("category", "GENERAL"),
                 "scope": r.get("scope", "GLOBAL"),
-                "title": r["title"],
-                "content_preview": r["content"],
-                "token_count": r["token_count"],
+                "title": r.get("title", ""),
+                "content_preview": r.get("content", ""),
+                "token_count": r.get("token_count", 0),
             }
             for r in results
         ],
@@ -1316,43 +1317,90 @@ async def _index_document(
         )
 
 
+def _parse_frontmatter(content: str) -> tuple[dict, str]:
+    """Parse YAML frontmatter metadata dari konten markdown."""
+    meta = {}
+    body = content
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        if len(parts) >= 3:
+            fm_text = parts[1].strip()
+            body = parts[2].strip()
+            for line in fm_text.splitlines():
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    k = k.strip().lower()
+                    v = v.strip().strip('"').strip("'")
+                    if v.startswith("[") and v.endswith("]"):
+                        # array tags
+                        tags_raw = v[1:-1].split(",")
+                        meta[k] = [t.strip().strip('"').strip("'") for t in tags_raw if t.strip()]
+                    else:
+                        meta[k] = v
+    return meta, body
+
+
 async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: Optional[str]) -> None:
-    """Memindai seluruh subfolder /opt/project5/docs dan mengindeks per kategori."""
+    """Memindai folder kanonikal /opt/project5/docs dan mengindeks dengan YAML Frontmatter metadata."""
     category_mapping = {
         "00_AI_Agent": "GENERAL",
-        "01_Architecture": "ARCHITECTURE",
+        "01_Architecture": "NETWORK_CONFIG",
         "02_SOP_Troubleshooting": "TROUBLESHOOTING",
         "03_Infrastructure": "INFRASTRUCTURE",
         "04_GIS_Mapping": "GIS_MANUAL",
         "05_Plans_Roadmap": "PLANS",
-        "Server": "PLANS",
-        "note": "GENERAL",
     }
+    allowed_dirs = set(category_mapping.keys())
 
     files = glob.glob(os.path.join(docs_dir, "**/*.md"), recursive=True)
     files.extend(glob.glob(os.path.join(docs_dir, "**/*.txt"), recursive=True))
 
-    logger.info(f"[Server Sync] Found {len(files)} files in {docs_dir}")
+    logger.info(f"[Server Sync] Scanning canonical documentation files in {docs_dir}")
     engine = LLMEngine()
     chunker = DocumentChunker(chunk_size=settings.RAG_CHUNK_SIZE, overlap=settings.RAG_CHUNK_OVERLAP)
 
+    valid_categories = {"GENERAL", "NETWORK_CONFIG", "TROUBLESHOOTING", "INFRASTRUCTURE", "GIS_MANUAL", "PLANS"}
+    valid_scopes = {"GLOBAL", "TENANT_INTERNAL", "PLATFORM_INTERNAL"}
+
     for file_path in files:
         rel_path = os.path.relpath(file_path, docs_dir)
-        top_folder = rel_path.split(os.sep)[0] if os.sep in rel_path else "GENERAL"
-        category = category_mapping.get(top_folder, "GENERAL")
-        title = Path(file_path).stem.replace("-", " ").replace("_", " ").title()
+        parts = rel_path.split(os.sep)
+        top_folder = parts[0] if len(parts) > 1 else ""
+
+        # Abaikan direktori arsip, server lama, note, temp, atau file root
+        if top_folder not in allowed_dirs:
+            logger.debug(f"[Server Sync] Skipping non-canonical file: {rel_path}")
+            continue
+
+        filename = Path(file_path).name
+        if filename.startswith(".") or filename.startswith("#") or "dummy" in filename.lower():
+            logger.debug(f"[Server Sync] Skipping hidden or temporary file: {rel_path}")
+            continue
 
         try:
             with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read().strip()
+                raw_file_content = f.read().strip()
 
-            if len(content) < 10:
+            if len(raw_file_content) < 15:
                 continue
 
-            # Tentukan scope otomatis berdasarkan kategori folder
-            if category in ("INFRASTRUCTURE", "ARCHITECTURE", "PLANS"):
+            # Parse YAML Frontmatter
+            fm, content = _parse_frontmatter(raw_file_content)
+
+            # Metadata Title
+            title = fm.get("title") or Path(file_path).stem.replace("-", " ").replace("_", " ").title()
+
+            # Metadata Category
+            fm_cat = fm.get("category", "").upper()
+            category = fm_cat if fm_cat in valid_categories else category_mapping.get(top_folder, "GENERAL")
+
+            # Metadata Scope
+            fm_scope = fm.get("scope", "").upper()
+            if fm_scope in valid_scopes:
+                scope_val = fm_scope
+            elif category in ("INFRASTRUCTURE", "NETWORK_CONFIG", "PLANS"):
                 scope_val = "PLATFORM_INTERNAL"
-            elif category in ("TROUBLESHOOTING",):
+            elif category in ("TROUBLESHOOTING", "GIS_MANUAL"):
                 scope_val = "TENANT_INTERNAL"
             else:
                 scope_val = "GLOBAL"
@@ -1382,14 +1430,15 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                         "category": category,
                         "scope": scope_val,
                         "fn": rel_path,
-                        "size": len(content.encode("utf-8")),
-                        "raw_content": content,
+                        "size": len(raw_file_content.encode("utf-8")),
+                        "raw_content": raw_file_content,
                         "actor": actor_id or "system-sync",
                     },
                 )
 
-            chunks = chunker.chunk_text(content)
-            vendor = _extract_vendor(title, content)
+            # Lakukan chunking pada konten body
+            chunks = chunker.chunk_text(content if len(content) > 10 else raw_file_content)
+            vendor = _extract_vendor(title, raw_file_content)
             stored_count = 0
             for i, chunk_text in enumerate(chunks):
                 try:
@@ -1402,14 +1451,24 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                         content=chunk_text,
                         token_count=token_count,
                         embedding=embedding,
-                        metadata={"source_file": rel_path, "chunk_index": i, "total_chunks": len(chunks), "vendor": vendor, "scope": scope_val},
+                        metadata={
+                            "source_file": rel_path, 
+                            "chunk_index": i, 
+                            "total_chunks": len(chunks), 
+                            "vendor": vendor, 
+                            "scope": scope_val,
+                            "category": category
+                        },
                     )
                     stored_count += 1
                 except Exception as ce:
                     logger.warning(f"Failed chunk {i} for {rel_path}: {ce}")
 
-            await vector_store.update_document_status(doc_id, tenant_id, "INDEXED", chunk_count=stored_count)
-            logger.info(f"[Server Sync] Indexed {title} ({stored_count} chunks)")
+            if stored_count > 0:
+                await vector_store.update_document_status(doc_id, tenant_id, "INDEXED", chunk_count=stored_count)
+                logger.info(f"[Server Sync] Indexed '{title}' ({category} | {scope_val} | {stored_count} chunks)")
+            else:
+                await vector_store.update_document_status(doc_id, tenant_id, "FAILED", chunk_count=0, error_message="0 vector chunks generated")
 
         except Exception as fe:
             logger.error(f"[Server Sync] Failed to process {rel_path}: {fe}")
