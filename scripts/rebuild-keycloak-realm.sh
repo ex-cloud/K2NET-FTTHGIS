@@ -25,7 +25,7 @@ SMTP_HOST="smtp-relay.brevo.com"
 SMTP_PORT="587"
 SMTP_USER="ac9057001@smtp-brevo.com"
 SMTP_PASS="${SMTP_PASSWORD:-}"
-SMTP_FROM="noreply@k2net.id"
+SMTP_FROM="noreply@kdua.net"
 SMTP_FROM_DISPLAY="FTTH GIS Platform"
 
 echo "=============================================="

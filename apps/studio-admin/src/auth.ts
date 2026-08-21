@@ -1,7 +1,7 @@
 /**
  * apps/studio-admin/src/auth.ts
  *
- * NextAuth instance for the Admin Portal (system-gis.k2net.id).
+ * NextAuth instance for the Admin Portal (system-gis.kdua.net).
  * Uses @k2net/auth base config + admin-specific `authorized` callback
  * that only allows access to system subdomain routes.
  */

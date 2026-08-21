@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         "X-Gateway-Token": gatewayToken,
         "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-        "X-Actor-ID": session?.user?.email || "admin@k2net.id",
+        "X-Actor-ID": session?.user?.email || "admin@kdua.net",
         "X-Actor-Role": "super_admin",
       },
       body: JSON.stringify({

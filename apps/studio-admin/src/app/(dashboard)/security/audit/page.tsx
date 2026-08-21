@@ -29,7 +29,7 @@ export default function SecurityAuditLogsPage() {
       audit_log_retention_days: getValue("audit_log_retention_days", "90"),
       minio_log_drain_bucket: getValue("minio_log_drain_bucket", "db-backups"),
       log_archival_cron: getValue("log_archival_cron", "0 0 * * *"),
-      cors_allowed_origins: getValue("cors_allowed_origins", "https://system-gis.k2net.id,https://gis.k2net.id"),
+      cors_allowed_origins: getValue("cors_allowed_origins", "https://system-gis.kdua.net,https://gis.kdua.net"),
       kong_rate_limit_per_minute: getValue("kong_rate_limit_per_minute", "120"),
     };
 
@@ -181,9 +181,9 @@ export default function SecurityAuditLogsPage() {
             >
               <Input
                 type="text"
-                value={getValue("cors_allowed_origins", "https://system-gis.k2net.id,https://gis.k2net.id")}
+                value={getValue("cors_allowed_origins", "https://system-gis.kdua.net,https://gis.kdua.net")}
                 onChange={(e) => handleInputChange("cors_allowed_origins", e.target.value)}
-                placeholder="https://system-gis.k2net.id,https://gis.k2net.id"
+                placeholder="https://system-gis.kdua.net,https://gis.kdua.net"
                 className="bg-background/80 border-border text-foreground text-xs w-full max-w-md font-mono focus:border-primary"
               />
             </SettingsFormRow>

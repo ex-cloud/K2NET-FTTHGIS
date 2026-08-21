@@ -58,10 +58,10 @@ async function refreshAccessToken(token: NextAuthJWT) {
     
     logInfo(`Refreshing token for user ${token.email} using issuer: ${issuer}`);
 
-    const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+    const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
     const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
 
-    let keycloakHost = "auth-gis.k2net.id";
+    let keycloakHost = "auth-gis.kdua.net";
     let keycloakProto = "https";
     try {
       const parsedUrl = new URL(serverUrl);
@@ -143,8 +143,10 @@ function getCookieDomain() {
       return undefined;
     }
 
-    // Shared cookie domain for the trusted k2net.id platform.
-    // This covers both `system-gis.k2net.id` and subdomains like `garut.gis.k2net.id`.
+    // Shared cookie domain for the trusted platform domains (kdua.net & legacy k2net.id).
+    if (hostname === "kdua.net" || hostname.endsWith(".kdua.net")) {
+      return ".kdua.net";
+    }
     if (hostname === "k2net.id" || hostname.endsWith(".k2net.id")) {
       return ".k2net.id";
     }
@@ -571,12 +573,12 @@ export function getRealmFromHost(host: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns dynamic NextAuth config object with modified providers
 export function getDynamicAuthConfig(host: string | null): any {
   const realm = getRealmFromHost(host || "");
-  const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+  const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
   const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
   const keycloakInternalUrl = process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
   const dynamicIssuer = `${serverUrl}/realms/${realm}`;
 
-  let keycloakHost = "auth-gis.k2net.id";
+  let keycloakHost = "auth-gis.kdua.net";
   let keycloakProto = "https";
   try {
     const parsedUrl = new URL(serverUrl);

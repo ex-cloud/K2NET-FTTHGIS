@@ -38,7 +38,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: always
-    command: tunnel --no-autoupdate run --token eyJhIjoiMjNhNzQyN2Y1MGVjMTc2MGZlMDEwNDYxNTljYWVhMWQiLCJ0IjoiYzgwOWVlOTUtMWJmYi00ZDQ4LTljNjMtNGNkYWZhNmM5MDRjIiwicyI6IlkyTTJaVEUyT1RRdE9UYzBaaTAwWkdZMExXSTNaVFF0TVdObFptWmpNemt3WVdObCJ9
+    command: tunnel --no-autoupdate run --token eyJhIjoiMjNhNzQyN2Y1MGVjMTc2MGZlMDEwNDYxNTljYWVhMWQiLCJ0IjoiNGM3MGNjZDctNTI2Yy00MGVhLTk0YTctODVhYjJjZmFkNjExIiwicyI6Ik5Ua3pZVEppWm1NdE5XWm1aUzAwTkRrNExXRTNZV1F0TmpJeFlUbGhPRFZrT0RJMSJ9
     depends_on:
       - traefik
     deploy:
@@ -69,8 +69,8 @@ services:
       - "127.0.0.1:8001:8001"
     labels:
       - "traefik.enable=true"
-      # - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`))"
-      - "traefik.http.routers.kong.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
+      # - "traefik.http.routers.kong.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`))"
+      - "traefik.http.routers.kong.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/api/`) || PathPrefix(`/actuator/`) || PathPrefix(`/gateway/`) || PathPrefix(`/webhooks/payment`)) && !PathPrefix(`/api/auth`)"
       - "traefik.http.routers.kong.entrypoints=websecure"
       - "traefik.http.routers.kong.tls=true"
       - "traefik.http.routers.kong.priority=100"
@@ -132,7 +132,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: excloud
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_ADMIN_PASSWORD}" # Sesuai dengan konfigurasi lokal Anda
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME: https://auth-gis.k2net.id
+      KC_HOSTNAME: https://auth-gis.kdua.net
       KC_HTTP_ENABLED: "true"
       KC_HTTP_CHALLENGE_COOKIE_SAME_SITE: "lax"
       KC_DB: postgres
@@ -142,7 +142,7 @@ services:
     command: start-dev --http-port=8081
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.keycloak.rule=Host(`auth-gis.k2net.id`)"
+      - "traefik.http.routers.keycloak.rule=Host(`auth-gis.kdua.net`)"
       - "traefik.http.routers.keycloak.entrypoints=websecure"
       - "traefik.http.routers.keycloak.tls=true"
       - "traefik.http.services.keycloak.loadbalancer.server.port=8081"
@@ -156,7 +156,7 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 1024M
+          memory: 1536M
 
   # Martin Vector Tile Server (Rust PostGIS Map Tile Generator)
   martin:
@@ -167,7 +167,7 @@ services:
       - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.martin.rule=(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
+      - "traefik.http.routers.martin.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && (PathPrefix(`/catalog`) || PathPrefix(`/get_mvt_data/`))"
       - "traefik.http.routers.martin.entrypoints=websecure"
       - "traefik.http.routers.martin.tls=true"
       - "traefik.http.routers.martin.priority=10"
@@ -325,7 +325,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-      - KEYCLOAK_SERVER_URL=https://auth-gis.k2net.id
+      - KEYCLOAK_SERVER_URL=https://auth-gis.kdua.net
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8081
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8081/realms/ftth-realm/protocol/openid-connect/certs
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
@@ -388,9 +388,9 @@ services:
       - NEXT_PUBLIC_APP_URL=${FRONTEND_URL}
       - AUTH_KEYCLOAK_ID=ftth-gis-frontend
       - AUTH_KEYCLOAK_SECRET=${AUTH_KEYCLOAK_SECRET}
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.k2net.id
-      - AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.kdua.net
+      - AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
       - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
       - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
       - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
@@ -406,7 +406,7 @@ services:
       - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)"
+      - "traefik.http.routers.frontend.rule=Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.priority=1"
@@ -442,12 +442,12 @@ services:
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true
       - AUTH_KEYCLOAK_INTERNAL_URL=http://keycloak:8081
-      - NEXT_PUBLIC_APP_URL=https://system-gis.k2net.id
+      - NEXT_PUBLIC_APP_URL=https://system-gis.kdua.net
       - AUTH_KEYCLOAK_ID=ftth-gis-frontend
       - AUTH_KEYCLOAK_SECRET=${AUTH_KEYCLOAK_SECRET}
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.k2net.id
-      - AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.k2net.id/realms/ftth-realm
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.kdua.net
+      - AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
+      - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
       - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
       - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
       - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
@@ -466,7 +466,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Route only the system admin domain
-      - "traefik.http.routers.frontend-admin.rule=Host(`system-gis.k2net.id`)"
+      - "traefik.http.routers.frontend-admin.rule=Host(`system-gis.kdua.net`)"
       - "traefik.http.routers.frontend-admin.entrypoints=websecure"
       - "traefik.http.routers.frontend-admin.tls=true"
       - "traefik.http.routers.frontend-admin.priority=10"

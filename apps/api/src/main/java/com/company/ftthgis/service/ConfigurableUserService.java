@@ -576,7 +576,7 @@ public class ConfigurableUserService {
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(keycloakInternalUrl + "/realms/" + realm + "/protocol/openid-connect/token"))
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("X-Forwarded-Host", "auth-gis.k2net.id")
+                    .header("X-Forwarded-Host", "auth-gis.kdua.net")
                     .header("X-Forwarded-Proto", "https")
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();

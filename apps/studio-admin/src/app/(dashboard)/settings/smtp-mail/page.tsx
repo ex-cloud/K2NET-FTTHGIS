@@ -31,7 +31,7 @@ export default function SettingsSmtpMailPage() {
       smtp_port: getValue("smtp_port", "587"),
       smtp_username: getValue("smtp_username", "ac9057001@smtp-brevo.com"),
       smtp_password: getValue("smtp_password", ""),
-      smtp_from: getValue("smtp_from", "noreply@k2net.id"),
+      smtp_from: getValue("smtp_from", "noreply@kdua.net"),
     };
 
     try {
@@ -187,9 +187,9 @@ export default function SettingsSmtpMailPage() {
             >
               <Input
                 type="email"
-                value={getValue("smtp_from", "noreply@k2net.id")}
+                value={getValue("smtp_from", "noreply@kdua.net")}
                 onChange={(e) => handleInputChange("smtp_from", e.target.value)}
-                placeholder="noreply@k2net.id"
+                placeholder="noreply@kdua.net"
                 className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm font-mono focus:border-primary"
               />
             </SettingsFormRow>

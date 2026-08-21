@@ -8,7 +8,7 @@ consumers:
   # Keycloak JWT consumer — maps to authenticated users
   - username: keycloak-users
     jwt_secrets:
-      - key: "https://auth-gis.k2net.id/realms/ftth-realm"
+      - key: "https://auth-gis.kdua.net/realms/ftth-realm"
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----

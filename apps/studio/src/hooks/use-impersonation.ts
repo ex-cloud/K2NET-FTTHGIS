@@ -21,13 +21,15 @@ export function useImpersonation() {
 
   const exitImpersonation = useCallback(() => {
     // Clear cookies across root domain
+    document.cookie = "k2net_impersonation=; max-age=0; path=/; domain=.kdua.net";
     document.cookie = "k2net_impersonation=; max-age=0; path=/; domain=.k2net.id";
     document.cookie = "k2net_impersonation=; max-age=0; path=/";
+    document.cookie = "k2net_impersonation_org=; max-age=0; path=/; domain=.kdua.net";
     document.cookie = "k2net_impersonation_org=; max-age=0; path=/; domain=.k2net.id";
     document.cookie = "k2net_impersonation_org=; max-age=0; path=/";
     
     // Redirect back to studio-admin overview
-    window.location.assign("https://system-gis.k2net.id/overview");
+    window.location.assign("https://system-gis.kdua.net/overview");
   }, []);
 
   return {

@@ -56,7 +56,7 @@ SORT priority desc
 ---
 
 ### 🔗 Quick Access
-- 🌐 [Buka Project Hub di Web Studio](https://system-gis.k2net.id/tasks/projects/{{.TaskID}})
+- 🌐 [Buka Project Hub di Web Studio](https://system-gis.kdua.net/tasks/projects/{{.TaskID}})
 - 📈 [Buka Project Dashboard](obsidian://open?vault=K2NET_Engineering_Vault&file=Excalidraw/Project%20Dashboard)
 `
 
@@ -97,7 +97,7 @@ tags:
 
 ### 📍 Lokasi Geospasial GIS
 - **Objek GIS**: {{.ReferenceType}} (ID: ` + "`{{.ReferenceID}}`" + `)
-- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.k2net.id/tasks/{{.TaskID}})
+- **Peta Spasial**: [Lihat Objek di Web Map Studio](https://system-gis.kdua.net/tasks/{{.TaskID}})
 {{end}}
 
 ---
@@ -110,7 +110,7 @@ tags:
 ---
 
 ### 🔗 Quick Links
-- 🌐 [Buka Tiket di Web Studio](https://system-gis.k2net.id/tasks/{{.TaskID}})
+- 🌐 [Buka Tiket di Web Studio](https://system-gis.kdua.net/tasks/{{.TaskID}})
 `
 
 type TaskPayload struct {

@@ -4,11 +4,11 @@ import Keycloak from "next-auth/providers/keycloak";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 
-const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+const rawServerUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
 const serverUrl = rawServerUrl.endsWith("/") ? rawServerUrl.slice(0, -1) : rawServerUrl;
 const keycloakInternalUrl = process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
 
-let keycloakHost = "auth-gis.k2net.id";
+let keycloakHost = "auth-gis.kdua.net";
 let keycloakProto = "https";
 try {
   const parsedUrl = new URL(serverUrl);

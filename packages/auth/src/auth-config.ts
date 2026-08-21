@@ -34,14 +34,14 @@ const MAX_SESSION_LIFETIME_SECONDS = 3 * 24 * 60 * 60;
 
 function buildKeycloakProvider(issuer: string) {
   const rawServerUrl =
-    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
   const serverUrl = rawServerUrl.endsWith("/")
     ? rawServerUrl.slice(0, -1)
     : rawServerUrl;
   const keycloakInternalUrl =
     process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
 
-  let keycloakHost = "auth-gis.k2net.id";
+  let keycloakHost = "auth-gis.kdua.net";
   let keycloakProto = "https";
   try {
     const parsedUrl = new URL(serverUrl);
@@ -106,14 +106,14 @@ function buildKeycloakProvider(issuer: string) {
 
 function buildCredentialsProvider() {
   const rawServerUrl =
-    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
   const serverUrl = rawServerUrl.endsWith("/")
     ? rawServerUrl.slice(0, -1)
     : rawServerUrl;
   const keycloakInternalUrl =
     process.env.AUTH_KEYCLOAK_INTERNAL_URL || "http://localhost:8081";
 
-  let keycloakHost = "auth-gis.k2net.id";
+  let keycloakHost = "auth-gis.kdua.net";
   let keycloakProto = "https";
   try {
     const parsedUrl = new URL(serverUrl);
@@ -641,7 +641,7 @@ export const baseAuthConfig: NextAuthConfig = {
 export function getDynamicAuthConfig(host: string | null): any {
   const realm = getRealmFromHost(host || "");
   const rawServerUrl =
-    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+    process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
   const serverUrl = rawServerUrl.endsWith("/")
     ? rawServerUrl.slice(0, -1)
     : rawServerUrl;

@@ -11,7 +11,7 @@ interface TenantDomainErrorProps {
 
 export function TenantDomainError({
   subdomain,
-  supportEmail = "support@k2net.id",
+  supportEmail = "support@kdua.net",
 }: TenantDomainErrorProps) {
   const handleSupport = () => {
     if (typeof window !== "undefined") {
@@ -46,7 +46,7 @@ export function TenantDomainError({
           <Button 
             variant="outline" 
             className="w-full" 
-            onClick={() => { if (typeof window !== "undefined") window.location.href = "https://k2net.id"; }}
+            onClick={() => { if (typeof window !== "undefined") window.location.href = "https://kdua.net"; }}
           >
             Kembali Ke Beranda Utama
           </Button>

@@ -11,7 +11,7 @@ Dokumen ini adalah pedoman dan standar baku (*Standard Operating Procedure*) unt
    - Perubahan di Obsidian Vault diselaraskan langsung dengan folder server ini via Nextcloud WebDAV.
 
 2. **Isolasi Multi-Tenant Mutlak (Zero Data Leakage)**:
-   - **Dokumentasi Platform / Global**: Menggunakan `tenant_id = 00000000-0000-0000-0000-000000000000` (hanya dapat diakses oleh Super Admin / DevOps di Portal Utama `system-gis.k2net.id`).
+   - **Dokumentasi Platform / Global**: Menggunakan `tenant_id = 00000000-0000-0000-0000-000000000000` (hanya dapat diakses oleh Super Admin / DevOps di Portal Utama `system-gis.kdua.net`).
    - **Dokumentasi Khusus Mitra ISP**: Wajib menggunakan `tenant_id` spesifik tenant tersebut agar data tidak bocor ke tenant lain.
 
 3. **Konsistensi Vektor & Dimensi**:

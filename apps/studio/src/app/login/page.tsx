@@ -104,7 +104,7 @@ export default async function LoginPage() {
                   Organisasi Tidak Ditemukan
                 </h1>
                 <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
-                  Subdomain <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-red-400 font-mono font-semibold">{detectedSubdomain}-gis.k2net.id</code> tidak terdaftar atau telah dinonaktifkan di platform kami.
+                  Subdomain <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-red-400 font-mono font-semibold">{detectedSubdomain}-gis.kdua.net</code> tidak terdaftar atau telah dinonaktifkan di platform kami.
                 </p>
               </div>
 

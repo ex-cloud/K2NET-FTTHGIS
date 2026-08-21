@@ -10,7 +10,19 @@ export function parseDomain(hostname: string) {
   // Strip port if present (e.g., system.lvh.me:3000 -> system.lvh.me)
   const hostOnly = hostname.split(":")[0];
 
-  if (hostOnly.endsWith("gis-staging.k2net.id")) {
+  if (hostOnly.endsWith("gis-staging.kdua.net")) {
+    baseDomain = "gis-staging.kdua.net";
+    isHyphen = true;
+    if (hostOnly !== baseDomain) {
+      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+    }
+  } else if (hostOnly.endsWith("gis.kdua.net")) {
+    baseDomain = "gis.kdua.net";
+    isHyphen = true;
+    if (hostOnly !== baseDomain) {
+      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
+    }
+  } else if (hostOnly.endsWith("gis-staging.k2net.id")) {
     baseDomain = "gis-staging.k2net.id";
     isHyphen = true;
     if (hostOnly !== baseDomain) {

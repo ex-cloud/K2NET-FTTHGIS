@@ -135,7 +135,7 @@ func (s *GeocodingService) fetchFromOSM(ctx context.Context, address string) (*G
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "SaaSFTTHGISApp/1.0 (contact@k2net.id)")
+	req.Header.Set("User-Agent", "SaaSFTTHGISApp/1.0 (contact@kdua.net)")
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {

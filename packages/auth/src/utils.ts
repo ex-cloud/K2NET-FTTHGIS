@@ -35,7 +35,10 @@ export function getCookieDomain(): string | undefined {
     ) {
       return undefined;
     }
-    // Shared cookie domain for system-gis.k2net.id and *.gis.k2net.id
+    // Shared cookie domain for system-gis.kdua.net, *.gis.kdua.net, and legacy k2net.id
+    if (hostname === "kdua.net" || hostname.endsWith(".kdua.net")) {
+      return ".kdua.net";
+    }
     if (hostname === "k2net.id" || hostname.endsWith(".k2net.id")) {
       return ".k2net.id";
     }
@@ -123,12 +126,12 @@ export async function refreshAccessToken(token: {
     logInfo(`Refreshing token for user ${token.email} using issuer: ${issuer}`);
 
     const rawServerUrl =
-      process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+      process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
     const serverUrl = rawServerUrl.endsWith("/")
       ? rawServerUrl.slice(0, -1)
       : rawServerUrl;
 
-    let keycloakHost = "auth-gis.k2net.id";
+    let keycloakHost = "auth-gis.kdua.net";
     let keycloakProto = "https";
     try {
       const parsedUrl = new URL(serverUrl);

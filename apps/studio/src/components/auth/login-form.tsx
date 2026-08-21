@@ -55,7 +55,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
     defaultValue: "",
   });
   
-  const baseUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.k2net.id";
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL || "https://auth-gis.kdua.net";
   const currentRealm = orgValue && orgValue !== "system" ? orgValue : "ftth-realm";
   
   const resetPasswordUrl = `${baseUrl}/realms/${currentRealm}/protocol/openid-connect/auth?client_id=ftth-gis-frontend&response_type=code&scope=openid&kc_action=PASSWORD_RESET`;
@@ -148,7 +148,7 @@ function LoginFormInner({ isAdmin = false, prefilledOrg }: { isAdmin?: boolean, 
 
   // RP-Initiated OIDC Logout to cleanly clear Keycloak session cookies
   const keycloakLogoutUrl = `${baseUrl}/realms/${currentRealm}/protocol/openid-connect/logout?client_id=ftth-gis-frontend&post_logout_redirect_uri=${encodeURIComponent(
-    (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "https://system-gis.k2net.id") + "/login"
+    (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || "https://system-gis.kdua.net") + "/login"
   )}`;
 
   // Blocked device / suspension card UI

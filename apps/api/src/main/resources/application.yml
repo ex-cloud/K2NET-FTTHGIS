@@ -52,12 +52,12 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://auth-gis.k2net.id/realms/ftth-realm
+          issuer-uri: https://auth-gis.kdua.net/realms/ftth-realm
           jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8081/realms/ftth-realm/protocol/openid-connect/certs}
 
 # Keycloak Admin Configuration
 keycloak:
-  server-url: https://auth-gis.k2net.id
+  server-url: https://auth-gis.kdua.net
   internal-url: ${KEYCLOAK_INTERNAL_URL:http://localhost:8081}
   realm: master
   # Service Account for Backend to manage everything (from master realm)
@@ -106,9 +106,9 @@ app:
       app-private-key: ${GITHUB_APP_PRIVATE_KEY:}
       app-private-key-path: ${GITHUB_APP_PRIVATE_KEY_PATH:}
       webhook-secret: ${GITHUB_WEBHOOK_SECRET:}
-      webhook-url: ${GITHUB_WEBHOOK_URL:https://system-gis.k2net.id/api/github/webhook}
-      callback-url: ${GITHUB_APP_CALLBACK_URL:https://system-gis.k2net.id/auth/github/callback}
-      homepage-url: ${GITHUB_APP_HOMEPAGE_URL:https://system-gis.k2net.id}
+      webhook-url: ${GITHUB_WEBHOOK_URL:https://system-gis.kdua.net/api/github/webhook}
+      callback-url: ${GITHUB_APP_CALLBACK_URL:https://system-gis.kdua.net/auth/github/callback}
+      homepage-url: ${GITHUB_APP_HOMEPAGE_URL:https://system-gis.kdua.net}
       organization: ${GITHUB_ORGANIZATION:ex-cloud}
       frontend-repo: ${DEVOPS_GITHUB_FRONTEND_REPO:https://github.com/ex-cloud/front_springboot_ftth_gis}
       backend-repo: ${DEVOPS_GITHUB_BACKEND_REPO:https://github.com/ex-cloud/back_springboot_ftth_gis}

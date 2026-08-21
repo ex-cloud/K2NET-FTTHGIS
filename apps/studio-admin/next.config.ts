@@ -15,8 +15,8 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "system.lvh.me",
     "localhost",
-    "system.gis.k2net.id",
-    "system-gis.k2net.id",
+    "system.gis.kdua.net",
+    "system-gis.kdua.net",
   ],
   async rewrites() {
     return [

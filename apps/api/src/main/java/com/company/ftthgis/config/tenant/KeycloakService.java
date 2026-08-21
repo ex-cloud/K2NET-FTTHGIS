@@ -78,7 +78,7 @@ public class KeycloakService {
                         String smtpPort = settingsService.getSettingValue("smtp_port", "587");
                         String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
                         String smtpPass = settingsService.getSettingValue("smtp_password", "");
-                        String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@k2net.id");
+                        String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@kdua.net");
 
                         smtpServer.put("host", smtpHost);
                         smtpServer.put("port", smtpPort);
@@ -209,7 +209,7 @@ public class KeycloakService {
                 String smtpPort = settingsService.getSettingValue("smtp_port", "587");
                 String smtpUser = settingsService.getSettingValue("smtp_username", "ac9057001@smtp-brevo.com");
                 String smtpPass = settingsService.getSettingValue("smtp_password", "");
-                String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@k2net.id");
+                String smtpFrom = settingsService.getSettingValue("smtp_from", "noreply@kdua.net");
 
                 smtpServer.put("host", smtpHost);
                 smtpServer.put("port", smtpPort);
@@ -338,7 +338,7 @@ public class KeycloakService {
             redirects.add(protocol + host + "/*");
             
             if ("ftth-realm".equals(realmName) || "master".equals(realmName)) {
-                // For system realm, the url is system-gis.k2net.id or system.localhost:3000
+                // For system realm, the url is system-gis.kdua.net or system.localhost:3000
                 tenantUrl = protocol + (isHyphen ? "system-" : "system.") + rootHost;
                 redirects.add(tenantUrl + "/*");
             } else {

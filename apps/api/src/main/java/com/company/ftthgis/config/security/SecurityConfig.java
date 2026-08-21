@@ -100,8 +100,8 @@ public class SecurityConfig {
             JwtAuthenticationConverter jwtAuthenticationConverter) {
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
             String cleanIssuer = issuer;
-            if (issuer.startsWith("http://auth-gis.k2net.id:8081/realms/")) {
-                cleanIssuer = issuer.replace("http://auth-gis.k2net.id:8081", keycloakServerUrl);
+            if (issuer.startsWith("http://auth-gis.kdua.net:8081/realms/")) {
+                cleanIssuer = issuer.replace("http://auth-gis.kdua.net:8081", keycloakServerUrl);
             } else if (issuer.startsWith("http://localhost:8081/realms/")) {
                 cleanIssuer = issuer.replace("http://localhost:8081", keycloakServerUrl);
             }

@@ -25,7 +25,7 @@ Kong mengelola CORS, rate-limiting global, dan validasi token JWT.
 ## 🔑 3. Keycloak Identity Access Management (IAM)
 
 Keycloak mengelola otentikasi pengguna global dan tenant.
-* **Endpoint Dynamic**: NextAuth Studio menggunakan dynamic issuer matching subdomain tenant untuk merujuk ke Realm Keycloak yang sesuai (contoh: `system-gis.k2net.id` -> `ftth-realm`, `garut-gis.k2net.id` -> `garut` realm).
+* **Endpoint Dynamic**: NextAuth Studio menggunakan dynamic issuer matching subdomain tenant untuk merujuk ke Realm Keycloak yang sesuai (contoh: `system-gis.kdua.net` -> `ftth-realm`, `garut-gis.kdua.net` -> `garut` realm).
 * **Bypass Cloudflare**: Komunikasi server-to-server (misal refresh token dari Next.js ke Keycloak) wajib menggunakan URL internal Keycloak (`http://ftth-keycloak:8080` atau `http://localhost:8081`) untuk memotong proteksi Cloudflare WAF/403.
 
 ---

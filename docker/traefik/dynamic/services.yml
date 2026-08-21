@@ -1,7 +1,7 @@
 http:
   routers:
     poller-router:
-      rule: "(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && PathPrefix(`/poller/`)"
+      rule: "(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && PathPrefix(`/poller/`)"
       entrypoints:
         - websecure
       tls: {}
@@ -11,7 +11,7 @@ http:
       priority: 15
 
     sms-webhook-router:
-      rule: "(Host(`gis.k2net.id`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.k2net\\.id$`) || HostRegexp(`^[a-z0-9-]+-gis\\.k2net\\.id$`)) && PathPrefix(`/webhooks/sms`)"
+      rule: "(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && PathPrefix(`/webhooks/sms`)"
       entrypoints:
         - websecure
       tls: {}
