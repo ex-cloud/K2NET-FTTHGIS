@@ -58,7 +58,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["X-Request-ID"],
 )
@@ -82,6 +82,7 @@ from app.api.routes.documents import router as documents_router
 from app.api.routes.providers import router as providers_router
 from app.api.routes.graph import router as graph_router
 from app.api.routes.config import router as config_router
+from app.api.routes.prompts import router as prompts_router
 
 app.include_router(health_router)
 app.include_router(chat_router)
@@ -90,6 +91,7 @@ app.include_router(documents_router)
 app.include_router(providers_router)
 app.include_router(graph_router)
 app.include_router(config_router)
+app.include_router(prompts_router)
 
 
 # ── Entry Point ───────────────────────────────────────────────────────────────

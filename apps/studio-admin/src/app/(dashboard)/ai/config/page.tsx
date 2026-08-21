@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Cpu, Database, RefreshCw } from "lucide-react";
+import { Cpu, Database, RefreshCw, Sparkles } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
@@ -92,6 +92,17 @@ export default function AiConfigPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ActionTooltip label="Saran Prompt & Trending">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/ai/prompts")}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Saran Prompt & Trending
+              </Button>
+            </ActionTooltip>
             <ActionTooltip label="Daftar Pengetahuan" shortcut="Esc">
               <Button
                 variant="outline"

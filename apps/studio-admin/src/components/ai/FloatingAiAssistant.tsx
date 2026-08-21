@@ -48,8 +48,17 @@ import {
   Minimize2,
   PlusCircle,
   GripVertical,
+  Flame,
+  Layers,
+  HelpCircle,
+  Cpu,
 } from "lucide-react";
-import { fetchActiveChatModels } from "@/lib/actions/gateways";
+import { 
+  fetchActiveChatModels, 
+  fetchAiPromptIdeas, 
+  incrementAiPromptUsage, 
+  SuggestedPromptItem 
+} from "@/lib/actions/gateways";
 import { cn } from "@/lib/utils";
 import {
   useAiChatStream,
@@ -65,49 +74,106 @@ const MAX_DRAWER_WIDTH = 1200;
 const WIDE_DRAWER_WIDTH = 860;
 const STORAGE_WIDTH_KEY = "k2net_ai_drawer_width";
 
-// ─── Supabase-Style Ideas & Quick Action Cards ─────────────────────────────────
-const SUPABASE_IDEAS = [
+// ─── Dynamic Icon Map for Suggested Ideas ──────────────────────────────────
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Zap,
+  MapPin,
+  Activity,
+  Database,
+  GitPullRequest,
+  ShieldCheck,
+  Flame,
+  Sparkles,
+  Cpu,
+  Layers,
+  HelpCircle,
+};
+
+// ─── Fallback Initial Ideas (while loading from server) ──────────────────────
+const FALLBACK_IDEAS: SuggestedPromptItem[] = [
   {
-    icon: Zap,
+    id: "fallback-1",
+    icon: "Zap",
     title: "Diagnosa OLT & Redaman Optik",
-    desc: "Troubleshooting OLT ZTE C320/Huawei, status LOS & redaman nominal",
+    description: "Troubleshooting OLT ZTE C320/Huawei, status LOS & redaman nominal",
     prompt:
       "Bagaimana cara troubleshooting OLT ZTE C320 jika port PON statusnya LOS dan berapa standar redaman optik nominalnya?",
+    category: "OLT_TROUBLESHOOTING",
+    target_role: "ALL",
+    is_pinned: true,
+    is_active: true,
+    is_trending: false,
+    usage_count: 42,
   },
   {
-    icon: MapPin,
+    id: "fallback-2",
+    icon: "MapPin",
     title: "Analisis Jaringan Spasial GIS & ODP",
-    desc: "Standar koordinat PostGIS EPSG:4326, kapasitas splitter 1:8 / 1:16",
+    description: "Standar koordinat PostGIS EPSG:4326, kapasitas splitter 1:8 / 1:16",
     prompt:
       "Jelaskan arsitektur database spasial PostGIS SRID 4326 dan standar penempatan ODP pada jaringan distribusi FTTH.",
+    category: "GIS_SPATIAL",
+    target_role: "ALL",
+    is_pinned: true,
+    is_active: true,
+    is_trending: false,
+    usage_count: 38,
   },
   {
-    icon: Activity,
+    id: "fallback-3",
+    icon: "Activity",
     title: "Health Check 12 Microservices",
-    desc: "Verifikasi status poller, kong, postgres, keycloak, minio, audit",
+    description: "Verifikasi status poller, kong, postgres, keycloak, minio, audit",
     prompt:
       "Jelaskan port map dan arsitektur 12 microservices gateway internal K2NET.",
+    category: "DEVOPS_INFRA",
+    target_role: "SUPER_ADMIN",
+    is_pinned: true,
+    is_active: true,
+    is_trending: false,
+    usage_count: 29,
   },
   {
-    icon: Database,
+    id: "fallback-4",
+    icon: "Database",
     title: "Panduan Backup & Disaster Recovery",
-    desc: "SOP 3-Layer backup lokal, MinIO S3, dan Nextcloud offsite cloud",
+    description: "SOP 3-Layer backup lokal, MinIO S3, dan Nextcloud offsite cloud",
     prompt:
       "Jelaskan strategi 3-layer disaster recovery backup database dan file di K2NET.",
+    category: "BACKUP_RECOVERY",
+    target_role: "SUPER_ADMIN",
+    is_pinned: false,
+    is_active: true,
+    is_trending: false,
+    usage_count: 21,
   },
   {
-    icon: GitPullRequest,
+    id: "fallback-5",
+    icon: "GitPullRequest",
     title: "Buat Linear Project & DevOps Task",
-    desc: "Integrasi sistem tugas, alur tiket B2B, dan sinkronisasi Obsidian",
+    description: "Integrasi sistem tugas, alur tiket B2B, dan sinkronisasi Obsidian",
     prompt:
       "Jelaskan cara membuat tiket atau proyek DevOps baru yang otomatis tersinkronisasi ke Obsidian Vault.",
+    category: "DEVOPS_INFRA",
+    target_role: "ALL",
+    is_pinned: false,
+    is_active: true,
+    is_trending: false,
+    usage_count: 18,
   },
   {
-    icon: ShieldCheck,
+    id: "fallback-6",
+    icon: "ShieldCheck",
     title: "Keamanan Multi-Tenant & RBAC",
-    desc: "One Realm per Org Keycloak, Superadmin God Mode, dan X-Tenant-ID",
+    description: "One Realm per Org Keycloak, Superadmin God Mode, dan X-Tenant-ID",
     prompt:
       "Jelaskan arsitektur isolasi multi-tenant dan sistem Hybrid RBAC di K2NET FTTH GIS.",
+    category: "RBAC_SECURITY",
+    target_role: "SUPER_ADMIN",
+    is_pinned: false,
+    is_active: true,
+    is_trending: false,
+    usage_count: 15,
   },
 ];
 
@@ -327,6 +393,7 @@ export function FloatingAiAssistant() {
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [availableModels, setAvailableModels] = useState<Array<{ value: string; label: string; badge: string }>>(MODELS);
+  const [promptIdeas, setPromptIdeas] = useState<SuggestedPromptItem[]>(FALLBACK_IDEAS);
   const [drawerWidth, setDrawerWidth] = useState<number>(DEFAULT_DRAWER_WIDTH);
   const [isWide, setIsWide] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -343,13 +410,17 @@ export function FloatingAiAssistant() {
     clearMessages,
   } = useAiChatStream({ model: selectedModel });
 
-  // ── Fetch smart-filtered active chat models on mount ─────────────────────────
+  // ── Fetch dynamic models & prompt ideas on mount ────────────────────────────
   useEffect(() => {
-    async function loadDynamicModels() {
+    async function loadData() {
       try {
-        const activeRes = await fetchActiveChatModels();
-        if (activeRes && activeRes.models && activeRes.models.length > 0) {
-          const smartList = activeRes.models.map((m) => ({
+        const [activeRes, ideasRes] = await Promise.allSettled([
+          fetchActiveChatModels(),
+          fetchAiPromptIdeas(),
+        ]);
+
+        if (activeRes.status === "fulfilled" && activeRes.value?.models && activeRes.value.models.length > 0) {
+          const smartList = activeRes.value.models.map((m) => ({
             value: m.id.replace("models/", ""),
             label: m.name,
             badge: m.badge || (m.category.includes("Gemini") ? "Google" : m.category.includes("OpenAI") ? "OpenAI" : m.category.includes("DeepSeek") ? "DeepSeek" : "Local"),
@@ -357,16 +428,28 @@ export function FloatingAiAssistant() {
           setAvailableModels(smartList);
         }
 
-        if (activeRes && activeRes.default_model) {
-          setSelectedModel(activeRes.default_model);
+        if (activeRes.status === "fulfilled" && activeRes.value?.default_model) {
+          setSelectedModel(activeRes.value.default_model);
+        }
+
+        if (ideasRes.status === "fulfilled" && ideasRes.value && ideasRes.value.length > 0) {
+          setPromptIdeas(ideasRes.value);
         }
       } catch (err) {
-        console.debug("Smart filtering model load fallback:", err);
+        console.debug("Dynamic assistant init fallback:", err);
       }
     }
 
-    loadDynamicModels();
+    loadData();
   }, []);
+
+  const handleSelectIdea = (idea: SuggestedPromptItem) => {
+    setInput(idea.prompt);
+    if (idea.id && !idea.id.startsWith("fallback-")) {
+      incrementAiPromptUsage(idea.id);
+    }
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
 
   // ── Load saved width on mount ─────────────────────────────────────────────
   useEffect(() => {
@@ -642,37 +725,50 @@ export function FloatingAiAssistant() {
 
                   {/* Ideas Cards (Supabase Style) */}
                   <div className="space-y-2">
-                    <div className="text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase">
-                      IDEAS & QUICK ACTIONS
+                    <div className="flex items-center justify-between text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase">
+                      <span>IDEAS & QUICK ACTIONS</span>
+                      <span>{promptIdeas.length} Rekomendasi</span>
                     </div>
-                    {SUPABASE_IDEAS.map((idea, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setInput(idea.prompt);
-                          setTimeout(() => inputRef.current?.focus(), 50);
-                        }}
-                        className={cn(
-                          "w-full flex items-start gap-3 p-3 rounded-xl text-left",
-                          "bg-card hover:bg-muted/60 border border-border hover:border-primary/40",
-                          "transition-all duration-150 group cursor-pointer shadow-xs"
-                        )}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
-                          <idea.icon className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {idea.title}
+                    {promptIdeas.map((idea) => {
+                      const IconComponent = ICON_MAP[idea.icon] || Zap;
+                      return (
+                        <button
+                          key={idea.id}
+                          type="button"
+                          onClick={() => handleSelectIdea(idea)}
+                          className={cn(
+                            "w-full flex items-start gap-3 p-3 rounded-xl text-left",
+                            "bg-card hover:bg-muted/60 border border-border hover:border-primary/40",
+                            "transition-all duration-150 group cursor-pointer shadow-xs"
+                          )}
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
+                            <IconComponent className="w-3.5 h-3.5" />
                           </div>
-                          <div className="text-[11px] text-muted-foreground truncate mt-0.5">
-                            {idea.desc}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {idea.title}
+                              </span>
+                              {idea.is_pinned && (
+                                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 text-amber-500 border-amber-500/30 bg-amber-500/10">
+                                  Pinned
+                                </Badge>
+                              )}
+                              {idea.is_trending && (
+                                <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0 text-primary border-primary/30 bg-primary/10">
+                                  Trending
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                              {idea.description || idea.prompt}
+                            </div>
                           </div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
-                      </button>
-                    ))}
+                          <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (

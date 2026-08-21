@@ -162,6 +162,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "RAG Simulator", url: "/ai/simulator", icon: "FlaskConical" },
           { title: "Template & Panduan SOP", url: "/ai/templates", icon: "FileCode" },
+          { title: "Saran Prompt & Trending", url: "/ai/prompts", icon: "Sparkles" },
         ],
       },
       {

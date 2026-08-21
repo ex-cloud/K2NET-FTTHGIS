@@ -359,3 +359,63 @@ class ServerFileIndexSingleRequest(BaseModel):
     scope: Optional[str] = None
 
 
+# ─── Suggested Prompts & Trending Analytics ──────────────────────────────────
+
+class SuggestedPromptItem(BaseModel):
+    id: str
+    tenant_id: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    prompt: str
+    icon: str = "Zap"
+    category: str = "GENERAL"
+    target_role: str = "ALL"
+    is_pinned: bool = False
+    is_active: bool = True
+    is_trending: bool = False
+    usage_count: int = 0
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+class SuggestedPromptCreateRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    prompt: str
+    icon: str = "Zap"
+    category: str = "GENERAL"
+    target_role: str = "ALL"
+    is_pinned: bool = False
+    is_active: bool = True
+
+
+class SuggestedPromptUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    prompt: Optional[str] = None
+    icon: Optional[str] = None
+    category: Optional[str] = None
+    target_role: Optional[str] = None
+    is_pinned: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
+class SuggestedPromptListResponse(BaseModel):
+    total: int
+    prompts: list[SuggestedPromptItem]
+
+
+class TrendingTopicItem(BaseModel):
+    topic: str
+    count: int
+    category: str
+    sample_query: str
+    is_already_prompt: bool = False
+
+
+class TrendingTopicsResponse(BaseModel):
+    total_queries_analyzed: int
+    trending: list[TrendingTopicItem]
+
+
+

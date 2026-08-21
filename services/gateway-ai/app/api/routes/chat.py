@@ -232,8 +232,27 @@ async def _save_messages(
                     "latency": latency_ms,
                 },
             )
+
+            # Log to ai_query_analytics for Trending Topics aggregation
+            normalized = user_message.strip()[:100]
+            analytics_sql = text("""
+                INSERT INTO ai_query_analytics 
+                    (id, tenant_id, query_text, normalized_topic, response_time_ms, created_at)
+                VALUES 
+                    (:aid, :tenant_id, :query, :topic, :resp_time, NOW())
+            """)
+            await session.execute(
+                analytics_sql,
+                {
+                    "aid": str(_uuid.uuid4()),
+                    "tenant_id": str(tenant_id) if tenant_id else None,
+                    "query": user_message,
+                    "topic": normalized,
+                    "resp_time": latency_ms,
+                }
+            )
     except Exception as e:
-        logger.warning(f"Failed to save chat messages to DB (non-critical): {e}")
+        logger.warning(f"Failed to save chat messages or analytics to DB (non-critical): {e}")
 
 
 # ─── Domain Knowledge Context Guidelines ───────────────────────────────────────
