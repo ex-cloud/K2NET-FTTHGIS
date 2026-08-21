@@ -438,222 +438,224 @@ export function AiKnowledgeTable({
         onOpenUnindexedModal={() => setIsUnindexedModalOpen(true)}
       />
 
-      {/* ── Query-Performance Style Unified Toolbar with Filters ───────────── */}
-      <AiKnowledgeToolbar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onSearchSubmit={onSearchSubmit}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        selectedScope={selectedScope}
-        setSelectedScope={setSelectedScope}
-        selectedStatus={selectedStatus}
-        setSelectedStatus={setSelectedStatus}
-        docsLoading={docsLoading}
-        isSyncing={isSyncing}
-        onSyncServerDocs={onSyncServerDocs}
-        onRefresh={onRefresh}
-        onGoToUpload={onGoToUpload}
-      />
-
-      {/* ── Enterprise Card & Table Container ─────────────────────────────── */}
-      <div
-        className="relative border border-border/80 bg-card/60 backdrop-blur-md rounded-xl shadow-xs overflow-hidden"
-        style={{ overflow: "clip" }}
-      >
-        {/* Shimmer Running Beam on Top Table Border (Query-Performance Pattern) */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden z-30 pointer-events-none">
-          <div
-            className={`h-full w-1/4 bg-gradient-to-r from-transparent via-primary to-transparent transition-opacity duration-300 will-change-transform ${
-              docsLoading || loadingMore || isSyncing ? "animate-shimmer-line opacity-100" : "opacity-0"
-            }`}
+      {/* ── Enterprise Card & Table Container (Query-Performance Unified Architecture) ── */}
+      <div className="border border-border bg-card/20 rounded-xl overflow-hidden flex flex-col shadow-xs w-full">
+        {/* 1. Integrated Toolbar */}
+        <div className="p-3 px-4 border-b border-border bg-card/40">
+          <AiKnowledgeToolbar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSearchSubmit={onSearchSubmit}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            selectedScope={selectedScope}
+            setSelectedScope={setSelectedScope}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            docsLoading={docsLoading}
+            isSyncing={isSyncing}
+            onSyncServerDocs={onSyncServerDocs}
+            onRefresh={onRefresh}
+            onGoToUpload={onGoToUpload}
           />
         </div>
 
-        <div ref={scrollContainerRef} className="max-h-[600px] overflow-auto custom-scrollbar relative">
-          <div className="min-w-[1100px] flex flex-col">
-            
-            {/* Sticky Header with Sorting Menus */}
-            <div className="sticky top-0 z-20 bg-card grid grid-cols-[minmax(280px,1fr)_160px_160px_100px_120px_140px_140px_90px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-foreground/75 dark:text-muted-foreground shadow-xs">
-              {table.getFlatHeaders().map((header) => {
-                if (header.isPlaceholder) return <div key={header.id} />;
+        {/* 2. Shimmer Running Beam on Top Table Border */}
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <div className="absolute top-0 left-0 right-0 h-[1px] overflow-hidden z-30 pointer-events-none">
+            <div
+              className={`h-full w-1/4 bg-gradient-to-r from-transparent via-primary/80 to-transparent transition-opacity duration-300 will-change-transform ${
+                docsLoading || loadingMore || isSyncing ? "animate-shimmer-line opacity-100" : "opacity-0"
+              }`}
+            />
+          </div>
 
-                const canSort = header.column.getCanSort();
-                const isSorted = header.column.getIsSorted();
-                const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(header.column.id);
+          {/* 3. Scrollable Table Container */}
+          <div ref={scrollContainerRef} className="max-h-[620px] overflow-auto custom-scrollbar-thin">
+            <div className="min-w-[1240px] flex flex-col">
+              
+              {/* Sticky Header with Sorting Menus */}
+              <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-foreground/75 dark:text-muted-foreground shadow-xs">
+                {table.getFlatHeaders().map((header) => {
+                  if (header.isPlaceholder) return <div key={header.id} />;
 
-                return (
-                  <div
-                    key={header.id}
-                    className={`min-w-0 px-4 py-2.5 flex items-center ${
-                      isRightAligned ? "justify-end text-right" : "justify-start text-left"
-                    }`}
-                  >
-                    {canSort && header.column.id !== "actions" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
-                            <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                            <span className="flex items-center">
-                              {isSorted === "asc" ? (
-                                <ArrowUp className="h-3 w-3 text-primary shrink-0" />
-                              ) : isSorted === "desc" ? (
-                                <ArrowDown className="h-3 w-3 text-primary shrink-0" />
-                              ) : (
-                                <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
-                              )}
-                            </span>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={isRightAligned ? "end" : "start"} className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
-                          <DropdownMenuItem 
-                            onClick={() => header.column.toggleSorting(false)}
-                            className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
-                          >
-                            <ArrowUp className="h-3.5 w-3.5 text-foreground/75 dark:text-muted-foreground" />
-                            <span>Urutkan Naik (Ascending)</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => header.column.toggleSorting(true)}
-                            className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
-                          >
-                            <ArrowDown className="h-3.5 w-3.5 text-foreground/75 dark:text-muted-foreground" />
-                            <span>Urutkan Turun (Descending)</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  const canSort = header.column.getCanSort();
+                  const isSorted = header.column.getIsSorted();
+                  const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(header.column.id);
 
-            {/* Table Rows Body */}
-            <div className="divide-y divide-border/40">
-              {docsLoading && documents.length === 0 ? (
-                /* Animated Skeleton Loading Rows */
-                Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={`skeleton-${i}`}
-                    className="grid grid-cols-[minmax(280px,1fr)_160px_160px_100px_120px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
-                  >
-                    <div className="min-w-0 px-4 py-3 flex items-center gap-2">
-                      <div className="h-4 w-4 bg-muted/60 rounded-md" />
-                      <div className="space-y-1.5 flex-1">
-                        <div className="h-3.5 bg-muted/70 rounded w-3/4" />
-                        <div className="h-2.5 bg-muted/50 rounded w-1/2" />
+                  return (
+                    <div
+                      key={header.id}
+                      className={`min-w-0 px-4 py-2.5 flex items-center ${
+                        isRightAligned ? "justify-end text-right" : "justify-start text-left"
+                      }`}
+                    >
+                      {canSort && header.column.id !== "actions" ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
+                              <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                              <span className="flex items-center">
+                                {isSorted === "asc" ? (
+                                  <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                                ) : isSorted === "desc" ? (
+                                  <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                                ) : (
+                                  <ChevronDown className="h-3 w-3 opacity-40 shrink-0 hover:opacity-100" />
+                                )}
+                              </span>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRightAligned ? "end" : "start"} className="bg-popover border border-border shadow-xl rounded-lg p-1 min-w-32 z-50">
+                            <DropdownMenuItem 
+                              onClick={() => header.column.toggleSorting(false)}
+                              className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5 text-foreground/75 dark:text-muted-foreground" />
+                              <span>Urutkan Naik (Ascending)</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => header.column.toggleSorting(true)}
+                              className="flex items-center gap-2 text-xs py-1.5 px-2 rounded-sm cursor-pointer hover:bg-muted/50 text-foreground"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5 text-foreground/75 dark:text-muted-foreground" />
+                              <span>Urutkan Turun (Descending)</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Table Rows Body */}
+              <div className="divide-y divide-border/40">
+                {docsLoading && documents.length === 0 ? (
+                  /* Animated Skeleton Loading Rows */
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={`skeleton-${i}`}
+                      className="grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+                    >
+                      <div className="min-w-0 px-4 py-3 flex items-center gap-2">
+                        <div className="h-4 w-4 bg-muted/60 rounded-md" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3.5 bg-muted/70 rounded w-3/4" />
+                          <div className="h-2.5 bg-muted/50 rounded w-1/2" />
+                        </div>
+                      </div>
+                      <div className="px-4 py-3 flex items-center">
+                        <div className="h-4 bg-muted/60 rounded w-20" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center">
+                        <div className="h-4 bg-muted/60 rounded w-20" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center justify-end">
+                        <div className="h-4 bg-muted/60 rounded w-12" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center justify-end">
+                        <div className="h-4 bg-muted/60 rounded w-16" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center">
+                        <div className="h-4 bg-muted/60 rounded w-16" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center">
+                        <div className="h-4 bg-muted/60 rounded w-24" />
+                      </div>
+                      <div className="px-4 py-3 flex items-center justify-end">
+                        <div className="h-4 bg-muted/60 rounded w-12" />
                       </div>
                     </div>
-                    <div className="px-4 py-3 flex items-center">
-                      <div className="h-4 bg-muted/60 rounded w-20" />
+                  ))
+                ) : table.getRowModel().rows.length === 0 ? (
+                  /* Empty State */
+                  <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center text-foreground/75 dark:text-muted-foreground border border-border/60">
+                      <Database className="w-6 h-6 opacity-60" />
                     </div>
-                    <div className="px-4 py-3 flex items-center">
-                      <div className="h-4 bg-muted/60 rounded w-20" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">Tidak Ada Dokumen SOP Ditemukan</p>
+                      <p className="text-xs text-foreground/75 dark:text-muted-foreground max-w-sm">
+                        {searchQuery 
+                          ? `Tidak ada hasil untuk pencarian "${searchQuery}". Coba kata kunci lain atau reset filter kategori/scope.`
+                          : "Belum ada dokumen panduan SOP atau manual hardware yang cocok dengan kriteria filter."}
+                      </p>
                     </div>
-                    <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-4 bg-muted/60 rounded w-12" />
-                    </div>
-                    <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-4 bg-muted/60 rounded w-16" />
-                    </div>
-                    <div className="px-4 py-3 flex items-center">
-                      <div className="h-4 bg-muted/60 rounded w-16" />
-                    </div>
-                    <div className="px-4 py-3 flex items-center">
-                      <div className="h-4 bg-muted/60 rounded w-24" />
-                    </div>
-                    <div className="px-4 py-3 flex items-center justify-end">
-                      <div className="h-4 bg-muted/60 rounded w-12" />
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onGoToUpload}
+                        className="text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Tambah Dokumen Baru
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onSyncServerDocs}
+                        disabled={isSyncing}
+                        className="text-xs gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                        {isSyncing ? "Menyinkronkan..." : "Sinkronkan Server Docs"}
+                      </Button>
                     </div>
                   </div>
-                ))
-              ) : table.getRowModel().rows.length === 0 ? (
-                /* Empty State */
-                <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center text-foreground/75 dark:text-muted-foreground border border-border/60">
-                    <Database className="w-6 h-6 opacity-60" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">Tidak Ada Dokumen SOP Ditemukan</p>
-                    <p className="text-xs text-foreground/75 dark:text-muted-foreground max-w-sm">
-                      {searchQuery 
-                        ? `Tidak ada hasil untuk pencarian "${searchQuery}". Coba kata kunci lain atau reset filter kategori/scope.`
-                        : "Belum ada dokumen panduan SOP atau manual hardware yang cocok dengan kriteria filter."}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onGoToUpload}
-                      className="text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <AiDocumentContextMenu
+                      key={row.id}
+                      document={row.original}
+                      onEdit={onEdit}
+                      onApprove={onApprove}
+                      onReject={onReject}
+                      onDelete={onDelete}
+                      onInspectVector={onInspectVector}
+                      onTestSimulator={onTestSimulator}
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      Tambah Dokumen Baru
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onSyncServerDocs}
-                      disabled={isSyncing}
-                      className="text-xs gap-1.5"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-                      {isSyncing ? "Menyinkronkan..." : "Sinkronkan Server Docs"}
-                    </Button>
-                  </div>
+                      <div
+                        className="grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/30 transition-colors group cursor-context-menu"
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);
+                          return (
+                            <div
+                              key={cell.id}
+                              className={`px-4 py-2.5 flex items-center ${
+                                isRightAligned ? "justify-end text-right" : "justify-start text-left"
+                              }`}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </AiDocumentContextMenu>
+                  ))
+                )}
+
+                {/* Infinite Scroll Sentinel & Loading More Spinner */}
+                <div ref={sentinelRef} className="py-3 flex items-center justify-center">
+                  {loadingMore && (
+                    <div className="flex items-center gap-2 text-xs text-foreground/75 dark:text-muted-foreground py-2 font-mono">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      <span>Memuat dokumen berikutnya...</span>
+                    </div>
+                  )}
+                  {!hasMore && documents.length > 0 && !docsLoading && (
+                    <div className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono py-1">
+                      — Menampilkan seluruh {documents.length} dokumen terindeks —
+                    </div>
+                  )}
                 </div>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <AiDocumentContextMenu
-                    key={row.id}
-                    document={row.original}
-                    onEdit={onEdit}
-                    onApprove={onApprove}
-                    onReject={onReject}
-                    onDelete={onDelete}
-                    onInspectVector={onInspectVector}
-                    onTestSimulator={onTestSimulator}
-                  >
-                    <div
-                      className="grid grid-cols-[minmax(280px,1fr)_160px_160px_100px_120px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/40 transition-colors group cursor-context-menu"
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);
-                        return (
-                          <div
-                            key={cell.id}
-                            className={`px-4 py-2.5 flex items-center ${
-                              isRightAligned ? "justify-end text-right" : "justify-start text-left"
-                            }`}
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </AiDocumentContextMenu>
-                ))
-              )}
-
-              {/* Infinite Scroll Sentinel & Loading More Spinner */}
-              <div ref={sentinelRef} className="py-2 flex items-center justify-center">
-                {loadingMore && (
-                  <div className="flex items-center gap-2 text-xs text-foreground/75 dark:text-muted-foreground py-2 font-mono">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                    <span>Memuat dokumen berikutnya...</span>
-                  </div>
-                )}
-                {!hasMore && documents.length > 0 && !docsLoading && (
-                  <div className="text-[10px] text-foreground/75 dark:text-muted-foreground font-mono py-1">
-                    — Menampilkan seluruh {documents.length} dokumen terindeks —
-                  </div>
-                )}
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
       </div>

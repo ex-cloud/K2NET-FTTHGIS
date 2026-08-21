@@ -26,14 +26,15 @@ function Card({
       )}
       {...props}
     >
-      {/* Interactive Cursor-Following Glowing Effect */}
+      {/* Interactive Cursor-Following Glowing Effect (Refined Sleek Hairline) */}
       {glowingEffect ? (
         <GlowingEffect
-          spread={40}
+          spread={16}
           glow={true}
           disabled={false}
-          proximity={64}
-          inactiveZone={0.01}
+          proximity={42}
+          inactiveZone={0.12}
+          borderWidth={1}
         />
       ) : null}
 

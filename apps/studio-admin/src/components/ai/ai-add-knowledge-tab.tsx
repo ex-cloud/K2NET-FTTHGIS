@@ -677,81 +677,87 @@ export function AiAddKnowledgeTab({
           </Card>
         </div>
 
-        {/* Right Column (Info Guide & Scope Taxonomy - 4 cols on lg, 3 cols on xl) */}
-        <div className="lg:col-span-4 xl:col-span-3 sticky top-6 space-y-4">
-          {/* Card 1: Taksonomi 3 Scope Visibilitas */}
-          <Card glowingEffect className="border-border bg-card shadow-xs p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <ShieldCheck className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-xs font-bold text-foreground">Scope Visibilitas Multi-Tenant</h3>
-                <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Mencegah kebocoran data rahasia platform (Zero Data Leakage)</p>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              {KNOWLEDGE_SCOPES.map((sc) => {
-                const Icon = sc.icon;
-                return (
-                  <div key={sc.id} className="p-2.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className={`w-3.5 h-3.5 ${sc.color}`} />
-                      <p className="text-xs font-semibold text-foreground">{sc.label}</p>
-                    </div>
-                    <p className="text-[11px] text-foreground/75 dark:text-muted-foreground leading-relaxed pl-5">
-                      {sc.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Card 2: Taksonomi 6 Kategori */}
-          <Card glowingEffect className="border-border bg-card shadow-xs p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Sparkles className="w-4 h-4" />
-              </span>
-              <div>
-                <h3 className="text-xs font-bold text-foreground">Panduan Taksonomi Pengetahuan</h3>
-                <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Pilih kategori yang tepat agar agen AI mudah mereferensikan</p>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              {CATEGORIES.filter((c) => c.id !== "ALL").map((cat) => (
-                <div key={cat.id} className="p-2 rounded-lg bg-muted/20 border border-border/50 flex items-start gap-2.5">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground">{cat.label}</p>
-                    <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">
-                      {cat.id === "TROUBLESHOOTING" && "Penanganan redaman drop, LOS/Dying Gasp, manual ONT ZTE/Huawei."}
-                      {cat.id === "NETWORK_CONFIG" && "Topologi OLT, ODC, ODP, VLAN, dan konfigurasi IP uplink."}
-                      {cat.id === "GIS_MANUAL" && "Panduan pemetaan jalur kabel FO, survey tiang, dan koordinat."}
-                      {cat.id === "INFRASTRUCTURE" && "Arsitektur server, Docker, Kong, MinIO S3, dan database."}
-                      {cat.id === "PLANS" && "Rencana ekspansi rute ODP, budget loss fiber, dan mitigasi risiko."}
-                      {cat.id === "GENERAL" && "SOP administrasi, tiket bantuan, tata tertib lapangan, dan kontak darurat."}
-                    </p>
-                  </div>
+        {/* Right Column: Unified Knowledge Guide Panel (Single Clean Card) */}
+        <div className="lg:col-span-4 xl:col-span-3 sticky top-6">
+          <Card glowingEffect className="border-border bg-card shadow-xs p-5 space-y-5">
+            
+            {/* Section 1: Scope Visibilitas */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">Scope Visibilitas Multi-Tenant</h3>
+                  <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Mencegah kebocoran data rahasia (Zero Data Leakage)</p>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
 
-          {/* Card 3: Vector Pipeline Info */}
-          <Card glowingEffect className="border-border bg-card/60 shadow-xs p-4 text-xs space-y-2">
-            <p className="font-semibold text-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              Pipeline Vektorisasi Otomatis (RAG)
-            </p>
-            <ul className="text-[11px] text-foreground/75 dark:text-muted-foreground space-y-1 list-disc pl-4 leading-relaxed">
-              <li>Dokumen dipotong otomatis menjadi chunk 500 token dengan 50 token overlap.</li>
-              <li>Embedding dihitung menggunakan model 1536-dimensi dan disimpan di PostgreSQL <span className="font-mono text-primary">pgvector</span>.</li>
-              <li>Kueri dicari menggunakan index <span className="font-mono text-primary">HNSW Cosine</span> dengan latensi di bawah 10ms.</li>
-            </ul>
+              <div className="space-y-2 pt-0.5">
+                {KNOWLEDGE_SCOPES.map((sc) => {
+                  const Icon = sc.icon;
+                  return (
+                    <div key={sc.id} className="p-2.5 rounded-lg bg-muted/20 border border-border/40 space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Icon className={`w-3.5 h-3.5 ${sc.color}`} />
+                        <p className="text-xs font-semibold text-foreground">{sc.label}</p>
+                      </div>
+                      <p className="text-[11px] text-foreground/75 dark:text-muted-foreground leading-relaxed pl-5">
+                        {sc.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-border/60" />
+
+            {/* Section 2: Taksonomi Kategori */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">Panduan Taksonomi Pengetahuan</h3>
+                  <p className="text-[11px] text-foreground/75 dark:text-muted-foreground">Klasifikasi dokumen untuk akurasi retrieval RAG</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-0.5">
+                {CATEGORIES.filter((c) => c.id !== "ALL").map((cat) => (
+                  <div key={cat.id} className="flex items-start gap-2 text-xs">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="font-semibold text-foreground">{cat.label}: </span>
+                      <span className="text-[11px] text-foreground/75 dark:text-muted-foreground">
+                        {cat.id === "TROUBLESHOOTING" && "Redaman drop, LOS/Dying Gasp, manual ONT ZTE/Huawei."}
+                        {cat.id === "NETWORK_CONFIG" && "Topologi OLT, ODC, ODP, VLAN, dan konfigurasi IP uplink."}
+                        {cat.id === "GIS_MANUAL" && "Pemetaan jalur kabel FO, survey tiang dan koordinat."}
+                        {cat.id === "INFRASTRUCTURE" && "Arsitektur server, Docker, Kong, MinIO S3, dan database."}
+                        {cat.id === "PLANS" && "Rencana ekspansi rute ODP, budget loss fiber, dan mitigasi risiko."}
+                        {cat.id === "GENERAL" && "SOP administrasi, tiket bantuan, tata tertib, dan kontak darurat."}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-border/60" />
+
+            {/* Section 3: Vector Pipeline Callout Banner */}
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs space-y-1.5">
+              <p className="font-semibold text-foreground flex items-center gap-1.5 text-[11px]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                Pipeline Vektorisasi Otomatis (RAG)
+              </p>
+              <p className="text-[11px] text-foreground/75 dark:text-muted-foreground leading-relaxed">
+                Dokumen dipotong otomatis menjadi chunk 500 token (50 token overlap) dan disimpan ke PostgreSQL <span className="font-mono text-primary font-semibold">pgvector</span> dengan index <span className="font-mono text-primary font-semibold">HNSW Cosine</span> (&lt;10ms latency).
+              </p>
+            </div>
+
           </Card>
         </div>
       </div>
