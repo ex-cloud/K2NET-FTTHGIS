@@ -207,58 +207,60 @@ export function AiAddKnowledgeTab({
   return (
     <div className="w-full space-y-6">
       {/* Top Segmented Mode Switcher Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border rounded-xl p-4 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            {entryMode === "UPLOAD" ? <UploadCloud className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+      <Card glowingEffect className="p-4 border-border bg-card shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              {entryMode === "UPLOAD" ? <UploadCloud className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">
+                Tambah Basis Pengetahuan SOP & Panduan Jaringan
+              </h2>
+              <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
+                Pilih metode input: Unggah berkas dokumen (PDF, MD, TXT) atau tulis catatan SOP langsung melalui editor Markdown.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-foreground">
-              Tambah Basis Pengetahuan SOP & Panduan Jaringan
-            </h2>
-            <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-0.5">
-              Pilih metode input: Unggah berkas dokumen (PDF, MD, TXT) atau tulis catatan SOP langsung melalui editor Markdown.
-            </p>
-          </div>
-        </div>
 
-        {/* Mode Switcher Pill */}
-        <div className="inline-flex p-1 bg-background border border-border rounded-xl shrink-0">
-          <button
-            type="button"
-            onClick={() => setEntryMode("UPLOAD")}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              entryMode === "UPLOAD"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <UploadCloud className="w-3.5 h-3.5" />
-            <span>Unggah Berkas</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setEntryMode("MANUAL")}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              entryMode === "MANUAL"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Tulis Manual</span>
-          </button>
+          {/* Mode Switcher Pill */}
+          <div className="inline-flex p-1 bg-background border border-border rounded-xl shrink-0">
+            <button
+              type="button"
+              onClick={() => setEntryMode("UPLOAD")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                entryMode === "UPLOAD"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Unggah Berkas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEntryMode("MANUAL")}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                entryMode === "MANUAL"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Tulis Manual</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Main Responsive Grid: Expansive Left Form (8-9 cols) & Compact Sticky Guide (4-3 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
         {/* Left Column (Main Form & Editor - 8 cols on lg, 9 cols on xl) */}
         <div className="lg:col-span-8 xl:col-span-9">
-          <Card glowingEffect className="border-border bg-card shadow-xs p-0 overflow-hidden">
-            <CardHeader className="border-b border-border bg-muted/20 px-6 py-4">
+          <Card glowingEffect className="border-border bg-card shadow-xs p-0">
+            <CardHeader className="border-b border-border bg-muted/20 px-6 py-4 rounded-t-xl">
               <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                 {entryMode === "UPLOAD" ? (
                   <>
@@ -678,7 +680,7 @@ export function AiAddKnowledgeTab({
         {/* Right Column (Info Guide & Scope Taxonomy - 4 cols on lg, 3 cols on xl) */}
         <div className="lg:col-span-4 xl:col-span-3 sticky top-6 space-y-4">
           {/* Card 1: Taksonomi 3 Scope Visibilitas */}
-          <Card className="border-border bg-card shadow-xs p-5 space-y-3">
+          <Card glowingEffect className="border-border bg-card shadow-xs p-5 space-y-3">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <ShieldCheck className="w-4 h-4" />
@@ -708,7 +710,7 @@ export function AiAddKnowledgeTab({
           </Card>
 
           {/* Card 2: Taksonomi 6 Kategori */}
-          <Card className="border-border bg-card shadow-xs p-5 space-y-3">
+          <Card glowingEffect className="border-border bg-card shadow-xs p-5 space-y-3">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <Sparkles className="w-4 h-4" />
@@ -740,7 +742,7 @@ export function AiAddKnowledgeTab({
           </Card>
 
           {/* Card 3: Vector Pipeline Info */}
-          <Card className="border-border bg-card/60 shadow-xs p-4 text-xs space-y-2">
+          <Card glowingEffect className="border-border bg-card/60 shadow-xs p-4 text-xs space-y-2">
             <p className="font-semibold text-foreground flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
               Pipeline Vektorisasi Otomatis (RAG)

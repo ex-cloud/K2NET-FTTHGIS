@@ -42,7 +42,7 @@ function Card({
           "relative z-20 h-full w-full",
           isFlexRow 
             ? cn("flex flex-row items-center", gapClass || "gap-4", justifyClass)
-            : "flex flex-col justify-between"
+            : cn("flex flex-col", justifyClass)
         )}
       >
         {children}
