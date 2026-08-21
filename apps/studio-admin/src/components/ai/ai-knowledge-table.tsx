@@ -472,10 +472,10 @@ export function AiKnowledgeTable({
 
           {/* 3. Scrollable Table Container */}
           <div ref={scrollContainerRef} className="max-h-[620px] overflow-auto custom-scrollbar-thin">
-            <div className="min-w-[1240px] flex flex-col">
+            <div className="min-w-[1300px] flex flex-col">
               
               {/* Sticky Header with Sorting Menus */}
-              <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-foreground/75 dark:text-muted-foreground shadow-xs">
+              <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md grid grid-cols-[minmax(320px,1.5fr)_200px_165px_105px_130px_140px_140px_90px] border-b border-border items-stretch divide-x divide-border/40 text-[11px] font-semibold text-foreground/75 dark:text-muted-foreground shadow-xs">
                 {table.getFlatHeaders().map((header) => {
                   if (header.isPlaceholder) return <div key={header.id} />;
 
@@ -538,7 +538,7 @@ export function AiKnowledgeTable({
                   Array.from({ length: 6 }).map((_, i) => (
                     <div
                       key={`skeleton-${i}`}
-                      className="grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
+                      className="grid grid-cols-[minmax(320px,1.5fr)_200px_165px_105px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 animate-pulse bg-background/30"
                     >
                       <div className="min-w-0 px-4 py-3 flex items-center gap-2">
                         <div className="h-4 w-4 bg-muted/60 rounded-md" />
@@ -548,7 +548,7 @@ export function AiKnowledgeTable({
                         </div>
                       </div>
                       <div className="px-4 py-3 flex items-center">
-                        <div className="h-4 bg-muted/60 rounded w-20" />
+                        <div className="h-4 bg-muted/60 rounded w-24" />
                       </div>
                       <div className="px-4 py-3 flex items-center">
                         <div className="h-4 bg-muted/60 rounded w-20" />
@@ -619,7 +619,7 @@ export function AiKnowledgeTable({
                       onTestSimulator={onTestSimulator}
                     >
                       <div
-                        className="grid grid-cols-[minmax(320px,1.5fr)_150px_160px_110px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/30 transition-colors group cursor-context-menu"
+                        className="grid grid-cols-[minmax(320px,1.5fr)_200px_165px_105px_130px_140px_140px_90px] items-stretch border-b border-border/40 divide-x divide-border/30 hover:bg-muted/30 transition-colors group cursor-context-menu"
                       >
                         {row.getVisibleCells().map((cell) => {
                           const isRightAligned = ["file_size_bytes", "chunk_count", "actions"].includes(cell.column.id);

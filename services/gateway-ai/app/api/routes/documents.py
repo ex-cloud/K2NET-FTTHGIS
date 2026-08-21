@@ -68,13 +68,13 @@ VENDOR_PATTERNS: list[tuple[list[str], str]] = [
 
 # ─── Two-Way Disk Persistence Mapping ─────────────────────────────────────────
 CATEGORY_TO_FOLDER: dict[str, str] = {
-    "TROUBLESHOOTING": "02_SOP_Troubleshooting",
+    "GENERAL": "00_AI_Agent",
     "NETWORK_CONFIG": "01_Architecture",
     "ARCHITECTURE": "01_Architecture",
+    "TROUBLESHOOTING": "02_SOP_Troubleshooting",
     "INFRASTRUCTURE": "03_Infrastructure",
     "GIS_MANUAL": "04_GIS_Mapping",
     "PLANS": "05_Plans_Roadmap",
-    "GENERAL": "note",
 }
 
 FOLDER_TO_CATEGORY: dict[str, str] = {
@@ -84,8 +84,20 @@ FOLDER_TO_CATEGORY: dict[str, str] = {
     "03_Infrastructure": "INFRASTRUCTURE",
     "04_GIS_Mapping": "GIS_MANUAL",
     "05_Plans_Roadmap": "PLANS",
-    "Server": "INFRASTRUCTURE",
-    "note": "GENERAL",
+}
+
+CANONICAL_DOC_DIRS: set[str] = set(FOLDER_TO_CATEGORY.keys())
+
+IGNORED_DOC_DIRS: set[str] = {
+    "06_Archive_Dev_History",
+    "aset",
+    "Server",
+    "note",
+    "github",
+    "node_modules",
+    ".git",
+    ".agents",
+    "scratch",
 }
 
 
@@ -261,8 +273,9 @@ async def get_server_sync_status(
     ctx: TenantContext = Depends(verify_gateway_and_tenant),
 ):
     """
-    Membandingkan berkas fisik di /opt/project5/docs/ dengan database ai_documents.
+    Membandingkan berkas fisik di folder kanonikal /opt/project5/docs/ dengan database ai_documents.
     Mengidentifikasi file baru (unindexed) yang belum terindeks.
+    Abaikan direktori non-kanonikal seperti 06_Archive_Dev_History, aset, note, Server, dll.
     """
     docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
     if not os.path.exists(docs_base):
@@ -274,8 +287,27 @@ async def get_server_sync_status(
             is_synced=True,
         )
 
-    files = glob.glob(os.path.join(docs_base, "**/*.md"), recursive=True)
-    files.extend(glob.glob(os.path.join(docs_base, "**/*.txt"), recursive=True))
+    all_raw_files = glob.glob(os.path.join(docs_base, "**/*.md"), recursive=True)
+    all_raw_files.extend(glob.glob(os.path.join(docs_base, "**/*.txt"), recursive=True))
+
+    valid_files: list[str] = []
+    for f in all_raw_files:
+        rel_path = os.path.relpath(f, docs_base)
+        parts = rel_path.split(os.sep)
+        top_folder = parts[0] if len(parts) > 1 else ""
+        filename = Path(f).name
+
+        # Hanya izinkan berkas di dalam 6 folder kanonikal (00_AI_Agent s/d 05_Plans_Roadmap)
+        if top_folder not in CANONICAL_DOC_DIRS:
+            continue
+        # Lewati folder yang di-ignore
+        if any(ign in parts for ign in IGNORED_DOC_DIRS):
+            continue
+        # Lewati file temporer / hidden / non-standar
+        if filename.startswith(".") or filename.startswith("#") or "dummy" in filename.lower() or "node_modules" in rel_path:
+            continue
+
+        valid_files.append(f)
 
     # Ambil daftar file_name dan title di database untuk tenant ini
     async with get_db_session() as session:
@@ -291,19 +323,29 @@ async def get_server_sync_status(
     unindexed_files: list[UnindexedFileItem] = []
     indexed_count = 0
 
-    for file_path in files:
+    for file_path in valid_files:
         rel_path = os.path.relpath(file_path, docs_base)
         title = Path(file_path).stem.replace("-", " ").replace("_", " ").title()
 
-        # Lewati file temporer / hidden
-        if Path(file_path).name.startswith(".") or "node_modules" in rel_path:
-            continue
+        # Parse YAML frontmatter jika ada untuk metadata title & category yang presisi
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f_obj:
+                sample = f_obj.read(1500)
+                fm, _ = _parse_frontmatter(sample)
+                if fm.get("title"):
+                    title = fm["title"]
+                if fm.get("category") and fm["category"].upper() in FOLDER_TO_CATEGORY.values():
+                    category = fm["category"].upper()
+                else:
+                    top_folder = rel_path.split(os.sep)[0]
+                    category = FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
+        except Exception:
+            top_folder = rel_path.split(os.sep)[0]
+            category = FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
 
         if rel_path in db_filenames or title.lower().strip() in db_titles_lower:
             indexed_count += 1
         else:
-            top_folder = rel_path.split(os.sep)[0] if os.sep in rel_path else "note"
-            category = FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
             try:
                 size_bytes = os.path.getsize(file_path)
             except Exception:
@@ -319,7 +361,7 @@ async def get_server_sync_status(
             )
 
     return ServerSyncStatusResponse(
-        total_server_files=len(files),
+        total_server_files=len(valid_files),
         indexed_count=indexed_count,
         unindexed_count=len(unindexed_files),
         unindexed_files=unindexed_files[:50],
@@ -334,7 +376,7 @@ async def preview_server_file(
 ):
     """
     Membaca dan mempratinjau isi berkas Markdown fisik di server sebelum diindeks atau ditolak.
-    Dilengkapi perlindungan anti directory traversal.
+    Dilengkapi perlindungan anti directory traversal dan parsing frontmatter.
     """
     docs_base = os.getenv("DOCS_ROOT_PATH", "/opt/project5/docs")
     clean_path = os.path.normpath(path).lstrip("/\\")
@@ -352,13 +394,20 @@ async def preview_server_file(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal membaca berkas: {e}")
 
+    # Parse YAML frontmatter jika ada
+    fm, _ = _parse_frontmatter(content)
     top_folder = clean_path.split(os.sep)[0] if os.sep in clean_path else "GENERAL"
-    category = FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
-    title = Path(full_path).stem.replace("-", " ").replace("_", " ").title()
 
-    if category in ("INFRASTRUCTURE", "ARCHITECTURE", "PLANS"):
+    fm_cat = fm.get("category", "").upper()
+    category = fm_cat if fm_cat in FOLDER_TO_CATEGORY.values() else FOLDER_TO_CATEGORY.get(top_folder, "GENERAL")
+    title = fm.get("title") or Path(full_path).stem.replace("-", " ").replace("_", " ").title()
+
+    fm_scope = fm.get("scope", "").upper()
+    if fm_scope in ("GLOBAL", "TENANT_INTERNAL", "PLATFORM_INTERNAL"):
+        scope_val = fm_scope
+    elif category in ("INFRASTRUCTURE", "NETWORK_CONFIG", "PLANS"):
         scope_val = "PLATFORM_INTERNAL"
-    elif category in ("TROUBLESHOOTING",):
+    elif category in ("TROUBLESHOOTING", "GIS_MANUAL"):
         scope_val = "TENANT_INTERNAL"
     else:
         scope_val = "GLOBAL"
@@ -1367,8 +1416,8 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
         parts = rel_path.split(os.sep)
         top_folder = parts[0] if len(parts) > 1 else ""
 
-        # Abaikan direktori arsip, server lama, note, temp, atau file root
-        if top_folder not in allowed_dirs:
+        # Abaikan direktori arsip, server lama, note, temp, aset, atau file root
+        if top_folder not in allowed_dirs or any(ign in parts for ign in IGNORED_DOC_DIRS):
             logger.debug(f"[Server Sync] Skipping non-canonical file: {rel_path}")
             continue
 
