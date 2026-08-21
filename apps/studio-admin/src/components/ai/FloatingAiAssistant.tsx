@@ -52,13 +52,20 @@ import {
   Layers,
   HelpCircle,
   Cpu,
+  SlidersHorizontal,
+  ArrowUpRight,
+  Settings2,
 } from "lucide-react";
 import { 
   fetchActiveChatModels, 
   fetchAiPromptIdeas, 
   incrementAiPromptUsage, 
-  SuggestedPromptItem 
+  SuggestedPromptItem,
+  fetchAgentAuthorization,
+  AgentAuthorizationData
 } from "@/lib/actions/gateways";
+import { AgentOnboardingModal } from "@/components/ai/agent-onboarding-modal";
+import { AgentSettingsPanel } from "@/components/ai/agent-settings-panel";
 import { cn } from "@/lib/utils";
 import {
   useAiChatStream,
@@ -398,6 +405,12 @@ export function FloatingAiAssistant() {
   const [isWide, setIsWide] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // ── K2 Agent Authorization & Settings State ────────────────────────────────
+  const [agentAuth, setAgentAuth] = useState<AgentAuthorizationData | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showTokenMenu, setShowTokenMenu] = useState(false);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -408,15 +421,21 @@ export function FloatingAiAssistant() {
     sendMessage,
     stopStreaming,
     clearMessages,
-  } = useAiChatStream({ model: selectedModel });
+  } = useAiChatStream({ 
+    model: selectedModel,
+    userScope: agentAuth?.user_scope || "PLATFORM_INTERNAL",
+    accessTier: agentAuth?.access_tier || "FULL",
+    grantedPermissions: agentAuth?.granted_permissions || []
+  });
 
-  // ── Fetch dynamic models & prompt ideas on mount ────────────────────────────
+  // ── Fetch dynamic models, prompt ideas & authorization on mount ─────────────
   useEffect(() => {
     async function loadData() {
       try {
-        const [activeRes, ideasRes] = await Promise.allSettled([
+        const [activeRes, ideasRes, authRes] = await Promise.allSettled([
           fetchActiveChatModels(),
           fetchAiPromptIdeas(),
+          fetchAgentAuthorization("PLATFORM_INTERNAL"),
         ]);
 
         if (activeRes.status === "fulfilled" && activeRes.value?.models && activeRes.value.models.length > 0) {
@@ -434,6 +453,13 @@ export function FloatingAiAssistant() {
 
         if (ideasRes.status === "fulfilled" && ideasRes.value && ideasRes.value.length > 0) {
           setPromptIdeas(ideasRes.value);
+        }
+
+        if (authRes.status === "fulfilled" && authRes.value) {
+          setAgentAuth(authRes.value);
+          if (!authRes.value.is_authorized) {
+            setShowOnboarding(true);
+          }
         }
       } catch (err) {
         console.debug("Dynamic assistant init fallback:", err);
@@ -703,24 +729,26 @@ export function FloatingAiAssistant() {
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-4 py-4 space-y-4">
               {messages.length === 0 ? (
-                /* Supabase-Style Empty State */
+                /* Cloudflare-Style Hero & Empty State (Matching Screenshot 3) */
                 <div className="space-y-4 py-2">
-                  {/* Banner */}
-                  <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/25 text-xs flex items-start gap-3 text-foreground">
-                    <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <div className="flex-1 text-[12px] leading-relaxed">
-                      <span className="font-semibold text-primary">K2NET FTTH Copilot</span> — Terhubung langsung ke 160+ dokumen arsitektur, SOP konfigurasi OLT, dan basis data spasial pgvector.
+                  
+                  {/* Hero Greeting & Avatar */}
+                  <div className="text-center py-2 space-y-2">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary/30 via-primary/15 to-amber-500/20 border border-primary/30 flex items-center justify-center shadow-md shadow-primary/10 mx-auto">
+                      <Sparkles className="w-8 h-8 text-primary animate-pulse" />
                     </div>
-                  </div>
-
-                  {/* Heading */}
-                  <div className="pt-2">
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      How can I assist you? <span className="text-primary">❖</span>
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Pilih ide pertanyaan di bawah atau ketik langsung kebutuhan Anda:
-                    </p>
+                    <div>
+                      <h2 className="text-lg font-bold text-foreground">
+                        {new Date().getHours() < 12 
+                          ? "Good morning." 
+                          : new Date().getHours() < 18 
+                          ? "Good afternoon." 
+                          : "Good evening."}
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        What are we doing today?
+                      </p>
+                    </div>
                   </div>
 
                   {/* Ideas Cards (Supabase Style) */}
@@ -770,6 +798,12 @@ export function FloatingAiAssistant() {
                       );
                     })}
                   </div>
+
+                  {/* Privacy Disclaimer Banner (Matching Screenshot 3) */}
+                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border text-[11px] text-muted-foreground">
+                    Chats are recorded to improve the service and are processed in accordance with our Privacy Policy.
+                  </div>
+
                 </div>
               ) : (
                 messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
@@ -786,30 +820,83 @@ export function FloatingAiAssistant() {
             </div>
           </ScrollArea>
 
-          {/* ── Input Area ── */}
+          {/* ── Input Area (Matching Screenshot 3 & 4) ── */}
           <div className="px-4 py-3 border-t border-border bg-background/95 backdrop-blur-md flex-shrink-0">
             <div className="flex gap-2 items-end">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Tanya tentang OLT, redaman, GIS, konfigurasi... (Enter untuk kirim)"
-                rows={1}
-                className={cn(
-                  "flex-1 resize-none rounded-xl px-3.5 py-2.5 text-xs sm:text-[13px]",
-                  "bg-muted/40 border border-border",
-                  "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
-                  "placeholder:text-muted-foreground text-foreground",
-                  "max-h-28 overflow-y-auto leading-relaxed"
-                )}
-                style={{ height: "auto" }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = "auto";
-                  target.style.height = `${Math.min(target.scrollHeight, 112)}px`;
-                }}
-              />
+              <div className="relative flex-1">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type @ to tag a resource or / for shortcuts..."
+                  rows={1}
+                  className={cn(
+                    "w-full resize-none rounded-xl pl-16 pr-10 py-2.5 text-xs sm:text-[13px]",
+                    "bg-muted/40 border border-border",
+                    "focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary",
+                    "placeholder:text-muted-foreground text-foreground",
+                    "max-h-28 overflow-y-auto leading-relaxed"
+                  )}
+                  style={{ height: "auto" }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = "auto";
+                    target.style.height = `${Math.min(target.scrollHeight, 112)}px`;
+                  }}
+                />
+
+                {/* Left Badge Pill "Ask" (Matching Screenshot 3) */}
+                <div className="absolute left-2.5 bottom-2.5 flex items-center">
+                  <Badge variant="outline" className="text-[9px] font-mono px-1.5 py-0.5 border-primary/30 text-primary bg-primary/10 select-none">
+                    Ask
+                  </Badge>
+                </div>
+
+                {/* Right Sliders / Token Settings Icon Button (Matching Screenshot 3 & 4) */}
+                <div className="absolute right-2.5 bottom-2 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowTokenMenu(!showTokenMenu)}
+                    className={cn(
+                      "p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer",
+                      showTokenMenu && "text-primary bg-primary/10"
+                    )}
+                    title="Pengaturan Otorisasi & Token K2 Agent"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Token Active Popover Menu (Matching Screenshot 4) */}
+                  {showTokenMenu && (
+                    <div className="absolute bottom-9 right-0 w-64 p-2 bg-card border border-border rounded-xl shadow-xl space-y-1 text-xs z-50 animate-in fade-in zoom-in-95 duration-100">
+                      <div className="p-2 rounded-lg bg-primary/5 border border-primary/20 space-y-0.5">
+                        <div className="flex items-center gap-1.5 font-bold text-primary text-xs">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>API token active</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          K2 Agent can access platform resources ({agentAuth?.access_tier || "Full"})
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTokenMenu(false);
+                          setShowSettingsPanel(true);
+                        }}
+                        className="w-full p-2 text-left rounded-lg hover:bg-muted/60 text-foreground text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors"
+                      >
+                        <span>⚙ Configure permissions</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Send Button */}
               <Button
                 size="sm"
                 onClick={isStreaming ? stopStreaming : handleSend}
@@ -828,6 +915,7 @@ export function FloatingAiAssistant() {
                 )}
               </Button>
             </div>
+
             <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
               <span>
                 <kbd className="px-1 py-0.5 rounded bg-muted border border-border/60 text-[9px] font-mono">
@@ -845,6 +933,33 @@ export function FloatingAiAssistant() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Cloudflare-Style Onboarding Modal ── */}
+      <AgentOnboardingModal
+        isOpen={showOnboarding}
+        scope="PLATFORM_INTERNAL"
+        currentAccountName="K2NET Core Platform (Root HQ)"
+        onAuthorized={(auth) => {
+          setAgentAuth(auth);
+          setShowOnboarding(false);
+        }}
+        onClose={() => setShowOnboarding(false)}
+      />
+
+      {/* ── Slide-Over K2 Agent Settings Panel ── */}
+      {agentAuth && (
+        <AgentSettingsPanel
+          isOpen={showSettingsPanel}
+          scope="PLATFORM_INTERNAL"
+          currentAuth={agentAuth}
+          onClose={() => setShowSettingsPanel(false)}
+          onAuthUpdated={(auth) => setAgentAuth(auth)}
+          onAuthRevoked={() => {
+            setAgentAuth(null);
+            setShowOnboarding(true);
+          }}
+        />
+      )}
     </>
   );
 }

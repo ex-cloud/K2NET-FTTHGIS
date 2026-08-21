@@ -83,6 +83,7 @@ from app.api.routes.providers import router as providers_router
 from app.api.routes.graph import router as graph_router
 from app.api.routes.config import router as config_router
 from app.api.routes.prompts import router as prompts_router
+from app.api.routes.authorization import router as authorization_router
 
 app.include_router(health_router)
 app.include_router(chat_router)
@@ -92,6 +93,7 @@ app.include_router(providers_router)
 app.include_router(graph_router)
 app.include_router(config_router)
 app.include_router(prompts_router)
+app.include_router(authorization_router)
 
 
 # ── Entry Point ───────────────────────────────────────────────────────────────

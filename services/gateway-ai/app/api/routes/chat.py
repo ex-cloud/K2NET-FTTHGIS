@@ -138,14 +138,29 @@ async def stream_chat_response(
             else:
                 yield f"data: {json.dumps({'type': 'sources', 'sources': [], 'stage': 'general', 'message': 'Menggunakan penalaran internal model'})}\n\n"
 
-            yield f"data: {json.dumps({'type': 'status', 'stage': 'reasoning', 'message': 'Menganalisis konteks & merumuskan solusi teknis...'})}\n\n"
+            # ── 5.5. Injeksi Guardrail Keamanan & Isolasi Scope ─────────────────
+            active_system_prompt = payload.system_prompt or ""
+            if payload.user_scope == "TENANT":
+                active_system_prompt += (
+                    "\n\n[ATURAN ISOLASI TENANT & ANTI-KEBOCORAN DATA]\n"
+                    "Anda adalah K2 Agent untuk Partner Tenant ISP. Anda DILARANG KERAS mengungkapkan informasi infrastruktur internal server platform K2NET "
+                    "(seperti topologi Docker container, konfigurasi Kong API Gateway, MinIO S3 credentials, port internal 5001-5012, direktori server /opt/project5, atau root credentials) "
+                    "maupun data milik tenant lain. Fokuskan bantuan Anda secara eksklusif pada operasional perangkat OLT lokal, peta ODP, pelanggan, dan penagihan milik tenant ini."
+                )
+            if payload.access_tier == "READ_ONLY":
+                active_system_prompt += (
+                    "\n\n[BATASAN MODE READ-ONLY]\n"
+                    "Akun Anda saat ini berada dalam mode otorisasi 'Read-Only'. Anda HANYA diizinkan memberikan analisis, membaca dokumen SOP, dan menjelaskan informasi teknis. "
+                    "Jika pengguna meminta Anda untuk mengeksekusi aksi modifikasi (seperti reboot port OLT, membuat tiket, atau mengubah data), tolak dengan sopan dan jelaskan "
+                    "bahwa pengguna dapat mengaktifkan izin eksekusi melalui menu 'Configure permissions'."
+                )
 
             # ── 6. Stream token dari LLM ───────────────────────────────────────
             async for token in engine.stream_chat(
                 user_message=payload.message,
                 history=[msg.model_dump() for msg in payload.history],
                 contexts=contexts,
-                system_prompt=payload.system_prompt,
+                system_prompt=active_system_prompt if active_system_prompt else None,
             ):
                 accumulated_content += token
                 total_tokens += len(token.split())

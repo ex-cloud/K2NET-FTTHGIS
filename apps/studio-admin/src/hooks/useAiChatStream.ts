@@ -74,10 +74,13 @@ export interface DocumentSource {
   content_preview: string;
 }
 
-interface UseAiChatStreamOptions {
+export interface UseAiChatStreamOptions {
   sessionId?: string | null;
   scope?: string;
   model?: string;
+  userScope?: string;
+  accessTier?: string;
+  grantedPermissions?: string[];
 }
 
 const AI_GATEWAY_URL = "/api/v1/ai/chat/stream";
@@ -171,6 +174,9 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
             scope: options.scope || "GENERAL",
             model: options.model || "",
             history: historyForPayload,
+            user_scope: options.userScope || "PLATFORM_INTERNAL",
+            access_tier: options.accessTier || "FULL",
+            granted_permissions: options.grantedPermissions || [],
           }),
           signal: controller.signal,
         });

@@ -37,6 +37,18 @@ class ChatStreamRequest(BaseModel):
         default=None,
         description="Override system prompt (hanya admin)."
     )
+    user_scope: str = Field(
+        default="PLATFORM_INTERNAL",
+        description="Scope pengguna: PLATFORM_INTERNAL | TENANT"
+    )
+    access_tier: str = Field(
+        default="FULL",
+        description="Tier otorisasi: FULL | READ_ONLY | ROLE_PRESET | CUSTOM"
+    )
+    granted_permissions: list[str] = Field(
+        default=[],
+        description="Daftar ID izin yang diberikan kepada K2 Agent."
+    )
 
 
 class SopGenerateRequest(BaseModel):
@@ -418,4 +430,60 @@ class TrendingTopicsResponse(BaseModel):
     trending: list[TrendingTopicItem]
 
 
+# ─── Agent Onboarding & Granular Permissions ─────────────────────────────────
 
+class AgentAuthorizationResponse(BaseModel):
+    is_authorized: bool
+    agent_name: str = "K2 Agent"
+    user_scope: str = "PLATFORM_INTERNAL" # PLATFORM_INTERNAL | TENANT
+    user_role: str = "SUPER_ADMIN"
+    access_tier: str = "FULL" # FULL | READ_ONLY | ROLE_PRESET | CUSTOM
+    role_preset: Optional[str] = "SUPER_ADMIN"
+    granted_permissions: list[str] = []
+    is_active: bool = True
+    authorized_at: Optional[datetime] = None
+
+
+class AgentAuthorizationRequest(BaseModel):
+    agent_name: str = "K2 Agent"
+    user_scope: str = "PLATFORM_INTERNAL"
+    access_tier: str = "FULL" # FULL | READ_ONLY | ROLE_PRESET | CUSTOM
+    role_preset: Optional[str] = None
+    granted_permissions: list[str] = []
+
+
+class PermissionItem(BaseModel):
+    id: str
+    name: str
+    scope: str # Read | Write
+    description: str
+
+
+class PermissionDomainGroup(BaseModel):
+    id: str
+    title: str
+    icon: str
+    description: str
+    target_scope: str # PLATFORM_INTERNAL | TENANT | SHARED
+    permissions: list[PermissionItem]
+
+
+class PermissionCatalogResponse(BaseModel):
+    scope: str
+    total_permissions: int
+    domains: list[PermissionDomainGroup]
+
+
+class RolePresetItem(BaseModel):
+    id: str
+    name: str
+    badge: str
+    icon: str
+    description: str
+    target_scope: str
+    default_permissions: list[str]
+
+
+class RolePresetsResponse(BaseModel):
+    scope: str
+    presets: list[RolePresetItem]
