@@ -36,6 +36,8 @@ export function useAiKnowledge() {
 
   const mounted = useRef(true);
   const offsetRef = useRef(0);
+  const hasMoreRef = useRef(true);
+  const loadingRef = useRef(true);
   const loadingMoreRef = useRef(false);
   const isFetchingRef = useRef(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -64,17 +66,17 @@ export function useAiKnowledge() {
 
   const fetchDocuments = useCallback(
     async (resetList = true) => {
-      if (isFetchingRef.current && resetList) {
-        // Allow reset to proceed but cancel stale
-      }
-      
       if (resetList) {
         setLoading(true);
+        loadingRef.current = true;
         offsetRef.current = 0;
-        // Clear documents so skeleton loader shows immediately on filter/reset
+        hasMoreRef.current = true;
+        setHasMore(true);
         setDocuments([]);
       } else {
-        if (loadingMoreRef.current || !hasMore || loading) return;
+        if (loadingRef.current || loadingMoreRef.current || !hasMoreRef.current || isFetchingRef.current) {
+          return;
+        }
         loadingMoreRef.current = true;
         setLoadingMore(true);
       }
@@ -82,7 +84,7 @@ export function useAiKnowledge() {
       isFetchingRef.current = true;
 
       try {
-        const currentOffset = offsetRef.current;
+        const currentOffset = resetList ? 0 : offsetRef.current;
         const res = await getAiDocuments({
           category: selectedCategory === "ALL" ? undefined : selectedCategory,
           scope: selectedScope === "ALL" ? undefined : selectedScope,
@@ -103,13 +105,16 @@ export function useAiKnowledge() {
             setDocuments((prev) => {
               const existingIds = new Set(prev.map((d) => d.id));
               const filtered = newDocs.filter((d) => !existingIds.has(d.id));
-              return [...prev, ...filtered];
+              const combined = [...prev, ...filtered];
+              offsetRef.current = combined.length;
+              return combined;
             });
-            offsetRef.current += newDocs.length;
           }
 
           setDocsTotal(total);
-          setHasMore(offsetRef.current < total && newDocs.length > 0);
+          const stillHasMore = newDocs.length === limit && offsetRef.current < total;
+          hasMoreRef.current = stillHasMore;
+          setHasMore(stillHasMore);
           setError(null);
         }
       } catch (err: any) {
@@ -121,12 +126,13 @@ export function useAiKnowledge() {
         if (mounted.current) {
           setLoading(false);
           setLoadingMore(false);
+          loadingRef.current = false;
           loadingMoreRef.current = false;
           isFetchingRef.current = false;
         }
       }
     },
-    [selectedCategory, selectedScope, selectedStatus, searchQuery, hasMore, loading]
+    [selectedCategory, selectedScope, selectedStatus, searchQuery]
   );
 
   // Re-fetch whenever filters change
@@ -140,9 +146,9 @@ export function useAiKnowledge() {
   }, [selectedCategory, selectedScope, selectedStatus]);
 
   const fetchMore = useCallback(async () => {
-    if (loading || loadingMore || !hasMore) return;
+    if (loadingRef.current || loadingMoreRef.current || !hasMoreRef.current) return;
     await fetchDocuments(false);
-  }, [loading, loadingMore, hasMore, fetchDocuments]);
+  }, [fetchDocuments]);
 
   const refresh = useCallback(async () => {
     fetchStatsAndSync();

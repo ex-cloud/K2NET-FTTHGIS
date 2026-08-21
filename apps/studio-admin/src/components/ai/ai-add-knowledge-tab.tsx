@@ -253,10 +253,10 @@ export function AiAddKnowledgeTab({
         </div>
       </div>
 
-      {/* Main 2-Column Responsive Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (Main Form - 7 cols) */}
-        <div className="lg:col-span-7">
+      {/* Main Responsive Grid: Expansive Left Form (8-9 cols) & Compact Sticky Guide (4-3 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
+        {/* Left Column (Main Form & Editor - 8 cols on lg, 9 cols on xl) */}
+        <div className="lg:col-span-8 xl:col-span-9">
           <Card glowingEffect className="border-border bg-card shadow-xs p-0 overflow-hidden">
             <CardHeader className="border-b border-border bg-muted/20 px-6 py-4">
               <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -632,7 +632,7 @@ export function AiAddKnowledgeTab({
                       onChange={(val) => setManualContent(val)}
                       placeholder="# Standar Redaman GPON 1:64&#10;&#10;- Batas minimum: -27 dBm&#10;- Batas ideal: -15 s/d -22 dBm&#10;- Prosedur perbaikan FO cut..."
                       disabled={manualSubmitting || aiGenerating}
-                      minHeight="280px"
+                      minHeight="380px"
                     />
                   </div>
 
@@ -675,8 +675,8 @@ export function AiAddKnowledgeTab({
           </Card>
         </div>
 
-        {/* Right Column (Info Guide & Scope Taxonomy - 5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
+        {/* Right Column (Info Guide & Scope Taxonomy - 4 cols on lg, 3 cols on xl) */}
+        <div className="lg:col-span-4 xl:col-span-3 sticky top-6 space-y-4">
           {/* Card 1: Taksonomi 3 Scope Visibilitas */}
           <Card className="border-border bg-card shadow-xs p-5 space-y-3">
             <div className="flex items-center gap-2">

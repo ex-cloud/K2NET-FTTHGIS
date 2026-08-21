@@ -216,14 +216,14 @@ export function AiKnowledgeTable({
     const rootEl = scrollContainerRef.current;
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !docsLoading && onFetchMore) {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore && !docsLoading && onFetchMore) {
           onFetchMore();
         }
       },
       {
         root: rootEl || null,
-        rootMargin: "200px",
-        threshold: 0.05,
+        rootMargin: "150px",
+        threshold: 0.1,
       }
     );
 
@@ -234,7 +234,7 @@ export function AiKnowledgeTable({
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
-  }, [hasMore, loadingMore, docsLoading, onFetchMore, documents.length]);
+  }, [hasMore, loadingMore, docsLoading, onFetchMore]);
 
   const columns = useMemo(
     () => [
