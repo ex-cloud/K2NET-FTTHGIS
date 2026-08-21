@@ -49,7 +49,7 @@ import {
   PlusCircle,
   GripVertical,
 } from "lucide-react";
-import { fetchAiProviderModels, getAiKnowledgeStats } from "@/lib/actions/gateways";
+import { fetchActiveChatModels } from "@/lib/actions/gateways";
 import { cn } from "@/lib/utils";
 import {
   useAiChatStream,
@@ -343,38 +343,25 @@ export function FloatingAiAssistant() {
     clearMessages,
   } = useAiChatStream({ model: selectedModel });
 
-  // ── Fetch dynamic live detected models on mount ───────────────────────────
+  // ── Fetch smart-filtered active chat models on mount ─────────────────────────
   useEffect(() => {
     async function loadDynamicModels() {
       try {
-        const [modelsRes, statsRes] = await Promise.allSettled([
-          fetchAiProviderModels("gemini"),
-          getAiKnowledgeStats(),
-        ]);
-
-        if (modelsRes.status === "fulfilled" && modelsRes.value?.models && modelsRes.value.models.length > 0) {
-          const dynamicList = modelsRes.value.models.map((m) => ({
+        const activeRes = await fetchActiveChatModels();
+        if (activeRes && activeRes.models && activeRes.models.length > 0) {
+          const smartList = activeRes.models.map((m) => ({
             value: m.id.replace("models/", ""),
             label: m.name,
-            badge: m.badge || "Google",
+            badge: m.badge || (m.category.includes("Gemini") ? "Google" : m.category.includes("OpenAI") ? "OpenAI" : m.category.includes("DeepSeek") ? "DeepSeek" : "Local"),
           }));
-          dynamicList.push(
-            { value: "gpt-4o-mini", label: "GPT-4o Mini", badge: "OpenAI" },
-            { value: "gpt-4o", label: "GPT-4o", badge: "OpenAI" },
-            { value: "deepseek-chat", label: "DeepSeek V3", badge: "DeepSeek" },
-            { value: "deepseek-reasoner", label: "DeepSeek R1", badge: "DeepSeek" },
-            { value: "llama3.2", label: "Local Ollama (Llama 3)", badge: "Local" },
-            { value: "deepseek-r1:7b", label: "Local DeepSeek-R1", badge: "Local" },
-          );
-          setAvailableModels(dynamicList);
+          setAvailableModels(smartList);
         }
 
-        if (statsRes.status === "fulfilled" && statsRes.value?.chat_model) {
-          const cleanModel = statsRes.value.chat_model.replace("models/", "");
-          setSelectedModel(cleanModel);
+        if (activeRes && activeRes.default_model) {
+          setSelectedModel(activeRes.default_model);
         }
       } catch (err) {
-        console.debug("Dynamic model load fallback:", err);
+        console.debug("Smart filtering model load fallback:", err);
       }
     }
 

@@ -254,6 +254,14 @@ class ProviderModelsResponse(BaseModel):
     source: str = "Google AI Studio API"
 
 
+class ActiveChatModelsResponse(BaseModel):
+    default_model: str
+    active_primary: str
+    active_fallback: str
+    models: list[ModelCatalogItem]
+    configured_providers: list[str]
+
+
 # ─── Gateway Configuration CRUD ──────────────────────────────────────────────
 
 class ConfigEntry(BaseModel):

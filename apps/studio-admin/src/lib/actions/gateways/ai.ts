@@ -390,6 +390,34 @@ export async function fetchAiProviderModels(
   return res.json();
 }
 
+export type ActiveChatModelsResponse = {
+  default_model: string;
+  active_primary: string;
+  active_fallback: string;
+  models: ModelCatalogItem[];
+  configured_providers: string[];
+};
+
+export async function fetchActiveChatModels(): Promise<ActiveChatModelsResponse> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/providers/active-models`, {
+    headers: {
+      "X-Gateway-Token": token,
+      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch active chat models: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
 export type KnowledgeGraphData = {
   nodes: Array<{
     id: string;

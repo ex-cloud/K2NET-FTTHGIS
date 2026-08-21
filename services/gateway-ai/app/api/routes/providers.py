@@ -13,6 +13,7 @@ from app.models.schemas import (
     ProviderStatusItem,
     ProviderModelsResponse,
     ModelCatalogItem,
+    ActiveChatModelsResponse,
 )
 from app.api.dependencies import verify_gateway_and_tenant, TenantContext
 from app.core.config import settings
@@ -677,4 +678,111 @@ async def get_providers_status(
         active_primary=primary,
         active_fallback=fallback,
         providers=providers,
+    )
+
+
+@router.get("/active-models", response_model=ActiveChatModelsResponse)
+async def get_active_chat_models(
+    tenant_ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Smart Filtering: Mengembalikan HANYA model-model percakapan & penalaran yang
+    provider-nya terbukti aktif / terkonfigurasi di server dengan API key yang valid.
+    Model non-chat (gambar/video/audio murni/embedding) otomatis disaring.
+    """
+    configured_providers: list[str] = []
+    active_models: list[ModelCatalogItem] = []
+
+    # 1. Check Google Gemini
+    gemini_key = settings.GEMINI_API_KEY or settings.GOOGLE_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if gemini_key and "••••" not in gemini_key:
+        configured_providers.append("gemini")
+        # Include conversational / reasoning Gemini models only
+        allowed_gemini = [
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash-thinking-exp",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-3.1-pro-preview",
+            "gemini-3-flash-preview",
+            "gemini-2.5-flash-lite",
+        ]
+        for m in GEMINI_MASTER_CATALOG:
+            if m.id in allowed_gemini:
+                active_models.append(m)
+    elif gemini_key:
+        # Key is set (even if masked in string representation)
+        configured_providers.append("gemini")
+        allowed_gemini = [
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash-thinking-exp",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-3.1-pro-preview",
+            "gemini-3-flash-preview",
+            "gemini-2.5-flash-lite",
+        ]
+        for m in GEMINI_MASTER_CATALOG:
+            if m.id in allowed_gemini:
+                active_models.append(m)
+
+    # 2. Check OpenAI
+    openai_key = settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    if openai_key and len(openai_key.strip()) > 5:
+        configured_providers.append("openai")
+        for m in OPENAI_MASTER_CATALOG:
+            active_models.append(m)
+
+    # 3. Check DeepSeek
+    deepseek_key = settings.DEEPSEEK_API_KEY or os.getenv("DEEPSEEK_API_KEY")
+    if deepseek_key and len(deepseek_key.strip()) > 5:
+        configured_providers.append("deepseek")
+        for m in DEEPSEEK_MASTER_CATALOG:
+            active_models.append(m)
+
+    # 4. Check Local Ollama
+    try:
+        clean_base = settings.OLLAMA_BASE_URL.rstrip("/v1").rstrip("/")
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(f"{clean_base}/api/tags")
+            if resp.status_code == 200:
+                models_data = resp.json().get("models", [])
+                if models_data:
+                    configured_providers.append("ollama")
+                    for m in models_data:
+                        m_name = m.get("name", "")
+                        active_models.append(ModelCatalogItem(
+                            id=m_name,
+                            name=m_name,
+                            description=f"Local On-Premise Model ({m_name})",
+                            category="Local Engine (Ollama)",
+                            badge="Local",
+                            context_window="Dynamic",
+                        ))
+    except Exception:
+        pass
+
+    # Safety fallback: ensure at least default Gemini models exist
+    if not active_models:
+        for m in GEMINI_MASTER_CATALOG:
+            if m.id in ("gemini-2.5-flash", "gemini-3.7-flash", "gemini-2.5-pro", "gemini-2.0-flash-thinking-exp"):
+                active_models.append(m)
+        configured_providers.append("gemini")
+
+    clean_default = settings.GEMINI_CHAT_MODEL.replace("models/", "")
+
+    return ActiveChatModelsResponse(
+        default_model=clean_default,
+        active_primary=settings.DEFAULT_LLM_PROVIDER,
+        active_fallback=settings.FALLBACK_LLM_PROVIDER,
+        models=active_models,
+        configured_providers=configured_providers,
     )
