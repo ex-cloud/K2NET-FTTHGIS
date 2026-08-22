@@ -181,16 +181,17 @@ async def stream_chat_response(
                     tokens=total_tokens,
                 ))
 
-            if payload.session_id:
-                asyncio.create_task(_save_messages(
-                    session_id=payload.session_id,
-                    tenant_id=ctx.tenant_id,
-                    user_message=payload.message,
-                    assistant_message=accumulated_content,
-                    sources=sources,
-                    tokens_used=total_tokens,
-                    latency_ms=latency_ms,
-                ))
+            asyncio.create_task(_save_messages(
+                session_id=payload.session_id or str(_uuid.uuid4()),
+                tenant_id=ctx.tenant_id,
+                user_message=payload.message,
+                assistant_message=accumulated_content,
+                sources=sources,
+                tokens_used=total_tokens,
+                latency_ms=latency_ms,
+                model_used=payload.model or "gemini-2.5-flash",
+                scope=payload.scope or "GENERAL",
+            ))
 
         except Exception as e:
             logger.error(f"SSE stream error for tenant={ctx.tenant_id}: {e}")
@@ -218,8 +219,10 @@ async def _save_messages(
     sources: list,
     tokens_used: int,
     latency_ms: int,
+    model_used: str = "gemini-2.5-flash",
+    scope: str = "GENERAL",
 ) -> None:
-    """Simpan pasangan pesan user + assistant ke database secara async."""
+    """Simpan pasangan pesan user + assistant dan log ke analitik secara async."""
     from app.db.session import get_db_session
     import uuid as _uuid
 
@@ -228,6 +231,20 @@ async def _save_messages(
             target_sid = _uuid.UUID(str(session_id))
         except Exception:
             target_sid = _uuid.uuid5(_uuid.NAMESPACE_DNS, str(session_id))
+
+        # Deteksi kategori query otomatis untuk trending analytics
+        cat = scope if scope and scope != "GENERAL" else "GENERAL"
+        msg_lower = user_message.lower()
+        if "olt" in msg_lower or "gpon" in msg_lower or "zte" in msg_lower or "huawei" in msg_lower or "redaman" in msg_lower or "los" in msg_lower:
+            cat = "OLT_TROUBLESHOOTING"
+        elif "gis" in msg_lower or "odp" in msg_lower or "odc" in msg_lower or "postgis" in msg_lower or "kabel" in msg_lower or "splicing" in msg_lower:
+            cat = "GIS_SPATIAL"
+        elif "backup" in msg_lower or "restore" in msg_lower or "minio" in msg_lower or "nextcloud" in msg_lower or "disaster" in msg_lower:
+            cat = "BACKUP_RECOVERY"
+        elif "rbac" in msg_lower or "keycloak" in msg_lower or "role" in msg_lower or "tenant" in msg_lower:
+            cat = "RBAC_SECURITY"
+        elif "microservice" in msg_lower or "gateway" in msg_lower or "docker" in msg_lower or "kong" in msg_lower or "traefik" in msg_lower or "devops" in msg_lower:
+            cat = "DEVOPS_INFRA"
 
         import json as _json
         async with get_db_session() as session:
@@ -246,7 +263,13 @@ async def _save_messages(
             )
 
             await session.execute(
-                sql,
+                text("""
+                    INSERT INTO ai_chat_messages
+                        (id, session_id, tenant_id, role, content, sources, tokens_used, latency_ms)
+                    VALUES
+                        (:id1, :session_id, :tenant_id, 'user',      :user_msg,   '[]'::jsonb,     0,       0),
+                        (:id2, :session_id, :tenant_id, 'assistant', :assist_msg, :sources::jsonb, :tokens, :latency)
+                """),
                 {
                     "id1": str(_uuid.uuid4()),
                     "id2": str(_uuid.uuid4()),
@@ -264,9 +287,9 @@ async def _save_messages(
             normalized = user_message.strip()[:100]
             analytics_sql = text("""
                 INSERT INTO ai_query_analytics 
-                    (id, tenant_id, query_text, normalized_topic, response_time_ms, created_at)
+                    (id, tenant_id, query_text, normalized_topic, category_detected, model_used, response_time_ms, created_at)
                 VALUES 
-                    (:aid, :tenant_id, :query, :topic, :resp_time, NOW())
+                    (:aid, :tenant_id, :query, :topic, :cat, :model, :resp_time, NOW())
             """)
             await session.execute(
                 analytics_sql,
@@ -275,6 +298,8 @@ async def _save_messages(
                     "tenant_id": str(tenant_id) if tenant_id else None,
                     "query": user_message,
                     "topic": normalized,
+                    "cat": cat,
+                    "model": model_used,
                     "resp_time": latency_ms,
                 }
             )

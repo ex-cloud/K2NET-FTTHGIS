@@ -189,14 +189,16 @@ export function AiFullscreenLayout({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex bg-background text-foreground animate-in fade-in duration-200 overflow-hidden">
-      {/* ── Left Sidebar (History & New Chat) ── */}
-      <aside
-        className={cn(
-          "flex-shrink-0 flex flex-col border-r border-border/60 bg-muted/20 transition-[width] duration-200 overflow-hidden min-w-0",
-          sidebarOpen ? "w-64" : "w-0"
-        )}
-      >
+    <div className="fixed inset-0 z-[200] p-2.5 sm:p-4 md:p-5 lg:p-6 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200 overflow-hidden">
+      {/* Floating Canvas Card (Cloudflare Floating Style) */}
+      <div className="w-full h-full max-w-[1680px] rounded-2xl md:rounded-3xl border border-border/80 bg-background text-foreground shadow-2xl flex overflow-hidden relative">
+        {/* ── Left Sidebar (History & New Chat) ── */}
+        <aside
+          className={cn(
+            "flex-shrink-0 flex flex-col border-r border-border/60 bg-muted/20 transition-[width] duration-200 overflow-hidden min-w-0",
+            sidebarOpen ? "w-64" : "w-0"
+          )}
+        >
         <div className="flex flex-col h-full w-64 min-w-0">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between px-3 pt-3 pb-2 border-b border-border/40">
@@ -736,6 +738,7 @@ export function AiFullscreenLayout({
           )}
         </aside>
       )}
+      </div>
     </div>
   );
 }

@@ -126,7 +126,7 @@ export function FloatingAiAssistant() {
       const { fetchAiPromptIdeas } = await import("@/lib/actions/gateways");
       const all = await fetchAiPromptIdeas();
       const seen = new Set<string>();
-      setPinnedIdeas(all.filter((p) => p.is_pinned && !seen.has(p.id) && seen.add(p.id) !== undefined));
+      setPinnedIdeas(all.filter((p) => p.is_pinned && !seen.has(p.title.toLowerCase().trim()) && seen.add(p.title.toLowerCase().trim()) !== undefined));
     } catch {
       setPinnedIdeas(FALLBACK_PINNED);
     }
