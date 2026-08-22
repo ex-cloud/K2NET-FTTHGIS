@@ -83,6 +83,7 @@ const ROLES = [
 export function AiPromptsTab() {
   const [prompts, setPrompts] = useState<SuggestedPromptItem[]>([]);
   const [trending, setTrending] = useState<TrendingTopicItem[]>([]);
+  const [totalQueriesAnalyzed, setTotalQueriesAnalyzed] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [trendingLoading, setTrendingLoading] = useState(true);
 
@@ -136,8 +137,9 @@ export function AiPromptsTab() {
     try {
       setTrendingLoading(true);
       const res = await fetchAiTrendingTopics(7);
-      if (res && res.trending) {
-        setTrending(res.trending);
+      if (res) {
+        setTrending(res.trending || []);
+        setTotalQueriesAnalyzed(res.total_queries_analyzed || 0);
       }
     } catch (err) {
       console.warn("Gagal memuat trending topics:", err);
@@ -312,7 +314,7 @@ export function AiPromptsTab() {
           <div>
             <p className="text-[11px] font-medium text-foreground/75 dark:text-muted-foreground">Analisis Query Pengguna</p>
             <h3 className="text-2xl font-bold text-foreground mt-1">
-              {trending.reduce((acc, curr) => acc + curr.count, 0)}+
+              {totalQueriesAnalyzed}
             </h3>
             <p className="text-[10px] text-primary mt-0.5">Log pertanyaan 7 hari terakhir</p>
           </div>
@@ -365,8 +367,12 @@ export function AiPromptsTab() {
               Menganalisis frekuensi query pengguna...
             </div>
           ) : trending.length === 0 ? (
-            <div className="col-span-3 py-6 text-center text-xs text-muted-foreground">
-              Belum ada data analitik pertanyaan yang tercatat minggu ini.
+            <div className="col-span-3 py-8 text-center space-y-1.5">
+              <Activity className="w-6 h-6 text-muted-foreground/40 mx-auto" />
+              <p className="text-xs font-semibold text-foreground">Belum ada log pertanyaan pengguna tercatat minggu ini</p>
+              <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+                Topik trending akan otomatis terbentuk dan diagregasikan secara real-time dari riwayat percakapan teknisi di Ask AI Copilot.
+              </p>
             </div>
           ) : (
             trending.map((topic, i) => (

@@ -425,7 +425,13 @@ async def get_trending_topics(
             )
             existing_titles = {r[0] for r in existing_prompts_res.fetchall()}
 
-            # 2. Query analytics table for frequent topics
+            # 2. Count actual total queries in window
+            count_res = await session.execute(
+                text("SELECT COUNT(*) FROM ai_query_analytics WHERE created_at >= NOW() - INTERVAL ':days days'".replace(":days", str(days)))
+            )
+            total_count = count_res.scalar() or 0
+
+            # 3. Query analytics table for frequent topics
             analytics_query = """
                 SELECT 
                     COALESCE(NULLIF(normalized_topic, ''), SUBSTRING(query_text FROM 1 FOR 60)) AS topic,
@@ -457,37 +463,6 @@ async def get_trending_topics(
                     sample_query=sample,
                     is_already_prompt=is_already,
                 ))
-
-            # If analytics has few data, provide curated trend starter topics
-            if len(trending_items) < 3:
-                sample_trends = [
-                    TrendingTopicItem(
-                        topic="Reset & Konfigurasi ONT ZTE F609",
-                        count=19,
-                        category="OLT_TROUBLESHOOTING",
-                        sample_query="Bagaimana SOP mereset dan provisioning ulang ONT ZTE F609 via Telnet/OMCI?",
-                        is_already_prompt=False,
-                    ),
-                    TrendingTopicItem(
-                        topic="Standar Redaman ODP Splitter 1:16",
-                        count=14,
-                        category="GIS_SPATIAL",
-                        sample_query="Berapa insertion loss maksimal pada ODP dengan passive optical splitter 1:16?",
-                        is_already_prompt=False,
-                    ),
-                    TrendingTopicItem(
-                        topic="Perintah CLI Cek Status PON Port Huawei",
-                        count=11,
-                        category="OLT_TROUBLESHOOTING",
-                        sample_query="Tuliskan perintah display ont info dan display optical-info pada OLT Huawei MA5608T.",
-                        is_already_prompt=False,
-                    ),
-                ]
-                for st in sample_trends:
-                    if not any(t.topic == st.topic for t in trending_items):
-                        trending_items.append(st)
-
-            total_count = sum(t.count for t in trending_items)
 
             return TrendingTopicsResponse(
                 total_queries_analyzed=total_count,
