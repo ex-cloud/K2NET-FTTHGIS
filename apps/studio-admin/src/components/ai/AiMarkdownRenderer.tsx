@@ -112,7 +112,7 @@ export function AiMarkdownRenderer({
   return (
     <div
       className={cn(
-        "prose prose-sm dark:prose-invert max-w-none text-xs sm:text-[13px] leading-relaxed break-words",
+        "prose prose-sm dark:prose-invert max-w-full text-xs sm:text-[13px] leading-relaxed break-words overflow-x-hidden",
         "prose-headings:font-semibold prose-headings:text-foreground",
         "prose-p:my-2 prose-p:leading-relaxed prose-p:text-foreground/90",
         "prose-strong:font-semibold prose-strong:text-foreground",

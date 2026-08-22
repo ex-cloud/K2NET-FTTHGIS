@@ -234,10 +234,13 @@ export function AiPromptsTab() {
       await togglePinAiPrompt(item.id);
       toast.success(item.is_pinned ? "Pin dilepas dari prompt" : "Prompt berhasil di-pin di urutan teratas!");
       loadPrompts();
+      // Notify FloatingAiAssistant to refresh its pinned ideas list
+      window.dispatchEvent(new CustomEvent("k2net-prompt-pinned"));
     } catch (err) {
       toast.error("Gagal mengubah status pin prompt.");
     }
   };
+
 
   // ── Toggle Active Status ──────────────────────────────────────────────────
   const handleToggleActive = async (item: SuggestedPromptItem) => {
