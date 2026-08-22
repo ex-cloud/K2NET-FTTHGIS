@@ -99,7 +99,19 @@ export function FloatingAiAssistant() {
   const [permSaving,         setPermSaving]         = useState(false);
   const [permRevoking,       setPermRevoking]       = useState(false);
 
-  const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } = useAiChatStream({
+  const {
+    messages,
+    isStreaming,
+    error,
+    sessions,
+    activeSessionId,
+    sendMessage,
+    stopStreaming,
+    clearMessages,
+    createNewSession,
+    loadSession,
+    deleteSession,
+  } = useAiChatStream({
     model:              selectedModel,
     userScope:          agentAuth?.user_scope        || "PLATFORM_INTERNAL",
     accessTier:         agentAuth?.access_tier       || "FULL",
@@ -451,6 +463,11 @@ export function FloatingAiAssistant() {
               setIsOpen(false);
               setIsFullscreen(true);
             }}
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onNewChat={createNewSession}
+            onLoadSession={loadSession}
+            onDeleteSession={deleteSession}
           />
         )}
       </SheetContent>
@@ -494,6 +511,11 @@ export function FloatingAiAssistant() {
           setIsFullscreen(false);
           setIsOpen(true);
         }}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onNewChat={createNewSession}
+        onLoadSession={loadSession}
+        onDeleteSession={deleteSession}
       />
     )}
     </>

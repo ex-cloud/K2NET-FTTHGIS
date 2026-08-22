@@ -203,10 +203,20 @@ export function useAiKnowledge() {
     try {
       const res = await triggerServerDocsSync();
       toast.success(res.message || "Sinkronisasi direktori server /opt/project5/docs dimulai di latar belakang!");
-      setTimeout(() => {
+      // Progressive polling to show real-time chunk & metadata updates
+      const t1 = setTimeout(() => refresh(), 3000);
+      const t2 = setTimeout(() => refresh(), 7000);
+      const t3 = setTimeout(() => refresh(), 12000);
+      const t4 = setTimeout(() => {
         refresh();
         setIsSyncing(false);
-      }, 3000);
+      }, 18000);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+      };
     } catch {
       toast.error("Terjadi kesalahan koneksi saat memicu sinkronisasi");
       setIsSyncing(false);

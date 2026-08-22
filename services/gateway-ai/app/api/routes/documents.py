@@ -1456,34 +1456,62 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
 
             doc_id = uuid.uuid4()
             async with get_db_session() as session:
-                # Cek apakah file sudah ada
+                # Cek apakah file sudah ada di database
                 check = await session.execute(
                     text("SELECT id FROM ai_documents WHERE tenant_id = :tenant_id AND file_name = :fn"),
                     {"tenant_id": str(tenant_id), "fn": rel_path},
                 )
                 existing = check.scalar()
                 if existing:
-                    continue
-
-                await session.execute(
-                    text("""
-                        INSERT INTO ai_documents
-                            (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type, status, raw_content, created_by)
-                        VALUES
-                            (:id, :tenant_id, :title, :category, :scope, :fn, :size, 'text/markdown', 'PROCESSING', :raw_content, :actor)
-                    """),
-                    {
-                        "id": str(doc_id),
-                        "tenant_id": str(tenant_id),
-                        "title": title,
-                        "category": category,
-                        "scope": scope_val,
-                        "fn": rel_path,
-                        "size": len(raw_file_content.encode("utf-8")),
-                        "raw_content": raw_file_content,
-                        "actor": actor_id or "system-sync",
-                    },
-                )
+                    # Update dokumen yang ada: hapus chunk lama dan set status PROCESSING
+                    doc_id = uuid.UUID(str(existing))
+                    await session.execute(
+                        text("DELETE FROM ai_document_chunks WHERE document_id = :doc_id"),
+                        {"doc_id": str(doc_id)},
+                    )
+                    await session.execute(
+                        text("""
+                            UPDATE ai_documents
+                            SET title = :title,
+                                category = :category,
+                                scope = :scope,
+                                file_size_bytes = :size,
+                                mime_type = 'text/markdown',
+                                status = 'PROCESSING',
+                                raw_content = :raw_content,
+                                error_message = NULL,
+                                updated_at = NOW()
+                            WHERE id = :id
+                        """),
+                        {
+                            "id": str(doc_id),
+                            "title": title,
+                            "category": category,
+                            "scope": scope_val,
+                            "size": len(raw_file_content.encode("utf-8")),
+                            "raw_content": raw_file_content,
+                        },
+                    )
+                else:
+                    await session.execute(
+                        text("""
+                            INSERT INTO ai_documents
+                                (id, tenant_id, title, category, scope, file_name, file_size_bytes, mime_type, status, raw_content, created_by)
+                            VALUES
+                                (:id, :tenant_id, :title, :category, :scope, :fn, :size, 'text/markdown', 'PROCESSING', :raw_content, :actor)
+                        """),
+                        {
+                            "id": str(doc_id),
+                            "tenant_id": str(tenant_id),
+                            "title": title,
+                            "category": category,
+                            "scope": scope_val,
+                            "fn": rel_path,
+                            "size": len(raw_file_content.encode("utf-8")),
+                            "raw_content": raw_file_content,
+                            "actor": actor_id or "system-sync",
+                        },
+                    )
 
             # Lakukan chunking pada konten body
             chunks = chunker.chunk_text(content if len(content) > 10 else raw_file_content)
@@ -1506,12 +1534,14 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                             "total_chunks": len(chunks), 
                             "vendor": vendor, 
                             "scope": scope_val,
-                            "category": category
+                            "category": category,
+                            "title": title,
                         },
                     )
                     stored_count += 1
+                    await asyncio.sleep(0.5)
                 except Exception as ce:
-                    logger.warning(f"Failed chunk {i} for {rel_path}: {ce}")
+                    logger.warning(f"[Server Sync] Failed chunk {i} for {rel_path}: {ce}")
 
             if stored_count > 0:
                 await vector_store.update_document_status(doc_id, tenant_id, "INDEXED", chunk_count=stored_count)

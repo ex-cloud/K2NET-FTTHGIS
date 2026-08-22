@@ -304,6 +304,7 @@ class LLMEngine:
 
         elif self.provider == "gemini":
             import os
+            import asyncio
             import google.generativeai as genai
             gemini_key = (
                 settings.GEMINI_API_KEY
@@ -319,14 +320,25 @@ class LLMEngine:
             if not model_name.startswith("models/"):
                 model_name = f"models/{model_name}"
 
-            result = genai.embed_content(
-                model=model_name,
-                content=text,
-                task_type="retrieval_document",
-            )
-            emb = result["embedding"]
-            if len(emb) < 1536:
-                emb = emb + [0.0] * (1536 - len(emb))
-            return emb[:1536]
+            max_retries = 6
+            for attempt in range(max_retries):
+                try:
+                    result = genai.embed_content(
+                        model=model_name,
+                        content=text,
+                        task_type="retrieval_document",
+                    )
+                    emb = result["embedding"]
+                    if len(emb) < 1536:
+                        emb = emb + [0.0] * (1536 - len(emb))
+                    return emb[:1536]
+                except Exception as e:
+                    err_str = str(e)
+                    if ("429" in err_str or "quota" in err_str.lower() or "rate" in err_str.lower()) and attempt < max_retries - 1:
+                        backoff = (attempt + 1) * 4
+                        logger.warning(f"[Embedding RateLimit] Gemini 429 quota reached, waiting {backoff}s before retry (attempt {attempt+1}/{max_retries})...")
+                        await asyncio.sleep(backoff)
+                    else:
+                        raise e
 
         raise ValueError(f"Provider '{self.provider}' tidak didukung untuk embedding.")

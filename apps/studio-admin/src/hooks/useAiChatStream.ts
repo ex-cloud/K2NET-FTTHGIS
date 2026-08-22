@@ -3,14 +3,17 @@
 /**
  * K2NET AI Chat Stream Hook
  * Mengelola koneksi SSE ke /api/v1/ai/chat/stream via Kong API Gateway.
- * Features: streaming token rendering, thinking/chain-of-thought parsing,
+ * Features: multi-session history management (New Chat preserves past chats),
+ * streaming token rendering, thinking/chain-of-thought parsing,
  * Redis Semantic Cache badge, localStorage session persistence, Markdown export.
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
-const STORAGE_KEY = "k2net_ai_chat_session";
+export const SESSIONS_STORAGE_KEY = "k2net_ai_chat_sessions";
+export const ACTIVE_SESSION_ID_KEY = "k2net_ai_active_session_id";
+export const LEGACY_STORAGE_KEY = "k2net_ai_chat_session";
 
 export interface ChatMessage {
   id: string;
@@ -24,6 +27,15 @@ export interface ChatMessage {
   isStreaming?: boolean;
   tokensUsed?: number;
   latencyMs?: number;
+}
+
+export interface StoredChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
+  model?: string;
 }
 
 /** Ekspor seluruh percakapan sebagai file Markdown untuk SOP Ticket */
@@ -88,37 +100,118 @@ const AI_GATEWAY_URL = "/api/v1/ai/chat/stream";
 export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
   const { data: session } = useSession();
 
-  // ── Load dari localStorage saat pertama mount ─────────────────────────────
+  // ── Multi-Session History State ───────────────────────────────────────────
+  const [sessions, setSessions] = useState<StoredChatSession[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      if (stored) {
+        const parsed: StoredChatSession[] = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+      // Migration from legacy storage key if exists
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        const legacyMsgs: ChatMessage[] = JSON.parse(legacy);
+        if (legacyMsgs.length > 0) {
+          const firstUserMsg = legacyMsgs.find((m) => m.role === "user")?.content || "Previous Chat";
+          const migratedSession: StoredChatSession = {
+            id: `sess-${Date.now()}`,
+            title: firstUserMsg.slice(0, 45),
+            messages: legacyMsgs.map((m) => ({ ...m, isStreaming: false, isThinking: false })),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([migratedSession]));
+          return [migratedSession];
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
+    if (typeof window === "undefined") return `sess-${Date.now()}`;
+    try {
+      const savedActive = localStorage.getItem(ACTIVE_SESSION_ID_KEY);
+      if (savedActive) return savedActive;
+      const storedSessions = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      if (storedSessions) {
+        const parsed: StoredChatSession[] = JSON.parse(storedSessions);
+        if (parsed.length > 0) return parsed[0].id;
+      }
+    } catch {}
+    const newId = `sess-${Date.now()}`;
+    try { localStorage.setItem(ACTIVE_SESSION_ID_KEY, newId); } catch {}
+    return newId;
+  });
+
+  // ── Load active session messages ─────────────────────────────────────────
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
-      const parsed: ChatMessage[] = JSON.parse(stored);
-      // Bersihkan state streaming yang tersimpan (tidak valid saat reload)
-      return parsed.map((m) => ({ ...m, isStreaming: false, isThinking: false }));
-    } catch {
-      return [];
-    }
+      const stored = localStorage.getItem(SESSIONS_STORAGE_KEY);
+      if (stored) {
+        const parsed: StoredChatSession[] = JSON.parse(stored);
+        const active = parsed.find((s) => s.id === activeSessionId) || parsed[0];
+        if (active) {
+          return active.messages.map((m) => ({ ...m, isStreaming: false, isThinking: false }));
+        }
+      }
+    } catch {}
+    return [];
   });
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // ── Simpan ke localStorage setiap kali messages berubah ──────────────────
+  // ── Sync messages to active session in localStorage ──────────────────────
   useEffect(() => {
     if (messages.length === 0) return;
     try {
-      // Simpan hanya pesan yang sudah selesai (bukan sedang streaming)
-      const toStore = messages.filter((m) => !m.isStreaming && !m.isThinking);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore.slice(-40)));
-    } catch {
-      // Abaikan jika storage penuh
-    }
-  }, [messages]);
+      const finishedMessages = messages.filter((m) => !m.isStreaming && !m.isThinking);
+      if (finishedMessages.length === 0) return;
 
-  /** Buat ID unik untuk message */
+      const firstUserMsg = messages.find((m) => m.role === "user")?.content || "New Chat";
+      const title = firstUserMsg.slice(0, 45).trim() || "New Chat";
+      const now = new Date().toISOString();
+
+      setSessions((prev) => {
+        const idx = prev.findIndex((s) => s.id === activeSessionId);
+        let updated: StoredChatSession[];
+        if (idx >= 0) {
+          updated = [...prev];
+          updated[idx] = {
+            ...updated[idx],
+            title: updated[idx].title && updated[idx].title !== "New Chat" ? updated[idx].title : title,
+            messages: finishedMessages,
+            updatedAt: now,
+          };
+        } else {
+          updated = [
+            {
+              id: activeSessionId,
+              title,
+              messages: finishedMessages,
+              createdAt: now,
+              updatedAt: now,
+              model: options.model,
+            },
+            ...prev,
+          ];
+        }
+        try {
+          localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updated.slice(0, 50)));
+        } catch {}
+        return updated;
+      });
+    } catch {}
+  }, [messages, activeSessionId, options.model]);
+
+  /** Create unique message ID */
   const createId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
   /** Kirim pesan dan mulai streaming */
@@ -169,7 +262,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            session_id: options.sessionId || null,
+            session_id: activeSessionId,
             message: userMessage,
             scope: options.scope || "GENERAL",
             model: options.model || "",
@@ -312,7 +405,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
         abortControllerRef.current = null;
       }
     },
-    [isStreaming, messages, options.model, options.scope, options.sessionId, session]
+    [isStreaming, messages, options.model, options.scope, activeSessionId, session]
   );
 
   /** Batalkan streaming yang sedang berjalan */
@@ -324,23 +417,70 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
     }
   }, []);
 
-  /** Hapus seluruh riwayat chat sesi ini (termasuk localStorage) */
-  const clearMessages = useCallback(() => {
+  /** Mulai sesi chat baru (+ New chat) tanpa menghapus histori sebelumnya */
+  const createNewSession = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsStreaming(false);
+    }
+    const newSessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setActiveSessionId(newSessionId);
     setMessages([]);
     setError(null);
     try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+      localStorage.setItem(ACTIVE_SESSION_ID_KEY, newSessionId);
+    } catch {}
   }, []);
+
+  /** Muat sesi percakapan dari daftar riwayat */
+  const loadSession = useCallback((sessionId: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsStreaming(false);
+    }
+    const target = sessions.find((s) => s.id === sessionId);
+    if (target) {
+      setActiveSessionId(sessionId);
+      setMessages(target.messages.map((m) => ({ ...m, isStreaming: false, isThinking: false })));
+      setError(null);
+      try {
+        localStorage.setItem(ACTIVE_SESSION_ID_KEY, sessionId);
+      } catch {}
+    }
+  }, [sessions]);
+
+  /** Hapus satu sesi tertentu dari riwayat */
+  const deleteSession = useCallback((sessionId: string) => {
+    setSessions((prev) => {
+      const updated = prev.filter((s) => s.id !== sessionId);
+      try {
+        localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    if (sessionId === activeSessionId) {
+      createNewSession();
+    }
+  }, [activeSessionId, createNewSession]);
+
+  /** Hapus seluruh pesan di sesi aktif saat ini */
+  const clearMessages = useCallback(() => {
+    createNewSession();
+  }, [createNewSession]);
 
   return {
     messages,
     isStreaming,
     error,
+    sessions,
+    activeSessionId,
     sendMessage,
     stopStreaming,
     clearMessages,
+    createNewSession,
+    loadSession,
+    deleteSession,
   };
 }

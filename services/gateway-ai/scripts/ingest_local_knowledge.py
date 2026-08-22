@@ -208,6 +208,7 @@ async def ingest_directory(docs_dir: str, tenant_id: uuid.UUID, default_category
                         },
                     )
                     stored_count += 1
+                    await asyncio.sleep(0.5)
                 except Exception as chunk_err:
                     print(f"   ❌ Gagal membuat embedding chunk {i}: {chunk_err}")
 
