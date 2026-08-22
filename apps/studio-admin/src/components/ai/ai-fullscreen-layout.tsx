@@ -1,23 +1,36 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Sparkles, X, Plus, Search, MessageSquare, PanelLeftClose,
   Maximize2, Download, Trash2, Send, Square, SlidersHorizontal,
-  Check, ChevronRight, Minimize2, Clock, ShieldCheck, Cpu, Database,
-  Activity, MapPin, GitPullRequest, Settings,
+  Check, Minimize2, Clock, ShieldCheck, Cpu, Database,
+  Activity, MapPin, GitPullRequest, Settings, ArrowLeft, Loader2, Save,
 } from "lucide-react";
 import { Badge, ScrollArea, Button } from "@k2net/ui";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MessageBubble } from "@/components/ai/ai-message-bubble";
 import { exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import type { ChatMessage, StoredChatSession } from "@/hooks/useAiChatStream";
-import type { SuggestedPromptItem, AgentAuthorizationData } from "@/lib/actions/gateways";
+import {
+  SuggestedPromptItem,
+  AgentAuthorizationData,
+  fetchAgentPermissionsCatalog,
+  fetchAgentRolePresets,
+  saveAgentAuthorization,
+  PermissionCatalogData,
+  RolePresetData,
+} from "@/lib/actions/gateways";
 import { Zap } from "lucide-react";
 import { AiSpatialNetworkGraphic } from "@/components/ai/AiSpatialNetworkGraphic";
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Zap, MapPin, Activity, Database, GitPullRequest, ShieldCheck, Sparkles, Cpu, Search,
+};
+
+const DOMAIN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Cpu, Activity, MapPin, Database, ShieldCheck, GitPullRequest, Sparkles,
 };
 
 interface AiFullscreenLayoutProps {
@@ -51,10 +64,10 @@ interface AiFullscreenLayoutProps {
 
 /**
  * Full-viewport AI chat layout — Cloudflare style:
- * - Left sidebar: New chat (+), Search, categorized chat history (Today, Yesterday, Older).
- * - Center: Centered chat area with spacious margins (max-w-3xl mx-auto px-6).
- * - Right sidebar (collapsible): K2NET Agent Configuration & Permissions panel (toggled via top-right button).
- * - Clean input box (Ask badge & duplicate sliders removed).
+ * - Left sidebar: Responsive multi-session chat history with smooth auto-truncation.
+ * - Center: Centered spatial GIS map graphic and spacious chat area.
+ * - Header: Clean and minimal without distracting model pill text.
+ * - Right sidebar: Embedded K2NET Agent Configuration & Permissions Management (no mode switching).
  */
 export function AiFullscreenLayout({
   messages, pinnedIdeas, input, onInputChange, onSend, onStop, onClear,
@@ -65,9 +78,42 @@ export function AiFullscreenLayout({
 }: AiFullscreenLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelView, setRightPanelView] = useState<"summary" | "permissions">("summary");
   const [sidebarSearch, setSidebarSearch] = useState("");
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  // Embedded Permissions State inside Right Panel
+  const [permCatalog, setPermCatalog] = useState<PermissionCatalogData | null>(null);
+  const [permPresets, setPermPresets] = useState<RolePresetData[]>([]);
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permTier, setPermTier] = useState<"FULL" | "ROLE_PRESET" | "READ_ONLY" | "CUSTOM">(
+    (agentAuth?.access_tier as any) || "FULL"
+  );
+  const [permSelected, setPermSelected] = useState<Set<string>>(
+    new Set(agentAuth?.granted_permissions || [])
+  );
+  const [permSearch, setPermSearch] = useState("");
+  const [permExpandedDomains, setPermExpandedDomains] = useState<Set<string>>(new Set());
+
+  // Load permissions data when switching to permissions view
+  useEffect(() => {
+    if (rightPanelOpen && rightPanelView === "permissions" && !permCatalog) {
+      setPermLoading(true);
+      Promise.all([
+        fetchAgentPermissionsCatalog(agentAuth?.user_scope || "PLATFORM_INTERNAL"),
+        fetchAgentRolePresets(agentAuth?.user_scope || "PLATFORM_INTERNAL"),
+      ])
+        .then(([catRes, preRes]) => {
+          setPermCatalog(catRes);
+          setPermPresets(preRes.presets);
+          setPermExpandedDomains(new Set(catRes.domains.map((d) => d.id)));
+        })
+        .catch((err) => toast.error("Gagal memuat katalog izin: " + String(err)))
+        .finally(() => setPermLoading(false));
+    }
+  }, [rightPanelOpen, rightPanelView, permCatalog, agentAuth?.user_scope]);
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,16 +164,40 @@ export function AiFullscreenLayout({
     return { today, yesterday, older };
   }, [filteredSessions]);
 
+  // Handle saving permissions right inside the panel
+  const handleSavePermissions = async () => {
+    setPermSaving(true);
+    try {
+      const permissionsToGrant = permTier === "FULL"
+        ? (permCatalog ? permCatalog.domains.flatMap((d) => d.permissions.map((p) => p.id)) : Array.from(permSelected))
+        : Array.from(permSelected);
+
+      await saveAgentAuthorization({
+        user_scope: agentAuth?.user_scope || "PLATFORM_INTERNAL",
+        access_tier: permTier,
+        role_preset: permTier === "ROLE_PRESET" ? "SUPER_ADMIN" : undefined,
+        granted_permissions: permissionsToGrant,
+      });
+
+      toast.success("Otorisasi K2 Agent berhasil disimpan");
+      setRightPanelView("summary");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyimpan otorisasi");
+    } finally {
+      setPermSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex bg-background text-foreground animate-in fade-in duration-200 overflow-hidden">
       {/* ── Left Sidebar (History & New Chat) ── */}
       <aside
         className={cn(
-          "flex-shrink-0 flex flex-col border-r border-border/60 bg-muted/20 transition-[width] duration-200 overflow-hidden",
+          "flex-shrink-0 flex flex-col border-r border-border/60 bg-muted/20 transition-[width] duration-200 overflow-hidden min-w-0",
           sidebarOpen ? "w-64" : "w-0"
         )}
       >
-        <div className="flex flex-col h-full w-64">
+        <div className="flex flex-col h-full w-64 min-w-0">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between px-3 pt-3 pb-2 border-b border-border/40">
             <div className="flex items-center gap-2">
@@ -172,32 +242,32 @@ export function AiFullscreenLayout({
             </div>
           </div>
 
-          {/* Chat History List */}
-          <ScrollArea className="flex-1 px-3 py-1">
+          {/* Chat History List (Responsive, Auto-Truncated, Tooltip Enabled) */}
+          <ScrollArea className="flex-1 px-3 py-1 min-w-0">
             {filteredSessions.length === 0 ? (
               <div className="py-12 text-center space-y-2">
                 <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto" />
                 <p className="text-xs text-muted-foreground">No chat history yet</p>
               </div>
             ) : (
-              <div className="space-y-4 pb-4">
+              <div className="space-y-4 pb-4 min-w-0">
                 {/* Today */}
                 {categorizedSessions.today.length > 0 && (
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Today</p>
                     {categorizedSessions.today.map((s) => (
                       <div
                         key={s.id}
                         onClick={() => onLoadSession?.(s.id)}
                         className={cn(
-                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border",
+                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
                           s.id === activeSessionId
                             ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                             : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
                         )}
                         title={s.title}
                       >
-                        <span className="truncate flex-1">{s.title}</span>
+                        <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
                         {onDeleteSession && (
                           <button
                             type="button"
@@ -205,7 +275,7 @@ export function AiFullscreenLayout({
                               e.stopPropagation();
                               onDeleteSession(s.id);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
                             title="Delete chat"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -218,21 +288,21 @@ export function AiFullscreenLayout({
 
                 {/* Yesterday */}
                 {categorizedSessions.yesterday.length > 0 && (
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Yesterday</p>
                     {categorizedSessions.yesterday.map((s) => (
                       <div
                         key={s.id}
                         onClick={() => onLoadSession?.(s.id)}
                         className={cn(
-                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border",
+                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
                           s.id === activeSessionId
                             ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                             : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
                         )}
                         title={s.title}
                       >
-                        <span className="truncate flex-1">{s.title}</span>
+                        <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
                         {onDeleteSession && (
                           <button
                             type="button"
@@ -240,7 +310,7 @@ export function AiFullscreenLayout({
                               e.stopPropagation();
                               onDeleteSession(s.id);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
                             title="Delete chat"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -253,21 +323,21 @@ export function AiFullscreenLayout({
 
                 {/* Older */}
                 {categorizedSessions.older.length > 0 && (
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Previous 7 Days</p>
                     {categorizedSessions.older.map((s) => (
                       <div
                         key={s.id}
                         onClick={() => onLoadSession?.(s.id)}
                         className={cn(
-                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border",
+                          "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
                           s.id === activeSessionId
                             ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                             : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
                         )}
                         title={s.title}
                       >
-                        <span className="truncate flex-1">{s.title}</span>
+                        <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
                         {onDeleteSession && (
                           <button
                             type="button"
@@ -275,7 +345,7 @@ export function AiFullscreenLayout({
                               e.stopPropagation();
                               onDeleteSession(s.id);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
                             title="Delete chat"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -293,7 +363,7 @@ export function AiFullscreenLayout({
 
       {/* ── Main Chat Area ── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-background">
-        {/* ── Top Header ── */}
+        {/* ── Top Header (Clean: Removed model pill text as requested) ── */}
         <header className="flex items-center justify-between px-6 py-3 border-b border-border/60 bg-background/95 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-3">
             {!sidebarOpen && (
@@ -306,23 +376,16 @@ export function AiFullscreenLayout({
                 <PanelLeftClose className="w-4 h-4 rotate-180" />
               </button>
             )}
-
-            {/* Model Pill (Quota Protection: Sleek Status Badge) */}
-            <Badge variant="outline" className="text-xs px-3 py-1 border-primary/30 text-primary bg-primary/10 font-semibold gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              {activeModelLabel}
-            </Badge>
-
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border text-muted-foreground font-mono">
-              RAG Live • 1536 dim
-            </Badge>
           </div>
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-2">
             {/* Toggle K2 Agent Settings Right Panel */}
             <button
-              onClick={() => setRightPanelOpen((prev) => !prev)}
+              onClick={() => {
+                setRightPanelOpen((prev) => !prev);
+                setRightPanelView("summary");
+              }}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
                 rightPanelOpen
@@ -371,7 +434,7 @@ export function AiFullscreenLayout({
           <div className="w-full max-w-3xl mx-auto px-6 py-8 space-y-6">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6 text-center">
-                {/* Greeting with Spatial Network Map Graphic */}
+                {/* Greeting with Spatial City Map Topology Graphic */}
                 <div className="space-y-3">
                   <AiSpatialNetworkGraphic size="lg" className="mx-auto" />
                   <div>
@@ -481,13 +544,27 @@ export function AiFullscreenLayout({
         </div>
       </div>
 
-      {/* ── Right Collapsible Configuration Panel (Red Box Area in Gambar 2) ── */}
+      {/* ── Right Collapsible Configuration Panel (Embedded Permissions Manager) ── */}
       {rightPanelOpen && (
-        <aside className="w-80 flex-shrink-0 flex flex-col border-l border-border/60 bg-card/70 backdrop-blur-md animate-in slide-in-from-right-2 duration-200 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+        <aside className="w-88 flex-shrink-0 flex flex-col border-l border-border/60 bg-card/90 backdrop-blur-md animate-in slide-in-from-right-2 duration-200 overflow-hidden z-20">
+          {/* Header of Right Panel */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-background/50">
             <div className="flex items-center gap-2">
-              <Settings className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-foreground">K2 Agent Config</span>
+              {rightPanelView === "permissions" ? (
+                <button
+                  type="button"
+                  onClick={() => setRightPanelView("summary")}
+                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+              ) : (
+                <>
+                  <Settings className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold text-foreground">K2 Agent Config</span>
+                </>
+              )}
             </div>
             <button
               type="button"
@@ -498,42 +575,165 @@ export function AiFullscreenLayout({
             </button>
           </div>
 
-          <ScrollArea className="flex-1 p-4 space-y-4">
-            {/* Status Card */}
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-primary text-xs">
-                <Check className="w-3.5 h-3.5" />
-                <span>API Token Active</span>
+          {/* View 1: Summary */}
+          {rightPanelView === "summary" && (
+            <ScrollArea className="flex-1 p-4 space-y-4">
+              {/* Status Card */}
+              <div className="p-3.5 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-primary text-xs">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>API Token Active</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Scope: <span className="font-semibold text-foreground">{agentAuth?.user_scope || "PLATFORM_INTERNAL"}</span>
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  Access Tier: <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">{agentAuth?.access_tier || "FULL"}</Badge>
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                K2 Agent Scope: <span className="font-semibold text-foreground">{agentAuth?.user_scope || "PLATFORM_INTERNAL"}</span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Access Tier: <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">{agentAuth?.access_tier || "FULL"}</Badge>
-              </p>
-            </div>
 
-            {/* Active Model Info */}
-            <div className="p-3 rounded-xl bg-muted/40 border border-border space-y-1.5">
-              <p className="text-xs font-semibold text-foreground">Active Model Engine</p>
-              <p className="text-xs text-primary font-mono">{activeModelLabel}</p>
-              <p className="text-[11px] text-muted-foreground">
-                Model default diatur terpusat oleh Super Admin untuk efisiensi kuota tenant.
-              </p>
-            </div>
+              {/* Active Model Info */}
+              <div className="p-3.5 rounded-2xl bg-muted/40 border border-border space-y-1.5">
+                <p className="text-xs font-semibold text-foreground">Active Model Engine</p>
+                <p className="text-xs text-primary font-mono font-semibold">{activeModelLabel}</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Model default dikonfigurasi terpusat oleh Super Admin untuk efisiensi kuota tenant.
+                </p>
+              </div>
 
-            {/* Permissions Button */}
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                onClick={onConfigurePermissions}
-                className="w-full text-xs font-semibold flex items-center justify-center gap-2"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Manage Permissions</span>
-              </Button>
+              {/* Manage Permissions Button */}
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setRightPanelView("permissions")}
+                  className="w-full text-xs font-semibold flex items-center justify-center gap-2 py-2 rounded-xl"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                  <span>Manage Permissions</span>
+                </Button>
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* View 2: Embedded Permissions Checklist (Right inside the panel) */}
+          {rightPanelView === "permissions" && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <ScrollArea className="flex-1 p-4 space-y-4">
+                {permLoading ? (
+                  <div className="py-16 text-center space-y-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
+                    <p className="text-xs text-muted-foreground">Memuat katalog izin...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Tier selector */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground">Authorization Tier</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(["FULL", "READ_ONLY", "ROLE_PRESET", "CUSTOM"] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setPermTier(t)}
+                            className={cn(
+                              "px-2.5 py-1.5 rounded-lg text-xs font-medium border text-left transition-all",
+                              permTier === t
+                                ? "border-primary bg-primary/10 text-primary font-bold"
+                                : "border-border bg-background text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search permissions..."
+                        value={permSearch}
+                        onChange={(e) => setPermSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
+
+                    {/* Domain List */}
+                    {permCatalog?.domains.map((domain) => {
+                      const Icon = DOMAIN_ICONS[domain.id] || Sparkles;
+                      const filteredPerms = domain.permissions.filter(
+                        (p) =>
+                          p.name.toLowerCase().includes(permSearch.toLowerCase()) ||
+                          p.id.toLowerCase().includes(permSearch.toLowerCase())
+                      );
+                      if (filteredPerms.length === 0 && permSearch) return null;
+
+                      return (
+                        <div key={domain.id} className="p-2.5 rounded-xl border border-border bg-background/50 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-3.5 h-3.5 text-primary" />
+                            <span className="text-xs font-bold text-foreground">{domain.title}</span>
+                          </div>
+                          <div className="space-y-1.5 pl-4 border-l border-border">
+                            {filteredPerms.map((perm) => {
+                              const isChecked = permTier === "FULL" || permSelected.has(perm.id);
+                              return (
+                                <label
+                                  key={perm.id}
+                                  className={cn(
+                                    "flex items-start gap-2 text-xs cursor-pointer",
+                                    permTier === "FULL" && "opacity-75 cursor-not-allowed"
+                                  )}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={permTier === "FULL"}
+                                    onChange={(e) => {
+                                      const next = new Set(permSelected);
+                                      if (e.target.checked) next.add(perm.id);
+                                      else next.delete(perm.id);
+                                      setPermSelected(next);
+                                    }}
+                                    className="mt-0.5 rounded border-border text-primary focus:ring-primary"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-foreground text-[11px] leading-tight">{perm.name}</p>
+                                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{perm.description}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* Bottom Action Footer */}
+              <div className="p-3 border-t border-border/60 bg-background/80 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setRightPanelView("summary")}
+                  className="flex-1 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSavePermissions}
+                  disabled={permSaving}
+                  className="flex-1 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-1.5"
+                >
+                  {permSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>Save</span>
+                </Button>
+              </div>
             </div>
-          </ScrollArea>
+          )}
         </aside>
       )}
     </div>

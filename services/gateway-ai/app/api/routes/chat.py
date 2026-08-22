@@ -224,21 +224,33 @@ async def _save_messages(
     import uuid as _uuid
 
     try:
-        sql = text("""
-            INSERT INTO ai_chat_messages
-                (id, session_id, tenant_id, role, content, sources, tokens_used, latency_ms)
-            VALUES
-                (:id1, :session_id, :tenant_id, 'user',      :user_msg,   '[]'::jsonb,     0,       0),
-                (:id2, :session_id, :tenant_id, 'assistant', :assist_msg, :sources::jsonb, :tokens, :latency)
-        """)
+        try:
+            target_sid = _uuid.UUID(str(session_id))
+        except Exception:
+            target_sid = _uuid.uuid5(_uuid.NAMESPACE_DNS, str(session_id))
+
         import json as _json
         async with get_db_session() as session:
+            # Pastikan parent session ada di ai_chat_sessions untuk memenuhi FK constraint
+            await session.execute(
+                text("""
+                    INSERT INTO ai_chat_sessions (id, tenant_id, user_id, title, created_at, updated_at)
+                    VALUES (:sid, :tid, 'system', :title, NOW(), NOW())
+                    ON CONFLICT (id) DO UPDATE SET updated_at = NOW()
+                """),
+                {
+                    "sid": str(target_sid),
+                    "tid": str(tenant_id),
+                    "title": user_message[:50],
+                }
+            )
+
             await session.execute(
                 sql,
                 {
                     "id1": str(_uuid.uuid4()),
                     "id2": str(_uuid.uuid4()),
-                    "session_id": str(session_id),
+                    "session_id": str(target_sid),
                     "tenant_id": str(tenant_id),
                     "user_msg": user_message,
                     "assist_msg": assistant_message,

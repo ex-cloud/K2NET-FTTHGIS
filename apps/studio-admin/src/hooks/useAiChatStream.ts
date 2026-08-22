@@ -38,6 +38,17 @@ export interface StoredChatSession {
   model?: string;
 }
 
+export function generateUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /** Ekspor seluruh percakapan sebagai file Markdown untuk SOP Ticket */
 export function exportChatToMarkdown(messages: ChatMessage[]): void {
   const lines: string[] = [
@@ -116,7 +127,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
         if (legacyMsgs.length > 0) {
           const firstUserMsg = legacyMsgs.find((m) => m.role === "user")?.content || "Previous Chat";
           const migratedSession: StoredChatSession = {
-            id: `sess-${Date.now()}`,
+            id: generateUUID(),
             title: firstUserMsg.slice(0, 45),
             messages: legacyMsgs.map((m) => ({ ...m, isStreaming: false, isThinking: false })),
             createdAt: new Date().toISOString(),
@@ -133,17 +144,17 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
   });
 
   const [activeSessionId, setActiveSessionId] = useState<string>(() => {
-    if (typeof window === "undefined") return `sess-${Date.now()}`;
+    if (typeof window === "undefined") return generateUUID();
     try {
       const savedActive = localStorage.getItem(ACTIVE_SESSION_ID_KEY);
-      if (savedActive) return savedActive;
+      if (savedActive && !savedActive.startsWith("sess-")) return savedActive;
       const storedSessions = localStorage.getItem(SESSIONS_STORAGE_KEY);
       if (storedSessions) {
         const parsed: StoredChatSession[] = JSON.parse(storedSessions);
         if (parsed.length > 0) return parsed[0].id;
       }
     } catch {}
-    const newId = `sess-${Date.now()}`;
+    const newId = generateUUID();
     try { localStorage.setItem(ACTIVE_SESSION_ID_KEY, newId); } catch {}
     return newId;
   });
@@ -424,7 +435,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
       abortControllerRef.current = null;
       setIsStreaming(false);
     }
-    const newSessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newSessionId = generateUUID();
     setActiveSessionId(newSessionId);
     setMessages([]);
     setError(null);

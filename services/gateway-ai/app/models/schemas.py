@@ -15,9 +15,9 @@ class ChatHistoryMessage(BaseModel):
 
 
 class ChatStreamRequest(BaseModel):
-    session_id: Optional[uuid.UUID] = Field(
+    session_id: Optional[str] = Field(
         default=None,
-        description="UUID sesi yang sudah ada. Jika None, buat sesi baru."
+        description="ID sesi yang sudah ada. Jika None, buat sesi baru."
     )
     message: str = Field(..., min_length=1, max_length=4000)
     scope: str = Field(

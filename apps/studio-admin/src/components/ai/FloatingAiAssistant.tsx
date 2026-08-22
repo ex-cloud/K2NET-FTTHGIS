@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, Badge } from "@k2net/ui";
-import { Sparkles, X, ChevronRight, GripVertical, Maximize2 } from "lucide-react";
+import { Sparkles, X, ChevronRight, GripVertical, Maximize2, Plus, History, SlidersHorizontal, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   fetchActiveChatModels,
@@ -24,7 +24,7 @@ import {
   AgentAuthorizationData,
   PermissionCatalogData,
 } from "@/lib/actions/gateways";
-import { useAiChatStream } from "@/hooks/useAiChatStream";
+import { useAiChatStream, exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import { AiDrawerOnboarding } from "./ai-drawer-onboarding";
 import { AiDrawerPermissions, AiDrawerSettings, type PermTier } from "./ai-drawer-permissions";
 import { AiDrawerChat } from "./ai-drawer-chat";
@@ -98,6 +98,8 @@ export function FloatingAiAssistant() {
   const [permExpandedDomains,setPermExpandedDomains]= useState<Set<string>>(new Set());
   const [permSaving,         setPermSaving]         = useState(false);
   const [permRevoking,       setPermRevoking]       = useState(false);
+
+  const [showHistoryInDrawer, setShowHistoryInDrawer] = useState(false);
 
   const {
     messages,
@@ -348,8 +350,8 @@ export function FloatingAiAssistant() {
           </div>
         </div>
 
-        {/* ── Header ── */}
-        <SheetHeader className="px-4 py-3 border-b border-border bg-background/95 backdrop-blur-md flex-shrink-0">
+        {/* ── Header (Unified Single Top Header) ── */}
+        <SheetHeader className="px-4 py-2.5 border-b border-border bg-background/95 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               {/* Back button */}
@@ -362,38 +364,100 @@ export function FloatingAiAssistant() {
                   <ChevronRight className="w-4 h-4 rotate-180" />
                 </button>
               )}
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs shrink-0">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <SheetTitle className="text-sm font-semibold text-foreground truncate">
+                  <SheetTitle className="text-xs sm:text-sm font-semibold text-foreground truncate">
                     {VIEW_TITLE[view]}
                   </SheetTitle>
                   {view === "chat" && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary bg-primary/10">
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/40 text-primary bg-primary/10">
                       RAG Live
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{subtitle}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
               {view === "chat" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOpen(false);
-                    setIsFullscreen(true);
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Full Screen View (Cloudflare Style)"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
+                <>
+                  {/* New Chat Button */}
+                  <button
+                    type="button"
+                    onClick={createNewSession}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted text-foreground text-xs font-semibold border border-border/70 transition-colors cursor-pointer"
+                    title="New Chat"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-primary" />
+                    <span>New</span>
+                  </button>
+
+                  {/* History Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowHistoryInDrawer((p) => !p)}
+                    className={cn(
+                      "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer relative",
+                      showHistoryInDrawer && "text-primary bg-primary/10 border border-primary/20"
+                    )}
+                    title="Riwayat Percakapan"
+                  >
+                    <History className="w-4 h-4" />
+                    {sessions.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                        {sessions.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Config / Permissions Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHistoryInDrawer(false);
+                      setShowTokenMenu(false);
+                      setPermSearch("");
+                      setView("settings");
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    title="K2 Agent Permissions & Settings"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </button>
+
+                  {/* Export Markdown */}
+                  {messages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => exportChatToMarkdown(messages)}
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="Export Markdown"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {/* Fullscreen Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHistoryInDrawer(false);
+                      setIsOpen(false);
+                      setIsFullscreen(true);
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    title="Full Screen View (Cloudflare Style)"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </>
               )}
+
+              {/* Close Drawer Button */}
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -448,26 +512,15 @@ export function FloatingAiAssistant() {
               setInput(idea.prompt);
               if (idea.id && !idea.id.startsWith("fb-")) incrementAiPromptUsage(idea.id);
             }}
-            onConfigurePermissions={() => { setShowTokenMenu(false); setPermSearch(""); setView("settings"); }}
             isStreaming={isStreaming}
             error={error}
-            agentAuth={agentAuth}
-            showTokenMenu={showTokenMenu}
-            onToggleTokenMenu={() => setShowTokenMenu((p) => !p)}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            availableModels={availableModels}
-            isWide={isWide}
-            onToggleWide={toggleWide}
-            onToggleFullscreen={() => {
-              setIsOpen(false);
-              setIsFullscreen(true);
-            }}
             sessions={sessions}
             activeSessionId={activeSessionId}
             onNewChat={createNewSession}
             onLoadSession={loadSession}
             onDeleteSession={deleteSession}
+            showHistory={showHistoryInDrawer}
+            onToggleHistory={() => setShowHistoryInDrawer((p) => !p)}
           />
         )}
       </SheetContent>

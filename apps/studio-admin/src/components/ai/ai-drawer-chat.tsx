@@ -2,18 +2,15 @@
 
 import React, { useRef, useState } from "react";
 import {
-  Sparkles, Send, Square, Trash2, Check, ChevronRight,
-  SlidersHorizontal, Download, Maximize2, Plus,
+  Send, Square, Trash2, ChevronRight,
   History, MessageSquare, Clock, Zap, MapPin, Activity, Database,
-  GitPullRequest, ShieldCheck, Cpu, Search, X,
+  GitPullRequest, ShieldCheck, Sparkles, Cpu, Search, X,
 } from "lucide-react";
-import { ScrollArea, Badge } from "@k2net/ui";
+import { ScrollArea } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { MessageBubble } from "@/components/ai/ai-message-bubble";
 import type { ChatMessage, StoredChatSession } from "@/hooks/useAiChatStream";
-import type { SuggestedPromptItem, AgentAuthorizationData } from "@/lib/actions/gateways";
-import { exportChatToMarkdown } from "@/hooks/useAiChatStream";
-
+import type { SuggestedPromptItem } from "@/lib/actions/gateways";
 import { AiSpatialNetworkGraphic } from "@/components/ai/AiSpatialNetworkGraphic";
 
 // ─── Icon Map for Prompt Ideas ────────────────────────────────────────────────
@@ -30,40 +27,30 @@ interface AiDrawerChatProps {
   onStop: () => void;
   onClear: () => void;
   onSelectIdea: (idea: SuggestedPromptItem) => void;
-  onConfigurePermissions: () => void;
   isStreaming: boolean;
   error?: string | null;
-  agentAuth: AgentAuthorizationData | null;
-  showTokenMenu: boolean;
-  onToggleTokenMenu: () => void;
-  selectedModel: string;
-  onModelChange: (m: string) => void;
-  availableModels: Array<{ value: string; label: string; badge: string }>;
-  isWide?: boolean;
-  onToggleWide?: () => void;
-  onToggleFullscreen?: () => void;
   // Multi-session history
   sessions?: StoredChatSession[];
   activeSessionId?: string;
   onNewChat?: () => void;
   onLoadSession?: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
+  showHistory?: boolean;
+  onToggleHistory?: () => void;
 }
 
 /**
  * The main chat view in drawer mode:
- * - Top header with New Chat (+), History (Clock), Settings (Sliders), Fullscreen, Export.
  * - Clean input area without clutter (Ask badge & duplicate sliders removed).
  * - Full multi-session history slide-over drawer.
+ * - Central city GIS map topology graphic.
  */
 export function AiDrawerChat({
   messages, pinnedIdeas, input, onInputChange, onSend, onStop, onClear,
-  onSelectIdea, onConfigurePermissions, isStreaming, error, agentAuth,
-  showTokenMenu, onToggleTokenMenu, selectedModel, onModelChange,
-  availableModels, isWide, onToggleWide, onToggleFullscreen,
+  onSelectIdea, isStreaming, error,
   sessions = [], activeSessionId, onNewChat, onLoadSession, onDeleteSession,
+  showHistory = false, onToggleHistory,
 }: AiDrawerChatProps) {
-  const [showHistory, setShowHistory] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -91,97 +78,15 @@ export function AiDrawerChat({
     }
   };
 
-  const activeModelLabel = availableModels.find((m) => m.value === selectedModel)?.label || "Gemini 2.5 Flash";
-
   const filteredSessions = sessions.filter((s) =>
     s.title.toLowerCase().includes(historySearch.toLowerCase())
   );
 
   return (
     <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
-      {/* ── Toolbar row (Model Pill + New Chat + History + Settings + Fullscreen) ── */}
-      <div className="px-4 py-2 border-b border-border/50 bg-background/80 flex items-center justify-between gap-2 flex-shrink-0">
-        {/* Model Status Pill (Quota Protection: Clean Badge rather than open selector for all tiers) */}
-        <div className="flex items-center gap-2 min-w-0">
-          <Badge variant="outline" className="text-[11px] px-2.5 py-0.5 border-primary/30 text-primary bg-primary/10 font-medium truncate gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            {activeModelLabel}
-          </Badge>
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-border text-muted-foreground font-mono">
-            RAG Live
-          </Badge>
-        </div>
-
-        {/* Top Header Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          {/* New Chat Button */}
-          <button
-            type="button"
-            onClick={onNewChat || onClear}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-muted/80 text-foreground text-xs font-semibold border border-border/60 hover:border-primary/40 transition-colors cursor-pointer"
-            title="New Chat (Mulai percakapan baru)"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New</span>
-          </button>
-
-          {/* History Button */}
-          <button
-            type="button"
-            onClick={() => setShowHistory((prev) => !prev)}
-            className={cn(
-              "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer relative",
-              showHistory && "text-primary bg-primary/10 border border-primary/20"
-            )}
-            title="Riwayat Percakapan (Chat History)"
-          >
-            <History className="w-4 h-4" />
-            {sessions.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                {sessions.length}
-              </span>
-            )}
-          </button>
-
-          {/* K2NET Settings Button */}
-          <button
-            type="button"
-            onClick={onConfigurePermissions}
-            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="K2 Agent Permissions & Settings"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-
-          {/* Fullscreen Toggle */}
-          {onToggleFullscreen && (
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              title="Tampilan Penuh (Cloudflare Fullscreen)"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Export Markdown */}
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={() => exportChatToMarkdown(messages)}
-              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              title="Ekspor Chat ke Markdown"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* ── Slide-over Chat History Panel ── */}
       {showHistory && (
-        <div className="absolute inset-x-0 top-[45px] bottom-0 z-30 bg-background/98 backdrop-blur-md border-b border-border p-4 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute inset-0 z-30 bg-background/98 backdrop-blur-md p-4 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="flex items-center justify-between pb-3 border-b border-border">
             <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-primary" />
@@ -189,7 +94,7 @@ export function AiDrawerChat({
             </div>
             <button
               type="button"
-              onClick={() => setShowHistory(false)}
+              onClick={onToggleHistory}
               className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -224,7 +129,7 @@ export function AiDrawerChat({
                       key={s.id}
                       onClick={() => {
                         onLoadSession?.(s.id);
-                        setShowHistory(false);
+                        onToggleHistory?.();
                       }}
                       className={cn(
                         "group flex items-center justify-between gap-2 p-2.5 rounded-xl text-left text-xs cursor-pointer transition-all border",
@@ -276,8 +181,8 @@ export function AiDrawerChat({
         <div className="px-4 py-4 space-y-4 overflow-x-hidden w-full">
           {messages.length === 0 ? (
             <div className="space-y-4 py-2">
-              {/* Greeting with Spatial Network Map Graphic */}
-              <div className="text-center py-2 space-y-2.5">
+              {/* Greeting with Spatial City Map Topology Graphic */}
+              <div className="text-center py-2 space-y-3">
                 <AiSpatialNetworkGraphic size="md" className="mx-auto" />
                 <div>
                   <h2 className="text-lg font-bold text-foreground">{greeting}</h2>
