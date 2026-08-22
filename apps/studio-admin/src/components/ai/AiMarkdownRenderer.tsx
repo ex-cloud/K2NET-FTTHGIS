@@ -112,7 +112,7 @@ export function AiMarkdownRenderer({
   return (
     <div
       className={cn(
-        "prose prose-sm dark:prose-invert max-w-full text-xs sm:text-[13px] leading-relaxed break-words overflow-x-hidden",
+        "prose prose-sm dark:prose-invert max-w-full text-xs sm:text-[13px] leading-relaxed break-words",
         "prose-headings:font-semibold prose-headings:text-foreground",
         "prose-p:my-2 prose-p:leading-relaxed prose-p:text-foreground/90",
         "prose-strong:font-semibold prose-strong:text-foreground",
@@ -145,12 +145,14 @@ export function AiMarkdownRenderer({
           },
           table({ children }) {
             return (
-              <div className="my-3 overflow-x-auto rounded-xl border border-border bg-card shadow-xs not-prose">
+              <div className="my-3 rounded-xl border border-border bg-card shadow-xs not-prose overflow-hidden max-w-full">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
-                  <Table className="w-3.5 h-3.5 text-primary" />
+                  <Table className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span>Tabel Data & Parameter</span>
                 </div>
-                <table className="w-full text-left text-xs border-collapse">{children}</table>
+                <div className="overflow-x-auto custom-scrollbar w-full">
+                  <table className="min-w-full text-left text-xs border-collapse divide-y divide-border/40 whitespace-normal">{children}</table>
+                </div>
               </div>
             );
           },
@@ -168,10 +170,10 @@ export function AiMarkdownRenderer({
             return <tr className="hover:bg-muted/30 transition-colors">{children}</tr>;
           },
           th({ children }) {
-            return <th className="px-3 py-2 text-[11px] font-semibold text-foreground">{children}</th>;
+            return <th className="px-3 py-2 text-[11px] font-semibold text-foreground whitespace-nowrap bg-muted/40">{children}</th>;
           },
           td({ children }) {
-            return <td className="px-3 py-2 text-[11px] leading-snug">{children}</td>;
+            return <td className="px-3 py-2 text-[11px] leading-relaxed break-words">{children}</td>;
           },
           h1({ children }) {
             return (

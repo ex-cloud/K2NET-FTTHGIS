@@ -6,7 +6,7 @@ Fitur: Redis Semantic Cache (< 10ms) + Hybrid Search RAG (pgvector + BM25 RRF) +
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from app.api.dependencies import verify_gateway_and_tenant, TenantContext
-from app.models.schemas import ChatStreamRequest, SopGenerateRequest
+from app.models.schemas import ChatStreamRequest, SopGenerateRequest, ChatFeedbackRequest
 from app.services.llm_engine import LLMEngine
 from app.services.rag_retriever import RAGRetriever
 from app.services.semantic_cache import semantic_cache
@@ -532,4 +532,43 @@ Tuliskan dokumen lengkap sekarang secara mendalam:"""
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+@router.post("/feedback")
+async def submit_feedback(
+    payload: ChatFeedbackRequest,
+    ctx: TenantContext = Depends(verify_gateway_and_tenant),
+):
+    """
+    Simpan rating/feedback pengguna (Like/Dislike) ke database PostgreSQL untuk RLHF.
+    """
+    from app.db.session import get_db_session
+    import uuid as _uuid
+
+    try:
+        async with get_db_session() as session:
+            await session.execute(
+                text("""
+                    INSERT INTO ai_chat_feedback
+                        (id, tenant_id, session_id, message_id, query_text, response_text, feedback_type, reason, model_used, created_at)
+                    VALUES
+                        (:id, :tenant_id, :session_id, :message_id, :query_text, :response_text, :feedback_type, :reason, :model_used, NOW())
+                """),
+                {
+                    "id": str(_uuid.uuid4()),
+                    "tenant_id": str(ctx.tenant_id) if ctx.tenant_id else None,
+                    "session_id": payload.session_id,
+                    "message_id": payload.message_id,
+                    "query_text": payload.query_text,
+                    "response_text": payload.response_text,
+                    "feedback_type": payload.feedback_type,
+                    "reason": payload.reason,
+                    "model_used": payload.model_used or "gemini-2.5-flash",
+                },
+            )
+        return {"status": "success", "message": "Feedback recorded successfully"}
+    except Exception as e:
+        logger.warning(f"Gagal mencatat AI feedback: {e}")
+        return {"status": "error", "message": str(e)}
+
 

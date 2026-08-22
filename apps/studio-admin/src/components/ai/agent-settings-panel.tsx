@@ -97,7 +97,7 @@ export function AgentSettingsPanel({
         setPresets(preRes.presets);
 
         // Expand all domains by default
-        setExpandedDomains(new Set(catRes.domains.map((d) => d.id)));
+        setExpandedDomains(new Set<string>(catRes.domains.map((d: any) => d.id)));
 
         // Sync with current auth
         setAccessTier((currentAuth.access_tier as any) || "FULL");

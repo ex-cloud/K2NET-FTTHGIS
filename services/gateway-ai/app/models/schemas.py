@@ -58,6 +58,16 @@ class SopGenerateRequest(BaseModel):
     model: str = Field(default="", description="Override model LLM (kosong = pakai default)")
 
 
+class ChatFeedbackRequest(BaseModel):
+    session_id: Optional[str] = None
+    message_id: Optional[str] = None
+    query_text: Optional[str] = None
+    response_text: Optional[str] = None
+    feedback_type: Literal["like", "dislike"]
+    reason: Optional[str] = None
+    model_used: Optional[str] = None
+
+
 class DocumentSource(BaseModel):
     document_id: str
     title: str

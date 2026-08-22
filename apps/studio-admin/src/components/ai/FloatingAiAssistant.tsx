@@ -13,8 +13,9 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, Badge } from "@k2net/ui";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, Badge, ActionTooltip } from "@k2net/ui";
 import { Sparkles, X, ChevronRight, GripVertical, Maximize2, Plus, History, SlidersHorizontal, Download } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   fetchActiveChatModels,
@@ -31,8 +32,8 @@ import { AiDrawerChat } from "./ai-drawer-chat";
 import { AiFullscreenLayout } from "./ai-fullscreen-layout";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const DEFAULT_DRAWER_WIDTH = 540;
-const MIN_DRAWER_WIDTH = 440;
+const DEFAULT_DRAWER_WIDTH = 580;
+const MIN_DRAWER_WIDTH = 460;
 const MAX_DRAWER_WIDTH = 1200;
 const WIDE_DRAWER_WIDTH = 860;
 const STORAGE_WIDTH_KEY = "k2net_ai_drawer_width";
@@ -198,9 +199,80 @@ export function FloatingAiAssistant() {
   // ── Keyboard shortcut + custom events ───────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "j") { e.preventDefault(); setIsOpen((p) => !p); }
-      if (e.key === "Escape" && isOpen) setIsOpen(false);
+      // Toggle AI Assistant Open/Close: Ctrl+J / Cmd+J
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setIsOpen((p) => !p);
+        return;
+      }
+
+      // Close on Escape
+      if (e.key === "Escape") {
+        if (isFullscreen) {
+          e.preventDefault();
+          setIsFullscreen(false);
+          setIsOpen(true);
+          return;
+        }
+        if (isOpen) {
+          e.preventDefault();
+          setIsOpen(false);
+          return;
+        }
+      }
+
+      // Active only when Assistant is open (Drawer or Fullscreen)
+      if (isOpen || isFullscreen) {
+        // Alt+N / Option+N: New Chat Session
+        if (e.altKey && e.key.toLowerCase() === "n") {
+          e.preventDefault();
+          createNewSession();
+          toast.success("Sesi percakapan baru dimulai");
+          return;
+        }
+
+        // Alt+H / Option+H: Toggle History Panel (Drawer only)
+        if (e.altKey && e.key.toLowerCase() === "h") {
+          e.preventDefault();
+          if (isOpen) {
+            setShowHistoryInDrawer((p) => !p);
+          }
+          return;
+        }
+
+        // Alt+P / Option+P: Settings & Permissions
+        if (e.altKey && e.key.toLowerCase() === "p") {
+          e.preventDefault();
+          if (isOpen) {
+            setView((v) => (v === "settings" ? "chat" : "settings"));
+          }
+          return;
+        }
+
+        // Ctrl+E / Cmd+E: Export Markdown
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "e") {
+          if (messages.length > 0) {
+            e.preventDefault();
+            exportChatToMarkdown(messages);
+          }
+          return;
+        }
+
+        // Alt+F / Option+F: Toggle Fullscreen Mode
+        if (e.altKey && e.key.toLowerCase() === "f") {
+          e.preventDefault();
+          if (isFullscreen) {
+            setIsFullscreen(false);
+            setIsOpen(true);
+          } else {
+            setIsOpen(false);
+            setIsFullscreen(true);
+          }
+          return;
+        }
+      }
     };
+
     const onToggle = () => setIsOpen((p) => !p);
     const onPrompt = (e: Event) => {
       const ce = e as CustomEvent<{ prompt: string }>;
@@ -214,7 +286,7 @@ export function FloatingAiAssistant() {
       window.removeEventListener("k2net-toggle-ai-assistant", onToggle);
       window.removeEventListener("k2net-ai-prompt-input", onPrompt);
     };
-  }, [isOpen]);
+  }, [isOpen, isFullscreen, messages, createNewSession]);
 
   // ── Restore saved width ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -386,85 +458,92 @@ export function FloatingAiAssistant() {
               {view === "chat" && (
                 <>
                   {/* New Chat Button */}
-                  <button
-                    type="button"
-                    onClick={createNewSession}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted text-foreground text-xs font-semibold border border-border/70 transition-colors cursor-pointer"
-                    title="New Chat"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-primary" />
-                    <span>New</span>
-                  </button>
+                  <ActionTooltip label="Mulai Sesi Baru" shortcut="Alt+N" side="bottom">
+                    <button
+                      type="button"
+                      onClick={createNewSession}
+                      className="flex items-center gap-1 h-7 px-2 rounded-lg bg-card hover:bg-muted text-foreground text-xs font-semibold border border-border/70 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-primary" />
+                      <span>New</span>
+                    </button>
+                  </ActionTooltip>
 
                   {/* History Button */}
-                  <button
-                    type="button"
-                    onClick={() => setShowHistoryInDrawer((p) => !p)}
-                    className={cn(
-                      "p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer relative",
-                      showHistoryInDrawer && "text-primary bg-primary/10 border border-primary/20"
-                    )}
-                    title="Riwayat Percakapan"
-                  >
-                    <History className="w-4 h-4" />
-                    {sessions.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
-                        {sessions.length}
-                      </span>
-                    )}
-                  </button>
+                  <ActionTooltip label="Riwayat Percakapan" shortcut="Alt+H" side="bottom">
+                    <button
+                      type="button"
+                      onClick={() => setShowHistoryInDrawer((p) => !p)}
+                      className={cn(
+                        "h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer relative",
+                        showHistoryInDrawer && "text-primary bg-primary/10 border border-primary/20"
+                      )}
+                    >
+                      <History className="w-3.5 h-3.5" />
+                      {sessions.length > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary text-primary-foreground text-[7px] font-bold flex items-center justify-center">
+                          {sessions.length}
+                        </span>
+                      )}
+                    </button>
+                  </ActionTooltip>
 
                   {/* Config / Permissions Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowHistoryInDrawer(false);
-                      setShowTokenMenu(false);
-                      setPermSearch("");
-                      setView("settings");
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="K2 Agent Permissions & Settings"
-                  >
-                    <SlidersHorizontal className="w-4 h-4" />
-                  </button>
+                  <ActionTooltip label="K2 Agent Permissions & Settings" shortcut="Alt+P" side="bottom">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowHistoryInDrawer(false);
+                        setShowTokenMenu(false);
+                        setPermSearch("");
+                        setView("settings");
+                      }}
+                      className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  </ActionTooltip>
 
                   {/* Export Markdown */}
                   {messages.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => exportChatToMarkdown(messages)}
-                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      title="Export Markdown"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
+                    <ActionTooltip label="Ekspor Percakapan (Markdown)" shortcut="Ctrl+E" side="bottom">
+                      <button
+                        type="button"
+                        onClick={() => exportChatToMarkdown(messages)}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </ActionTooltip>
                   )}
 
                   {/* Fullscreen Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowHistoryInDrawer(false);
-                      setIsOpen(false);
-                      setIsFullscreen(true);
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="Full Screen View (Cloudflare Style)"
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
+                  <ActionTooltip label="Mode Layar Penuh" shortcut="Alt+F" side="bottom">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowHistoryInDrawer(false);
+                        setIsOpen(false);
+                        setIsFullscreen(true);
+                      }}
+                      className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </ActionTooltip>
                 </>
               )}
 
               {/* Close Drawer Button */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                title="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <ActionTooltip label="Tutup Assistant" shortcut="Esc" side="bottom">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </ActionTooltip>
             </div>
           </div>
         </SheetHeader>

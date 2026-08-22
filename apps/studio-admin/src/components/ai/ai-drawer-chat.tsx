@@ -6,7 +6,7 @@ import {
   History, MessageSquare, Clock, Zap, MapPin, Activity, Database,
   GitPullRequest, ShieldCheck, Sparkles, Cpu, Search, X,
 } from "lucide-react";
-import { ScrollArea } from "@k2net/ui";
+import { ScrollArea, ActionTooltip } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { MessageBubble } from "@/components/ai/ai-message-bubble";
 import type { ChatMessage, StoredChatSession } from "@/hooks/useAiChatStream";
@@ -63,6 +63,14 @@ export function AiDrawerChat({
   React.useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
+
+  // Auto-resize textarea when input state changes
+  React.useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = `${Math.max(38, Math.min(inputRef.current.scrollHeight, 140))}px`;
+    }
+  }, [input]);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -253,37 +261,36 @@ export function AiDrawerChat({
               placeholder="Type @ to tag a resource or ask any FTTH question..."
               rows={1}
               className={cn(
-                "flex-1 w-full resize-none bg-transparent pl-4 pr-3 py-[10px] text-[13px]",
+                "flex-1 w-full resize-none bg-transparent pl-4 pr-3 py-2 text-[13px]",
                 "focus:outline-none placeholder:text-muted-foreground text-foreground",
-                "max-h-32 overflow-y-auto leading-relaxed"
+                "min-h-[38px] max-h-36 overflow-y-auto leading-relaxed"
               )}
-              style={{ height: "auto" }}
-              onInput={(e) => {
-                const t = e.target as HTMLTextAreaElement;
-                t.style.height = "auto";
-                t.style.height = `${Math.min(t.scrollHeight, 128)}px`;
-              }}
             />
           </div>
 
           {/* Send / Stop circle button */}
-          <button
-            type="button"
-            onClick={isStreaming ? onStop : onSend}
-            disabled={!input.trim() && !isStreaming}
-            className={cn(
-              "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-all cursor-pointer",
-              "disabled:opacity-40 disabled:cursor-not-allowed",
-              isStreaming
-                ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105"
-            )}
-            title={isStreaming ? "Stop" : "Send"}
+          <ActionTooltip
+            label={isStreaming ? "Hentikan pembuatan" : "Kirim pesan"}
+            shortcut="Enter"
+            side="top"
           >
-            {isStreaming
-              ? <Square className="w-3.5 h-3.5 fill-current" />
-              : <Send className="w-3.5 h-3.5 -translate-x-px" />}
-          </button>
+            <button
+              type="button"
+              onClick={isStreaming ? onStop : onSend}
+              disabled={!input.trim() && !isStreaming}
+              className={cn(
+                "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-all cursor-pointer",
+                "disabled:opacity-40 disabled:cursor-not-allowed",
+                isStreaming
+                  ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105"
+              )}
+            >
+              {isStreaming
+                ? <Square className="w-3.5 h-3.5 fill-current" />
+                : <Send className="w-3.5 h-3.5 -translate-x-px" />}
+            </button>
+          </ActionTooltip>
         </div>
 
         {/* Privacy Note at Bottom */}

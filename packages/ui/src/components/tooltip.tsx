@@ -75,11 +75,58 @@ function TooltipContent({
   );
 }
 
+// ─── Shortcut key matching helpers ───────────────────────────────────────────
+
+function matchesShortcut(e: KeyboardEvent, shortcut: string): boolean {
+  if (!shortcut) return false;
+  const parts = shortcut.toLowerCase().split("+").map((s) => s.trim());
+  const needsCtrl = parts.includes("ctrl") || parts.includes("control");
+  const needsMeta = parts.includes("meta") || parts.includes("cmd") || parts.includes("command");
+  const needsAlt = parts.includes("alt") || parts.includes("option") || parts.includes("opt");
+  const needsShift = parts.includes("shift");
+
+  const keyPart = parts.find(
+    (p) => !["ctrl", "control", "meta", "cmd", "command", "alt", "option", "opt", "shift"].includes(p)
+  );
+
+  if (!keyPart) return false;
+
+  const hasCtrlOrMeta = e.ctrlKey || e.metaKey;
+  if ((needsCtrl || needsMeta) && !hasCtrlOrMeta) return false;
+  if (!needsCtrl && !needsMeta && (e.ctrlKey || e.metaKey)) return false;
+
+  if (needsAlt && !e.altKey) return false;
+  if (!needsAlt && e.altKey) return false;
+
+  if (needsShift && !e.shiftKey) return false;
+
+  const eventKey = e.key.toLowerCase();
+  if (keyPart === "esc" || keyPart === "escape") {
+    return eventKey === "escape";
+  }
+  if (keyPart === "enter" || keyPart === "return") {
+    return eventKey === "enter";
+  }
+  if (keyPart === "del" || keyPart === "delete") {
+    return eventKey === "delete";
+  }
+
+  return eventKey === keyPart;
+}
+
+function isInputTarget(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof HTMLElement)) return false;
+  const tag = target.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
+}
+
 /**
  * All-in-one Linear-style Action Tooltip for fast, uniform tooltip usage across the entire project.
+ * Automatically wires up keyboard shortcuts to execute the wrapped button onClick!
+ * 
  * Example:
- * <ActionTooltip label="Create new project" shortcut="N">
- *   <button>...</button>
+ * <ActionTooltip label="Create new project" shortcut="C">
+ *   <button onClick={...}>...</button>
  * </ActionTooltip>
  */
 export interface ActionTooltipProps {
@@ -91,6 +138,7 @@ export interface ActionTooltipProps {
   sideOffset?: number;
   className?: string;
   disabled?: boolean;
+  enableGlobalShortcut?: boolean;
 }
 
 function ActionTooltip({
@@ -102,12 +150,58 @@ function ActionTooltip({
   sideOffset = 6,
   className,
   disabled = false,
+  enableGlobalShortcut = true,
 }: ActionTooltipProps) {
+  const elementRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    if (!shortcut || !enableGlobalShortcut || disabled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const el = elementRef.current;
+      if (!el || !document.body.contains(el)) return;
+
+      // Don't trigger if element is disabled or hidden
+      if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") {
+        return;
+      }
+      if (el.offsetParent === null && el.offsetWidth === 0 && el.offsetHeight === 0) {
+        return;
+      }
+
+      if (matchesShortcut(e, shortcut)) {
+        const parts = shortcut.toLowerCase().split("+").map((s) => s.trim());
+        const hasModifier = parts.some((p) =>
+          ["ctrl", "control", "meta", "cmd", "command", "alt", "option", "opt"].includes(p)
+        );
+        const isEsc = parts.includes("esc") || parts.includes("escape");
+
+        if (!hasModifier && !isEsc && isInputTarget(e.target)) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        el.click();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [shortcut, enableGlobalShortcut, disabled]);
+
   if (disabled) return <>{children}</>;
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger
+        asChild
+        ref={(node: HTMLElement | null) => {
+          elementRef.current = node;
+        }}
+      >
+        {children}
+      </TooltipTrigger>
       <TooltipContent
         side={side}
         align={align}

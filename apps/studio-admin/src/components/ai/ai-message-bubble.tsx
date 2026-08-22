@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Sparkles, Check, Copy, Loader2, ChevronDown, BookOpen, Zap, BrainCircuit } from "lucide-react";
-import { Badge } from "@k2net/ui";
+import { Sparkles, Check, Copy, Loader2, ChevronDown, BrainCircuit, ThumbsUp, ThumbsDown } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AiMarkdownRenderer } from "@/components/ai/AiMarkdownRenderer";
-import type { ChatMessage, DocumentSource } from "@/hooks/useAiChatStream";
+import type { ChatMessage } from "@/hooks/useAiChatStream";
+import { sendAiFeedback } from "@/lib/actions/gateways";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -14,13 +15,33 @@ interface MessageBubbleProps {
 export function MessageBubble({ message }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [showThinking, setShowThinking] = useState(false);
+  const [feedback, setFeedback] = useState<"like" | "dislike" | null>(null);
   const isUser = message.role === "user";
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
+    toast.success("Teks berhasil disalin ke clipboard");
     setTimeout(() => setCopied(false), 2000);
   }, [message.content]);
+
+  const handleFeedback = useCallback(async (type: "like" | "dislike") => {
+    const next = feedback === type ? null : type;
+    setFeedback(next);
+    if (next) {
+      if (next === "like") toast.success("Terima kasih atas tanggapan positif Anda!");
+      else toast.success("Tanggapan dicatat untuk peningkatan kualitas model.");
+      try {
+        await sendAiFeedback({
+          messageId: message.id,
+          responseText: message.content,
+          feedbackType: next,
+        });
+      } catch (e) {
+        console.warn("Feedback recording failed:", e);
+      }
+    }
+  }, [feedback, message.id, message.content]);
 
   return (
     <div className={cn("flex gap-3 group", isUser && "flex-row-reverse")}>
@@ -46,7 +67,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               <button
                 type="button"
                 onClick={() => setShowThinking(!showThinking)}
-                className="w-full px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold text-foreground/90 hover:text-foreground bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer border-b border-border/40"
+                className={cn(
+                  "w-full px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold text-foreground/90 hover:text-foreground bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer",
+                  showThinking && "border-b border-border/40"
+                )}
               >
                 <span className="flex items-center gap-2">
                   <BrainCircuit className={cn("w-3.5 h-3.5 text-primary", message.isStreaming && "animate-pulse")} />
@@ -60,43 +84,45 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground", showThinking ? "rotate-180" : "")} />
               </button>
 
-              <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px]">
-                <div className="flex items-center gap-2 text-foreground/80">
-                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>Ran pgvector semantic embedding (HNSW)</span>
-                </div>
-                <div className="flex items-center gap-2 text-foreground/80">
-                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>Ran BM25 Full-Text search across 160+ K2NET documents</span>
-                </div>
-                {message.sources && message.sources.length > 0 && (
-                  <div className="flex items-center gap-2 text-primary font-medium">
+              {showThinking && (
+                <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px] animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2 text-foreground/80">
                     <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Retrieved {message.sources.length} matching knowledge chunks</span>
+                    <span>Ran pgvector semantic embedding (HNSW)</span>
                   </div>
-                )}
-                {message.isStreaming && !message.content && (
-                  <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse">
-                    <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
-                    <span>{message.thinkingStage || "Mengevaluasi parameter teknis..."}</span>
+                  <div className="flex items-center gap-2 text-foreground/80">
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span>Ran BM25 Full-Text search across 160+ K2NET documents</span>
                   </div>
-                )}
-                {showThinking && message.thought && (
-                  <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground whitespace-pre-wrap max-h-40 overflow-y-auto bg-muted/30 p-2 rounded-md">
-                    {message.thought}
-                  </div>
-                )}
-              </div>
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>Retrieved {message.sources.length} matching knowledge chunks</span>
+                    </div>
+                  )}
+                  {message.isStreaming && !message.content && (
+                    <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse">
+                      <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
+                      <span>{message.thinkingStage || "Mengevaluasi parameter teknis..."}</span>
+                    </div>
+                  )}
+                  {message.thought && (
+                    <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground whitespace-pre-wrap max-h-40 overflow-y-auto bg-muted/30 p-2 rounded-md">
+                      {message.thought}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
         {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 max-w-[92%] text-sm shadow-xs",
+            "rounded-2xl px-4 py-3 text-sm shadow-xs",
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm font-medium"
-              : "bg-card text-foreground border border-border rounded-tl-sm"
+              ? "bg-primary text-primary-foreground rounded-tr-sm font-medium max-w-[85%]"
+              : "bg-card text-foreground border border-border rounded-tl-sm w-full max-w-full"
           )}
         >
           {isUser ? (
@@ -118,44 +144,44 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           )}
         </div>
 
-        {/* Cache hit */}
-        {!isUser && message.cacheHit && (
-          <div className="text-[10px] text-amber-500 flex items-center gap-1 mt-1.5 mb-1">
-            <Zap className="w-2.5 h-2.5" />
-            <span className="font-semibold">Redis Semantic Cache</span>
-            <span className="text-muted-foreground">• respons instan</span>
-          </div>
-        )}
-
-        {/* Citation sources */}
-        {!isUser && message.sources && message.sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2.5 max-w-[92%]">
-            {message.sources.map((src: DocumentSource, i: number) => (
-              <Badge key={i} variant="secondary" className="text-[10px] gap-1 cursor-default py-0.5 px-2 border border-border" title={src.content_preview}>
-                <BookOpen className="w-2.5 h-2.5 text-primary" />
-                <span className="font-medium text-foreground">
-                  {src.title.length > 24 ? src.title.slice(0, 24) + "…" : src.title}
-                </span>
-                <span className="text-muted-foreground font-mono">
-                  {(src.similarity_score * 100).toFixed(0)}%
-                </span>
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {/* Latency + copy */}
+        {/* Cloudflare-style action toolbar (Thumbs Up, Thumbs Down, Copy) */}
         {!isUser && !message.isStreaming && message.content && (
-          <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            {message.latencyMs && (
-              <span className="text-[10px] text-muted-foreground font-mono">{message.latencyMs}ms</span>
-            )}
+          <div className="flex items-center gap-1 mt-1.5 text-muted-foreground">
             <button
+              type="button"
+              onClick={() => handleFeedback("like")}
+              className={cn(
+                "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+                feedback === "like" && "text-primary bg-primary/10"
+              )}
+              title="Good response (RLHF)"
+            >
+              <ThumbsUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFeedback("dislike")}
+              className={cn(
+                "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+                feedback === "dislike" && "text-destructive bg-destructive/10"
+              )}
+              title="Bad response (RLHF)"
+            >
+              <ThumbsDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
               onClick={handleCopy}
-              className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer"
+              title="Copy message"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
+            {message.latencyMs && (
+              <span className="text-[10px] text-muted-foreground/60 font-mono ml-2">
+                {message.latencyMs}ms
+              </span>
+            )}
           </div>
         )}
       </div>

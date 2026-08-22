@@ -1059,3 +1059,33 @@ export async function fetchAgentRolePresets(
   return res.json();
 }
 
+export async function sendAiFeedback(payload: {
+  sessionId?: string;
+  messageId?: string;
+  queryText?: string;
+  responseText?: string;
+  feedbackType: "like" | "dislike";
+  reason?: string;
+  modelUsed?: string;
+}): Promise<{ status: string; message: string }> {
+  const token = getGatewayToken();
+  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
+
+  try {
+    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/feedback`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Gateway-Token": token,
+        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+      },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  } catch (err) {
+    console.warn("Gagal mengirim AI feedback:", err);
+    return { status: "error", message: String(err) };
+  }
+}
+
+

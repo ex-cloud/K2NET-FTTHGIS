@@ -94,11 +94,11 @@ export function AgentOnboardingModal({
         setPresets(preRes.presets);
 
         // Default: expand all domains and select all permissions for Full Access
-        const allDomainIds = new Set(catRes.domains.map((d) => d.id));
+        const allDomainIds = new Set<string>(catRes.domains.map((d: any) => d.id));
         setExpandedDomains(allDomainIds);
 
-        const allPermIds = new Set(
-          catRes.domains.flatMap((d) => d.permissions.map((p) => p.id))
+        const allPermIds = new Set<string>(
+          catRes.domains.flatMap((d: any) => d.permissions.map((p: any) => p.id))
         );
         setSelectedPermissions(allPermIds);
       } catch (err) {

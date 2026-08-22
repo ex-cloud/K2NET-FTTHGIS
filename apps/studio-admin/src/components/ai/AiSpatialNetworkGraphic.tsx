@@ -51,9 +51,7 @@ export function AiSpatialNetworkGraphic({
   return (
     <div
       className={cn(
-        "relative rounded-2xl p-2 flex items-center justify-center select-none overflow-hidden mx-auto",
-        "bg-primary/[0.03] dark:bg-primary/[0.06] border border-primary/15",
-        "shadow-xs shadow-primary/5 backdrop-blur-xs transition-all duration-300",
+        "relative flex items-center justify-center select-none mx-auto",
         sizeClasses[size],
         className
       )}
