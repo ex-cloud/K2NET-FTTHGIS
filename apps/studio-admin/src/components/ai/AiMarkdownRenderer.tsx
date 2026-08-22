@@ -112,10 +112,12 @@ export function AiMarkdownRenderer({
   return (
     <div
       className={cn(
-        "prose prose-sm dark:prose-invert max-w-full text-xs sm:text-[13px] leading-relaxed break-words",
-        "prose-headings:font-semibold prose-headings:text-foreground",
-        "prose-p:my-2 prose-p:leading-relaxed prose-p:text-foreground/90",
+        "prose prose-sm dark:prose-invert max-w-full text-xs sm:text-[13px] leading-relaxed break-words [word-break:break-word] overflow-hidden",
+        "prose-headings:font-semibold prose-headings:text-foreground prose-headings:break-words",
+        "prose-p:my-2 prose-p:leading-relaxed prose-p:text-foreground/90 prose-p:break-words",
         "prose-strong:font-semibold prose-strong:text-foreground",
+        "prose-ul:my-2 prose-ul:pl-4 prose-ol:my-2 prose-ol:pl-4",
+        "prose-li:my-0.5 prose-li:break-words",
         className
       )}
     >
@@ -130,7 +132,7 @@ export function AiMarkdownRenderer({
             if (isInline) {
               return (
                 <code
-                  className="px-1.5 py-0.5 mx-0.5 rounded-md font-mono text-[11px] font-semibold bg-muted text-primary border border-border/50 inline-block align-middle"
+                  className="px-1.5 py-0.5 mx-0.5 rounded-md font-mono text-[11px] font-semibold bg-muted text-primary border border-border/50 break-all inline align-baseline"
                   {...props}
                 >
                   {children}

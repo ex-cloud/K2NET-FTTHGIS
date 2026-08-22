@@ -187,7 +187,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
       if (finishedMessages.length === 0) return;
 
       const firstUserMsg = messages.find((m) => m.role === "user")?.content || "New Chat";
-      const title = firstUserMsg.slice(0, 45).trim() || "New Chat";
+      const title = firstUserMsg.slice(0, 150).trim() || "New Chat";
       const now = new Date().toISOString();
 
       setSessions((prev) => {
@@ -197,7 +197,7 @@ export function useAiChatStream(options: UseAiChatStreamOptions = {}) {
           updated = [...prev];
           updated[idx] = {
             ...updated[idx],
-            title: updated[idx].title && updated[idx].title !== "New Chat" ? updated[idx].title : title,
+            title: updated[idx].title && updated[idx].title !== "New Chat" && updated[idx].title.length >= title.length ? updated[idx].title : title,
             messages: finishedMessages,
             updatedAt: now,
           };

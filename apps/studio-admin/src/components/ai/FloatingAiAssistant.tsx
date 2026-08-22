@@ -408,7 +408,7 @@ export function FloatingAiAssistant() {
         showCloseButton={false}
         style={{ width: `${drawerWidth}px`, maxWidth: "95vw" }}
         className={cn(
-          "p-0 flex flex-col bg-background border-l border-border transition-[width] duration-75 select-text",
+          "p-0 flex flex-col bg-background border-l border-border transition-[width] duration-75 select-text sm:max-w-none",
           isDragging && "transition-none select-none"
         )}
       >

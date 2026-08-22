@@ -147,7 +147,7 @@ export function AiDrawerChat({
                       )}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs text-foreground group-hover:text-primary transition-colors">
+                        <p className="line-clamp-2 leading-snug break-words text-xs text-foreground group-hover:text-primary transition-colors">
                           {s.title}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
@@ -185,8 +185,8 @@ export function AiDrawerChat({
       )}
 
       {/* ── Messages / Empty State ── */}
-      <ScrollArea className="flex-1 min-h-0 overflow-x-hidden">
-        <div className="px-4 py-4 space-y-4 overflow-x-hidden w-full">
+      <ScrollArea className="flex-1 min-h-0 w-full">
+        <div className="px-4 py-4 space-y-4 w-full min-w-0 max-w-full">
           {messages.length === 0 ? (
             <div className="space-y-4 py-2">
               {/* Greeting with Spatial City Map Topology Graphic */}

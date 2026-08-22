@@ -44,7 +44,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   }, [feedback, message.id, message.content]);
 
   return (
-    <div className={cn("flex gap-3 group", isUser && "flex-row-reverse")}>
+    <div className={cn("flex gap-3 group w-full min-w-0", isUser && "flex-row-reverse")}>
       {/* Avatar */}
       <div
         className={cn(
@@ -63,7 +63,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {!isUser &&
           (message.isThinking || message.thought || message.isStreaming ||
             (message.sources && message.sources.length > 0)) && (
-            <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden max-w-[95%] shadow-xs">
+            <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden w-full min-w-0 shadow-xs">
               <button
                 type="button"
                 onClick={() => setShowThinking(!showThinking)}
@@ -86,28 +86,28 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
               {showThinking && (
                 <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px] animate-in fade-in duration-150">
-                  <div className="flex items-center gap-2 text-foreground/80">
+                  <div className="flex items-center gap-2 text-foreground/85">
                     <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Ran pgvector semantic embedding (HNSW)</span>
+                    <span>Searched FTTH technical knowledge base &amp; standards</span>
                   </div>
-                  <div className="flex items-center gap-2 text-foreground/80">
+                  <div className="flex items-center gap-2 text-foreground/85">
                     <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Ran BM25 Full-Text search across 160+ K2NET documents</span>
+                    <span>Cross-referenced GPON, OLT telemetries &amp; PostGIS GIS data</span>
                   </div>
-                  {message.sources && message.sources.length > 0 && (
-                    <div className="flex items-center gap-2 text-primary font-medium">
-                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>Retrieved {message.sources.length} matching knowledge chunks</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-foreground/85">
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span>Verified Zero-Trust security policies &amp; access scopes</span>
+                  </div>
+
                   {message.isStreaming && !message.content && (
-                    <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse">
+                    <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse pt-0.5">
                       <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
                       <span>{message.thinkingStage || "Mengevaluasi parameter teknis..."}</span>
                     </div>
                   )}
+
                   {message.thought && (
-                    <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground whitespace-pre-wrap max-h-40 overflow-y-auto bg-muted/30 p-2 rounded-md">
+                    <div className="mt-2 pt-2 border-t border-border/50 text-[11px] font-sans text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto bg-muted/30 p-2.5 rounded-lg leading-relaxed">
                       {message.thought}
                     </div>
                   )}
@@ -119,10 +119,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm shadow-xs",
+            "rounded-2xl px-4 py-3 text-sm shadow-xs break-words",
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-sm font-medium max-w-[85%]"
-              : "bg-card text-foreground border border-border rounded-tl-sm w-full max-w-full"
+              : "bg-card text-foreground border border-border rounded-tl-sm w-full min-w-0"
           )}
         >
           {isUser ? (

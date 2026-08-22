@@ -222,7 +222,7 @@ export function AiFullscreenLayout({
             sidebarOpen ? "w-72" : "w-0"
           )}
         >
-          <div className="flex flex-col h-full w-72 min-w-0">
+          <div className="flex flex-col h-full w-80 min-w-0">
             {/* Sidebar Header */}
             <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2 border-b border-border/40">
               <div className="flex items-center gap-2">
@@ -267,7 +267,7 @@ export function AiFullscreenLayout({
               </div>
             </div>
 
-            {/* Chat History List (Responsive, Auto-Truncated, Tooltip Enabled) */}
+            {/* Chat History List (Responsive, Multiline line-clamp-2, Tooltip Enabled) */}
             <ScrollArea className="flex-1 px-3 py-1 min-w-0">
               {filteredSessions.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
@@ -281,32 +281,32 @@ export function AiFullscreenLayout({
                     <div className="space-y-1 min-w-0">
                       <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Today</p>
                       {categorizedSessions.today.map((s) => (
-                        <div
-                          key={s.id}
-                          onClick={() => onLoadSession?.(s.id)}
-                          className={cn(
-                            "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
-                            s.id === activeSessionId
-                              ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
-                              : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
-                          )}
-                          title={s.title}
-                        >
-                          <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
-                          {onDeleteSession && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteSession(s.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
-                              title="Delete chat"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
+                        <ActionTooltip key={s.id} label={s.title} side="right" align="start" className="max-w-xs text-xs">
+                          <div
+                            onClick={() => onLoadSession?.(s.id)}
+                            className={cn(
+                              "group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full text-left",
+                              s.id === activeSessionId
+                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
+                                : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <span className="line-clamp-2 leading-snug flex-1 min-w-0 block text-xs break-words">{s.title}</span>
+                            {onDeleteSession && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteSession(s.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0 mt-0.5"
+                                title="Delete chat"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </ActionTooltip>
                       ))}
                     </div>
                   )}
@@ -316,32 +316,32 @@ export function AiFullscreenLayout({
                     <div className="space-y-1 min-w-0">
                       <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Yesterday</p>
                       {categorizedSessions.yesterday.map((s) => (
-                        <div
-                          key={s.id}
-                          onClick={() => onLoadSession?.(s.id)}
-                          className={cn(
-                            "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
-                            s.id === activeSessionId
-                              ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
-                              : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
-                          )}
-                          title={s.title}
-                        >
-                          <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
-                          {onDeleteSession && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteSession(s.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
-                              title="Delete chat"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
+                        <ActionTooltip key={s.id} label={s.title} side="right" align="start" className="max-w-xs text-xs">
+                          <div
+                            onClick={() => onLoadSession?.(s.id)}
+                            className={cn(
+                              "group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full text-left",
+                              s.id === activeSessionId
+                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
+                                : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <span className="line-clamp-2 leading-snug flex-1 min-w-0 block text-xs break-words">{s.title}</span>
+                            {onDeleteSession && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteSession(s.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0 mt-0.5"
+                                title="Delete chat"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </ActionTooltip>
                       ))}
                     </div>
                   )}
@@ -351,32 +351,32 @@ export function AiFullscreenLayout({
                     <div className="space-y-1 min-w-0">
                       <p className="text-[10px] font-bold tracking-wider text-muted-foreground/60 uppercase px-1 pb-0.5">Previous 7 Days</p>
                       {categorizedSessions.older.map((s) => (
-                        <div
-                          key={s.id}
-                          onClick={() => onLoadSession?.(s.id)}
-                          className={cn(
-                            "group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full",
-                            s.id === activeSessionId
-                              ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
-                              : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
-                          )}
-                          title={s.title}
-                        >
-                          <span className="truncate flex-1 min-w-0 block text-xs">{s.title}</span>
-                          {onDeleteSession && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteSession(s.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0"
-                              title="Delete chat"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
+                        <ActionTooltip key={s.id} label={s.title} side="right" align="start" className="max-w-xs text-xs">
+                          <div
+                            onClick={() => onLoadSession?.(s.id)}
+                            className={cn(
+                              "group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all border min-w-0 w-full text-left",
+                              s.id === activeSessionId
+                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
+                                : "bg-transparent hover:bg-muted/60 border-transparent hover:border-border text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <span className="line-clamp-2 leading-snug flex-1 min-w-0 block text-xs break-words">{s.title}</span>
+                            {onDeleteSession && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteSession(s.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer shrink-0 mt-0.5"
+                                title="Delete chat"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </ActionTooltip>
                       ))}
                     </div>
                   )}
