@@ -1,5 +1,5 @@
 -- ============================================================
--- Flyway Migration V24: Deduplicate AI Suggested Prompts & Add Unique Index
+-- Flyway Migration V25: Deduplicate AI Suggested Prompts & Add Unique Index
 -- K2NET FTTH GIS — Enterprise AI Assistant Gateway
 -- ============================================================
 
