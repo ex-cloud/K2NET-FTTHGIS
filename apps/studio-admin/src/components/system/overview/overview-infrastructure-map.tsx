@@ -528,58 +528,45 @@ export function OverviewInfrastructureMap({
                 return (
                   <g
                     key={`conn-${idx}`}
-                    style={{ transition: "opacity 0.35s cubic-bezier(0.16,1,0.3,1)" }}
-                    opacity={isDimmed ? 0.1 : 1}
+                    // PILAR 4: opacity-20 saat dimmed (sesuai dokumen: 20%)
+                    className={cn(
+                      "transition-opacity duration-300",
+                      isDimmed ? "opacity-20" : "opacity-100"
+                    )}
                   >
-                    {/* PILAR 3: Aceternity base track — ultra-thin 1.2px, transparent */}
+                    {/* PILAR 3: Aceternity base track — text-border/40, 1.5px, tidak berkedip */}
                     <path
                       d={curveD}
                       fill="none"
-                      stroke={isHighlighted ? "var(--primary)" : "currentColor"}
-                      strokeOpacity={isHighlighted ? 0.5 : 0.25}
-                      strokeWidth={isHighlighted ? 1.8 : 1.2}
-                      className="text-foreground transition-all duration-300"
+                      stroke="currentColor"
+                      className={cn(
+                        "transition-all duration-300",
+                        isHighlighted ? "text-primary/50" : "text-border/40 dark:text-border/30"
+                      )}
+                      strokeWidth={isHighlighted ? 2 : 1.5}
                     />
 
-                    {/* PILAR 2: Magic UI Laser Comet — short 18px particle on long 148px gap */}
+                    {/* PILAR 2: Magic UI Laser Comet — solid var(--primary), 24px + 140px gap = 164px cycle */}
                     <path
                       d={curveD}
                       fill="none"
-                      stroke={`url(#comet-${idx})`}
-                      strokeWidth={isHighlighted ? 2.6 : 1.8}
+                      stroke="var(--primary)"
+                      strokeWidth={isHighlighted ? 2.5 : 1.8}
                       strokeLinecap="round"
-                      strokeDasharray="18 148"
+                      strokeDasharray="24 140"
                       filter={isHighlighted ? "url(#comet-glow)" : undefined}
                       className="animate-beam-flow"
                       style={{
-                        animationDuration: isHighlighted ? "1.5s" : "2.8s",
+                        animationDuration: isHighlighted ? "1.5s" : "2.4s",
                         animationDelay: `${BEAM_DELAYS[idx] ?? 0}s`,
-                        opacity: isDimmed ? 0 : isHighlighted ? 1 : 0.85,
-                        transition: "opacity 0.3s",
                       }}
                     />
                   </g>
                 );
               })}
 
-              {/* ── Orbit spokes (cluster center → each chip) ── */}
-              {isClusterExpanded && GATEWAY_ORBIT.map((gw) => {
-                const c     = getNodeCoords("gw-cluster");
-                const op    = getOrbitCoords(gw);
-                const isAct = activeOrbitNode === gw.id;
-                return (
-                  <line
-                    key={`spoke-${gw.id}`}
-                    x1={`${c.x}%`}  y1={`${c.y}%`}
-                    x2={`${op.x}%`} y2={`${op.y}%`}
-                    stroke="var(--primary)"
-                    strokeWidth={isAct ? 1.2 : 0.6}
-                    strokeDasharray="3 6"
-                    strokeOpacity={isAct ? 0.55 : 0.15}
-                    style={{ transition: "stroke-opacity 0.3s, stroke-width 0.3s" }}
-                  />
-                );
-              })}
+              {/* ── PILAR 4: Orbit spokes — dihapus per dokumen, diganti concentric ring ── */}
+              {/* Spoke lines tidak diperlukan — orbit ring sudah cukup sebagai guide */}
 
               {/* ── Smart routing: active orbit → its dependencies ── */}
               {isClusterExpanded && activeOrbitNode && (() => {
@@ -643,7 +630,7 @@ export function OverviewInfrastructureMap({
                     isSelected
                       ? "border-primary/60 bg-primary/10 scale-105 z-20"
                       : "border-border/50 bg-card/80 hover:border-border/80 hover:scale-[1.03] hover:bg-card/95",
-                    dimmed ? "opacity-10" : "opacity-100"
+                  dimmed ? "opacity-20" : "opacity-100"
                   )}
                 >
                   {/* Status dot */}
