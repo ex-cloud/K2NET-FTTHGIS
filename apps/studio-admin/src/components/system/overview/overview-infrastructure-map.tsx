@@ -466,11 +466,26 @@ export function OverviewInfrastructureMap({
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
+
+                {/* Orbit area aurora glow — Aceternity Deep Dark radial gradient */}
+                <radialGradient id="orbit-aura" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+                  <stop offset="0%"   stopColor="var(--primary)" stopOpacity="0.15" />
+                  <stop offset="55%"  stopColor="var(--primary)" stopOpacity="0.05" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0"   />
+                </radialGradient>
               </defs>
 
               {/* ── PILAR 4: Concentric Orbit Rings (Railway.app style) ── */}
               {isClusterExpanded && (
                 <>
+                  {/* Aurora glow fill behind entire orbit area — Aceternity style */}
+                  <ellipse
+                    cx={`${clusterPos.x}%`}
+                    cy={`${clusterPos.y}%`}
+                    rx={`${ORBIT_RX + 9}%`}
+                    ry={`${ORBIT_RY + 10}%`}
+                    fill="url(#orbit-aura)"
+                  />
                   {/* Outer ring — wide halo, faint */}
                   <ellipse
                     cx={`${clusterPos.x}%`}
@@ -618,13 +633,13 @@ export function OverviewInfrastructureMap({
                     cursor: "grab",
                     // Glow halo behind selected node — matches target image
                     boxShadow: isSelected
-                      ? "0 0 0 1px rgba(16,185,129,0.5), 0 0 32px rgba(16,185,129,0.25), 0 4px 20px rgba(0,0,0,0.4)"
+                      ? "0 0 0 1px color-mix(in srgb, var(--primary) 50%, transparent), 0 0 32px color-mix(in srgb, var(--primary) 25%, transparent), 0 4px 20px rgba(0,0,0,0.4)"
                       : "0 2px 12px rgba(0,0,0,0.3)",
                   }}
                   // PILAR 4: Spotlight Focus Mode — dim unrelated nodes to opacity-10
                   className={cn(
-                    "absolute z-10 flex items-center gap-2 rounded-xl border backdrop-blur-sm px-3 py-2 transition-all duration-300 group whitespace-nowrap",
-                    isCluster ? "min-w-[116px]" : "min-w-[110px]",
+                    "absolute z-10 flex items-center gap-2 rounded-xl border backdrop-blur-sm px-4 py-2.5 transition-all duration-300 group whitespace-nowrap",
+                    isCluster ? "min-w-[140px]" : "min-w-[118px]",
                     isSelected
                       ? "border-primary/60 bg-primary/10 scale-105 z-20"
                       : "border-border/50 bg-card/80 hover:border-border/80 hover:scale-[1.03] hover:bg-card/95",
@@ -637,18 +652,22 @@ export function OverviewInfrastructureMap({
                     style={{ backgroundColor: dotColor, boxShadow: isSelected ? `0 0 8px ${dotColor}` : undefined }}
                   />
 
-                  {/* Label */}
+                  {/* Label + Subtitle (like target: "Core Router" / "Kong)") */}
                   <div className="flex flex-col min-w-0">
-                    <span className={cn("text-[10px] font-semibold font-mono uppercase tracking-wide truncate",
+                    <span className={cn("text-[10.5px] font-semibold font-mono uppercase tracking-wide truncate",
                       isSelected ? "text-primary" : "text-foreground/90"
                     )}>
-                      {isCluster ? "Go Gateways" : node.name.split(" ")[0]}
+                      {isCluster ? "Go Gateways" : node.name.split(" ").slice(0, 2).join(" ")}
                     </span>
-                    {node.port && (
-                      <span className="text-[7.5px] text-muted-foreground/70 font-mono">
-                        {isCluster ? (isClusterExpanded ? "▲ collapse" : "▼ expand") : `port ${node.port}`}
-                      </span>
-                    )}
+                    <span className="text-[8px] text-muted-foreground/60 font-mono truncate">
+                      {isCluster
+                        ? (isClusterExpanded ? "▲ collapse" : "▼ expand")
+                        : node.type === "core"  ? "Kong)"
+                        : node.type === "db"    ? "(SpatiaLite)"
+                        : node.type === "auth"  ? "Keycloak 26"
+                        : node.type === "cache" ? "Redis 7"
+                        : `port ${node.port}`}
+                    </span>
                   </div>
 
                   {/* Icon — right side */}
@@ -694,7 +713,7 @@ export function OverviewInfrastructureMap({
                     transform: "translate(-50%, -50%)",
                     // Glow for active orbit chip — matches target image (Notification highlighted)
                     boxShadow: isActive
-                      ? "0 0 0 1px rgba(16,185,129,0.6), 0 0 24px rgba(16,185,129,0.35)"
+                      ? "0 0 0 1px color-mix(in srgb, var(--primary) 60%, transparent), 0 0 24px color-mix(in srgb, var(--primary) 35%, transparent)"
                       : "0 1px 8px rgba(0,0,0,0.3)",
                     animationDelay: `${gwIdx * 40}ms`,
                   }}
