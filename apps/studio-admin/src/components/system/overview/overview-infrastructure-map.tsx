@@ -493,8 +493,8 @@ export function OverviewInfrastructureMap({
                     fill="none"
                     stroke="var(--primary)"
                     strokeOpacity="0.14"
-                    strokeWidth="0.4"
-                    strokeDasharray="2.5 2.5"
+                    strokeWidth="1.2"
+                    strokeDasharray="6 6"
                     vectorEffect="non-scaling-stroke"
                   />
                   {/* Inner ring — main orbit track */}
@@ -506,8 +506,8 @@ export function OverviewInfrastructureMap({
                     fill="none"
                     stroke="var(--primary)"
                     strokeOpacity="0.35"
-                    strokeWidth="0.4"
-                    strokeDasharray="1.8 1.8"
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
                     vectorEffect="non-scaling-stroke"
                   />
                 </>
@@ -539,6 +539,7 @@ export function OverviewInfrastructureMap({
                       d={curveD}
                       fill="none"
                       stroke="currentColor"
+                      vectorEffect="non-scaling-stroke"
                       className={cn(
                         "transition-all duration-300",
                         isHighlighted ? "text-primary/50" : "text-border/40 dark:text-border/30"
@@ -546,11 +547,12 @@ export function OverviewInfrastructureMap({
                       strokeWidth={isHighlighted ? 2 : 1.5}
                     />
 
-                    {/* PILAR 2: Magic UI Laser Comet — solid var(--primary), 24px + 140px gap = 164px cycle */}
+                    {/* PILAR 2: Magic UI Laser Comet — solid var(--primary), 24px + 140px gap */}
                     <path
                       d={curveD}
                       fill="none"
                       stroke="var(--primary)"
+                      vectorEffect="non-scaling-stroke"
                       strokeWidth={isHighlighted ? 2.5 : 1.8}
                       strokeLinecap="round"
                       strokeDasharray="24 140"
@@ -578,11 +580,20 @@ export function OverviewInfrastructureMap({
                   const smartD = getCurvedPath(op, tp, 0.42);
                   return (
                     <g key={`smart-${gw.id}-${targetId}`}>
-                      <path d={smartD} fill="none" stroke="var(--primary)" strokeWidth={1.2} strokeDasharray="4 5" strokeOpacity={0.4} />
+                      <path
+                        d={smartD}
+                        fill="none"
+                        stroke="var(--primary)"
+                        vectorEffect="non-scaling-stroke"
+                        strokeWidth={1.2}
+                        strokeDasharray="4 5"
+                        strokeOpacity={0.4}
+                      />
                       <path
                         d={smartD}
                         fill="none"
                         stroke="url(#orbit-beam)"
+                        vectorEffect="non-scaling-stroke"
                         strokeWidth={2.4}
                         strokeLinecap="round"
                         strokeDasharray="20 126"
