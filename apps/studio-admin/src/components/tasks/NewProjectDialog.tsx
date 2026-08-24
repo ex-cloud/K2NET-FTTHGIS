@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   Button,
+  RichTextEditor,
 } from "@k2net/ui";
 import {
   FolderKanban,
@@ -32,6 +33,9 @@ import {
   Trash2,
   Flame,
   Zap,
+  FileText,
+  FileCode,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
@@ -83,6 +87,40 @@ const PROJECT_PRIORITIES = [
   { id: "HIGH", label: "High", icon: AlertCircle, color: "text-amber-500" },
   { id: "URGENT", label: "Urgent", icon: AlertCircle, color: "text-destructive" },
 ];
+
+const TEMPLATE_TECH_SPEC = `## 🎯 Objective & Business Goals
+Jelaskan tujuan inisiatif arsitektur, platform reliability, atau optimasi GIS yang akan dicapai.
+
+## 📐 Technical Architecture & Specification
+- **Core Engine / Microservice**: 
+- **Database Schema / PostGIS Migration**: 
+- **API Contracts & Ingress (Kong/Traefik)**: 
+- **Cache & Message Broker**: 
+
+## 📋 Scope & Key Deliverables
+- [ ] Core Logic & Service Ingestion
+- [ ] UI Studio Dashboard Integration
+- [ ] Security Guard & RBAC PreAuthorize Audit
+- [ ] End-to-End Stress & Verification Testing
+
+## 🛡️ Risk Mitigation & Rollback Plan
+Langkah kontinjensi jika deployment memicu degradasi performa atau lonjakan latency.`;
+
+const TEMPLATE_INITIATIVE = `## 💡 Background & Problem Statement
+Latar belakang kebutuhan fitur baru atau integrasi tenant pada platform FTTH GIS.
+
+## 🛠️ Proposed Solution Overview
+Deskripsi solusi fungsional dan alur interaksi pengguna/teknisi lapangan.
+
+## 📦 Impacted Modules & Gateways
+- **Studio Frontend**: 
+- **Spring Boot Backend**: 
+- **Go Gateways**: 
+
+## 📅 Target Rollout & Milestone Timeline
+- **Phase 1**: Desain skema & prototipe awal
+- **Phase 2**: Integrasi API & QA Sandbox
+- **Phase 3**: Rilis produksi & monitoring telemetri`;
 
 export function NewProjectDialog({
   open,
@@ -164,6 +202,22 @@ export function NewProjectDialog({
     setMilestones((prev) => prev.filter((m) => m.id !== id));
   };
 
+  // Image Upload Handler via MinIO storage-client
+  const handleUploadImage = async (file: File): Promise<{ url: string; filename?: string }> => {
+    try {
+      const { uploadTaskAttachment } = await import("@/lib/storage-client");
+      const res = await uploadTaskAttachment(file, session?.accessToken);
+      if (res && res.url) {
+        toast.success(`Gambar ${file.name} berhasil diunggah ke MinIO`);
+        return { url: res.url, filename: file.name };
+      }
+      throw new Error("Invalid storage upload response");
+    } catch (err: any) {
+      toast.error("Gagal mengunggah gambar: " + (err.message ?? "Storage error"));
+      throw err;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -234,7 +288,7 @@ export function NewProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="w-full sm:max-w-[720px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col gap-0"
+        className="w-full sm:max-w-[860px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col gap-0 max-h-[90vh]"
       >
         {/* ── Top Header / Breadcrumb ────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-border/40 bg-muted/20 shrink-0">
@@ -242,13 +296,16 @@ export function NewProjectDialog({
             <FolderKanban className="w-3.5 h-3.5 text-amber-500" />
             <span>K2N</span>
             <span className="text-muted-foreground/60">›</span>
-            <span className="font-semibold text-foreground">New project</span>
+            <span className="font-semibold text-foreground">New project plan</span>
           </div>
+          <span className="text-[11px] text-muted-foreground hidden sm:inline">
+            Inisiatif Roadmap & Arsitektur Payung
+          </span>
         </div>
 
         {/* ── Form Body ──────────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-          <div className="px-7 pt-6 pb-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="px-6 pt-5 pb-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar-thin">
             {/* Project Icon Selector + Name Input */}
             <div className="flex items-start gap-3.5">
               {/* Icon Selector Dropdown */}
@@ -258,14 +315,14 @@ export function NewProjectDialog({
                     type="button"
                     title="Pilih Icon Projek"
                     className={cn(
-                      "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-all hover:scale-105 cursor-pointer shadow-sm",
+                      "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-all hover:scale-105 cursor-pointer shadow-sm mt-0.5",
                       activeIconObj.color
                     )}
                   >
                     <IconComponent className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 p-1.5 grid grid-cols-4 gap-1.5">
+                <DropdownMenuContent align="start" className="w-48 p-1.5 grid grid-cols-4 gap-1.5 z-[150]">
                   {PROJECT_ICONS.map((item) => {
                     const ItemIcon = item.icon;
                     return (
@@ -284,41 +341,41 @@ export function NewProjectDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Title Input */}
-              <div className="flex-1 space-y-1">
+              {/* Title & Summary Input */}
+              <div className="flex-1 space-y-1 min-w-0">
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Project name"
+                  placeholder="Project plan name (e.g. Core Engine V2 Refactoring)"
                   autoFocus
                   required
-                  className="w-full text-2xl font-bold font-sans tracking-tight text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 leading-tight"
+                  className="w-full text-xl font-bold font-sans tracking-tight text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 leading-tight"
                 />
                 <input
                   type="text"
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
-                  placeholder="Add a short summary..."
-                  className="w-full text-sm text-foreground/80 placeholder:text-muted-foreground/40 bg-transparent border-0 focus:outline-none"
+                  placeholder="Executive summary / tujuan ringkas inisiatif..."
+                  className="w-full text-xs text-foreground/80 placeholder:text-muted-foreground/40 bg-transparent border-0 focus:outline-none"
                 />
               </div>
             </div>
 
             {/* ── Linear Horizontal Property Pills ─────────────────────────── */}
-            <div className="flex items-center gap-2 flex-wrap pt-2 pb-1 border-b border-border/30">
+            <div className="flex items-center gap-2 flex-wrap pt-2 pb-2 border-y border-border/30">
               {/* Status Pill */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
                   >
                     <StatusIcon className={cn("w-3.5 h-3.5", activeStatusObj.color)} />
                     <span>{activeStatusObj.label}</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuContent align="start" className="w-40 z-[150]">
                   {PROJECT_STATUSES.map((st) => {
                     const StIcon = st.icon;
                     return (
@@ -340,13 +397,13 @@ export function NewProjectDialog({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
                   >
                     <PriorityIcon className={cn("w-3.5 h-3.5", activePriorityObj.color)} />
                     <span>{activePriorityObj.label}</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
+                <DropdownMenuContent align="start" className="w-40 z-[150]">
                   {PROJECT_PRIORITIES.map((pr) => {
                     const PrIcon = pr.icon;
                     return (
@@ -368,13 +425,13 @@ export function NewProjectDialog({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
                   >
                     <User className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>Lead: {leadName ? leadName.split("@")[0] : "Unassigned"}</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 max-h-60 overflow-y-auto z-[100]">
+                <DropdownMenuContent align="start" className="w-56 max-h-60 overflow-y-auto z-[150]">
                   {teamUsers.length === 0 ? (
                     <DropdownMenuItem
                       onClick={() => setLeadName(session?.user?.name || session?.user?.email || "andiansyah")}
@@ -431,37 +488,86 @@ export function NewProjectDialog({
               <button
                 type="button"
                 onClick={() => toast.info("Dependencies dapat dikonfigurasi setelah master project dibuat")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
               >
                 <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Dependencies</span>
               </button>
             </div>
 
-            {/* ── Main Description / Project Brief ─────────────────────────── */}
-            <div className="pt-2">
-              <textarea
-                rows={5}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Write a description, a project brief, or collect ideas..."
-                className="w-full text-sm text-foreground bg-transparent border-0 focus:outline-none placeholder:text-muted-foreground/40 resize-none leading-relaxed"
-              />
+            {/* ── TipTap Markdown Project Plan Editor ───────────────────────── */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  <span>Project Plan Specification (TipTap Markdown)</span>
+                </label>
+                
+                {/* Quick Templates Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground hidden sm:inline">Templates:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDescription(TEMPLATE_TECH_SPEC);
+                      toast.info("Template Technical Architecture Plan dimuat");
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+                  >
+                    <FileCode className="w-3 h-3 text-cyan-500" />
+                    <span>Tech Spec</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDescription(TEMPLATE_INITIATIVE);
+                      toast.info("Template Platform Initiative dimuat");
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>Initiative</span>
+                  </button>
+                  {description && (
+                    <button
+                      type="button"
+                      onClick={() => setDescription("")}
+                      title="Reset dokumen"
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Rich Headless TipTap Editor */}
+              <div className="rounded-xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
+                <RichTextEditor
+                  value={description}
+                  onChange={setDescription}
+                  minHeight="180px"
+                  placeholder="Tuliskan spesifikasi project plan, arsitektur sistem, tabel konfigurasi, dan deliverables teknis di sini..."
+                  onUploadImage={handleUploadImage}
+                />
+              </div>
             </div>
 
             {/* ── Milestones Section ───────────────────────────────────────── */}
-            <div className="pt-3 border-t border-border/30 space-y-2.5">
+            <div className="pt-2 border-t border-border/30 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-foreground/80 tracking-wide">
-                  Milestones
+                <span className="text-xs font-semibold text-foreground/90 tracking-wide flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Key Milestones & Checkpoints</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowMilestoneInput(true)}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer flex items-center gap-1 text-xs"
                   title="Tambah Milestone"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Milestone</span>
                 </button>
               </div>
 
@@ -480,7 +586,7 @@ export function NewProjectDialog({
                       <button
                         type="button"
                         onClick={() => handleRemoveMilestone(m.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -491,7 +597,7 @@ export function NewProjectDialog({
 
               {/* Inline Add Milestone Input */}
               {showMilestoneInput && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-1">
                   <input
                     type="text"
                     value={newMilestoneText}
@@ -502,7 +608,7 @@ export function NewProjectDialog({
                         handleAddMilestone();
                       }
                     }}
-                    placeholder="Nama target milestone (e.g. Phase 1: Core Deployment)"
+                    placeholder="Nama target milestone (e.g. Phase 1: Core Engine Integration)"
                     autoFocus
                     className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -529,29 +635,34 @@ export function NewProjectDialog({
           </div>
 
           {/* ── Modal Footer ──────────────────────────────────────────────── */}
-          <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-border/40 bg-muted/20 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground h-9 px-4 rounded-lg"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="h-9 px-5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-md transition-all flex items-center gap-1.5"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Membuat Project...</span>
-                </>
-              ) : (
-                <span>Create project</span>
-              )}
-            </Button>
+          <div className="flex items-center justify-between px-6 py-3 border-t border-border/40 bg-muted/20 shrink-0">
+            <span className="text-[11px] text-muted-foreground">
+              Tip: Gunakan TipTap Markdown untuk menyusun format tabel & checklist
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-3 rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || !name.trim()}
+                className="h-8 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Membuat Project...</span>
+                  </>
+                ) : (
+                  <span>Create project plan</span>
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

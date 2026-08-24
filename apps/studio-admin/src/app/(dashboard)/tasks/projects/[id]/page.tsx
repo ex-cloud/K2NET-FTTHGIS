@@ -85,6 +85,7 @@ export default function ProjectHubDetailPage() {
       setAssigneeId(projectTask.assigneeId ?? null);
       setDueDate(projectTask.dueDate);
       setComments(projectTask.comments ?? []);
+      document.title = `Projects › ${projectTask.title} | FTTH GIS K2NET`;
     }
   }, [projectTask]);
 
@@ -102,15 +103,49 @@ export default function ProjectHubDetailPage() {
       ? 100
       : 0;
 
-  // Save changes to backend
+  // Save changes to backend (only if fields actually changed)
   const handleSaveField = async (fields: Partial<Task>) => {
+    if (!projectTask) return;
+
+    const changedFields: Partial<Task> = {};
+    let hasChanges = false;
+
+    if (fields.title !== undefined && fields.title.trim() !== (projectTask.title ?? "")) {
+      changedFields.title = fields.title.trim();
+      hasChanges = true;
+    }
+    if (fields.description !== undefined && fields.description !== (projectTask.description ?? "")) {
+      changedFields.description = fields.description;
+      hasChanges = true;
+    }
+    if (fields.status !== undefined && fields.status !== projectTask.status) {
+      changedFields.status = fields.status;
+      hasChanges = true;
+    }
+    if (fields.priority !== undefined && fields.priority !== projectTask.priority) {
+      changedFields.priority = fields.priority;
+      hasChanges = true;
+    }
+    if (fields.assigneeId !== undefined && fields.assigneeId !== (projectTask.assigneeId ?? null)) {
+      changedFields.assigneeId = fields.assigneeId;
+      hasChanges = true;
+    }
+    if (fields.dueDate !== undefined && fields.dueDate !== (projectTask.dueDate ?? undefined)) {
+      changedFields.dueDate = fields.dueDate;
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      return; // No-op: no actual changes made
+    }
+
     try {
       const baseUrl = getBackendBaseUrl();
       const res = await httpClient(`${baseUrl}/tasks/${id}`, {
         method: "PUT",
         token: session?.accessToken ?? "",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
+        body: JSON.stringify(changedFields),
       });
       if (res.ok) {
         toast.success("Project updated");

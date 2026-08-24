@@ -295,9 +295,13 @@ export default function ProjectsHubPage() {
       });
     });
 
-    // 2. Distinct obsidianRef groups if not already an explicit project
+    // 2. Distinct obsidianRef groups if not already an explicit project (ignore individual TKT- ticket sequences)
     childMap.forEach((children, key) => {
-      if (key !== "uncategorized" && !projectTasks.some((p) => (p.obsidianRef || p.id) === key)) {
+      if (
+        key !== "uncategorized" &&
+        !key.startsWith("TKT-") &&
+        !projectTasks.some((p) => (p.obsidianRef || p.id) === key)
+      ) {
         const total = children.length;
         const completed = children.filter((c) => ["RESOLVED", "CLOSED"].includes(c.status)).length;
         const pct = total > 0 ? Math.round((completed / total) * 100) : 0;

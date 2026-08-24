@@ -142,7 +142,9 @@ export default function TasksPage() {
   const userId = session?.user?.id ?? session?.user?.email ?? "";
 
   const filteredTasks = useMemo(() => {
-    let result = applyViewFilter(tasks, quickParam, userId);
+    // Exclude master PROJECT containers from /tasks (All Issues / Active Tasks) unless typeParam specifically requests PROJECT
+    const baseTasks = typeParam ? tasks.filter((t) => t.type === typeParam) : tasks.filter((t) => t.type !== "PROJECT");
+    let result = applyViewFilter(baseTasks, quickParam, userId);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

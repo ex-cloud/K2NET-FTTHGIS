@@ -53,6 +53,7 @@ export default function TaskDetailPage() {
       setDueDate(task.dueDate);
       setComments(task.comments ?? []);
       setIsDirty(false);
+      document.title = `Tasks › ${task.title} | FTTH GIS K2NET`;
     }
   }, [task]);
 

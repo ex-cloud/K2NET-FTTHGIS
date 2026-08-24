@@ -16,6 +16,7 @@ import { getLogoUrl } from "@/lib/domain";
 
 import Image from "next/image";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { getRouteHeaderTitle } from "@/lib/route-utils";
 
 export function SystemHeader() {
   const pathname = usePathname();
@@ -91,8 +92,8 @@ export function SystemHeader() {
             {appName}
           </span>
           <Separator orientation="vertical" className="mx-0.5 h-3 bg-border/40 -rotate-12" />
-          <span className="text-[11px] font-medium text-muted-foreground capitalize">
-            {pathname.split('/').pop() || 'Overview'}
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {getRouteHeaderTitle(pathname)}
           </span>
         </div>
       </div>

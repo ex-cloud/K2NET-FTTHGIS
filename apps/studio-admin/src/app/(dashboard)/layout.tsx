@@ -12,6 +12,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getLogoUrl } from "@/lib/domain";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
 import { FloatingAiAssistant } from "@/components/ai/FloatingAiAssistant";
+import { getRouteHeaderTitle } from "@/lib/route-utils";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,15 +29,11 @@ function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (isLoginPage) return;
 
-    const appName = settings.find((s) => s.key === "app_name")?.value;
+    const appName = settings.find((s) => s.key === "app_name")?.value || "FTTH GIS K2NET";
     const logoUrl = settings.find((s) => s.key === "logo_url")?.value;
 
-    if (appName) {
-      const segments = pathname.split("/").filter(Boolean);
-      const lastSegment = segments[segments.length - 1] || "Overview";
-      const pageTitle = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
-      document.title = lastSegment.toLowerCase() === "system" ? appName : `${pageTitle} | ${appName}`;
-    }
+    const pageTitle = getRouteHeaderTitle(pathname);
+    document.title = `${pageTitle} | ${appName}`;
 
     if (logoUrl) {
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");

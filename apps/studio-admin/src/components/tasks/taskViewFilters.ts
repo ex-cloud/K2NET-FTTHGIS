@@ -21,22 +21,23 @@ export const VIEW_LABELS: Record<QuickView, string> = {
   "created-by-me": "Created by Me",
 };
 
-export function applyViewFilter(tasks: Task[], view: QuickView, userId: string): Task[] {
+export function applyViewFilter(tasks: Task[], view: QuickView, userId: string, excludeProjects: boolean = false): Task[] {
+  const targetTasks = excludeProjects ? tasks.filter((t) => t.type !== "PROJECT") : tasks;
   const now = new Date();
   const in7d = new Date();
   in7d.setDate(now.getDate() + 7);
 
   switch (view) {
     case "active":
-      return tasks.filter((t) => !["RESOLVED", "CLOSED"].includes(t.status));
+      return targetTasks.filter((t) => !["RESOLVED", "CLOSED"].includes(t.status));
     case "overdue":
-      return tasks.filter(
+      return targetTasks.filter(
         (t) => t.dueDate && new Date(t.dueDate) < now && !["RESOLVED", "CLOSED"].includes(t.status)
       );
     case "no-assignee":
-      return tasks.filter((t) => !t.assigneeId);
+      return targetTasks.filter((t) => !t.assigneeId);
     case "upcoming":
-      return tasks.filter(
+      return targetTasks.filter(
         (t) =>
           t.dueDate &&
           new Date(t.dueDate) >= now &&
@@ -44,14 +45,14 @@ export function applyViewFilter(tasks: Task[], view: QuickView, userId: string):
           !["RESOLVED", "CLOSED"].includes(t.status)
       );
     case "resolved":
-      return tasks.filter((t) => ["RESOLVED", "CLOSED"].includes(t.status));
+      return targetTasks.filter((t) => ["RESOLVED", "CLOSED"].includes(t.status));
     case "my-issues":
-      return tasks.filter(
+      return targetTasks.filter(
         (t) => t.assigneeId === userId && !["RESOLVED", "CLOSED"].includes(t.status)
       );
     case "created-by-me":
-      return tasks.filter((t) => t.reporterId === userId);
+      return targetTasks.filter((t) => t.reporterId === userId);
     default:
-      return tasks;
+      return targetTasks;
   }
 }
