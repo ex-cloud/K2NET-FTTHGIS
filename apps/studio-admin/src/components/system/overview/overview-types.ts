@@ -45,9 +45,11 @@ export interface DevOpsStats {
 export interface ServiceNode {
   id: string;
   name: string;
-  type: "core" | "db" | "auth" | "cache" | "gateway";
+  type: "edge" | "core" | "ai" | "db" | "auth" | "cache" | "gateway";
   status: "healthy" | "warning" | "error";
   port?: number;
+  sublabel?: string;
+  tone?: "green" | "blue" | "red";
   details: string;
   metrics: Record<string, string>;
   x: number;
