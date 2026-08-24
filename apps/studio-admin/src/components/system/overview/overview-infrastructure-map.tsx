@@ -49,29 +49,29 @@ const GATEWAY_ORBIT: GatewayOrbitNode[] = [
   { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",         port: 5009, icon: ClipboardList, angle: 268,  connectsTo: ["db-postgres"] },
 ];
 
-// Wider radius — matches target image's spread of orbit chips
-const ORBIT_RX = 20;  // % of viewport width
-const ORBIT_RY = 24;  // % of viewport height
+// Larger orbit radius — matches the BIG ring in the target image
+const ORBIT_RX = 22;  // % of viewport width
+const ORBIT_RY = 27;  // % of viewport height
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
 const subNodesMap: Record<string, SubNode[]> = {
   "core-router": [
-    { id: "sub-kong-rl",  name: "Rate Limit", details: "Global request throttling (100 req/min)",   icon: Zap,    xOffset: -30, yOffset: -50 },
-    { id: "sub-kong-ip",  name: "IP Rules",   details: "WhatsApp webhook whitelist CIDR",             icon: Shield, xOffset: 0,   yOffset: -65 },
-    { id: "sub-kong-jwt", name: "JWT Auth",   details: "Validation of Keycloak JWT signatures",       icon: Lock,   xOffset: 30,  yOffset: -50 },
+    { id: "sub-kong-rl",  name: "Rate Limit", details: "Global request throttling (100 req/min)",   icon: Zap,    xOffset: -35, yOffset: -48 },
+    { id: "sub-kong-ip",  name: "IP Rules",   details: "WhatsApp webhook whitelist CIDR",             icon: Shield, xOffset: 0,   yOffset: -60 },
+    { id: "sub-kong-jwt", name: "JWT Auth",   details: "Validation of Keycloak JWT signatures",       icon: Lock,   xOffset: 35,  yOffset: -48 },
   ],
   "auth-keycloak": [
-    { id: "sub-kc-realm", name: "Realms",     details: "Multi-tenant isolation configurations",       icon: Layers, xOffset: -45, yOffset: 25 },
-    { id: "sub-kc-mfa",   name: "MFA Policy", details: "Multi-factor authentication check",           icon: Shield, xOffset: -45, yOffset: -25 },
+    { id: "sub-kc-realm", name: "Realms",     details: "Multi-tenant isolation configurations",       icon: Layers, xOffset: -50, yOffset: 30 },
+    { id: "sub-kc-mfa",   name: "MFA Policy", details: "Multi-factor authentication check",           icon: Shield, xOffset: -50, yOffset: -30 },
   ],
   "db-postgres": [
-    { id: "sub-pg-part",    name: "Partitions", details: "Audit Logs monthly tables partitioned",     icon: Database, xOffset: 45, yOffset: -25 },
-    { id: "sub-pg-spatial", name: "PostGIS",    details: "Spatial mapping & coordinate functions",    icon: Map,      xOffset: 45, yOffset: 25 },
+    { id: "sub-pg-part",    name: "Partitions", details: "Audit Logs monthly tables partitioned",     icon: Database, xOffset: 50, yOffset: -28 },
+    { id: "sub-pg-spatial", name: "PostGIS",    details: "Spatial mapping & coordinate functions",    icon: Map,      xOffset: 50, yOffset: 28 },
   ],
   "cache-redis": [
-    { id: "sub-rd-pub",  name: "Pub/Sub",    details: "Event dispatcher channels (network-events)",   icon: Radio,  xOffset: -25, yOffset: 55 },
-    { id: "sub-rd-tile", name: "Tile Cache", details: "Cached spatial map tiles storage",              icon: Layers, xOffset: 25,  yOffset: 55 },
+    { id: "sub-rd-pub",  name: "Pub/Sub",    details: "Event dispatcher channels (network-events)",   icon: Radio,  xOffset: -30, yOffset: -48 },
+    { id: "sub-rd-tile", name: "Tile Cache", details: "Cached spatial map tiles storage",              icon: Layers, xOffset: 30,  yOffset: -48 },
   ],
 };
 
@@ -92,13 +92,19 @@ const relationsMap: Record<string, string[]> = {
   "gw-cluster":    ["core-router", "auth-keycloak", "db-postgres", "cache-redis"],
 };
 
-// Default positions — spread wide across canvas to match target image layout
+// Default positions — matching the target image layout exactly:
+// Core Router (Kong): top-center
+// Keycloak Auth: top-right (NOT in orbit, separate node)
+// PostgreSQL: center of canvas
+// Go Gateways (parent pill): LEFT side — different from orbit cluster center
+// Redis Cache: bottom-center
+// Orbit cluster center is DIFFERENT — RIGHT side of canvas
 const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
-  "core-router":   { x: 44,  y: 14  },
-  "auth-keycloak": { x: 80,  y: 22  },
-  "db-postgres":   { x: 44,  y: 48  },
-  "cache-redis":   { x: 34,  y: 68  },
-  "gw-cluster":    { x: 72,  y: 58  },
+  "core-router":   { x: 42,  y: 22  }, // top-center
+  "auth-keycloak": { x: 74,  y: 23  }, // top-right
+  "db-postgres":   { x: 42,  y: 50  }, // center
+  "cache-redis":   { x: 41,  y: 72  }, // bottom-center
+  "gw-cluster":    { x: 74,  y: 56  }, // center-right (orbit center)
 };
 
 // Stagger delays for laser comet per beam
@@ -343,7 +349,7 @@ export function OverviewInfrastructureMap({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card
-        className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[520px]"
+        className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[560px]"
         ref={containerRef}
       >
         {/* ── Header + Controls ── */}
@@ -386,7 +392,7 @@ export function OverviewInfrastructureMap({
         {/* ── Viewport ── */}
         <div
           ref={viewportRef}
-          className="relative mt-4 flex-1 w-full overflow-hidden rounded-xl border border-border/30 bg-[hsl(var(--card))] cursor-grab active:cursor-grabbing min-h-[430px]"
+          className="relative mt-4 flex-1 w-full overflow-hidden rounded-xl border border-border/30 bg-[hsl(var(--card))] cursor-grab active:cursor-grabbing min-h-[470px]"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
@@ -462,22 +468,22 @@ export function OverviewInfrastructureMap({
                 </filter>
               </defs>
 
-              {/* ── Dual concentric orbit guide rings (like target image) ── */}
+              {/* ── PILAR 4: Concentric Orbit Rings (Railway.app style) ── */}
               {isClusterExpanded && (
                 <>
-                  {/* Outer ring — large, very subtle */}
+                  {/* Outer ring — wide halo, faint */}
                   <ellipse
                     cx={`${clusterPos.x}%`}
                     cy={`${clusterPos.y}%`}
-                    rx={`${ORBIT_RX + 4}%`}
-                    ry={`${ORBIT_RY + 4.5}%`}
+                    rx={`${ORBIT_RX + 5}%`}
+                    ry={`${ORBIT_RY + 5.5}%`}
                     fill="none"
                     stroke="var(--primary)"
-                    strokeOpacity="0.08"
-                    strokeWidth="1"
-                    strokeDasharray="6 6"
+                    strokeOpacity="0.14"
+                    strokeWidth="1.2"
+                    strokeDasharray="8 7"
                   />
-                  {/* Inner ring — main orbit track */}
+                  {/* Inner ring — main orbit track, clearly visible */}
                   <ellipse
                     cx={`${clusterPos.x}%`}
                     cy={`${clusterPos.y}%`}
@@ -485,14 +491,14 @@ export function OverviewInfrastructureMap({
                     ry={`${ORBIT_RY}%`}
                     fill="none"
                     stroke="var(--primary)"
-                    strokeOpacity="0.18"
-                    strokeWidth="1"
-                    strokeDasharray="4 5"
+                    strokeOpacity="0.35"
+                    strokeWidth="1.2"
+                    strokeDasharray="5 5"
                   />
                 </>
               )}
 
-              {/* ── Parent node connections ── */}
+              {/* ── PILAR 1+2: Cubic Bezier connections + Magic UI Laser Comet Beams ── */}
               {parentConnections.map((conn, idx) => {
                 const s = getNodeCoords(conn.from);
                 const e = getNodeCoords(conn.to);
@@ -501,36 +507,37 @@ export function OverviewInfrastructureMap({
                   ((activeNode === conn.from && relationsMap[activeNode]?.includes(conn.to)) ||
                    (activeNode === conn.to   && relationsMap[activeNode]?.includes(conn.from)));
                 const isDimmed = !!activeNode && !isHighlighted;
-                const curveD   = getCurvedPath(s, e, 0.5);
+                // PILAR 1: Smooth Cubic Bezier (React Flow formula)
+                const curveD = getCurvedPath(s, e, 0.5);
 
                 return (
                   <g
                     key={`conn-${idx}`}
                     style={{ transition: "opacity 0.35s cubic-bezier(0.16,1,0.3,1)" }}
-                    opacity={isDimmed ? 0.12 : 1}
+                    opacity={isDimmed ? 0.1 : 1}
                   >
-                    {/* Base track — thin, dark, visible */}
+                    {/* PILAR 3: Aceternity base track — ultra-thin 1.2px, transparent */}
                     <path
                       d={curveD}
                       fill="none"
                       stroke={isHighlighted ? "var(--primary)" : "currentColor"}
-                      strokeOpacity={isHighlighted ? 0.45 : 0.22}
-                      strokeWidth={isHighlighted ? 1.6 : 1.2}
+                      strokeOpacity={isHighlighted ? 0.5 : 0.25}
+                      strokeWidth={isHighlighted ? 1.8 : 1.2}
                       className="text-foreground transition-all duration-300"
                     />
 
-                    {/* Laser comet pulse — gradient particle moving along path */}
+                    {/* PILAR 2: Magic UI Laser Comet — short 18px particle on long 148px gap */}
                     <path
                       d={curveD}
                       fill="none"
                       stroke={`url(#comet-${idx})`}
-                      strokeWidth={isHighlighted ? 2.4 : 1.8}
+                      strokeWidth={isHighlighted ? 2.6 : 1.8}
                       strokeLinecap="round"
                       strokeDasharray="18 148"
                       filter={isHighlighted ? "url(#comet-glow)" : undefined}
                       className="animate-beam-flow"
                       style={{
-                        animationDuration: isHighlighted ? "1.6s" : "2.8s",
+                        animationDuration: isHighlighted ? "1.5s" : "2.8s",
                         animationDelay: `${BEAM_DELAYS[idx] ?? 0}s`,
                         opacity: isDimmed ? 0 : isHighlighted ? 1 : 0.85,
                         transition: "opacity 0.3s",
@@ -614,14 +621,14 @@ export function OverviewInfrastructureMap({
                       ? "0 0 0 1px rgba(16,185,129,0.5), 0 0 32px rgba(16,185,129,0.25), 0 4px 20px rgba(0,0,0,0.4)"
                       : "0 2px 12px rgba(0,0,0,0.3)",
                   }}
+                  // PILAR 4: Spotlight Focus Mode — dim unrelated nodes to opacity-10
                   className={cn(
-                    // Pill-shaped card like target image
                     "absolute z-10 flex items-center gap-2 rounded-xl border backdrop-blur-sm px-3 py-2 transition-all duration-300 group whitespace-nowrap",
-                    isCluster ? "min-w-[110px]" : "min-w-[100px]",
+                    isCluster ? "min-w-[116px]" : "min-w-[110px]",
                     isSelected
                       ? "border-primary/60 bg-primary/10 scale-105 z-20"
                       : "border-border/50 bg-card/80 hover:border-border/80 hover:scale-[1.03] hover:bg-card/95",
-                    dimmed ? "opacity-12" : "opacity-100"
+                    dimmed ? "opacity-10" : "opacity-100"
                   )}
                 >
                   {/* Status dot */}
@@ -632,8 +639,7 @@ export function OverviewInfrastructureMap({
 
                   {/* Label */}
                   <div className="flex flex-col min-w-0">
-                    <span className={cn(
-                      "text-[9.5px] font-semibold font-mono uppercase tracking-wide truncate",
+                    <span className={cn("text-[10px] font-semibold font-mono uppercase tracking-wide truncate",
                       isSelected ? "text-primary" : "text-foreground/90"
                     )}>
                       {isCluster ? "Go Gateways" : node.name.split(" ")[0]}
