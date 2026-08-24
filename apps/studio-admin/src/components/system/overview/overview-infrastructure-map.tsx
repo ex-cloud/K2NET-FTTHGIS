@@ -92,19 +92,14 @@ const relationsMap: Record<string, string[]> = {
   "gw-cluster":    ["core-router", "auth-keycloak", "db-postgres", "cache-redis"],
 };
 
-// Default positions — matching the target image layout exactly:
-// Core Router (Kong): top-center
-// Keycloak Auth: top-right (NOT in orbit, separate node)
-// PostgreSQL: center of canvas
-// Go Gateways (parent pill): LEFT side — different from orbit cluster center
-// Redis Cache: bottom-center
-// Orbit cluster center is DIFFERENT — RIGHT side of canvas
+// Default positions — balanced layout, stays within 20-80% range per Gemini AI advice
+// Coordinates are 0-100 scale matching viewBox="0 0 100 100" and CSS left/top %
 const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
-  "core-router":   { x: 42,  y: 22  }, // top-center
-  "auth-keycloak": { x: 74,  y: 23  }, // top-right
-  "db-postgres":   { x: 42,  y: 50  }, // center
-  "cache-redis":   { x: 41,  y: 72  }, // bottom-center
-  "gw-cluster":    { x: 74,  y: 56  }, // center-right (orbit center)
+  "core-router":   { x: 35, y: 25 }, // top-center-left
+  "auth-keycloak": { x: 70, y: 25 }, // top-right
+  "db-postgres":   { x: 35, y: 55 }, // center
+  "cache-redis":   { x: 35, y: 80 }, // bottom
+  "gw-cluster":    { x: 72, y: 65 }, // center-right (orbit center)
 };
 
 // Stagger delays for laser comet per beam
@@ -419,10 +414,18 @@ export function OverviewInfrastructureMap({
           >
             {/* ════════════════════════════════════════════════════════════
                 SVG layer — connections, orbit rings, laser comets
+                KEY FIX: viewBox="0 0 100 100" + preserveAspectRatio="none"
+                makes SVG coordinate space (0-100) sync exactly with
+                CSS percentage positions (left: 42%, top: 22%) of node buttons.
+                Without this, path coordinates are interpreted as pixels ≠ %!
                 ════════════════════════════════════════════════════════════ */}
-            <svg className="absolute inset-0 h-full w-full pointer-events-none z-0 overflow-visible">
+            <svg
+              className="absolute inset-0 h-full w-full pointer-events-none z-0"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
               <defs>
-                {/* Per-connection comet gradient — follows path direction */}
+                {/* Per-connection comet gradients — userSpaceOnUse in viewBox 0-100 coords */}
                 {parentConnections.map((conn, idx) => {
                   const s = getNodeCoords(conn.from);
                   const e = getNodeCoords(conn.to);
@@ -431,12 +434,11 @@ export function OverviewInfrastructureMap({
                       key={`lg-${idx}`}
                       id={`comet-${idx}`}
                       gradientUnits="userSpaceOnUse"
-                      x1={`${s.x}%`} y1={`${s.y}%`}
-                      x2={`${e.x}%`} y2={`${e.y}%`}
+                      x1={s.x} y1={s.y}
+                      x2={e.x} y2={e.y}
                     >
                       <stop offset="0%"   stopColor="var(--primary)" stopOpacity="0"   />
-                      <stop offset="55%"  stopColor="var(--primary)" stopOpacity="0.7" />
-                      <stop offset="90%"  stopColor="var(--primary)" stopOpacity="1"   />
+                      <stop offset="60%"  stopColor="var(--primary)" stopOpacity="0.8" />
                       <stop offset="100%" stopColor="hsl(0 0% 100%)" stopOpacity="1"   />
                     </linearGradient>
                   );
@@ -478,37 +480,39 @@ export function OverviewInfrastructureMap({
               {/* ── PILAR 4: Concentric Orbit Rings (Railway.app style) ── */}
               {isClusterExpanded && (
                 <>
-                  {/* Aurora glow fill behind entire orbit area — Aceternity style */}
+                  {/* Aurora glow fill — bare numbers in viewBox 0-100 coords */}
                   <ellipse
-                    cx={`${clusterPos.x}%`}
-                    cy={`${clusterPos.y}%`}
-                    rx={`${ORBIT_RX + 9}%`}
-                    ry={`${ORBIT_RY + 10}%`}
+                    cx={clusterPos.x}
+                    cy={clusterPos.y}
+                    rx={ORBIT_RX + 9}
+                    ry={ORBIT_RY + 10}
                     fill="url(#orbit-aura)"
                   />
-                  {/* Outer ring — wide halo, faint */}
+                  {/* Outer ring — wide halo */}
                   <ellipse
-                    cx={`${clusterPos.x}%`}
-                    cy={`${clusterPos.y}%`}
-                    rx={`${ORBIT_RX + 5}%`}
-                    ry={`${ORBIT_RY + 5.5}%`}
+                    cx={clusterPos.x}
+                    cy={clusterPos.y}
+                    rx={ORBIT_RX + 5}
+                    ry={ORBIT_RY + 5.5}
                     fill="none"
                     stroke="var(--primary)"
                     strokeOpacity="0.14"
-                    strokeWidth="1.2"
-                    strokeDasharray="8 7"
+                    strokeWidth="0.4"
+                    strokeDasharray="2.5 2.5"
+                    vectorEffect="non-scaling-stroke"
                   />
-                  {/* Inner ring — main orbit track, clearly visible */}
+                  {/* Inner ring — main orbit track */}
                   <ellipse
-                    cx={`${clusterPos.x}%`}
-                    cy={`${clusterPos.y}%`}
-                    rx={`${ORBIT_RX}%`}
-                    ry={`${ORBIT_RY}%`}
+                    cx={clusterPos.x}
+                    cy={clusterPos.y}
+                    rx={ORBIT_RX}
+                    ry={ORBIT_RY}
                     fill="none"
                     stroke="var(--primary)"
                     strokeOpacity="0.35"
-                    strokeWidth="1.2"
-                    strokeDasharray="5 5"
+                    strokeWidth="0.4"
+                    strokeDasharray="1.8 1.8"
+                    vectorEffect="non-scaling-stroke"
                   />
                 </>
               )}
