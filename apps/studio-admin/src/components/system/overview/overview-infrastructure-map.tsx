@@ -36,19 +36,19 @@ import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
 const GATEWAY_ORBIT: GatewayOrbitNode[] = [
   { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          angle: -90,  connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -50,  connectsTo: ["postgres-db", "keycloak-iam"] },
-  { id: "gw-map",          name: "Map",           gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: -10,  connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",       port: 5004, icon: HardDrive,     angle: 30,   connectsTo: ["postgres-db"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",      port: 5005, icon: MessageSquare, angle: 70,   connectsTo: ["redis-cache"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",     port: 5006, icon: CalendarClock, angle: 110,  connectsTo: ["postgres-db"] },
-  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",        port: 5007, icon: Upload,        angle: 150,  connectsTo: ["postgres-db"] },
-  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",           port: 5008, icon: Network,       angle: 190,  connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",         port: 5009, icon: ClipboardList, angle: 230,  connectsTo: ["postgres-db"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -45,  connectsTo: ["postgres-db", "keycloak-iam"] },
+  { id: "gw-map",          name: "Map",           gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 0,    connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",       port: 5004, icon: HardDrive,     angle: 45,   connectsTo: ["postgres-db"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",      port: 5005, icon: MessageSquare, angle: 85,   connectsTo: ["redis-cache"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",     port: 5006, icon: CalendarClock, angle: 125,  connectsTo: ["postgres-db"] },
+  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",        port: 5007, icon: Upload,        angle: 165,  connectsTo: ["postgres-db"] },
+  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",           port: 5008, icon: Network,       angle: 205,  connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",         port: 5009, icon: ClipboardList, angle: 245,  connectsTo: ["postgres-db"] },
 ];
 
-const ORBIT_CENTER = { x: 670, y: 250 };
-const ORBIT_RX     = 125;
-const ORBIT_RY     = 120;
+const ORBIT_CENTER = { x: 690, y: 250 };
+const ORBIT_RX     = 115;
+const ORBIT_RY     = 110;
 
 // Edge coordinates for connections when orbit is expanded vs collapsed
 const ORBIT_GATEWAY_EDGE_X = ORBIT_CENTER.x - 38;
@@ -66,12 +66,12 @@ interface StageNodePosition {
 }
 
 const STAGE_NODE_POSITIONS: Record<string, StageNodePosition> = {
-  "edge-router":   { x: 110, y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green" },
-  "core-backend":  { x: 330, y: 120, label: "Spring Boot Core", sublabel: "Port 9090",      icon: Cpu,      tone: "green" },
-  "ai-gateway":    { x: 330, y: 250, label: "AI Gateway (RAG)", sublabel: "Python Engine", icon: Zap,      tone: "green" },
-  "keycloak-iam":  { x: 330, y: 380, label: "Keycloak IAM",     sublabel: "Keycloak 26",    icon: KeyRound, tone: "green" },
-  "postgres-db":   { x: 490, y: 185, label: "PostgreSQL",       sublabel: "(PostGIS)",      icon: Database, tone: "blue"  },
-  "redis-cache":   { x: 490, y: 315, label: "Redis Cache",      sublabel: "Port 6379",      icon: Activity, tone: "red"   },
+  "edge-router":   { x: 100, y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green" },
+  "core-backend":  { x: 290, y: 120, label: "Spring Boot Core", sublabel: "Port 9090",      icon: Cpu,      tone: "green" },
+  "ai-gateway":    { x: 290, y: 250, label: "AI Gateway (RAG)", sublabel: "Python Engine", icon: Zap,      tone: "green" },
+  "keycloak-iam":  { x: 290, y: 380, label: "Keycloak IAM",     sublabel: "Keycloak 26",    icon: KeyRound, tone: "green" },
+  "postgres-db":   { x: 460, y: 185, label: "PostgreSQL",       sublabel: "(PostGIS)",      icon: Database, tone: "blue"  },
+  "redis-cache":   { x: 460, y: 315, label: "Redis Cache",      sublabel: "Port 6379",      icon: Activity, tone: "red"   },
 };
 
 // ─── 3-Tier Logical Traffic Connections ───────────────────────────────────────
@@ -85,19 +85,19 @@ interface StageEdge {
 
 const STAGE_EDGES: StageEdge[] = [
   // Edge -> Core Layer
-  { id: "edge-core",     from: "edge-router",  to: "core-backend", path: "M 110 250 C 210 250, 220 120, 330 120" },
-  { id: "edge-ai",       from: "edge-router",  to: "ai-gateway",   path: "M 110 250 L 330 250" },
-  { id: "edge-keycloak", from: "edge-router",  to: "keycloak-iam", path: "M 110 250 C 210 250, 220 380, 330 380" },
+  { id: "edge-core",     from: "edge-router",  to: "core-backend", path: "M 100 250 C 190 250, 200 120, 290 120" },
+  { id: "edge-ai",       from: "edge-router",  to: "ai-gateway",   path: "M 100 250 L 290 250" },
+  { id: "edge-keycloak", from: "edge-router",  to: "keycloak-iam", path: "M 100 250 C 190 250, 200 380, 290 380" },
 
   // Core Layer -> Storage & Data Layer
-  { id: "core-postgres", from: "core-backend", to: "postgres-db",  path: "M 330 120 C 410 120, 410 185, 490 185" },
-  { id: "core-redis",    from: "core-backend", to: "redis-cache",  path: "M 330 120 C 410 120, 410 315, 490 315" },
-  { id: "ai-postgres",   from: "ai-gateway",    to: "postgres-db",  path: "M 330 250 C 410 250, 410 185, 490 185" },
-  { id: "ai-redis",      from: "ai-gateway",    to: "redis-cache",  path: "M 330 250 C 410 250, 410 315, 490 315" },
+  { id: "core-postgres", from: "core-backend", to: "postgres-db",  path: "M 290 120 C 370 120, 380 185, 460 185" },
+  { id: "core-redis",    from: "core-backend", to: "redis-cache",  path: "M 290 120 C 370 120, 380 315, 460 315" },
+  { id: "ai-postgres",   from: "ai-gateway",    to: "postgres-db",  path: "M 290 250 C 370 250, 380 185, 460 185" },
+  { id: "ai-redis",      from: "ai-gateway",    to: "redis-cache",  path: "M 290 250 C 370 250, 380 315, 460 315" },
 
   // Data Layer -> Go Gateways Cluster Orbit
-  { id: "postgres-orbit",from: "postgres-db",   to: "gw-cluster",   path: `M 490 185 C 560 185, 570 250, ${ORBIT_GATEWAY_EDGE_X} 250` },
-  { id: "redis-orbit",   from: "redis-cache",   to: "gw-cluster",   path: `M 490 315 C 560 315, 570 250, ${ORBIT_GATEWAY_EDGE_X} 250` },
+  { id: "postgres-orbit",from: "postgres-db",   to: "gw-cluster",   path: `M 460 185 C 540 185, 560 250, ${ORBIT_GATEWAY_EDGE_X} 250` },
+  { id: "redis-orbit",   from: "redis-cache",   to: "gw-cluster",   path: `M 460 315 C 540 315, 560 250, ${ORBIT_GATEWAY_EDGE_X} 250` },
 ];
 
 const subNodesMap: Record<string, SubNode[]> = {
@@ -370,6 +370,34 @@ export function OverviewInfrastructureMap({
                   </g>
                 );
               })}
+
+              {/* ── Concentric Orbit Dashed Circles ── */}
+              <ellipse
+                cx={ORBIT_CENTER.x}
+                cy={ORBIT_CENTER.y}
+                rx={ORBIT_RX}
+                ry={ORBIT_RY}
+                fill="none"
+                stroke="var(--primary)"
+                strokeOpacity={0.35}
+                strokeWidth="1.2"
+                strokeDasharray="5 5"
+                vectorEffect="non-scaling-stroke"
+                className={cn("transition-opacity duration-300", collapsed ? "opacity-0 invisible" : "opacity-100")}
+              />
+              <ellipse
+                cx={ORBIT_CENTER.x}
+                cy={ORBIT_CENTER.y}
+                rx={ORBIT_RX * 0.65}
+                ry={ORBIT_RY * 0.65}
+                fill="none"
+                stroke="var(--primary)"
+                strokeOpacity={0.2}
+                strokeWidth="1"
+                strokeDasharray="3 3"
+                vectorEffect="non-scaling-stroke"
+                className={cn("transition-opacity duration-300", collapsed ? "opacity-0 invisible" : "opacity-100")}
+              />
             </svg>
 
             {/* ── Tier 1 & Tier 2 Service Nodes ── */}
@@ -427,22 +455,6 @@ export function OverviewInfrastructureMap({
               style={{ left: ORBIT_CENTER.x, top: ORBIT_CENTER.y }}
               aria-label="Gateway services cluster"
             >
-              {/* Concentric Orbit Rings */}
-              <div
-                className={cn(
-                  "absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-border/40 pointer-events-none transition-opacity duration-300",
-                  collapsed ? "opacity-0 invisible" : "opacity-100"
-                )}
-                style={{ width: ORBIT_RX * 2, height: ORBIT_RY * 2 }}
-              />
-              <div
-                className={cn(
-                  "absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-primary/20 pointer-events-none transition-opacity duration-300",
-                  collapsed ? "opacity-0 invisible" : "opacity-100"
-                )}
-                style={{ width: ORBIT_RX * 1.3, height: ORBIT_RY * 1.3 }}
-              />
-
               {/* Orbit Central Hub Button */}
               <button
                 onClick={toggleOrbit}

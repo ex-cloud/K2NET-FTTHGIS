@@ -10,7 +10,6 @@ import { useTaskSummary } from "@/hooks/useTaskSummary";
 import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import {
   OverviewInfrastructureMap,
-  OverviewInfrastructureMapSleek,
   OverviewMetricCardsRow,
   OverviewStatusBanner,
   OverviewThroughputChart,
@@ -23,7 +22,6 @@ export default function SystemOverviewPage() {
   const data = useSystemOverviewData();
   const { summary: taskSummary, loading: loadingTasks, refresh: refreshTasks } = useTaskSummary();
   const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
-  const [mapMode, setMapMode]       = useState<"sleek" | "interactive">("sleek");
 
   const serviceNodes: ServiceNode[] = useServiceNodes({
     postgresStatus: data.systemHealth.postgresStatus,
@@ -112,50 +110,14 @@ export default function SystemOverviewPage() {
             resolvedTasksToday={taskSummary?.resolvedToday ?? 0}
           />
 
-          {/* Mode Switcher for Infrastructure Map */}
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold text-foreground font-mono">INFRASTRUCTURE MAP ENGINE:</span>
-            </div>
-            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-              <Button
-                variant={mapMode === "sleek" ? "default" : "ghost"}
-                size="sm"
-                className="h-7 text-[10px] font-mono font-semibold px-2.5"
-                onClick={() => setMapMode("sleek")}
-              >
-                1:1 Blueprint Sleek Mode (Target Match)
-              </Button>
-              <Button
-                variant={mapMode === "interactive" ? "default" : "ghost"}
-                size="sm"
-                className="h-7 text-[10px] font-mono font-semibold px-2.5"
-                onClick={() => setMapMode("interactive")}
-              >
-                Interactive Drag Canvas
-              </Button>
-            </div>
-          </div>
-
-          {/* Infrastructure Map Mode */}
-          {mapMode === "sleek" ? (
-            <OverviewInfrastructureMapSleek
-              serviceNodes={serviceNodes}
-              activeNode={activeNode}
-              onSelectNode={setActiveNode}
-              activeNodeData={activeNodeData}
-              gateways={data.gateways}
-            />
-          ) : (
-            <OverviewInfrastructureMap
-              serviceNodes={serviceNodes}
-              activeNode={activeNode}
-              onSelectNode={setActiveNode}
-              activeNodeData={activeNodeData}
-              gateways={data.gateways}
-            />
-          )}
+          {/* Interactive infrastructure map */}
+          <OverviewInfrastructureMap
+            serviceNodes={serviceNodes}
+            activeNode={activeNode}
+            onSelectNode={setActiveNode}
+            activeNodeData={activeNodeData}
+            gateways={data.gateways}
+          />
 
           {/* Throughput chart */}
           <OverviewThroughputChart data={displayThroughput} />
