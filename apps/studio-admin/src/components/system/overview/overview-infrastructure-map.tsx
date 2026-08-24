@@ -113,16 +113,12 @@ function getCurvedPath(
   curvature = 0.5
 ): string {
   const dx = end.x - start.x;
-  const dy = end.y - start.y;
 
-  let cx1: number, cy1: number, cx2: number, cy2: number;
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    cx1 = start.x + dx * curvature;  cy1 = start.y;
-    cx2 = start.x + dx * (1 - curvature); cy2 = end.y;
-  } else {
-    cx1 = start.x;  cy1 = start.y + dy * curvature;
-    cx2 = end.x;    cy2 = start.y + dy * (1 - curvature);
-  }
+  const cx1 = start.x + dx * curvature;
+  const cy1 = start.y;
+  const cx2 = start.x + dx * (1 - curvature);
+  const cy2 = end.y;
+
   return `M ${start.x} ${start.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${end.x} ${end.y}`;
 }
 
