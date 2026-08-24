@@ -97,6 +97,41 @@ const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
   "gw-cluster":    { x: 72,    y: 73   },
 };
 
+// ─── Bezier Math Generator (React Flow Style) ────────────────────────────────
+
+function getCurvedPath(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  curvature = 0.5
+): string {
+  const x1 = start.x;
+  const y1 = start.y;
+  const x2 = end.x;
+  const y2 = end.y;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  let cx1: number;
+  let cy1: number;
+  let cx2: number;
+  let cy2: number;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    cx1 = x1 + dx * curvature;
+    cy1 = y1;
+    cx2 = x1 + dx * (1 - curvature);
+    cy2 = y2;
+  } else {
+    cx1 = x1;
+    cy1 = y1 + dy * curvature;
+    cx2 = x2;
+    cy2 = y1 + dy * (1 - curvature);
+  }
+
+  return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface OverviewInfrastructureMapProps {
@@ -281,6 +316,7 @@ export function OverviewInfrastructureMap({
   const clusterNode = serviceNodes.find((n) => n.id === "gw-cluster");
   const clusterStatus     = clusterNode?.status ?? "healthy";
   const clusterOnlineText = clusterNode?.metrics?.["Online"] ?? "—";
+  const clusterPos        = getNodeCoords("gw-cluster");
 
   const activeOrbitGw = useMemo(
     () => (activeOrbitNode ? GATEWAY_ORBIT.find((g) => g.id === activeOrbitNode) ?? null : null),
@@ -388,13 +424,32 @@ export function OverviewInfrastructureMap({
             {/* SVG connections */}
             <svg className="absolute inset-0 h-full w-full pointer-events-none z-0 overflow-visible">
               <defs>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                {/* Soft ambient glow */}
+                <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
                 </filter>
               </defs>
 
-              {/* Parent connections */}
+              {/* Concentric Orbit Guide Ellipse for Go Gateways */}
+              {isClusterExpanded && (
+                <ellipse
+                  cx={`${clusterPos.x}%`}
+                  cy={`${clusterPos.y}%`}
+                  rx={`${ORBIT_RX}%`}
+                  ry={`${ORBIT_RY}%`}
+                  fill="none"
+                  stroke="currentColor"
+                  className="text-primary/20 transition-opacity duration-300"
+                  strokeWidth="1.2"
+                  strokeDasharray="4 4"
+                />
+              )}
+
+              {/* Parent connections — Smooth Cubic Bezier Curves with Laser Comet Beams */}
               {parentConnections.map((conn, idx) => {
                 const start      = getNodeCoords(conn.from);
                 const end        = getNodeCoords(conn.to);
@@ -406,36 +461,40 @@ export function OverviewInfrastructureMap({
                   ((activeNode === conn.from && relationsMap[activeNode]?.includes(conn.to)) ||
                    (activeNode === conn.to   && relationsMap[activeNode]?.includes(conn.from)));
                 const isDimmed = !!activeNode && !isHighlighted;
+                const curveD   = getCurvedPath(start, end, 0.5);
 
                 return (
-                  <g key={`conn-${idx}`} style={{ transition: "opacity 0.3s ease" }} className={isDimmed ? "opacity-20" : "opacity-100"}>
-                    <line
-                      x1={`${start.x}%`} y1={`${start.y}%`}
-                      x2={`${end.x}%`}   y2={`${end.y}%`}
-                      stroke={isHealthy ? "var(--primary)" : "#f97316"}
-                      strokeWidth={isHighlighted ? 2.2 : 1.2}
+                  <g key={`conn-${idx}`} style={{ transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }} className={isDimmed ? "opacity-20" : "opacity-100"}>
+                    {/* 1. Subtle Base Track */}
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke="currentColor"
+                      className={cn(
+                        "transition-colors duration-300",
+                        isHighlighted ? "text-primary/40" : "text-border/40 dark:text-border/30"
+                      )}
+                      strokeWidth={isHighlighted ? 1.8 : 1.2}
                       strokeDasharray={conn.dashed ? "4 4" : undefined}
-                      filter={isHighlighted && isHealthy ? "url(#glow)" : undefined}
-                      style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
                     />
-                    {isHealthy && isHighlighted && (
-                      <line
-                        x1={`${start.x}%`} y1={`${start.y}%`}
-                        x2={`${end.x}%`}   y2={`${end.y}%`}
-                        stroke="var(--background)" strokeWidth={1.5}
-                        strokeDasharray="5 15"
-                        style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.8 }}
-                      />
-                    )}
-                    {isHealthy && !activeNode && !conn.dashed && (
-                      <line
-                        x1={`${start.x}%`} y1={`${start.y}%`}
-                        x2={`${end.x}%`}   y2={`${end.y}%`}
-                        stroke="var(--background)" strokeWidth={1.2}
-                        strokeDasharray="5 15"
-                        style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.2 }}
-                      />
-                    )}
+
+                    {/* 2. Sleek Laser Comet Pulse Flow (Magic UI Animated Beam Style) */}
+                    <path
+                      d={curveD}
+                      fill="none"
+                      stroke={isHealthy ? "var(--primary)" : "#f97316"}
+                      strokeWidth={isHighlighted ? 2.4 : 1.6}
+                      strokeLinecap="round"
+                      strokeDasharray="24 140"
+                      filter={isHighlighted && isHealthy ? "url(#soft-glow)" : undefined}
+                      className={cn(
+                        "animate-beam-flow transition-opacity duration-300",
+                        isHighlighted ? "opacity-100" : isDimmed ? "opacity-0" : "opacity-75"
+                      )}
+                      style={{
+                        animationDuration: isHighlighted ? "1.8s" : "2.8s",
+                      }}
+                    />
                   </g>
                 );
               })}
@@ -445,14 +504,16 @@ export function OverviewInfrastructureMap({
                 const cluster = getNodeCoords("gw-cluster");
                 const orbit   = getOrbitCoords(gw);
                 const isAct   = activeOrbitNode === gw.id;
+                const spokeD  = getCurvedPath(cluster, orbit, 0.4);
                 return (
-                  <line key={`spoke-${gw.id}`}
-                    x1={`${cluster.x}%`} y1={`${cluster.y}%`}
-                    x2={`${orbit.x}%`}   y2={`${orbit.y}%`}
+                  <path
+                    key={`spoke-${gw.id}`}
+                    d={spokeD}
+                    fill="none"
                     stroke="var(--primary)"
                     strokeWidth={isAct ? 1.5 : 0.8}
                     strokeDasharray="2 4"
-                    opacity={isAct ? 0.7 : 0.3}
+                    opacity={isAct ? 0.75 : 0.25}
                     style={{ transition: "opacity 0.3s, stroke-width 0.3s" }}
                   />
                 );
@@ -465,19 +526,29 @@ export function OverviewInfrastructureMap({
                 const op = getOrbitCoords(gw);
                 return gw.connectsTo.map((targetId) => {
                   const tp = getNodeCoords(targetId);
+                  const smartD = getCurvedPath(op, tp, 0.45);
                   return (
-                    <g key={`smart-${gw.id}-${targetId}`}>
-                      <line
-                        x1={`${op.x}%`} y1={`${op.y}%`}
-                        x2={`${tp.x}%`} y2={`${tp.y}%`}
-                        stroke="var(--primary)" strokeWidth={2} strokeDasharray="5 5"
-                        filter="url(#glow)" opacity={0.85}
+                    <g key={`smart-${gw.id}-${targetId}`} className="animate-fade-in">
+                      {/* Subtle guide curve */}
+                      <path
+                        d={smartD}
+                        fill="none"
+                        stroke="var(--primary)"
+                        strokeWidth={1.5}
+                        strokeDasharray="4 4"
+                        opacity={0.5}
                       />
-                      <line
-                        x1={`${op.x}%`} y1={`${op.y}%`}
-                        x2={`${tp.x}%`} y2={`${tp.y}%`}
-                        stroke="var(--background)" strokeWidth={1.2} strokeDasharray="5 15"
-                        style={{ animation: "dash-marching 1.5s linear infinite", opacity: 0.7 }}
+                      {/* Active laser beam */}
+                      <path
+                        d={smartD}
+                        fill="none"
+                        stroke="var(--primary)"
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        strokeDasharray="28 120"
+                        filter="url(#soft-glow)"
+                        className="animate-beam-flow opacity-100"
+                        style={{ animationDuration: "1.6s" }}
                       />
                     </g>
                   );
@@ -502,16 +573,16 @@ export function OverviewInfrastructureMap({
                     left: `${pos.x}%`,
                     top:  `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
-                    transition: "opacity 0.3s ease, border-color 0.3s, box-shadow 0.3s",
+                    transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s, transform 0.2s",
                     cursor: "grab",
                   }}
                   className={cn(
-                    "absolute z-10 flex flex-col items-center justify-center rounded-xl border bg-card p-3 shadow-2xl transition-all duration-300 group",
-                    isCluster ? "min-w-[90px]" : "min-w-[76px]",
+                    "absolute z-10 flex flex-col items-center justify-center rounded-xl border bg-card/95 backdrop-blur-md p-3 shadow-xl transition-all duration-300 group ring-1 ring-border/50",
+                    isCluster ? "min-w-[92px]" : "min-w-[78px]",
                     isSelected
-                      ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.25)] ring-1 ring-primary/20 scale-105 z-20"
-                      : "border-border hover:border-foreground/20",
-                    dimmed ? "opacity-25" : "opacity-100"
+                      ? "border-primary/80 bg-primary/10 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-primary/40 scale-105 z-20"
+                      : "border-border/70 hover:border-foreground/30 hover:scale-102",
+                    dimmed ? "opacity-20" : "opacity-100"
                   )}
                 >
                   {isCluster && (
@@ -529,8 +600,8 @@ export function OverviewInfrastructureMap({
                   <div className={cn(
                     "mb-1.5 flex items-center justify-center rounded-lg border p-1.5 transition-colors",
                     isSelected
-                      ? "border-primary/40 bg-primary/20 text-primary"
-                      : "border-border bg-muted/60 text-muted-foreground group-hover:text-foreground"
+                      ? "border-primary/50 bg-primary/20 text-primary"
+                      : "border-border/60 bg-muted/60 text-muted-foreground group-hover:text-foreground"
                   )}>
                     <Icon className={cn("h-4 w-4", isCluster && "h-5 w-5")} />
                   </div>
@@ -541,13 +612,13 @@ export function OverviewInfrastructureMap({
                       getStatusColor(node.status),
                       node.status === "healthy" ? "animate-pulse" : node.status === "error" ? "animate-ping" : ""
                     )} />
-                    <span className="max-w-[70px] truncate text-[8px] font-mono font-bold uppercase text-foreground">
+                    <span className="max-w-[72px] truncate text-[8.5px] font-mono font-bold uppercase text-foreground">
                       {isCluster ? "Go Gateways" : node.name.split(" ")[0]}
                     </span>
                   </div>
 
                   {isCluster && (
-                    <span className="mt-0.5 text-[7px] text-muted-foreground">
+                    <span className="mt-0.5 text-[7px] text-muted-foreground font-mono">
                       {isClusterExpanded ? "▲ collapse" : "▼ expand"}
                     </span>
                   )}
@@ -555,7 +626,7 @@ export function OverviewInfrastructureMap({
               );
             })}
 
-            {/* Orbit chips (9 gateways) */}
+            {/* Orbit chips (9 gateways) — High Contrast Glassmorphic Capsules */}
             {isClusterExpanded && GATEWAY_ORBIT.map((gw) => {
               const OrbitIcon    = gw.icon;
               const orbitPos     = getOrbitCoords(gw);
@@ -573,19 +644,19 @@ export function OverviewInfrastructureMap({
                     transform: "translate(-50%, -50%)",
                   }}
                   className={cn(
-                    "absolute z-30 flex flex-col items-center justify-center rounded-full border shadow-lg transition-all duration-200 animate-fade-in group",
-                    "w-8 h-8",
+                    "absolute z-30 flex flex-col items-center justify-center rounded-xl border shadow-lg backdrop-blur-md transition-all duration-200 animate-fade-in group cursor-pointer",
+                    "w-9 h-9",
                     isActive
-                      ? "border-primary/60 bg-primary/20 shadow-[0_0_10px_var(--primary)] scale-125 z-40"
-                      : "border-border bg-card/90 hover:border-foreground/20 hover:scale-110",
-                    otherActive ? "opacity-40" : "opacity-100"
+                      ? "border-primary/80 bg-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.35)] ring-1 ring-primary/50 scale-125 z-40"
+                      : "border-border/80 bg-card/95 hover:border-foreground/30 hover:scale-110",
+                    otherActive ? "opacity-35" : "opacity-100"
                   )}
                   title={`${gw.name} Gateway — Port ${gw.port}`}
                 >
-                  <OrbitIcon className={cn("h-3 w-3", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                  <OrbitIcon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
                   <span className={cn(
-                    "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7px] font-mono whitespace-nowrap",
-                    isActive ? "text-primary" : "text-muted-foreground/80"
+                    "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7.5px] font-mono font-semibold whitespace-nowrap",
+                    isActive ? "text-primary font-bold" : "text-muted-foreground/90"
                   )}>
                     {gw.name}
                   </span>
@@ -611,7 +682,7 @@ export function OverviewInfrastructureMap({
                       top:  `calc(${pc.y}% + ${sub.yOffset}px)`,
                       transform: "translate(-50%, -50%)",
                     }}
-                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-card px-2 py-1 shadow-lg backdrop-blur-sm animate-fade-in hover:border-primary/40 transition-all"
+                    className="absolute z-30 flex items-center gap-1.5 rounded-xl border border-primary/30 bg-card/95 px-2.5 py-1 shadow-lg backdrop-blur-md animate-fade-in hover:border-primary/60 transition-all"
                     title={sub.details}
                   >
                     <div className="flex items-center justify-center text-primary">
@@ -628,7 +699,17 @@ export function OverviewInfrastructureMap({
         </div>
 
         <style jsx global>{`
-          @keyframes dash-marching { to { stroke-dashoffset: -20; } }
+          @keyframes beam-flow {
+            from {
+              stroke-dashoffset: 164;
+            }
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+          .animate-beam-flow {
+            animation: beam-flow 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+          }
           @keyframes fade-in {
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
             to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
