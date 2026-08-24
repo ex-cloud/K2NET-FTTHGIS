@@ -174,23 +174,23 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     ],
   },
   tasks: {
-    title: "Tasks & Tickets",
+    title: "Projects & Issues",
     sections: [
       {
         title: "Workspace",
         items: [
           { title: "Projects & Plans", url: "/tasks/projects", icon: "FolderKanban" },
-          { title: "Internal Tasks", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
-          { title: "B2B Mitra Tickets", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2" },
+          { title: "Internal Platform Issues", url: "/tasks?scope=PLATFORM_INTERNAL", icon: "Server" },
+          { title: "B2B Mitra Escalations", url: "/tasks?scope=TENANT_TO_PLATFORM", icon: "Building2" },
         ],
       },
       {
         title: "Views",
         items: [
           { title: "All Issues", url: "/tasks", icon: "LayoutDashboard" },
-          { title: "Active", url: "/tasks?quick=active", icon: "Activity" },
+          { title: "Active Issues", url: "/tasks?quick=active", icon: "Activity" },
           { title: "Overdue", url: "/tasks?quick=overdue", icon: "CalendarClock" },
-          { title: "No Assignee", url: "/tasks?quick=no-assignee", icon: "UserX" },
+          { title: "Unassigned", url: "/tasks?quick=no-assignee", icon: "UserX" },
           { title: "Upcoming 7d", url: "/tasks?quick=upcoming", icon: "Clock" },
           { title: "Resolved", url: "/tasks?quick=resolved", icon: "CheckCircle" },
         ],
@@ -198,8 +198,8 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       {
         title: "Personal",
         items: [
-          { title: "My Issues", url: "/tasks?quick=my-issues", icon: "ClipboardList" },
-          { title: "Created by Me", url: "/tasks?quick=created-by-me", icon: "Cpu" },
+          { title: "My Assigned Issues", url: "/tasks?quick=my-issues", icon: "ClipboardList" },
+          { title: "Created by Me", url: "/tasks?quick=created-by-me", icon: "UserCheck" },
         ],
       },
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, ChevronDown, RefreshCw, Filter } from "lucide-react";
+import { Search, ChevronDown, RefreshCw, Filter, FolderKanban } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -26,6 +26,9 @@ interface TaskToolbarProps {
   filters: TaskFilterState;
   onToggleFilter: (type: keyof TaskFilterState, value: string) => void;
   onClearFilters: () => void;
+  projectsList?: string[];
+  selectedProject?: string | null;
+  onSelectProject?: (proj: string | null) => void;
   loading: boolean;
   onRefresh: () => void;
   viewMode: "list" | "kanban" | "timeline";
@@ -51,6 +54,9 @@ export function TaskToolbar({
   filters,
   onToggleFilter,
   onClearFilters,
+  projectsList,
+  selectedProject,
+  onSelectProject,
   loading,
   onRefresh,
   viewMode,
@@ -68,7 +74,8 @@ export function TaskToolbar({
     filters.status.length +
     filters.priority.length +
     filters.scope.length +
-    (filters.assigneeId ? 1 : 0);
+    (filters.assigneeId ? 1 : 0) +
+    (selectedProject ? 1 : 0);
 
   const hasActiveFilter = activeCount > 0;
 
@@ -196,6 +203,53 @@ export function TaskToolbar({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Project / Initiative filter chip */}
+          {projectsList && projectsList.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+                    selectedProject
+                      ? "bg-purple-500/10 border-purple-500/40 text-purple-400 font-semibold"
+                      : "bg-card border-border hover:bg-muted/30 text-foreground"
+                  )}
+                >
+                  <FolderKanban className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[130px]">
+                    {selectedProject || "Project"}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-48 max-h-60 overflow-y-auto z-50">
+                <DropdownMenuItem
+                  onClick={() => onSelectProject?.(null)}
+                  className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer text-muted-foreground"
+                >
+                  <span>All Projects (Any)</span>
+                </DropdownMenuItem>
+                {projectsList.map((proj) => (
+                  <DropdownMenuItem
+                    key={proj}
+                    onClick={() => onSelectProject?.(proj === selectedProject ? null : proj)}
+                    className={cn(
+                      "text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between gap-2",
+                      selectedProject === proj
+                        ? "bg-purple-500/10 text-purple-400 font-semibold"
+                        : "hover:bg-muted/50 text-foreground"
+                    )}
+                  >
+                    <span className="truncate font-mono">{proj}</span>
+                    {selectedProject === proj && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Clear all filters pill */}
           {hasActiveFilter && (

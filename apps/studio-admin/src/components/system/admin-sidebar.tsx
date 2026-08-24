@@ -38,7 +38,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
   { title: "Organizations", icon: Building2, href: "/organizations" },
   { title: "Global Users", icon: Users, href: "/users" },
-  { title: "Tasks & Tickets", icon: ClipboardList, href: "/tasks" },
+  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks" },
   { title: "Observability", icon: ScanLine, href: "/observability" },
   { title: "Global Logs", icon: Terminal, href: "/logs" },
   { title: "Security", icon: Lock, href: "/security" },

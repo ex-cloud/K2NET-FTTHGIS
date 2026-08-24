@@ -12,12 +12,12 @@ export type QuickView =
 
 export const VIEW_LABELS: Record<QuickView, string> = {
   "all": "All Issues",
-  "active": "Active Tasks",
-  "overdue": "Overdue",
-  "no-assignee": "No Assignee",
+  "active": "Active Issues",
+  "overdue": "Overdue Issues",
+  "no-assignee": "Unassigned Issues",
   "upcoming": "Upcoming 7 Days",
   "resolved": "Resolved & Closed",
-  "my-issues": "My Issues",
+  "my-issues": "My Assigned Issues",
   "created-by-me": "Created by Me",
 };
 

@@ -46,6 +46,9 @@ interface ProjectOverviewTabProps {
   healthStatus: "On track" | "At risk" | "Off track";
   projectTask: Task;
   teamUsers: TeamUser[];
+  progressPercent?: number;
+  resolvedIssuesCount?: number;
+  totalIssuesCount?: number;
   onSaveField: (fields: Partial<Task>) => Promise<void>;
 }
 
@@ -65,6 +68,9 @@ export function ProjectOverviewTab({
   healthStatus,
   projectTask,
   teamUsers,
+  progressPercent = 0,
+  resolvedIssuesCount = 0,
+  totalIssuesCount = 0,
   onSaveField,
 }: ProjectOverviewTabProps) {
   const { data: session } = useSession();
@@ -135,7 +141,7 @@ export function ProjectOverviewTab({
       </div>
 
       {/* ── 2. Interactive Properties Bar ────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-card/50 border border-border/60 rounded-xl p-3 text-xs shadow-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-card/50 border border-border/60 rounded-xl p-3 text-xs shadow-xs">
         {/* Status */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -263,6 +269,23 @@ export function ProjectOverviewTab({
             }}
             buttonClassName="border-0 bg-transparent p-0 hover:bg-transparent text-xs font-mono font-semibold"
           />
+        </div>
+
+        {/* Delivery Progress */}
+        <div className="p-2 rounded-lg bg-muted/20 border border-transparent flex flex-col justify-center col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Progress</span>
+            <span className="text-[10px] font-mono font-bold text-foreground">{progressPercent}%</span>
+          </div>
+          <div className="mt-1.5 w-full h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+            />
+          </div>
+          <span className="text-[9px] text-muted-foreground font-mono mt-1">
+            {resolvedIssuesCount}/{totalIssuesCount} issues resolved
+          </span>
         </div>
       </div>
 

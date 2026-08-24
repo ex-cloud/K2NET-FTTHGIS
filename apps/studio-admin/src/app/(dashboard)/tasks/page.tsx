@@ -62,14 +62,43 @@ export default function TasksPage() {
   const [sheetTask, setSheetTask] = useState<Task | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Density view mode (Standard vs Compact KPI cards)
+  const [showKpiCards, setShowKpiCards] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("k2net_tasks_show_kpi_cards");
+      if (saved !== null) setShowKpiCards(saved === "true");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleKpiCards = useCallback(() => {
+    setShowKpiCards((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("k2net_tasks_show_kpi_cards", String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
   // Toolbar state
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProject, setSelectedProject] = useState<string | null>(projectParam ?? null);
   const [filters, setFilters] = useState<TaskFilterState>({
     status: [],
     priority: [],
     scope: [],
     assigneeId: null,
   });
+
+  useEffect(() => {
+    if (projectParam) setSelectedProject(projectParam);
+  }, [projectParam]);
 
   const [displayProperties, setDisplayProperties] = useState<DisplayPropertiesState>({
     priority: true,
@@ -155,12 +184,15 @@ export default function TasksPage() {
     if (filters.scope.length > 0) result = result.filter((t) => filters.scope.includes(t.scope));
     if (filters.assigneeId) result = result.filter((t) => t.assigneeId === filters.assigneeId);
     if (typeParam) result = result.filter((t) => t.type === typeParam);
-    if (projectParam) {
+
+    const activeProject = selectedProject || projectParam;
+    if (activeProject) {
       result = result.filter(
         (t) =>
-          t.obsidianRef === projectParam ||
-          t.title.toLowerCase().includes(projectParam.toLowerCase()) ||
-          t.title === projectParam
+          t.obsidianRef === activeProject ||
+          (t.parentTaskId && t.parentTaskId === activeProject) ||
+          t.title.toLowerCase().includes(activeProject.toLowerCase()) ||
+          t.title === activeProject
       );
     }
 
@@ -186,7 +218,7 @@ export default function TasksPage() {
     }
 
     return result;
-  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, typeParam, ordering, showClosed]);
+  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, selectedProject, typeParam, ordering, showClosed]);
 
   // Local optimistic state for Kanban
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
@@ -322,22 +354,23 @@ export default function TasksPage() {
 
   const handleClearFilters = () => {
     setFilters({ status: [], priority: [], scope: [], assigneeId: null });
+    setSelectedProject(null);
     setSearchQuery("");
   };
 
   // ── Page Titles ─────────────────────────────────────────────────────────────
   const pageTitle =
     scopeParam === "PLATFORM_INTERNAL" && quickParam === "all"
-      ? "Internal Tasks"
+      ? "Internal Platform Issues"
       : scopeParam === "TENANT_TO_PLATFORM" && quickParam === "all"
-      ? "B2B Mitra Tickets"
-      : VIEW_LABELS[quickParam] ?? "Tasks & Tickets";
+      ? "B2B Mitra Escalations"
+      : VIEW_LABELS[quickParam] ?? "All Issues";
   const scopeDescription =
     scopeParam === "PLATFORM_INTERNAL"
-      ? "Platform & DevOps internal engineering tasks"
+      ? "Platform & DevOps internal engineering issues & incidents"
       : scopeParam === "TENANT_TO_PLATFORM"
-      ? "Incoming B2B partner support tickets"
-      : "Internal + B2B Inbox";
+      ? "Incoming L3 escalation tickets from tenant ISPs"
+      : "Internal Platform + B2B Escalation Inbox";
 
   return (
     <>
@@ -352,14 +385,18 @@ export default function TasksPage() {
           onToggleRightPanel={() => setRightPanelOpen((v) => !v)}
           onOpenShortcutsHelp={() => setShortcutsHelpOpen(true)}
           onOpenNewTask={() => setDialogOpen(true)}
+          showKpiCards={showKpiCards}
+          onToggleKpiCards={handleToggleKpiCards}
           summary={summary}
           totalElements={totalElements}
         />
 
-        {/* ── KPI Cards ─────────────────────────────────────────────── */}
-        <div className="px-4 md:px-6 shrink-0">
-          <TaskKpiStrip />
-        </div>
+        {/* ── KPI Cards (Collapsible for Compact / Productivity View) ── */}
+        {showKpiCards && (
+          <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
+            <TaskKpiStrip />
+          </div>
+        )}
 
         {/* ── Main content area + optional right sidebar ─────────────── */}
         <div className="flex-1 min-h-0 flex gap-4 px-4 md:px-6 pb-6 overflow-hidden">
@@ -372,8 +409,11 @@ export default function TasksPage() {
               filters={filters}
               onToggleFilter={handleToggleFilter}
               onClearFilters={handleClearFilters}
+              projectsList={dynamicProjectsList}
+              selectedProject={selectedProject}
+              onSelectProject={setSelectedProject}
               loading={loading}
-              onRefresh={() => { refresh(); toast.info("Refreshing tasks..."); }}
+              onRefresh={() => { refresh(); toast.info("Refreshing issues..."); }}
               viewMode={viewMode}
               onViewModeChange={handleViewModeChange}
               displayProperties={displayProperties}
@@ -401,8 +441,8 @@ export default function TasksPage() {
                   </span>
                 )}
                 {scopeParam === "TENANT_TO_PLATFORM" && (
-                  <span className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full">
-                    B2B Mitra Tickets
+                  <span className="text-xs font-medium text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
+                    B2B Mitra Escalations
                   </span>
                 )}
                 {projectParam && (

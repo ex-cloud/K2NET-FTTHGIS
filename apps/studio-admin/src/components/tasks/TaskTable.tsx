@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   Calendar as CalendarIcon,
@@ -71,6 +72,7 @@ export function TaskTable({
   focusedIndex = -1,
   displayProperties,
 }: TaskTableProps) {
+  const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   // ── IntersectionObserver for infinite scroll ────────────────────────────────
@@ -152,13 +154,29 @@ export function TaskTable({
         header: "Title",
         cell: (info) => {
           const task = info.row.original;
+          const isProjectRef = task.obsidianRef?.startsWith("PRJ-") || Boolean(task.parentTaskId);
           return (
             <div className="min-w-0 flex items-center gap-2">
               <span className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
                 {task.title}
               </span>
               {task.obsidianRef && (
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                <span
+                  onClick={(e) => {
+                    if (isProjectRef) {
+                      e.stopPropagation();
+                      const target = task.parentTaskId ? `/tasks/projects/${task.parentTaskId}` : `/tasks/projects`;
+                      router.push(target);
+                    }
+                  }}
+                  className={cn(
+                    "text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0 transition-colors",
+                    isProjectRef
+                      ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30 cursor-pointer"
+                      : "text-muted-foreground bg-muted/50 border border-border/40"
+                  )}
+                  title={isProjectRef ? "Buka detail project terkait" : undefined}
+                >
                   {task.obsidianRef}
                 </span>
               )}
@@ -172,11 +190,15 @@ export function TaskTable({
       }),
       columnHelper.accessor("type", {
         header: "Type",
-        cell: (info) => (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider whitespace-nowrap">
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const rawType = info.getValue();
+          const label = rawType === "TICKET" ? "ISSUE" : rawType;
+          return (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider whitespace-nowrap">
+              {label}
+            </span>
+          );
+        },
       }),
       columnHelper.accessor("priority", {
         header: "Priority",

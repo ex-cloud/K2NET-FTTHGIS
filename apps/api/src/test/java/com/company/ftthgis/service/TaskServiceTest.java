@@ -76,6 +76,7 @@ class TaskServiceTest {
                 null,  // referenceType
                 null,  // referenceId
                 null,  // parentTaskId
+                null,  // obsidianRef
                 null,  // dueDate
                 null,  // coordinates
                 null   // scope — resolved to PLATFORM_INTERNAL by service
@@ -112,6 +113,7 @@ class TaskServiceTest {
                 null,   // referenceType
                 null,   // referenceId
                 null,   // parentTaskId
+                null,   // obsidianRef
                 null,   // dueDate
                 null,   // coordinates
                 TaskScope.PLATFORM_INTERNAL  // scope

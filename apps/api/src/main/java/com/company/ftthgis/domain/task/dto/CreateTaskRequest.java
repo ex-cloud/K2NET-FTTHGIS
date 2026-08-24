@@ -30,6 +30,8 @@ public record CreateTaskRequest(
 
         UUID parentTaskId,
 
+        String obsidianRef,
+
         LocalDateTime dueDate,
 
         /** GeoJSON Point coordinates [lng, lat] — optional, only for TENANT scope tasks */

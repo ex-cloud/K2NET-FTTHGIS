@@ -50,6 +50,7 @@ import {
   UploadCloud,
   FlaskConical,
   FileCode,
+  UserCheck,
 } from "lucide-react";
 import {
   Collapsible,
@@ -59,6 +60,7 @@ import {
 import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
+import { useTaskStore } from "@/store/task-store";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Users,
@@ -104,12 +106,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
   UploadCloud,
   FlaskConical,
   FileCode,
+  UserCheck,
 };
 
 export function SystemSecondarySidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const unreadB2BCount = useTaskStore((s) => s.unreadB2BCount);
 
   // For the logs page, sync collapse state with the shared LogsFilter context
   // so the PanelLeft button in LogsTopHeader can also toggle the sidebar.
@@ -217,6 +221,7 @@ export function SystemSecondarySidebar() {
                             : true);
                       }
                       const Icon = ICON_MAP[item.icon] || FileText;
+                      const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
                       return (
                         <Link
                           key={idx}
@@ -228,7 +233,12 @@ export function SystemSecondarySidebar() {
                           }`}
                         >
                           <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
-                          {item.title}
+                          <span className="truncate flex-1">{item.title}</span>
+                          {isB2BLink && unreadB2BCount > 0 && (
+                            <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
+                              {unreadB2BCount}
+                            </span>
+                          )}
                         </Link>
                       );
                     })}

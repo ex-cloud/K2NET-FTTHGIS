@@ -246,19 +246,13 @@ export default function ProjectsHubPage() {
     const projectTasks = tasks.filter((t) => t.type === "PROJECT");
     const childTasks = tasks.filter((t) => t.type !== "PROJECT");
 
-    // Group child tasks by obsidianRef or parentTaskId
-    const childMap = new Map<string, Task[]>();
-    childTasks.forEach((t) => {
-      const key = t.obsidianRef || t.parentTaskId || "uncategorized";
-      if (!childMap.has(key)) childMap.set(key, []);
-      childMap.get(key)!.push(t);
-    });
-
-    const result: ProjectPlanItem[] = [];
-
-    // 1. Explicit PROJECT tasks
-    projectTasks.forEach((p) => {
-      const linkedChildren = childMap.get(p.obsidianRef || p.id) || [];
+    return projectTasks.map((p) => {
+      const linkedChildren = childTasks.filter(
+        (c) =>
+          (c.parentTaskId && c.parentTaskId === p.id) ||
+          (p.obsidianRef && c.obsidianRef === p.obsidianRef) ||
+          (c.referenceId && c.referenceId === p.id)
+      );
       const totalChildren = linkedChildren.length;
       const completedChildren = linkedChildren.filter((c) =>
         ["RESOLVED", "CLOSED"].includes(c.status)
@@ -279,7 +273,7 @@ export default function ProjectsHubPage() {
       if (p.priority === "URGENT") health = "At risk";
       if (p.dueDate && new Date(p.dueDate) < new Date() && pct < 100) health = "Off track";
 
-      result.push({
+      return {
         id: p.id,
         name: p.title,
         obsidianRef: p.obsidianRef,
@@ -292,39 +286,8 @@ export default function ProjectsHubPage() {
         completedCount: completedChildren,
         percentage: pct,
         status: p.status,
-      });
+      };
     });
-
-    // 2. Distinct obsidianRef groups if not already an explicit project (ignore individual TKT- ticket sequences)
-    childMap.forEach((children, key) => {
-      if (
-        key !== "uncategorized" &&
-        !key.startsWith("TKT-") &&
-        !projectTasks.some((p) => (p.obsidianRef || p.id) === key)
-      ) {
-        const total = children.length;
-        const completed = children.filter((c) => ["RESOLVED", "CLOSED"].includes(c.status)).length;
-        const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-        const hasUrgent = children.some((c) => c.priority === "URGENT");
-
-        result.push({
-          id: children[0].id,
-          name: key.replace(/-/g, " "),
-          obsidianRef: key,
-          health: hasUrgent ? "At risk" : "On track",
-          priority: hasUrgent ? "HIGH" : "NORMAL",
-          lead: children[0].assigneeId || "Unassigned",
-          dueDate: children[0].dueDate,
-          createdAt: children[0].createdAt,
-          issuesCount: total,
-          completedCount: completed,
-          percentage: pct,
-          status: pct === 100 ? "RESOLVED" : "IN_PROGRESS",
-        });
-      }
-    });
-
-    return result;
   }, [tasks]);
 
   // ── Filters & Search ───────────────────────────────────────────────────────

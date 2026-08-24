@@ -154,8 +154,16 @@ public class TaskService {
                 .scope(resolvedScope)
                 .build();
 
-        // Auto-generate Obsidian vault reference for PROJECT tasks or HIGH/URGENT tickets
-        if (request.type() == TaskType.PROJECT) {
+        // Auto-generate or assign Obsidian reference
+        if (request.obsidianRef() != null && !request.obsidianRef().isBlank()) {
+            task.setObsidianRef(request.obsidianRef().trim());
+        } else if (request.parentTaskId() != null) {
+            taskRepository.findById(request.parentTaskId()).ifPresent(parent -> {
+                if (parent.getObsidianRef() != null) {
+                    task.setObsidianRef(parent.getObsidianRef());
+                }
+            });
+        } else if (request.type() == TaskType.PROJECT) {
             task.setObsidianRef(generateObsidianRef("PRJ", organizationId));
         } else if (task.getPriority() == TaskPriority.HIGH || task.getPriority() == TaskPriority.URGENT) {
             task.setObsidianRef(generateObsidianRef("TKT", organizationId));

@@ -9,6 +9,7 @@ import {
   Plus,
   ExternalLink,
   Loader2,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTasksQuery, type Task, type TaskComment, type TaskScope } from "@/hooks/useTasksQuery";
@@ -228,6 +229,74 @@ export default function ProjectHubDetailPage() {
     }
   };
 
+  const handleQuickCreateIssue = async (quickTitle: string) => {
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const payload = {
+        type: "TICKET",
+        title: quickTitle,
+        priority: "NORMAL",
+        status: "TODO",
+        scope: projectTask?.scope ?? "PLATFORM_INTERNAL",
+        parentTaskId: id,
+        obsidianRef: projectTask?.obsidianRef || undefined,
+        referenceType: "PROJECT",
+        referenceId: id,
+      };
+      const res = await httpClient(`${baseUrl}/tasks`, {
+        method: "POST",
+        token: session?.accessToken ?? "",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        toast.success(`Issue "${quickTitle}" created`);
+        fetchSubtasks();
+        refresh();
+      } else {
+        toast.error("Failed to create issue");
+      }
+    } catch {
+      toast.error("Network error while creating issue");
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    if (!projectTask) return;
+    const dateStr = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    let md = `# Project Specification: ${projectTask.title}\n\n`;
+    md += `> **Reference:** \`${projectTask.obsidianRef || "PRJ-DRAFT"}\`  \n`;
+    md += `> **Status:** ${projectTask.status} | **Priority:** ${projectTask.priority || "NORMAL"} | **Health:** ${healthStatus}  \n`;
+    md += `> **Lead:** ${assigneeId || "Unassigned"} | **Target Date:** ${dueDate ? new Date(dueDate).toLocaleDateString("id-ID") : "TBD"}  \n`;
+    md += `> **Export Date:** ${dateStr}  \n\n`;
+    md += `---\n\n`;
+    md += `## 1. Executive Summary & Specification\n\n`;
+    md += `${description || "_No specification description documented._"}\n\n`;
+    md += `---\n\n`;
+    md += `## 2. Issues Breakdown (${resolvedIssuesCount}/${totalIssuesCount} Resolved - ${progressPercent}% Complete)\n\n`;
+
+    if (projectIssues.length === 0) {
+      md += `_No issues logged under this project._\n`;
+    } else {
+      md += `| Ref | Issue Title | Priority | Status | Assignee |\n`;
+      md += `| :--- | :--- | :--- | :--- | :--- |\n`;
+      projectIssues.forEach((issue) => {
+        md += `| ${issue.obsidianRef || issue.id.substring(0, 8)} | ${issue.title} | ${issue.priority || "NORMAL"} | ${issue.status} | ${issue.assigneeId || "Unassigned"} |\n`;
+      });
+    }
+
+    navigator.clipboard.writeText(md).then(() => {
+      toast.success("Tech spec & issues markdown copied to clipboard!");
+    }).catch(() => {
+      toast.info("Markdown generated");
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -278,6 +347,14 @@ export default function ProjectHubDetailPage() {
               <span>{projectTask.obsidianRef}</span>
             </a>
           )}
+          <button
+            onClick={handleExportMarkdown}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            title="Copy Spec as Markdown"
+          >
+            <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="hidden sm:inline">Export Spec</span>
+          </button>
           <button
             onClick={() => setNewIssueOpen(true)}
             className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-sm transition-colors cursor-pointer"
@@ -353,6 +430,9 @@ export default function ProjectHubDetailPage() {
               healthStatus={healthStatus}
               projectTask={projectTask}
               teamUsers={teamUsers}
+              progressPercent={progressPercent}
+              resolvedIssuesCount={resolvedIssuesCount}
+              totalIssuesCount={totalIssuesCount}
               onSaveField={handleSaveField}
             />
           )}
@@ -376,6 +456,7 @@ export default function ProjectHubDetailPage() {
               resolvedIssuesCount={resolvedIssuesCount}
               totalIssuesCount={totalIssuesCount}
               onNewIssueClick={() => setNewIssueOpen(true)}
+              onQuickCreateIssue={handleQuickCreateIssue}
               onToggleIssueStatus={handleToggleIssueStatus}
               onUpdateIssue={handleUpdateIssue}
               onDeleteIssue={handleDeleteIssue}

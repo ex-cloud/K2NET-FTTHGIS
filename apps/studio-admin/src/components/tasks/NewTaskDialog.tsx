@@ -141,7 +141,7 @@ export function NewTaskDialog({
       const baseUrl = getBackendBaseUrl();
       
       const payload: Record<string, any> = {
-        type: defaultValues?.type ?? type,
+        type: defaultValues?.parentTaskId ? "TICKET" : (defaultValues?.type ?? type),
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
@@ -214,20 +214,22 @@ export function NewTaskDialog({
             </span>
           </div>
 
-          <div className="flex items-center gap-1 pr-6">
-            <button
-              type="button"
-              onClick={() => setType(type === "TICKET" ? "PROJECT" : "TICKET")}
-              className={cn(
-                "text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors border",
-                type === "PROJECT"
-                  ? "bg-primary/15 text-primary border-primary/30"
-                  : "bg-muted text-muted-foreground border-transparent hover:text-foreground"
-              )}
-            >
-              {type === "PROJECT" ? "Project Mode" : "Ticket Mode"}
-            </button>
-          </div>
+          {!defaultValues?.parentTaskId && (
+            <div className="flex items-center gap-1 pr-6">
+              <button
+                type="button"
+                onClick={() => setType(type === "TICKET" ? "PROJECT" : "TICKET")}
+                className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors border",
+                  type === "PROJECT"
+                    ? "bg-primary/15 text-primary border-primary/30"
+                    : "bg-muted text-muted-foreground border-transparent hover:text-foreground"
+                )}
+              >
+                {type === "PROJECT" ? "Project Mode" : "Issue Mode"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Form Canvas ──────────────────────────────────────────────── */}

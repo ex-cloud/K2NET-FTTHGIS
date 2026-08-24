@@ -7,7 +7,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   "/overview": "Overview",
   "/organizations": "Organizations",
   "/users": "Global Users",
-  "/tasks": "Tasks & Tickets",
+  "/tasks": "Projects & Issues",
   "/tasks/projects": "Projects",
   "/observability": "Observability",
   "/observability/overview": "Observability Overview",
@@ -74,7 +74,7 @@ export function getRouteHeaderTitle(pathname: string): string {
     return "Projects";
   }
   if (pathname.startsWith("/tasks")) {
-    return "Tasks & Tickets";
+    return "Projects & Issues";
   }
   if (pathname.startsWith("/observability")) {
     return "Observability";
