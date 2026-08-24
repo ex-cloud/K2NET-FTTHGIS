@@ -249,6 +249,44 @@ body {
 }
 
 /* ============================================================
+   🔵 Infrastructure Map — Laser Comet Beam & Orbit Animations
+   ============================================================ */
+@keyframes beam-flow {
+  from { stroke-dashoffset: 164; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.animate-beam-flow {
+  animation: beam-flow 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Orbit chip stagger delays */
+.orbit-delay-0  { animation-delay: 0ms; }
+.orbit-delay-1  { animation-delay: 40ms; }
+.orbit-delay-2  { animation-delay: 80ms; }
+.orbit-delay-3  { animation-delay: 120ms; }
+.orbit-delay-4  { animation-delay: 160ms; }
+.orbit-delay-5  { animation-delay: 200ms; }
+.orbit-delay-6  { animation-delay: 240ms; }
+.orbit-delay-7  { animation-delay: 280ms; }
+.orbit-delay-8  { animation-delay: 320ms; }
+
+/* ============================================================
    📝 TipTap Headless Editor Typography & Table Design System
    ============================================================ */
 .ProseMirror {

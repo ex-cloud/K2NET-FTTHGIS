@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@k2net/ui";
 import { Card } from "@k2net/ui";
@@ -34,21 +36,22 @@ import { MapDetailPanel } from "./map-detail-panel";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
 // ─── Gateway Orbit Configuration ─────────────────────────────────────────────
-
+// Angles distributed evenly for a clean ring layout (matching target image)
 const GATEWAY_ORBIT: GatewayOrbitNode[] = [
-  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          angle: -90,  connectsTo: ["cache-redis", "db-postgres"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -50,  connectsTo: ["db-postgres", "auth-keycloak"] },
-  { id: "gw-map",          name: "Map",          gatewayName: "ftth-map-gateway",           port: 5003, icon: Map,           angle: -10,  connectsTo: ["db-postgres", "cache-redis"] },
-  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",       port: 5004, icon: HardDrive,     angle: 30,   connectsTo: ["db-postgres"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",      port: 5005, icon: MessageSquare, angle: 70,   connectsTo: ["cache-redis"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",     port: 5006, icon: CalendarClock, angle: 110,  connectsTo: ["db-postgres"] },
-  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",        port: 5007, icon: Upload,        angle: 150,  connectsTo: ["db-postgres"] },
-  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",           port: 5008, icon: Network,       angle: 190,  connectsTo: ["db-postgres", "cache-redis"] },
-  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",         port: 5009, icon: ClipboardList, angle: 230,  connectsTo: ["db-postgres"] },
+  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          angle: -72,  connectsTo: ["cache-redis", "db-postgres"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -32,  connectsTo: ["db-postgres", "auth-keycloak"] },
+  { id: "gw-map",          name: "Map",           gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 8,    connectsTo: ["db-postgres", "cache-redis"] },
+  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",       port: 5004, icon: HardDrive,     angle: 48,   connectsTo: ["db-postgres"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",      port: 5005, icon: MessageSquare, angle: 108,  connectsTo: ["cache-redis"] },
+  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",        port: 5007, icon: Upload,        angle: 148,  connectsTo: ["db-postgres"] },
+  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",           port: 5008, icon: Network,       angle: 188,  connectsTo: ["db-postgres", "cache-redis"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",     port: 5006, icon: CalendarClock, angle: 228,  connectsTo: ["db-postgres"] },
+  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",         port: 5009, icon: ClipboardList, angle: 268,  connectsTo: ["db-postgres"] },
 ];
 
-const ORBIT_RX = 14; // horizontal orbit radius as %
-const ORBIT_RY = 18; // vertical orbit radius as %
+// Wider radius — matches target image's spread of orbit chips
+const ORBIT_RX = 20;  // % of viewport width
+const ORBIT_RY = 24;  // % of viewport height
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
@@ -73,12 +76,12 @@ const subNodesMap: Record<string, SubNode[]> = {
 };
 
 const parentConnections: ParentConnection[] = [
-  { from: "core-router", to: "auth-keycloak", dashed: true  },
-  { from: "core-router", to: "db-postgres",   dashed: true  },
+  { from: "core-router", to: "auth-keycloak", dashed: false },
+  { from: "core-router", to: "db-postgres",   dashed: false },
   { from: "core-router", to: "cache-redis",   dashed: false },
-  { from: "core-router", to: "gw-cluster",    dashed: true  },
+  { from: "core-router", to: "gw-cluster",    dashed: false },
   { from: "cache-redis", to: "gw-cluster",    dashed: false },
-  { from: "db-postgres", to: "gw-cluster",    dashed: true  },
+  { from: "db-postgres", to: "gw-cluster",    dashed: false },
 ];
 
 const relationsMap: Record<string, string[]> = {
@@ -89,47 +92,37 @@ const relationsMap: Record<string, string[]> = {
   "gw-cluster":    ["core-router", "auth-keycloak", "db-postgres", "cache-redis"],
 };
 
+// Default positions — spread wide across canvas to match target image layout
 const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
-  "core-router":   { x: 50,    y: 12.5 },
-  "auth-keycloak": { x: 16.66, y: 40   },
-  "db-postgres":   { x: 83.33, y: 40   },
-  "cache-redis":   { x: 32,    y: 70   },
-  "gw-cluster":    { x: 72,    y: 73   },
+  "core-router":   { x: 44,  y: 14  },
+  "auth-keycloak": { x: 80,  y: 22  },
+  "db-postgres":   { x: 44,  y: 48  },
+  "cache-redis":   { x: 34,  y: 68  },
+  "gw-cluster":    { x: 72,  y: 58  },
 };
 
-// ─── Bezier Math Generator (React Flow Style) ────────────────────────────────
+// Stagger delays for laser comet per beam
+const BEAM_DELAYS = [0, 0.5, 1.0, 1.5, 2.0, 2.5];
+
+// ─── Bezier Math (React Flow Style Smooth Cubic Bezier) ──────────────────────
 
 function getCurvedPath(
   start: { x: number; y: number },
   end: { x: number; y: number },
   curvature = 0.5
 ): string {
-  const x1 = start.x;
-  const y1 = start.y;
-  const x2 = end.x;
-  const y2 = end.y;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
 
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-
-  let cx1: number;
-  let cy1: number;
-  let cx2: number;
-  let cy2: number;
-
+  let cx1: number, cy1: number, cx2: number, cy2: number;
   if (Math.abs(dx) >= Math.abs(dy)) {
-    cx1 = x1 + dx * curvature;
-    cy1 = y1;
-    cx2 = x1 + dx * (1 - curvature);
-    cy2 = y2;
+    cx1 = start.x + dx * curvature;  cy1 = start.y;
+    cx2 = start.x + dx * (1 - curvature); cy2 = end.y;
   } else {
-    cx1 = x1;
-    cy1 = y1 + dy * curvature;
-    cx2 = x2;
-    cy2 = y1 + dy * (1 - curvature);
+    cx1 = start.x;  cy1 = start.y + dy * curvature;
+    cx2 = end.x;    cy2 = start.y + dy * (1 - curvature);
   }
-
-  return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+  return `M ${start.x} ${start.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${end.x} ${end.y}`;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -155,11 +148,13 @@ function getNodeIcon(type: ServiceNode["type"]) {
   }
 }
 
-function getStatusColor(status: ServiceNode["status"]): string {
+function getStatusDotColor(status: ServiceNode["status"]): string {
+  // Returns CSS variable path resolved at runtime for SVG/inline-style usage
+  // These are JavaScript string values passed to style={{ backgroundColor }}, not Tailwind classes
   switch (status) {
-    case "healthy": return "bg-primary";
-    case "warning": return "bg-amber-500";
-    default:        return "bg-red-500";
+    case "healthy": return "var(--primary)";
+    case "warning": return "hsl(45 93% 47%)";
+    default:        return "hsl(0 84% 60%)";
   }
 }
 
@@ -189,13 +184,12 @@ export function OverviewInfrastructureMap({
   // ── Coordinates ──────────────────────────────────────────────────────────
 
   const getNodeCoords = useCallback(
-    (nodeId: string): { x: number; y: number } =>
-      nodePositions[nodeId] ?? DEFAULT_POSITIONS[nodeId] ?? { x: 50, y: 50 },
+    (nodeId: string) => nodePositions[nodeId] ?? DEFAULT_POSITIONS[nodeId] ?? { x: 50, y: 50 },
     [nodePositions]
   );
 
   const getOrbitCoords = useCallback(
-    (gw: GatewayOrbitNode): { x: number; y: number } => {
+    (gw: GatewayOrbitNode) => {
       const c   = getNodeCoords("gw-cluster");
       const rad = (gw.angle * Math.PI) / 180;
       return { x: c.x + Math.cos(rad) * ORBIT_RX, y: c.y + Math.sin(rad) * ORBIT_RY };
@@ -206,7 +200,7 @@ export function OverviewInfrastructureMap({
   // ── Dimming ──────────────────────────────────────────────────────────────
 
   const isNodeDimmed = useCallback(
-    (nodeId: string): boolean => {
+    (nodeId: string) => {
       if (!activeNode) return false;
       if (activeNode === nodeId) return false;
       return !(relationsMap[activeNode]?.includes(nodeId));
@@ -313,7 +307,7 @@ export function OverviewInfrastructureMap({
     [gateways]
   );
 
-  const clusterNode = serviceNodes.find((n) => n.id === "gw-cluster");
+  const clusterNode       = serviceNodes.find((n) => n.id === "gw-cluster");
   const clusterStatus     = clusterNode?.status ?? "healthy";
   const clusterOnlineText = clusterNode?.metrics?.["Online"] ?? "—";
   const clusterPos        = getNodeCoords("gw-cluster");
@@ -349,10 +343,10 @@ export function OverviewInfrastructureMap({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card
-        className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[460px]"
+        className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[520px]"
         ref={containerRef}
       >
-        {/* Header + Controls */}
+        {/* ── Header + Controls ── */}
         <div className="flex justify-between items-start z-20 pointer-events-none">
           <div>
             <h4 className="text-sm font-semibold text-foreground pointer-events-auto">Infrastructure Dependency Map</h4>
@@ -360,8 +354,6 @@ export function OverviewInfrastructureMap({
               Interactive canvas. Pan with drag, zoom with wheel, click node to highlight. Drag nodes to reposition.
             </p>
           </div>
-
-          {/* Unified zoom + collapse controls */}
           <div className="flex items-center gap-1 bg-popover/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
             <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-accent"
               onClick={() => setZoom((z) => Math.min(z + 0.1, 1.6))} title="Zoom In">
@@ -384,7 +376,6 @@ export function OverviewInfrastructureMap({
               variant="ghost"
               className="h-6 px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent gap-1 flex items-center"
               onClick={handleCollapseAll}
-              title="Collapse All"
             >
               <Minimize2 className="h-3 w-3" />
               <span>Collapse All</span>
@@ -392,23 +383,22 @@ export function OverviewInfrastructureMap({
           </div>
         </div>
 
-        {/* Viewport */}
+        {/* ── Viewport ── */}
         <div
           ref={viewportRef}
-          className="relative mt-6 flex-1 w-full overflow-hidden rounded-xl border border-border/40 bg-card/40 cursor-grab active:cursor-grabbing min-h-[380px]"
+          className="relative mt-4 flex-1 w-full overflow-hidden rounded-xl border border-border/30 bg-[hsl(var(--card))] cursor-grab active:cursor-grabbing min-h-[430px]"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
         >
-          {/* Dot grid */}
+          {/* Subtle dot grid — very faint like target image */}
           <div
-            className="absolute inset-0 z-0 opacity-25"
+            className="absolute inset-0 z-0"
             style={{
-              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1.2px, transparent 1.2px)",
-              backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)",
+              backgroundSize: `${28 * zoom}px ${28 * zoom}px`,
               backgroundPosition: `${pan.x}px ${pan.y}px`,
-              transition: isDragging ? "none" : "transform 0.1s ease-out",
             }}
           />
 
@@ -421,11 +411,49 @@ export function OverviewInfrastructureMap({
               transition: isDragging ? "none" : "transform 0.15s ease-out",
             }}
           >
-            {/* SVG connections */}
+            {/* ════════════════════════════════════════════════════════════
+                SVG layer — connections, orbit rings, laser comets
+                ════════════════════════════════════════════════════════════ */}
             <svg className="absolute inset-0 h-full w-full pointer-events-none z-0 overflow-visible">
               <defs>
-                {/* Soft ambient glow */}
-                <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+                {/* Per-connection comet gradient — follows path direction */}
+                {parentConnections.map((conn, idx) => {
+                  const s = getNodeCoords(conn.from);
+                  const e = getNodeCoords(conn.to);
+                  return (
+                    <linearGradient
+                      key={`lg-${idx}`}
+                      id={`comet-${idx}`}
+                      gradientUnits="userSpaceOnUse"
+                      x1={`${s.x}%`} y1={`${s.y}%`}
+                      x2={`${e.x}%`} y2={`${e.y}%`}
+                    >
+                      <stop offset="0%"   stopColor="var(--primary)" stopOpacity="0"   />
+                      <stop offset="55%"  stopColor="var(--primary)" stopOpacity="0.7" />
+                      <stop offset="90%"  stopColor="var(--primary)" stopOpacity="1"   />
+                      <stop offset="100%" stopColor="hsl(0 0% 100%)" stopOpacity="1"   />
+                    </linearGradient>
+                  );
+                })}
+
+                {/* Orbit active beam gradient */}
+                <linearGradient id="orbit-beam" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stopColor="var(--primary)" stopOpacity="0"   />
+                  <stop offset="60%"  stopColor="var(--primary)" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="hsl(0 0% 100%)" stopOpacity="1"   />
+                </linearGradient>
+
+                {/* Soft node selection glow */}
+                <filter id="node-glow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                {/* Comet tip glow */}
+                <filter id="comet-glow" x="-30%" y="-30%" width="160%" height="160%">
                   <feGaussianBlur stdDeviation="2.5" result="blur" />
                   <feMerge>
                     <feMergeNode in="blur" />
@@ -434,121 +462,124 @@ export function OverviewInfrastructureMap({
                 </filter>
               </defs>
 
-              {/* Concentric Orbit Guide Ellipse for Go Gateways */}
+              {/* ── Dual concentric orbit guide rings (like target image) ── */}
               {isClusterExpanded && (
-                <ellipse
-                  cx={`${clusterPos.x}%`}
-                  cy={`${clusterPos.y}%`}
-                  rx={`${ORBIT_RX}%`}
-                  ry={`${ORBIT_RY}%`}
-                  fill="none"
-                  stroke="currentColor"
-                  className="text-primary/20 transition-opacity duration-300"
-                  strokeWidth="1.2"
-                  strokeDasharray="4 4"
-                />
+                <>
+                  {/* Outer ring — large, very subtle */}
+                  <ellipse
+                    cx={`${clusterPos.x}%`}
+                    cy={`${clusterPos.y}%`}
+                    rx={`${ORBIT_RX + 4}%`}
+                    ry={`${ORBIT_RY + 4.5}%`}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeOpacity="0.08"
+                    strokeWidth="1"
+                    strokeDasharray="6 6"
+                  />
+                  {/* Inner ring — main orbit track */}
+                  <ellipse
+                    cx={`${clusterPos.x}%`}
+                    cy={`${clusterPos.y}%`}
+                    rx={`${ORBIT_RX}%`}
+                    ry={`${ORBIT_RY}%`}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeOpacity="0.18"
+                    strokeWidth="1"
+                    strokeDasharray="4 5"
+                  />
+                </>
               )}
 
-              {/* Parent connections — Smooth Cubic Bezier Curves with Laser Comet Beams */}
+              {/* ── Parent node connections ── */}
               {parentConnections.map((conn, idx) => {
-                const start      = getNodeCoords(conn.from);
-                const end        = getNodeCoords(conn.to);
-                const nodeFrom   = serviceNodes.find((n) => n.id === conn.from);
-                const nodeTo     = serviceNodes.find((n) => n.id === conn.to);
-                const isHealthy  = nodeFrom?.status === "healthy" && nodeTo?.status === "healthy";
+                const s = getNodeCoords(conn.from);
+                const e = getNodeCoords(conn.to);
                 const isHighlighted =
                   !!activeNode &&
                   ((activeNode === conn.from && relationsMap[activeNode]?.includes(conn.to)) ||
                    (activeNode === conn.to   && relationsMap[activeNode]?.includes(conn.from)));
                 const isDimmed = !!activeNode && !isHighlighted;
-                const curveD   = getCurvedPath(start, end, 0.5);
+                const curveD   = getCurvedPath(s, e, 0.5);
 
                 return (
-                  <g key={`conn-${idx}`} style={{ transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }} className={isDimmed ? "opacity-20" : "opacity-100"}>
-                    {/* 1. Subtle Base Track */}
+                  <g
+                    key={`conn-${idx}`}
+                    style={{ transition: "opacity 0.35s cubic-bezier(0.16,1,0.3,1)" }}
+                    opacity={isDimmed ? 0.12 : 1}
+                  >
+                    {/* Base track — thin, dark, visible */}
                     <path
                       d={curveD}
                       fill="none"
-                      stroke="currentColor"
-                      className={cn(
-                        "transition-colors duration-300",
-                        isHighlighted ? "text-primary/40" : "text-border/40 dark:text-border/30"
-                      )}
-                      strokeWidth={isHighlighted ? 1.8 : 1.2}
-                      strokeDasharray={conn.dashed ? "4 4" : undefined}
+                      stroke={isHighlighted ? "var(--primary)" : "currentColor"}
+                      strokeOpacity={isHighlighted ? 0.45 : 0.22}
+                      strokeWidth={isHighlighted ? 1.6 : 1.2}
+                      className="text-foreground transition-all duration-300"
                     />
 
-                    {/* 2. Sleek Laser Comet Pulse Flow (Magic UI Animated Beam Style) */}
+                    {/* Laser comet pulse — gradient particle moving along path */}
                     <path
                       d={curveD}
                       fill="none"
-                      stroke={isHealthy ? "var(--primary)" : "#f97316"}
-                      strokeWidth={isHighlighted ? 2.4 : 1.6}
+                      stroke={`url(#comet-${idx})`}
+                      strokeWidth={isHighlighted ? 2.4 : 1.8}
                       strokeLinecap="round"
-                      strokeDasharray="24 140"
-                      filter={isHighlighted && isHealthy ? "url(#soft-glow)" : undefined}
-                      className={cn(
-                        "animate-beam-flow transition-opacity duration-300",
-                        isHighlighted ? "opacity-100" : isDimmed ? "opacity-0" : "opacity-75"
-                      )}
+                      strokeDasharray="18 148"
+                      filter={isHighlighted ? "url(#comet-glow)" : undefined}
+                      className="animate-beam-flow"
                       style={{
-                        animationDuration: isHighlighted ? "1.8s" : "2.8s",
+                        animationDuration: isHighlighted ? "1.6s" : "2.8s",
+                        animationDelay: `${BEAM_DELAYS[idx] ?? 0}s`,
+                        opacity: isDimmed ? 0 : isHighlighted ? 1 : 0.85,
+                        transition: "opacity 0.3s",
                       }}
                     />
                   </g>
                 );
               })}
 
-              {/* Orbit spokes: cluster center → each orbit chip */}
+              {/* ── Orbit spokes (cluster center → each chip) ── */}
               {isClusterExpanded && GATEWAY_ORBIT.map((gw) => {
-                const cluster = getNodeCoords("gw-cluster");
-                const orbit   = getOrbitCoords(gw);
-                const isAct   = activeOrbitNode === gw.id;
-                const spokeD  = getCurvedPath(cluster, orbit, 0.4);
+                const c     = getNodeCoords("gw-cluster");
+                const op    = getOrbitCoords(gw);
+                const isAct = activeOrbitNode === gw.id;
                 return (
-                  <path
+                  <line
                     key={`spoke-${gw.id}`}
-                    d={spokeD}
-                    fill="none"
+                    x1={`${c.x}%`}  y1={`${c.y}%`}
+                    x2={`${op.x}%`} y2={`${op.y}%`}
                     stroke="var(--primary)"
-                    strokeWidth={isAct ? 1.5 : 0.8}
-                    strokeDasharray="2 4"
-                    opacity={isAct ? 0.75 : 0.25}
-                    style={{ transition: "opacity 0.3s, stroke-width 0.3s" }}
+                    strokeWidth={isAct ? 1.2 : 0.6}
+                    strokeDasharray="3 6"
+                    strokeOpacity={isAct ? 0.55 : 0.15}
+                    style={{ transition: "stroke-opacity 0.3s, stroke-width 0.3s" }}
                   />
                 );
               })}
 
-              {/* Smart routing: active orbit node → its dependency nodes */}
+              {/* ── Smart routing: active orbit → its dependencies ── */}
               {isClusterExpanded && activeOrbitNode && (() => {
                 const gw = GATEWAY_ORBIT.find((g) => g.id === activeOrbitNode);
                 if (!gw) return null;
                 const op = getOrbitCoords(gw);
                 return gw.connectsTo.map((targetId) => {
-                  const tp = getNodeCoords(targetId);
-                  const smartD = getCurvedPath(op, tp, 0.45);
+                  const tp     = getNodeCoords(targetId);
+                  const smartD = getCurvedPath(op, tp, 0.42);
                   return (
-                    <g key={`smart-${gw.id}-${targetId}`} className="animate-fade-in">
-                      {/* Subtle guide curve */}
+                    <g key={`smart-${gw.id}-${targetId}`}>
+                      <path d={smartD} fill="none" stroke="var(--primary)" strokeWidth={1.2} strokeDasharray="4 5" strokeOpacity={0.4} />
                       <path
                         d={smartD}
                         fill="none"
-                        stroke="var(--primary)"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                        opacity={0.5}
-                      />
-                      {/* Active laser beam */}
-                      <path
-                        d={smartD}
-                        fill="none"
-                        stroke="var(--primary)"
-                        strokeWidth={2.5}
+                        stroke="url(#orbit-beam)"
+                        strokeWidth={2.4}
                         strokeLinecap="round"
-                        strokeDasharray="28 120"
-                        filter="url(#soft-glow)"
-                        className="animate-beam-flow opacity-100"
-                        style={{ animationDuration: "1.6s" }}
+                        strokeDasharray="20 126"
+                        filter="url(#comet-glow)"
+                        className="animate-beam-flow"
+                        style={{ animationDuration: "1.4s" }}
                       />
                     </g>
                   );
@@ -556,13 +587,16 @@ export function OverviewInfrastructureMap({
               })()}
             </svg>
 
-            {/* Main 5 nodes */}
+            {/* ════════════════════════════════════════════════════════════
+                Main 5 parent nodes — pill-style cards like target image
+                ════════════════════════════════════════════════════════════ */}
             {serviceNodes.map((node) => {
-              const Icon      = getNodeIcon(node.type);
+              const Icon       = getNodeIcon(node.type);
               const isSelected = activeNode === node.id;
               const dimmed     = isNodeDimmed(node.id);
               const pos        = getNodeCoords(node.id);
               const isCluster  = node.id === "gw-cluster";
+              const dotColor   = getStatusDotColor(node.status);
 
               return (
                 <button
@@ -573,66 +607,76 @@ export function OverviewInfrastructureMap({
                     left: `${pos.x}%`,
                     top:  `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
-                    transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s, transform 0.2s",
+                    transition: "opacity 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s, transform 0.2s",
                     cursor: "grab",
+                    // Glow halo behind selected node — matches target image
+                    boxShadow: isSelected
+                      ? "0 0 0 1px rgba(16,185,129,0.5), 0 0 32px rgba(16,185,129,0.25), 0 4px 20px rgba(0,0,0,0.4)"
+                      : "0 2px 12px rgba(0,0,0,0.3)",
                   }}
                   className={cn(
-                    "absolute z-10 flex flex-col items-center justify-center rounded-xl border bg-card/95 backdrop-blur-md p-3 shadow-xl transition-all duration-300 group ring-1 ring-border/50",
-                    isCluster ? "min-w-[92px]" : "min-w-[78px]",
+                    // Pill-shaped card like target image
+                    "absolute z-10 flex items-center gap-2 rounded-xl border backdrop-blur-sm px-3 py-2 transition-all duration-300 group whitespace-nowrap",
+                    isCluster ? "min-w-[110px]" : "min-w-[100px]",
                     isSelected
-                      ? "border-primary/80 bg-primary/10 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-primary/40 scale-105 z-20"
-                      : "border-border/70 hover:border-foreground/30 hover:scale-102",
-                    dimmed ? "opacity-20" : "opacity-100"
+                      ? "border-primary/60 bg-primary/10 scale-105 z-20"
+                      : "border-border/50 bg-card/80 hover:border-border/80 hover:scale-[1.03] hover:bg-card/95",
+                    dimmed ? "opacity-12" : "opacity-100"
                   )}
                 >
-                  {isCluster && (
+                  {/* Status dot */}
+                  <span
+                    className={cn("h-2 w-2 rounded-full flex-shrink-0", node.status === "healthy" ? "animate-pulse" : "")}
+                    style={{ backgroundColor: dotColor, boxShadow: isSelected ? `0 0 8px ${dotColor}` : undefined }}
+                  />
+
+                  {/* Label */}
+                  <div className="flex flex-col min-w-0">
                     <span className={cn(
-                      "absolute -top-2.5 -right-2 flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] font-mono font-bold shadow-lg whitespace-nowrap",
-                      clusterStatus === "healthy" ? "border-primary/30 bg-muted text-primary"
-                        : clusterStatus === "warning" ? "border-amber-500/30 bg-muted text-amber-500"
-                        : "border-red-500/30 bg-muted text-red-500"
+                      "text-[9.5px] font-semibold font-mono uppercase tracking-wide truncate",
+                      isSelected ? "text-primary" : "text-foreground/90"
                     )}>
-                      <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", getStatusColor(clusterStatus))} />
-                      {clusterOnlineText}
-                    </span>
-                  )}
-
-                  <div className={cn(
-                    "mb-1.5 flex items-center justify-center rounded-lg border p-1.5 transition-colors",
-                    isSelected
-                      ? "border-primary/50 bg-primary/20 text-primary"
-                      : "border-border/60 bg-muted/60 text-muted-foreground group-hover:text-foreground"
-                  )}>
-                    <Icon className={cn("h-4 w-4", isCluster && "h-5 w-5")} />
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <span className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      getStatusColor(node.status),
-                      node.status === "healthy" ? "animate-pulse" : node.status === "error" ? "animate-ping" : ""
-                    )} />
-                    <span className="max-w-[72px] truncate text-[8.5px] font-mono font-bold uppercase text-foreground">
                       {isCluster ? "Go Gateways" : node.name.split(" ")[0]}
                     </span>
+                    {node.port && (
+                      <span className="text-[7.5px] text-muted-foreground/70 font-mono">
+                        {isCluster ? (isClusterExpanded ? "▲ collapse" : "▼ expand") : `port ${node.port}`}
+                      </span>
+                    )}
                   </div>
 
+                  {/* Icon — right side */}
+                  <Icon className={cn(
+                    "h-3.5 w-3.5 flex-shrink-0 ml-auto",
+                    isSelected ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground/80"
+                  )} />
+
+                  {/* Cluster online badge */}
                   {isCluster && (
-                    <span className="mt-0.5 text-[7px] text-muted-foreground font-mono">
-                      {isClusterExpanded ? "▲ collapse" : "▼ expand"}
+                    <span className={cn(
+                      "absolute -top-2 -right-1 flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[7px] font-mono font-bold whitespace-nowrap",
+                      clusterStatus === "healthy"
+                        ? "border-primary/30 bg-primary/20 text-primary"
+                        : "border-red-500/30 bg-red-950/80 text-red-400"
+                    )}>
+                      <span className={cn("h-1 w-1 rounded-full", clusterStatus === "healthy" ? "bg-primary animate-pulse" : "bg-red-400")} />
+                      {clusterOnlineText}
                     </span>
                   )}
                 </button>
               );
             })}
 
-            {/* Orbit chips (9 gateways) — High Contrast Glassmorphic Capsules */}
-            {isClusterExpanded && GATEWAY_ORBIT.map((gw) => {
-              const OrbitIcon    = gw.icon;
-              const orbitPos     = getOrbitCoords(gw);
-              const status       = getOrbitStatus(gw.gatewayName);
-              const isActive     = activeOrbitNode === gw.id;
-              const otherActive  = activeOrbitNode !== null && !isActive;
+            {/* ════════════════════════════════════════════════════════════
+                9 Orbit chips — pill cards around concentric ring
+                ════════════════════════════════════════════════════════════ */}
+            {isClusterExpanded && GATEWAY_ORBIT.map((gw, gwIdx) => {
+              const OrbitIcon   = gw.icon;
+              const orbitPos    = getOrbitCoords(gw);
+              const status      = getOrbitStatus(gw.gatewayName);
+              const isActive    = activeOrbitNode === gw.id;
+              const otherActive = activeOrbitNode !== null && !isActive;
+              const dotColor    = getStatusDotColor(status);
 
               return (
                 <button
@@ -642,34 +686,43 @@ export function OverviewInfrastructureMap({
                     left: `${orbitPos.x}%`,
                     top:  `${orbitPos.y}%`,
                     transform: "translate(-50%, -50%)",
+                    // Glow for active orbit chip — matches target image (Notification highlighted)
+                    boxShadow: isActive
+                      ? "0 0 0 1px rgba(16,185,129,0.6), 0 0 24px rgba(16,185,129,0.35)"
+                      : "0 1px 8px rgba(0,0,0,0.3)",
+                    animationDelay: `${gwIdx * 40}ms`,
                   }}
                   className={cn(
-                    "absolute z-30 flex flex-col items-center justify-center rounded-xl border shadow-lg backdrop-blur-md transition-all duration-200 animate-fade-in group cursor-pointer",
-                    "w-9 h-9",
+                    "absolute z-30 flex items-center gap-1.5 rounded-lg border backdrop-blur-sm px-2.5 py-1.5 transition-all duration-200 animate-fade-in-scale group cursor-pointer whitespace-nowrap",
                     isActive
-                      ? "border-primary/80 bg-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.35)] ring-1 ring-primary/50 scale-125 z-40"
-                      : "border-border/80 bg-card/95 hover:border-foreground/30 hover:scale-110",
-                    otherActive ? "opacity-35" : "opacity-100"
+                      ? "border-primary/60 bg-primary/10 scale-110 z-40"
+                      : "border-border/60 bg-card/85 hover:border-border/90 hover:scale-105 hover:bg-card/95",
+                    otherActive ? "opacity-25" : "opacity-100"
                   )}
                   title={`${gw.name} Gateway — Port ${gw.port}`}
                 >
-                  <OrbitIcon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                  {/* Status dot */}
+                  <span
+                    className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", status === "healthy" ? "animate-pulse" : "")}
+                    style={{ backgroundColor: dotColor, boxShadow: isActive ? `0 0 6px ${dotColor}` : undefined }}
+                  />
+                  {/* Label */}
                   <span className={cn(
-                    "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[7.5px] font-mono font-semibold whitespace-nowrap",
-                    isActive ? "text-primary font-bold" : "text-muted-foreground/90"
+                    "text-[8.5px] font-mono font-semibold",
+                    isActive ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
                   )}>
                     {gw.name}
                   </span>
-                  <span className={cn(
-                    "absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full border border-background",
-                    getStatusColor(status),
-                    status === "healthy" ? "animate-pulse" : ""
+                  {/* Icon */}
+                  <OrbitIcon className={cn(
+                    "h-3 w-3 flex-shrink-0",
+                    isActive ? "text-primary" : "text-muted-foreground/50"
                   )} />
                 </button>
               );
             })}
 
-            {/* Sub-node chips for non-cluster nodes */}
+            {/* ── Sub-node chips for selected parent node ── */}
             {activeNode && activeNode !== "gw-cluster" &&
               activeSubNodes.map((sub) => {
                 const pc      = getNodeCoords(activeNode);
@@ -682,13 +735,11 @@ export function OverviewInfrastructureMap({
                       top:  `calc(${pc.y}% + ${sub.yOffset}px)`,
                       transform: "translate(-50%, -50%)",
                     }}
-                    className="absolute z-30 flex items-center gap-1.5 rounded-xl border border-primary/30 bg-card/95 px-2.5 py-1 shadow-lg backdrop-blur-md animate-fade-in hover:border-primary/60 transition-all"
+                    className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/25 bg-card/90 px-2 py-1 shadow-lg backdrop-blur-md animate-fade-in-scale hover:border-primary/50 transition-all"
                     title={sub.details}
                   >
-                    <div className="flex items-center justify-center text-primary">
-                      <SubIcon className="h-3 w-3" />
-                    </div>
-                    <span className="text-[7.5px] font-mono font-bold text-foreground tracking-wider uppercase select-none">
+                    <SubIcon className="h-2.5 w-2.5 text-primary flex-shrink-0" />
+                    <span className="text-[7.5px] font-mono font-bold text-foreground/90 tracking-wide uppercase select-none">
                       {sub.name}
                     </span>
                   </div>
@@ -697,25 +748,6 @@ export function OverviewInfrastructureMap({
             }
           </div>
         </div>
-
-        <style jsx global>{`
-          @keyframes beam-flow {
-            from {
-              stroke-dashoffset: 164;
-            }
-            to {
-              stroke-dashoffset: 0;
-            }
-          }
-          .animate-beam-flow {
-            animation: beam-flow 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          }
-          @keyframes fade-in {
-            from { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
-            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-          }
-          .animate-fade-in { animation: fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        `}</style>
       </Card>
 
       <MapDetailPanel activeNodeData={activeOrbitServiceNode} activeSubNodes={activeSubNodes} />
