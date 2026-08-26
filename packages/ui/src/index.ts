@@ -43,6 +43,9 @@ export * from "./components/rich-text-editor";
 // 3D Visualization Components (Three.js)
 export * from "./components/3d";
 
+// Technical Isometric Wireframe Figures (Linear Style)
+export * from "./components/linear-isometric/linear-isometric-figures";
+
 // Error Pages
 export * from "./components/errors/NotFoundError";
 export * from "./components/errors/TenantDomainError";

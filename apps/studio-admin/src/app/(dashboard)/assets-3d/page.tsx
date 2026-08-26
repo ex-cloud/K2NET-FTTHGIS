@@ -16,6 +16,7 @@ import {
   PebbleBot3D,
   FiberGlobe3D,
   CyberWaveform3D,
+  LinearIsometricShowcase,
 } from "@k2net/ui";
 import {
   Box,
@@ -650,6 +651,29 @@ export default function Assets3DPage() {
               );
             })}
           </div>
+        </div>
+
+        {/* ── 3. Technical Isometric Wireframe Figures (1:1 Linear.app Style) ── */}
+        <div className="space-y-4 pt-4 border-t border-border/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 bg-primary/5 text-primary">
+                  100% SVG Vector Line Art
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">0% GPU Overhead • Instant 60 FPS</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+                <span>Technical Isometric Wireframe Figures</span>
+                <span className="text-xs text-muted-foreground font-mono font-normal">(Linear.app Aesthetic)</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Precision 30° axonometric vector wireframes with interactive hover extrusion, dashed projection lines, and monospace technical labeling.
+              </p>
+            </div>
+          </div>
+
+          <LinearIsometricShowcase />
         </div>
       </div>
     </PageLayout>
