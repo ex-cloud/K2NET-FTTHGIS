@@ -79,6 +79,10 @@ export function LinearPurposeBuiltFigure({
   const apertureRx = apertureRadius * 1.2247;
   const apertureRy = apertureRadius * 0.7071;
 
+  // Top slab center coordinate
+  const zTopFinal = topSlabIndex * (slabThickness + 2) + slabThickness;
+  const topCenterY = originY - zTopFinal;
+
   return (
     <div
       ref={containerRef}
@@ -98,17 +102,17 @@ export function LinearPurposeBuiltFigure({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          {/* Subtle Ambient Depth Lighting */}
+          {/* Subtle Ambient Depth Lighting inside Center Cavity */}
           <radialGradient id="apertureMutedGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#27272a" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#09090b" stopOpacity="1" />
+            <stop offset="0%" stopColor="#1f1f23" stopOpacity="0.9" />
+            <stop offset="85%" stopColor="#09090b" stopOpacity="1" />
           </radialGradient>
 
-          {/* Clip path for horizontal aperture chords */}
-          <clipPath id="fig1ApertureClip">
+          {/* Clip path for center aperture */}
+          <clipPath id="fig1CenterApertureClip">
             <ellipse
               cx="140"
-              cy={originY - (topSlabIndex * (slabThickness + 2) + slabThickness)}
+              cy={topCenterY}
               rx={apertureRx}
               ry={apertureRy}
             />
@@ -138,8 +142,6 @@ export function LinearPurposeBuiltFigure({
           const b2 = toIso(slabSize, -slabSize, zBase, 140, originY);
           const b3 = toIso(slabSize, slabSize, zBase, 140, originY);
           const b4 = toIso(-slabSize, slabSize, zBase, 140, originY);
-
-          const topCenterY = originY - zTop;
 
           return (
             <g
@@ -193,10 +195,10 @@ export function LinearPurposeBuiltFigure({
                 strokeLinecap="round"
               />
 
-              {/* Top Slab: Mathematically Exact Isometric Circle Aperture & Chords */}
+              {/* Top Slab: Exact Center Isometric Aperture with K2NET Watermark Emblem */}
               {isTop && (
                 <g>
-                  {/* Recessed Aperture Cavity */}
+                  {/* Recessed Center Aperture Rim */}
                   <ellipse
                     cx="140"
                     cy={topCenterY}
@@ -208,21 +210,20 @@ export function LinearPurposeBuiltFigure({
                     strokeWidth="1"
                   />
 
-                  {/* Inner Isometric Chords (Clipped inside the circle) */}
-                  <g clipPath="url(#fig1ApertureClip)">
-                    {[-10, -5, 0, 5, 10].map((offset, cIdx) => (
-                      <line
-                        key={`chord-${cIdx}`}
-                        x1="100"
-                        y1={topCenterY + offset}
-                        x2="180"
-                        y2={topCenterY + offset}
-                        stroke={active ? "#71717a" : "#52525b"}
-                        strokeOpacity={active ? "0.75" : "0.5"}
-                        strokeWidth="0.75"
-                        strokeLinecap="round"
-                      />
-                    ))}
+                  {/* K2NET Watermark Emblem centered on the exact 30° isometric top plane */}
+                  <g
+                    transform={`translate(140, ${topCenterY}) matrix(0.866025 0.5 -0.866025 0.5 0 0)`}
+                    clipPath="url(#fig1CenterApertureClip)"
+                  >
+                    <image
+                      href="/logo-watermark.svg"
+                      x={size === "hero" ? -22 : -18}
+                      y={size === "hero" ? -22 : -18}
+                      width={size === "hero" ? 44 : 36}
+                      height={size === "hero" ? 44 : 36}
+                      opacity={active ? "0.9" : "0.65"}
+                      className="filter brightness-125 contrast-125 transition-opacity duration-300"
+                    />
                   </g>
                 </g>
               )}
