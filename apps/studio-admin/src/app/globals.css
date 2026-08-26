@@ -254,9 +254,9 @@ body {
 
 /* ─── Particle: smooth flowing gradient, fade in/out at endpoints ─── */
 @keyframes flow-particle {
-  0%   { stroke-dashoffset: 220; opacity: 0; }
-  8%   { opacity: 1; }
-  92%  { opacity: 1; }
+  0%   { stroke-dashoffset: 174; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
   100% { stroke-dashoffset: 0;   opacity: 0; }
 }
 

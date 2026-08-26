@@ -21,7 +21,7 @@ import type { ServiceNode } from "@/components/system/overview/overview-types";
 export default function SystemOverviewPage() {
   const data = useSystemOverviewData();
   const { summary: taskSummary, loading: loadingTasks, refresh: refreshTasks } = useTaskSummary();
-  const [activeNode, setActiveNode] = useState<string | null>("db-postgres");
+  const [activeNode, setActiveNode] = useState<string | null>(null);
 
   const serviceNodes: ServiceNode[] = useServiceNodes({
     postgresStatus: data.systemHealth.postgresStatus,
