@@ -33,30 +33,34 @@ import { MapDetailPanel } from "./map-detail-panel";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
 // ─── 9 Gateway Dual Concentric Orbit Configuration (360° Full Circles) ────────
-// Outer Ring (R=120): 6 Gateways (Notification, Payment, Map, WhatsApp, Export, Audit)
-// Inner Ring (R=72):  3 Gateways (Storage, Scheduler, OLT)
+// Outer Ring (R=155): 5 Gateways (Notification, Payment, Map, WhatsApp, Audit) - Spaced 72° apart
+// Inner Ring (R=95):  4 Gateways (Storage, Scheduler, Export, OLT) - Spaced 90° apart
+// Distance between any adjacent pair is >= 95px (100% zero collision & zero overlap)
 
-const ORBIT_OUTER_R = 120;
-const ORBIT_INNER_R = 72;
+const ORBIT_OUTER_R = 155;
+const ORBIT_INNER_R = 95;
 
 const GATEWAY_ORBIT: GatewayOrbitNode[] = [
+  // Outer Ring (R = 155)
   { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          angle: -90, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -30, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "keycloak-iam"] },
-  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     angle: 0,   radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-map",          name: "Map",          gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 30,  radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, angle: 90,  radius: ORBIT_OUTER_R, connectsTo: ["redis-cache"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, angle: 120, radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        angle: 150, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       angle: 240, radius: ORBIT_INNER_R, connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, angle: 210, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -18, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "keycloak-iam"] },
+  { id: "gw-map",          name: "Map",          gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 54,  radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, angle: 126, radius: ORBIT_OUTER_R, connectsTo: ["redis-cache"] },
+  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, angle: 198, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db"] },
+
+  // Inner Ring (R = 95)
+  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     angle: -54, radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, angle: 18,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        angle: 90,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       angle: 162, radius: ORBIT_INNER_R, connectsTo: ["postgres-db", "redis-cache"] },
 ];
 
-const ORBIT_CENTER = { x: 710, y: 250 };
+const ORBIT_CENTER = { x: 700, y: 250 };
 
 // Hub connection edge X
-const ORBIT_HUB_EDGE_X = ORBIT_CENTER.x - 65; // 645
+const ORBIT_HUB_EDGE_X = ORBIT_CENTER.x - 65; // 635
 
-// ─── 4-Tier Node Fixed Positions (880 x 500 Stage) ────────────────────────────
+// ─── 4-Tier Node Fixed Positions (920 x 500 Stage) ────────────────────────────
 
 interface StageNodePosition {
   x: number;
@@ -70,14 +74,14 @@ interface StageNodePosition {
 
 const STAGE_NODE_POSITIONS: Record<string, StageNodePosition> = {
   // Tier 1 — Edge Ingress
-  "edge-router":   { x: 85,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
+  "edge-router":   { x: 80,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
   // Tier 2 — Core, AI & IAM
-  "core-backend":  { x: 260, y: 115, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
-  "ai-gateway":    { x: 260, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
-  "keycloak-iam":  { x: 260, y: 385, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
+  "core-backend":  { x: 245, y: 115, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
+  "ai-gateway":    { x: 245, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
+  "keycloak-iam":  { x: 245, y: 385, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
   // Tier 3 — Storage & Data Layer
-  "postgres-db":   { x: 435, y: 175, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
-  "redis-cache":   { x: 435, y: 325, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
+  "postgres-db":   { x: 410, y: 175, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
+  "redis-cache":   { x: 410, y: 325, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
 };
 
 // ─── 4-Tier Logical Traffic Connections ───────────────────────────────────────
@@ -92,19 +96,19 @@ interface StageEdge {
 
 const STAGE_EDGES: StageEdge[] = [
   // Edge → Core Layer
-  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 85 250 C 170 250, 180 115, 260 115" },
-  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 85 250 L 260 250" },
-  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 85 250 C 170 250, 180 385, 260 385" },
+  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 80 250 C 160 250, 175 115, 245 115" },
+  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 80 250 L 245 250" },
+  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 80 250 C 160 250, 175 385, 245 385" },
 
   // Core Layer → Storage & Data Layer
-  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 260 115 C 340 115, 355 175, 435 175" },
-  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 260 115 C 340 115, 355 325, 435 325" },
-  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 260 250 C 340 250, 355 175, 435 175" },
-  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 260 250 C 340 250, 355 325, 435 325" },
+  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 245 115 C 320 115, 335 175, 410 175" },
+  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 245 115 C 320 115, 335 325, 410 325" },
+  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 245 250 C 320 250, 335 175, 410 175" },
+  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 245 250 C 320 250, 335 325, 410 325" },
 
   // Data Layer → Go Gateways Cluster Hub
-  { id: "postgres-orbit", from: "postgres-db",  to: "gw-cluster",   speed: "normal", path: `M 435 175 C 510 175, 540 250, ${ORBIT_HUB_EDGE_X} 250` },
-  { id: "redis-orbit",    from: "redis-cache",  to: "gw-cluster",   speed: "slow",   path: `M 435 325 C 510 325, 540 250, ${ORBIT_HUB_EDGE_X} 250` },
+  { id: "postgres-orbit", from: "postgres-db",  to: "gw-cluster",   speed: "normal", path: `M 410 175 C 490 175, 520 250, ${ORBIT_HUB_EDGE_X} 250` },
+  { id: "redis-orbit",    from: "redis-cache",  to: "gw-cluster",   speed: "slow",   path: `M 410 325 C 490 325, 520 250, ${ORBIT_HUB_EDGE_X} 250` },
 ];
 
 const subNodesMap: Record<string, SubNode[]> = {
@@ -337,15 +341,15 @@ export function OverviewInfrastructureMap({
             }}
           />
 
-          {/* ── Stage (880px x 500px) ── */}
+          {/* ── Stage (920px x 500px) ── */}
           <div
-            className="relative w-[880px] h-[500px] transform-gpu transition-transform duration-200"
+            className="relative w-[920px] h-[500px] transform-gpu transition-transform duration-200"
             style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
           >
             {/* ── SVG Connection Layer ── */}
             <svg
-              className="absolute inset-0 w-[880px] h-[500px] overflow-visible pointer-events-none z-0"
-              viewBox="0 0 880 500"
+              className="absolute inset-0 w-[920px] h-[500px] overflow-visible pointer-events-none z-0"
+              viewBox="0 0 920 500"
               role="img"
               aria-label="Animated service dependencies"
             >
@@ -429,7 +433,7 @@ export function OverviewInfrastructureMap({
               })}
 
               {/* ── 2 Full 360° Concentric Orbit Dashed Circles (hidden when collapsed) ── */}
-              {/* Outer Circle (R = 120) */}
+              {/* Outer Circle (R = 155) */}
               <circle
                 cx={ORBIT_CENTER.x}
                 cy={ORBIT_CENTER.y}
@@ -442,7 +446,7 @@ export function OverviewInfrastructureMap({
                 vectorEffect="non-scaling-stroke"
                 className={cn("transition-opacity duration-300", collapsed ? "opacity-0 invisible" : "opacity-100")}
               />
-              {/* Inner Circle (R = 72) */}
+              {/* Inner Circle (R = 95) */}
               <circle
                 cx={ORBIT_CENTER.x}
                 cy={ORBIT_CENTER.y}
@@ -470,7 +474,7 @@ export function OverviewInfrastructureMap({
                 nodeStatus === "warning" ? "bg-yellow-400 shadow-[0_0_8px_#facc15]" :
                 pos.tone === "blue"      ? "bg-sky-400 shadow-[0_0_8px_#38bdf8]" :
                 pos.tone === "red"       ? "bg-rose-500 shadow-[0_0_8px_#f43f5e]" :
-                                           "bg-emerald-400 shadow-[0_0_8px_#34d399]";
+                                           "bg-primary shadow-[0_0_8px_var(--primary)]";
 
               return (
                 <button
@@ -540,7 +544,7 @@ export function OverviewInfrastructureMap({
                     : "text-foreground hover:border-primary/50 hover:scale-[1.03]"
                 )}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse flex-shrink-0 ring-2 ring-black/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse flex-shrink-0 ring-2 ring-black/40" />
                 <span className="text-[11px]">Go Gateways</span>
                 <span className="text-[8px] text-muted-foreground font-normal">
                   {collapsed
@@ -549,7 +553,7 @@ export function OverviewInfrastructureMap({
                 </span>
               </button>
 
-              {/* 9 Surrounding Orbit Chips following 2 concentric circles */}
+              {/* 9 Surrounding Orbit Chips following 2 concentric circles (Zero Collision) */}
               <div
                 className={cn(
                   "transition-all duration-300",
@@ -566,7 +570,7 @@ export function OverviewInfrastructureMap({
                   const gwStatus    = getOrbitStatus(gw.gatewayName);
                   const isOnline    = gwStatus === "healthy";
                   const dotCls      = isOnline
-                    ? "bg-emerald-400 shadow-[0_0_6px_#34d399]"
+                    ? "bg-primary shadow-[0_0_6px_var(--primary)]"
                     : "bg-rose-500 shadow-[0_0_6px_#f43f5e]";
 
                   return (

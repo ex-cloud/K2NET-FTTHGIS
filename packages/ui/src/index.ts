@@ -40,10 +40,14 @@ export * from "./components/markdown";
 export * from "./components/kanban-board";
 export * from "./components/rich-text-editor";
 
+// 3D Visualization Components (Three.js)
+export * from "./components/3d";
+
 // Error Pages
 export * from "./components/errors/NotFoundError";
 export * from "./components/errors/TenantDomainError";
 export * from "./components/errors/ForbiddenError";
 export * from "./components/errors/ServerError";
 export * from "./components/errors/MaintenanceMode";
+
 
