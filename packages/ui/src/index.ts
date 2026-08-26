@@ -45,6 +45,7 @@ export * from "./components/3d";
 
 // Technical Isometric Wireframe Figures (Linear Style)
 export * from "./components/linear-isometric/linear-isometric-figures";
+export * from "./components/linear-isometric/linear-hero-visuals";
 
 // Error Pages
 export * from "./components/errors/NotFoundError";

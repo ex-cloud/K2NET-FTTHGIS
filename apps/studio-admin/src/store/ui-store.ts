@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type Ai3DModelType = "waveform" | "pebble";
-export type Ai3DMascotType = Ai3DModelType;
+export type LoginHeroVariant = "geo-core" | "fiber-matrix" | "sentinel";
 
 interface UIState {
   sidebarOpen: boolean;
@@ -11,10 +10,8 @@ interface UIState {
   setOrganizationSuspended: (suspended: boolean) => void;
   activeTenantId: string | null;
   setActiveTenantId: (id: string | null) => void;
-  aiMascotVariant: Ai3DModelType;
-  setAiMascotVariant: (variant: Ai3DModelType) => void;
-  login3DVariant: Ai3DModelType;
-  setLogin3DVariant: (variant: Ai3DModelType) => void;
+  loginHeroVariant: LoginHeroVariant;
+  setLoginHeroVariant: (variant: LoginHeroVariant) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -26,10 +23,8 @@ export const useUIStore = create<UIState>()(
       setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
       activeTenantId: null,
       setActiveTenantId: (id) => set({ activeTenantId: id }),
-      aiMascotVariant: "pebble",
-      setAiMascotVariant: (variant) => set({ aiMascotVariant: variant }),
-      login3DVariant: "waveform",
-      setLogin3DVariant: (variant) => set({ login3DVariant: variant }),
+      loginHeroVariant: "geo-core",
+      setLoginHeroVariant: (variant) => set({ loginHeroVariant: variant }),
     }),
     {
       name: "ftth-ui-settings",
@@ -37,8 +32,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({ 
         sidebarOpen: state.sidebarOpen, 
         organizationSuspended: state.organizationSuspended,
-        aiMascotVariant: state.aiMascotVariant,
-        login3DVariant: state.login3DVariant,
+        loginHeroVariant: state.loginHeroVariant,
       }),
     }
   )

@@ -1,17 +1,67 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { ShieldAlert, BookOpen, Quote, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
-  CyberWaveform3D,
-  CosmicStardustBackground,
+  LinearGeospatialCoreHero,
+  LinearFiberMatrixHero,
+  LinearNetworkSentinelHero,
   Badge,
 } from "@k2net/ui";
+import { useUIStore, type LoginHeroVariant } from "@/store/ui-store";
 
 export default function AdminLoginPage() {
+  const storeVariant = useUIStore((state) => state.loginHeroVariant);
+  const [activeVariant, setActiveVariant] = useState<LoginHeroVariant>("geo-core");
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("k2net_login_hero_variant") || localStorage.getItem("k2net_login_3d_variant");
+      if (stored) {
+        setActiveVariant(stored as LoginHeroVariant);
+      } else if (storeVariant) {
+        setActiveVariant(storeVariant);
+      }
+    } catch (_) {}
+
+    const handleStorageChange = () => {
+      try {
+        const stored = localStorage.getItem("k2net_login_hero_variant") || localStorage.getItem("k2net_login_3d_variant");
+        if (stored) setActiveVariant(stored as LoginHeroVariant);
+      } catch (_) {}
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [storeVariant]);
+
+  const renderHeroVisual = () => {
+    switch (activeVariant) {
+      case "fiber-matrix":
+        return <LinearFiberMatrixHero key="fib-hero" size="full" interactive={true} />;
+      case "sentinel":
+        return <LinearNetworkSentinelHero key="sen-hero" size="full" interactive={true} />;
+      case "geo-core":
+      default:
+        return <LinearGeospatialCoreHero key="geo-hero" size="full" interactive={true} />;
+    }
+  };
+
+  const getVariantLabel = () => {
+    switch (activeVariant) {
+      case "fiber-matrix":
+        return "Stepped Fiber Matrix";
+      case "sentinel":
+        return "Network Sentinel";
+      case "geo-core":
+      default:
+        return "FTTH Geospatial Core";
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
       
@@ -77,31 +127,28 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Interactive 3D Hero Canvas & Glassmorphic Testimonial */}
+      {/* RIGHT COLUMN: Interactive Pure SVG Hero Canvas & Glassmorphic Testimonial */}
       <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
-        
-        {/* Full-Viewport Deep Space Galaxy Stardust Layer */}
-        <CosmicStardustBackground starCount={650} interactive={true} />
 
-        {/* Top Floating 3D Badge Indicator */}
+        {/* Top Floating Badge Indicator */}
         <div className="w-full flex justify-end z-20">
           <Badge
             variant="outline"
             className="border-border/60 bg-card/60 backdrop-blur-md text-foreground/80 font-mono text-[10px] px-3 py-1 gap-1.5 shadow-md"
           >
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>Hero Visual: Cyber Waveform Mesh</span>
+            <span>Hero: {getVariantLabel()}</span>
           </Badge>
         </div>
 
-        {/* Center 3D Canvas Viewport: Cyber Waveform Mesh */}
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto">
-          <CyberWaveform3D size="full" interactive={true} />
+        {/* Center Pure SVG Hero Viewport: Linear-Style Isometric Architecture */}
+        <div className="w-full max-w-lg my-auto flex items-center justify-center z-10 pointer-events-auto">
+          {renderHeroVisual()}
         </div>
 
         {/* Ambient Grid pattern background overlay */}
         <div
-          className="absolute inset-0 opacity-[0.12] pointer-events-none"
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1.2px, transparent 1.2px)",
             backgroundSize: "24px 24px",

@@ -35,8 +35,8 @@ import { MapDetailPanel } from "./map-detail-panel";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
 // ─── 9 Gateway Categorized 2-Column Matrix Configuration (Zero Collision) ────
-// Column 1 (X = 625): 5 Business & Communication Gateways (Notification, WhatsApp, Payment, Storage, Map)
-// Column 2 (X = 775): 4 Infrastructure & System Gateways (Audit, Scheduler, Export, OLT Poller)
+// Column 1 (X = 645): 5 Business & Communication Gateways (Notification, WhatsApp, Payment, Storage, Map)
+// Column 2 (X = 780): 4 Infrastructure & System Gateways (Audit, Scheduler, Export, OLT Poller)
 // Perfectly aligned rows: Y = 115, 180, 245, 310, 375
 
 export interface GatewayMatrixNode {
@@ -54,28 +54,29 @@ export interface GatewayMatrixNode {
 }
 
 const GATEWAY_MATRIX: GatewayMatrixNode[] = [
-  // ── Column 1: Core Business & Communication Gateways (X = 625) ──
-  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          column: 1, row: 1, x: 625, y: 115, category: "Messaging",      connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, column: 1, row: 2, x: 625, y: 180, category: "Chat WABA",      connectsTo: ["redis-cache"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    column: 1, row: 3, x: 625, y: 245, category: "Fintech",        connectsTo: ["postgres-db", "keycloak-iam"] },
-  { id: "gw-storage",      name: "Storage S3",   gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     column: 1, row: 4, x: 625, y: 310, category: "MinIO S3",       connectsTo: ["postgres-db"] },
-  { id: "gw-map",          name: "Spatial Map",  gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           column: 1, row: 5, x: 625, y: 375, category: "GIS Geocoding",  connectsTo: ["postgres-db", "redis-cache"] },
+  // ── Column 1: Core Business & Communication Gateways (X = 645) ──
+  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          column: 1, row: 1, x: 645, y: 115, category: "Messaging",      connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, column: 1, row: 2, x: 645, y: 180, category: "Chat WABA",      connectsTo: ["redis-cache"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    column: 1, row: 3, x: 645, y: 245, category: "Fintech",        connectsTo: ["postgres-db", "keycloak-iam"] },
+  { id: "gw-storage",      name: "Storage S3",   gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     column: 1, row: 4, x: 645, y: 310, category: "MinIO S3",       connectsTo: ["postgres-db"] },
+  { id: "gw-map",          name: "Spatial Map",  gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           column: 1, row: 5, x: 645, y: 375, category: "GIS Geocoding",  connectsTo: ["postgres-db", "redis-cache"] },
 
-  // ── Column 2: System & Background Workers (X = 775) ──
-  { id: "gw-audit",        name: "Audit Logger", gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, column: 2, row: 1, x: 775, y: 115, category: "Security",       connectsTo: ["postgres-db"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, column: 2, row: 2, x: 775, y: 180, category: "Cron Automation",connectsTo: ["postgres-db"] },
-  { id: "gw-export",       name: "Export Svc",   gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        column: 2, row: 3, x: 775, y: 245, category: "Async Worker",   connectsTo: ["postgres-db"] },
-  { id: "gw-olt",          name: "OLT Poller",   gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       column: 2, row: 4, x: 775, y: 310, category: "SNMP Telemetry", connectsTo: ["postgres-db", "redis-cache"] },
+  // ── Column 2: System & Background Workers (X = 780) ──
+  { id: "gw-audit",        name: "Audit Logger", gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, column: 2, row: 1, x: 780, y: 115, category: "Security",       connectsTo: ["postgres-db"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, column: 2, row: 2, x: 780, y: 180, category: "Cron Automation",connectsTo: ["postgres-db"] },
+  { id: "gw-export",       name: "Export Svc",   gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        column: 2, row: 3, x: 780, y: 245, category: "Async Worker",   connectsTo: ["postgres-db"] },
+  { id: "gw-olt",          name: "OLT Poller",   gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       column: 2, row: 4, x: 780, y: 310, category: "SNMP Telemetry", connectsTo: ["postgres-db", "redis-cache"] },
 ];
 
-const COLLAPSED_HUB_X = 610;
+const COLLAPSED_HUB_X = 640;
 const COLLAPSED_HUB_Y = 250;
-const CLUSTER_FRAME_X = 530;
+const CLUSTER_FRAME_X = 560;
 const CLUSTER_FRAME_Y = 45;
-const CLUSTER_FRAME_W = 365;
+const CLUSTER_FRAME_W = 345;
 const CLUSTER_FRAME_H = 410;
 
 // ─── 4-Tier Node Fixed Positions (920 x 500 Stage) ────────────────────────────
+// Calibrated with generous horizontal breathing room between Tier 1, 2, 3, and 4
 
 interface StageNodePosition {
   x: number;
@@ -88,15 +89,15 @@ interface StageNodePosition {
 }
 
 const STAGE_NODE_POSITIONS: Record<string, StageNodePosition> = {
-  // Tier 1 — Edge Ingress
-  "edge-router":   { x: 75,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
-  // Tier 2 — Core, AI & IAM
-  "core-backend":  { x: 225, y: 110, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
-  "ai-gateway":    { x: 225, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
-  "keycloak-iam":  { x: 225, y: 390, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
-  // Tier 3 — Storage & Data Layer
-  "postgres-db":   { x: 370, y: 170, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
-  "redis-cache":   { x: 370, y: 330, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
+  // Tier 1 — Edge Ingress (Spacious Left X = 65)
+  "edge-router":   { x: 65,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
+  // Tier 2 — Core, AI & IAM (X = 255, generous ~60px gap from Edge)
+  "core-backend":  { x: 255, y: 100, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
+  "ai-gateway":    { x: 255, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
+  "keycloak-iam":  { x: 255, y: 400, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
+  // Tier 3 — Storage & Data Layer (X = 420, generous ~55px gap from Core)
+  "postgres-db":   { x: 420, y: 165, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
+  "redis-cache":   { x: 420, y: 335, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
 };
 
 // ─── 4-Tier Logical Traffic Connections ───────────────────────────────────────
@@ -110,16 +111,16 @@ interface StageEdge {
 }
 
 const STAGE_EDGES: StageEdge[] = [
-  // Edge → Core Layer
-  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 75 250 C 140 250, 160 110, 225 110" },
-  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 75 250 L 225 250" },
-  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 75 250 C 140 250, 160 390, 225 390" },
+  // Edge → Core Layer (Spacious smooth bezier arcs)
+  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 65 250 C 145 250, 165 100, 255 100" },
+  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 65 250 L 255 250" },
+  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 65 250 C 145 250, 165 400, 255 400" },
 
   // Core Layer → Storage & Data Layer
-  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 225 110 C 290 110, 305 170, 370 170" },
-  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 225 110 C 290 110, 305 330, 370 330" },
-  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 225 250 C 290 250, 305 170, 370 170" },
-  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 225 250 C 290 250, 305 330, 370 330" },
+  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 255 100 C 330 100, 345 165, 420 165" },
+  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 255 100 C 330 100, 345 335, 420 335" },
+  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 255 250 C 330 250, 345 165, 420 165" },
+  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 255 250 C 330 250, 345 335, 420 335" },
 ];
 
 const subNodesMap: Record<string, SubNode[]> = {
@@ -272,12 +273,12 @@ export function OverviewInfrastructureMap({
       return [
         {
           id: "postgres-hub-col",
-          path: `M 370 170 C 460 170, 480 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
+          path: `M 420 165 C 500 165, 540 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
           speed: "normal" as const,
         },
         {
           id: "redis-hub-col",
-          path: `M 370 330 C 460 330, 480 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
+          path: `M 420 335 C 500 335, 540 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
           speed: "slow" as const,
         },
       ];
@@ -285,12 +286,12 @@ export function OverviewInfrastructureMap({
       return [
         {
           id: "postgres-hub-exp",
-          path: `M 370 170 C 440 170, 470 170, ${CLUSTER_FRAME_X} 170`,
+          path: `M 420 165 C 480 165, 510 165, ${CLUSTER_FRAME_X} 165`,
           speed: "normal" as const,
         },
         {
           id: "redis-hub-exp",
-          path: `M 370 330 C 440 330, 470 330, ${CLUSTER_FRAME_X} 330`,
+          path: `M 420 335 C 480 335, 510 335, ${CLUSTER_FRAME_X} 335`,
           speed: "slow" as const,
         },
       ];
@@ -511,7 +512,7 @@ export function OverviewInfrastructureMap({
                     strokeWidth="1"
                   />
 
-                  {/* Vertical Main Ingress Bus Rail (X = 530) */}
+                  {/* Vertical Main Ingress Bus Rail (X = 560) */}
                   <line
                     x1={CLUSTER_FRAME_X}
                     y1="115"
@@ -526,11 +527,11 @@ export function OverviewInfrastructureMap({
                   {/* Branching Horizontal Feeder Lines to Each Row */}
                   {[115, 180, 245, 310, 375].map((yRow, rIdx) => (
                     <g key={`feeder-${rIdx}`}>
-                      {/* Feeder to Column 1 (X = 565) */}
+                      {/* Feeder to Column 1 (X = 585) */}
                       <line
                         x1={CLUSTER_FRAME_X}
                         y1={yRow}
-                        x2="565"
+                        x2="585"
                         y2={yRow}
                         stroke="var(--primary)"
                         strokeOpacity={0.35}
@@ -539,9 +540,9 @@ export function OverviewInfrastructureMap({
                       {/* Inter-Column Bridge to Column 2 (except row 5) */}
                       {yRow <= 310 && (
                         <line
-                          x1="685"
+                          x1="705"
                           y1={yRow}
-                          x2="715"
+                          x2="720"
                           y2={yRow}
                           stroke="currentColor"
                           className="text-border/30"
@@ -555,7 +556,7 @@ export function OverviewInfrastructureMap({
               )}
             </svg>
 
-            {/* ── Tier 1, 2, 3 Service Nodes ── */}
+            {/* ── Tier 1, 2, 3 Service Nodes (Spacious and Well-Distributed) ── */}
             {Object.entries(STAGE_NODE_POSITIONS).map(([nodeId, pos]) => {
               const NodeIcon    = pos.icon;
               const isSelected  = activeNode === nodeId;
@@ -643,7 +644,7 @@ export function OverviewInfrastructureMap({
                 {/* Cluster Top Bar (Title + Collapse Button) */}
                 <div
                   style={{ left: CLUSTER_FRAME_X + 16, top: CLUSTER_FRAME_Y + 12 }}
-                  className="absolute z-20 flex items-center justify-between w-[332px] select-none"
+                  className="absolute z-20 flex items-center justify-between w-[312px] select-none"
                 >
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse" />
@@ -688,7 +689,7 @@ export function OverviewInfrastructureMap({
                       aria-pressed={isAct}
                       className={cn(
                         "absolute flex items-center justify-between gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-mono transition-all duration-200 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-30 animate-fade-in-scale",
-                        "w-[122px]",
+                        "w-[120px]",
                         "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
                         "border-[#262e3f] dark:border-white/10 shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.1)] text-foreground/90 hover:border-primary/60 hover:scale-[1.04]",
                         isAct && "border-primary bg-gradient-to-b from-[#152a22] to-[#0a1813] text-primary shadow-[0_0_18px_rgba(38,230,161,0.35),inset_0_1px_0_0_rgba(38,230,161,0.3)] scale-105 z-40 font-bold",
