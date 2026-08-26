@@ -240,29 +240,31 @@ export function FiberGlobe3D({
       });
     });
 
-    // ─── 6. Ambient Stardust Galaxy Cloud ───────────────────────────────────
-    const starCount = 350;
-    const starGeo = new THREE.BufferGeometry();
-    const starPos = new Float32Array(starCount * 3);
+    // ─── 6. Globe Atmospheric Orbital Particle Halo ────────────────────────
+    const haloParticleCount = 120;
+    const haloParticleGeo = new THREE.BufferGeometry();
+    const haloPos = new Float32Array(haloParticleCount * 3);
 
-    for (let p = 0; p < starCount; p++) {
-      const r = 2.8 + Math.random() * 2.6;
+    for (let p = 0; p < haloParticleCount; p++) {
+      const r = globeRadius + 0.3 + Math.random() * 0.8;
       const theta = Math.random() * Math.PI * 2;
       const phi = (Math.random() - 0.5) * Math.PI;
 
-      starPos[p * 3]     = r * Math.cos(theta) * Math.cos(phi);
-      starPos[p * 3 + 1] = r * Math.sin(theta) * Math.cos(phi);
-      starPos[p * 3 + 2] = r * Math.sin(phi);
+      haloPos[p * 3]     = r * Math.cos(theta) * Math.cos(phi);
+      haloPos[p * 3 + 1] = r * Math.sin(theta) * Math.cos(phi);
+      haloPos[p * 3 + 2] = r * Math.sin(phi);
     }
-    starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-    const starMat = new THREE.PointsMaterial({
+
+    haloParticleGeo.setAttribute("position", new THREE.BufferAttribute(haloPos, 3));
+
+    const haloParticleMat = new THREE.PointsMaterial({
       color: new THREE.Color("#10b981"),
-      size: 0.035,
+      size: 0.032,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.65,
       blending: THREE.AdditiveBlending,
     });
-    const starField = new THREE.Points(starGeo, starMat);
+    const starField = new THREE.Points(haloParticleGeo, haloParticleMat);
     masterGroup.add(starField);
 
     setIsLoaded(true);

@@ -2,16 +2,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export type Ai3DModelType =
+  | "globe"
+  | "waveform"
   | "voxel"
   | "cloud"
   | "jelly"
-  | "astrolabe"
-  | "prism"
-  | "pebble"
-  | "globe"
-  | "waveform"
-  | "reactor"
-  | "city";
+  | "pebble";
 
 export type Ai3DMascotType = Ai3DModelType;
 

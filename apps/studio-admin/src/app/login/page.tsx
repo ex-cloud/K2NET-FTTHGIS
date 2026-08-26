@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { ShieldAlert, BookOpen, Quote, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -8,30 +9,43 @@ import {
   VoxelTopology3D,
   CloudNetClay3D,
   AetherJelly3D,
-  AstrolabeCore3D,
-  PrismOrigami3D,
   PebbleBot3D,
   FiberGlobe3D,
   CyberWaveform3D,
-  HolographicReactor3D,
-  TopographicCity3D,
+  CosmicStardustBackground,
   Badge,
 } from "@k2net/ui";
-import { useUIStore } from "@/store/ui-store";
+import { useUIStore, type Ai3DModelType } from "@/store/ui-store";
 
 export default function AdminLoginPage() {
-  const login3DVariant = useUIStore((state) => state.login3DVariant) || "globe";
+  const storeLogin3D = useUIStore((state) => state.login3DVariant);
+  const [activeVariant, setActiveVariant] = useState<Ai3DModelType>("globe");
+  const [mounted, setMounted] = useState(false);
 
-  const MODEL_NAMES: Record<string, string> = {
+  useEffect(() => {
+    setMounted(true);
+    // Directly check localStorage to guarantee instant hydration
+    try {
+      const stored = localStorage.getItem("ftth-ui-settings");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.state?.login3DVariant) {
+          setActiveVariant(parsed.state.login3DVariant);
+          return;
+        }
+      }
+    } catch (_) {}
+    if (storeLogin3D) {
+      setActiveVariant(storeLogin3D);
+    }
+  }, [storeLogin3D]);
+
+  const MODEL_NAMES: Record<Ai3DModelType, string> = {
     globe: "3D Fiber Earth Globe",
     waveform: "Cyber Waveform Mesh",
-    reactor: "Holographic Gateway Reactor",
-    city: "Topographic GIS City",
     voxel: "Voxel Data Matrix Cube",
     cloud: "CloudNet Clay",
     jelly: "Aether Jelly Biomorphic",
-    astrolabe: "Astrolabe Kinetic Core",
-    prism: "Prism Origami Crystal",
     pebble: "Pebble Bot Companion",
   };
 
@@ -103,6 +117,9 @@ export default function AdminLoginPage() {
       {/* RIGHT COLUMN: Interactive 3D Hero Canvas & Glassmorphic Testimonial */}
       <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
         
+        {/* Full-Viewport Deep Space Galaxy Stardust Layer */}
+        <CosmicStardustBackground starCount={750} interactive={true} />
+
         {/* Top Floating 3D Badge Indicator */}
         <div className="w-full flex justify-end z-20">
           <Badge
@@ -110,17 +127,18 @@ export default function AdminLoginPage() {
             className="border-border/60 bg-card/60 backdrop-blur-md text-foreground/80 font-mono text-[10px] px-3 py-1 gap-1.5 shadow-md"
           >
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>Hero 3D: {MODEL_NAMES[login3DVariant] || "3D Fiber Earth Globe"}</span>
+            <span>Hero 3D: {MODEL_NAMES[activeVariant] || "3D Fiber Earth Globe"}</span>
           </Badge>
         </div>
 
         {/* Center 3D Canvas Viewport */}
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto">
-          {login3DVariant === "globe" && <FiberGlobe3D size="xl" interactive={true} />}
-          {login3DVariant === "waveform" && <CyberWaveform3D size="xl" interactive={true} />}
-          {login3DVariant === "reactor" && <HolographicReactor3D size="xl" interactive={true} />}
-          {login3DVariant === "city" && <TopographicCity3D size="xl" interactive={true} />}
-          {login3DVariant === "voxel" && (
+        <div
+          key={`hero-3d-${activeVariant}-${mounted}`}
+          className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto"
+        >
+          {activeVariant === "globe" && <FiberGlobe3D size="full" interactive={true} />}
+          {activeVariant === "waveform" && <CyberWaveform3D size="full" interactive={true} />}
+          {activeVariant === "voxel" && (
             <VoxelTopology3D
               size="lg"
               primaryColor="#38bdf8"
@@ -129,11 +147,9 @@ export default function AdminLoginPage() {
               interactive={true}
             />
           )}
-          {login3DVariant === "cloud" && <CloudNetClay3D size="lg" interactive={true} />}
-          {login3DVariant === "jelly" && <AetherJelly3D size="lg" interactive={true} />}
-          {login3DVariant === "astrolabe" && <AstrolabeCore3D size="lg" interactive={true} />}
-          {login3DVariant === "prism" && <PrismOrigami3D size="lg" interactive={true} />}
-          {login3DVariant === "pebble" && <PebbleBot3D size="lg" interactive={true} />}
+          {activeVariant === "cloud" && <CloudNetClay3D size="lg" interactive={true} />}
+          {activeVariant === "jelly" && <AetherJelly3D size="lg" interactive={true} />}
+          {activeVariant === "pebble" && <PebbleBot3D size="lg" interactive={true} />}
         </div>
 
         {/* Ambient Grid pattern background overlay */}

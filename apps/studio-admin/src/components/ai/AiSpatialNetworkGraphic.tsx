@@ -6,13 +6,9 @@ import {
   VoxelTopology3D,
   CloudNetClay3D,
   AetherJelly3D,
-  AstrolabeCore3D,
-  PrismOrigami3D,
   PebbleBot3D,
   FiberGlobe3D,
   CyberWaveform3D,
-  HolographicReactor3D,
-  TopographicCity3D,
 } from "@k2net/ui";
 import { useUIStore, type Ai3DModelType } from "@/store/ui-store";
 
@@ -26,7 +22,13 @@ interface AiSpatialNetworkGraphicProps {
 
 /**
  * AiSpatialNetworkGraphic
- * High-fidelity 3D Interactive AI Mascot & Graphic Renderer supporting all 10 distinct concepts.
+ * High-fidelity 3D Interactive AI Mascot & Graphic Renderer supporting all 6 curated concepts:
+ * 1. "voxel": Voxel Data Matrix Cube with 16 Radial Fiber Beams
+ * 2. "cloud": CloudNet Clay (Organic Metaball Cloud ala Cloudflare Agent Lee)
+ * 3. "jelly": Aether Jelly (Biomorphic Fiber Jellyfish / Coral Node)
+ * 4. "pebble": Pebble Bot (Cute Ceramic Companion with Floating Satellite Ears)
+ * 5. "globe": 3D Fiber Earth Globe (Global FTTH GIS Network Telemetry)
+ * 6. "waveform": Cyber Waveform Mesh (Parametric Optical Wave Surface Dynamics)
  */
 export function AiSpatialNetworkGraphic({
   className,
@@ -59,18 +61,6 @@ export function AiSpatialNetworkGraphic({
           interactive={true}
         />
       )}
-      {activeVariant === "astrolabe" && (
-        <AstrolabeCore3D
-          size={size}
-          interactive={true}
-        />
-      )}
-      {activeVariant === "prism" && (
-        <PrismOrigami3D
-          size={size}
-          interactive={true}
-        />
-      )}
       {activeVariant === "pebble" && (
         <PebbleBot3D
           size={size}
@@ -85,18 +75,6 @@ export function AiSpatialNetworkGraphic({
       )}
       {activeVariant === "waveform" && (
         <CyberWaveform3D
-          size={size}
-          interactive={true}
-        />
-      )}
-      {activeVariant === "reactor" && (
-        <HolographicReactor3D
-          size={size}
-          interactive={true}
-        />
-      )}
-      {activeVariant === "city" && (
-        <TopographicCity3D
           size={size}
           interactive={true}
         />

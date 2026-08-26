@@ -13,27 +13,20 @@ import {
   VoxelTopology3D,
   CloudNetClay3D,
   AetherJelly3D,
-  AstrolabeCore3D,
-  PrismOrigami3D,
   PebbleBot3D,
   FiberGlobe3D,
   CyberWaveform3D,
-  HolographicReactor3D,
-  TopographicCity3D,
 } from "@k2net/ui";
 import {
   Box,
   Check,
   CheckCircle2,
-  Globe,
-  Layers,
   LogIn,
   MousePointerClick,
   Move3d,
   Orbit,
   RotateCcw,
   Sparkles,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -68,6 +61,13 @@ export default function Assets3DPage() {
 
   const handleSetActiveAi = (id: Ai3DModelType, title: string) => {
     setAiMascotVariant(id);
+    try {
+      const stored = localStorage.getItem("ftth-ui-settings");
+      const obj = stored ? JSON.parse(stored) : { state: {} };
+      obj.state = { ...obj.state, aiMascotVariant: id };
+      localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
+    } catch (_) {}
+
     toast.success(`Maskot AI Assistant diubah ke "${title}"!`, {
       description: "Visual 3D pada panel floating AI dan full-screen chat telah diperbarui.",
     });
@@ -75,8 +75,15 @@ export default function Assets3DPage() {
 
   const handleSetActiveLogin = (id: Ai3DModelType, title: string) => {
     setLogin3DVariant(id);
+    try {
+      const stored = localStorage.getItem("ftth-ui-settings");
+      const obj = stored ? JSON.parse(stored) : { state: {} };
+      obj.state = { ...obj.state, login3DVariant: id };
+      localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
+    } catch (_) {}
+
     toast.success(`Visual 3D Halaman Login diubah ke "${title}"!`, {
-      description: "Buka /login untuk melihat visualisasi 3D terbaru di hero login.",
+      description: "Buka halaman /login untuk melihat visualisasi 3D yang baru dipilih.",
     });
   };
 
@@ -89,7 +96,7 @@ export default function Assets3DPage() {
       category: "Login & Hero Visual",
       typeTag: "Spatial Telemetry",
       description:
-        "Bola dunia 3D kaca obsidian gelap berputar dengan titik koordinat OLT neon emerald, busur kabel optik melengkung 3D, dan foton cahaya yang meluncur antar benua.",
+        "Bola dunia 3D kaca obsidian gelap berputar dengan titik koordinat OLT neon emerald, busur kabel optik melengkung 3D, dan galaksi stardust realistis yang menyebar di seluruh layar.",
       renderComponent: (
         <FiberGlobe3D
           key={`glb-${previewKey}`}
@@ -100,14 +107,14 @@ export default function Assets3DPage() {
       specs: {
         polyCount: "~4.5k Poligon",
         drawCalls: "3 Draw Calls",
-        material: "Obsidian Glass + Fibonacci Points + Arc Splines",
+        material: "Obsidian Glass + Fibonacci Points + Wide Star Constellation",
         interaction: "360° Drag + GPS Beacons + Orbital Auto-Spin",
       },
       features: [
         "1,400 Fibonacci continental surface landmass grid points",
+        "650 Wide deep-space multi-colored galaxy stars across full screen",
         "10 Global telecommunication hubs (Jakarta, Tokyo, NY, London, etc.)",
         "3D Parabolic optical fiber curved arcs with traveling photons",
-        "Pulsing beacon halo rings with axial orbital tilt",
       ],
     },
     {
@@ -136,62 +143,6 @@ export default function Assets3DPage() {
         "Real-time cursor wave ripple physics disturbance",
         "6 Floating telemetry node beacons riding wave peaks",
         "Ambient stardust perspective constellation",
-      ],
-    },
-    {
-      id: "reactor",
-      title: "Holographic Gateway Reactor",
-      subtitle: "Multi-Axis Core Fusion & Orbiting Data Satellites",
-      category: "Login & Hero Visual",
-      typeTag: "Kinetic Hologram",
-      description:
-        "Reaktor fusi energi holografik plasma hijau-cyan dengan 3 cincin gimbal giral konsentris dan 6 satelit data prisma yang mengorbit terhubung berkas sinar laser.",
-      renderComponent: (
-        <HolographicReactor3D
-          key={`rea-${previewKey}`}
-          size="md"
-          interactive={true}
-        />
-      ),
-      specs: {
-        polyCount: "~3.4k Poligon",
-        drawCalls: "2 Draw Calls",
-        material: "Plasma Emissive + Frosted Shield + Wireframe Torus",
-        interaction: "Multi-Axis Kinetic Differential Spin + Burst",
-      },
-      features: [
-        "Luminous inner plasma core with frosted icosahedron shield",
-        "3 Concentric gimbal telemetry rings with differential speeds",
-        "6 Orbiting data octahedron satellites with laser threads",
-        "Kinetic acceleration boost saat diklik / di-drag",
-      ],
-    },
-    {
-      id: "city",
-      title: "Topographic GIS City Wireframe",
-      subtitle: "3D Isometric Urban Elevation & Fiber Distribution",
-      category: "Login & Hero Visual",
-      typeTag: "PostGIS Architectural",
-      description:
-        "Model kontur elevasi GIS bertingkat dengan gedung-gedung isometrik, suar telemetri atap gedung, dan kabel fiber optik gantung yang saling menghubungkan antar gedung.",
-      renderComponent: (
-        <TopographicCity3D
-          key={`cty-${previewKey}`}
-          size="md"
-          interactive={true}
-        />
-      ),
-      specs: {
-        polyCount: "~3.1k Poligon",
-        drawCalls: "3 Draw Calls",
-        material: "Dark Ceramic + Emerald Wireframe Edges + Catenary Cables",
-        interaction: "Isometric 3D Perspective Tilt + Scan Pulse",
-      },
-      features: [
-        "3 Stacked hexagonal GIS topographic elevation terraces",
-        "9 Isometric city building blocks with rooftop beacon nodes",
-        "Catenary sag fiber optic distribution lines",
-        "Ambient GIS spatial coordinates stardust cloud",
       ],
     },
 
@@ -281,62 +232,6 @@ export default function Assets3DPage() {
         "12 Dynamic physics wave undulating fiber tendrils",
         "Traveling photon packets moving down tentacles",
         "Bioluminescent ambient particle cloud",
-      ],
-    },
-    {
-      id: "astrolabe",
-      title: "Astrolabe Core",
-      subtitle: "Kinetic Multi-Axis Iridescent Rings",
-      category: "AI Assistant Mascot",
-      typeTag: "Kinetic Sculpture",
-      description:
-        "Inti bola porselen putih murni diselimuti oleh 3 cincin kaca tipis iridescent (pastel teal, electric indigo, sky blue) yang berputar kinetik pada sumbu X, Y, Z berbeda.",
-      renderComponent: (
-        <AstrolabeCore3D
-          key={`ast-${previewKey}`}
-          size="md"
-          interactive={true}
-        />
-      ),
-      specs: {
-        polyCount: "~3.1k Poligon",
-        drawCalls: "2 Draw Calls",
-        material: "Porcelain + Iridescent Physical Glass",
-        interaction: "Multi-Axis Continuous Kinetic Rotation",
-      },
-      features: [
-        "3 Concentric kinetic glass rings rotating on 3 axes",
-        "8 Satellite beads with dynamic laser light threads",
-        "Kinetic acceleration burst saat diklik",
-        "Ambient stardust particle constellation",
-      ],
-    },
-    {
-      id: "prism",
-      title: "Prism Origami",
-      subtitle: "Floating Crystal Shards Gateway",
-      category: "AI Assistant Mascot",
-      typeTag: "Geometric Prism",
-      description:
-        "Kluster pecahan kristal geometris tajam (oktahedron & piramida) dari keramik putih halus dan kaca kristal, terhubung oleh balok sinar energi neon biru di ruang isometrik.",
-      renderComponent: (
-        <PrismOrigami3D
-          key={`pri-${previewKey}`}
-          size="md"
-          interactive={true}
-        />
-      ),
-      specs: {
-        polyCount: "~2.2k Poligon",
-        drawCalls: "2 Draw Calls",
-        material: "Polished Ceramic + Rainbow Crystal Glass",
-        interaction: "Modular Micro-Explosion + Light Beams",
-      },
-      features: [
-        "Modular floating shards with individual micro-rotation",
-        "Interconnecting glowing neon blue laser beams",
-        "Micro-expansion burst saat diklik / disentuh",
-        "Rainbow dispersion lighting effects",
       ],
     },
     {
@@ -446,13 +341,13 @@ export default function Assets3DPage() {
               </div>
 
               {/* Selector Tabs for quick switching inside hero */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1.5 rounded-xl border border-border/50 max-h-[90px] overflow-y-auto">
+              <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1.5 rounded-xl border border-border/50">
                 {ASSETS.map((asset) => (
                   <button
                     key={asset.id}
                     onClick={() => setSelectedPreview(asset.id)}
                     className={cn(
-                      "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
+                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
                       selectedPreview === asset.id
                         ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20 scale-[1.02]"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/60"
@@ -582,7 +477,7 @@ export default function Assets3DPage() {
           </CardContent>
         </Card>
 
-        {/* ── 2. All 10 Models Showcase Grid with Filter Tabs ── */}
+        {/* ── 2. Curated 6 Models Showcase Grid with Filter Tabs ── */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -591,7 +486,7 @@ export default function Assets3DPage() {
                 <span>3D Component Catalog ({filteredAssets.length})</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Inspect and assign any model to the AI Assistant or Login Hero Page.
+                Curated 3D models for FTTH GIS: 2 Hero Visualizations &amp; 4 AI Assistant Mascots.
               </p>
             </div>
 
@@ -617,7 +512,7 @@ export default function Assets3DPage() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                Login &amp; Hero (4)
+                Login &amp; Hero (2)
               </button>
               <button
                 onClick={() => setFilterCategory("MASCOT")}
@@ -628,7 +523,7 @@ export default function Assets3DPage() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                AI Mascots (6)
+                AI Mascots (4)
               </button>
             </div>
           </div>

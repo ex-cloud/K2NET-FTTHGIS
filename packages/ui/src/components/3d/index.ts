@@ -1,10 +1,7 @@
 export { VoxelTopology3D, type VoxelTopology3DProps } from "./voxel-topology-3d";
 export { CloudNetClay3D, type CloudNetClay3DProps } from "./cloudnet-clay-3d";
 export { AetherJelly3D, type AetherJelly3DProps } from "./aether-jelly-3d";
-export { AstrolabeCore3D, type AstrolabeCore3DProps } from "./astrolabe-core-3d";
-export { PrismOrigami3D, type PrismOrigami3DProps } from "./prism-origami-3d";
 export { PebbleBot3D, type PebbleBot3DProps } from "./pebble-bot-3d";
 export { FiberGlobe3D, type FiberGlobe3DProps } from "./fiber-globe-3d";
 export { CyberWaveform3D, type CyberWaveform3DProps } from "./cyber-waveform-3d";
-export { HolographicReactor3D, type HolographicReactor3DProps } from "./holographic-reactor-3d";
-export { TopographicCity3D, type TopographicCity3DProps } from "./topographic-city-3d";
+export { CosmicStardustBackground, type CosmicStardustBackgroundProps } from "./cosmic-stardust-background";
