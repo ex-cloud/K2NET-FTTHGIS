@@ -1,16 +1,45 @@
 "use client";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { ShieldAlert, BookOpen, Quote, ShieldCheck } from "lucide-react";
+import { ShieldAlert, BookOpen, Quote, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
+import {
+  VoxelTopology3D,
+  CloudNetClay3D,
+  AetherJelly3D,
+  AstrolabeCore3D,
+  PrismOrigami3D,
+  PebbleBot3D,
+  FiberGlobe3D,
+  CyberWaveform3D,
+  HolographicReactor3D,
+  TopographicCity3D,
+  Badge,
+} from "@k2net/ui";
+import { useUIStore } from "@/store/ui-store";
 
 export default function AdminLoginPage() {
+  const login3DVariant = useUIStore((state) => state.login3DVariant) || "globe";
+
+  const MODEL_NAMES: Record<string, string> = {
+    globe: "3D Fiber Earth Globe",
+    waveform: "Cyber Waveform Mesh",
+    reactor: "Holographic Gateway Reactor",
+    city: "Topographic GIS City",
+    voxel: "Voxel Data Matrix Cube",
+    cloud: "CloudNet Clay",
+    jelly: "Aether Jelly Biomorphic",
+    astrolabe: "Astrolabe Kinetic Core",
+    prism: "Prism Origami Crystal",
+    pebble: "Pebble Bot Companion",
+  };
+
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
       
       {/* LEFT COLUMN: Login Form (Supabase Style) */}
-      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-sidebar border-r border-border">
+      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-sidebar border-r border-border z-20">
         
         {/* Top Header Row */}
         <div className="flex items-center justify-between w-full z-20">
@@ -71,32 +100,61 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Testimonial & Glowing Ambient Background */}
-      <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-center p-16 relative overflow-hidden">
+      {/* RIGHT COLUMN: Interactive 3D Hero Canvas & Glassmorphic Testimonial */}
+      <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
         
-        {/* Subtle Ambient Glowing Spots */}
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-muted/10 rounded-full blur-3xl" />
+        {/* Top Floating 3D Badge Indicator */}
+        <div className="w-full flex justify-end z-20">
+          <Badge
+            variant="outline"
+            className="border-border/60 bg-card/60 backdrop-blur-md text-foreground/80 font-mono text-[10px] px-3 py-1 gap-1.5 shadow-md"
+          >
+            <Sparkles className="h-3 w-3 text-primary" />
+            <span>Hero 3D: {MODEL_NAMES[login3DVariant] || "3D Fiber Earth Globe"}</span>
+          </Badge>
+        </div>
 
-        {/* Grid pattern background overlay */}
+        {/* Center 3D Canvas Viewport */}
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto">
+          {login3DVariant === "globe" && <FiberGlobe3D size="xl" interactive={true} />}
+          {login3DVariant === "waveform" && <CyberWaveform3D size="xl" interactive={true} />}
+          {login3DVariant === "reactor" && <HolographicReactor3D size="xl" interactive={true} />}
+          {login3DVariant === "city" && <TopographicCity3D size="xl" interactive={true} />}
+          {login3DVariant === "voxel" && (
+            <VoxelTopology3D
+              size="lg"
+              primaryColor="#38bdf8"
+              accentColor="#00f2fe"
+              coreColor="#f8fafc"
+              interactive={true}
+            />
+          )}
+          {login3DVariant === "cloud" && <CloudNetClay3D size="lg" interactive={true} />}
+          {login3DVariant === "jelly" && <AetherJelly3D size="lg" interactive={true} />}
+          {login3DVariant === "astrolabe" && <AstrolabeCore3D size="lg" interactive={true} />}
+          {login3DVariant === "prism" && <PrismOrigami3D size="lg" interactive={true} />}
+          {login3DVariant === "pebble" && <PebbleBot3D size="lg" interactive={true} />}
+        </div>
+
+        {/* Ambient Grid pattern background overlay */}
         <div
-          className="absolute inset-0 opacity-[0.15]"
+          className="absolute inset-0 opacity-[0.12] pointer-events-none"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1.2px, transparent 1.2px)",
             backgroundSize: "24px 24px",
           }}
         />
 
-        {/* Testimonial Quote Container */}
-        <div className="max-w-md w-full z-10 space-y-6">
-          <Quote className="h-8 w-8 text-primary/80 transform rotate-180" />
+        {/* Bottom Glassmorphic Testimonial Quote Container */}
+        <div className="w-full max-w-lg z-20 space-y-4 bg-card/60 backdrop-blur-xl border border-border/60 p-6 rounded-2xl shadow-2xl">
+          <Quote className="h-6 w-6 text-primary/90 transform rotate-180" />
           
-          <blockquote className="text-xl font-light text-foreground leading-relaxed font-sans">
+          <blockquote className="text-sm md:text-base font-light text-foreground leading-relaxed font-sans">
             &ldquo;Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.&rdquo;
           </blockquote>
 
-          <div className="flex items-center gap-3 pt-2">
-            <div className="relative h-9 w-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground font-bold font-mono text-xs shadow-md">
+          <div className="flex items-center gap-3 pt-1 border-t border-border/40">
+            <div className="relative h-8 w-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary font-bold font-mono text-xs shadow-md">
               A
             </div>
             <div>

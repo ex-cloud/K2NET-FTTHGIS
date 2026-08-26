@@ -16,13 +16,18 @@ import {
   AstrolabeCore3D,
   PrismOrigami3D,
   PebbleBot3D,
+  FiberGlobe3D,
+  CyberWaveform3D,
+  HolographicReactor3D,
+  TopographicCity3D,
 } from "@k2net/ui";
 import {
   Box,
   Check,
   CheckCircle2,
-  Cpu,
+  Globe,
   Layers,
+  LogIn,
   MousePointerClick,
   Move3d,
   Orbit,
@@ -32,13 +37,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useUIStore, type Ai3DMascotType } from "@/store/ui-store";
+import { useUIStore, type Ai3DModelType } from "@/store/ui-store";
 
 interface MascotAsset {
-  id: Ai3DMascotType;
+  id: Ai3DModelType;
   title: string;
   subtitle: string;
-  category: string;
+  category: "Login & Hero Visual" | "AI Assistant Mascot";
+  typeTag: string;
   description: string;
   renderComponent: React.ReactNode;
   specs: {
@@ -51,24 +57,151 @@ interface MascotAsset {
 }
 
 export default function Assets3DPage() {
-  const activeMascot = useUIStore((state) => state.aiMascotVariant);
+  const activeAiMascot = useUIStore((state) => state.aiMascotVariant) || "voxel";
+  const activeLogin3D = useUIStore((state) => state.login3DVariant) || "globe";
   const setAiMascotVariant = useUIStore((state) => state.setAiMascotVariant);
-  const [selectedPreview, setSelectedPreview] = useState<Ai3DMascotType>(activeMascot || "voxel");
+  const setLogin3DVariant = useUIStore((state) => state.setLogin3DVariant);
+
+  const [selectedPreview, setSelectedPreview] = useState<Ai3DModelType>(activeLogin3D || "globe");
+  const [filterCategory, setFilterCategory] = useState<"ALL" | "HERO" | "MASCOT">("ALL");
   const [previewKey, setPreviewKey] = useState(0);
 
-  const handleSetActive = (id: Ai3DMascotType, title: string) => {
+  const handleSetActiveAi = (id: Ai3DModelType, title: string) => {
     setAiMascotVariant(id);
     toast.success(`Maskot AI Assistant diubah ke "${title}"!`, {
       description: "Visual 3D pada panel floating AI dan full-screen chat telah diperbarui.",
     });
   };
 
+  const handleSetActiveLogin = (id: Ai3DModelType, title: string) => {
+    setLogin3DVariant(id);
+    toast.success(`Visual 3D Halaman Login diubah ke "${title}"!`, {
+      description: "Buka /login untuk melihat visualisasi 3D terbaru di hero login.",
+    });
+  };
+
   const ASSETS: MascotAsset[] = [
+    // ─── LOGIN & HERO SHOWCASE CANDIDATES ───────────────────────────────────
+    {
+      id: "globe",
+      title: "3D Fiber Earth Globe",
+      subtitle: "Interactive Global FTTH GIS Network Telemetry",
+      category: "Login & Hero Visual",
+      typeTag: "Spatial Telemetry",
+      description:
+        "Bola dunia 3D kaca obsidian gelap berputar dengan titik koordinat OLT neon emerald, busur kabel optik melengkung 3D, dan foton cahaya yang meluncur antar benua.",
+      renderComponent: (
+        <FiberGlobe3D
+          key={`glb-${previewKey}`}
+          size="md"
+          interactive={true}
+        />
+      ),
+      specs: {
+        polyCount: "~4.5k Poligon",
+        drawCalls: "3 Draw Calls",
+        material: "Obsidian Glass + Fibonacci Points + Arc Splines",
+        interaction: "360° Drag + GPS Beacons + Orbital Auto-Spin",
+      },
+      features: [
+        "1,400 Fibonacci continental surface landmass grid points",
+        "10 Global telecommunication hubs (Jakarta, Tokyo, NY, London, etc.)",
+        "3D Parabolic optical fiber curved arcs with traveling photons",
+        "Pulsing beacon halo rings with axial orbital tilt",
+      ],
+    },
+    {
+      id: "waveform",
+      title: "Cyber Waveform Mesh",
+      subtitle: "Mathematical Optical Wave Surface Dynamics",
+      category: "Login & Hero Visual",
+      typeTag: "Parametric Fluid",
+      description:
+        "Matriks partikel 3D yang mengalir bergelombang halus dengan gradasi warna Deep Slate ke Sky Blue dan Emerald Neon, serta riak gelombang interaktif mengikuti kursor.",
+      renderComponent: (
+        <CyberWaveform3D
+          key={`wav-${previewKey}`}
+          size="md"
+          interactive={true}
+        />
+      ),
+      specs: {
+        polyCount: "~3.7k Poligon",
+        drawCalls: "2 Draw Calls",
+        material: "Parametric Vertex Color Points + Beacon Spheres",
+        interaction: "Mouse Ripple Wave Physics + Parallax Tilt",
+      },
+      features: [
+        "52x36 Dynamic mathematical sinusoidal fluid particle grid",
+        "Real-time cursor wave ripple physics disturbance",
+        "6 Floating telemetry node beacons riding wave peaks",
+        "Ambient stardust perspective constellation",
+      ],
+    },
+    {
+      id: "reactor",
+      title: "Holographic Gateway Reactor",
+      subtitle: "Multi-Axis Core Fusion & Orbiting Data Satellites",
+      category: "Login & Hero Visual",
+      typeTag: "Kinetic Hologram",
+      description:
+        "Reaktor fusi energi holografik plasma hijau-cyan dengan 3 cincin gimbal giral konsentris dan 6 satelit data prisma yang mengorbit terhubung berkas sinar laser.",
+      renderComponent: (
+        <HolographicReactor3D
+          key={`rea-${previewKey}`}
+          size="md"
+          interactive={true}
+        />
+      ),
+      specs: {
+        polyCount: "~3.4k Poligon",
+        drawCalls: "2 Draw Calls",
+        material: "Plasma Emissive + Frosted Shield + Wireframe Torus",
+        interaction: "Multi-Axis Kinetic Differential Spin + Burst",
+      },
+      features: [
+        "Luminous inner plasma core with frosted icosahedron shield",
+        "3 Concentric gimbal telemetry rings with differential speeds",
+        "6 Orbiting data octahedron satellites with laser threads",
+        "Kinetic acceleration boost saat diklik / di-drag",
+      ],
+    },
+    {
+      id: "city",
+      title: "Topographic GIS City Wireframe",
+      subtitle: "3D Isometric Urban Elevation & Fiber Distribution",
+      category: "Login & Hero Visual",
+      typeTag: "PostGIS Architectural",
+      description:
+        "Model kontur elevasi GIS bertingkat dengan gedung-gedung isometrik, suar telemetri atap gedung, dan kabel fiber optik gantung yang saling menghubungkan antar gedung.",
+      renderComponent: (
+        <TopographicCity3D
+          key={`cty-${previewKey}`}
+          size="md"
+          interactive={true}
+        />
+      ),
+      specs: {
+        polyCount: "~3.1k Poligon",
+        drawCalls: "3 Draw Calls",
+        material: "Dark Ceramic + Emerald Wireframe Edges + Catenary Cables",
+        interaction: "Isometric 3D Perspective Tilt + Scan Pulse",
+      },
+      features: [
+        "3 Stacked hexagonal GIS topographic elevation terraces",
+        "9 Isometric city building blocks with rooftop beacon nodes",
+        "Catenary sag fiber optic distribution lines",
+        "Ambient GIS spatial coordinates stardust cloud",
+      ],
+    },
+
+    // ─── AI ASSISTANT MASCOT CANDIDATES ─────────────────────────────────────
     {
       id: "voxel",
       title: "Voxel Data Matrix Cube",
       subtitle: "Spatial PostGIS & Vector Embedding Core",
-      category: "Architectural Voxel",
+      category: "AI Assistant Mascot",
+      typeTag: "Architectural Voxel",
       description:
         "Kubus modular isometrik tersusun dari balok-balok porselen putih dan sky blue dengan jendela aperture neon cyan yang memancarkan 16 berkas sinar laser fiber optik.",
       renderComponent: (
@@ -98,7 +231,8 @@ export default function Assets3DPage() {
       id: "cloud",
       title: "CloudNet Clay",
       subtitle: "Organic Metaball Cloud Formation (1:1 Cloudflare Style)",
-      category: "Organic Claymorphism",
+      category: "AI Assistant Mascot",
+      typeTag: "Organic Claymorphism",
       description:
         "Kluster 20 bola matte velvet clay organik yang saling terhubung dengan gradasi Sky Blue, Porcelain White, dan Cool Gray, serta pendaran neon cyan di sela-sela lipatan awan.",
       renderComponent: (
@@ -125,7 +259,8 @@ export default function Assets3DPage() {
       id: "jelly",
       title: "Aether Jelly",
       subtitle: "Biomorphic Fiber Jellyfish / Coral Node",
-      category: "Biomorphic Glass",
+      category: "AI Assistant Mascot",
+      typeTag: "Biomorphic Glass",
       description:
         "Kubah ubur-ubur biomorphic dari kaca frosted translucent dengan inti organ koral bercahaya lilac & cyan neon, serta 12 tentakel serat optik melayang yang bergelombang lentur.",
       renderComponent: (
@@ -152,7 +287,8 @@ export default function Assets3DPage() {
       id: "astrolabe",
       title: "Astrolabe Core",
       subtitle: "Kinetic Multi-Axis Iridescent Rings",
-      category: "Kinetic Sculpture",
+      category: "AI Assistant Mascot",
+      typeTag: "Kinetic Sculpture",
       description:
         "Inti bola porselen putih murni diselimuti oleh 3 cincin kaca tipis iridescent (pastel teal, electric indigo, sky blue) yang berputar kinetik pada sumbu X, Y, Z berbeda.",
       renderComponent: (
@@ -179,7 +315,8 @@ export default function Assets3DPage() {
       id: "prism",
       title: "Prism Origami",
       subtitle: "Floating Crystal Shards Gateway",
-      category: "Geometric Prism",
+      category: "AI Assistant Mascot",
+      typeTag: "Geometric Prism",
       description:
         "Kluster pecahan kristal geometris tajam (oktahedron & piramida) dari keramik putih halus dan kaca kristal, terhubung oleh balok sinar energi neon biru di ruang isometrik.",
       renderComponent: (
@@ -206,7 +343,8 @@ export default function Assets3DPage() {
       id: "pebble",
       title: "Pebble Bot",
       subtitle: "Cute Ceramic Companion with Floating Satellite Ears",
-      category: "Character Mascot",
+      category: "AI Assistant Mascot",
+      typeTag: "Character Mascot",
       description:
         "Robot mungil berbentuk batu halus (pebble) bertekstur keramik krem matte, visor kaca hitam melengkung glossy, garis mata LED biru tersenyum, dan 2 telinga antena satelit nirkabel.",
       renderComponent: (
@@ -231,31 +369,42 @@ export default function Assets3DPage() {
     },
   ];
 
+  const filteredAssets = ASSETS.filter((asset) => {
+    if (filterCategory === "HERO") return asset.category === "Login & Hero Visual";
+    if (filterCategory === "MASCOT") return asset.category === "AI Assistant Mascot";
+    return true;
+  });
+
   const currentActiveAsset = ASSETS.find((a) => a.id === selectedPreview) || ASSETS[0];
 
   return (
     <PageLayout variant="dashboard" spaceY="space-y-8">
       {/* ── Page Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-mono font-bold tracking-widest text-primary uppercase bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
-              3D INTERACTIVE VISUALIZATION SYSTEM
+              3D INTERACTIVE VISUALIZATION STUDIO
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
             <Box className="h-6 w-6 text-primary" />
-            <span>3D Assets &amp; Mascot Gallery</span>
+            <span>3D Assets &amp; Mascot Laboratory</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1 max-w-3xl">
-            Interactive Three.js WebGL 3D asset laboratory for K2NET Enterprise SaaS Platform. Preview, rotate, inspect physics, and select active AI assistant mascot.
+            Interactive Three.js WebGL 3D asset laboratory for K2NET Enterprise SaaS Platform. Preview, rotate 360°, inspect physics, and dynamically assign models to AI Assistant or Login Hero.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        {/* Status Indicators for both AI & Login */}
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary gap-1.5 px-3 py-1 font-mono text-xs shadow-sm">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Active: {ASSETS.find((a) => a.id === activeMascot)?.title || "Voxel Matrix"}</span>
+            <span>AI: {ASSETS.find((a) => a.id === activeAiMascot)?.title || "Voxel"}</span>
+          </Badge>
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary gap-1.5 px-3 py-1 font-mono text-xs shadow-sm">
+            <LogIn className="h-3.5 w-3.5" />
+            <span>Login: {ASSETS.find((a) => a.id === activeLogin3D)?.title || "Globe"}</span>
           </Badge>
           <Button
             variant="outline"
@@ -283,6 +432,9 @@ export default function Assets3DPage() {
                     Live WebGL Viewport
                   </Badge>
                   <span className="text-xs text-muted-foreground font-mono">60-120 FPS Realtime</span>
+                  <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
+                    {currentActiveAsset.category}
+                  </Badge>
                 </div>
                 <CardTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
                   <Move3d className="h-5 w-5 text-primary" />
@@ -294,19 +446,19 @@ export default function Assets3DPage() {
               </div>
 
               {/* Selector Tabs for quick switching inside hero */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1.5 rounded-xl border border-border/50">
+              <div className="flex flex-wrap items-center gap-1.5 bg-muted/40 p-1.5 rounded-xl border border-border/50 max-h-[90px] overflow-y-auto">
                 {ASSETS.map((asset) => (
                   <button
                     key={asset.id}
                     onClick={() => setSelectedPreview(asset.id)}
                     className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 cursor-pointer",
+                      "px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
                       selectedPreview === asset.id
                         ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20 scale-[1.02]"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/60"
                     )}
                   >
-                    {asset.title.split(" ")[0]}
+                    {asset.title.split(" ")[0]} {asset.title.split(" ")[1] || ""}
                   </button>
                 ))}
               </div>
@@ -316,7 +468,7 @@ export default function Assets3DPage() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
               {/* 3D Interactive Stage Canvas */}
-              <div className="lg:col-span-2 relative min-h-[340px] flex items-center justify-center rounded-2xl bg-gradient-to-b from-black/40 via-black/20 to-black/50 border border-border/40 shadow-inner overflow-hidden">
+              <div className="lg:col-span-2 relative min-h-[380px] flex items-center justify-center rounded-2xl bg-gradient-to-b from-black/40 via-black/20 to-black/50 border border-border/40 shadow-inner overflow-hidden">
                 {/* Dot Grid Backdrop */}
                 <div
                   className="absolute inset-0 opacity-15 pointer-events-none"
@@ -340,39 +492,39 @@ export default function Assets3DPage() {
                 </div>
               </div>
 
-              {/* Specs & Active Mascot Switcher Sidebar */}
+              {/* Specs & Dual Target Switchers */}
               <div className="space-y-5">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/75 mb-3">
                     Technical Specifications
                   </h4>
-                  <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                    <div className="p-3 rounded-xl border border-border/40 bg-muted/20">
+                  <div className="grid grid-cols-2 gap-2.5 font-mono text-xs">
+                    <div className="p-2.5 rounded-xl border border-border/40 bg-muted/20">
                       <span className="text-[10px] text-muted-foreground block">Polycount</span>
                       <span className="text-foreground font-semibold">{currentActiveAsset.specs.polyCount}</span>
                     </div>
-                    <div className="p-3 rounded-xl border border-border/40 bg-muted/20">
+                    <div className="p-2.5 rounded-xl border border-border/40 bg-muted/20">
                       <span className="text-[10px] text-muted-foreground block">Performance</span>
                       <span className="text-foreground font-semibold">{currentActiveAsset.specs.drawCalls}</span>
                     </div>
-                    <div className="p-3 rounded-xl border border-border/40 bg-muted/20 col-span-2">
+                    <div className="p-2.5 rounded-xl border border-border/40 bg-muted/20 col-span-2">
                       <span className="text-[10px] text-muted-foreground block">Materials & Shaders</span>
-                      <span className="text-foreground font-semibold">{currentActiveAsset.specs.material}</span>
+                      <span className="text-foreground font-semibold text-[11px]">{currentActiveAsset.specs.material}</span>
                     </div>
-                    <div className="p-3 rounded-xl border border-border/40 bg-muted/20 col-span-2">
+                    <div className="p-2.5 rounded-xl border border-border/40 bg-muted/20 col-span-2">
                       <span className="text-[10px] text-muted-foreground block">Interaction Model</span>
-                      <span className="text-primary font-semibold">{currentActiveAsset.specs.interaction}</span>
+                      <span className="text-primary font-semibold text-[11px]">{currentActiveAsset.specs.interaction}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Key Capabilities */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground/75">
                     Feature Highlights
                   </h4>
-                  <ul className="space-y-1.5">
-                    {currentActiveAsset.features.map((feat, i) => (
+                  <ul className="space-y-1">
+                    {currentActiveAsset.features.slice(0, 3).map((feat, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs text-foreground/85">
                         <Check className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
                         <span>{feat}</span>
@@ -381,45 +533,110 @@ export default function Assets3DPage() {
                   </ul>
                 </div>
 
-                {/* Set as Active Mascot Button */}
-                <div className="pt-2">
-                  {activeMascot === currentActiveAsset.id ? (
-                    <div className="flex items-center gap-2 p-3 rounded-xl border border-primary/40 bg-primary/10 text-primary font-medium text-xs">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Currently active on Floating AI Assistant & Chat</span>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => handleSetActive(currentActiveAsset.id, currentActiveAsset.title)}
-                      className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      <span>Set as Active AI Assistant Mascot</span>
-                    </Button>
-                  )}
+                {/* Dual Set Active Buttons (AI vs Login) */}
+                <div className="pt-2 space-y-2">
+                  <Button
+                    onClick={() => handleSetActiveAi(currentActiveAsset.id, currentActiveAsset.title)}
+                    variant={activeAiMascot === currentActiveAsset.id ? "secondary" : "default"}
+                    className={cn(
+                      "w-full gap-2 text-xs font-semibold shadow-sm",
+                      activeAiMascot === currentActiveAsset.id
+                        ? "border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                  >
+                    {activeAiMascot === currentActiveAsset.id ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" /> Active on AI Assistant
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" /> Set as AI Assistant Mascot
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => handleSetActiveLogin(currentActiveAsset.id, currentActiveAsset.title)}
+                    variant={activeLogin3D === currentActiveAsset.id ? "secondary" : "outline"}
+                    className={cn(
+                      "w-full gap-2 text-xs font-semibold shadow-sm border",
+                      activeLogin3D === currentActiveAsset.id
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/50 text-foreground"
+                    )}
+                  >
+                    {activeLogin3D === currentActiveAsset.id ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 text-primary" /> Active on Login Hero Page
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="h-4 w-4 text-muted-foreground" /> Set as Login Hero 3D Visual
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* ── 2. All 6 Models Showcase Grid ── */}
+        {/* ── 2. All 10 Models Showcase Grid with Filter Tabs ── */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
                 <Orbit className="h-5 w-5 text-primary" />
-                <span>Available 3D Component Models ({ASSETS.length})</span>
+                <span>3D Component Catalog ({filteredAssets.length})</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Every component is modular, fully typed with TypeScript, and reusable across K2NET Studio.
+                Inspect and assign any model to the AI Assistant or Login Hero Page.
               </p>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl border border-border/50">
+              <button
+                onClick={() => setFilterCategory("ALL")}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
+                  filterCategory === "ALL"
+                    ? "bg-card text-foreground font-bold shadow-sm border border-border"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                All ({ASSETS.length})
+              </button>
+              <button
+                onClick={() => setFilterCategory("HERO")}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
+                  filterCategory === "HERO"
+                    ? "bg-card text-foreground font-bold shadow-sm border border-border"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Login &amp; Hero (4)
+              </button>
+              <button
+                onClick={() => setFilterCategory("MASCOT")}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer",
+                  filterCategory === "MASCOT"
+                    ? "bg-card text-foreground font-bold shadow-sm border border-border"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                AI Mascots (6)
+              </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ASSETS.map((asset) => {
-              const isCurrentActive = activeMascot === asset.id;
+            {filteredAssets.map((asset) => {
+              const isAiActive = activeAiMascot === asset.id;
+              const isLoginActive = activeLogin3D === asset.id;
               const isSelected = selectedPreview === asset.id;
 
               return (
@@ -428,26 +645,30 @@ export default function Assets3DPage() {
                   className={cn(
                     "flex flex-col justify-between border transition-all duration-300 overflow-hidden bg-card hover:border-primary/50 group",
                     isSelected && "ring-2 ring-primary/40 border-primary/80 shadow-xl",
-                    isCurrentActive && "border-primary/60 bg-gradient-to-b from-primary/5 to-card"
+                    (isAiActive || isLoginActive) && "border-primary/60 bg-gradient-to-b from-primary/5 to-card"
                   )}
                 >
                   <CardHeader className="p-5 pb-3">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <Badge
                         variant="outline"
-                        className={cn(
-                          "text-[10px] font-mono uppercase tracking-wider",
-                          isCurrentActive ? "border-primary/50 text-primary bg-primary/10 font-bold" : "border-border text-muted-foreground"
-                        )}
+                        className="text-[10px] font-mono uppercase tracking-wider border-border text-muted-foreground"
                       >
-                        {asset.category}
+                        {asset.typeTag}
                       </Badge>
 
-                      {isCurrentActive && (
-                        <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-full">
-                          <Check className="h-3 w-3" /> Active
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {isAiActive && (
+                          <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.5 rounded-md">
+                            <Sparkles className="h-2.5 w-2.5" /> AI
+                          </span>
+                        )}
+                        {isLoginActive && (
+                          <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-foreground/90 bg-muted border border-border px-1.5 py-0.5 rounded-md">
+                            <LogIn className="h-2.5 w-2.5 text-primary" /> Login
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <CardTitle className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
                       {asset.title}
@@ -482,33 +703,45 @@ export default function Assets3DPage() {
 
                     <div className="grid grid-cols-2 gap-2">
                       <Button
-                        variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setSelectedPreview(asset.id);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                        className="text-xs border-border hover:border-primary/50 text-foreground"
-                      >
-                        Inspect Full
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={isCurrentActive ? "secondary" : "default"}
-                        disabled={isCurrentActive}
-                        onClick={() => handleSetActive(asset.id, asset.title)}
+                        variant={isAiActive ? "secondary" : "default"}
+                        onClick={() => handleSetActiveAi(asset.id, asset.title)}
                         className={cn(
-                          "text-xs font-semibold gap-1",
-                          isCurrentActive ? "opacity-75 cursor-default" : "bg-primary text-primary-foreground hover:bg-primary/90"
+                          "text-[11px] font-semibold gap-1",
+                          isAiActive
+                            ? "border border-primary/40 bg-primary/10 text-primary"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
                         )}
                       >
-                        {isCurrentActive ? (
+                        {isAiActive ? (
                           <>
-                            <Check className="h-3.5 w-3.5" /> Active
+                            <Check className="h-3 w-3" /> Active AI
                           </>
                         ) : (
                           <>
-                            <Sparkles className="h-3.5 w-3.5" /> Set Active
+                            <Sparkles className="h-3 w-3" /> Set AI
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant={isLoginActive ? "secondary" : "outline"}
+                        onClick={() => handleSetActiveLogin(asset.id, asset.title)}
+                        className={cn(
+                          "text-[11px] font-semibold gap-1 border",
+                          isLoginActive
+                            ? "border-primary/50 bg-primary/10 text-primary"
+                            : "border-border hover:border-primary/50 text-foreground"
+                        )}
+                      >
+                        {isLoginActive ? (
+                          <>
+                            <Check className="h-3 w-3 text-primary" /> Active Login
+                          </>
+                        ) : (
+                          <>
+                            <LogIn className="h-3 w-3 text-muted-foreground" /> Set Login
                           </>
                         )}
                       </Button>

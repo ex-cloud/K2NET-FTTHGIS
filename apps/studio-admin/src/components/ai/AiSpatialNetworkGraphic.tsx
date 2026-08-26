@@ -9,10 +9,14 @@ import {
   AstrolabeCore3D,
   PrismOrigami3D,
   PebbleBot3D,
+  FiberGlobe3D,
+  CyberWaveform3D,
+  HolographicReactor3D,
+  TopographicCity3D,
 } from "@k2net/ui";
-import { useUIStore, type Ai3DMascotType } from "@/store/ui-store";
+import { useUIStore, type Ai3DModelType } from "@/store/ui-store";
 
-export type Ai3DMascotVariant = Ai3DMascotType;
+export type Ai3DMascotVariant = Ai3DModelType;
 
 interface AiSpatialNetworkGraphicProps {
   className?: string;
@@ -22,13 +26,7 @@ interface AiSpatialNetworkGraphicProps {
 
 /**
  * AiSpatialNetworkGraphic
- * High-fidelity 3D Interactive AI Mascot Renderer supporting all 6 distinct concepts:
- * 1. "voxel": Voxel Data Matrix Cube with 16 Radial Fiber Beams
- * 2. "cloud": CloudNet Clay (Organic Metaball Cloud ala Cloudflare Agent Lee)
- * 3. "jelly": Aether Jelly (Biomorphic Fiber Jellyfish / Coral Node)
- * 4. "astrolabe": Astrolabe Core (Kinetic Multi-Axis Iridescent Rings)
- * 5. "prism": Prism Origami (Floating Crystal Shards Gateway)
- * 6. "pebble": Pebble Bot (Cute Ceramic Companion with Floating Satellite Ears)
+ * High-fidelity 3D Interactive AI Mascot & Graphic Renderer supporting all 10 distinct concepts.
  */
 export function AiSpatialNetworkGraphic({
   className,
@@ -75,6 +73,30 @@ export function AiSpatialNetworkGraphic({
       )}
       {activeVariant === "pebble" && (
         <PebbleBot3D
+          size={size}
+          interactive={true}
+        />
+      )}
+      {activeVariant === "globe" && (
+        <FiberGlobe3D
+          size={size}
+          interactive={true}
+        />
+      )}
+      {activeVariant === "waveform" && (
+        <CyberWaveform3D
+          size={size}
+          interactive={true}
+        />
+      )}
+      {activeVariant === "reactor" && (
+        <HolographicReactor3D
+          size={size}
+          interactive={true}
+        />
+      )}
+      {activeVariant === "city" && (
+        <TopographicCity3D
           size={size}
           interactive={true}
         />
