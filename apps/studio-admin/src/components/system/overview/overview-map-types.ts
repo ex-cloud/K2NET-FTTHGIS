@@ -33,6 +33,8 @@ export interface GatewayOrbitNode {
   icon: React.ComponentType<{ className?: string }>;
   /** Angle in degrees: 0 = right, -90 = top, 90 = bottom, 180 = left */
   angle: number;
+  /** Radius in pixels from orbit center (allows multi-ring concentric orbits) */
+  radius?: number;
   /** IDs of parent nodes this orbit gateway connects to (for smart routing lines) */
   connectsTo: string[];
 }
