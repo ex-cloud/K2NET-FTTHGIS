@@ -1,83 +1,64 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
 import { toIso, type LinearFigureProps } from "../iso-utils";
 
 export function LinearMicroserviceBusFigure({
   className,
-  isHovered,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const busNodesRef = useRef<(SVGGElement | null)[]>([]);
-  const [localHover, setLocalHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : localHover;
 
   const busNodes = [
-    { name: "Kong Ingress", x: -60, y: 0, z: 0 },
-    { name: "Spring Core",  x: -20, y: 0, z: 10 },
-    { name: "Event Bus",    x: 20,  y: 0, z: 20 },
-    { name: "Go Gateways",  x: 60,  y: 0, z: 0 },
+    { name: "Kong Ingress", x: -60, y: 0, z: 0,  nx: -0.35 },
+    { name: "Spring Core",  x: -20, y: 0, z: 10, nx: -0.12 },
+    { name: "Event Bus",    x: 20,  y: 0, z: 20, nx: 0.12 },
+    { name: "Go Gateways",  x: 60,  y: 0, z: 0,  nx: 0.35 },
   ];
 
-  // GSAP Node Hop Relay
-  useEffect(() => {
-    const valid = busNodesRef.current.filter(Boolean);
-    if (valid.length === 0) return;
-
-    if (active) {
-      gsap.to(valid, {
-        y: (i) => (i === 2 ? -14 : i === 1 ? -8 : -4),
-        duration: 0.6,
-        ease: "back.out(1.8)",
-        stagger: 0.04,
-        overwrite: "auto",
-      });
-    } else {
-      gsap.to(valid, {
-        y: 0,
-        duration: 0.45,
-        ease: "power2.out",
-        stagger: 0.02,
-        overwrite: "auto",
-      });
-    }
-  }, [active]);
-
+  // Directional Node Hop along Bus Rail
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 10;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 10;
+    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
 
-    gsap.to(containerRef.current.querySelector("svg"), {
-      x: nx,
-      y: ny,
-      duration: 0.4,
-      ease: "power2.out",
-      overwrite: "auto",
+    busNodes.forEach((n, idx) => {
+      const el = busNodesRef.current[idx];
+      if (!el) return;
+
+      const diff = Math.abs(nx - n.nx);
+      const proximity = Math.exp(-Math.pow(diff / 0.2, 2));
+      const targetLift = -proximity * 16;
+
+      gsap.to(el, {
+        y: targetLift,
+        duration: 0.4,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
     });
   };
 
   const handleMouseLeave = () => {
-    setLocalHover(false);
-    if (containerRef.current) {
-      gsap.to(containerRef.current.querySelector("svg"), {
-        x: 0,
+    busNodes.forEach((_, idx) => {
+      const el = busNodesRef.current[idx];
+      if (!el) return;
+      gsap.to(el, {
         y: 0,
         duration: 0.6,
-        ease: "elastic.out(1, 0.5)",
+        ease: "power3.out",
+        overwrite: "auto",
       });
-    }
+    });
   };
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setLocalHover(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
@@ -98,8 +79,8 @@ export function LinearMicroserviceBusFigure({
           y1={toIso(-75, 0, 0).split(",")[1]}
           x2={toIso(75, 0, 0).split(",")[0]}
           y2={toIso(75, 0, 0).split(",")[1]}
-          stroke={active ? "#a1a1aa" : "#52525b"}
-          strokeOpacity={active ? "0.9" : "0.5"}
+          stroke="#71717a"
+          strokeOpacity="0.75"
           strokeWidth="1.2"
           strokeLinecap="round"
         />
@@ -139,8 +120,8 @@ export function LinearMicroserviceBusFigure({
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
                 fill="#121215"
-                stroke={active ? "#a1a1aa" : "#71717a"}
-                strokeOpacity={active ? "0.95" : "0.7"}
+                stroke="#a1a1aa"
+                strokeOpacity="0.85"
                 strokeWidth="0.85"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -150,7 +131,7 @@ export function LinearMicroserviceBusFigure({
                 cx={topPt.split(",")[0]}
                 cy={topPt.split(",")[1]}
                 r="1.8"
-                fill={active ? "#ffffff" : "#d4d4d8"}
+                fill="#ffffff"
               />
             </g>
           );

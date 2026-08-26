@@ -1,72 +1,17 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
 import { toIso, type LinearFigureProps } from "../iso-utils";
 
 export function LinearPurposeBuiltFigure({
   className,
-  isHovered,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const slabsRef = useRef<(SVGGElement | null)[]>([]);
-  const [localHover, setLocalHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : localHover;
-
-  // GSAP Smooth Stagger Extrusion
-  useEffect(() => {
-    const validSlabs = slabsRef.current.filter(Boolean);
-    if (validSlabs.length === 0) return;
-
-    if (active) {
-      gsap.to(validSlabs, {
-        y: (i) => -i * 7,
-        duration: 0.65,
-        ease: "back.out(1.8)",
-        stagger: 0.03,
-        overwrite: "auto",
-      });
-    } else {
-      gsap.to(validSlabs, {
-        y: 0,
-        duration: 0.5,
-        ease: "power2.out",
-        stagger: 0.02,
-        overwrite: "auto",
-      });
-    }
-  }, [active]);
-
-  // GSAP Parallax Tilt
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 12;
-
-    gsap.to(containerRef.current.querySelector("svg"), {
-      x: nx,
-      y: ny,
-      duration: 0.4,
-      ease: "power2.out",
-      overwrite: "auto",
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setLocalHover(false);
-    if (containerRef.current) {
-      gsap.to(containerRef.current.querySelector("svg"), {
-        x: 0,
-        y: 0,
-        duration: 0.6,
-        ease: "elastic.out(1, 0.5)",
-      });
-    }
-  };
 
   const layers = [0, 1, 2, 3, 4, 5];
   const slabSize = size === "hero" ? 58 : 50;
@@ -83,10 +28,48 @@ export function LinearPurposeBuiltFigure({
   const zTopFinal = topSlabIndex * (slabThickness + 2) + slabThickness;
   const topCenterY = originY - zTopFinal;
 
+  // Smooth directional cursor interaction
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!interactive || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+
+    // Directional slab lift: cursor vertical position expands/contracts the stack
+    const liftIntensity = Math.max(0.4, 1.2 - ny * 1.2);
+
+    slabsRef.current.forEach((slab, idx) => {
+      if (!slab) return;
+      // Higher slabs lift more, influenced by cursor direction (nx, ny)
+      const targetY = -idx * (5.5 * liftIntensity) - (idx === topSlabIndex ? 6 : 0);
+      const targetX = nx * (idx * 2.5);
+
+      gsap.to(slab, {
+        x: targetX,
+        y: targetY,
+        duration: 0.45,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+    });
+  };
+
+  const handleMouseLeave = () => {
+    slabsRef.current.forEach((slab) => {
+      if (!slab) return;
+      gsap.to(slab, {
+        x: 0,
+        y: 0,
+        duration: 0.65,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+    });
+  };
+
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setLocalHover(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
@@ -102,13 +85,11 @@ export function LinearPurposeBuiltFigure({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          {/* Subtle Ambient Depth Lighting inside Center Cavity */}
           <radialGradient id="apertureMutedGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#18181b" stopOpacity="1" />
+            <stop offset="0%" stopColor="#222226" stopOpacity="1" />
             <stop offset="100%" stopColor="#050507" stopOpacity="1" />
           </radialGradient>
 
-          {/* Clip path for center aperture chords */}
           <clipPath id="fig1CenterApertureClip">
             <ellipse
               cx="140"
@@ -155,7 +136,7 @@ export function LinearPurposeBuiltFigure({
                 points={`${p4} ${p3} ${b3} ${b4}`}
                 fill="#09090b"
                 stroke="#3f3f46"
-                strokeOpacity={active ? "0.8" : "0.5"}
+                strokeOpacity="0.6"
                 strokeWidth="0.85"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -166,18 +147,18 @@ export function LinearPurposeBuiltFigure({
                 points={`${p3} ${p2} ${b2} ${b3}`}
                 fill="#000000"
                 stroke="#27272a"
-                strokeOpacity={active ? "0.6" : "0.35"}
+                strokeOpacity="0.45"
                 strokeWidth="0.85"
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
 
-              {/* Top Face (Slightly Lighter Matte Obsidian + Thin Zinc-400 Outline) */}
+              {/* Top Face (Matte Obsidian + Thin Zinc-400 Outline) */}
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
                 fill="#121215"
-                stroke={active ? "#a1a1aa" : "#71717a"}
-                strokeOpacity={active ? "0.9" : "0.7"}
+                stroke="#71717a"
+                strokeOpacity="0.8"
                 strokeWidth={isTop ? "1" : "0.85"}
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -189,13 +170,13 @@ export function LinearPurposeBuiltFigure({
                 y1={p4.split(",")[1]}
                 x2={p3.split(",")[0]}
                 y2={p3.split(",")[1]}
-                stroke={active ? "#d4d4d8" : "#a1a1aa"}
-                strokeOpacity={active ? "0.95" : "0.75"}
+                stroke="#a1a1aa"
+                strokeOpacity="0.8"
                 strokeWidth="1.1"
                 strokeLinecap="round"
               />
 
-              {/* Top Slab: Exact Center Isometric Aperture with Pure SVG K2NET Watermark Logo */}
+              {/* Top Slab: Center Isometric Aperture with K2NET Concentric Waves */}
               {isTop && (
                 <g>
                   {/* Recessed Center Aperture Cavity Background */}
@@ -205,8 +186,8 @@ export function LinearPurposeBuiltFigure({
                     rx={apertureRx}
                     ry={apertureRy}
                     fill="url(#apertureMutedGlow)"
-                    stroke={active ? "#d4d4d8" : "#a1a1aa"}
-                    strokeOpacity={active ? "1" : "0.85"}
+                    stroke="#a1a1aa"
+                    strokeOpacity="0.9"
                     strokeWidth="1.1"
                   />
 
@@ -220,8 +201,8 @@ export function LinearPurposeBuiltFigure({
                         y1={topCenterY + offset}
                         x2="180"
                         y2={topCenterY + offset}
-                        stroke={active ? "#a1a1aa" : "#71717a"}
-                        strokeOpacity={active ? "0.85" : "0.6"}
+                        stroke="#71717a"
+                        strokeOpacity="0.75"
                         strokeWidth="0.85"
                         strokeLinecap="round"
                       />
@@ -233,8 +214,8 @@ export function LinearPurposeBuiltFigure({
                       cy={topCenterY}
                       rx={apertureRx * 0.72}
                       ry={apertureRy * 0.72}
-                      stroke={active ? "#ffffff" : "#d4d4d8"}
-                      strokeOpacity={active ? "0.9" : "0.7"}
+                      stroke="#d4d4d8"
+                      strokeOpacity="0.85"
                       strokeWidth="1"
                       strokeDasharray="4 3"
                     />
@@ -244,8 +225,8 @@ export function LinearPurposeBuiltFigure({
                       cy={topCenterY}
                       rx={apertureRx * 0.42}
                       ry={apertureRy * 0.42}
-                      stroke={active ? "#ffffff" : "#e4e4e7"}
-                      strokeOpacity={active ? "1" : "0.85"}
+                      stroke="#e4e4e7"
+                      strokeOpacity="0.95"
                       strokeWidth="1.1"
                     />
                   </g>

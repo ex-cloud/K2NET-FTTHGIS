@@ -1,84 +1,66 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
 import { toIso, type LinearFigureProps } from "../iso-utils";
 
 export function LinearSpatialTopologyFigure({
   className,
-  isHovered,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<(SVGGElement | null)[]>([]);
-  const [localHover, setLocalHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : localHover;
 
   const nodes = [
-    { id: "olt-root", x: 0, y: 0, z: 36, type: "olt" },
-    { id: "odp-1", x: -42, y: -30, z: 18, type: "odp" },
-    { id: "odp-2", x: 42,  y: -30, z: 18, type: "odp" },
-    { id: "odp-3", x: -42, y: 30,  z: 18, type: "odp" },
-    { id: "odp-4", x: 42,  y: 30,  z: 18, type: "odp" },
+    { id: "olt-root", x: 0,   y: 0,   z: 36, type: "olt", nx: 0,    ny: 0 },
+    { id: "odp-1",    x: -42, y: -30, z: 18, type: "odp", nx: -0.3, ny: -0.2 },
+    { id: "odp-2",    x: 42,  y: -30, z: 18, type: "odp", nx: 0.3,  ny: -0.2 },
+    { id: "odp-3",    x: -42, y: 30,  z: 18, type: "odp", nx: -0.3, ny: 0.2 },
+    { id: "odp-4",    x: 42,  y: 30,  z: 18, type: "odp", nx: 0.3,  ny: 0.2 },
   ];
 
-  // GSAP Node Elevation
-  useEffect(() => {
-    const valid = nodesRef.current.filter(Boolean);
-    if (valid.length === 0) return;
-
-    if (active) {
-      gsap.to(valid, {
-        y: (i) => (i === 0 ? -14 : -8),
-        duration: 0.6,
-        ease: "back.out(1.8)",
-        stagger: 0.03,
-        overwrite: "auto",
-      });
-    } else {
-      gsap.to(valid, {
-        y: 0,
-        duration: 0.5,
-        ease: "power2.out",
-        stagger: 0.02,
-        overwrite: "auto",
-      });
-    }
-  }, [active]);
-
+  // Directional Node Elevation based on Cursor Proximity
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 10;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 10;
+    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
 
-    gsap.to(containerRef.current.querySelector("svg"), {
-      x: nx,
-      y: ny,
-      duration: 0.4,
-      ease: "power2.out",
-      overwrite: "auto",
+    nodes.forEach((n, idx) => {
+      const el = nodesRef.current[idx];
+      if (!el) return;
+
+      const dist = Math.hypot(nx - n.nx, ny - n.ny);
+      const proximity = Math.exp(-Math.pow(dist / 0.38, 2));
+      const targetLift = -proximity * (n.type === "olt" ? 18 : 12);
+
+      gsap.to(el, {
+        y: targetLift,
+        duration: 0.45,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
     });
   };
 
   const handleMouseLeave = () => {
-    setLocalHover(false);
-    if (containerRef.current) {
-      gsap.to(containerRef.current.querySelector("svg"), {
-        x: 0,
+    nodes.forEach((_, idx) => {
+      const el = nodesRef.current[idx];
+      if (!el) return;
+      gsap.to(el, {
         y: 0,
         duration: 0.6,
-        ease: "elastic.out(1, 0.5)",
+        ease: "power3.out",
+        overwrite: "auto",
       });
-    }
+    });
   };
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setLocalHover(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
@@ -134,9 +116,9 @@ export function LinearSpatialTopologyFigure({
                 y1={rootPt.split(",")[1]}
                 x2={odpPt.split(",")[0]}
                 y2={odpPt.split(",")[1]}
-                stroke={active ? "#a1a1aa" : "#52525b"}
-                strokeOpacity={active ? "0.9" : "0.55"}
-                strokeWidth={active ? "1.2" : "0.85"}
+                stroke="#71717a"
+                strokeOpacity="0.75"
+                strokeWidth="0.95"
                 strokeLinecap="round"
               />
             </g>
@@ -160,8 +142,8 @@ export function LinearSpatialTopologyFigure({
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
                 fill="#121215"
-                stroke={n.type === "olt" ? (active ? "#d4d4d8" : "#a1a1aa") : active ? "#a1a1aa" : "#71717a"}
-                strokeOpacity={n.type === "olt" ? "1" : "0.75"}
+                stroke={n.type === "olt" ? "#d4d4d8" : "#a1a1aa"}
+                strokeOpacity="0.9"
                 strokeWidth="0.9"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -170,7 +152,7 @@ export function LinearSpatialTopologyFigure({
                 cx={toIso(n.x, n.y, n.z).split(",")[0]}
                 cy={toIso(n.x, n.y, n.z).split(",")[1]}
                 r={n.type === "olt" ? "2.2" : "1.4"}
-                fill={active ? "#ffffff" : "#d4d4d8"}
+                fill="#ffffff"
               />
             </g>
           );

@@ -1,83 +1,66 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
 import { toIso, type LinearFigureProps } from "../iso-utils";
 
 export function LinearSpeedArrayFigure({
   className,
-  isHovered,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bladesRef = useRef<(SVGGElement | null)[]>([]);
-  const [localHover, setLocalHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : localHover;
 
   const cardCount = 12;
   const cards = Array.from({ length: cardCount }, (_, i) => i);
   const originY = size === "hero" ? 185 : 178;
 
-  // GSAP Wave Propagation
-  useEffect(() => {
-    const valid = bladesRef.current.filter(Boolean);
-    if (valid.length === 0) return;
-
-    if (active) {
-      gsap.to(valid, {
-        y: (i) => Math.sin((i / cardCount) * Math.PI * 1.5) * 16,
-        duration: 0.55,
-        ease: "sine.out",
-        stagger: {
-          each: 0.02,
-          from: "start",
-        },
-        overwrite: "auto",
-      });
-    } else {
-      gsap.to(valid, {
-        y: 0,
-        duration: 0.45,
-        ease: "power2.out",
-        stagger: 0.015,
-        overwrite: "auto",
-      });
-    }
-  }, [active]);
-
+  // Directional Cursor Wave Tracking along Array
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 10;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 10;
+    // Normalized cursor along array: 0.0 (left) to 1.0 (right)
+    const cursorProgress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
 
-    gsap.to(containerRef.current.querySelector("svg"), {
-      x: nx,
-      y: ny,
-      duration: 0.4,
-      ease: "power2.out",
-      overwrite: "auto",
+    cards.forEach((i) => {
+      const el = bladesRef.current[i];
+      if (!el) return;
+
+      const cardRatio = i / (cardCount - 1);
+      // Distance from cursor to this card
+      const diff = Math.abs(cardRatio - cursorProgress);
+      // Gaussian peak at cursor position
+      const waveLift = Math.exp(-Math.pow(diff / 0.22, 2)) * 24;
+      // Progressive slope lift
+      const slopeLift = Math.pow(cardRatio, 1.8) * 12;
+
+      gsap.to(el, {
+        y: -(waveLift + slopeLift * 0.4),
+        duration: 0.4,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
     });
   };
 
   const handleMouseLeave = () => {
-    setLocalHover(false);
-    if (containerRef.current) {
-      gsap.to(containerRef.current.querySelector("svg"), {
-        x: 0,
+    cards.forEach((i) => {
+      const el = bladesRef.current[i];
+      if (!el) return;
+      gsap.to(el, {
         y: 0,
         duration: 0.6,
-        ease: "elastic.out(1, 0.5)",
+        ease: "power3.out",
+        overwrite: "auto",
       });
-    }
+    });
   };
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setLocalHover(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
@@ -121,7 +104,7 @@ export function LinearSpeedArrayFigure({
                 points={`${p1} ${p2} ${b2} ${b1}`}
                 fill={isLead ? "#0c0c0e" : "#09090b"}
                 stroke={isLead ? "#a1a1aa" : "#3f3f46"}
-                strokeOpacity={isLead ? "0.9" : "0.45"}
+                strokeOpacity={isLead ? "0.9" : "0.5"}
                 strokeWidth={isLead ? "1.1" : "0.8"}
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -133,28 +116,14 @@ export function LinearSpeedArrayFigure({
                 y1={p1.split(",")[1]}
                 x2={p2.split(",")[0]}
                 y2={p2.split(",")[1]}
-                stroke={isLead ? (active ? "#e4e4e7" : "#d4d4d8") : active ? "#a1a1aa" : "#71717a"}
-                strokeOpacity={isLead ? "1" : active ? "0.85" : "0.55"}
-                strokeWidth={isLead ? "1.4" : "0.9"}
+                stroke={isLead ? "#e4e4e7" : "#a1a1aa"}
+                strokeOpacity={isLead ? "1" : "0.75"}
+                strokeWidth={isLead ? "1.3" : "0.85"}
                 strokeLinecap="round"
               />
             </g>
           );
         })}
-
-        {active && (
-          <line
-            x1="70"
-            y1="175"
-            x2="225"
-            y2="75"
-            stroke="#71717a"
-            strokeWidth="1.2"
-            strokeDasharray="4 6"
-            strokeOpacity="0.75"
-            className="animate-pulse"
-          />
-        )}
       </svg>
     </div>
   );

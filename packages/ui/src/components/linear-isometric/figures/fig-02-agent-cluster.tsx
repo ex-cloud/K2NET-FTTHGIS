@@ -1,85 +1,68 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
 import { toIso, type LinearFigureProps } from "../iso-utils";
 
 export function LinearAgentClusterFigure({
   className,
-  isHovered,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pillarsRef = useRef<(SVGGElement | null)[]>([]);
-  const [localHover, setLocalHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : localHover;
 
   const pillars = [
-    { id: "p1", x: -28, y: -28, width: 26, defaultH: 58, activeH: 76 },
-    { id: "p2", x: 28,  y: -28, width: 26, defaultH: 34, activeH: 48 },
-    { id: "p3", x: -28, y: 28,  width: 26, defaultH: 82, activeH: 108 },
-    { id: "p4", x: 28,  y: 28,  width: 26, defaultH: 48, activeH: 66 },
+    { id: "p1", x: -28, y: -28, width: 26, defaultH: 58, nx: -0.28, ny: -0.28 },
+    { id: "p2", x: 28,  y: -28, width: 26, defaultH: 34, nx: 0.28,  ny: -0.28 },
+    { id: "p3", x: -28, y: 28,  width: 26, defaultH: 82, nx: -0.28, ny: 0.28 },
+    { id: "p4", x: 28,  y: 28,  width: 26, defaultH: 48, nx: 0.28,  ny: 0.28 },
   ];
 
   const originY = size === "hero" ? 165 : 158;
 
-  // GSAP Elastic Lift on Hover
-  useEffect(() => {
-    const valid = pillarsRef.current.filter(Boolean);
-    if (valid.length === 0) return;
-
-    if (active) {
-      gsap.to(valid, {
-        y: (i) => -(i === 2 ? 18 : i === 0 ? 12 : 8),
-        duration: 0.7,
-        ease: "elastic.out(1, 0.5)",
-        stagger: 0.04,
-        overwrite: "auto",
-      });
-    } else {
-      gsap.to(valid, {
-        y: 0,
-        duration: 0.5,
-        ease: "power2.out",
-        stagger: 0.02,
-        overwrite: "auto",
-      });
-    }
-  }, [active]);
-
+  // Directional Cursor Proximity Interaction
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 12;
-    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 12;
+    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
 
-    gsap.to(containerRef.current.querySelector("svg"), {
-      x: nx,
-      y: ny,
-      duration: 0.4,
-      ease: "power2.out",
-      overwrite: "auto",
+    pillars.forEach((p, idx) => {
+      const el = pillarsRef.current[idx];
+      if (!el) return;
+
+      // Calculate distance between cursor and this specific pillar
+      const dist = Math.hypot(nx - p.nx, ny - p.ny);
+      // Closer pillar gets higher lift (smooth Gaussian falloff)
+      const proximity = Math.exp(-Math.pow(dist / 0.45, 2));
+      const targetLift = -proximity * 22;
+
+      gsap.to(el, {
+        y: targetLift,
+        duration: 0.45,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
     });
   };
 
   const handleMouseLeave = () => {
-    setLocalHover(false);
-    if (containerRef.current) {
-      gsap.to(containerRef.current.querySelector("svg"), {
-        x: 0,
+    pillarsRef.current.forEach((el) => {
+      if (!el) return;
+      gsap.to(el, {
         y: 0,
-        duration: 0.6,
-        ease: "elastic.out(1, 0.5)",
+        duration: 0.65,
+        ease: "power3.out",
+        overwrite: "auto",
       });
-    }
+    });
   };
 
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setLocalHover(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
@@ -131,7 +114,7 @@ export function LinearAgentClusterFigure({
                 points={`${p4} ${p3} ${b3} ${b4}`}
                 fill="#09090b"
                 stroke="#3f3f46"
-                strokeOpacity={active ? "0.8" : "0.5"}
+                strokeOpacity="0.6"
                 strokeWidth="0.85"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -142,7 +125,7 @@ export function LinearAgentClusterFigure({
                 points={`${p3} ${p2} ${b2} ${b3}`}
                 fill="#000000"
                 stroke="#27272a"
-                strokeOpacity={active ? "0.6" : "0.35"}
+                strokeOpacity="0.45"
                 strokeWidth="0.85"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -152,8 +135,8 @@ export function LinearAgentClusterFigure({
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
                 fill="#121215"
-                stroke={active ? "#a1a1aa" : "#71717a"}
-                strokeOpacity={active ? "0.95" : "0.75"}
+                stroke="#71717a"
+                strokeOpacity="0.85"
                 strokeWidth="0.9"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -168,8 +151,8 @@ export function LinearAgentClusterFigure({
                   ${toIso(p.x - 4.5, p.y + 4.5, h + 1, ox, oy)}
                 `}
                 fill="#09090b"
-                stroke={active ? "#71717a" : "#3f3f46"}
-                strokeOpacity={active ? "0.9" : "0.6"}
+                stroke="#3f3f46"
+                strokeOpacity="0.75"
                 strokeWidth="0.8"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -179,8 +162,8 @@ export function LinearAgentClusterFigure({
               <circle
                 cx={toIso(p.x, p.y, h + 1, ox, oy).split(",")[0]}
                 cy={toIso(p.x, p.y, h + 1, ox, oy).split(",")[1]}
-                r={active ? "1.6" : "1.2"}
-                fill={active ? "#d4d4d8" : "#a1a1aa"}
+                r="1.4"
+                fill="#d4d4d8"
               />
             </g>
           );
