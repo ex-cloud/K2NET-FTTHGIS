@@ -343,3 +343,19 @@ Seluruh baris KPI Cards / Metric Summary Strip di bagian atas dashboard (`/tasks
    * Header: Label kategori (`text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase`) + Status Icon.
    * Nilai Utama: Angka/Statistik besar (`text-2xl font-bold text-foreground font-mono`).
    * Sub-keterangan / Progress Bar: Progress status (`h-1.5 bg-muted rounded-full overflow-hidden`).
+
+---
+
+## 🌌 14. Arsitektur Visualisasi 3D (Three.js) & Pemisahan Animasi DOM (Framer Motion)
+
+Untuk menjaga performa tinggi (60–120 FPS) dan menghindari memory leak pada visualisasi 3D (AI Assistant Mascot, 3D Assets Gallery, Hero Landing Page):
+
+### A. Prinsip Pemisahan Tanggung Jawab (Separation of Concerns):
+1. **WebGL Canvas (Pure Three.js via `packages/ui/src/components/3d/`)**:
+   * Seluruh kalkulasi rotasi, partikel, deformasi gelombang, fisika pegas (*spring squish/wobble*), dan *mouse parallax* **wajib** dikerjakan di dalam render loop Three.js (`requestAnimationFrame` + `clock.getElapsedTime()` + `lerp`).
+   * **DILARANG** mengikat Framer Motion untuk menganimasikan posisi/skala *mesh 3D* di dalam Three.js canvas karena memicu re-render React berlebihan.
+2. **DOM HTML Layer (Framer Motion / Tailwind CSS)**:
+   * Gunakan Framer Motion **hanya untuk elemen DOM HTML pembungkus di luar canvas** (misalnya: animasi slide-in drawer chat, fade-in hero card, popover dialog, dan teks overlay).
+   * Pola ini sangat ideal untuk membangun *Landing Page Marketing* interaktif yang memiliki latar belakang/objek 3D dinamis dengan teks dan tombol CTA 2D yang meluncur mulus.
+3. **Manajemen Memori & Cleanup Wajib**:
+   * Setiap komponen 3D Three.js wajib menyertakan pembersihan memori lengkap pada unmount: `cancelAnimationFrame`, `resizeObserver.disconnect()`, serta traversal `geometry.dispose()` dan `material.dispose()`.
