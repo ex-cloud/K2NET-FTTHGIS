@@ -7,7 +7,6 @@ import {
   Activity,
   Bell,
   CalendarClock,
-  ChevronDown,
   ChevronRight,
   ClipboardList,
   CreditCard,
@@ -25,6 +24,7 @@ import {
   RefreshCw,
   Server,
   Upload,
+  X,
   Zap,
   ZoomIn,
   ZoomOut,
@@ -35,8 +35,9 @@ import { MapDetailPanel } from "./map-detail-panel";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 
 // ─── 9 Gateway Categorized 2-Column Matrix Configuration (Zero Collision) ────
-// Column 1 (X = 665): 5 Business & Communication Gateways (Notification, WhatsApp, Payment, Storage, Map)
-// Column 2 (X = 805): 4 Infrastructure & System Gateways (Audit, Scheduler, Export, OLT Poller)
+// Column 1 (X = 625): 5 Business & Communication Gateways (Notification, WhatsApp, Payment, Storage, Map)
+// Column 2 (X = 775): 4 Infrastructure & System Gateways (Audit, Scheduler, Export, OLT Poller)
+// Perfectly aligned rows: Y = 115, 180, 245, 310, 375
 
 export interface GatewayMatrixNode {
   id: string;
@@ -45,6 +46,7 @@ export interface GatewayMatrixNode {
   port: number;
   icon: React.ElementType;
   column: 1 | 2;
+  row: number;
   x: number;
   y: number;
   category: string;
@@ -52,22 +54,26 @@ export interface GatewayMatrixNode {
 }
 
 const GATEWAY_MATRIX: GatewayMatrixNode[] = [
-  // ── Column 1: Core Business & Communication Gateways (X = 665) ──
-  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          column: 1, x: 665, y: 90,  category: "Messaging",      connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, column: 1, x: 665, y: 170, category: "Chat WABA",      connectsTo: ["redis-cache"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    column: 1, x: 665, y: 250, category: "Fintech",        connectsTo: ["postgres-db", "keycloak-iam"] },
-  { id: "gw-storage",      name: "Storage S3",   gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     column: 1, x: 665, y: 330, category: "MinIO S3",       connectsTo: ["postgres-db"] },
-  { id: "gw-map",          name: "Spatial Map",  gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           column: 1, x: 665, y: 410, category: "GIS Geocoding",  connectsTo: ["postgres-db", "redis-cache"] },
+  // ── Column 1: Core Business & Communication Gateways (X = 625) ──
+  { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          column: 1, row: 1, x: 625, y: 115, category: "Messaging",      connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, column: 1, row: 2, x: 625, y: 180, category: "Chat WABA",      connectsTo: ["redis-cache"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    column: 1, row: 3, x: 625, y: 245, category: "Fintech",        connectsTo: ["postgres-db", "keycloak-iam"] },
+  { id: "gw-storage",      name: "Storage S3",   gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     column: 1, row: 4, x: 625, y: 310, category: "MinIO S3",       connectsTo: ["postgres-db"] },
+  { id: "gw-map",          name: "Spatial Map",  gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           column: 1, row: 5, x: 625, y: 375, category: "GIS Geocoding",  connectsTo: ["postgres-db", "redis-cache"] },
 
-  // ── Column 2: System & Background Workers (X = 805) ──
-  { id: "gw-audit",        name: "Audit Logger", gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, column: 2, x: 805, y: 130, category: "Security",       connectsTo: ["postgres-db"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, column: 2, x: 805, y: 210, category: "Cron Automation",connectsTo: ["postgres-db"] },
-  { id: "gw-export",       name: "Export Svc",   gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        column: 2, x: 805, y: 290, category: "Async Worker",   connectsTo: ["postgres-db"] },
-  { id: "gw-olt",          name: "OLT Poller",   gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       column: 2, x: 805, y: 370, category: "SNMP Telemetry", connectsTo: ["postgres-db", "redis-cache"] },
+  // ── Column 2: System & Background Workers (X = 775) ──
+  { id: "gw-audit",        name: "Audit Logger", gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, column: 2, row: 1, x: 775, y: 115, category: "Security",       connectsTo: ["postgres-db"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, column: 2, row: 2, x: 775, y: 180, category: "Cron Automation",connectsTo: ["postgres-db"] },
+  { id: "gw-export",       name: "Export Svc",   gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        column: 2, row: 3, x: 775, y: 245, category: "Async Worker",   connectsTo: ["postgres-db"] },
+  { id: "gw-olt",          name: "OLT Poller",   gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       column: 2, row: 4, x: 775, y: 310, category: "SNMP Telemetry", connectsTo: ["postgres-db", "redis-cache"] },
 ];
 
-const CLUSTER_HUB_X = 540;
-const CLUSTER_HUB_Y = 250;
+const COLLAPSED_HUB_X = 610;
+const COLLAPSED_HUB_Y = 250;
+const CLUSTER_FRAME_X = 530;
+const CLUSTER_FRAME_Y = 45;
+const CLUSTER_FRAME_W = 365;
+const CLUSTER_FRAME_H = 410;
 
 // ─── 4-Tier Node Fixed Positions (920 x 500 Stage) ────────────────────────────
 
@@ -83,14 +89,14 @@ interface StageNodePosition {
 
 const STAGE_NODE_POSITIONS: Record<string, StageNodePosition> = {
   // Tier 1 — Edge Ingress
-  "edge-router":   { x: 80,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
+  "edge-router":   { x: 75,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
   // Tier 2 — Core, AI & IAM
-  "core-backend":  { x: 240, y: 115, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
-  "ai-gateway":    { x: 240, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
-  "keycloak-iam":  { x: 240, y: 385, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
+  "core-backend":  { x: 225, y: 110, label: "Spring Boot Core",   sublabel: "Port 9090",       icon: Cpu,      tone: "green", nodeId: "core-backend"  },
+  "ai-gateway":    { x: 225, y: 250, label: "AI Gateway (RAG)",   sublabel: "Python Engine",   icon: Zap,      tone: "green", nodeId: "ai-gateway"    },
+  "keycloak-iam":  { x: 225, y: 390, label: "Keycloak IAM",       sublabel: "Keycloak 26",     icon: KeyRound, tone: "green", nodeId: "keycloak-iam"  },
   // Tier 3 — Storage & Data Layer
-  "postgres-db":   { x: 395, y: 175, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
-  "redis-cache":   { x: 395, y: 325, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
+  "postgres-db":   { x: 370, y: 170, label: "PostgreSQL",         sublabel: "(PostGIS)",        icon: Database, tone: "blue",  nodeId: "postgres-db"   },
+  "redis-cache":   { x: 370, y: 330, label: "Redis Cache",        sublabel: "Port 6379",        icon: Activity, tone: "red",   nodeId: "redis-cache"   },
 };
 
 // ─── 4-Tier Logical Traffic Connections ───────────────────────────────────────
@@ -105,19 +111,15 @@ interface StageEdge {
 
 const STAGE_EDGES: StageEdge[] = [
   // Edge → Core Layer
-  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 80 250 C 150 250, 170 115, 240 115" },
-  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 80 250 L 240 250" },
-  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 80 250 C 150 250, 170 385, 240 385" },
+  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 75 250 C 140 250, 160 110, 225 110" },
+  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 75 250 L 225 250" },
+  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 75 250 C 140 250, 160 390, 225 390" },
 
   // Core Layer → Storage & Data Layer
-  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 240 115 C 310 115, 325 175, 395 175" },
-  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 240 115 C 310 115, 325 325, 395 325" },
-  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 240 250 C 310 250, 325 175, 395 175" },
-  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 240 250 C 310 250, 325 325, 395 325" },
-
-  // Data Layer → Go Gateways Cluster Hub
-  { id: "postgres-hub",   from: "postgres-db",  to: "gw-cluster",   speed: "normal", path: `M 395 175 C 460 175, 480 250, ${CLUSTER_HUB_X} ${CLUSTER_HUB_Y}` },
-  { id: "redis-hub",      from: "redis-cache",  to: "gw-cluster",   speed: "slow",   path: `M 395 325 C 460 325, 480 250, ${CLUSTER_HUB_X} ${CLUSTER_HUB_Y}` },
+  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 225 110 C 290 110, 305 170, 370 170" },
+  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 225 110 C 290 110, 305 330, 370 330" },
+  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 225 250 C 290 250, 305 170, 370 170" },
+  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 225 250 C 290 250, 305 330, 370 330" },
 ];
 
 const subNodesMap: Record<string, SubNode[]> = {
@@ -264,6 +266,37 @@ export function OverviewInfrastructureMap({
     [gateways]
   );
 
+  // Dynamic incoming cables from Data Tier to Go Gateways Cluster
+  const incomingDataCables = useMemo(() => {
+    if (collapsed) {
+      return [
+        {
+          id: "postgres-hub-col",
+          path: `M 370 170 C 460 170, 480 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
+          speed: "normal" as const,
+        },
+        {
+          id: "redis-hub-col",
+          path: `M 370 330 C 460 330, 480 250, ${COLLAPSED_HUB_X - 60} ${COLLAPSED_HUB_Y}`,
+          speed: "slow" as const,
+        },
+      ];
+    } else {
+      return [
+        {
+          id: "postgres-hub-exp",
+          path: `M 370 170 C 440 170, 470 170, ${CLUSTER_FRAME_X} 170`,
+          speed: "normal" as const,
+        },
+        {
+          id: "redis-hub-exp",
+          path: `M 370 330 C 440 330, 470 330, ${CLUSTER_FRAME_X} 330`,
+          speed: "slow" as const,
+        },
+      ];
+    }
+  }, [collapsed]);
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <Card className="flex flex-col justify-start border-border bg-card p-6 lg:col-span-2 relative select-none overflow-hidden h-full min-h-[540px]">
@@ -372,7 +405,6 @@ export function OverviewInfrastructureMap({
                       dimmed ? "opacity-10" : "opacity-100"
                     )}
                   >
-                    {/* Layer 1: Base rail track */}
                     <path
                       d={edge.path}
                       fill="none"
@@ -383,7 +415,6 @@ export function OverviewInfrastructureMap({
                       vectorEffect="non-scaling-stroke"
                     />
 
-                    {/* Layer 2: Ambient pulse glow line */}
                     <path
                       d={edge.path}
                       fill="none"
@@ -400,7 +431,6 @@ export function OverviewInfrastructureMap({
                       style={{ animationDelay: `${edgeIdx * 0.25}s` }}
                     />
 
-                    {/* Layer 3: Fiber-optic light packet */}
                     {edgeStatus !== "error" && (
                       <path
                         d={edge.path}
@@ -418,83 +448,114 @@ export function OverviewInfrastructureMap({
                 );
               })}
 
-              {/* ── Branching Tree Lines to 2-Column Matrix (When Expanded) ── */}
-              {!collapsed && GATEWAY_MATRIX.map((gw, idx) => {
-                const targetX = gw.x - 55; // Left edge of the card
-                const targetY = gw.y;
-                const branchPath = `M ${CLUSTER_HUB_X + 45} ${CLUSTER_HUB_Y} C ${CLUSTER_HUB_X + 90} ${CLUSTER_HUB_Y}, ${targetX - 45} ${targetY}, ${targetX} ${targetY}`;
-                const isOnline = getGatewayStatus(gw.gatewayName) === "healthy";
-                const isAct = activeGatewayId === gw.id;
+              {/* Dynamic Incoming PostgreSQL & Redis Trunk Cables */}
+              {incomingDataCables.map((cable, idx) => (
+                <g key={cable.id}>
+                  <path
+                    d={cable.path}
+                    fill="none"
+                    stroke="currentColor"
+                    className="text-border/40 dark:text-border/30"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <path
+                    d={cable.path}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeOpacity="0.3"
+                    className="animate-glow-pulse"
+                  />
+                  <path
+                    d={cable.path}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeDasharray="14 140"
+                    className="animate-flow-particle-fast"
+                    style={{ animationDelay: `${-(idx * 0.5)}s` }}
+                  />
+                </g>
+              ))}
 
-                return (
-                  <g key={`branch-${gw.id}`} className="animate-fade-in">
-                    {/* Base track */}
-                    <path
-                      d={branchPath}
-                      fill="none"
-                      stroke="currentColor"
-                      className={cn("transition-colors", isAct ? "text-primary" : "text-border/40")}
-                      strokeWidth={isAct ? "1.5" : "1"}
-                      strokeLinecap="round"
-                      vectorEffect="non-scaling-stroke"
-                    />
-
-                    {/* Light pulse */}
-                    {isOnline && (
-                      <path
-                        d={branchPath}
-                        fill="none"
-                        stroke="var(--primary)"
-                        strokeWidth="1.3"
-                        strokeLinecap="round"
-                        strokeDasharray="10 100"
-                        vectorEffect="non-scaling-stroke"
-                        className="animate-flow-particle-fast"
-                        style={{ animationDelay: `${-(idx * 0.3)}s` }}
-                      />
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* ── Bounding Cluster Frame for 2-Column Matrix (When Expanded) ── */}
+              {/* ── Matrix Cluster Frame & Branching Bus (When Expanded) ── */}
               {!collapsed && (
                 <g className="animate-fade-in">
+                  {/* Bounding Outer Frame */}
                   <rect
-                    x="595"
-                    y="50"
-                    width="310"
-                    height="400"
+                    x={CLUSTER_FRAME_X}
+                    y={CLUSTER_FRAME_Y}
+                    width={CLUSTER_FRAME_W}
+                    height={CLUSTER_FRAME_H}
                     rx="14"
                     fill="currentColor"
                     className="text-primary/5"
                     stroke="var(--primary)"
-                    strokeOpacity={0.25}
+                    strokeOpacity={0.3}
                     strokeWidth="1"
                     strokeDasharray="4 4"
                   />
-                  <text
-                    x="610"
-                    y="72"
-                    fill="currentColor"
-                    className="text-[9px] font-mono font-bold tracking-widest text-primary uppercase select-none"
-                  >
-                    GO MICROSERVICES CLUSTER
-                  </text>
-                  <text
-                    x="885"
-                    y="72"
-                    textAnchor="end"
-                    fill="currentColor"
-                    className="text-[8px] font-mono text-muted-foreground select-none"
-                  >
-                    {onlineGatewayCount}/{GATEWAY_MATRIX.length} ACTIVE
-                  </text>
+
+                  {/* Frame Header Baseline Separator */}
+                  <line
+                    x1={CLUSTER_FRAME_X}
+                    y1="82"
+                    x2={CLUSTER_FRAME_X + CLUSTER_FRAME_W}
+                    y2="82"
+                    stroke="var(--primary)"
+                    strokeOpacity={0.2}
+                    strokeWidth="1"
+                  />
+
+                  {/* Vertical Main Ingress Bus Rail (X = 530) */}
+                  <line
+                    x1={CLUSTER_FRAME_X}
+                    y1="115"
+                    x2={CLUSTER_FRAME_X}
+                    y2="375"
+                    stroke="var(--primary)"
+                    strokeOpacity={0.6}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+
+                  {/* Branching Horizontal Feeder Lines to Each Row */}
+                  {[115, 180, 245, 310, 375].map((yRow, rIdx) => (
+                    <g key={`feeder-${rIdx}`}>
+                      {/* Feeder to Column 1 (X = 565) */}
+                      <line
+                        x1={CLUSTER_FRAME_X}
+                        y1={yRow}
+                        x2="565"
+                        y2={yRow}
+                        stroke="var(--primary)"
+                        strokeOpacity={0.35}
+                        strokeWidth="1"
+                      />
+                      {/* Inter-Column Bridge to Column 2 (except row 5) */}
+                      {yRow <= 310 && (
+                        <line
+                          x1="685"
+                          y1={yRow}
+                          x2="715"
+                          y2={yRow}
+                          stroke="currentColor"
+                          className="text-border/30"
+                          strokeWidth="1"
+                          strokeDasharray="2 3"
+                        />
+                      )}
+                    </g>
+                  ))}
                 </g>
               )}
             </svg>
 
-            {/* ── Tier 1, 2, 3 Service Nodes (Compact & Crisp) ── */}
+            {/* ── Tier 1, 2, 3 Service Nodes ── */}
             {Object.entries(STAGE_NODE_POSITIONS).map(([nodeId, pos]) => {
               const NodeIcon    = pos.icon;
               const isSelected  = activeNode === nodeId;
@@ -529,7 +590,6 @@ export function OverviewInfrastructureMap({
                     dimmed && "opacity-10 hover:opacity-100"
                   )}
                 >
-                  {/* Status Dot */}
                   <span
                     className={cn(
                       "h-1.5 w-1.5 rounded-full flex-shrink-0 ring-2 ring-black/40",
@@ -539,7 +599,6 @@ export function OverviewInfrastructureMap({
                     style={nodeStatus === "error" ? { backgroundColor: dotColor } : undefined}
                   />
 
-                  {/* Label & Sublabel */}
                   <div className="flex flex-col text-left">
                     <span className="text-[11px] font-semibold text-foreground tracking-tight leading-none">
                       {pos.label}
@@ -551,92 +610,109 @@ export function OverviewInfrastructureMap({
                     )}
                   </div>
 
-                  {/* Right Icon */}
                   <NodeIcon className={cn("h-3.5 w-3.5 ml-1 text-muted-foreground/50 shrink-0", isSelected && "text-primary")} />
                 </button>
               );
             })}
 
-            {/* ── Tier 4: Master Cluster Trunk Hub Button ── */}
-            <button
-              onClick={toggleCollapse}
-              aria-pressed={!collapsed}
-              aria-expanded={!collapsed}
-              style={{ left: CLUSTER_HUB_X, top: CLUSTER_HUB_Y }}
-              className={cn(
-                "absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-mono font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap select-none z-20",
-                "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
-                "border-[#262e3f] dark:border-white/10 shadow-[0_6px_20px_-3px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)]",
-                collapsed
-                  ? "border-primary/60 text-primary shadow-[0_0_18px_rgba(38,230,161,0.3),inset_0_1px_0_0_rgba(38,230,161,0.3)] hover:scale-[1.03]"
-                  : "border-primary/40 bg-gradient-to-b from-[#152a22] to-[#0a1813] text-primary hover:border-primary"
-              )}
-            >
-              <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse flex-shrink-0 ring-2 ring-black/40" />
-              <span className="text-[11px] font-bold">Go Gateways</span>
-              <span className="text-[9px] text-muted-foreground font-mono font-normal">
-                {collapsed
-                  ? `+${GATEWAY_MATRIX.length} expand`
-                  : `${onlineGatewayCount}/${GATEWAY_MATRIX.length}`}
-              </span>
-              {collapsed ? (
-                <ChevronRight className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 text-primary" />
-              )}
-            </button>
+            {/* ── Tier 4 (When Collapsed): Single Hub Pill Button ── */}
+            {collapsed && (
+              <button
+                onClick={toggleCollapse}
+                aria-pressed={false}
+                aria-expanded={false}
+                style={{ left: COLLAPSED_HUB_X, top: COLLAPSED_HUB_Y }}
+                className={cn(
+                  "absolute -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-mono font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap select-none z-20",
+                  "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
+                  "border-primary/60 text-primary shadow-[0_0_18px_rgba(38,230,161,0.3),inset_0_1px_0_0_rgba(38,230,161,0.3)] hover:scale-[1.04]"
+                )}
+              >
+                <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse flex-shrink-0 ring-2 ring-black/40" />
+                <span className="text-[11px] font-bold">Go Gateways</span>
+                <span className="text-[9px] text-muted-foreground font-mono font-normal">
+                  +{GATEWAY_MATRIX.length} expand
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-primary animate-pulse" />
+              </button>
+            )}
 
-            {/* ── 9 Categorized Matrix Nodes (When Expanded) ── */}
-            {!collapsed &&
-              GATEWAY_MATRIX.map((gw, idx) => {
-                const isAct     = activeGatewayId === gw.id;
-                const dimmed    = isNodeDimmed(gw.id);
-                const GwIcon    = gw.icon;
-                const gwStatus  = getGatewayStatus(gw.gatewayName);
-                const isOnline  = gwStatus === "healthy";
-                const dotCls    = isOnline
-                  ? "bg-primary shadow-[0_0_6px_var(--primary)]"
-                  : "bg-rose-500 shadow-[0_0_6px_#f43f5e]";
+            {/* ── Tier 4 (When Expanded): Cluster Header + 2 Symmetrical Columns ── */}
+            {!collapsed && (
+              <>
+                {/* Cluster Top Bar (Title + Collapse Button) */}
+                <div
+                  style={{ left: CLUSTER_FRAME_X + 16, top: CLUSTER_FRAME_Y + 12 }}
+                  className="absolute z-20 flex items-center justify-between w-[332px] select-none"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse" />
+                    <span className="text-[10px] font-mono font-bold tracking-widest text-primary uppercase">
+                      GO GATEWAYS CLUSTER
+                    </span>
+                  </div>
 
-                return (
                   <button
-                    key={gw.id}
-                    onClick={() => {
-                      setActiveGatewayId(gw.id);
-                      onSelectNode("gw-cluster");
-                    }}
-                    style={{
-                      left: gw.x,
-                      top: gw.y,
-                      animationDelay: `${idx * 25}ms`,
-                    }}
-                    aria-pressed={isAct}
-                    className={cn(
-                      "absolute flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[10px] font-mono transition-all duration-200 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-30 animate-fade-in-scale",
-                      "w-[125px] justify-between",
-                      "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
-                      "border-[#262e3f] dark:border-white/10 shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.1)] text-foreground/90 hover:border-primary/60 hover:scale-[1.04]",
-                      isAct && "border-primary bg-gradient-to-b from-[#152a22] to-[#0a1813] text-primary shadow-[0_0_18px_rgba(38,230,161,0.35),inset_0_1px_0_0_rgba(38,230,161,0.3)] scale-105 z-40 font-bold",
-                      !isOnline && "border-rose-500/30 opacity-70",
-                      dimmed && "opacity-10 hover:opacity-100"
-                    )}
+                    onClick={toggleCollapse}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-mono font-semibold transition-all cursor-pointer shadow-sm"
+                    title="Collapse cluster back to hub node"
                   >
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      {/* Live status dot */}
-                      <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", dotCls)} />
-                      <span className="truncate font-semibold">{gw.name}</span>
-                    </div>
-
-                    <GwIcon
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0",
-                        isAct ? "text-primary" : "text-muted-foreground/50",
-                        !isOnline && "text-rose-400/70"
-                      )}
-                    />
+                    <span>{onlineGatewayCount}/9 Active</span>
+                    <X className="h-3 w-3 ml-0.5" />
                   </button>
-                );
-              })}
+                </div>
+
+                {/* 9 Symmetrical Matrix Gateway Chips (5 Rows) */}
+                {GATEWAY_MATRIX.map((gw, idx) => {
+                  const isAct     = activeGatewayId === gw.id;
+                  const dimmed    = isNodeDimmed(gw.id);
+                  const GwIcon    = gw.icon;
+                  const gwStatus  = getGatewayStatus(gw.gatewayName);
+                  const isOnline  = gwStatus === "healthy";
+                  const dotCls    = isOnline
+                    ? "bg-primary shadow-[0_0_6px_var(--primary)]"
+                    : "bg-rose-500 shadow-[0_0_6px_#f43f5e]";
+
+                  return (
+                    <button
+                      key={gw.id}
+                      onClick={() => {
+                        setActiveGatewayId(gw.id);
+                        onSelectNode("gw-cluster");
+                      }}
+                      style={{
+                        left: gw.x,
+                        top: gw.y,
+                        animationDelay: `${idx * 20}ms`,
+                      }}
+                      aria-pressed={isAct}
+                      className={cn(
+                        "absolute flex items-center justify-between gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-mono transition-all duration-200 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-30 animate-fade-in-scale",
+                        "w-[122px]",
+                        "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
+                        "border-[#262e3f] dark:border-white/10 shadow-[0_4px_14px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.1)] text-foreground/90 hover:border-primary/60 hover:scale-[1.04]",
+                        isAct && "border-primary bg-gradient-to-b from-[#152a22] to-[#0a1813] text-primary shadow-[0_0_18px_rgba(38,230,161,0.35),inset_0_1px_0_0_rgba(38,230,161,0.3)] scale-105 z-40 font-bold",
+                        !isOnline && "border-rose-500/30 opacity-70",
+                        dimmed && "opacity-10 hover:opacity-100"
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", dotCls)} />
+                        <span className="truncate font-semibold tracking-tight">{gw.name}</span>
+                      </div>
+
+                      <GwIcon
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0",
+                          isAct ? "text-primary" : "text-muted-foreground/50",
+                          !isOnline && "text-rose-400/70"
+                        )}
+                      />
+                    </button>
+                  );
+                })}
+              </>
+            )}
 
             {/* ── Sub-node Chips Overlay ── */}
             {activeNode && activeNode !== "gw-cluster" && activeSubNodes.map((sub) => {
