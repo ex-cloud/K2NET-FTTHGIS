@@ -249,15 +249,43 @@ body {
 }
 
 /* ============================================================
-   🔵 Infrastructure Map — Laser Comet Beam & Orbit Animations
+   🔵 Infrastructure Map — Vercel/Railway Style Flow Animations
    ============================================================ */
-@keyframes beam-flow {
-  from { stroke-dashoffset: 164; }
-  to   { stroke-dashoffset: 0; }
+
+/* ─── Particle: smooth flowing gradient, fade in/out at endpoints ─── */
+@keyframes flow-particle {
+  0%   { stroke-dashoffset: 220; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { stroke-dashoffset: 0;   opacity: 0; }
 }
 
-.animate-beam-flow {
-  animation: beam-flow 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+/* ─── Glow: ambient pulsing glow on the base track ─── */
+@keyframes glow-pulse {
+  0%, 100% { stroke-opacity: 0.10; }
+  50%       { stroke-opacity: 0.35; }
+}
+
+/* ─── Orbit ring slow rotation ─── */
+@keyframes orbit-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-flow-particle {
+  animation: flow-particle 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-flow-particle-slow {
+  animation: flow-particle 5.0s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-flow-particle-fast {
+  animation: flow-particle 2.0s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3.5s ease-in-out infinite;
+}
+.animate-glow-pulse-warn {
+  animation: glow-pulse 2.2s ease-in-out infinite;
 }
 
 @keyframes fade-in-scale {
