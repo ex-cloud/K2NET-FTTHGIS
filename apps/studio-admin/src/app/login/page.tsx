@@ -24,20 +24,30 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Directly check localStorage to guarantee instant hydration
-    try {
-      const stored = localStorage.getItem("ftth-ui-settings");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed?.state?.login3DVariant) {
-          setActiveVariant(parsed.state.login3DVariant);
+    const readActiveVariant = () => {
+      try {
+        const direct = localStorage.getItem("k2net_login_3d_variant");
+        if (direct && ["globe", "waveform", "voxel", "cloud", "jelly", "pebble"].includes(direct)) {
+          setActiveVariant(direct as Ai3DModelType);
           return;
         }
+        const stored = localStorage.getItem("ftth-ui-settings");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.state?.login3DVariant) {
+            setActiveVariant(parsed.state.login3DVariant);
+            return;
+          }
+        }
+      } catch (_) {}
+      if (storeLogin3D) {
+        setActiveVariant(storeLogin3D);
       }
-    } catch (_) {}
-    if (storeLogin3D) {
-      setActiveVariant(storeLogin3D);
-    }
+    };
+
+    readActiveVariant();
+    window.addEventListener("storage", readActiveVariant);
+    return () => window.removeEventListener("storage", readActiveVariant);
   }, [storeLogin3D]);
 
   const MODEL_NAMES: Record<Ai3DModelType, string> = {
@@ -118,7 +128,7 @@ export default function AdminLoginPage() {
       <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
         
         {/* Full-Viewport Deep Space Galaxy Stardust Layer */}
-        <CosmicStardustBackground starCount={750} interactive={true} />
+        <CosmicStardustBackground starCount={650} interactive={true} />
 
         {/* Top Floating 3D Badge Indicator */}
         <div className="w-full flex justify-end z-20">

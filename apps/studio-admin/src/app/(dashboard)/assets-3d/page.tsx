@@ -62,10 +62,12 @@ export default function Assets3DPage() {
   const handleSetActiveAi = (id: Ai3DModelType, title: string) => {
     setAiMascotVariant(id);
     try {
+      localStorage.setItem("k2net_ai_mascot_variant", id);
       const stored = localStorage.getItem("ftth-ui-settings");
       const obj = stored ? JSON.parse(stored) : { state: {} };
       obj.state = { ...obj.state, aiMascotVariant: id };
       localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
+      window.dispatchEvent(new Event("storage"));
     } catch (_) {}
 
     toast.success(`Maskot AI Assistant diubah ke "${title}"!`, {
@@ -76,10 +78,12 @@ export default function Assets3DPage() {
   const handleSetActiveLogin = (id: Ai3DModelType, title: string) => {
     setLogin3DVariant(id);
     try {
+      localStorage.setItem("k2net_login_3d_variant", id);
       const stored = localStorage.getItem("ftth-ui-settings");
       const obj = stored ? JSON.parse(stored) : { state: {} };
       obj.state = { ...obj.state, login3DVariant: id };
       localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
+      window.dispatchEvent(new Event("storage"));
     } catch (_) {}
 
     toast.success(`Visual 3D Halaman Login diubah ke "${title}"!`, {

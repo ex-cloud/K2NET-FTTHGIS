@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { cn } from "../../utils";
 
@@ -14,13 +14,25 @@ export interface CosmicStardustBackgroundProps {
  * CosmicStardustBackground
  * High-performance, full-viewport WebGL deep-space galaxy stardust canvas.
  * Spreads multi-colored twinkling stars with natural 3D depth across the entire background container.
+ * Automatically adapts palette for both Dark and Light modes.
  */
 export function CosmicStardustBackground({
   className,
-  starCount = 750,
+  starCount = 650,
   interactive = true,
 }: CosmicStardustBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -45,12 +57,13 @@ export function CosmicStardustBackground({
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // ─── Generate 750 Multi-Colored Deep Space Stars ─────────────────────────
+    // ─── Generate Multi-Colored Deep Space Stars (Theme Adaptive) ───────────
     const starGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
 
-    const palette = [
+    // Dark vs Light Mode Palette
+    const darkPalette = [
       new THREE.Color("#ffffff"), // Pure brilliant white
       new THREE.Color("#f8fafc"), // Silver white
       new THREE.Color("#38bdf8"), // Sky blue
@@ -59,6 +72,17 @@ export function CosmicStardustBackground({
       new THREE.Color("#00f2fe"), // Neon cyan
       new THREE.Color("#818cf8"), // Soft indigo
     ];
+
+    const lightPalette = [
+      new THREE.Color("#0284c7"), // Deep Sky Cyan
+      new THREE.Color("#0891b2"), // Deep Ocean Cyan
+      new THREE.Color("#059669"), // Forest Emerald
+      new THREE.Color("#4f46e5"), // Deep Indigo
+      new THREE.Color("#64748b"), // Slate Blue
+      new THREE.Color("#2563eb"), // Royal Blue
+    ];
+
+    const palette = isDark ? darkPalette : lightPalette;
 
     for (let i = 0; i < starCount; i++) {
       // Wide distribution covering full rectangular viewport
@@ -76,11 +100,11 @@ export function CosmicStardustBackground({
     starGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 0.048,
+      size: isDark ? 0.048 : 0.055,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
-      blending: THREE.AdditiveBlending,
+      opacity: isDark ? 0.85 : 0.65,
+      blending: isDark ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
 
     const starPoints = new THREE.Points(starGeo, starMat);
@@ -117,7 +141,7 @@ export function CosmicStardustBackground({
       camera.lookAt(0, 0, 0);
 
       // Subtle breathing twinkle
-      starMat.opacity = 0.75 + Math.sin(time * 1.8) * 0.15;
+      starMat.opacity = (isDark ? 0.75 : 0.55) + Math.sin(time * 1.8) * 0.15;
 
       renderer.render(scene, camera);
     };
@@ -149,7 +173,7 @@ export function CosmicStardustBackground({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [starCount, interactive]);
+  }, [starCount, interactive, isDark]);
 
   return (
     <div
