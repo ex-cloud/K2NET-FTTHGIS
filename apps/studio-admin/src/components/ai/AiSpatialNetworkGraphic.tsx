@@ -23,7 +23,7 @@ export function AiSpatialNetworkGraphic({
       <VoxelTopology3D
         size={size}
         primaryColor="#38bdf8"
-        accentColor="#0ea5e9"
+        accentColor="#00f2fe"
         coreColor="#f8fafc"
         interactive={true}
       />

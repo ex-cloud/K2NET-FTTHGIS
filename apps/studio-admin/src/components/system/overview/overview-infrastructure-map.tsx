@@ -37,28 +37,28 @@ import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 // Inner Ring (R=95):  4 Gateways (Storage, Scheduler, Export, OLT) - Spaced 90° apart
 // Distance between any adjacent pair is >= 95px (100% zero collision & zero overlap)
 
-const ORBIT_OUTER_R = 155;
-const ORBIT_INNER_R = 95;
+const ORBIT_OUTER_R = 150;
+const ORBIT_INNER_R = 85;
 
 const GATEWAY_ORBIT: GatewayOrbitNode[] = [
-  // Outer Ring (R = 155)
+  // Outer Ring (R = 150)
   { id: "gw-notification", name: "Notification", gatewayName: "ftth-notification-gateway", port: 5001, icon: Bell,          angle: -90, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -18, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "keycloak-iam"] },
-  { id: "gw-map",          name: "Map",          gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 54,  radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
-  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, angle: 126, radius: ORBIT_OUTER_R, connectsTo: ["redis-cache"] },
-  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, angle: 198, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-payment",      name: "Payment",      gatewayName: "ftth-payment-gateway",      port: 5002, icon: CreditCard,    angle: -25, radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "keycloak-iam"] },
+  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     angle: 25,  radius: ORBIT_OUTER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-map",          name: "Map",          gatewayName: "ftth-map-gateway",          port: 5003, icon: Map,           angle: 90,  radius: ORBIT_OUTER_R, connectsTo: ["postgres-db", "redis-cache"] },
+  { id: "gw-whatsapp",     name: "WhatsApp",     gatewayName: "ftth-whatsapp-gateway",     port: 5005, icon: MessageSquare, angle: 145, radius: ORBIT_OUTER_R, connectsTo: ["redis-cache"] },
 
-  // Inner Ring (R = 95)
-  { id: "gw-storage",      name: "Storage",      gatewayName: "ftth-storage-gateway",      port: 5004, icon: HardDrive,     angle: -54, radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, angle: 18,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        angle: 90,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
-  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       angle: 162, radius: ORBIT_INNER_R, connectsTo: ["postgres-db", "redis-cache"] },
+  // Inner Ring (R = 85)
+  { id: "gw-audit",        name: "Audit",        gatewayName: "ftth-audit-gateway",        port: 5009, icon: ClipboardList, angle: -115, radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-scheduler",    name: "Scheduler",    gatewayName: "ftth-scheduler-gateway",    port: 5006, icon: CalendarClock, angle: -55,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-export",       name: "Export",       gatewayName: "ftth-export-gateway",       port: 5007, icon: Upload,        angle: 55,   radius: ORBIT_INNER_R, connectsTo: ["postgres-db"] },
+  { id: "gw-olt",          name: "OLT",          gatewayName: "ftth-olt-gateway",          port: 5008, icon: Network,       angle: 115,  radius: ORBIT_INNER_R, connectsTo: ["postgres-db", "redis-cache"] },
 ];
 
-const ORBIT_CENTER = { x: 700, y: 250 };
+const ORBIT_CENTER = { x: 720, y: 250 };
 
 // Hub connection edge X
-const ORBIT_HUB_EDGE_X = ORBIT_CENTER.x - 65; // 635
+const ORBIT_HUB_EDGE_X = ORBIT_CENTER.x - 65; // 655
 
 // ─── 4-Tier Node Fixed Positions (920 x 500 Stage) ────────────────────────────
 
@@ -107,8 +107,8 @@ const STAGE_EDGES: StageEdge[] = [
   { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 245 250 C 320 250, 335 325, 410 325" },
 
   // Data Layer → Go Gateways Cluster Hub
-  { id: "postgres-orbit", from: "postgres-db",  to: "gw-cluster",   speed: "normal", path: `M 410 175 C 490 175, 520 250, ${ORBIT_HUB_EDGE_X} 250` },
-  { id: "redis-orbit",    from: "redis-cache",  to: "gw-cluster",   speed: "slow",   path: `M 410 325 C 490 325, 520 250, ${ORBIT_HUB_EDGE_X} 250` },
+  { id: "postgres-orbit", from: "postgres-db",  to: "gw-cluster",   speed: "normal", path: `M 410 175 C 500 175, 550 250, ${ORBIT_HUB_EDGE_X} 250` },
+  { id: "redis-orbit",    from: "redis-cache",  to: "gw-cluster",   speed: "slow",   path: `M 410 325 C 500 325, 550 250, ${ORBIT_HUB_EDGE_X} 250` },
 ];
 
 const subNodesMap: Record<string, SubNode[]> = {

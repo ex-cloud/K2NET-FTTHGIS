@@ -7,25 +7,17 @@ import { cn } from "../../utils";
 export interface VoxelTopology3DProps {
   className?: string;
   size?: "sm" | "md" | "lg";
-  primaryColor?: string;  // Sky Blue / Emerald
-  accentColor?: string;   // Neon glow
-  coreColor?: string;     // Porcelain white
+  primaryColor?: string; // Sky Blue (#38bdf8)
+  accentColor?: string;  // Glowing Neon Cyan (#00f2fe)
+  coreColor?: string;    // Porcelain White (#f8fafc)
   interactive?: boolean;
-}
-
-interface NodePoint {
-  x: number;
-  y: number;
-  z: number;
-  angle: number;
-  dist: number;
 }
 
 export function VoxelTopology3D({
   className,
   size = "md",
   primaryColor = "#38bdf8",
-  accentColor = "#0ea5e9",
+  accentColor = "#00f2fe",
   coreColor = "#f8fafc",
   interactive = true,
 }: VoxelTopology3DProps) {
@@ -33,22 +25,22 @@ export function VoxelTopology3D({
   const [isLoaded, setIsLoaded] = useState(false);
 
   const sizeStyles = {
-    sm: "w-full max-w-[260px] h-[160px]",
-    md: "w-full max-w-[340px] h-[210px]",
-    lg: "w-full max-w-[420px] h-[260px]",
+    sm: "w-[260px] h-[220px]",
+    md: "w-[320px] h-[260px]",
+    lg: "w-[420px] h-[340px]",
   };
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const width = container.clientWidth || 340;
-    const height = container.clientHeight || 210;
+    const width = container.clientWidth || 320;
+    const height = container.clientHeight || 260;
 
-    // Scene & Camera
+    // Scene & Camera (calibrated FOV and distance to prevent any clipping)
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 7.2);
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 9.8);
 
     // WebGL Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -61,71 +53,100 @@ export function VoxelTopology3D({
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    // Master Rotation Group (receives mouse parallax tilt)
+    // Master Rotation Group (receives smooth mouse parallax tilt)
     const masterGroup = new THREE.Group();
     scene.add(masterGroup);
 
-    // ─── 1. Modular Voxel Data Cube (Center Core) ───────────────────────────
-    const coreGroup = new THREE.Group();
-    masterGroup.add(coreGroup);
+    // ─── 1. Lights Setup ────────────────────────────────────────────────────
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 1.4);
+    scene.add(ambientLight);
 
-    // Initial Isometric Tilt for the core cube
-    coreGroup.rotation.x = 0.45;
-    coreGroup.rotation.y = -0.55;
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.8);
+    dirLight1.position.set(5, 8, 7);
+    scene.add(dirLight1);
 
-    // Materials
+    const dirLight2 = new THREE.DirectionalLight(new THREE.Color(primaryColor), 2.2);
+    dirLight2.position.set(-6, -4, 5);
+    scene.add(dirLight2);
+
+    const corePointLight = new THREE.PointLight(new THREE.Color(accentColor), 4.5, 10);
+    corePointLight.position.set(0, 0, 0);
+    scene.add(corePointLight);
+
+    // ─── 2. Materials (Porcelain White + Sky Blue + Glowing Cyan Neon) ───────
     const matWhite = new THREE.MeshStandardMaterial({
       color: new THREE.Color(coreColor),
-      roughness: 0.2,
+      roughness: 0.18,
       metalness: 0.1,
     });
+
     const matSky = new THREE.MeshStandardMaterial({
       color: new THREE.Color(primaryColor),
+      roughness: 0.25,
+      metalness: 0.15,
+    });
+
+    const matDarkAccent = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#0284c7"),
       roughness: 0.3,
       metalness: 0.2,
     });
-    const matGlow = new THREE.MeshStandardMaterial({
+
+    const matNeonGlow = new THREE.MeshStandardMaterial({
       color: new THREE.Color(accentColor),
-      emissive: new THREE.Color(primaryColor),
-      emissiveIntensity: 1.6,
-      roughness: 0.1,
+      emissive: new THREE.Color(accentColor),
+      emissiveIntensity: 2.8,
+      roughness: 0.05,
     });
+
+    const matSoftGlow = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(accentColor),
+      transparent: true,
+      opacity: 0.85,
+    });
+
+    // ─── 3. High-Fidelity Isometric Voxel Data Core Cube ────────────────────
+    const coreGroup = new THREE.Group();
+    masterGroup.add(coreGroup);
+
+    // Set genuine isometric perspective angles
+    coreGroup.rotation.x = Math.PI / 6.2; // ~29°
+    coreGroup.rotation.y = Math.PI / 4.0; // 45° corner facing camera
 
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
     const voxelMeshes: { mesh: THREE.Mesh; origX: number; origY: number; origZ: number; speed: number }[] = [];
 
-    // Construct a rich subdivided 3x3x3 voxel block structure with varied heights & colors
-    const blockSize = 0.26;
-    const gap = 0.035;
-    const step = blockSize + gap;
+    // Construct 3x3x3 modular voxel grid
+    const bSize = 0.34;
+    const gap = 0.042;
+    const step = bSize + gap;
 
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
-          // Skip inner core center block to create hollow internal glow chamber
-          if (x === 0 && y === 0 && z === 0) continue;
+          if (x === 0 && y === 0 && z === 0) continue; // Hollow core chamber
 
-          // Determine voxel scale and material style
           const isCorner = Math.abs(x) === 1 && Math.abs(y) === 1 && Math.abs(z) === 1;
-          const isCenterFace = (Math.abs(x) + Math.abs(y) + Math.abs(z)) === 1;
+          const isFaceCenter = (Math.abs(x) + Math.abs(y) + Math.abs(z)) === 1;
 
           let mat = matWhite;
-          let scaleX = blockSize;
-          let scaleY = blockSize;
-          let scaleZ = blockSize;
+          let sX = bSize;
+          let sY = bSize;
+          let sZ = bSize;
 
           if (isCorner) {
-            mat = matSky;
-            scaleX *= 0.9;
-            scaleY *= 0.9;
-            scaleZ *= 0.9;
-          } else if (isCenterFace) {
-            mat = matGlow;
-            scaleX *= 1.05;
-            scaleY *= 1.05;
-            scaleZ *= 1.05;
-          } else if ((x + y + z) % 2 === 0) {
-            mat = matSky;
+            mat = (x + y + z > 0) ? matSky : matDarkAccent;
+            sX *= 0.94;
+            sY *= 0.94;
+            sZ *= 0.94;
+          } else if (isFaceCenter) {
+            mat = matNeonGlow;
+            sX *= 1.04;
+            sY *= 1.04;
+            sZ *= 1.04;
+          } else {
+            // Edge blocks
+            mat = ((x + y + z) % 2 === 0) ? matSky : matWhite;
           }
 
           const mesh = new THREE.Mesh(boxGeo, mat);
@@ -134,7 +155,7 @@ export function VoxelTopology3D({
           const posZ = z * step;
 
           mesh.position.set(posX, posY, posZ);
-          mesh.scale.set(scaleX, scaleY, scaleZ);
+          mesh.scale.set(sX, sY, sZ);
           coreGroup.add(mesh);
 
           voxelMeshes.push({
@@ -142,128 +163,152 @@ export function VoxelTopology3D({
             origX: posX,
             origY: posY,
             origZ: posZ,
-            speed: 1.5 + Math.random() * 2,
+            speed: 1.8 + Math.random() * 1.5,
           });
         }
       }
     }
 
-    // Inner glowing core energy orb inside the voxel cube
-    const innerLightSphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.18, 16, 16),
-      matGlow
-    );
-    coreGroup.add(innerLightSphere);
+    // Glowing Neon Aperture Frames on the 3 visible isometric faces
+    const apertureSize = bSize * 1.25;
+    const apertureGeo = new THREE.RingGeometry(apertureSize * 0.32, apertureSize * 0.48, 4); // Diamond/Square ring
 
-    // ─── 2. 16 Perimeter Nodes & Radial Optical Fiber Rays ──────────────────
+    // Top Face Aperture (+Y)
+    const topAperture = new THREE.Mesh(apertureGeo, matSoftGlow);
+    topAperture.position.set(0, step * 1.55, 0);
+    topAperture.rotation.x = -Math.PI / 2;
+    topAperture.rotation.z = Math.PI / 4;
+    coreGroup.add(topAperture);
+
+    // Front Right Face Aperture (+X)
+    const rightAperture = new THREE.Mesh(apertureGeo, matSoftGlow);
+    rightAperture.position.set(step * 1.55, 0, 0);
+    rightAperture.rotation.y = Math.PI / 2;
+    rightAperture.rotation.z = Math.PI / 4;
+    coreGroup.add(rightAperture);
+
+    // Front Left Face Aperture (+Z)
+    const leftAperture = new THREE.Mesh(apertureGeo, matSoftGlow);
+    leftAperture.position.set(0, 0, step * 1.55);
+    leftAperture.rotation.z = Math.PI / 4;
+    coreGroup.add(leftAperture);
+
+    // Inner Glowing Core Sphere
+    const innerLightOrb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 20, 20),
+      matNeonGlow
+    );
+    coreGroup.add(innerLightOrb);
+
+    // ─── 4. 16 Radial Fiber Beams & 16 Orbiting Data Beads ──────────────────
     const nodesGroup = new THREE.Group();
     masterGroup.add(nodesGroup);
 
     const nodeCount = 16;
-    const nodePoints: NodePoint[] = [];
+    const nodeRadius = 2.65;
+    const photonMeshes: { mesh: THREE.Mesh; start: THREE.Vector3; end: THREE.Vector3; progress: number; speed: number }[] = [];
 
-    // Spatial node layout around perimeter with varying distances and depths
+    const sphereGeo = new THREE.SphereGeometry(0.1, 16, 16);
+    const photonGeo = new THREE.SphereGeometry(0.04, 12, 12);
+    const ringGeo = new THREE.RingGeometry(0.14, 0.18, 24);
+
+    const nodePositions: THREE.Vector3[] = [];
+
     for (let i = 0; i < nodeCount; i++) {
       const angle = (i / nodeCount) * Math.PI * 2;
-      // Organic elliptical perimeter radius (aspect ratio wider on X than Y)
-      const baseRadiusX = 2.4;
-      const baseRadiusY = 1.6;
-      const variation = Math.sin(angle * 3) * 0.25 + Math.cos(angle * 2) * 0.15;
-      
-      const px = Math.cos(angle) * (baseRadiusX + variation);
-      const py = Math.sin(angle) * (baseRadiusY + variation * 0.8);
-      const pz = Math.sin(angle * 2) * 0.35; // 3D depth tilt
+      // Beautiful circular distribution with subtle depth variation
+      const px = Math.cos(angle) * nodeRadius;
+      const py = Math.sin(angle) * nodeRadius;
+      const pz = Math.sin(angle * 2) * 0.25;
 
-      nodePoints.push({ x: px, y: py, z: pz, angle, dist: Math.sqrt(px * px + py * py) });
-    }
-
-    // Create 16 Radial Fiber Ray Lines & Traveling Photons
-    const photonMeshes: { mesh: THREE.Mesh; start: THREE.Vector3; end: THREE.Vector3; progress: number; speed: number }[] = [];
-    const sphereGeo = new THREE.SphereGeometry(0.08, 16, 16);
-    const photonGeo = new THREE.SphereGeometry(0.035, 12, 12);
-    const ringGeo = new THREE.RingGeometry(0.11, 0.14, 24);
-
-    nodePoints.forEach((pt, idx) => {
+      const endPos = new THREE.Vector3(px, py, pz);
       const startPos = new THREE.Vector3(0, 0, 0);
-      const endPos = new THREE.Vector3(pt.x, pt.y, pt.z);
+      nodePositions.push(endPos);
 
-      // Ray line
+      // Layer 1: Base Radial Laser Line
       const lineGeo = new THREE.BufferGeometry().setFromPoints([startPos, endPos]);
       const lineMat = new THREE.LineBasicMaterial({
         color: new THREE.Color(primaryColor),
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.55,
       });
       const line = new THREE.Line(lineGeo, lineMat);
       nodesGroup.add(line);
 
-      // Endpoint Node Bead (White Porcelain / Sky Glow)
-      const nodeMat = (idx % 2 === 0) ? matWhite : matSky;
-      const nodeMesh = new THREE.Mesh(sphereGeo, nodeMat);
-      nodeMesh.position.copy(endPos);
-      nodesGroup.add(nodeMesh);
+      // Layer 2: Glowing Core Endpoint Bead (Porcelain White & Sky Blue)
+      const beadMat = (i % 2 === 0) ? matWhite : matSky;
+      const bead = new THREE.Mesh(sphereGeo, beadMat);
+      bead.position.copy(endPos);
+      nodesGroup.add(bead);
 
-      // Concentric Orbit Ring around Node
-      const ringMat = new THREE.MeshBasicMaterial({
+      // Layer 3: Concentric Neon Halo Ring around each bead
+      const haloMat = new THREE.MeshBasicMaterial({
         color: new THREE.Color(accentColor),
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.75,
       });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.position.copy(endPos);
-      ringMesh.lookAt(0, 0, 10);
-      nodesGroup.add(ringMesh);
+      const halo = new THREE.Mesh(ringGeo, haloMat);
+      halo.position.copy(endPos);
+      halo.lookAt(0, 0, 10);
+      nodesGroup.add(halo);
 
-      // Traveling Photon Light Packet
-      const photonMesh = new THREE.Mesh(photonGeo, matGlow);
-      nodesGroup.add(photonMesh);
+      // Layer 4: Traveling Photon Light Packet
+      const photon = new THREE.Mesh(photonGeo, matNeonGlow);
+      nodesGroup.add(photon);
 
       photonMeshes.push({
-        mesh: photonMesh,
+        mesh: photon,
         start: startPos,
         end: endPos,
-        progress: (idx / nodeCount),
-        speed: 0.008 + (idx % 3) * 0.003,
+        progress: (i / nodeCount),
+        speed: 0.01 + (i % 4) * 0.003,
       });
-    });
+    }
 
-    // ─── 3. Organic 3D Boundary Ribbon Contour ──────────────────────────────
-    const curvePoints = nodePoints.map((p) => new THREE.Vector3(p.x, p.y, p.z));
-    curvePoints.push(curvePoints[0]); // Close the loop
-
+    // ─── 5. Glowing Outer Boundary Spherical Ribbon & Particle Cloud ─────────
+    // A. Closed Spline Wave Ribbon
+    const curvePoints = [...nodePositions, nodePositions[0]];
     const boundaryCurve = new THREE.CatmullRomCurve3(curvePoints, true, "catmullrom", 0.5);
-    const boundaryPoints = boundaryCurve.getPoints(120);
+    const boundaryPoints = boundaryCurve.getPoints(140);
     const boundaryGeo = new THREE.BufferGeometry().setFromPoints(boundaryPoints);
     const boundaryMat = new THREE.LineBasicMaterial({
-      color: new THREE.Color(primaryColor),
+      color: new THREE.Color(accentColor),
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.65,
     });
     const boundaryLine = new THREE.Line(boundaryGeo, boundaryMat);
     nodesGroup.add(boundaryLine);
 
-    // ─── 4. Lights ──────────────────────────────────────────────────────────
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
-    scene.add(ambientLight);
+    // B. Ambient Nebula Particles (600 glowing dust points on the outer shell)
+    const particleCount = 450;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
 
-    const dirLight1 = new THREE.DirectionalLight(new THREE.Color(primaryColor), 2.2);
-    dirLight1.position.set(4, 5, 6);
-    scene.add(dirLight1);
+    for (let p = 0; p < particleCount; p++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = (Math.random() - 0.5) * Math.PI * 0.8;
+      const r = nodeRadius * (0.95 + Math.random() * 0.25);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight2.position.set(-4, -3, 4);
-    scene.add(dirLight2);
+      particlePositions[p * 3]     = r * Math.cos(theta) * Math.cos(phi);
+      particlePositions[p * 3 + 1] = r * Math.sin(theta) * Math.cos(phi);
+      particlePositions[p * 3 + 2] = r * Math.sin(phi) * 0.8;
+    }
 
-    const pointLight = new THREE.PointLight(new THREE.Color(accentColor), 2.5, 6);
-    pointLight.position.set(0, 0, 0);
-    scene.add(pointLight);
+    particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: new THREE.Color(accentColor),
+      size: 0.04,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending,
+    });
+    const particleCloud = new THREE.Points(particleGeo, particleMat);
+    nodesGroup.add(particleCloud);
 
     setIsLoaded(true);
 
-    // ─── 5. Mouse Parallax & Interaction ────────────────────────────────────
-    let mouseX = 0;
-    let mouseY = 0;
+    // ─── 6. Mouse Parallax & Gyroscopic Tracking ────────────────────────────
     let targetRotY = 0;
     let targetRotX = 0;
 
@@ -273,17 +318,15 @@ export function VoxelTopology3D({
       const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
       const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
 
-      targetRotY = nx * 0.45;
-      targetRotX = -ny * 0.35;
-      mouseX = nx;
-      mouseY = ny;
+      targetRotY = nx * 0.55;
+      targetRotX = -ny * 0.4;
     };
 
     if (interactive) {
       container.addEventListener("mousemove", onMouseMove);
     }
 
-    // ─── 6. Animation Loop ──────────────────────────────────────────────────
+    // ─── 7. Animation Loop (60-120 FPS) ─────────────────────────────────────
     const clock = new THREE.Clock();
     let animationFrameId: number;
 
@@ -296,15 +339,19 @@ export function VoxelTopology3D({
       masterGroup.rotation.x += (targetRotX - masterGroup.rotation.x) * 0.08;
 
       // Master Floating Levitation (Breathing)
-      masterGroup.position.y = Math.sin(time * 1.8) * 0.06;
+      masterGroup.position.y = Math.sin(time * 1.6) * 0.08;
 
-      // Voxel Cube Internal Micro-rotation & Spring Pulse
-      coreGroup.rotation.y += 0.005;
-      coreGroup.rotation.x = 0.45 + Math.sin(time * 1.2) * 0.05;
+      // Voxel Cube Internal Micro-rotation & Aperture Pulse
+      coreGroup.rotation.y += 0.004;
+      coreGroup.rotation.x = Math.PI / 6.2 + Math.sin(time * 1.2) * 0.04;
 
-      // Micro-bounce on individual voxels
+      // Pulse the apertures and point light
+      const pulseIntensity = 3.5 + Math.sin(time * 3) * 1.2;
+      corePointLight.intensity = pulseIntensity;
+
+      // Dynamic Spring Bounce on individual voxels
       voxelMeshes.forEach((item, i) => {
-        const pulse = Math.sin(time * item.speed + i) * 0.018;
+        const pulse = Math.sin(time * item.speed + i * 0.4) * 0.022;
         item.mesh.position.x = item.origX + (item.origX !== 0 ? Math.sign(item.origX) * pulse : 0);
         item.mesh.position.y = item.origY + (item.origY !== 0 ? Math.sign(item.origY) * pulse : 0);
         item.mesh.position.z = item.origZ + (item.origZ !== 0 ? Math.sign(item.origZ) * pulse : 0);
@@ -316,12 +363,15 @@ export function VoxelTopology3D({
         p.mesh.position.lerpVectors(p.start, p.end, p.progress);
       });
 
-      // Subtle undulation on outer boundary curve
+      // Ambient Particle Cloud Rotation
+      particleCloud.rotation.z += 0.0015;
+
+      // Subtle Undulation on Outer Boundary Curve
       const posAttr = boundaryGeo.attributes.position;
       const bArray = posAttr.array as Float32Array;
       for (let j = 0; j < boundaryPoints.length; j++) {
         const idx = j * 3;
-        const wave = Math.sin(time * 2 + j * 0.15) * 0.04;
+        const wave = Math.sin(time * 2.2 + j * 0.18) * 0.05;
         bArray[idx + 2] = boundaryPoints[j].z + wave;
       }
       posAttr.needsUpdate = true;
@@ -330,7 +380,7 @@ export function VoxelTopology3D({
     };
     animate();
 
-    // ─── 7. Resize Observer ─────────────────────────────────────────────────
+    // ─── 8. Resize Observer ─────────────────────────────────────────────────
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width: newWidth, height: newHeight } = entry.contentRect;
@@ -343,7 +393,7 @@ export function VoxelTopology3D({
     });
     resizeObserver.observe(container);
 
-    // ─── 8. Clean up on unmount ─────────────────────────────────────────────
+    // ─── 9. Clean up on unmount ─────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
@@ -352,7 +402,7 @@ export function VoxelTopology3D({
       }
 
       scene.traverse((obj) => {
-        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line) {
+        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line || obj instanceof THREE.Points) {
           if (obj.geometry) obj.geometry.dispose();
           if (Array.isArray(obj.material)) {
             obj.material.forEach((m) => m.dispose());
