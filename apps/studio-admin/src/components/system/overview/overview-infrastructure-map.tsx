@@ -458,11 +458,11 @@ export function OverviewInfrastructureMap({
               const dotColor    = statusToColor(nodeStatus);
 
               const toneClasses =
-                nodeStatus === "error"   ? "bg-rose-500 shadow-[0_0_8px_hsl(0,84%,60%)]" :
-                nodeStatus === "warning" ? "bg-yellow-400 shadow-[0_0_8px_hsl(45,95%,55%)]" :
-                pos.tone === "blue"      ? "bg-sky-400 shadow-[0_0_8px_#4ab5e4]" :
-                pos.tone === "red"       ? "bg-rose-500 shadow-[0_0_8px_#c64b3d]" :
-                                           "bg-primary shadow-[0_0_8px_var(--primary)]";
+                nodeStatus === "error"   ? "bg-rose-500 shadow-[0_0_10px_#f43f5e,0_0_3px_#f43f5e]" :
+                nodeStatus === "warning" ? "bg-yellow-400 shadow-[0_0_10px_#facc15,0_0_3px_#facc15]" :
+                pos.tone === "blue"      ? "bg-sky-400 shadow-[0_0_10px_#38bdf8,0_0_3px_#38bdf8]" :
+                pos.tone === "red"       ? "bg-rose-500 shadow-[0_0_10px_#f43f5e,0_0_3px_#f43f5e]" :
+                                           "bg-emerald-400 shadow-[0_0_10px_#34d399,0_0_3px_#34d399]";
 
               return (
                 <button
@@ -474,18 +474,20 @@ export function OverviewInfrastructureMap({
                   style={{ left: pos.x, top: pos.y }}
                   aria-pressed={isSelected}
                   className={cn(
-                    "absolute flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-mono font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-10",
-                    "border-border/60 bg-card/90 shadow-lg backdrop-blur-md hover:border-primary/60 hover:scale-105 hover:bg-card/95 text-foreground/90",
-                    isSelected && "border-primary bg-primary/10 shadow-[0_0_20px_rgba(38,230,161,0.28)] scale-105 z-20 text-primary font-bold",
-                    nodeStatus === "error" && "border-rose-500/40",
-                    nodeStatus === "warning" && "border-yellow-400/40",
+                    "absolute flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 transition-all duration-300 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-10",
+                    "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
+                    "border-[#262e3f] dark:border-white/10 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)]",
+                    "hover:border-primary/50 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.2)] hover:scale-[1.03] text-foreground",
+                    isSelected && "border-primary/80 bg-gradient-to-b from-[#152a22] to-[#0a1813] shadow-[0_0_24px_rgba(38,230,161,0.35),inset_0_1px_0_0_rgba(38,230,161,0.4)] scale-105 z-20 text-primary font-bold",
+                    nodeStatus === "error" && "border-rose-500/50",
+                    nodeStatus === "warning" && "border-yellow-400/50",
                     dimmed && "opacity-10 hover:opacity-100"
                   )}
                 >
                   {/* Status Dot */}
                   <span
                     className={cn(
-                      "h-2 w-2 rounded-full flex-shrink-0",
+                      "h-2 w-2 rounded-full flex-shrink-0 ring-2 ring-black/40",
                       toneClasses,
                       nodeStatus !== "error" && "animate-pulse"
                     )}
@@ -494,16 +496,18 @@ export function OverviewInfrastructureMap({
 
                   {/* Label & Sublabel */}
                   <div className="flex flex-col text-left">
-                    <span className="leading-none">{pos.label}</span>
+                    <span className="text-[12px] font-semibold text-foreground tracking-tight leading-none">
+                      {pos.label}
+                    </span>
                     {pos.sublabel && (
-                      <span className="text-[8px] font-normal text-muted-foreground mt-0.5 leading-none">
+                      <span className="text-[9px] font-mono text-muted-foreground/80 mt-1 leading-none">
                         {pos.sublabel}
                       </span>
                     )}
                   </div>
 
                   {/* Right Icon */}
-                  <NodeIcon className={cn("h-3.5 w-3.5 ml-1 text-muted-foreground/60", isSelected && "text-primary")} />
+                  <NodeIcon className={cn("h-4 w-4 ml-1.5 text-muted-foreground/50 shrink-0", isSelected && "text-primary")} />
                 </button>
               );
             })}
@@ -520,13 +524,15 @@ export function OverviewInfrastructureMap({
                 aria-pressed={!collapsed}
                 aria-expanded={!collapsed}
                 className={cn(
-                  "absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-mono font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap select-none z-20",
+                  "absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-xs font-mono font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap select-none z-20",
+                  "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
+                  "border-[#262e3f] dark:border-white/10 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)]",
                   collapsed
-                    ? "border-primary/60 bg-card/95 text-primary shadow-[0_0_18px_rgba(38,230,161,0.28)] hover:scale-105"
-                    : "border-border/60 bg-card/85 text-foreground hover:border-primary/60 hover:scale-105"
+                    ? "border-primary/60 text-primary shadow-[0_0_20px_rgba(38,230,161,0.3),inset_0_1px_0_0_rgba(38,230,161,0.3)] hover:scale-[1.03]"
+                    : "text-foreground hover:border-primary/50 hover:scale-[1.03]"
                 )}
               >
-                <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse flex-shrink-0" />
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399,0_0_3px_#34d399] animate-pulse flex-shrink-0 ring-2 ring-black/40" />
                 <span>Go Gateways</span>
                 <span className="text-[8px] text-muted-foreground font-normal">
                   {collapsed
@@ -552,8 +558,8 @@ export function OverviewInfrastructureMap({
                   const gwStatus    = getOrbitStatus(gw.gatewayName);
                   const isOnline    = gwStatus === "healthy";
                   const dotCls      = isOnline
-                    ? "bg-primary shadow-[0_0_6px_var(--primary)] animate-pulse"
-                    : "bg-rose-500 shadow-[0_0_6px_hsl(0,84%,60%)]";
+                    ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                    : "bg-rose-500 shadow-[0_0_8px_#f43f5e]";
 
                   return (
                     <button
@@ -569,9 +575,10 @@ export function OverviewInfrastructureMap({
                       }}
                       aria-pressed={isAct}
                       className={cn(
-                        "absolute flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[10px] font-mono font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-30 animate-fade-in-scale",
-                        "border-border/60 bg-card/90 shadow-md backdrop-blur-sm hover:border-primary/60 hover:bg-card/95 text-foreground/80 hover:scale-105",
-                        isAct && "border-primary bg-primary/20 text-primary shadow-[0_0_20px_color-mix(in_srgb,var(--primary)_28%,transparent)] scale-110 z-40 font-bold",
+                        "absolute flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-mono font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap -translate-x-1/2 -translate-y-1/2 select-none z-30 animate-fade-in-scale",
+                        "bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] dark:from-[#181d28] dark:via-[#121620] dark:to-[#0c0f17]",
+                        "border-[#262e3f] dark:border-white/10 shadow-[0_6px_18px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.1)] text-foreground/90 hover:border-primary/60 hover:scale-105",
+                        isAct && "border-primary bg-gradient-to-b from-[#152a22] to-[#0a1813] text-primary shadow-[0_0_20px_rgba(38,230,161,0.35),inset_0_1px_0_0_rgba(38,230,161,0.3)] scale-110 z-40 font-bold",
                         !isOnline && "border-rose-500/30 opacity-70",
                         dimmed && "opacity-10 hover:opacity-100"
                       )}
@@ -595,7 +602,7 @@ export function OverviewInfrastructureMap({
                 <div
                   key={sub.id}
                   style={{ left: pos.x + sub.xOffset, top: pos.y + sub.yOffset }}
-                  className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/40 bg-card/95 px-2 py-1 shadow-xl backdrop-blur-md animate-fade-in-scale -translate-x-1/2 -translate-y-1/2 whitespace-nowrap"
+                  className="absolute z-30 flex items-center gap-1.5 rounded-lg border border-primary/50 bg-gradient-to-b from-[#181d28] via-[#121620] to-[#0c0f17] px-2.5 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(38,230,161,0.3)] animate-fade-in-scale -translate-x-1/2 -translate-y-1/2 whitespace-nowrap"
                   title={sub.details}
                 >
                   <SubIcon className="h-3 w-3 text-primary flex-shrink-0" />
