@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { cn } from "../../utils";
 
-// ─── Math Helpers for True Isometric 30° Projection ──────────────────────────
-// Isometric transform:
-// screenX = (x - y) * cos(30°)
-// screenY = (x + y) * sin(30°) - z
+// ─── Math Helpers for True Isometric 30° Axonometric Projection ──────────────
 const COS30 = Math.cos(Math.PI / 6); // ~0.8660
 const SIN30 = Math.sin(Math.PI / 6); // 0.5
 
@@ -21,94 +18,202 @@ export interface LinearFigureProps {
   isHovered?: boolean;
 }
 
-// ─── 1. FIG 0.1: Purpose-Built Stacked Isometric Slices with Circle Cutout ───
+// ─── 1. FIG 0.1: Purpose-Built Volumetric Stacked Slabs (Linear FIG 0.2) ──────
 export function LinearPurposeBuiltFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
+  const [localHover, setLocalHover] = useState(false);
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const active = isHovered !== undefined ? isHovered : localHover;
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
+    setMouseOffset({ x: nx, y: ny });
+  };
+
+  const handleMouseLeave = () => {
+    setLocalHover(false);
+    setMouseOffset({ x: 0, y: 0 });
+  };
+
+  // 6 Stacked solid volumetric dark slabs
   const layers = [0, 1, 2, 3, 4, 5];
-  const size = 52;
-  const layerHeight = 10;
-  const hoverSeparation = active ? 6 : 0;
+  const size = 50;
+  const slabThickness = 8;
 
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      ref={containerRef}
+      onMouseEnter={() => setLocalHover(true)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
+        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group overflow-hidden",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible transition-transform duration-500 ease-out"
+        style={{
+          transform: `translate3d(${mouseOffset.x}px, ${mouseOffset.y}px, 0)`,
+        }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          {/* Volumetric Dark Shading Gradients */}
+          <linearGradient id="slabTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1e2430" />
+            <stop offset="100%" stopColor="#12161f" />
+          </linearGradient>
+
+          <linearGradient id="slabTopActive" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#222d3d" />
+            <stop offset="100%" stopColor="#16202c" />
+          </linearGradient>
+
+          <linearGradient id="slabLeftFace" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#131720" />
+            <stop offset="100%" stopColor="#0b0e14" />
+          </linearGradient>
+
+          <linearGradient id="slabRightFace" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#0d1017" />
+            <stop offset="100%" stopColor="#07080c" />
+          </linearGradient>
+
+          {/* 1px Specular Edge Highlight Gradient */}
+          <linearGradient id="edgeBevelHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.3" />
+          </linearGradient>
+
+          <radialGradient id="cutoutApertureGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#06090e" stopOpacity="0.9" />
+          </radialGradient>
+        </defs>
+
+        {/* Ambient Ground Shadow */}
+        <ellipse
+          cx="140"
+          cy="195"
+          rx="68"
+          ry="32"
+          className="fill-black/60 filter blur-[10px] transition-opacity duration-500"
+          style={{ opacity: active ? 0.75 : 0.4 }}
+        />
+
+        {/* 6 Solid Isometric Slices with Spring Separation */}
         {layers.map((idx) => {
-          const zBase = idx * (layerHeight + hoverSeparation);
-          const zTop = zBase + layerHeight;
-          const isTopLayer = idx === layers.length - 1;
+          const separation = active ? idx * 7.5 : 0;
+          const zBase = idx * (slabThickness + 2) + separation;
+          const zTop = zBase + slabThickness;
+          const isTop = idx === layers.length - 1;
 
-          const p1 = toIso(-size, -size, zTop);
-          const p2 = toIso(size, -size, zTop);
-          const p3 = toIso(size, size, zTop);
-          const p4 = toIso(-size, size, zTop);
+          const p1 = toIso(-size, -size, zTop, 140, 150);
+          const p2 = toIso(size, -size, zTop, 140, 150);
+          const p3 = toIso(size, size, zTop, 140, 150);
+          const p4 = toIso(-size, size, zTop, 140, 150);
 
-          const b1 = toIso(-size, -size, zBase);
-          const b2 = toIso(size, -size, zBase);
-          const b3 = toIso(size, size, zBase);
-          const b4 = toIso(-size, size, zBase);
+          const b2 = toIso(size, -size, zBase, 140, 150);
+          const b3 = toIso(size, size, zBase, 140, 150);
+          const b4 = toIso(-size, size, zBase, 140, 150);
 
           return (
             <g
               key={idx}
-              className="transition-all duration-300 ease-out"
               style={{
-                transform: active ? `translateY(-${idx * 3}px)` : "translateY(0px)",
-                transitionDelay: `${idx * 20}ms`,
+                transition: "transform 0.6s cubic-bezier(0.34, 1.4, 0.64, 1)",
+                transform: active ? `translateY(-${idx * 4}px)` : "translateY(0px)",
+                transitionDelay: `${idx * 25}ms`,
               }}
             >
-              {/* Top Face Diamond */}
+              {/* Left Face (Solid Shaded Dark Tone) */}
               <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
-                className={cn(
-                  "transition-colors duration-300",
-                  isTopLayer
-                    ? "fill-card/80 stroke-foreground/40 group-hover:stroke-primary group-hover:fill-primary/5"
-                    : "fill-card/40 stroke-foreground/20 group-hover:stroke-foreground/40"
-                )}
-                strokeWidth="1"
+                points={`${p4} ${p3} ${b3} ${b4}`}
+                fill="url(#slabLeftFace)"
+                stroke="#2a3346"
+                strokeWidth="0.8"
+                className="transition-colors duration-300"
               />
 
-              {/* Left & Right Drop Edges */}
-              <line x1={p4.split(",")[0]} y1={p4.split(",")[1]} x2={b4.split(",")[0]} y2={b4.split(",")[1]} className="stroke-foreground/25 group-hover:stroke-primary/50" strokeWidth="1" />
-              <line x1={p3.split(",")[0]} y1={p3.split(",")[1]} x2={b3.split(",")[0]} y2={b3.split(",")[1]} className="stroke-foreground/25 group-hover:stroke-primary/50" strokeWidth="1" />
-              <line x1={p2.split(",")[0]} y1={p2.split(",")[1]} x2={b2.split(",")[0]} y2={b2.split(",")[1]} className="stroke-foreground/25 group-hover:stroke-primary/50" strokeWidth="1" />
+              {/* Right Face (Deep Shadow Dark Tone) */}
+              <polygon
+                points={`${p3} ${p2} ${b2} ${b3}`}
+                fill="url(#slabRightFace)"
+                stroke="#1f2635"
+                strokeWidth="0.8"
+                className="transition-colors duration-300"
+              />
 
-              {/* Bottom Edge Rails */}
-              <line x1={b4.split(",")[0]} y1={b4.split(",")[1]} x2={b3.split(",")[0]} y2={b3.split(",")[1]} className="stroke-foreground/20 group-hover:stroke-foreground/35" strokeWidth="1" />
-              <line x1={b3.split(",")[0]} y1={b3.split(",")[1]} x2={b2.split(",")[0]} y2={b2.split(",")[1]} className="stroke-foreground/20 group-hover:stroke-foreground/35" strokeWidth="1" />
+              {/* Top Face (Directional Highlight Face) */}
+              <polygon
+                points={`${p1} ${p2} ${p3} ${p4}`}
+                fill={active ? "url(#slabTopActive)" : "url(#slabTopGrad)"}
+                stroke={isTop && active ? "url(#edgeBevelHighlight)" : "#3a4760"}
+                strokeWidth={isTop ? "1.2" : "0.9"}
+                className="transition-all duration-300"
+              />
 
-              {/* Hidden Interior Dashed Projections */}
-              <line x1={b1.split(",")[0]} y1={b1.split(",")[1]} x2={b4.split(",")[0]} y2={b4.split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="2 3" />
-              <line x1={b1.split(",")[0]} y1={b1.split(",")[1]} x2={b2.split(",")[0]} y2={b2.split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="2 3" />
+              {/* Leading Edge 1px Specular Bevel Line */}
+              <line
+                x1={p4.split(",")[0]}
+                y1={p4.split(",")[1]}
+                x2={p3.split(",")[0]}
+                y2={p3.split(",")[1]}
+                stroke={active ? "url(#edgeBevelHighlight)" : "#4a5b7a"}
+                strokeWidth="1"
+                className="transition-colors duration-300"
+              />
 
-              {/* Top Layer Circular Precision Cutout */}
-              {isTopLayer && (
+              {/* Top Slab: Precision Circular Cutout / Aperture Lens */}
+              {isTop && (
                 <g>
+                  {/* Recessed dark circular basin */}
                   <ellipse
                     cx="140"
-                    cy="88"
-                    rx="32"
-                    ry="18"
-                    className="stroke-foreground/50 group-hover:stroke-primary group-hover:fill-primary/10 transition-colors duration-300"
+                    cy={150 - zTop * 0.5 + 24}
+                    rx="30"
+                    ry="17"
+                    fill="url(#cutoutApertureGlow)"
+                    stroke={active ? "#10b981" : "#4a5b7a"}
                     strokeWidth="1.2"
+                    className="transition-colors duration-300"
                   />
-                  <line x1="116" y1="84" x2="164" y2="84" className="stroke-foreground/30 group-hover:stroke-primary/60" strokeWidth="0.8" />
-                  <line x1="112" y1="88" x2="168" y2="88" className="stroke-foreground/30 group-hover:stroke-primary/60" strokeWidth="0.8" />
-                  <line x1="120" y1="92" x2="160" y2="92" className="stroke-foreground/30 group-hover:stroke-primary/60" strokeWidth="0.8" />
+
+                  {/* Horizontal Precision Scan Reticles */}
+                  <line
+                    x1="118"
+                    y1={150 - zTop * 0.5 + 21}
+                    x2="162"
+                    y2={150 - zTop * 0.5 + 21}
+                    stroke={active ? "#10b981" : "#3b4861"}
+                    strokeWidth="0.8"
+                    className="transition-colors duration-300"
+                  />
+                  <line
+                    x1="114"
+                    y1={150 - zTop * 0.5 + 24}
+                    x2="166"
+                    y2={150 - zTop * 0.5 + 24}
+                    stroke={active ? "#10b981" : "#3b4861"}
+                    strokeWidth="0.9"
+                    className="transition-colors duration-300"
+                  />
+                  <line
+                    x1="120"
+                    y1={150 - zTop * 0.5 + 27}
+                    x2="160"
+                    y2={150 - zTop * 0.5 + 27}
+                    stroke={active ? "#10b981" : "#3b4861"}
+                    strokeWidth="0.8"
+                    className="transition-colors duration-300"
+                  />
                 </g>
               )}
             </g>
@@ -119,48 +224,98 @@ export function LinearPurposeBuiltFigure({ className, isHovered }: LinearFigureP
   );
 }
 
-// ─── 2. FIG 0.2: Autonomous Agent Modular Isometric Pillar Cluster ───────────
+// ─── 2. FIG 0.2: Autonomous Agent Volumetric Isometric Pillars (Linear FIG 0.3)
 export function LinearAgentClusterFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
+  const [localHover, setLocalHover] = useState(false);
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const active = isHovered !== undefined ? isHovered : localHover;
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
+    setMouseOffset({ x: nx, y: ny });
+  };
+
+  const handleMouseLeave = () => {
+    setLocalHover(false);
+    setMouseOffset({ x: 0, y: 0 });
+  };
+
+  // 4 Solid Isometric Pillars with Staggered Heights
   const pillars = [
-    { id: "p1", x: -26, y: -26, width: 28, height: active ? 68 : 55, chip: true },
-    { id: "p2", x: 26,  y: -26, width: 28, height: active ? 42 : 32, chip: true },
-    { id: "p3", x: -26, y: 26,  width: 28, height: active ? 95 : 75, chip: true },
-    { id: "p4", x: 26,  y: 26,  width: 28, height: active ? 58 : 45, chip: true },
+    { id: "p1", x: -28, y: -28, width: 26, defaultH: 58, activeH: 72, delay: 0 },
+    { id: "p2", x: 28,  y: -28, width: 26, defaultH: 34, activeH: 46, delay: 50 },
+    { id: "p3", x: -28, y: 28,  width: 26, defaultH: 82, activeH: 104, delay: 100 },
+    { id: "p4", x: 28,  y: 28,  width: 26, defaultH: 48, activeH: 64, delay: 150 },
   ];
 
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      ref={containerRef}
+      onMouseEnter={() => setLocalHover(true)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
+        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group overflow-hidden",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible transition-transform duration-500 ease-out"
+        style={{
+          transform: `translate3d(${mouseOffset.x}px, ${mouseOffset.y}px, 0)`,
+        }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <line x1="75" y1="165" x2="140" y2="202" className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
-        <line x1="205" y1="165" x2="140" y2="202" className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
+        <defs>
+          <linearGradient id="pillarTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#242b3a" />
+            <stop offset="100%" stopColor="#141822" />
+          </linearGradient>
 
-        {pillars.map((p, idx) => {
+          <linearGradient id="pillarLeftGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#141822" />
+            <stop offset="100%" stopColor="#0a0d13" />
+          </linearGradient>
+
+          <linearGradient id="pillarRightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#0e1118" />
+            <stop offset="100%" stopColor="#05070a" />
+          </linearGradient>
+
+          <filter id="emeraldChipGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" />
+          </filter>
+        </defs>
+
+        {/* Isometric Ground Base Shadow */}
+        <polygon
+          points={`
+            ${toIso(-55, -55, 0, 140, 160)}
+            ${toIso(55, -55, 0, 140, 160)}
+            ${toIso(55, 55, 0, 140, 160)}
+            ${toIso(-55, 55, 0, 140, 160)}
+          `}
+          className="fill-black/50 filter blur-[8px]"
+        />
+
+        {/* 4 Solid Obsidian Pillars */}
+        {pillars.map((p) => {
           const w = p.width;
-          const h = p.height;
+          const h = active ? p.activeH : p.defaultH;
           const ox = 140;
-          const oy = 155;
+          const oy = 160;
 
           const p1 = toIso(p.x - w / 2, p.y - w / 2, h, ox, oy);
           const p2 = toIso(p.x + w / 2, p.y - w / 2, h, ox, oy);
           const p3 = toIso(p.x + w / 2, p.y + w / 2, h, ox, oy);
           const p4 = toIso(p.x - w / 2, p.y + w / 2, h, ox, oy);
 
-          const b1 = toIso(p.x - w / 2, p.y - w / 2, 0, ox, oy);
           const b2 = toIso(p.x + w / 2, p.y - w / 2, 0, ox, oy);
           const b3 = toIso(p.x + w / 2, p.y + w / 2, 0, ox, oy);
           const b4 = toIso(p.x - w / 2, p.y + w / 2, 0, ox, oy);
@@ -168,49 +323,57 @@ export function LinearAgentClusterFigure({ className, isHovered }: LinearFigureP
           return (
             <g
               key={p.id}
-              className="transition-all duration-500 ease-out"
-              style={{ transitionDelay: `${idx * 40}ms` }}
+              style={{
+                transition: "all 0.65s cubic-bezier(0.34, 1.45, 0.64, 1)",
+                transitionDelay: `${p.delay}ms`,
+              }}
             >
+              {/* Left Face (Solid Mid-Tone) */}
               <polygon
                 points={`${p4} ${p3} ${b3} ${b4}`}
-                className="fill-card/60 stroke-foreground/25 group-hover:stroke-foreground/45 transition-colors"
-                strokeWidth="1"
+                fill="url(#pillarLeftGrad)"
+                stroke="#252d3d"
+                strokeWidth="0.9"
               />
+
+              {/* Right Face (Solid Deep Shadow) */}
               <polygon
                 points={`${p3} ${p2} ${b2} ${b3}`}
-                className="fill-card/30 stroke-foreground/25 group-hover:stroke-foreground/45 transition-colors"
-                strokeWidth="1"
+                fill="url(#pillarRightGrad)"
+                stroke="#1b212d"
+                strokeWidth="0.9"
               />
 
+              {/* Top Face (Solid Highlight) */}
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                className="fill-card/90 stroke-foreground/40 group-hover:stroke-primary group-hover:fill-primary/10 transition-colors duration-300"
-                strokeWidth="1.2"
+                fill="url(#pillarTopGrad)"
+                stroke={active ? "#10b981" : "#3b475e"}
+                strokeWidth={active ? "1.2" : "0.9"}
+                className="transition-colors duration-300"
               />
 
-              <line x1={b1.split(",")[0]} y1={b1.split(",")[1]} x2={b4.split(",")[0]} y2={b4.split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="2 3" />
-              <line x1={b1.split(",")[0]} y1={b1.split(",")[1]} x2={b2.split(",")[0]} y2={b2.split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="2 3" />
+              {/* Micro Recessed Chip Bed on Pillar Top */}
+              <polygon
+                points={`
+                  ${toIso(p.x - 5, p.y - 5, h + 1.5, ox, oy)}
+                  ${toIso(p.x + 5, p.y - 5, h + 1.5, ox, oy)}
+                  ${toIso(p.x + 5, p.y + 5, h + 1.5, ox, oy)}
+                  ${toIso(p.x - 5, p.y + 5, h + 1.5, ox, oy)}
+                `}
+                fill={active ? "rgba(16, 185, 129, 0.25)" : "rgba(56, 189, 248, 0.15)"}
+                stroke={active ? "#10b981" : "#38bdf8"}
+                strokeWidth="0.9"
+                className="transition-all duration-300"
+              />
 
-              {p.chip && (
-                <g>
-                  <polygon
-                    points={`
-                      ${toIso(p.x - 4, p.y - 4, h + 2, ox, oy)}
-                      ${toIso(p.x + 4, p.y - 4, h + 2, ox, oy)}
-                      ${toIso(p.x + 4, p.y + 4, h + 2, ox, oy)}
-                      ${toIso(p.x - 4, p.y + 4, h + 2, ox, oy)}
-                    `}
-                    className="fill-primary/20 stroke-primary transition-all duration-300"
-                    strokeWidth="1"
-                  />
-                  <circle
-                    cx={toIso(p.x, p.y, h + 2, ox, oy).split(",")[0]}
-                    cy={toIso(p.x, p.y, h + 2, ox, oy).split(",")[1]}
-                    r="1"
-                    className="fill-primary"
-                  />
-                </g>
-              )}
+              {/* Active Pulsing Emerald Core Dot */}
+              <circle
+                cx={toIso(p.x, p.y, h + 1.5, ox, oy).split(",")[0]}
+                cy={toIso(p.x, p.y, h + 1.5, ox, oy).split(",")[1]}
+                r={active ? "2.2" : "1.6"}
+                className={active ? "fill-emerald-400" : "fill-sky-400"}
+              />
             </g>
           );
         })}
@@ -219,88 +382,130 @@ export function LinearAgentClusterFigure({ className, isHovered }: LinearFigureP
   );
 }
 
-// ─── 3. FIG 0.3: Designed for Speed Ascending Stepped Isometric Cards ─────────
+// ─── 3. FIG 0.3: Designed for Speed Solid Stepped Blades (Linear FIG 0.4) ────
 export function LinearSpeedArrayFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
+  const [localHover, setLocalHover] = useState(false);
+  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const active = isHovered !== undefined ? isHovered : localHover;
 
-  const cardCount = 11;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 8;
+    setMouseOffset({ x: nx, y: ny });
+  };
+
+  const handleMouseLeave = () => {
+    setLocalHover(false);
+    setMouseOffset({ x: 0, y: 0 });
+  };
+
+  const cardCount = 12;
   const cards = Array.from({ length: cardCount }, (_, i) => i);
 
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      ref={containerRef}
+      onMouseEnter={() => setLocalHover(true)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
+        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group overflow-hidden",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible transition-transform duration-500 ease-out"
+        style={{
+          transform: `translate3d(${mouseOffset.x}px, ${mouseOffset.y}px, 0)`,
+        }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <linearGradient id="bladeGradSolid" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#090c12" stopOpacity="0.95" />
+            <stop offset="70%" stopColor="#151b26" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#222b3d" stopOpacity="0.98" />
+          </linearGradient>
+
+          <linearGradient id="bladeGradLead" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#062217" stopOpacity="0.95" />
+            <stop offset="60%" stopColor="#0c3826" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0.95" />
+          </linearGradient>
+
+          <linearGradient id="leadingNeonEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
+        </defs>
+
         {cards.map((i) => {
-          const baseHeight = 12 + i * 8 + (i > 6 ? (i - 6) * 10 : 0);
-          const height = active ? baseHeight + Math.sin((i / cardCount) * Math.PI) * 18 : baseHeight;
-          const cardWidth = 50;
-          const spacing = 11;
+          // Exponential height stair steps
+          const baseHeight = 16 + Math.pow(i / (cardCount - 1), 1.85) * 85;
+          const waveBounce = active ? Math.sin((i / cardCount) * Math.PI * 1.5) * 14 : 0;
+          const height = baseHeight + waveBounce;
+
+          const cardDepth = 42;
+          const spacing = 9.5;
           const xPos = (i - cardCount / 2) * spacing;
           const yPos = (i - cardCount / 2) * (spacing * 0.2);
 
           const ox = 140;
-          const oy = 175;
+          const oy = 180;
 
-          const p1 = toIso(xPos, yPos - cardWidth / 2, height, ox, oy);
-          const p2 = toIso(xPos, yPos + cardWidth / 2, height, ox, oy);
-          const b1 = toIso(xPos, yPos - cardWidth / 2, 0, ox, oy);
-          const b2 = toIso(xPos, yPos + cardWidth / 2, 0, ox, oy);
+          const p1 = toIso(xPos, yPos - cardDepth / 2, height, ox, oy);
+          const p2 = toIso(xPos, yPos + cardDepth / 2, height, ox, oy);
+          const b1 = toIso(xPos, yPos - cardDepth / 2, 0, ox, oy);
+          const b2 = toIso(xPos, yPos + cardDepth / 2, 0, ox, oy);
 
-          const isHighest = i === cardCount - 1;
+          const isLead = i === cardCount - 1;
 
           return (
             <g
               key={i}
-              className="transition-all duration-300 ease-out"
-              style={{ transitionDelay: `${i * 15}ms` }}
+              style={{
+                transition: "all 0.5s cubic-bezier(0.34, 1.4, 0.64, 1)",
+                transitionDelay: `${i * 18}ms`,
+              }}
             >
+              {/* Solid Volumetric Card Body Face */}
               <polygon
                 points={`${p1} ${p2} ${b2} ${b1}`}
-                className={cn(
-                  "transition-colors duration-300",
-                  isHighest
-                    ? "fill-card/80 stroke-primary/80 group-hover:fill-primary/10"
-                    : "fill-card/40 stroke-foreground/25 group-hover:stroke-foreground/45"
-                )}
-                strokeWidth="1"
+                fill={isLead ? "url(#bladeGradLead)" : "url(#bladeGradSolid)"}
+                stroke={isLead ? "#10b981" : "#242e42"}
+                strokeWidth={isLead ? "1.4" : "0.85"}
               />
 
+              {/* Leading Top Rim Laser Bevel */}
               <line
                 x1={p1.split(",")[0]}
                 y1={p1.split(",")[1]}
                 x2={p2.split(",")[0]}
                 y2={p2.split(",")[1]}
-                className={cn(
-                  "transition-colors duration-300",
-                  isHighest ? "stroke-primary" : "stroke-foreground/40 group-hover:stroke-primary/70"
-                )}
-                strokeWidth="1.2"
+                stroke={isLead ? "url(#leadingNeonEdge)" : active ? "#38bdf8" : "#3b4a69"}
+                strokeWidth={isLead ? "1.8" : "1"}
+                className="transition-colors duration-300"
               />
             </g>
           );
         })}
 
+        {/* Animated Laser Speed Scanline (Traversing across the top ridge) */}
         {active && (
           <line
-            x1="50"
-            y1="180"
-            x2="230"
-            y2="70"
-            className="stroke-primary/50 animate-pulse"
-            strokeWidth="1"
-            strokeDasharray="4 8"
+            x1="70"
+            y1="175"
+            x2="225"
+            y2="75"
+            stroke="#10b981"
+            strokeWidth="1.6"
+            strokeDasharray="6 8"
+            className="animate-pulse"
           />
         )}
       </svg>
@@ -308,307 +513,14 @@ export function LinearSpeedArrayFigure({ className, isHovered }: LinearFigurePro
   );
 }
 
-// ─── 4. FIG 0.4: Spatial FTTH GIS Network Topology Grid ───────────────────────
-export function LinearSpatialTopologyFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
-
-  // Grid node points
-  const nodes = [
-    { id: "olt-root", x: 0, y: 0, z: active ? 45 : 35, type: "olt" },
-    { id: "odp-1", x: -40, y: -30, z: active ? 25 : 18, type: "odp" },
-    { id: "odp-2", x: 40,  y: -30, z: active ? 25 : 18, type: "odp" },
-    { id: "odp-3", x: -40, y: 30,  z: active ? 25 : 18, type: "odp" },
-    { id: "odp-4", x: 40,  y: 30,  z: active ? 25 : 18, type: "odp" },
-  ];
-
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
-        className
-      )}
-    >
-      <svg
-        viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Isometric Ground Grid Plate */}
-        <polygon
-          points={`
-            ${toIso(-70, -70, 0)}
-            ${toIso(70, -70, 0)}
-            ${toIso(70, 70, 0)}
-            ${toIso(-70, 70, 0)}
-          `}
-          className="fill-card/30 stroke-foreground/15 group-hover:stroke-foreground/30 transition-colors"
-          strokeWidth="1"
-        />
-
-        {/* Diagonal Cross Grid Lines */}
-        <line x1={toIso(-70, 0, 0).split(",")[0]} y1={toIso(-70, 0, 0).split(",")[1]} x2={toIso(70, 0, 0).split(",")[0]} y2={toIso(70, 0, 0).split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
-        <line x1={toIso(0, -70, 0).split(",")[0]} y1={toIso(0, -70, 0).split(",")[1]} x2={toIso(0, 70, 0).split(",")[0]} y2={toIso(0, 70, 0).split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
-
-        {/* Connecting Fiber Laser Traces from OLT Root to ODP Nodes */}
-        {nodes.slice(1).map((odp) => {
-          const rootPt = toIso(0, 0, nodes[0].z);
-          const odpPt = toIso(odp.x, odp.y, odp.z);
-          const basePt = toIso(odp.x, odp.y, 0);
-
-          return (
-            <g key={odp.id}>
-              {/* Vertical Stalk to Ground */}
-              <line
-                x1={odpPt.split(",")[0]}
-                y1={odpPt.split(",")[1]}
-                x2={basePt.split(",")[0]}
-                y2={basePt.split(",")[1]}
-                className="stroke-foreground/20 group-hover:stroke-primary/40"
-                strokeWidth="1"
-                strokeDasharray="2 3"
-              />
-
-              {/* Curved/Direct Optical Spline Cable */}
-              <line
-                x1={rootPt.split(",")[0]}
-                y1={rootPt.split(",")[1]}
-                x2={odpPt.split(",")[0]}
-                y2={odpPt.split(",")[1]}
-                className="stroke-foreground/30 group-hover:stroke-primary transition-colors"
-                strokeWidth={active ? "1.5" : "1"}
-              />
-            </g>
-          );
-        })}
-
-        {/* Central Root OLT Stalk */}
-        <line
-          x1={toIso(0, 0, nodes[0].z).split(",")[0]}
-          y1={toIso(0, 0, nodes[0].z).split(",")[1]}
-          x2={toIso(0, 0, 0).split(",")[0]}
-          y2={toIso(0, 0, 0).split(",")[1]}
-          className="stroke-primary/40"
-          strokeWidth="1.2"
-          strokeDasharray="2 2"
-        />
-
-        {/* Render Node Diamond Badges */}
-        {nodes.map((n) => {
-          const sz = n.type === "olt" ? 14 : 9;
-          const p1 = toIso(n.x - sz, n.y - sz, n.z);
-          const p2 = toIso(n.x + sz, n.y - sz, n.z);
-          const p3 = toIso(n.x + sz, n.y + sz, n.z);
-          const p4 = toIso(n.x - sz, n.y + sz, n.z);
-
-          return (
-            <g key={`badge-${n.id}`} className="transition-all duration-300">
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
-                className={cn(
-                  "transition-colors duration-300",
-                  n.type === "olt"
-                    ? "fill-primary/20 stroke-primary"
-                    : "fill-card stroke-foreground/40 group-hover:stroke-primary group-hover:fill-primary/10"
-                )}
-                strokeWidth="1.2"
-              />
-              <circle
-                cx={toIso(n.x, n.y, n.z).split(",")[0]}
-                cy={toIso(n.x, n.y, n.z).split(",")[1]}
-                r={n.type === "olt" ? "2.5" : "1.5"}
-                className={n.type === "olt" ? "fill-primary animate-pulse" : "fill-foreground/60 group-hover:fill-primary"}
-              />
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-// ─── 5. FIG 0.5: Vector Database pgvector Isometric Chunk Array ──────────────
-export function LinearVectorMatrixFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
-
-  // 3x3 Isometric Matrix Cubes
-  const grid = [
-    { x: -30, y: -30, z: 0, highlight: false },
-    { x: 0,   y: -30, z: 0, highlight: true },
-    { x: 30,  y: -30, z: 0, highlight: false },
-    { x: -30, y: 0,   z: 0, highlight: false },
-    { x: 0,   y: 0,   z: active ? 22 : 12, highlight: true }, // Active query match
-    { x: 30,  y: 0,   z: 0, highlight: false },
-    { x: -30, y: 30,  z: 0, highlight: false },
-    { x: 0,   y: 30,  z: 0, highlight: false },
-    { x: 30,  y: 30,  z: 0, highlight: true },
-  ];
-
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
-        className
-      )}
-    >
-      <svg
-        viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {grid.map((c, i) => {
-          const sz = 10;
-          const h = 14;
-          const ox = 140;
-          const oy = 145;
-
-          const p1 = toIso(c.x - sz, c.y - sz, c.z + h, ox, oy);
-          const p2 = toIso(c.x + sz, c.y - sz, c.z + h, ox, oy);
-          const p3 = toIso(c.x + sz, c.y + sz, c.z + h, ox, oy);
-          const p4 = toIso(c.x - sz, c.y + sz, c.z + h, ox, oy);
-
-          const b2 = toIso(c.x + sz, c.y - sz, c.z, ox, oy);
-          const b3 = toIso(c.x + sz, c.y + sz, c.z, ox, oy);
-          const b4 = toIso(c.x - sz, c.y + sz, c.z, ox, oy);
-
-          return (
-            <g
-              key={i}
-              className="transition-all duration-300 ease-out"
-              style={{ transitionDelay: `${i * 20}ms` }}
-            >
-              <polygon points={`${p4} ${p3} ${b3} ${b4}`} className="fill-card/60 stroke-foreground/20 group-hover:stroke-foreground/35" strokeWidth="1" />
-              <polygon points={`${p3} ${p2} ${b2} ${b3}`} className="fill-card/40 stroke-foreground/20 group-hover:stroke-foreground/35" strokeWidth="1" />
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
-                className={cn(
-                  "transition-colors duration-300",
-                  c.highlight
-                    ? "fill-primary/20 stroke-primary"
-                    : "fill-card/90 stroke-foreground/30 group-hover:stroke-primary/50"
-                )}
-                strokeWidth="1.2"
-              />
-            </g>
-          );
-        })}
-
-        {/* Vector Similarity Laser Ray */}
-        {active && (
-          <line
-            x1="80"
-            y1="70"
-            x2="140"
-            y2="120"
-            className="stroke-primary animate-pulse"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-          />
-        )}
-      </svg>
-    </div>
-  );
-}
-
-// ─── 6. FIG 0.6: Real-Time Event Stream Microservice Bus Pipeline ────────────
-export function LinearMicroserviceBusFigure({ className, isHovered }: LinearFigureProps) {
-  const [hover, setHover] = useState(false);
-  const active = isHovered !== undefined ? isHovered : hover;
-
-  const busNodes = [
-    { name: "Kong Ingress", x: -60, y: 0, z: 0 },
-    { name: "Spring Core",  x: -20, y: 0, z: active ? 18 : 10 },
-    { name: "Event Bus",    x: 20,  y: 0, z: active ? 32 : 20 },
-    { name: "Go Gateways",  x: 60,  y: 0, z: 0 },
-  ];
-
-  return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      className={cn(
-        "relative w-full h-[240px] flex items-center justify-center select-none cursor-pointer group",
-        className
-      )}
-    >
-      <svg
-        viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Longitudinal Main Bus Beam Line */}
-        <line
-          x1={toIso(-75, 0, 0).split(",")[0]}
-          y1={toIso(-75, 0, 0).split(",")[1]}
-          x2={toIso(75, 0, 0).split(",")[0]}
-          y2={toIso(75, 0, 0).split(",")[1]}
-          className="stroke-foreground/20 group-hover:stroke-primary/50 transition-colors"
-          strokeWidth="1.5"
-        />
-
-        {/* Side Rail Track Guides */}
-        <line x1={toIso(-75, -20, 0).split(",")[0]} y1={toIso(-75, -20, 0).split(",")[1]} x2={toIso(75, -20, 0).split(",")[0]} y2={toIso(75, -20, 0).split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
-        <line x1={toIso(-75, 20, 0).split(",")[0]} y1={toIso(-75, 20, 0).split(",")[1]} x2={toIso(75, 20, 0).split(",")[0]} y2={toIso(75, 20, 0).split(",")[1]} className="stroke-foreground/10" strokeWidth="0.8" strokeDasharray="3 3" />
-
-        {/* Bus Nodes */}
-        {busNodes.map((n, i) => {
-          const sz = 16;
-          const p1 = toIso(n.x - sz, n.y - sz / 2, n.z);
-          const p2 = toIso(n.x + sz, n.y - sz / 2, n.z);
-          const p3 = toIso(n.x + sz, n.y + sz / 2, n.z);
-          const p4 = toIso(n.x - sz, n.y + sz / 2, n.z);
-
-          const bPt = toIso(n.x, n.y, 0);
-          const topPt = toIso(n.x, n.y, n.z);
-
-          return (
-            <g key={i} className="transition-all duration-300">
-              <line
-                x1={topPt.split(",")[0]}
-                y1={topPt.split(",")[1]}
-                x2={bPt.split(",")[0]}
-                y2={bPt.split(",")[1]}
-                className="stroke-foreground/25 group-hover:stroke-primary/50"
-                strokeWidth="1"
-                strokeDasharray="2 2"
-              />
-
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
-                className="fill-card/90 stroke-foreground/40 group-hover:stroke-primary group-hover:fill-primary/10 transition-colors"
-                strokeWidth="1.2"
-              />
-
-              <circle
-                cx={topPt.split(",")[0]}
-                cy={topPt.split(",")[1]}
-                r="2"
-                className="fill-primary"
-              />
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-// ─── Complete 6-Card Technical Wireframe Showcase Layout (1:1 Linear Style) ───
+// ─── 4. Complete 3-Card Technical Wireframe Showcase Layout (1:1 Linear Style)
 export function LinearIsometricShowcase({ className }: { className?: string }) {
   const figures = [
     {
       fig: "FIG 0.1",
       tag: "PURPOSE-BUILT",
       title: "Purpose-built architecture",
-      desc: "Engineered from the ground up with zero bloat. Layered modularity for mission-critical enterprise telecom operations.",
+      desc: "Engineered from the ground up with zero bloat. Layered solid modularity for mission-critical enterprise telecom operations.",
       component: <LinearPurposeBuiltFigure />,
     },
     {
@@ -625,40 +537,21 @@ export function LinearIsometricShowcase({ className }: { className?: string }) {
       desc: "Streamlined synchronous pipeline reducing latency and network jitter to ship telemetry updates with maximum velocity.",
       component: <LinearSpeedArrayFigure />,
     },
-    {
-      fig: "FIG 0.4",
-      tag: "SPATIAL GIS",
-      title: "Spatial FTTH network topology",
-      desc: "Real-time PostGIS topological graphs linking OLT central offices, optical splitters, and distribution points.",
-      component: <LinearSpatialTopologyFigure />,
-    },
-    {
-      fig: "FIG 0.5",
-      tag: "PGVECTOR",
-      title: "Vector embedding retrieval matrix",
-      desc: "500-token chunk vector embeddings stored in PostgreSQL pgvector with cosine similarity distance lookups.",
-      component: <LinearVectorMatrixFigure />,
-    },
-    {
-      fig: "FIG 0.6",
-      tag: "MICROSERVICES",
-      title: "High-throughput event bus",
-      desc: "Decoupled Go microservice gateways processing asynchronous notification queues, payment webhooks, and SNMP telemetry.",
-      component: <LinearMicroserviceBusFigure />,
-    },
   ];
 
   return (
-    <div className={cn("w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6", className)}>
+    <div className={cn("w-full grid grid-cols-1 md:grid-cols-3 gap-6", className)}>
       {figures.map((item, idx) => (
         <div
           key={idx}
-          className="flex flex-col justify-between p-6 rounded-2xl bg-card border border-border/60 hover:border-primary/50 transition-all duration-300 group shadow-md"
+          className="flex flex-col justify-between p-6 rounded-2xl bg-card border border-border/60 hover:border-primary/50 transition-all duration-300 group shadow-lg hover:shadow-2xl"
         >
           <div>
             <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
               <span>{item.fig}</span>
-              <span className="text-primary/60 group-hover:text-primary transition-colors">{item.tag}</span>
+              <span className="text-primary/75 font-semibold group-hover:text-primary transition-colors">
+                {item.tag}
+              </span>
             </div>
 
             {item.component}
