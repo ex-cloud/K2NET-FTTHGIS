@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type LoginHeroVariant = "geo-core" | "fiber-matrix" | "sentinel";
+export type LoginHeroFigureId = "fig-01" | "fig-02" | "fig-03" | "fig-04" | "fig-05" | "fig-06";
 
 interface UIState {
   sidebarOpen: boolean;
@@ -10,8 +10,8 @@ interface UIState {
   setOrganizationSuspended: (suspended: boolean) => void;
   activeTenantId: string | null;
   setActiveTenantId: (id: string | null) => void;
-  loginHeroVariant: LoginHeroVariant;
-  setLoginHeroVariant: (variant: LoginHeroVariant) => void;
+  activeLoginHeroId: LoginHeroFigureId;
+  setActiveLoginHeroId: (id: LoginHeroFigureId) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -23,8 +23,8 @@ export const useUIStore = create<UIState>()(
       setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
       activeTenantId: null,
       setActiveTenantId: (id) => set({ activeTenantId: id }),
-      loginHeroVariant: "geo-core",
-      setLoginHeroVariant: (variant) => set({ loginHeroVariant: variant }),
+      activeLoginHeroId: "fig-01",
+      setActiveLoginHeroId: (id) => set({ activeLoginHeroId: id }),
     }),
     {
       name: "ftth-ui-settings",
@@ -32,7 +32,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({ 
         sidebarOpen: state.sidebarOpen, 
         organizationSuspended: state.organizationSuspended,
-        loginHeroVariant: state.loginHeroVariant,
+        activeLoginHeroId: state.activeLoginHeroId,
       }),
     }
   )

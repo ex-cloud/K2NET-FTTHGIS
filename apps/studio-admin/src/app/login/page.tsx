@@ -6,61 +6,50 @@ import { ShieldAlert, BookOpen, Quote, ShieldCheck, Sparkles } from "lucide-reac
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
-  LinearGeospatialCoreHero,
-  LinearFiberMatrixHero,
-  LinearNetworkSentinelHero,
+  renderIsometricFigureById,
+  ISOMETRIC_FIGURES_LIST,
   Badge,
 } from "@k2net/ui";
-import { useUIStore, type LoginHeroVariant } from "@/store/ui-store";
+import { useUIStore, type LoginHeroFigureId } from "@/store/ui-store";
 
 export default function AdminLoginPage() {
-  const storeVariant = useUIStore((state) => state.loginHeroVariant);
-  const [activeVariant, setActiveVariant] = useState<LoginHeroVariant>("geo-core");
+  const storeHeroId = useUIStore((state) => state.activeLoginHeroId);
+  const [activeHeroId, setActiveHeroId] = useState<string>("fig-01");
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("k2net_login_hero_variant") || localStorage.getItem("k2net_login_3d_variant");
-      if (stored) {
-        setActiveVariant(stored as LoginHeroVariant);
-      } else if (storeVariant) {
-        setActiveVariant(storeVariant);
+      const stored =
+        localStorage.getItem("k2net_active_login_hero") ||
+        localStorage.getItem("k2net_login_hero_variant") ||
+        localStorage.getItem("k2net_login_3d_variant");
+
+      if (stored && (stored.startsWith("fig-") || stored === "fig-01" || stored === "fig-02" || stored === "fig-03" || stored === "fig-04" || stored === "fig-05" || stored === "fig-06")) {
+        setActiveHeroId(stored);
+      } else if (storeHeroId) {
+        setActiveHeroId(storeHeroId);
       }
     } catch (_) {}
 
     const handleStorageChange = () => {
       try {
-        const stored = localStorage.getItem("k2net_login_hero_variant") || localStorage.getItem("k2net_login_3d_variant");
-        if (stored) setActiveVariant(stored as LoginHeroVariant);
+        const stored =
+          localStorage.getItem("k2net_active_login_hero") ||
+          localStorage.getItem("k2net_login_hero_variant") ||
+          localStorage.getItem("k2net_login_3d_variant");
+
+        if (stored && stored.startsWith("fig-")) {
+          setActiveHeroId(stored);
+        }
       } catch (_) {}
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [storeVariant]);
+  }, [storeHeroId]);
 
-  const renderHeroVisual = () => {
-    switch (activeVariant) {
-      case "fiber-matrix":
-        return <LinearFiberMatrixHero key="fib-hero" size="full" interactive={true} />;
-      case "sentinel":
-        return <LinearNetworkSentinelHero key="sen-hero" size="full" interactive={true} />;
-      case "geo-core":
-      default:
-        return <LinearGeospatialCoreHero key="geo-hero" size="full" interactive={true} />;
-    }
-  };
-
-  const getVariantLabel = () => {
-    switch (activeVariant) {
-      case "fiber-matrix":
-        return "Stepped Fiber Matrix";
-      case "sentinel":
-        return "Network Sentinel";
-      case "geo-core":
-      default:
-        return "FTTH Geospatial Core";
-    }
-  };
+  const activeFigureMeta =
+    ISOMETRIC_FIGURES_LIST.find((f) => f.id === activeHeroId) ||
+    ISOMETRIC_FIGURES_LIST[0];
 
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
@@ -127,37 +116,37 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Interactive Pure SVG Hero Canvas & Glassmorphic Testimonial */}
+      {/* RIGHT COLUMN: Monochrome Pure SVG Hero Canvas & Testimonial */}
       <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
-
-        {/* Top Floating Badge Indicator */}
+        
+        {/* Top Floating Badge Indicator (Monochrome) */}
         <div className="w-full flex justify-end z-20">
           <Badge
             variant="outline"
-            className="border-border/60 bg-card/60 backdrop-blur-md text-foreground/80 font-mono text-[10px] px-3 py-1 gap-1.5 shadow-md"
+            className="border-border/80 bg-card/70 backdrop-blur-md text-foreground font-mono text-[10px] px-3 py-1 gap-1.5 shadow-sm"
           >
-            <Sparkles className="h-3 w-3 text-primary" />
-            <span>Hero: {getVariantLabel()}</span>
+            <Sparkles className="h-3 w-3 text-muted-foreground" />
+            <span>{activeFigureMeta.fig}: {activeFigureMeta.title}</span>
           </Badge>
         </div>
 
-        {/* Center Pure SVG Hero Viewport: Linear-Style Isometric Architecture */}
-        <div className="w-full max-w-lg my-auto flex items-center justify-center z-10 pointer-events-auto">
-          {renderHeroVisual()}
+        {/* Center Pure SVG Hero Viewport: Monochrome Isometric Architecture */}
+        <div className="w-full max-w-md my-auto flex items-center justify-center z-10 pointer-events-auto">
+          {renderIsometricFigureById(activeHeroId, "hero")}
         </div>
 
-        {/* Ambient Grid pattern background overlay */}
+        {/* Ambient Subtle Grid Pattern Overlay */}
         <div
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.15) 1.2px, transparent 1.2px)",
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px)",
             backgroundSize: "24px 24px",
           }}
         />
 
         {/* Bottom Glassmorphic Testimonial Quote Container */}
         <div className="w-full max-w-lg z-20 space-y-4 bg-card/60 backdrop-blur-xl border border-border/60 p-6 rounded-2xl shadow-2xl">
-          <Quote className="h-6 w-6 text-primary/90 transform rotate-180" />
+          <Quote className="h-6 w-6 text-foreground/80 transform rotate-180" />
           
           <blockquote className="text-sm md:text-base font-light text-foreground leading-relaxed font-sans">
             &ldquo;Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.&rdquo;

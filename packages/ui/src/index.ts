@@ -40,12 +40,8 @@ export * from "./components/markdown";
 export * from "./components/kanban-board";
 export * from "./components/rich-text-editor";
 
-// 3D Visualization Components (Three.js)
-export * from "./components/3d";
-
-// Technical Isometric Wireframe Figures (Linear Style)
-export * from "./components/linear-isometric/linear-isometric-figures";
-export * from "./components/linear-isometric/linear-hero-visuals";
+// Technical Isometric Wireframe Figures & Pure SVG Animated Mascot (Linear Style)
+export * from "./components/linear-isometric";
 
 // Error Pages
 export * from "./components/errors/NotFoundError";
