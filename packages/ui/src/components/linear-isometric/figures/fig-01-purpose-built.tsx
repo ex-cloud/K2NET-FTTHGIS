@@ -75,7 +75,7 @@ export function LinearPurposeBuiltFigure({
   const topSlabIndex = layers.length - 1;
 
   // Aperture radius calculation (exact isometric projection of a flat circle)
-  const apertureRadius = size === "hero" ? 28 : 24;
+  const apertureRadius = size === "hero" ? 27 : 23;
   const apertureRx = apertureRadius * 1.2247;
   const apertureRy = apertureRadius * 0.7071;
 
@@ -104,11 +104,11 @@ export function LinearPurposeBuiltFigure({
         <defs>
           {/* Subtle Ambient Depth Lighting inside Center Cavity */}
           <radialGradient id="apertureMutedGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#1f1f23" stopOpacity="0.9" />
-            <stop offset="85%" stopColor="#09090b" stopOpacity="1" />
+            <stop offset="0%" stopColor="#18181b" stopOpacity="1" />
+            <stop offset="100%" stopColor="#050507" stopOpacity="1" />
           </radialGradient>
 
-          {/* Clip path for center aperture */}
+          {/* Clip path for center aperture chords */}
           <clipPath id="fig1CenterApertureClip">
             <ellipse
               cx="140"
@@ -195,36 +195,69 @@ export function LinearPurposeBuiltFigure({
                 strokeLinecap="round"
               />
 
-              {/* Top Slab: Exact Center Isometric Aperture with K2NET Watermark Emblem */}
+              {/* Top Slab: Exact Center Isometric Aperture with Pure SVG K2NET Watermark Logo */}
               {isTop && (
                 <g>
-                  {/* Recessed Center Aperture Rim */}
+                  {/* Recessed Center Aperture Cavity Background */}
                   <ellipse
                     cx="140"
                     cy={topCenterY}
                     rx={apertureRx}
                     ry={apertureRy}
                     fill="url(#apertureMutedGlow)"
-                    stroke={active ? "#a1a1aa" : "#71717a"}
-                    strokeOpacity={active ? "0.95" : "0.75"}
-                    strokeWidth="1"
+                    stroke={active ? "#d4d4d8" : "#a1a1aa"}
+                    strokeOpacity={active ? "1" : "0.85"}
+                    strokeWidth="1.1"
                   />
 
-                  {/* K2NET Watermark Emblem centered on the exact 30° isometric top plane */}
-                  <g
-                    transform={`translate(140, ${topCenterY}) matrix(0.866025 0.5 -0.866025 0.5 0 0)`}
-                    clipPath="url(#fig1CenterApertureClip)"
-                  >
-                    <image
-                      href="/logo-watermark.svg"
-                      x={size === "hero" ? -22 : -18}
-                      y={size === "hero" ? -22 : -18}
-                      width={size === "hero" ? 44 : 36}
-                      height={size === "hero" ? 44 : 36}
-                      opacity={active ? "0.9" : "0.65"}
-                      className="filter brightness-125 contrast-125 transition-opacity duration-300"
+                  {/* K2NET Vector Lines & Concentric Radar Waves (Exact Linear-Style Chords) */}
+                  <g clipPath="url(#fig1CenterApertureClip)">
+                    {/* Horizontal Linear Chords in Lower Half of Cavity */}
+                    {[-10, -6, -2, 2, 6, 10].map((offset, cIdx) => (
+                      <line
+                        key={`chord-${cIdx}`}
+                        x1="100"
+                        y1={topCenterY + offset}
+                        x2="180"
+                        y2={topCenterY + offset}
+                        stroke={active ? "#a1a1aa" : "#71717a"}
+                        strokeOpacity={active ? "0.85" : "0.6"}
+                        strokeWidth="0.85"
+                        strokeLinecap="round"
+                      />
+                    ))}
+
+                    {/* Concentric Fiber Wave Radar Arcs */}
+                    <ellipse
+                      cx="140"
+                      cy={topCenterY}
+                      rx={apertureRx * 0.72}
+                      ry={apertureRy * 0.72}
+                      stroke={active ? "#ffffff" : "#d4d4d8"}
+                      strokeOpacity={active ? "0.9" : "0.7"}
+                      strokeWidth="1"
+                      strokeDasharray="4 3"
+                    />
+
+                    <ellipse
+                      cx="140"
+                      cy={topCenterY}
+                      rx={apertureRx * 0.42}
+                      ry={apertureRy * 0.42}
+                      stroke={active ? "#ffffff" : "#e4e4e7"}
+                      strokeOpacity={active ? "1" : "0.85"}
+                      strokeWidth="1.1"
                     />
                   </g>
+
+                  {/* Center K2NET Core Emitter Beacon (Sharp Silver/White Vector Mark) */}
+                  <circle
+                    cx="140"
+                    cy={topCenterY}
+                    r={size === "hero" ? "3.2" : "2.6"}
+                    fill="#ffffff"
+                    className="filter drop-shadow-[0_0_4px_rgba(255,255,255,0.7)]"
+                  />
                 </g>
               )}
             </g>
