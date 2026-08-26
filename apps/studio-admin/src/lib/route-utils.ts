@@ -42,6 +42,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   "/ai": "AI Assistant",
   "/ai/knowledge": "Knowledge Base",
   "/ai/add": "Add Knowledge",
+  "/assets-3d": "3D Assets",
   "/settings": "Settings",
   "/settings/general": "General Settings",
   "/settings/database": "Database Config",

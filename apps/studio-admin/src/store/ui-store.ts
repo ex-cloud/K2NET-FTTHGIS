@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+export type Ai3DMascotType = "voxel" | "cloud" | "jelly" | "astrolabe" | "prism" | "pebble";
+
 interface UIState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -8,6 +10,8 @@ interface UIState {
   setOrganizationSuspended: (suspended: boolean) => void;
   activeTenantId: string | null;
   setActiveTenantId: (id: string | null) => void;
+  aiMascotVariant: Ai3DMascotType;
+  setAiMascotVariant: (variant: Ai3DMascotType) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -19,14 +23,16 @@ export const useUIStore = create<UIState>()(
       setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
       activeTenantId: null,
       setActiveTenantId: (id) => set({ activeTenantId: id }),
+      aiMascotVariant: "voxel",
+      setAiMascotVariant: (variant) => set({ aiMascotVariant: variant }),
     }),
     {
       name: "ftth-ui-settings",
       storage: createJSONStorage(() => localStorage),
-      // Hanya simpan sidebar dan status suspend, jangan simpan tenant ID agar tidak tertukar antar session
       partialize: (state) => ({ 
         sidebarOpen: state.sidebarOpen, 
-        organizationSuspended: state.organizationSuspended 
+        organizationSuspended: state.organizationSuspended,
+        aiMascotVariant: state.aiMascotVariant,
       }),
     }
   )

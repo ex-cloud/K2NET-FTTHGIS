@@ -14,6 +14,7 @@ import {
   Terminal,
   ClipboardList,
   Sparkles,
+  Box,
 } from "lucide-react";
 import {
   Tooltip,
@@ -44,6 +45,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Security", icon: Lock, href: "/security" },
   { title: "Gateways", icon: Cpu, href: "/gateways/overview" },
   { title: "AI Assistant", icon: Sparkles, href: "/ai" },
+  { title: "3D Assets", icon: Box, href: "/assets-3d" },
   { title: "Settings", icon: Settings, href: "/settings" },
 ];
 
