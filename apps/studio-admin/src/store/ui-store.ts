@@ -1,14 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type Ai3DModelType =
-  | "globe"
-  | "waveform"
-  | "voxel"
-  | "cloud"
-  | "jelly"
-  | "pebble";
-
+export type Ai3DModelType = "waveform" | "pebble";
 export type Ai3DMascotType = Ai3DModelType;
 
 interface UIState {
@@ -33,9 +26,9 @@ export const useUIStore = create<UIState>()(
       setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
       activeTenantId: null,
       setActiveTenantId: (id) => set({ activeTenantId: id }),
-      aiMascotVariant: "voxel",
+      aiMascotVariant: "pebble",
       setAiMascotVariant: (variant) => set({ aiMascotVariant: variant }),
-      login3DVariant: "globe",
+      login3DVariant: "waveform",
       setLogin3DVariant: (variant) => set({ login3DVariant: variant }),
     }),
     {

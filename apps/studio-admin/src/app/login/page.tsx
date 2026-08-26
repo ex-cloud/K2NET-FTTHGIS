@@ -1,68 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { ShieldAlert, BookOpen, Quote, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
-  VoxelTopology3D,
-  CloudNetClay3D,
-  AetherJelly3D,
-  PebbleBot3D,
-  FiberGlobe3D,
   CyberWaveform3D,
   CosmicStardustBackground,
   Badge,
 } from "@k2net/ui";
-import { useUIStore, type Ai3DModelType } from "@/store/ui-store";
 
 export default function AdminLoginPage() {
-  const storeLogin3D = useUIStore((state) => state.login3DVariant);
-  const [activeVariant, setActiveVariant] = useState<Ai3DModelType>("globe");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const readActiveVariant = () => {
-      try {
-        const direct = localStorage.getItem("k2net_login_3d_variant");
-        if (direct && ["globe", "waveform", "voxel", "cloud", "jelly", "pebble"].includes(direct)) {
-          setActiveVariant(direct as Ai3DModelType);
-          return;
-        }
-        const stored = localStorage.getItem("ftth-ui-settings");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed?.state?.login3DVariant) {
-            setActiveVariant(parsed.state.login3DVariant);
-            return;
-          }
-        }
-      } catch (_) {}
-      if (storeLogin3D) {
-        setActiveVariant(storeLogin3D);
-      }
-    };
-
-    readActiveVariant();
-    window.addEventListener("storage", readActiveVariant);
-    return () => window.removeEventListener("storage", readActiveVariant);
-  }, [storeLogin3D]);
-
-  const MODEL_NAMES: Record<Ai3DModelType, string> = {
-    globe: "3D Fiber Earth Globe",
-    waveform: "Cyber Waveform Mesh",
-    voxel: "Voxel Data Matrix Cube",
-    cloud: "CloudNet Clay",
-    jelly: "Aether Jelly Biomorphic",
-    pebble: "Pebble Bot Companion",
-  };
-
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
       
-      {/* LEFT COLUMN: Login Form (Supabase Style) */}
+      {/* LEFT COLUMN: Login Form (Supabase / Linear Style) */}
       <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-12 md:p-16 relative bg-sidebar border-r border-border z-20">
         
         {/* Top Header Row */}
@@ -137,29 +90,13 @@ export default function AdminLoginPage() {
             className="border-border/60 bg-card/60 backdrop-blur-md text-foreground/80 font-mono text-[10px] px-3 py-1 gap-1.5 shadow-md"
           >
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>Hero 3D: {MODEL_NAMES[activeVariant] || "3D Fiber Earth Globe"}</span>
+            <span>Hero Visual: Cyber Waveform Mesh</span>
           </Badge>
         </div>
 
-        {/* Center 3D Canvas Viewport */}
-        <div
-          key={`hero-3d-${activeVariant}-${mounted}`}
-          className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto"
-        >
-          {activeVariant === "globe" && <FiberGlobe3D size="full" interactive={true} />}
-          {activeVariant === "waveform" && <CyberWaveform3D size="full" interactive={true} />}
-          {activeVariant === "voxel" && (
-            <VoxelTopology3D
-              size="lg"
-              primaryColor="#38bdf8"
-              accentColor="#00f2fe"
-              coreColor="#f8fafc"
-              interactive={true}
-            />
-          )}
-          {activeVariant === "cloud" && <CloudNetClay3D size="lg" interactive={true} />}
-          {activeVariant === "jelly" && <AetherJelly3D size="lg" interactive={true} />}
-          {activeVariant === "pebble" && <PebbleBot3D size="lg" interactive={true} />}
+        {/* Center 3D Canvas Viewport: Cyber Waveform Mesh */}
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-auto">
+          <CyberWaveform3D size="full" interactive={true} />
         </div>
 
         {/* Ambient Grid pattern background overlay */}
