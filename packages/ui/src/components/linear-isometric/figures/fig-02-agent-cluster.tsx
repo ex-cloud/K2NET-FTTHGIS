@@ -126,48 +126,61 @@ export function LinearAgentClusterFigure({
                 pillarsRef.current[idx] = el;
               }}
             >
+              {/* Left Face (Deep Charcoal) */}
               <polygon
                 points={`${p4} ${p3} ${b3} ${b4}`}
-                fill="#0a0a0a"
-                stroke="#ffffff"
-                strokeOpacity={active ? "0.6" : "0.35"}
-                strokeWidth="0.9"
+                fill="#09090b"
+                stroke="#3f3f46"
+                strokeOpacity={active ? "0.8" : "0.5"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Right Face (Deep Black) */}
               <polygon
                 points={`${p3} ${p2} ${b2} ${b3}`}
                 fill="#000000"
-                stroke="#ffffff"
-                strokeOpacity={active ? "0.45" : "0.22"}
-                strokeWidth="0.9"
+                stroke="#27272a"
+                strokeOpacity={active ? "0.6" : "0.35"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Top Face (Matte Obsidian with Muted Zinc-500 Outline) */}
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                fill="#141414"
-                stroke="#ffffff"
-                strokeOpacity={active ? "1" : "0.8"}
-                strokeWidth={active ? "1.2" : "0.9"}
+                fill="#121215"
+                stroke={active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={active ? "0.95" : "0.75"}
+                strokeWidth="0.9"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Recessed Aperture Diamond on Top Face */}
               <polygon
                 points={`
-                  ${toIso(p.x - 5, p.y - 5, h + 1.5, ox, oy)}
-                  ${toIso(p.x + 5, p.y - 5, h + 1.5, ox, oy)}
-                  ${toIso(p.x + 5, p.y + 5, h + 1.5, ox, oy)}
-                  ${toIso(p.x - 5, p.y + 5, h + 1.5, ox, oy)}
+                  ${toIso(p.x - 4.5, p.y - 4.5, h + 1, ox, oy)}
+                  ${toIso(p.x + 4.5, p.y - 4.5, h + 1, ox, oy)}
+                  ${toIso(p.x + 4.5, p.y + 4.5, h + 1, ox, oy)}
+                  ${toIso(p.x - 4.5, p.y + 4.5, h + 1, ox, oy)}
                 `}
-                fill="rgba(255, 255, 255, 0.15)"
-                stroke="#ffffff"
-                strokeOpacity={active ? "1" : "0.6"}
-                strokeWidth="0.9"
+                fill="#09090b"
+                stroke={active ? "#71717a" : "#3f3f46"}
+                strokeOpacity={active ? "0.9" : "0.6"}
+                strokeWidth="0.8"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Center Specular Dot */}
               <circle
-                cx={toIso(p.x, p.y, h + 1.5, ox, oy).split(",")[0]}
-                cy={toIso(p.x, p.y, h + 1.5, ox, oy).split(",")[1]}
-                r={active ? "2.2" : "1.6"}
-                className="fill-white"
+                cx={toIso(p.x, p.y, h + 1, ox, oy).split(",")[0]}
+                cy={toIso(p.x, p.y, h + 1, ox, oy).split(",")[1]}
+                r={active ? "1.6" : "1.2"}
+                fill={active ? "#d4d4d8" : "#a1a1aa"}
               />
             </g>
           );

@@ -10,32 +10,46 @@ import {
   ISOMETRIC_FIGURES_LIST,
   Badge,
 } from "@k2net/ui";
-import { useUIStore, type LoginHeroFigureId } from "@/store/ui-store";
+import { useUIStore } from "@/store/ui-store";
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? decodeURIComponent(match[2]) : null;
+}
 
 export default function AdminLoginPage() {
   const storeHeroId = useUIStore((state) => state.activeLoginHeroId);
   const [activeHeroId, setActiveHeroId] = useState<string>("fig-01");
 
   useEffect(() => {
-    try {
-      const stored =
-        localStorage.getItem("k2net_active_login_hero") ||
-        localStorage.getItem("k2net_login_hero_variant") ||
-        localStorage.getItem("k2net_login_3d_variant");
+    // 1. Initial priority: Cookie -> LocalStorage -> Store
+    const cookieHero = getCookie("k2net_global_login_hero");
+    const localHero =
+      localStorage.getItem("k2net_active_login_hero") ||
+      localStorage.getItem("k2net_login_hero_variant");
 
-      if (stored && (stored.startsWith("fig-") || stored === "fig-01" || stored === "fig-02" || stored === "fig-03" || stored === "fig-04" || stored === "fig-05" || stored === "fig-06")) {
-        setActiveHeroId(stored);
-      } else if (storeHeroId) {
-        setActiveHeroId(storeHeroId);
-      }
-    } catch (_) {}
+    const initialHero = cookieHero || localHero || storeHeroId || "fig-01";
+    if (initialHero.startsWith("fig-")) {
+      setActiveHeroId(initialHero);
+    }
 
+    // 2. Fetch server global setting to ensure multi-browser sync
+    fetch("/api/system/login-hero")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.activeHeroId && data.activeHeroId.startsWith("fig-")) {
+          setActiveHeroId(data.activeHeroId);
+        }
+      })
+      .catch(() => {});
+
+    // 3. Storage event listener for multi-tab sync
     const handleStorageChange = () => {
       try {
         const stored =
           localStorage.getItem("k2net_active_login_hero") ||
-          localStorage.getItem("k2net_login_hero_variant") ||
-          localStorage.getItem("k2net_login_3d_variant");
+          localStorage.getItem("k2net_login_hero_variant");
 
         if (stored && stored.startsWith("fig-")) {
           setActiveHeroId(stored);
@@ -137,7 +151,7 @@ export default function AdminLoginPage() {
 
         {/* Ambient Subtle Grid Pattern Overlay */}
         <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px)",
             backgroundSize: "24px 24px",

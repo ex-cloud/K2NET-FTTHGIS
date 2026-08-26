@@ -23,7 +23,7 @@ export function LinearPurposeBuiltFigure({
 
     if (active) {
       gsap.to(validSlabs, {
-        y: (i) => -i * 6.5,
+        y: (i) => -i * 7,
         duration: 0.65,
         ease: "back.out(1.8)",
         stagger: 0.03,
@@ -72,6 +72,12 @@ export function LinearPurposeBuiltFigure({
   const slabSize = size === "hero" ? 58 : 50;
   const slabThickness = size === "hero" ? 9 : 7.5;
   const originY = size === "hero" ? 155 : 148;
+  const topSlabIndex = layers.length - 1;
+
+  // Aperture radius calculation (exact isometric projection of a flat circle)
+  const apertureRadius = size === "hero" ? 28 : 24;
+  const apertureRx = apertureRadius * 1.2247;
+  const apertureRy = apertureRadius * 0.7071;
 
   return (
     <div
@@ -92,24 +98,37 @@ export function LinearPurposeBuiltFigure({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <radialGradient id="apertureWhiteGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0.95" />
+          {/* Subtle Ambient Depth Lighting */}
+          <radialGradient id="apertureMutedGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#27272a" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#09090b" stopOpacity="1" />
           </radialGradient>
+
+          {/* Clip path for horizontal aperture chords */}
+          <clipPath id="fig1ApertureClip">
+            <ellipse
+              cx="140"
+              cy={originY - (topSlabIndex * (slabThickness + 2) + slabThickness)}
+              rx={apertureRx}
+              ry={apertureRy}
+            />
+          </clipPath>
         </defs>
 
+        {/* Ambient Ground Shadow */}
         <ellipse
           cx="140"
           cy={originY + 45}
           rx="72"
-          ry="34"
+          ry="32"
           className="fill-black/80 filter blur-[10px]"
         />
 
+        {/* 6 Layered Slabs with Rounded Muted Zinc Lines (Linear Style) */}
         {layers.map((idx) => {
           const zBase = idx * (slabThickness + 2);
           const zTop = zBase + slabThickness;
-          const isTop = idx === layers.length - 1;
+          const isTop = idx === topSlabIndex;
 
           const p1 = toIso(-slabSize, -slabSize, zTop, 140, originY);
           const p2 = toIso(slabSize, -slabSize, zTop, 140, originY);
@@ -120,6 +139,8 @@ export function LinearPurposeBuiltFigure({
           const b3 = toIso(slabSize, slabSize, zBase, 140, originY);
           const b4 = toIso(-slabSize, slabSize, zBase, 140, originY);
 
+          const topCenterY = originY - zTop;
+
           return (
             <g
               key={idx}
@@ -127,55 +148,82 @@ export function LinearPurposeBuiltFigure({
                 slabsRef.current[idx] = el;
               }}
             >
+              {/* Left Face (Deep Matte Charcoal) */}
               <polygon
                 points={`${p4} ${p3} ${b3} ${b4}`}
-                fill="#0a0a0a"
-                stroke="#ffffff"
-                strokeOpacity={active ? "0.6" : "0.35"}
-                strokeWidth="0.9"
+                fill="#09090b"
+                stroke="#3f3f46"
+                strokeOpacity={active ? "0.8" : "0.5"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Right Face (Deep Black) */}
               <polygon
                 points={`${p3} ${p2} ${b2} ${b3}`}
                 fill="#000000"
-                stroke="#ffffff"
-                strokeOpacity={active ? "0.45" : "0.22"}
-                strokeWidth="0.9"
+                stroke="#27272a"
+                strokeOpacity={active ? "0.6" : "0.35"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Top Face (Slightly Lighter Matte Obsidian + Thin Zinc-400 Outline) */}
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                fill="#141414"
-                stroke="#ffffff"
-                strokeOpacity={isTop && active ? "1" : "0.75"}
-                strokeWidth={isTop ? "1.2" : "0.9"}
+                fill="#121215"
+                stroke={active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={active ? "0.9" : "0.7"}
+                strokeWidth={isTop ? "1" : "0.85"}
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Leading Specular Ridge Edge Highlight (Muted Zinc-300) */}
               <line
                 x1={p4.split(",")[0]}
                 y1={p4.split(",")[1]}
                 x2={p3.split(",")[0]}
                 y2={p3.split(",")[1]}
-                stroke="#ffffff"
-                strokeOpacity={active ? "1" : "0.85"}
+                stroke={active ? "#d4d4d8" : "#a1a1aa"}
+                strokeOpacity={active ? "0.95" : "0.75"}
                 strokeWidth="1.1"
+                strokeLinecap="round"
               />
 
+              {/* Top Slab: Mathematically Exact Isometric Circle Aperture & Chords */}
               {isTop && (
                 <g>
+                  {/* Recessed Aperture Cavity */}
                   <ellipse
                     cx="140"
-                    cy={originY - zTop * 0.5 + 24}
-                    rx="30"
-                    ry="17"
-                    fill="url(#apertureWhiteGlow)"
-                    stroke="#ffffff"
-                    strokeOpacity={active ? "1" : "0.8"}
-                    strokeWidth="1.2"
+                    cy={topCenterY}
+                    rx={apertureRx}
+                    ry={apertureRy}
+                    fill="url(#apertureMutedGlow)"
+                    stroke={active ? "#a1a1aa" : "#71717a"}
+                    strokeOpacity={active ? "0.95" : "0.75"}
+                    strokeWidth="1"
                   />
-                  <line x1="118" y1={originY - zTop * 0.5 + 21} x2="162" y2={originY - zTop * 0.5 + 21} stroke="#ffffff" strokeOpacity={active ? "0.8" : "0.35"} strokeWidth="0.8" />
-                  <line x1="114" y1={originY - zTop * 0.5 + 24} x2="166" y2={originY - zTop * 0.5 + 24} stroke="#ffffff" strokeOpacity={active ? "0.9" : "0.45"} strokeWidth="0.9" />
-                  <line x1="120" y1={originY - zTop * 0.5 + 27} x2="160" y2={originY - zTop * 0.5 + 27} stroke="#ffffff" strokeOpacity={active ? "0.8" : "0.35"} strokeWidth="0.8" />
+
+                  {/* Inner Isometric Chords (Clipped inside the circle) */}
+                  <g clipPath="url(#fig1ApertureClip)">
+                    {[-10, -5, 0, 5, 10].map((offset, cIdx) => (
+                      <line
+                        key={`chord-${cIdx}`}
+                        x1="100"
+                        y1={topCenterY + offset}
+                        x2="180"
+                        y2={topCenterY + offset}
+                        stroke={active ? "#71717a" : "#52525b"}
+                        strokeOpacity={active ? "0.75" : "0.5"}
+                        strokeWidth="0.75"
+                        strokeLinecap="round"
+                      />
+                    ))}
+                  </g>
                 </g>
               )}
             </g>

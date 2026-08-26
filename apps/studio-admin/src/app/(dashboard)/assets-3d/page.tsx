@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Badge,
   Button,
@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
   PageLayout,
-  PebbleBot3D,
+  PebbleBotSvg,
   LinearIsometricShowcase,
 } from "@k2net/ui";
 import {
@@ -29,9 +29,23 @@ export default function Assets3DPage() {
   const setActiveLoginHeroId = useUIStore((state) => state.setActiveLoginHeroId);
   const [previewKey, setPreviewKey] = useState(0);
 
-  const handleSetLoginHero = (id: string, title: string) => {
+  // Sync with global API on mount
+  useEffect(() => {
+    fetch("/api/system/login-hero")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.activeHeroId && data.activeHeroId !== activeLoginHeroId) {
+          setActiveLoginHeroId(data.activeHeroId as LoginHeroFigureId);
+        }
+      })
+      .catch(() => {});
+  }, [activeLoginHeroId, setActiveLoginHeroId]);
+
+  const handleSetLoginHero = async (id: string, title: string) => {
     const heroId = id as LoginHeroFigureId;
     setActiveLoginHeroId(heroId);
+
+    // 1. Set localStorage & state
     try {
       localStorage.setItem("k2net_active_login_hero", heroId);
       localStorage.setItem("k2net_login_hero_variant", heroId);
@@ -40,11 +54,26 @@ export default function Assets3DPage() {
       const obj = stored ? JSON.parse(stored) : { state: {} };
       obj.state = { ...obj.state, activeLoginHeroId: heroId };
       localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
-      window.dispatchEvent(new Event("storage"));
     } catch (_) {}
 
+    // 2. Set domain cookie for all browsers
+    try {
+      document.cookie = `k2net_global_login_hero=${heroId}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (_) {}
+
+    // 3. Persist to server API for all other browsers and guests
+    try {
+      await fetch("/api/system/login-hero", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: heroId }),
+      });
+    } catch (_) {}
+
+    window.dispatchEvent(new Event("storage"));
+
     toast.success(`Visual Halaman Login diubah ke "${title}"!`, {
-      description: "Buka halaman /login untuk melihat visualisasi yang baru dipilih.",
+      description: "Buka halaman /login (di browser mana pun) untuk melihat visualisasi yang baru dipilih.",
     });
   };
 
@@ -90,7 +119,7 @@ export default function Assets3DPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── SECTION 1: AI Assistant 3D Companion Mascot (Pebble Bot) ────────── */}
+      {/* ── SECTION 1: AI Assistant Companion Mascot (Pebble Bot Pure SVG) ─── */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
       <Card className="border-border/60 bg-gradient-to-b from-card via-card to-card/90 overflow-hidden relative shadow-xl">
         <CardHeader className="border-b border-border/40 pb-4">
@@ -100,7 +129,7 @@ export default function Assets3DPage() {
                 <Badge variant="secondary" className="text-[10px] font-mono uppercase tracking-wider text-primary border border-primary/30 bg-primary/5">
                   Dedicated AI Mascot (Pure SVG Vector)
                 </Badge>
-                <span className="text-xs text-muted-foreground font-mono">Real-Time Cursor Gaze</span>
+                <span className="text-xs text-muted-foreground font-mono">Real-Time GSAP Gaze Tracking</span>
               </div>
               <CardTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
                 <Bot className="h-5 w-5 text-primary" />
@@ -120,7 +149,7 @@ export default function Assets3DPage() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div className="relative h-[220px] flex items-center justify-center rounded-2xl bg-gradient-to-b from-black/40 to-black/60 border border-border/40 overflow-hidden">
-              <PebbleBot3D key={`peb-showcase-${previewKey}`} size="md" interactive={true} />
+              <PebbleBotSvg key={`peb-showcase-${previewKey}`} size="md" interactive={true} />
             </div>
 
             <div className="md:col-span-2 space-y-3">
@@ -160,14 +189,14 @@ export default function Assets3DPage() {
               <Badge variant="outline" className="text-[10px] font-mono border-primary/30 bg-primary/5 text-primary">
                 100% Pure SVG Vector Line Art
               </Badge>
-              <span className="text-xs text-muted-foreground font-mono">0% GPU Overhead &bull; Solid Black + White Lines &bull; 6 Core Figures</span>
+              <span className="text-xs text-muted-foreground font-mono">0% GPU Overhead &bull; Muted Silver-Zinc Wireframe &bull; Linear Style</span>
             </div>
             <h3 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               <span>Technical Isometric Architecture Gallery</span>
               <span className="text-xs text-muted-foreground font-mono font-normal">(FIG 0.1 — FIG 0.6)</span>
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Klik tombol &quot;Set as Login Hero&quot; pada salah satu figur di bawah untuk menjadikannya visual aktif di halaman login.
+              Klik tombol &quot;Set as Login Hero&quot; pada salah satu figur di bawah untuk menjadikannya visual aktif di halaman login untuk semua browser.
             </p>
           </div>
         </div>

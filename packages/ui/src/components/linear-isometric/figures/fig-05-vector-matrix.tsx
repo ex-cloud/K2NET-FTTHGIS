@@ -102,8 +102,8 @@ export function LinearVectorMatrixFigure({
         xmlns="http://www.w3.org/2000/svg"
       >
         {grid.map((c, i) => {
-          const sz = 10;
-          const h = 14;
+          const sz = 9.5;
+          const h = 13;
           const ox = 140;
           const oy = 145;
 
@@ -123,14 +123,16 @@ export function LinearVectorMatrixFigure({
                 cubesRef.current[i] = el;
               }}
             >
-              <polygon points={`${p4} ${p3} ${b3} ${b4}`} fill="#0a0a0a" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.8" />
-              <polygon points={`${p3} ${p2} ${b2} ${b3}`} fill="#000000" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="0.8" />
+              <polygon points={`${p4} ${p3} ${b3} ${b4}`} fill="#09090b" stroke="#3f3f46" strokeOpacity="0.5" strokeWidth="0.75" strokeLinejoin="round" strokeLinecap="round" />
+              <polygon points={`${p3} ${p2} ${b2} ${b3}`} fill="#000000" stroke="#27272a" strokeOpacity="0.4" strokeWidth="0.75" strokeLinejoin="round" strokeLinecap="round" />
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                fill={c.highlight && active ? "#222222" : "#121212"}
-                stroke="#ffffff"
-                strokeOpacity={c.highlight && active ? "1" : "0.7"}
-                strokeWidth="1.1"
+                fill={c.highlight && active ? "#18181b" : "#101012"}
+                stroke={c.highlight && active ? "#d4d4d8" : active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={c.highlight && active ? "1" : "0.75"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
             </g>
           );
@@ -142,9 +144,10 @@ export function LinearVectorMatrixFigure({
             y1="70"
             x2="140"
             y2="120"
-            stroke="#ffffff"
-            strokeWidth="1.5"
+            stroke="#71717a"
+            strokeWidth="1.2"
             strokeDasharray="4 4"
+            strokeOpacity="0.7"
             className="animate-pulse"
           />
         )}

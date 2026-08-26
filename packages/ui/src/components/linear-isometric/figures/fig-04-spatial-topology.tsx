@@ -100,14 +100,16 @@ export function LinearSpatialTopologyFigure({
             ${toIso(70, 70, 0)}
             ${toIso(-70, 70, 0)}
           `}
-          fill="#0a0a0a"
-          stroke="#ffffff"
-          strokeOpacity="0.3"
-          strokeWidth="1"
+          fill="#09090b"
+          stroke="#3f3f46"
+          strokeOpacity="0.5"
+          strokeWidth="0.85"
+          strokeLinejoin="round"
+          strokeLinecap="round"
         />
 
-        <line x1={toIso(-70, 0, 0).split(",")[0]} y1={toIso(-70, 0, 0).split(",")[1]} x2={toIso(70, 0, 0).split(",")[0]} y2={toIso(70, 0, 0).split(",")[1]} stroke="#ffffff" strokeOpacity="0.15" strokeWidth="0.8" strokeDasharray="3 3" />
-        <line x1={toIso(0, -70, 0).split(",")[0]} y1={toIso(0, -70, 0).split(",")[1]} x2={toIso(0, 70, 0).split(",")[0]} y2={toIso(0, 70, 0).split(",")[1]} stroke="#ffffff" strokeOpacity="0.15" strokeWidth="0.8" strokeDasharray="3 3" />
+        <line x1={toIso(-70, 0, 0).split(",")[0]} y1={toIso(-70, 0, 0).split(",")[1]} x2={toIso(70, 0, 0).split(",")[0]} y2={toIso(70, 0, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" />
+        <line x1={toIso(0, -70, 0).split(",")[0]} y1={toIso(0, -70, 0).split(",")[1]} x2={toIso(0, 70, 0).split(",")[0]} y2={toIso(0, 70, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" />
 
         {nodes.slice(1).map((odp) => {
           const rootPt = toIso(0, 0, nodes[0].z);
@@ -121,9 +123,9 @@ export function LinearSpatialTopologyFigure({
                 y1={odpPt.split(",")[1]}
                 x2={basePt.split(",")[0]}
                 y2={basePt.split(",")[1]}
-                stroke="#ffffff"
-                strokeOpacity="0.25"
-                strokeWidth="0.9"
+                stroke="#3f3f46"
+                strokeOpacity="0.4"
+                strokeWidth="0.8"
                 strokeDasharray="2 3"
               />
 
@@ -132,16 +134,17 @@ export function LinearSpatialTopologyFigure({
                 y1={rootPt.split(",")[1]}
                 x2={odpPt.split(",")[0]}
                 y2={odpPt.split(",")[1]}
-                stroke="#ffffff"
-                strokeOpacity={active ? "1" : "0.5"}
-                strokeWidth={active ? "1.5" : "1"}
+                stroke={active ? "#a1a1aa" : "#52525b"}
+                strokeOpacity={active ? "0.9" : "0.55"}
+                strokeWidth={active ? "1.2" : "0.85"}
+                strokeLinecap="round"
               />
             </g>
           );
         })}
 
         {nodes.map((n, idx) => {
-          const sz = n.type === "olt" ? 14 : 9;
+          const sz = n.type === "olt" ? 13 : 8.5;
           const p1 = toIso(n.x - sz, n.y - sz, n.z);
           const p2 = toIso(n.x + sz, n.y - sz, n.z);
           const p3 = toIso(n.x + sz, n.y + sz, n.z);
@@ -156,16 +159,18 @@ export function LinearSpatialTopologyFigure({
             >
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                fill="#121212"
-                stroke="#ffffff"
-                strokeOpacity={n.type === "olt" ? "1" : "0.7"}
-                strokeWidth="1.2"
+                fill="#121215"
+                stroke={n.type === "olt" ? (active ? "#d4d4d8" : "#a1a1aa") : active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={n.type === "olt" ? "1" : "0.75"}
+                strokeWidth="0.9"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
               <circle
                 cx={toIso(n.x, n.y, n.z).split(",")[0]}
                 cy={toIso(n.x, n.y, n.z).split(",")[1]}
-                r={n.type === "olt" ? "2.6" : "1.6"}
-                className="fill-white"
+                r={n.type === "olt" ? "2.2" : "1.4"}
+                fill={active ? "#ffffff" : "#d4d4d8"}
               />
             </g>
           );

@@ -92,21 +92,24 @@ export function LinearMicroserviceBusFigure({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Main Bus Track Rail */}
         <line
           x1={toIso(-75, 0, 0).split(",")[0]}
           y1={toIso(-75, 0, 0).split(",")[1]}
           x2={toIso(75, 0, 0).split(",")[0]}
           y2={toIso(75, 0, 0).split(",")[1]}
-          stroke="#ffffff"
-          strokeOpacity={active ? "0.9" : "0.4"}
-          strokeWidth="1.5"
+          stroke={active ? "#a1a1aa" : "#52525b"}
+          strokeOpacity={active ? "0.9" : "0.5"}
+          strokeWidth="1.2"
+          strokeLinecap="round"
         />
 
-        <line x1={toIso(-75, -20, 0).split(",")[0]} y1={toIso(-75, -20, 0).split(",")[1]} x2={toIso(75, -20, 0).split(",")[0]} y2={toIso(75, -20, 0).split(",")[1]} stroke="#ffffff" strokeOpacity="0.15" strokeWidth="0.8" strokeDasharray="3 3" />
-        <line x1={toIso(-75, 20, 0).split(",")[0]} y1={toIso(-75, 20, 0).split(",")[1]} x2={toIso(75, 20, 0).split(",")[0]} y2={toIso(75, 20, 0).split(",")[1]} stroke="#ffffff" strokeOpacity="0.15" strokeWidth="0.8" strokeDasharray="3 3" />
+        {/* Parallel Guide Rails */}
+        <line x1={toIso(-75, -20, 0).split(",")[0]} y1={toIso(-75, -20, 0).split(",")[1]} x2={toIso(75, -20, 0).split(",")[0]} y2={toIso(75, -20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" />
+        <line x1={toIso(-75, 20, 0).split(",")[0]} y1={toIso(-75, 20, 0).split(",")[1]} x2={toIso(75, 20, 0).split(",")[0]} y2={toIso(75, 20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" />
 
         {busNodes.map((n, i) => {
-          const sz = 16;
+          const sz = 15;
           const p1 = toIso(n.x - sz, n.y - sz / 2, n.z);
           const p2 = toIso(n.x + sz, n.y - sz / 2, n.z);
           const p3 = toIso(n.x + sz, n.y + sz, n.z);
@@ -127,25 +130,27 @@ export function LinearMicroserviceBusFigure({
                 y1={topPt.split(",")[1]}
                 x2={bPt.split(",")[0]}
                 y2={bPt.split(",")[1]}
-                stroke="#ffffff"
-                strokeOpacity="0.3"
-                strokeWidth="1"
+                stroke="#3f3f46"
+                strokeOpacity="0.4"
+                strokeWidth="0.8"
                 strokeDasharray="2 2"
               />
 
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
-                fill="#121212"
-                stroke="#ffffff"
-                strokeOpacity={active ? "1" : "0.75"}
-                strokeWidth="1.2"
+                fill="#121215"
+                stroke={active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={active ? "0.95" : "0.7"}
+                strokeWidth="0.85"
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
               <circle
                 cx={topPt.split(",")[0]}
                 cy={topPt.split(",")[1]}
-                r="2"
-                className="fill-white"
+                r="1.8"
+                fill={active ? "#ffffff" : "#d4d4d8"}
               />
             </g>
           );

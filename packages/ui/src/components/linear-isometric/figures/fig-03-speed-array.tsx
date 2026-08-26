@@ -116,22 +116,27 @@ export function LinearSpeedArrayFigure({
                 bladesRef.current[i] = el;
               }}
             >
+              {/* Solid Matte Card Body */}
               <polygon
                 points={`${p1} ${p2} ${b2} ${b1}`}
-                fill="#080808"
-                stroke="#ffffff"
-                strokeOpacity={isLead ? "0.9" : "0.35"}
-                strokeWidth={isLead ? "1.4" : "0.85"}
+                fill={isLead ? "#0c0c0e" : "#09090b"}
+                stroke={isLead ? "#a1a1aa" : "#3f3f46"}
+                strokeOpacity={isLead ? "0.9" : "0.45"}
+                strokeWidth={isLead ? "1.1" : "0.8"}
+                strokeLinejoin="round"
+                strokeLinecap="round"
               />
 
+              {/* Leading Top Rim Zinc Bevel */}
               <line
                 x1={p1.split(",")[0]}
                 y1={p1.split(",")[1]}
                 x2={p2.split(",")[0]}
                 y2={p2.split(",")[1]}
-                stroke="#ffffff"
-                strokeOpacity={isLead ? "1" : active ? "0.9" : "0.6"}
-                strokeWidth={isLead ? "1.8" : "1"}
+                stroke={isLead ? (active ? "#e4e4e7" : "#d4d4d8") : active ? "#a1a1aa" : "#71717a"}
+                strokeOpacity={isLead ? "1" : active ? "0.85" : "0.55"}
+                strokeWidth={isLead ? "1.4" : "0.9"}
+                strokeLinecap="round"
               />
             </g>
           );
@@ -143,9 +148,10 @@ export function LinearSpeedArrayFigure({
             y1="175"
             x2="225"
             y2="75"
-            stroke="#ffffff"
-            strokeWidth="1.6"
-            strokeDasharray="6 8"
+            stroke="#71717a"
+            strokeWidth="1.2"
+            strokeDasharray="4 6"
+            strokeOpacity="0.75"
             className="animate-pulse"
           />
         )}
