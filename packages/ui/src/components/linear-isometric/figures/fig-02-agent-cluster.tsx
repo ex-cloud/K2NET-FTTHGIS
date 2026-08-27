@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { toIso, toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 export function LinearAgentClusterFigure({
   className,
@@ -20,6 +20,7 @@ export function LinearAgentClusterFigure({
   ];
 
   const originY = size === "hero" ? 165 : 158;
+  const cornerRadius = 3.8;
 
   // Direct Per-Pillar Hover Trigger
   const handlePillarHover = (hoveredIdx: number) => {
@@ -81,17 +82,32 @@ export function LinearAgentClusterFigure({
         {pillars.map((p) => {
           const w = p.width;
           const h = p.defaultH;
+          const r = cornerRadius;
           const ox = 140;
           const oy = originY;
 
-          const p1 = toIso(p.x - w / 2, p.y - w / 2, h, ox, oy);
-          const p2 = toIso(p.x + w / 2, p.y - w / 2, h, ox, oy);
-          const p3 = toIso(p.x + w / 2, p.y + w / 2, h, ox, oy);
-          const p4 = toIso(p.x - w / 2, p.y + w / 2, h, ox, oy);
+          const topPath = isoRoundedRectPath(p.x, p.y, w, w, h, r, ox, oy);
 
-          const b2 = toIso(p.x + w / 2, p.y - w / 2, 0, ox, oy);
-          const b3 = toIso(p.x + w / 2, p.y + w / 2, 0, ox, oy);
-          const b4 = toIso(p.x - w / 2, p.y + w / 2, 0, ox, oy);
+          const x1 = p.x - w / 2;
+          const x2 = p.x + w / 2;
+          const y1 = p.y - w / 2;
+          const y2 = p.y + w / 2;
+
+          const p6Top = toIsoPt(x1 + r, y2, h, ox, oy);
+          const p5Top = toIsoPt(x2 - r, y2, h, ox, oy);
+          const c3Top = toIsoPt(x2, y2, h, ox, oy);
+          const p4Top = toIsoPt(x2, y2 - r, h, ox, oy);
+          const p3Top = toIsoPt(x2, y1 + r, h, ox, oy);
+          const c4Top = toIsoPt(x1, y2, h, ox, oy);
+          const p7Top = toIsoPt(x1, y2 - r, h, ox, oy);
+
+          const p6Base = toIsoPt(x1 + r, y2, 0, ox, oy);
+          const p5Base = toIsoPt(x2 - r, y2, 0, ox, oy);
+          const c3Base = toIsoPt(x2, y2, 0, ox, oy);
+          const p4Base = toIsoPt(x2, y2 - r, 0, ox, oy);
+          const p3Base = toIsoPt(x2, y1 + r, 0, ox, oy);
+          const c4Base = toIsoPt(x1, y2, 0, ox, oy);
+          const p7Base = toIsoPt(x1, y2 - r, 0, ox, oy);
 
           return (
             <g
@@ -103,9 +119,17 @@ export function LinearAgentClusterFigure({
               onMouseEnter={() => handlePillarHover(p.idx)}
               onMouseMove={() => handlePillarHover(p.idx)}
             >
-              {/* Left Face */}
-              <polygon
-                points={`${p4} ${p3} ${b3} ${b4}`}
+              {/* Left Face with Rounded Corner Fillet */}
+              <path
+                d={`
+                  M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                  Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                  L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  L ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  L ${p6Base.x.toFixed(1)} ${p6Base.y.toFixed(1)}
+                  Q ${c4Base.x.toFixed(1)} ${c4Base.y.toFixed(1)} ${p7Base.x.toFixed(1)} ${p7Base.y.toFixed(1)}
+                  Z
+                `}
                 fill="#09090b"
                 stroke="#3f3f46"
                 strokeOpacity="0.6"
@@ -114,9 +138,17 @@ export function LinearAgentClusterFigure({
                 strokeLinecap="round"
               />
 
-              {/* Right Face */}
-              <polygon
-                points={`${p3} ${p2} ${b2} ${b3}`}
+              {/* Right Face with Rounded Corner Fillet */}
+              <path
+                d={`
+                  M ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                  L ${p3Top.x.toFixed(1)} ${p3Top.y.toFixed(1)}
+                  L ${p3Base.x.toFixed(1)} ${p3Base.y.toFixed(1)}
+                  L ${p4Base.x.toFixed(1)} ${p4Base.y.toFixed(1)}
+                  Q ${c3Base.x.toFixed(1)} ${c3Base.y.toFixed(1)} ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  Z
+                `}
                 fill="#000000"
                 stroke="#27272a"
                 strokeOpacity="0.45"
@@ -125,9 +157,9 @@ export function LinearAgentClusterFigure({
                 strokeLinecap="round"
               />
 
-              {/* Top Face */}
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
+              {/* Top Face (Smooth Rounded Isometric Polygon) */}
+              <path
+                d={topPath}
                 fill="#121215"
                 stroke="#71717a"
                 strokeOpacity="0.85"
@@ -136,14 +168,9 @@ export function LinearAgentClusterFigure({
                 strokeLinecap="round"
               />
 
-              {/* Recessed Aperture Diamond on Top Face */}
-              <polygon
-                points={`
-                  ${toIso(p.x - 4.5, p.y - 4.5, h + 1, ox, oy)}
-                  ${toIso(p.x + 4.5, p.y - 4.5, h + 1, ox, oy)}
-                  ${toIso(p.x + 4.5, p.y + 4.5, h + 1, ox, oy)}
-                  ${toIso(p.x - 4.5, p.y + 4.5, h + 1, ox, oy)}
-                `}
+              {/* Recessed Aperture Diamond on Top Face with Rounded Joins */}
+              <path
+                d={isoRoundedRectPath(p.x, p.y, 9, 9, h + 1, 1.8, ox, oy)}
                 fill="#09090b"
                 stroke="#3f3f46"
                 strokeOpacity="0.75"

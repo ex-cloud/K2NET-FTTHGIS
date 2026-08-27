@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { toIso, toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 // Official K2NET Brand Watermark Base64 Data URI
 const K2NET_LOGO_B64 =
@@ -21,6 +21,7 @@ export function LinearPurposeBuiltFigure({
   const slabThickness = size === "hero" ? 9 : 7.5;
   const originY = size === "hero" ? 155 : 148;
   const topSlabIndex = layers.length - 1;
+  const cornerRadius = size === "hero" ? 6.5 : 5.5;
 
   // Aperture radius calculation (exact isometric projection of a flat circle)
   const apertureRadius = size === "hero" ? 27 : 23;
@@ -107,7 +108,7 @@ export function LinearPurposeBuiltFigure({
           className="fill-black/80 filter blur-[10px] pointer-events-none"
         />
 
-        {/* 6 Layered Slabs with Direct Hover on Slab Stack */}
+        {/* 6 Layered Slabs with Rounded Fillet Corners */}
         <g
           className="cursor-pointer"
           onMouseEnter={handleSlabsHover}
@@ -119,14 +120,32 @@ export function LinearPurposeBuiltFigure({
             const zTop = zBase + slabThickness;
             const isTop = idx === topSlabIndex;
 
-            const p1 = toIso(-slabSize, -slabSize, zTop, 140, originY);
-            const p2 = toIso(slabSize, -slabSize, zTop, 140, originY);
-            const p3 = toIso(slabSize, slabSize, zTop, 140, originY);
-            const p4 = toIso(-slabSize, slabSize, zTop, 140, originY);
+            const w = slabSize * 2;
+            const r = cornerRadius;
+            const x1 = -slabSize;
+            const x2 = slabSize;
+            const y1 = -slabSize;
+            const y2 = slabSize;
 
-            const b2 = toIso(slabSize, -slabSize, zBase, 140, originY);
-            const b3 = toIso(slabSize, slabSize, zBase, 140, originY);
-            const b4 = toIso(-slabSize, slabSize, zBase, 140, originY);
+            // Rounded corner projected points for top face
+            const topPath = isoRoundedRectPath(0, 0, w, w, zTop, r, 140, originY);
+
+            // Side wall contour points (at zTop and zBase)
+            const p6Top = toIsoPt(x1 + r, y2, zTop, 140, originY);
+            const p5Top = toIsoPt(x2 - r, y2, zTop, 140, originY);
+            const c3Top = toIsoPt(x2, y2, zTop, 140, originY);
+            const p4Top = toIsoPt(x2, y2 - r, zTop, 140, originY);
+            const p3Top = toIsoPt(x2, y1 + r, zTop, 140, originY);
+            const c4Top = toIsoPt(x1, y2, zTop, 140, originY);
+            const p7Top = toIsoPt(x1, y2 - r, zTop, 140, originY);
+
+            const p6Base = toIsoPt(x1 + r, y2, zBase, 140, originY);
+            const p5Base = toIsoPt(x2 - r, y2, zBase, 140, originY);
+            const c3Base = toIsoPt(x2, y2, zBase, 140, originY);
+            const p4Base = toIsoPt(x2, y2 - r, zBase, 140, originY);
+            const p3Base = toIsoPt(x2, y1 + r, zBase, 140, originY);
+            const c4Base = toIsoPt(x1, y2, zBase, 140, originY);
+            const p7Base = toIsoPt(x1, y2 - r, zBase, 140, originY);
 
             return (
               <g
@@ -135,9 +154,17 @@ export function LinearPurposeBuiltFigure({
                   slabsRef.current[idx] = el;
                 }}
               >
-                {/* Left Face */}
-                <polygon
-                  points={`${p4} ${p3} ${b3} ${b4}`}
+                {/* Left Face with Rounded Corner Fillet */}
+                <path
+                  d={`
+                    M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                    Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                    L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                    L ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                    L ${p6Base.x.toFixed(1)} ${p6Base.y.toFixed(1)}
+                    Q ${c4Base.x.toFixed(1)} ${c4Base.y.toFixed(1)} ${p7Base.x.toFixed(1)} ${p7Base.y.toFixed(1)}
+                    Z
+                  `}
                   fill="#09090b"
                   stroke="#3f3f46"
                   strokeOpacity="0.6"
@@ -146,9 +173,17 @@ export function LinearPurposeBuiltFigure({
                   strokeLinecap="round"
                 />
 
-                {/* Right Face */}
-                <polygon
-                  points={`${p3} ${p2} ${b2} ${b3}`}
+                {/* Right Face with Rounded Corner Fillet */}
+                <path
+                  d={`
+                    M ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                    Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                    L ${p3Top.x.toFixed(1)} ${p3Top.y.toFixed(1)}
+                    L ${p3Base.x.toFixed(1)} ${p3Base.y.toFixed(1)}
+                    L ${p4Base.x.toFixed(1)} ${p4Base.y.toFixed(1)}
+                    Q ${c3Base.x.toFixed(1)} ${c3Base.y.toFixed(1)} ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                    Z
+                  `}
                   fill="#000000"
                   stroke="#27272a"
                   strokeOpacity="0.45"
@@ -157,27 +192,30 @@ export function LinearPurposeBuiltFigure({
                   strokeLinecap="round"
                 />
 
-                {/* Top Face */}
-                <polygon
-                  points={`${p1} ${p2} ${p3} ${p4}`}
+                {/* Top Face (Smooth Rounded Isometric Polygon) */}
+                <path
+                  d={topPath}
                   fill="#121215"
                   stroke="#71717a"
-                  strokeOpacity="0.8"
+                  strokeOpacity="0.85"
                   strokeWidth={isTop ? "1" : "0.85"}
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
 
                 {/* Leading Specular Ridge Edge Highlight */}
-                <line
-                  x1={p4.split(",")[0]}
-                  y1={p4.split(",")[1]}
-                  x2={p3.split(",")[0]}
-                  y2={p3.split(",")[1]}
+                <path
+                  d={`
+                    M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                    Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                    L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                    Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                  `}
                   stroke="#a1a1aa"
-                  strokeOpacity="0.8"
+                  strokeOpacity="0.85"
                   strokeWidth="1.1"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
 
                 {/* Top Slab: Exact Center Isometric Aperture with Official K2NET Logo */}

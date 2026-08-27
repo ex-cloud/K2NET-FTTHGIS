@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { toIso, toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 export function LinearSpatialTopologyFigure({
   className,
@@ -67,13 +67,9 @@ export function LinearSpatialTopologyFigure({
         xmlns="http://www.w3.org/2000/svg"
         onMouseLeave={handleNodesLeave}
       >
-        <polygon
-          points={`
-            ${toIso(-70, -70, 0)}
-            ${toIso(70, -70, 0)}
-            ${toIso(70, 70, 0)}
-            ${toIso(-70, 70, 0)}
-          `}
+        {/* Rounded Base Ground Plane */}
+        <path
+          d={isoRoundedRectPath(0, 0, 140, 140, 0, 8, 140, 140)}
           fill="#09090b"
           stroke="#3f3f46"
           strokeOpacity="0.5"
@@ -83,31 +79,31 @@ export function LinearSpatialTopologyFigure({
           className="pointer-events-none"
         />
 
-        <line x1={toIso(-70, 0, 0).split(",")[0]} y1={toIso(-70, 0, 0).split(",")[1]} x2={toIso(70, 0, 0).split(",")[0]} y2={toIso(70, 0, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
-        <line x1={toIso(0, -70, 0).split(",")[0]} y1={toIso(0, -70, 0).split(",")[1]} x2={toIso(0, 70, 0).split(",")[0]} y2={toIso(0, 70, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
+        <line x1={toIso(-62, 0, 0).split(",")[0]} y1={toIso(-62, 0, 0).split(",")[1]} x2={toIso(62, 0, 0).split(",")[0]} y2={toIso(62, 0, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
+        <line x1={toIso(0, -62, 0).split(",")[0]} y1={toIso(0, -62, 0).split(",")[1]} x2={toIso(0, 62, 0).split(",")[0]} y2={toIso(0, 62, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.6" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
 
         {nodes.slice(1).map((odp) => {
-          const rootPt = toIso(0, 0, nodes[0].z);
-          const odpPt = toIso(odp.x, odp.y, odp.z);
-          const basePt = toIso(odp.x, odp.y, 0);
+          const rootPt = toIsoPt(0, 0, nodes[0].z);
+          const odpPt = toIsoPt(odp.x, odp.y, odp.z);
+          const basePt = toIsoPt(odp.x, odp.y, 0);
 
           return (
             <g key={`feeder-${odp.id}`} className="pointer-events-none">
               <line
-                x1={basePt.split(",")[0]}
-                y1={basePt.split(",")[1]}
-                x2={odpPt.split(",")[0]}
-                y2={odpPt.split(",")[1]}
+                x1={basePt.x.toFixed(1)}
+                y1={basePt.y.toFixed(1)}
+                x2={odpPt.x.toFixed(1)}
+                y2={odpPt.y.toFixed(1)}
                 stroke="#3f3f46"
                 strokeOpacity="0.5"
                 strokeWidth="0.8"
                 strokeDasharray="2 2"
               />
               <line
-                x1={rootPt.split(",")[0]}
-                y1={rootPt.split(",")[1]}
-                x2={odpPt.split(",")[0]}
-                y2={odpPt.split(",")[1]}
+                x1={rootPt.x.toFixed(1)}
+                y1={rootPt.y.toFixed(1)}
+                x2={odpPt.x.toFixed(1)}
+                y2={odpPt.y.toFixed(1)}
                 stroke="#52525b"
                 strokeOpacity="0.7"
                 strokeWidth="0.9"
@@ -119,11 +115,7 @@ export function LinearSpatialTopologyFigure({
         {nodes.map((node) => {
           const isOlt = node.type === "olt";
           const r = isOlt ? 8.5 : 5.5;
-
-          const p1 = toIso(node.x - r, node.y - r, node.z);
-          const p2 = toIso(node.x + r, node.y - r, node.z);
-          const p3 = toIso(node.x + r, node.y + r, node.z);
-          const p4 = toIso(node.x - r, node.y + r, node.z);
+          const cornerR = isOlt ? 2.5 : 1.8;
 
           return (
             <g
@@ -135,8 +127,9 @@ export function LinearSpatialTopologyFigure({
               onMouseEnter={() => handleNodeHover(node.idx)}
               onMouseMove={() => handleNodeHover(node.idx)}
             >
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
+              {/* Rounded Node Plate */}
+              <path
+                d={isoRoundedRectPath(node.x, node.y, r * 2, r * 2, node.z, cornerR, 140, 140)}
                 fill="#121215"
                 stroke={isOlt ? "#d4d4d8" : "#71717a"}
                 strokeOpacity={isOlt ? "1" : "0.85"}

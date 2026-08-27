@@ -3,17 +3,7 @@
 import React, { useRef, useState, useCallback } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { type LinearFigureProps } from "../iso-utils";
-
-const COS30 = 0.8660254;
-const SIN30 = 0.5;
-
-function pt(x: number, y: number, z: number, ox: number, oy: number) {
-  return {
-    x: ox + (x - y) * COS30,
-    y: oy + (x + y) * SIN30 - z,
-  };
-}
+import { toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 export function LinearSpeedArrayFigure({
   className,
@@ -26,9 +16,10 @@ export function LinearSpeedArrayFigure({
 
   const originY = size === "hero" ? 160 : 150;
   const originX = 140;
-  const slatWidth = 3.2;
+  const slatWidth = 3.4;
   const slatLength = size === "hero" ? 56 : 48;
   const pitch = size === "hero" ? 6.2 : 5.4;
+  const cornerRadius = 1.2;
 
   // Track height of each slat [0..13]
   const [heights, setHeights] = useState<number[]>(() =>
@@ -42,11 +33,13 @@ export function LinearSpeedArrayFigure({
   const slatBases = useRef(
     Array.from({ length: cardCount }, (_, i) => {
       const xi = (i - (cardCount - 1) / 2) * pitch;
-      const p1 = pt(xi - slatWidth / 2, -slatLength / 2, 0, originX, originY);
-      const p2 = pt(xi + slatWidth / 2, -slatLength / 2, 0, originX, originY);
-      const p3 = pt(xi + slatWidth / 2, slatLength / 2, 0, originX, originY);
-      const p4 = pt(xi - slatWidth / 2, slatLength / 2, 0, originX, originY);
-      return { xi, p1, p2, p3, p4 };
+      const x1 = xi - slatWidth / 2;
+      const x2 = xi + slatWidth / 2;
+      const y1 = -slatLength / 2;
+      const y2 = slatLength / 2;
+      const r = cornerRadius;
+
+      return { xi, x1, x2, y1, y2, r };
     })
   );
 
@@ -114,16 +107,29 @@ export function LinearSpeedArrayFigure({
           className="fill-black/75 filter blur-[8px] pointer-events-none"
         />
 
-        {/* 14 True 3D Isometric Extruded Slats with direct per-slat hover */}
+        {/* 14 True 3D Isometric Extruded Slats with Rounded Fillets */}
         {slatBases.current.map((base, i) => {
           const H = heights[i] || REST_HEIGHT;
-          const { p1, p2, p3, p4 } = base;
+          const { xi, x1, x2, y1, y2, r } = base;
 
-          // Top face vertices elevated by -H
-          const tp1 = `${p1.x},${p1.y - H}`;
-          const tp2 = `${p2.x},${p2.y - H}`;
-          const tp3 = `${p3.x},${p3.y - H}`;
-          const tp4 = `${p4.x},${p4.y - H}`;
+          const topPath = isoRoundedRectPath(xi, 0, slatWidth, slatLength, H, r, originX, originY);
+
+          // Side wall and end-cap contours
+          const p6Top = toIsoPt(x1 + r, y2, H, originX, originY);
+          const p5Top = toIsoPt(x2 - r, y2, H, originX, originY);
+          const c3Top = toIsoPt(x2, y2, H, originX, originY);
+          const p4Top = toIsoPt(x2, y2 - r, H, originX, originY);
+          const p3Top = toIsoPt(x2, y1 + r, H, originX, originY);
+          const c4Top = toIsoPt(x1, y2, H, originX, originY);
+          const p7Top = toIsoPt(x1, y2 - r, H, originX, originY);
+
+          const p6Base = toIsoPt(x1 + r, y2, 0, originX, originY);
+          const p5Base = toIsoPt(x2 - r, y2, 0, originX, originY);
+          const c3Base = toIsoPt(x2, y2, 0, originX, originY);
+          const p4Base = toIsoPt(x2, y2 - r, 0, originX, originY);
+          const p3Base = toIsoPt(x2, y1 + r, 0, originX, originY);
+          const c4Base = toIsoPt(x1, y2, 0, originX, originY);
+          const p7Base = toIsoPt(x1, y2 - r, 0, originX, originY);
 
           const isRaised = H > REST_HEIGHT + 2;
 
@@ -134,9 +140,17 @@ export function LinearSpeedArrayFigure({
               onMouseEnter={() => handleSlatHover(i)}
               onMouseMove={() => handleSlatHover(i)}
             >
-              {/* Left vertical side face */}
-              <polygon
-                points={`${tp4} ${tp3} ${p3.x},${p3.y} ${p4.x},${p4.y}`}
+              {/* Left vertical side face with rounded corner end */}
+              <path
+                d={`
+                  M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                  Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                  L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  L ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  L ${p6Base.x.toFixed(1)} ${p6Base.y.toFixed(1)}
+                  Q ${c4Base.x.toFixed(1)} ${c4Base.y.toFixed(1)} ${p7Base.x.toFixed(1)} ${p7Base.y.toFixed(1)}
+                  Z
+                `}
                 fill="#09090b"
                 stroke="#3f3f46"
                 strokeOpacity={isRaised ? "0.85" : "0.5"}
@@ -145,9 +159,17 @@ export function LinearSpeedArrayFigure({
                 strokeLinecap="round"
               />
 
-              {/* Front-right vertical end cap */}
-              <polygon
-                points={`${tp3} ${tp2} ${p2.x},${p2.y} ${p3.x},${p3.y}`}
+              {/* Front-right vertical end cap with rounded fillet */}
+              <path
+                d={`
+                  M ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                  L ${p3Top.x.toFixed(1)} ${p3Top.y.toFixed(1)}
+                  L ${p3Base.x.toFixed(1)} ${p3Base.y.toFixed(1)}
+                  L ${p4Base.x.toFixed(1)} ${p4Base.y.toFixed(1)}
+                  Q ${c3Base.x.toFixed(1)} ${c3Base.y.toFixed(1)} ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  Z
+                `}
                 fill="#000000"
                 stroke="#27272a"
                 strokeOpacity={isRaised ? "0.65" : "0.4"}
@@ -156,9 +178,9 @@ export function LinearSpeedArrayFigure({
                 strokeLinecap="round"
               />
 
-              {/* Top horizontal face */}
-              <polygon
-                points={`${tp1} ${tp2} ${tp3} ${tp4}`}
+              {/* Top horizontal face with rounded corners */}
+              <path
+                d={topPath}
                 fill={isRaised ? "#18181b" : "#121215"}
                 stroke={isRaised ? "#d4d4d8" : "#71717a"}
                 strokeOpacity={isRaised ? "1" : "0.75"}
@@ -168,20 +190,28 @@ export function LinearSpeedArrayFigure({
               />
 
               {/* Leading Top Ridge Highlight */}
-              <line
-                x1={p4.x}
-                y1={p4.y - H}
-                x2={p3.x}
-                y2={p3.y - H}
+              <path
+                d={`
+                  M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                  Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                  L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                `}
                 stroke={isRaised ? "#ffffff" : "#a1a1aa"}
                 strokeOpacity={isRaised ? "1" : "0.7"}
                 strokeWidth={isRaised ? "1.2" : "0.85"}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
 
-              {/* Invisible expanded hit area for buttery-smooth interaction */}
+              {/* Expanded hit area for smooth hover */}
               <polygon
-                points={`${p1.x},${p1.y - MAX_LIFT} ${p2.x},${p2.y - MAX_LIFT} ${p3.x},${p3.y} ${p4.x},${p4.y}`}
+                points={`
+                  ${toIsoPt(x1, y1, H + 12, originX, originY).x},${toIsoPt(x1, y1, H + 12, originX, originY).y}
+                  ${toIsoPt(x2, y1, H + 12, originX, originY).x},${toIsoPt(x2, y1, H + 12, originX, originY).y}
+                  ${toIsoPt(x2, y2, 0, originX, originY).x},${toIsoPt(x2, y2, 0, originX, originY).y}
+                  ${toIsoPt(x1, y2, 0, originX, originY).x},${toIsoPt(x1, y2, 0, originX, originY).y}
+                `}
                 fill="transparent"
                 stroke="transparent"
               />

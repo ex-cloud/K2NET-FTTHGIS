@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 export function LinearVectorMatrixFigure({
   className,
@@ -25,6 +25,7 @@ export function LinearVectorMatrixFigure({
   ];
 
   const originY = 145;
+  const cornerRadius = 2.4;
 
   // Direct Per-Cube Hover Trigger
   const handleCubeHover = (hoveredIdx: number) => {
@@ -80,17 +81,32 @@ export function LinearVectorMatrixFigure({
         {grid.map((c, i) => {
           const sz = 9.5;
           const h = 13;
+          const r = cornerRadius;
           const ox = 140;
           const oy = originY;
 
-          const p1 = toIso(c.x - sz, c.y - sz, c.z + h, ox, oy);
-          const p2 = toIso(c.x + sz, c.y - sz, c.z + h, ox, oy);
-          const p3 = toIso(c.x + sz, c.y + sz, c.z + h, ox, oy);
-          const p4 = toIso(c.x - sz, c.y + sz, c.z + h, ox, oy);
+          const topPath = isoRoundedRectPath(c.x, c.y, sz * 2, sz * 2, c.z + h, r, ox, oy);
 
-          const b2 = toIso(c.x + sz, c.y - sz, c.z, ox, oy);
-          const b3 = toIso(c.x + sz, c.y + sz, c.z, ox, oy);
-          const b4 = toIso(c.x - sz, c.y + sz, c.z, ox, oy);
+          const x1 = c.x - sz;
+          const x2 = c.x + sz;
+          const y1 = c.y - sz;
+          const y2 = c.y + sz;
+
+          const p6Top = toIsoPt(x1 + r, y2, c.z + h, ox, oy);
+          const p5Top = toIsoPt(x2 - r, y2, c.z + h, ox, oy);
+          const c3Top = toIsoPt(x2, y2, c.z + h, ox, oy);
+          const p4Top = toIsoPt(x2, y2 - r, c.z + h, ox, oy);
+          const p3Top = toIsoPt(x2, y1 + r, c.z + h, ox, oy);
+          const c4Top = toIsoPt(x1, y2, c.z + h, ox, oy);
+          const p7Top = toIsoPt(x1, y2 - r, c.z + h, ox, oy);
+
+          const p6Base = toIsoPt(x1 + r, y2, c.z, ox, oy);
+          const p5Base = toIsoPt(x2 - r, y2, c.z, ox, oy);
+          const c3Base = toIsoPt(x2, y2, c.z, ox, oy);
+          const p4Base = toIsoPt(x2, y2 - r, c.z, ox, oy);
+          const p3Base = toIsoPt(x2, y1 + r, c.z, ox, oy);
+          const c4Base = toIsoPt(x1, y2, c.z, ox, oy);
+          const p7Base = toIsoPt(x1, y2 - r, c.z, ox, oy);
 
           return (
             <g
@@ -102,10 +118,47 @@ export function LinearVectorMatrixFigure({
               onMouseEnter={() => handleCubeHover(i)}
               onMouseMove={() => handleCubeHover(i)}
             >
-              <polygon points={`${p4} ${p3} ${b3} ${b4}`} fill="#09090b" stroke="#3f3f46" strokeOpacity="0.5" strokeWidth="0.75" strokeLinejoin="round" strokeLinecap="round" />
-              <polygon points={`${p3} ${p2} ${b2} ${b3}`} fill="#000000" stroke="#27272a" strokeOpacity="0.4" strokeWidth="0.75" strokeLinejoin="round" strokeLinecap="round" />
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
+              {/* Left Face with Rounded Corner Fillet */}
+              <path
+                d={`
+                  M ${p7Top.x.toFixed(1)} ${p7Top.y.toFixed(1)}
+                  Q ${c4Top.x.toFixed(1)} ${c4Top.y.toFixed(1)} ${p6Top.x.toFixed(1)} ${p6Top.y.toFixed(1)}
+                  L ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  L ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  L ${p6Base.x.toFixed(1)} ${p6Base.y.toFixed(1)}
+                  Q ${c4Base.x.toFixed(1)} ${c4Base.y.toFixed(1)} ${p7Base.x.toFixed(1)} ${p7Base.y.toFixed(1)}
+                  Z
+                `}
+                fill="#09090b"
+                stroke="#3f3f46"
+                strokeOpacity="0.5"
+                strokeWidth="0.75"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+
+              {/* Right Face with Rounded Corner Fillet */}
+              <path
+                d={`
+                  M ${p5Top.x.toFixed(1)} ${p5Top.y.toFixed(1)}
+                  Q ${c3Top.x.toFixed(1)} ${c3Top.y.toFixed(1)} ${p4Top.x.toFixed(1)} ${p4Top.y.toFixed(1)}
+                  L ${p3Top.x.toFixed(1)} ${p3Top.y.toFixed(1)}
+                  L ${p3Base.x.toFixed(1)} ${p3Base.y.toFixed(1)}
+                  L ${p4Base.x.toFixed(1)} ${p4Base.y.toFixed(1)}
+                  Q ${c3Base.x.toFixed(1)} ${c3Base.y.toFixed(1)} ${p5Base.x.toFixed(1)} ${p5Base.y.toFixed(1)}
+                  Z
+                `}
+                fill="#000000"
+                stroke="#27272a"
+                strokeOpacity="0.4"
+                strokeWidth="0.75"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+
+              {/* Top Face with Rounded Isometric Polygon */}
+              <path
+                d={topPath}
                 fill={i === 4 ? "#18181b" : "#101012"}
                 stroke={i === 4 ? "#d4d4d8" : "#71717a"}
                 strokeOpacity={i === 4 ? "1" : "0.75"}

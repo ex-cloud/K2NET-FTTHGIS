@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { toIso, toIsoPt, isoRoundedRectPath, type LinearFigureProps } from "../iso-utils";
 
 export function LinearMicroserviceBusFigure({
   className,
@@ -18,6 +18,8 @@ export function LinearMicroserviceBusFigure({
     { name: "Event Bus",    x: 20,  y: 0, z: 20, idx: 2 },
     { name: "Go Gateways",  x: 60,  y: 0, z: 0,  idx: 3 },
   ];
+
+  const cornerRadius = 3.5;
 
   // Direct Per-Node Hover Trigger along Bus Rail
   const handleBusNodeHover = (hoveredIdx: number) => {
@@ -81,18 +83,13 @@ export function LinearMicroserviceBusFigure({
         />
 
         {/* Parallel Guide Rails */}
-        <line x1={toIso(-75, -20, 0).split(",")[0]} y1={toIso(-75, -20, 0).split(",")[1]} x2={toIso(75, -20, 0).split(",")[0]} y2={toIso(75, -20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
-        <line x1={toIso(-75, 20, 0).split(",")[0]} y1={toIso(-75, 20, 0).split(",")[1]} x2={toIso(75, 20, 0).split(",")[0]} y2={toIso(75, 20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" className="pointer-events-none" />
+        <line x1={toIso(-75, -20, 0).split(",")[0]} y1={toIso(-75, -20, 0).split(",")[1]} x2={toIso(75, -20, 0).split(",")[0]} y2={toIso(75, -20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" strokeLinecap="round" className="pointer-events-none" />
+        <line x1={toIso(-75, 20, 0).split(",")[0]} y1={toIso(-75, 20, 0).split(",")[1]} x2={toIso(75, 20, 0).split(",")[0]} y2={toIso(75, 20, 0).split(",")[1]} stroke="#27272a" strokeOpacity="0.5" strokeWidth="0.75" strokeDasharray="3 3" strokeLinecap="round" className="pointer-events-none" />
 
         {busNodes.map((n) => {
           const sz = 15;
-          const p1 = toIso(n.x - sz, n.y - sz / 2, n.z);
-          const p2 = toIso(n.x + sz, n.y - sz / 2, n.z);
-          const p3 = toIso(n.x + sz, n.y + sz, n.z);
-          const p4 = toIso(n.x - sz, n.y + sz, n.z);
-
-          const bPt = toIso(n.x, n.y, 0);
-          const topPt = toIso(n.x, n.y, n.z);
+          const bPt = toIsoPt(n.x, n.y, 0);
+          const topPt = toIsoPt(n.x, n.y, n.z);
 
           return (
             <g
@@ -105,18 +102,20 @@ export function LinearMicroserviceBusFigure({
               onMouseMove={() => handleBusNodeHover(n.idx)}
             >
               <line
-                x1={bPt.split(",")[0]}
-                y1={bPt.split(",")[1]}
-                x2={topPt.split(",")[0]}
-                y2={topPt.split(",")[1]}
+                x1={bPt.x.toFixed(1)}
+                y1={bPt.y.toFixed(1)}
+                x2={topPt.x.toFixed(1)}
+                y2={topPt.y.toFixed(1)}
                 stroke="#52525b"
                 strokeOpacity="0.6"
                 strokeWidth="0.85"
                 strokeDasharray="2 2"
+                strokeLinecap="round"
               />
 
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
+              {/* Rounded Plate Node */}
+              <path
+                d={isoRoundedRectPath(n.x, n.y, sz * 2, sz * 1.5, n.z, cornerRadius, 140, 140)}
                 fill="#121215"
                 stroke="#71717a"
                 strokeOpacity="0.85"
@@ -126,8 +125,8 @@ export function LinearMicroserviceBusFigure({
               />
 
               <circle
-                cx={topPt.split(",")[0]}
-                cy={topPt.split(",")[1]}
+                cx={topPt.x.toFixed(1)}
+                cy={topPt.y.toFixed(1)}
                 r="1.8"
                 fill="#ffffff"
               />
