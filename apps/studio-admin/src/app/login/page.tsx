@@ -130,9 +130,54 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Monochrome Pure SVG Hero Canvas & Testimonial */}
-      <div className="hidden lg:flex flex-1 bg-background flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden">
+      {/* RIGHT COLUMN: Monochrome Pure SVG Hero Canvas & Testimonial with Film Grain & Noise Gradients */}
+      <div className="hidden lg:flex flex-1 bg-[#09090b] flex-col items-center justify-between p-12 xl:p-16 relative overflow-hidden select-none">
         
+        {/* 1. Ambient Radial Glow & Gradient Vignette Behind 3D Object */}
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 45%, rgba(63, 63, 70, 0.28) 0%, rgba(24, 24, 27, 0.45) 42%, rgba(9, 9, 11, 0.98) 78%)",
+          }}
+        />
+
+        {/* 2. Top-Right Subtle Specular Sheen */}
+        <div
+          className="absolute top-0 right-0 w-[550px] h-[550px] pointer-events-none z-0 opacity-50"
+          style={{
+            background:
+              "radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.09) 0%, transparent 65%)",
+          }}
+        />
+
+        {/* 3. Pure SVG Fractal Film Grain / Noise Overlay (Zero External Asset) */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.24] mix-blend-overlay z-1"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <filter id="login-grain-noise">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.8"
+              numOctaves="3"
+              stitchTiles="stitch"
+            />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#login-grain-noise)" />
+        </svg>
+
+        {/* 4. Ambient Micro-Dot Pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none z-1"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+
         {/* Top Floating Badge Indicator (Monochrome) */}
         <div className="w-full flex justify-end z-20">
           <Badge
@@ -148,15 +193,6 @@ export default function AdminLoginPage() {
         <div className="w-full max-w-md my-auto flex items-center justify-center z-10 pointer-events-auto">
           {renderIsometricFigureById(activeHeroId, "hero")}
         </div>
-
-        {/* Ambient Subtle Grid Pattern Overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.05] pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
 
         {/* Bottom Glassmorphic Testimonial Quote Container */}
         <div className="w-full max-w-lg z-20 space-y-4 bg-card/60 backdrop-blur-xl border border-border/60 p-6 rounded-2xl shadow-2xl">
