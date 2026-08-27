@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@k2net/ui";
+import { Button, Card, ActionTooltip } from "@k2net/ui";
 import {
   PauseCircle,
   PlayCircle,
@@ -57,7 +57,7 @@ export function OrgDangerZoneTab({
 
       <div className="space-y-4">
         {/* 1. Super Admin Impersonation */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4">
+        <Card glowingEffect className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               Super Admin Impersonation (God Mode)
@@ -66,18 +66,20 @@ export function OrgDangerZoneTab({
               Masuk langsung ke dashboard portal tenant sebagai Super Admin tanpa memerlukan kata sandi pengguna mitra.
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={onImpersonate}
-            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
-          >
-            <span>Open Tenant Portal</span>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+          <ActionTooltip label="Login to tenant portal as Super Admin" shortcut="Ctrl+Enter">
+            <Button
+              size="sm"
+              onClick={onImpersonate}
+              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+            >
+              <span>Open Tenant Portal</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
+        </Card>
 
         {/* 2. Suspend / Freeze Tenant */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4">
+        <Card glowingEffect className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               {isSuspended ? "Resume Tenant Operations" : "Suspend Organization Access"}
@@ -88,23 +90,25 @@ export function OrgDangerZoneTab({
                 : "Membekukan sementara akses seluruh pengguna tenant dan menolak query peta GIS."}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onUpdateStatus(isSuspended ? "ACTIVE" : "SUSPENDED")}
-            className={
-              isSuspended
-                ? "text-xs border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0"
-                : "text-xs border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0"
-            }
-          >
-            {isSuspended ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
-            <span>{isSuspended ? "Resume Tenant" : "Suspend Tenant"}</span>
-          </Button>
-        </div>
+          <ActionTooltip label={isSuspended ? "Unfreeze and resume tenant operations" : "Freeze tenant API and poller access"}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onUpdateStatus(isSuspended ? "ACTIVE" : "SUSPENDED")}
+              className={
+                isSuspended
+                  ? "text-xs border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0"
+                  : "text-xs border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0"
+              }
+            >
+              {isSuspended ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
+              <span>{isSuspended ? "Resume Tenant" : "Suspend Tenant"}</span>
+            </Button>
+          </ActionTooltip>
+        </Card>
 
         {/* 3. Reset Keycloak IAM Realm */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4">
+        <Card glowingEffect className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               Reset Keycloak IAM Realm Secret
@@ -113,17 +117,19 @@ export function OrgDangerZoneTab({
               Mengatur ulang client secret OAuth2 dan melakukan sinkronisasi ulang role RBAC Keycloak untuk realm <code className="text-primary font-mono">{org.slug}-realm</code>.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResetRealm}
-            disabled={resettingRealm}
-            className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
-            <span>Reset IAM Realm</span>
-          </Button>
-        </div>
+          <ActionTooltip label="Re-sync Keycloak client secrets & RBAC roles">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetRealm}
+              disabled={resettingRealm}
+              className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
+              <span>Reset IAM Realm</span>
+            </Button>
+          </ActionTooltip>
+        </Card>
 
         {/* 4. Delete Organization Permanently */}
         <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-4">
@@ -135,15 +141,17 @@ export function OrgDangerZoneTab({
               Menghapus permanen skema PostGIS database, objek MinIO S3, akun Keycloak, dan seluruh data kabel/ODP organisasi ini. Tindakan ini tidak dapat dibatalkan.
             </p>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onDelete}
-            className="text-xs font-semibold gap-1.5 shrink-0"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Delete Organization</span>
-          </Button>
+          <ActionTooltip label="Initiate irreversible tenant destruction protocol">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onDelete}
+              className="text-xs font-semibold gap-1.5 shrink-0"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Delete Organization</span>
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
     </div>

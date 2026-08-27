@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -12,14 +10,19 @@ import {
   Input,
   Label,
   Badge,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Globe,
   Copy,
   RefreshCw,
   ShieldCheck,
+  Terminal,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "./types";
 
 interface TenantDomainModalProps {
@@ -27,6 +30,19 @@ interface TenantDomainModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveDomain: (orgId: string, domain: string) => Promise<void>;
+}
+
+interface DnsDiagnosticResult {
+  success: boolean;
+  domain: string;
+  cname: string | null;
+  isCnameMatched: boolean;
+  ip: string | null;
+  latencyMs: number;
+  status: "OK" | "MISMATCH" | "ERROR";
+  sslReady: boolean;
+  logs: string[];
+  timestamp: string;
 }
 
 export function TenantDomainModal({
@@ -38,28 +54,47 @@ export function TenantDomainModal({
   const [domainInput, setDomainInput] = useState(organization?.customDomain || "");
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dnsResult, setDnsResult] = useState<DnsDiagnosticResult | null>(null);
 
   useEffect(() => {
     if (organization) {
       setDomainInput(organization.customDomain || "");
+      setDnsResult(null);
     }
   }, [organization]);
 
   if (!organization) return null;
 
-  const handleCopy = (text: string) => {
+  const handleCopy = (text: string, label = "Copied to clipboard") => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success(label);
   };
 
   const handleVerifyDns = async () => {
+    const targetDomain = domainInput.trim() || organization.customDomain;
+    if (!targetDomain) return;
+
     setVerifying(true);
     try {
-      // Simulate/Trigger DNS CNAME verification
-      await new Promise((r) => setTimeout(r, 1200));
-      toast.success(`DNS CNAME verified successfully for ${domainInput || organization.customDomain}`);
+      const res = await fetch(`/api/observability/dns-check?domain=${encodeURIComponent(targetDomain)}`);
+      const data: DnsDiagnosticResult = await res.json();
+      setDnsResult(data);
+
+      if (data.isCnameMatched || data.status === "OK") {
+        toast.success(`DNS CNAME verified successfully for ${targetDomain}`, {
+          description: `Resolved to cname.kdua.net (${data.latencyMs}ms RTT)`,
+        });
+      } else if (data.status === "MISMATCH") {
+        toast.warning(`CNAME points to different host or direct A record`, {
+          description: `Found: ${data.cname || data.ip || "None"}. Expected: cname.kdua.net`,
+        });
+      } else {
+        toast.error("DNS verification query failed", {
+          description: "Domain could not be resolved from platform DNS.",
+        });
+      }
     } catch {
-      toast.error("DNS verification failed. Please ensure CNAME record points to cname.kdua.net");
+      toast.error("DNS verification request failed");
     } finally {
       setVerifying(false);
     }
@@ -80,7 +115,7 @@ export function TenantDomainModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-popover/95 backdrop-blur-xl border-border/80 text-foreground shadow-2xl rounded-2xl">
+      <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-xl border-border/80 text-foreground shadow-2xl rounded-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Globe className="h-4 w-4" />
@@ -107,16 +142,18 @@ export function TenantDomainModal({
                 onChange={(e) => setDomainInput(e.target.value)}
                 className="h-9 text-xs bg-card border-border text-foreground font-mono"
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleVerifyDns}
-                disabled={verifying || !domainInput.trim()}
-                className="h-9 text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${verifying ? "animate-spin text-primary" : ""}`} />
-                <span>Check DNS</span>
-              </Button>
+              <ActionTooltip label="Run live DNS Dig & SSL diagnostic resolution" shortcut="R">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleVerifyDns}
+                  disabled={verifying || !domainInput.trim()}
+                  className="h-9 text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", verifying && "animate-spin text-primary")} />
+                  <span>Check DNS</span>
+                </Button>
+              </ActionTooltip>
             </div>
           </div>
 
@@ -131,17 +168,69 @@ export function TenantDomainModal({
 
             <div className="flex items-center justify-between rounded-lg bg-background/80 border border-border/60 p-2.5 font-mono text-[11px]">
               <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[10px] block">TARGET CNAME</span>
+                <span className="text-muted-foreground text-[10px] block font-mono">TARGET CNAME</span>
                 <span className="text-primary font-bold">cname.kdua.net</span>
               </div>
-              <button
-                onClick={() => handleCopy("cname.kdua.net")}
-                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
+              <ActionTooltip label="Copy target CNAME">
+                <button
+                  onClick={() => handleCopy("cname.kdua.net", "CNAME target copied")}
+                  className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </ActionTooltip>
             </div>
           </div>
+
+          {/* Live Diagnostic Visual Terminal (if verified) */}
+          {dnsResult && (
+            <div className="rounded-xl border border-border/80 bg-background/90 p-3 space-y-2 font-mono text-[11px] animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Terminal className="h-3.5 w-3.5 text-primary" />
+                  <span>Live DNS Dig Console</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5" />
+                    <span>{dnsResult.latencyMs}ms</span>
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] font-mono",
+                      dnsResult.status === "OK"
+                        ? "border-primary/30 bg-primary/10 text-primary"
+                        : dnsResult.status === "MISMATCH"
+                        ? "border-amber-500/30 bg-amber-500/10 text-amber-500"
+                        : "border-destructive/30 bg-destructive/10 text-destructive"
+                    )}
+                  >
+                    {dnsResult.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="bg-muted/40 rounded-lg p-2.5 max-h-36 overflow-y-auto space-y-1 custom-scrollbar text-[10px] leading-relaxed">
+                {dnsResult.logs.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      log.includes("[MATCH-SUCCESS]")
+                        ? "text-primary font-bold"
+                        : log.includes("[ERROR]") || log.includes("[DIAGNOSTIC-FAIL]")
+                        ? "text-destructive font-semibold"
+                        : log.includes("[MATCH-WARNING]")
+                        ? "text-amber-500"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {log}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* SSL Status Card */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3.5">
@@ -160,17 +249,24 @@ export function TenantDomainModal({
             </div>
             <Badge
               variant="outline"
-              className={organization.domainSslActive
-                ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px]"
+              className={organization.domainSslActive || dnsResult?.isCnameMatched
+                ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1"
                 : "border-border text-muted-foreground font-mono text-[10px]"
               }
             >
-              {organization.domainSslActive ? "SSL ACTIVE" : "PENDING DNS"}
+              {organization.domainSslActive || dnsResult?.isCnameMatched ? (
+                <>
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>SSL ACTIVE</span>
+                </>
+              ) : (
+                "PENDING DNS"
+              )}
             </Badge>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-border/50">
           <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-xs border-border">
             Cancel
           </Button>
@@ -187,3 +283,4 @@ export function TenantDomainModal({
     </Dialog>
   );
 }
+

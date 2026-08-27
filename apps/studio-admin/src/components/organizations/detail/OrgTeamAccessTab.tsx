@@ -21,11 +21,27 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Card,
+  ActionTooltip,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
 } from "@k2net/ui";
 import {
   Users,
   UserPlus,
   ShieldCheck,
+  Mail,
+  KeyRound,
+  Copy,
+  Trash2,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "../types";
@@ -109,6 +125,33 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
     });
   };
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  const handlePasswordReset = (user: TenantUser) => {
+    toast.success(`Password reset link generated for ${user.name}`, {
+      description: `Sent to ${user.email} via Keycloak SMTP service.`,
+    });
+  };
+
+  const handleResendInvite = (user: TenantUser) => {
+    toast.success(`Invitation email resent to ${user.email}`);
+  };
+
+  const handleChangeRole = (userId: string, newRole: TenantUser["role"]) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+    );
+    toast.success(`User role updated to ${newRole}`);
+  };
+
+  const handleRemoveUser = (userId: string, userName: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    toast.success(`User ${userName} removed from ${org.name}`);
+  };
+
   const getRoleBadge = (role: TenantUser["role"]) => {
     switch (role) {
       case "TENANT_ADMIN":
@@ -125,7 +168,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
   return (
     <div className="space-y-6">
       {/* 1. Header with Invite Action */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <Card glowingEffect className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
@@ -139,15 +182,17 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => setInviteOpen(true)}
-          className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
-        >
-          <UserPlus className="h-3.5 w-3.5" />
-          <span>Invite Team Member</span>
-        </Button>
-      </div>
+        <ActionTooltip label="Invite Staff Member to Keycloak Realm" shortcut="I">
+          <Button
+            size="sm"
+            onClick={() => setInviteOpen(true)}
+            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            <span>Invite Team Member</span>
+          </Button>
+        </ActionTooltip>
+      </Card>
 
       {/* 2. Team Members Table */}
       <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
@@ -187,43 +232,108 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
 
             <TableBody>
               {users.map((u) => (
-                <TableRow key={u.id} className="border-b border-border/50 text-xs hover:bg-muted/30">
-                  <TableCell className="pl-6 py-3.5">
-                    <div className="space-y-0.5">
-                      <span className="font-semibold text-foreground block">{u.name}</span>
-                      <span className="text-[10px] font-mono text-muted-foreground">@{u.username}</span>
-                    </div>
-                  </TableCell>
+                <ContextMenu key={u.id}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="border-b border-border/50 text-xs hover:bg-muted/30 cursor-pointer">
+                      <TableCell className="pl-6 py-3.5">
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-foreground block">{u.name}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">@{u.username}</span>
+                        </div>
+                      </TableCell>
 
-                  <TableCell className="py-3.5">
-                    {getRoleBadge(u.role)}
-                  </TableCell>
+                      <TableCell className="py-3.5">
+                        {getRoleBadge(u.role)}
+                      </TableCell>
 
-                  <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
-                    {u.email}
-                  </TableCell>
+                      <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
+                        {u.email}
+                      </TableCell>
 
-                  <TableCell className="py-3.5">
-                    {u.mfaEnabled ? (
-                      <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1">
-                        <ShieldCheck className="h-3 w-3" />
-                        <span>Enabled</span>
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-[10px] font-mono">Disabled</span>
-                    )}
-                  </TableCell>
+                      <TableCell className="py-3.5">
+                        {u.mfaEnabled ? (
+                          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1">
+                            <ShieldCheck className="h-3 w-3" />
+                            <span>Enabled</span>
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px] font-mono">Disabled</span>
+                        )}
+                      </TableCell>
 
-                  <TableCell className="py-3.5">
-                    <Badge variant="outline" className={u.status === "ACTIVE" ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px]" : "border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px]"}>
-                      {u.status}
-                    </Badge>
-                  </TableCell>
+                      <TableCell className="py-3.5">
+                        <Badge variant="outline" className={u.status === "ACTIVE" ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px]" : "border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px]"}>
+                          {u.status}
+                        </Badge>
+                      </TableCell>
 
-                  <TableCell className="py-3.5 pr-6 font-mono text-[11px] text-muted-foreground">
-                    {u.lastLogin}
-                  </TableCell>
-                </TableRow>
+                      <TableCell className="py-3.5 pr-6 font-mono text-[11px] text-muted-foreground">
+                        {u.lastLogin}
+                      </TableCell>
+                    </TableRow>
+                  </ContextMenuTrigger>
+
+                  <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+                    <ContextMenuItem
+                      onClick={() => handlePasswordReset(u)}
+                      className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-primary" />
+                      <span>Send Password Reset Link</span>
+                      <ContextMenuShortcut>R</ContextMenuShortcut>
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={() => handleResendInvite(u)}
+                      className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Resend Keycloak Invite</span>
+                    </ContextMenuItem>
+
+                    <ContextMenuSeparator className="bg-border/40 my-1" />
+
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
+                        <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Change Role</span>
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
+                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "TENANT_ADMIN")} className="cursor-pointer">
+                          <span>Tenant Admin</span>
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "NOC_OPERATOR")} className="cursor-pointer">
+                          <span>NOC Operator</span>
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "FIELD_TECH")} className="cursor-pointer">
+                          <span>Field Tech</span>
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "VIEWER")} className="cursor-pointer">
+                          <span>Viewer</span>
+                        </ContextMenuItem>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+
+                    <ContextMenuSeparator className="bg-border/40 my-1" />
+
+                    <ContextMenuItem
+                      onClick={() => handleCopy(u.email, "Email address")}
+                      className="cursor-pointer gap-2 focus:bg-muted"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Copy Email ({u.email})</span>
+                      <ContextMenuShortcut>C</ContextMenuShortcut>
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={() => handleRemoveUser(u.id, u.name)}
+                      className="cursor-pointer gap-2 focus:bg-muted text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Member</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
             </TableBody>
           </Table>

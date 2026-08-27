@@ -26,6 +26,11 @@ public class OrganizationController {
         return ResponseEntity.ok(organizationService.getAllOrganizations());
     }
 
+    @GetMapping("/plans")
+    public ResponseEntity<List<com.company.ftthgis.domain.tenant.entity.SubscriptionPlan>> getSubscriptionPlans() {
+        return ResponseEntity.ok(organizationService.getAllSubscriptionPlans());
+    }
+
     @GetMapping("/{slug}")
     @PreAuthorize("@tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Organization> getBySlug(@PathVariable String slug) {

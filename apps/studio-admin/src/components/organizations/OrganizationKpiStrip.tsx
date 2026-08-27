@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, UploadCloud, Network, AlertTriangle } from "lucide-react";
+import { Card } from "@k2net/ui";
 import type { EnrichedOrganization } from "./types";
 
 interface OrganizationKpiStripProps {
@@ -31,130 +32,154 @@ export function OrganizationKpiStrip({
   const atRiskPct = total > 0 ? Math.round((atRiskCount / total) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-6 py-2 shrink-0 animate-in fade-in duration-200">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 1. ACTIVE TENANTS */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-widest font-mono">
+          <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             Active Tenants
           </span>
           <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Building2 className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="mt-3">
+        <div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-foreground font-mono">
+            <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {activeCount}
-            </span>
-            <span className="text-[11px] font-mono text-muted-foreground">
+            </p>
+            <span className="text-xs font-mono text-muted-foreground">
               {activePct}% Ratio
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {activeCount} of {total} organizations live
           </p>
-          <div className="h-1 w-full bg-muted/60 rounded-full overflow-hidden mt-3">
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
+            <span>Utilization</span>
+            <span>{activePct}%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
+              className="h-full bg-primary rounded-full transition-all duration-700"
               style={{ width: `${activePct}%` }}
             />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 2. PROVISIONING QUEUE */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-widest font-mono">
+          <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             Provisioning & Trial
           </span>
           <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
             <UploadCloud className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="mt-3">
+        <div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-foreground font-mono">
+            <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {provisioningCount + trialCount}
-            </span>
-            <span className="text-[11px] font-mono text-blue-500">
+            </p>
+            <span className="text-xs font-mono text-blue-500">
               {provisioningCount > 0 ? "In Setup" : "On Trial"}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {provisioningCount} provisioning, {trialCount} in trial
           </p>
-          <div className="h-1 w-full bg-muted/60 rounded-full overflow-hidden mt-3">
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
+            <span>Utilization</span>
+            <span>{Math.min(100, (provisioningCount + trialCount) * 25)}%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-500"
+              className="h-full bg-blue-500 rounded-full transition-all duration-700"
               style={{ width: `${Math.min(100, (provisioningCount + trialCount) * 25)}%` }}
             />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 3. HARDWARE DEPLOYED */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-widest font-mono">
+          <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             FTTH Hardware
           </span>
           <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Network className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="mt-3">
+        <div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-foreground font-mono">
+            <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {totalOlts} <span className="text-xs font-normal text-muted-foreground">OLTs</span>
-            </span>
-            <span className="text-[11px] font-mono text-primary">
+            </p>
+            <span className="text-xs font-mono text-primary">
               {totalOdps} ODPs
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {oltPct}% allocated network capacity
           </p>
-          <div className="h-1 w-full bg-muted/60 rounded-full overflow-hidden mt-3">
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
+            <span>Utilization</span>
+            <span>{oltPct}%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
+              className="h-full bg-primary rounded-full transition-all duration-700"
               style={{ width: `${oltPct}%` }}
             />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 4. AT RISK / SUSPENDED */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+      <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-widest font-mono">
+          <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
             Overdue / Inactive
           </span>
           <div className="h-6 w-6 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">
             <AlertTriangle className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="mt-3">
+        <div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-foreground font-mono">
+            <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {atRiskCount}
-            </span>
-            <span className="text-[11px] font-mono text-destructive">
+            </p>
+            <span className="text-xs font-mono text-destructive">
               {atRiskPct > 0 ? `${atRiskPct}% Rate` : "Healthy"}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {atRiskCount === 0 ? "All tenant accounts operational" : "Action required on overdue accounts"}
           </p>
-          <div className="h-1 w-full bg-muted/60 rounded-full overflow-hidden mt-3">
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
+            <span>Utilization</span>
+            <span>{Math.min(100, atRiskCount * 33)}%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-destructive rounded-full transition-all duration-500"
+              className="h-full bg-destructive rounded-full transition-all duration-700"
               style={{ width: `${Math.min(100, atRiskCount * 33)}%` }}
             />
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

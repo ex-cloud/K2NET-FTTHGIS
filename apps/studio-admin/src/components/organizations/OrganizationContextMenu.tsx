@@ -31,6 +31,7 @@ import { getTenantUrl } from "@/lib/domain";
 
 interface OrganizationContextMenuProps {
   organization: EnrichedOrganization;
+  onViewDetail?: (org: EnrichedOrganization) => void;
   onImpersonate?: (org: EnrichedOrganization) => void;
   onOpenDomainModal?: (org: EnrichedOrganization) => void;
   onOpenQuotaModal?: (org: EnrichedOrganization) => void;
@@ -43,6 +44,7 @@ interface OrganizationContextMenuProps {
 
 export function OrganizationContextMenu({
   organization,
+  onViewDetail,
   onImpersonate,
   onOpenDomainModal,
   onOpenQuotaModal,
@@ -78,7 +80,17 @@ export function OrganizationContextMenu({
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
-        {/* 1. Super Admin Impersonation */}
+        {/* 1. Open Organization Detail */}
+        <ContextMenuItem
+          onClick={() => onViewDetail?.(organization)}
+          className="cursor-pointer font-semibold text-foreground focus:bg-accent gap-2"
+        >
+          <Network className="w-3.5 h-3.5 text-primary" />
+          <span>Open Organization Detail</span>
+          <ContextMenuShortcut>↵</ContextMenuShortcut>
+        </ContextMenuItem>
+
+        {/* 2. Super Admin Impersonation */}
         <ContextMenuItem
           onClick={() => onImpersonate?.(organization)}
           className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"

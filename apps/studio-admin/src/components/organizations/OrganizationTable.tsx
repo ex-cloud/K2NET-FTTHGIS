@@ -160,6 +160,7 @@ export function OrganizationTable({
                 <OrganizationContextMenu
                   key={org.id}
                   organization={org}
+                  onViewDetail={(o) => router.push(`/organizations/${o.slug}`)}
                   onImpersonate={onImpersonate}
                   onOpenDomainModal={onOpenDomainModal}
                   onOpenQuotaModal={onOpenQuotaModal}

@@ -1,12 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Table, TableHeader, TableRow, TableHead, TableBody, TableCell, ActionTooltip } from "@k2net/ui";
+import {
+  Badge,
+  Button,
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+  ActionTooltip,
+  Card,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+} from "@k2net/ui";
 import {
   Network,
   Plus,
   RefreshCw,
   Sliders,
+  Copy,
+  Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -80,10 +99,15 @@ export function OrgHardwareTab({
     }, 1000);
   };
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Header Quota Allocation Summary */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+      <Card glowingEffect className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-foreground">Hardware Quotas & OLT Poller Telemetry</h3>
@@ -97,26 +121,30 @@ export function OrgHardwareTab({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenQuotaModal}
-            className="text-xs font-semibold border-border bg-card hover:bg-accent gap-1.5"
-          >
-            <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Adjust Quota Limits</span>
-          </Button>
+          <ActionTooltip label="Adjust OLT & ODP Quota Allocations" shortcut="Q">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenQuotaModal}
+              className="text-xs font-semibold border-border bg-card hover:bg-accent gap-1.5"
+            >
+              <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Adjust Quota Limits</span>
+            </Button>
+          </ActionTooltip>
 
-          <Button
-            size="sm"
-            onClick={onOpenQuotaModal}
-            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Allocate OLT Slot</span>
-          </Button>
+          <ActionTooltip label="Allocate Additional OLT Hardware Slot">
+            <Button
+              size="sm"
+              onClick={onOpenQuotaModal}
+              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Allocate OLT Slot</span>
+            </Button>
+          </ActionTooltip>
         </div>
-      </div>
+      </Card>
 
       {/* 2. OLT Hardware Devices Table */}
       <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
@@ -162,76 +190,119 @@ export function OrgHardwareTab({
 
             <TableBody>
               {oltDevices.map((olt) => (
-                <TableRow key={olt.id} className="border-b border-border/50 text-xs hover:bg-muted/30">
-                  {/* Device Code */}
-                  <TableCell className="pl-6 py-3.5">
-                    <div className="space-y-0.5">
-                      <div className="font-bold text-foreground font-mono flex items-center gap-1.5">
-                        <Network className="h-3.5 w-3.5 text-primary" />
-                        <span>{olt.code}</span>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground block">{olt.name}</span>
-                    </div>
-                  </TableCell>
+                <ContextMenu key={olt.id}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="border-b border-border/50 text-xs hover:bg-muted/30 cursor-pointer">
+                      {/* Device Code */}
+                      <TableCell className="pl-6 py-3.5">
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-foreground font-mono flex items-center gap-1.5">
+                            <Network className="h-3.5 w-3.5 text-primary" />
+                            <span>{olt.code}</span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground block">{olt.name}</span>
+                        </div>
+                      </TableCell>
 
-                  {/* Model */}
-                  <TableCell className="py-3.5 font-medium text-foreground">
-                    {olt.vendorModel}
-                  </TableCell>
+                      {/* Model */}
+                      <TableCell className="py-3.5 font-medium text-foreground">
+                        {olt.vendorModel}
+                      </TableCell>
 
-                  {/* IP Address */}
-                  <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
-                    {olt.ipAddress}
-                  </TableCell>
+                      {/* IP Address */}
+                      <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
+                        {olt.ipAddress}
+                      </TableCell>
 
-                  {/* POP */}
-                  <TableCell className="py-3.5 text-muted-foreground">
-                    {olt.popLocation}
-                  </TableCell>
+                      {/* POP */}
+                      <TableCell className="py-3.5 text-muted-foreground">
+                        {olt.popLocation}
+                      </TableCell>
 
-                  {/* PON Ports */}
-                  <TableCell className="py-3.5">
-                    <div className="space-y-1">
-                      <span className="font-mono text-[11px] text-foreground font-medium">
-                        {olt.ponPortsUsed}/{olt.ponPortsTotal} Ports
-                      </span>
-                      <span className="text-[10px] text-muted-foreground block font-mono">
-                        ({olt.ontCount} ONTs active)
-                      </span>
-                    </div>
-                  </TableCell>
+                      {/* PON Ports */}
+                      <TableCell className="py-3.5">
+                        <div className="space-y-1">
+                          <span className="font-mono text-[11px] text-foreground font-medium">
+                            {olt.ponPortsUsed}/{olt.ponPortsTotal} Ports
+                          </span>
+                          <span className="text-[10px] text-muted-foreground block font-mono">
+                            ({olt.ontCount} ONTs active)
+                          </span>
+                        </div>
+                      </TableCell>
 
-                  {/* Optical Power */}
-                  <TableCell className="py-3.5">
-                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">
-                      {olt.meanPowerDbm}
-                    </Badge>
-                  </TableCell>
+                      {/* Optical Power */}
+                      <TableCell className="py-3.5">
+                        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">
+                          {olt.meanPowerDbm}
+                        </Badge>
+                      </TableCell>
 
-                  {/* Status */}
-                  <TableCell className="py-3.5">
-                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5 shadow-2xs">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                      <span>{olt.status}</span>
-                    </Badge>
-                  </TableCell>
+                      {/* Status */}
+                      <TableCell className="py-3.5">
+                        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5 shadow-2xs">
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                          <span>{olt.status}</span>
+                        </Badge>
+                      </TableCell>
 
-                  {/* Actions */}
-                  <TableCell className="py-3.5 pr-6 text-right">
-                    <ActionTooltip label="Test SNMP & SSH reachability">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTestPing(olt)}
-                        disabled={testingOltId === olt.id}
-                        className="h-7 text-xs border-border bg-card hover:bg-accent text-foreground gap-1 px-2 font-mono"
-                      >
-                        <RefreshCw className={cn("h-3 w-3", testingOltId === olt.id && "animate-spin text-primary")} />
-                        <span>Ping / Test</span>
-                      </Button>
-                    </ActionTooltip>
-                  </TableCell>
-                </TableRow>
+                      {/* Actions */}
+                      <TableCell className="py-3.5 pr-6 text-right">
+                        <ActionTooltip label="Test SNMP & SSH reachability" shortcut="P">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTestPing(olt)}
+                            disabled={testingOltId === olt.id}
+                            className="h-7 text-xs border-border bg-card hover:bg-accent text-foreground gap-1 px-2 font-mono"
+                          >
+                            <RefreshCw className={cn("h-3 w-3", testingOltId === olt.id && "animate-spin text-primary")} />
+                            <span>Ping / Test</span>
+                          </Button>
+                        </ActionTooltip>
+                      </TableCell>
+                    </TableRow>
+                  </ContextMenuTrigger>
+
+                  <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+                    <ContextMenuItem
+                      onClick={() => handleTestPing(olt)}
+                      className="cursor-pointer font-semibold text-primary focus:bg-primary/10 focus:text-primary gap-2"
+                    >
+                      <Terminal className="w-3.5 h-3.5 text-primary" />
+                      <span>Test SNMP & SSH Reachability</span>
+                      <ContextMenuShortcut>P</ContextMenuShortcut>
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={onOpenQuotaModal}
+                      className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
+                    >
+                      <Sliders className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Adjust OLT Quotas</span>
+                      <ContextMenuShortcut>Q</ContextMenuShortcut>
+                    </ContextMenuItem>
+
+                    <ContextMenuSeparator className="bg-border/40 my-1" />
+
+                    <ContextMenuItem
+                      onClick={() => handleCopy(olt.ipAddress, "Management IP")}
+                      className="cursor-pointer gap-2 focus:bg-muted"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Copy IP ({olt.ipAddress})</span>
+                      <ContextMenuShortcut>C</ContextMenuShortcut>
+                    </ContextMenuItem>
+
+                    <ContextMenuItem
+                      onClick={() => handleCopy(olt.code, "Device Code")}
+                      className="cursor-pointer gap-2 focus:bg-muted"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Copy Device Code ({olt.code})</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
             </TableBody>
           </Table>

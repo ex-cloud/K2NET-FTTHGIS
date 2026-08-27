@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, Card, ActionTooltip } from "@k2net/ui";
 import {
   Globe,
   ShieldCheck,
@@ -52,7 +52,7 @@ export function OrgNetworkDomainTab({
   return (
     <div className="space-y-6">
       {/* 1. Custom Domain & SSL Section */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-5 space-y-4 shadow-sm">
+      <Card glowingEffect className="p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
@@ -65,24 +65,29 @@ export function OrgNetworkDomainTab({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCheckDns}
-              disabled={checkingDns}
-              className="text-xs border-border bg-card hover:bg-accent gap-1.5"
-            >
-              <RefreshCw className={cn("h-3 w-3", checkingDns && "animate-spin text-primary")} />
-              <span>Check DNS</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={onOpenDomainModal}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              <span>Configure Domain</span>
-            </Button>
+            <ActionTooltip label="Inspect live DNS resolution and SSL certificate" shortcut="R">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCheckDns}
+                disabled={checkingDns}
+                className="text-xs border-border bg-card hover:bg-accent gap-1.5"
+              >
+                <RefreshCw className={cn("h-3 w-3", checkingDns && "animate-spin text-primary")} />
+                <span>Check DNS</span>
+              </Button>
+            </ActionTooltip>
+
+            <ActionTooltip label="Configure tenant custom FQDN domain and SSL" shortcut="D">
+              <Button
+                size="sm"
+                onClick={onOpenDomainModal}
+                className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              >
+                <Globe className="h-3.5 w-3.5" />
+                <span>Configure Domain</span>
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
@@ -119,19 +124,21 @@ export function OrgNetworkDomainTab({
             <span className="text-[10px] font-mono text-muted-foreground block uppercase">DNS CNAME Target</span>
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-primary">cname.kdua.net</span>
-              <button
-                onClick={() => handleCopy("cname.kdua.net", "CNAME Target")}
-                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
+              <ActionTooltip label="Copy CNAME destination target">
+                <button
+                  onClick={() => handleCopy("cname.kdua.net", "CNAME Target")}
+                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              </ActionTooltip>
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 2. VPN & Tunneling Infrastructure (Tailscale / IPsec) */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-5 space-y-4 shadow-sm">
+      <Card glowingEffect className="p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
@@ -146,16 +153,18 @@ export function OrgNetworkDomainTab({
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTestVpn}
-            disabled={testingVpn}
-            className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
-          >
-            <RefreshCw className={cn("h-3 w-3", testingVpn && "animate-spin text-primary")} />
-            <span>Test Handshake</span>
-          </Button>
+          <ActionTooltip label="Test WireGuard VPN handshake and ping response" shortcut="P">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestVpn}
+              disabled={testingVpn}
+              className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
+            >
+              <RefreshCw className={cn("h-3 w-3", testingVpn && "animate-spin text-primary")} />
+              <span>Test Handshake</span>
+            </Button>
+          </ActionTooltip>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
@@ -191,7 +200,7 @@ export function OrgNetworkDomainTab({
             <span className="font-mono text-xs font-bold text-foreground block">42.8 Mbps RX / 18.2 Mbps TX</span>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Switch } from "@k2net/ui";
+import { Badge, Button, Switch, Card, ActionTooltip } from "@k2net/ui";
 import {
   Sliders,
   Map,
@@ -44,7 +44,7 @@ export function OrgFeatureFlagsTab({
   return (
     <div className="space-y-6">
       {/* 1. Header with Save Action */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <Card glowingEffect className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Sliders className="h-4 w-4 text-primary" />
@@ -58,21 +58,23 @@ export function OrgFeatureFlagsTab({
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={handleSave}
-          disabled={saving}
-          className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
-        >
-          <Save className="h-3.5 w-3.5" />
-          <span>{saving ? "Saving..." : "Save Entitlements"}</span>
-        </Button>
-      </div>
+        <ActionTooltip label="Save updated feature flag permissions for this tenant" shortcut="S">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving}
+            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+          >
+            <Save className="h-3.5 w-3.5" />
+            <span>{saving ? "Saving..." : "Save Entitlements"}</span>
+          </Button>
+        </ActionTooltip>
+      </Card>
 
       {/* 2. Feature Toggles List */}
       <div className="space-y-3">
         {/* Flag 1: GIS Spatial Core */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all hover:border-primary/30">
+        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Map className="h-5 w-5" />
@@ -93,10 +95,10 @@ export function OrgFeatureFlagsTab({
             checked={flags.gisCore}
             onCheckedChange={() => handleToggle("gisCore")}
           />
-        </div>
+        </Card>
 
         {/* Flag 2: OLT Poller Gateway */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all hover:border-primary/30">
+        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Radio className="h-5 w-5" />
@@ -117,10 +119,10 @@ export function OrgFeatureFlagsTab({
             checked={flags.oltPoller}
             onCheckedChange={() => handleToggle("oltPoller")}
           />
-        </div>
+        </Card>
 
         {/* Flag 3: WhatsApp Engine */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all hover:border-primary/30">
+        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
               <MessageSquare className="h-5 w-5" />
@@ -141,10 +143,10 @@ export function OrgFeatureFlagsTab({
             checked={flags.whatsappEngine}
             onCheckedChange={() => handleToggle("whatsappEngine")}
           />
-        </div>
+        </Card>
 
         {/* Flag 4: AI Copilot */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all hover:border-primary/30">
+        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
               <Sparkles className="h-5 w-5" />
@@ -165,10 +167,10 @@ export function OrgFeatureFlagsTab({
             checked={flags.aiCopilot}
             onCheckedChange={() => handleToggle("aiCopilot")}
           />
-        </div>
+        </Card>
 
         {/* Flag 5: Sandbox Mode */}
-        <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all hover:border-primary/30">
+        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
               <FlaskConical className="h-5 w-5" />
@@ -189,7 +191,7 @@ export function OrgFeatureFlagsTab({
             checked={flags.sandboxMode}
             onCheckedChange={() => handleToggle("sandboxMode")}
           />
-        </div>
+        </Card>
       </div>
     </div>
   );

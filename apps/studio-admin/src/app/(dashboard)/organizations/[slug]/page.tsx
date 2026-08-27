@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Button,
   Badge,
+  Card,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -22,6 +23,7 @@ import {
   Checkbox,
   PageLayout,
   DashboardPageSkeleton,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Building2,
@@ -157,69 +159,10 @@ export default function OrganizationDetailPage() {
     }
   }, [org]);
 
-  // Export tech spec as Markdown
-  const handleExportMarkdown = () => {
-    if (!org) return;
-    const dateStr = new Date().toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-
-    let md = `# Organization Operational Specification: ${org.name}\n\n`;
-    md += `> **Tenant Reference:** \`ORG-${org.slug.toUpperCase()}\`  \n`;
-    md += `> **Status:** ${org.status} | **Plan Tier:** ${org.planTier} | **SLA:** ${org.slaTier}  \n`;
-    md += `> **Technical PIC:** ${org.picName} (${org.picEmail})  \n`;
-    md += `> **Custom Domain:** ${org.customDomain || org.slug + ".kdua.net"}  \n`;
-    md += `> **Export Date:** ${dateStr}  \n\n`;
-    md += `---\n\n`;
-    md += `## 1. Hardware Allocation & Quotas\n\n`;
-    md += `- **OLT Nodes:** ${org.usedOlts} / ${org.maxOlts} Allocated\n`;
-    md += `- **ODP Splitters:** ${org.usedOdps} / ${org.maxOdps} Mapped\n`;
-    md += `- **MinIO S3 Storage:** ${org.usedStorageGb} / ${org.maxStorageGb} GB\n`;
-    md += `- **Kong API Rate Limit:** ${org.apiRateLimitUsed} / ${org.apiRateLimitMax} RPM\n\n`;
-    md += `---\n\n`;
-    md += `## 2. B2B Module Entitlements\n\n`;
-    md += `- GIS Spatial Core: ${org.featureFlags.gisCore ? "Enabled" : "Disabled"}\n`;
-    md += `- OLT SNMP/SSH Poller: ${org.featureFlags.oltPoller ? "Enabled" : "Disabled"}\n`;
-    md += `- WhatsApp Notification Engine: ${org.featureFlags.whatsappEngine ? "Enabled" : "Disabled"}\n`;
-    md += `- AI Fiber Routing Copilot: ${org.featureFlags.aiCopilot ? "Enabled" : "Disabled"}\n`;
-    md += `- Sandbox Mode: ${org.featureFlags.sandboxMode ? "Enabled" : "Disabled"}\n`;
-
-    navigator.clipboard.writeText(md).then(() => {
-      toast.success("Organization specification markdown copied to clipboard!");
-    }).catch(() => {
-      toast.info("Specification markdown generated");
-    });
-  };
-
-  const handleImpersonate = () => {
-    if (!org) return;
-    toast.success(`Switching to Tenant Admin: ${org.name}`, {
-      description: "Redirecting to tenant management portal...",
-    });
-    window.open(getTenantUrl(org.slug), "_blank");
-  };
-
-  const handleUpdateStatus = async (newStatus: OrganizationStatus) => {
-    if (!org) return;
-    try {
-      if (updateOrganization) {
-        await updateOrganization({
-          slug: org.slug,
-          org: { status: newStatus },
-        });
-      }
-      toast.success(`Status updated to ${newStatus} for ${org.name}`);
-      refresh();
-    } catch {
-      toast.error(`Failed to update status for ${org.name}`);
-    }
-  };
-
-  // Delete flow
+  // Fetch projects on delete open
   useEffect(() => {
     if (!deleteOpen || !org || !session?.accessToken) return;
+
     const fetchProjects = async () => {
       setLoadingProjects(true);
       try {
@@ -239,14 +182,99 @@ export default function OrganizationDetailPage() {
     fetchProjects();
   }, [deleteOpen, org, session?.accessToken]);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        router.push("/organizations");
+      } else if (e.key === "1") {
+        setActiveTab("overview");
+      } else if (e.key === "2") {
+        setActiveTab("hardware");
+      } else if (e.key === "3") {
+        setActiveTab("network");
+      } else if (e.key === "4") {
+        setActiveTab("team");
+      } else if (e.key === "5") {
+        setActiveTab("features");
+      } else if (e.key === "6") {
+        setActiveTab("billing");
+      } else if (e.key === "7") {
+        setActiveTab("danger");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router]);
+
+  // Actions
+  const handleImpersonate = () => {
+    if (!org) return;
+    const url = getTenantUrl(org.slug);
+    toast.info(`Opening tenant workspace for ${org.name}...`);
+    window.open(url, "_blank");
+  };
+
+  const handleUpdateStatus = async (status: OrganizationStatus) => {
+    if (!org) return;
+    try {
+      await updateOrganization({
+        slug: org.slug,
+        org: { status },
+      });
+      toast.success(`Organization status updated to ${status}`);
+      refresh();
+    } catch {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    if (!org) return;
+    const dateStr = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    let md = `# Organization Technical Dossier: ${org.name}\n\n`;
+    md += `> **Identifier:** \`ORG-${org.slug.toUpperCase()}\`  \n`;
+    md += `> **Status:** ${org.status} | **Plan:** ${org.planTier} | **SLA:** ${org.slaTier}  \n`;
+    md += `> **Technical PIC:** ${org.picName || "Andiansyah"} — \`${org.picEmail || "admin@" + org.slug + ".kdua.net"}\`  \n`;
+    md += `> **Hardware Allocation:** ${org.usedOlts}/${org.maxOlts} OLTs | ${org.usedOdps}/${org.maxOdps} ODPs  \n`;
+    md += `> **Storage (MinIO):** ${org.usedStorageGb}/${org.maxStorageGb} GB  \n`;
+    md += `> **Export Timestamp:** ${dateStr}  \n\n`;
+    md += `---\n\n`;
+    md += `## 1. Feature Flags & Module Entitlements\n\n`;
+    md += `- **GIS Core Engine:** ${org.featureFlags.gisCore ? "ENABLED" : "DISABLED"}\n`;
+    md += `- **SNMP OLT Poller:** ${org.featureFlags.oltPoller ? "ENABLED" : "DISABLED"}\n`;
+    md += `- **WhatsApp Engine (Twilio):** ${org.featureFlags.whatsappEngine ? "ENABLED" : "DISABLED"}\n`;
+    md += `- **AI Fiber Copilot:** ${org.featureFlags.aiCopilot ? "ENABLED" : "DISABLED"}\n`;
+    md += `- **Sandbox Mode:** ${org.featureFlags.sandboxMode ? "ACTIVE" : "INACTIVE"}\n\n`;
+    md += `---\n\n`;
+    md += `_Generated securely by K2NET FTTH GIS Multi-Tenant Command Center._\n`;
+
+    navigator.clipboard
+      .writeText(md)
+      .then(() => {
+        toast.success("Organization tech dossier copied to clipboard!");
+      })
+      .catch(() => {
+        toast.info("Spec generated");
+      });
+  };
+
   const handleDelete = async () => {
     if (!org) return;
     setDeleting(true);
     try {
-      if (deleteOrg) {
-        await deleteOrg(org.id);
-      }
+      await deleteOrg(org.id || org.slug);
       toast.success(`Organization ${org.name} deleted successfully`);
+      setDeleteOpen(false);
       router.push("/organizations");
     } catch {
       toast.error("Failed to delete organization");
@@ -272,22 +300,22 @@ export default function OrganizationDetailPage() {
   if (!org) {
     return (
       <OrganizationPageWrapper>
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-muted/60 border border-border flex items-center justify-center text-muted-foreground">
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+          <div className="h-12 w-12 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive mb-3">
             <Building2 className="h-6 w-6" />
           </div>
-          <h2 className="text-base font-bold text-foreground">Organization Not Found</h2>
-          <p className="text-xs text-muted-foreground max-w-sm">
-            Organisasi dengan slug <code className="text-primary font-mono">{slug}</code> tidak ditemukan atau telah dihapus dari sistem.
+          <h2 className="text-lg font-bold text-foreground">Organisasi Tidak Ditemukan</h2>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+            Slug organisasi &quot;{slug}&quot; tidak terdaftar dalam database platform.
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => router.push("/organizations")}
-            className="text-xs font-semibold gap-1.5 mt-2"
+            className="mt-4 text-xs gap-1.5"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Kembali ke Direktori Organisasi</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali ke All Organizations</span>
           </Button>
         </div>
       </OrganizationPageWrapper>
@@ -300,13 +328,15 @@ export default function OrganizationDetailPage() {
         {/* ── 1. Top Linear Breadcrumbs Header ──────────────────────── */}
         <div className="px-6 py-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-xs">
-            <Link
-              href="/organizations"
-              className="text-muted-foreground hover:text-foreground font-medium transition-colors flex items-center gap-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Organizations</span>
-            </Link>
+            <ActionTooltip label="Back to Organizations list" shortcut="Esc">
+              <Link
+                href="/organizations"
+                className="text-muted-foreground hover:text-foreground font-medium transition-colors flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Organizations</span>
+              </Link>
+            </ActionTooltip>
             <span className="text-muted-foreground/60">›</span>
             <div className="flex items-center gap-1.5 font-semibold text-foreground">
               <Building2 className="w-3.5 h-3.5 text-primary" />
@@ -315,60 +345,98 @@ export default function OrganizationDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportMarkdown}
-              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5"
-              title="Copy Spec as Markdown"
-            >
-              <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="hidden sm:inline">Export Spec</span>
-            </Button>
+            <Badge variant="outline" className="text-[11px] font-mono border-border/80 bg-muted/40 text-muted-foreground">
+              ORG-{org.slug.toUpperCase()}
+            </Badge>
 
-            <Button
-              size="sm"
-              onClick={handleImpersonate}
-              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-sm"
-            >
-              <span>Open Portal</span>
-              <ExternalLink className="w-3 h-3" />
-            </Button>
+            <ActionTooltip label="Copy Technical Dossier as Markdown" shortcut="E">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportMarkdown}
+                className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
+              >
+                <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="hidden sm:inline">Export Spec</span>
+              </Button>
+            </ActionTooltip>
+
+            <ActionTooltip label="Open Tenant Workspace Portal" shortcut="Ctrl+Enter">
+              <Button
+                size="sm"
+                onClick={handleImpersonate}
+                className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-sm"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Open Portal</span>
+              </Button>
+            </ActionTooltip>
           </div>
         </div>
 
-        {/* ── 2. Scrollable Body Content ────────────────────────────── */}
+        {/* ── 2. Linear Tabs Bar (Directly below Header Bar) ───────────── */}
+        <div className="px-6 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-1 overflow-x-auto custom-scrollbar">
+          {[
+            { id: "overview", label: "Overview", icon: Activity },
+            { id: "hardware", label: "Hardware & OLTs", icon: Network },
+            { id: "network", label: "Domain & VPN", icon: Globe },
+            { id: "team", label: "Team & Access", icon: Users },
+            { id: "features", label: "Feature Flags", icon: Sliders },
+            { id: "billing", label: "Billing & Invoices", icon: CreditCard },
+            { id: "danger", label: "Danger Zone", icon: ShieldAlert },
+          ].map((tab, idx) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <ActionTooltip key={tab.id} label={`Switch to ${tab.label}`} shortcut={`${idx + 1}`}>
+                <button
+                  onClick={() => setActiveTab(tab.id as DetailTab)}
+                  className={cn(
+                    "px-3 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                    isActive
+                      ? "border-primary text-foreground font-bold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground")} />
+                  <span>{tab.label}</span>
+                </button>
+              </ActionTooltip>
+            );
+          })}
+        </div>
+
+        {/* ── 3. Scrollable Body Content ────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-          {/* Header Card with Key Properties */}
-          <div className="rounded-2xl border border-border/80 bg-card/60 backdrop-blur-md p-6 space-y-5 shadow-xs">
+          {/* Header Card with Key Properties & Glowing Effect */}
+          <Card glowingEffect className="p-5 space-y-4">
             {/* Top Identity Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="h-12 w-12 rounded-2xl bg-secondary/90 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xl shadow-xs">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono text-base shadow-xs">
                   {org.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-lg font-bold tracking-tight text-foreground">
+                    <h1 className="text-base font-bold tracking-tight text-foreground">
                       {org.name}
                     </h1>
-                    <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px] px-2 py-0.5">
-                      ORG-{org.slug.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                    <span>Slug: {org.slug}</span>
-                    <span>•</span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
+                      slug: {org.slug}
+                    </span>
                     <a
                       href={getTenantUrl(org.slug)}
                       target="_blank"
                       rel="noreferrer"
-                      className="hover:text-primary flex items-center gap-0.5 underline text-muted-foreground/80"
+                      className="hover:text-primary flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono underline"
                     >
                       <span>subdomain portal</span>
                       <ExternalLink className="h-2.5 w-2.5" />
                     </a>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {org.description || "Enterprise FTTH ISP Tenant Environment"}
+                  </p>
                 </div>
               </div>
 
@@ -379,7 +447,7 @@ export default function OrganizationDetailPage() {
                   <span>{org.status}</span>
                 </Badge>
                 <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-xs font-semibold px-2.5 py-1">
-                  {org.planTier} Plan
+                  {org.planTier} PLAN
                 </Badge>
               </div>
             </div>
@@ -387,62 +455,31 @@ export default function OrganizationDetailPage() {
             {/* Key Properties Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-border/50 text-xs">
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">Lead PIC</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Lead PIC</span>
                 <span className="font-semibold text-foreground truncate block">{org.picName}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">SLA Support</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">SLA Support</span>
                 <span className="font-semibold text-primary block">{org.slaTier}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">Hardware Slots</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Hardware Slots</span>
                 <span className="font-mono text-foreground block">{org.usedOlts}/{org.maxOlts} OLTs</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">ODP Quota</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">ODP Quota</span>
                 <span className="font-mono text-foreground block">{org.usedOdps}/{org.maxOdps}</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">MinIO Storage</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">MinIO Storage</span>
                 <span className="font-mono text-foreground block">{org.usedStorageGb}/{org.maxStorageGb} GB</span>
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-mono text-muted-foreground block">API Latency</span>
+                <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">API Latency</span>
                 <span className="font-mono text-primary block">{org.apiLatencyMs} ms</span>
               </div>
             </div>
-          </div>
-
-          {/* ── 3. Tabs Navigation Bar ────────────────────────────── */}
-          <div className="flex items-center gap-1.5 border-b border-border/80 overflow-x-auto custom-scrollbar pb-px">
-            {[
-              { id: "overview", label: "Overview & Metrics", icon: Activity },
-              { id: "hardware", label: "Hardware & OLTs", icon: Network },
-              { id: "network", label: "Domain & VPN Tunnel", icon: Globe },
-              { id: "team", label: "Team & Access", icon: Users },
-              { id: "features", label: "Feature Flags", icon: Sliders },
-              { id: "billing", label: "Billing & Invoices", icon: CreditCard },
-              { id: "danger", label: "Danger Zone", icon: ShieldAlert },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as DetailTab)}
-                  className={cn(
-                    "flex items-center gap-2 px-3.5 py-2 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer",
-                    isActive
-                      ? "border-primary text-foreground bg-primary/5 rounded-t-lg font-bold"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-t-lg"
-                  )}
-                >
-                  <Icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground")} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          </Card>
 
           {/* ── 4. Tab Content Viewport ───────────────────────────── */}
           <div className="pt-2">

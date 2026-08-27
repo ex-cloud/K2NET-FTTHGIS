@@ -596,4 +596,9 @@ public class OrganizationService {
             "adminPassword", tempPassword
         );
     }
+
+    @Transactional(readOnly = true)
+    public List<SubscriptionPlan> getAllSubscriptionPlans() {
+        return subscriptionPlanRepository.findAll();
+    }
 }
