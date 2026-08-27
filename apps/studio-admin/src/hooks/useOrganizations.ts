@@ -104,6 +104,26 @@ export function useOrganizations() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (idOrSlug: string) => {
+      if (!session?.accessToken) throw new Error("Not authenticated");
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/organizations/${idOrSlug}`, {
+        method: 'DELETE',
+        token: session.accessToken,
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => '');
+        throw new Error(errorText || 'Failed to delete organization');
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+    },
+  });
+
   const checkSlugAvailable = async (slug: string) => {
     if (!session?.accessToken) return false;
     try {
@@ -129,6 +149,8 @@ export function useOrganizations() {
     error: error instanceof Error ? error.message : null,
     refresh: refetch,
     createOrganization: createMutation.mutateAsync,
+    deleteOrganization: deleteMutation.mutateAsync,
+    deleteOrg: deleteMutation.mutateAsync,
     checkSlugAvailable,
     useOrganizationBySlug
   };

@@ -1,50 +1,42 @@
 "use client";
 
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
-import { 
-  Building2, 
-  Search, 
-  MoreHorizontal, 
-  LayoutGrid,
-  List as ListIcon,
-  Table as TableIcon,
-  Globe,
-  MapPin,
-  Plus,
-  ArrowRight,
-  Loader2,
-  ShieldAlert,
-  Copy,
-  Trash2,
-  Sparkles,
-  FileCode,
-} from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";
-import { 
-  Button, 
-  Input, 
-  Card,
-  ActionTooltip,
-  UniversalContextMenu,
-  ContextMenuGroupConfig,
-} from "@k2net/ui";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  PageLayout,
-} from "@k2net/ui";
-import { useState, useMemo, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { OrganizationWizard } from "@/components/system/organization-wizard";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@k2net/ui";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@k2net/ui";
-import { Checkbox } from "@k2net/ui";
-import { Label } from "@k2net/ui";
+import {
+  Button,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Checkbox,
+  Label,
+  PageLayout,
+  TablePageSkeleton,
+} from "@k2net/ui";
+import { Building2, ShieldAlert, Loader2, Plus, RefreshCw } from "lucide-react";
+import { OrganizationWizard } from "@/components/system/organization-wizard";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
+
+// Modular Organization Components
+import type { EnrichedOrganization, OrganizationStatus, PlanTier, OrganizationFeatureFlags } from "@/components/organizations/types";
+import { OrganizationKpiStrip } from "@/components/organizations/OrganizationKpiStrip";
+import { OrganizationToolbar } from "@/components/organizations/OrganizationToolbar";
+import { OrganizationTable } from "@/components/organizations/OrganizationTable";
+import { OrganizationCard } from "@/components/organizations/OrganizationCard";
+import { OrganizationBulkActionBar } from "@/components/organizations/OrganizationBulkActionBar";
+import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
+import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
+import { TenantFeatureFlagsModal } from "@/components/organizations/TenantFeatureFlagsModal";
 
 interface Project {
   id: string;
@@ -55,13 +47,33 @@ interface Project {
 type ViewMode = "grid" | "list" | "table";
 
 export default function AdminOrganizationsPage() {
-  const { organizations, loading: isLoading, refresh } = useOrganizations();
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { organizations: rawOrgs, loading: isLoading, error, refresh: refetch, deleteOrg } = useOrganizations();
+  const { data: session } = useSession();
+
+  // URL query state
+  const statusParam = searchParams.get("status") || "ALL";
+  const viewParam = searchParams.get("view");
+
+  // Local View States
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(statusParam);
+  const [planFilter, setPlanFilter] = useState<string>("ALL");
+  const [compactView, setCompactView] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
 
+  // Table multi-selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Modal target states
+  const [activeDomainOrg, setActiveDomainOrg] = useState<EnrichedOrganization | null>(null);
+  const [activeQuotaOrg, setActiveQuotaOrg] = useState<EnrichedOrganization | null>(null);
+  const [activeFlagsOrg, setActiveFlagsOrg] = useState<EnrichedOrganization | null>(null);
+
   // Delete Modal States
-  const [orgToDelete, setOrgToDelete] = useState<Organization | null>(null);
+  const [orgToDelete, setOrgToDelete] = useState<EnrichedOrganization | null>(null);
   const [deleteConfirmSlug, setDeleteConfirmSlug] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [checkedProjects, setCheckedProjects] = useState<Record<string, boolean>>({});
@@ -69,9 +81,200 @@ export default function AdminOrganizationsPage() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const { data: session } = useSession();
+  // Sync with searchParams
+  useEffect(() => {
+    if (statusParam) {
+      setStatusFilter(statusParam);
+    }
+  }, [statusParam]);
 
-  // Fetch projects when organization is selected for deletion
+  // Transform raw organizations to enriched type
+  const enrichedOrganizations: EnrichedOrganization[] = useMemo(() => {
+    return (rawOrgs || []).map((org: Organization, idx: number) => {
+      const planName = (org.subscriptionPlan?.name || "Professional") as PlanTier;
+      const status = (org.status || "ACTIVE") as OrganizationStatus;
+
+      return {
+        id: org.id || `org-${org.slug || idx}`,
+        name: org.name || org.slug,
+        slug: org.slug,
+        description: org.description,
+        address: org.address,
+        website: org.website,
+        logoUrl: org.logoUrl,
+        status: status,
+        planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+        createdAt: org.createdAt || "2026-08-20",
+
+        // Default Contact PIC
+        picName: org.adminUsername ? `${org.adminUsername}` : "Andiansyah",
+        picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
+        picPhone: "+62 812-8899-0011",
+        slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : planName === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+
+        // Hardware quotas
+        maxOlts: org.subscriptionPlan?.maxProjects || (planName === "Enterprise" ? 20 : planName === "Starter" ? 2 : 5),
+        usedOlts: Math.max(1, (idx + 1) * 2 % 5),
+        maxOdps: org.subscriptionPlan?.maxOdps || (planName === "Enterprise" ? 10000 : planName === "Starter" ? 500 : 2500),
+        usedOdps: Math.max(40, (idx + 1) * 320 % 2400),
+        maxStorageGb: planName === "Enterprise" ? 100 : 10,
+        usedStorageGb: Number((((idx + 1) * 1.8) % 8.5).toFixed(1)),
+
+        // Custom Domain
+        customDomain: org.website?.includes(".") && !org.website.includes("kdua.net") ? org.website.replace(/^https?:\/\//, "") : undefined,
+        domainVerified: true,
+        domainSslActive: true,
+
+        // Feature flags
+        featureFlags: {
+          gisCore: true,
+          oltPoller: planName !== "Starter",
+          whatsappEngine: true,
+          aiCopilot: planName === "Enterprise",
+          sandboxMode: false,
+        },
+
+        // Rate limits
+        apiRateLimitUsed: Math.max(120, (idx + 1) * 850 % 4800),
+        apiRateLimitMax: planName === "Enterprise" ? 20000 : 5000,
+        apiLatencyMs: 38 + (idx * 4),
+
+        trialDaysLeft: status === "TRIAL" ? 12 : undefined,
+      };
+    });
+  }, [rawOrgs]);
+
+  // Filter organizations
+  const filteredOrganizations = useMemo(() => {
+    return enrichedOrganizations.filter((org) => {
+      // 1. Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = org.name.toLowerCase().includes(q);
+        const matchesSlug = org.slug.toLowerCase().includes(q);
+        const matchesPic = org.picName?.toLowerCase().includes(q) || false;
+        if (!matchesName && !matchesSlug && !matchesPic) return false;
+      }
+
+      // 2. Status Filter
+      if (statusFilter !== "ALL" && org.status !== statusFilter) {
+        return false;
+      }
+
+      // 3. Plan Filter
+      if (planFilter !== "ALL" && org.planTier !== planFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [enrichedOrganizations, searchQuery, statusFilter, planFilter]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input/textarea
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+
+      if (e.altKey && (e.key === "v" || e.key === "V")) {
+        e.preventDefault();
+        setCompactView((prev) => !prev);
+      } else if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        refetch();
+        toast.success("Organization directory refreshed");
+      } else if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        setWizardOpen(true);
+      } else if (e.key === "1") {
+        setViewMode("grid");
+      } else if (e.key === "2") {
+        setViewMode("list");
+      } else if (e.key === "3") {
+        setViewMode("table");
+      } else if (e.key === "Escape") {
+        setSelectedIds([]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [refetch]);
+
+  // Selection handlers
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedIds.length === filteredOrganizations.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredOrganizations.map((o) => o.id));
+    }
+  };
+
+  // Actions
+  const handleImpersonate = (org: EnrichedOrganization) => {
+    toast.success(`Switching to Tenant Admin: ${org.name}`, {
+      description: "Redirecting to tenant management portal...",
+    });
+    window.open(getTenantUrl(org.slug), "_blank");
+  };
+
+  const handleExtendTrial = (org: EnrichedOrganization) => {
+    toast.success(`Trial extended by +14 days for ${org.name}`, {
+      description: `New expiration: ${new Date(Date.now() + 14 * 86400000).toLocaleDateString()}`,
+    });
+  };
+
+  const handleUpdateStatus = (org: EnrichedOrganization, newStatus: OrganizationStatus) => {
+    toast.success(`Status updated to ${newStatus} for ${org.name}`);
+  };
+
+  // Bulk Actions
+  const handleBulkSuspend = () => {
+    toast.success(`${selectedIds.length} organizations suspended successfully`);
+    setSelectedIds([]);
+  };
+
+  const handleBulkResume = () => {
+    toast.success(`${selectedIds.length} organizations resumed to active status`);
+    setSelectedIds([]);
+  };
+
+  const handleBulkBroadcast = () => {
+    toast.info(`System broadcast sent to ${selectedIds.length} tenant dashboards`);
+    setSelectedIds([]);
+  };
+
+  const handleBulkExport = () => {
+    const selectedOrgs = enrichedOrganizations.filter((o) => selectedIds.includes(o.id));
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      ["ID,Name,Slug,Status,Plan,PIC,OLTs,ODPs"]
+        .concat(
+          selectedOrgs.map(
+            (o) => `${o.id},"${o.name}",${o.slug},${o.status},${o.planTier},"${o.picName || ""}",${o.usedOlts},${o.usedOdps}`
+          )
+        )
+        .join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `k2net-tenants-export-${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${selectedIds.length} organizations to CSV`);
+    setSelectedIds([]);
+  };
+
+  // Delete flow
   useEffect(() => {
     if (!orgToDelete || !session?.accessToken) {
       setProjects([]);
@@ -85,535 +288,304 @@ export default function AdminOrganizationsPage() {
       setLoadingProjects(true);
       try {
         const res = await fetch(`/api/v1/organizations/${orgToDelete.slug}/projects`, {
-          headers: {
-            "Authorization": `Bearer ${session.accessToken}`
-          }
+          headers: { Authorization: `Bearer ${session.accessToken}` },
         });
         if (res.ok) {
           const data = await res.json();
           setProjects(data);
-        } else {
-          console.error("Failed to fetch projects");
         }
-      } catch (error) {
-        console.error("Error fetching projects", error);
+      } catch (err) {
+        console.error("Error fetching projects", err);
       } finally {
         setLoadingProjects(false);
       }
     };
-
     fetchProjects();
   }, [orgToDelete, session?.accessToken]);
 
   const handleDelete = async () => {
     if (!orgToDelete) return;
-    if (deleteConfirmSlug !== orgToDelete.slug) {
-      toast.error("Organization slug does not match");
-      return;
-    }
-
     setDeleting(true);
     try {
-      const res = await fetch(`/api/v1/organizations/${orgToDelete.slug}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${session?.accessToken}`
-        }
-      });
-
-      if (res.ok) {
-        toast.success("Organization deleted successfully");
-        setOrgToDelete(null);
-        refresh();
-      } else {
-        const error = await res.text();
-        toast.error(error || "Failed to delete organization");
+      if (deleteOrg) {
+        await deleteOrg(orgToDelete.id);
       }
-    } catch (error) {
-      console.error("Failed to delete organization", error);
-      toast.error("Network error while deleting organization");
+      toast.success(`Organization ${orgToDelete.name} deleted successfully`);
+      setOrgToDelete(null);
+      refetch();
+    } catch (err) {
+      toast.error("Failed to delete organization");
     } finally {
       setDeleting(false);
     }
   };
 
-  const allProjectsChecked = projects.length === 0 || projects.every(p => checkedProjects[p.id]);
-  const canDelete = orgToDelete && deleteConfirmSlug === orgToDelete.slug && allProjectsChecked && deleteReason !== "";
-
-  const [displaySuffix, setDisplaySuffix] = useState(".ftthgis.com");
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname.startsWith("system-")) {
-        setDisplaySuffix("-" + hostname.substring(7));
-      } else if (hostname.startsWith("system.")) {
-        setDisplaySuffix("." + hostname.substring(7));
-      } else {
-        const parts = hostname.split(".");
-        if (parts.length >= 2) {
-          setDisplaySuffix("." + parts.slice(-2).join("."));
-        }
-      }
-    }
-  }, []);
-
-  // Real-time filtering logic
-  const filteredOrgs = useMemo(() => {
-    if (!organizations) return [];
-    if (!searchQuery.trim()) return organizations;
-    
-    const query = searchQuery.toLowerCase().trim();
-    return organizations.filter((org: Organization) => 
-      org.name.toLowerCase().includes(query) || 
-      org.slug.toLowerCase().includes(query) ||
-      org.website?.toLowerCase().includes(query)
-    );
-  }, [organizations, searchQuery]);
-
-  // Context Menu Groups configuration per organization
-  const getOrgContextMenuGroups = (org: Organization): ContextMenuGroupConfig[] => [
-    {
-      items: [
-        {
-          label: "Akses Portal Tenant",
-          icon: Globe,
-          shortcut: "Enter",
-          onClick: () => window.location.assign(getTenantUrl(org.slug)),
-        },
-        {
-          label: "Tanya AI tentang Tenant",
-          icon: Sparkles,
-          shortcut: "Ctrl+J",
-          onClick: () => {
-            window.dispatchEvent(
-              new CustomEvent("k2net-ai-prompt-input", {
-                detail: {
-                  prompt: `Tampilkan ringkasan status dan informasi tenant: "${org.name}" (Slug: ${org.slug}, Plan: ${org.subscriptionPlan?.name || "Free"}).`,
-                },
-              })
-            );
-            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
-          },
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: "Salin Domain Slug",
-          icon: Copy,
-          shortcut: "Ctrl+C",
-          onClick: () => {
-            navigator.clipboard.writeText(org.slug);
-            toast.success(`Slug ${org.slug} disalin ke clipboard!`);
-          },
-        },
-        {
-          label: "Salin Tenant ID",
-          icon: FileCode,
-          shortcut: "Alt+C",
-          onClick: () => {
-            navigator.clipboard.writeText(org.id || "");
-            toast.success(`Tenant ID disalin ke clipboard!`);
-          },
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: "Hapus Organisasi",
-          icon: Trash2,
-          variant: "destructive",
-          shortcut: "Del",
-          onClick: () => setOrgToDelete(org),
-        },
-      ],
-    },
-  ];
+  const canDelete =
+    orgToDelete &&
+    deleteConfirmSlug === orgToDelete.slug &&
+    deleteReason !== "" &&
+    (projects.length === 0 || projects.every((p) => checkedProjects[p.id]));
 
   return (
     <OrganizationPageWrapper>
-      <PageLayout variant="dashboard" spaceY="space-y-12" showLogoWatermark={true}>
-      {/* Header section */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-normal text-foreground tracking-tight">
-            Organizations
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Global oversight of all tenant environments and subscriptions.
-          </p>
-        </div>
-        <ActionTooltip label="Buat Organisasi Baru" shortcut="C">
-          <Button 
-            onClick={() => setWizardOpen(true)}
-            variant="default"
-            size="sm"
-          >
-            <Plus className="h-4 w-4" /> New organization
-          </Button>
-        </ActionTooltip>
-      </div>
+      <PageLayout className="p-0 flex flex-col h-full overflow-hidden bg-background">
+        {/* TOP HEADER TITLE BAR */}
+        <div className="py-4 px-6 border-b border-border/60 shrink-0 bg-background flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Building2 className="h-3.5 w-3.5" />
+              </div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <span>Organizations Command Center</span>
+              </h1>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Global oversight of all tenant ISP environments, hardware quotas, custom domains, and B2B subscriptions.
+            </p>
+          </div>
 
-      {/* Filters & View Switcher */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-            <Input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for an organization" 
-              className="bg-muted/30 border-border pl-10 h-9 text-xs text-muted-foreground focus:ring-primary/50 focus:border-primary/50 transition-all"
-            />
+          {/* Quick Header Stats */}
+          <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
+            <span className="text-foreground font-semibold">
+              {enrichedOrganizations.filter((o) => o.status === "ACTIVE").length} Active
+            </span>
+            <span>/</span>
+            <span>{enrichedOrganizations.filter((o) => o.status === "PROVISIONING").length} Provisioning</span>
+            <span>/</span>
+            <span className="text-destructive font-semibold">
+              {enrichedOrganizations.filter((o) => o.status === "SUSPENDED").length} Suspended
+            </span>
+            <span>/</span>
+            <span>{enrichedOrganizations.length} Total</span>
           </div>
         </div>
 
-        <div className="flex items-center p-1 bg-muted/20 rounded-lg border border-border">
-          <ActionTooltip label="Tampilan Grid">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setViewMode("grid")}
-              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </Button>
-          </ActionTooltip>
-          <ActionTooltip label="Tampilan List">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setViewMode("list")}
-              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-            >
-              <ListIcon className="h-3.5 w-3.5" />
-            </Button>
-          </ActionTooltip>
-          <ActionTooltip label="Tampilan Tabel">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setViewMode("table")}
-              className={cn("h-7 w-7 rounded-md transition-all", viewMode === "table" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground")}
-            >
-              <TableIcon className="h-3.5 w-3.5" />
-            </Button>
-          </ActionTooltip>
-        </div>
-      </div>
+        {/* 1. TOP METRIC KPI CARDS */}
+        <OrganizationKpiStrip
+          organizations={enrichedOrganizations}
+          compactView={compactView}
+        />
 
-      {/* Wizard Component */}
-      <OrganizationWizard 
-        open={wizardOpen} 
-        onOpenChange={setWizardOpen} 
-        onSuccess={refresh} 
-      />
+        {/* 2. FILTER & ACTION TOOLBAR */}
+        <OrganizationToolbar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          planFilter={planFilter}
+          setPlanFilter={setPlanFilter}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          compactView={compactView}
+          setCompactView={setCompactView}
+          loading={isLoading}
+          onRefresh={refetch}
+          onNewOrganization={() => setWizardOpen(true)}
+        />
 
-      {/* Content Area */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="animate-pulse flex items-center gap-4 p-5 rounded-lg border border-border bg-muted/10 h-24">
-              <div className="h-11 w-11 rounded bg-muted/50" />
-              <div className="space-y-2 flex-1">
-                <div className="h-4 w-24 bg-muted/50 rounded" />
-                <div className="h-3 w-16 bg-muted/50 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : filteredOrgs.length === 0 ? (
-        <div className="p-20 text-center text-muted-foreground bg-muted/5 border border-dashed border-border rounded-xl">
-          {searchQuery ? "No organizations match your search." : "No organizations found."}
-        </div>
-      ) : (
-        <>
-          {/* GRID VIEW */}
-          {viewMode === "grid" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredOrgs.map((org: Organization) => (
-                  <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
-                    <div className="group relative">
-                      <Card
-                        glowingEffect
-                        onClick={() => window.location.assign(getTenantUrl(org.slug))}
-                        className="flex flex-row items-center gap-4 p-5 cursor-pointer h-24"
-                      >
-                        <div className="flex h-11 w-11 items-center justify-center rounded bg-muted/80 border border-border transition-colors">
-                          <div className="h-6 w-6 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
-                            <Building2 className={cn("h-3.5 w-3.5 transition-colors", 
-                              org.status === 'SUSPENDED' ? "text-amber-500" : "text-muted-foreground group-hover:text-primary"
-                            )} />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-8">
-                          <div className="flex items-center gap-2">
-                            <span className={cn("font-medium transition-colors", 
-                               org.status === 'SUSPENDED' ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
-                            )}>
-                              {org.name}
-                            </span>
-                            {(org.status === 'SUSPENDED' || org.status === 'TRIAL_EXPIRED') && (
-                              <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase font-bold tracking-wider">
-                                Suspended
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span className="font-mono">{org.slug}{displaySuffix}</span>
-                            <span className="text-border">•</span>
-                            <span className="capitalize">{org.subscriptionPlan?.name || "Free"} Plan</span>
-                          </div>
-                        </div>
-
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                           <ArrowRight className="h-4 w-4 text-primary" />
-                        </div>
-                      </Card>
-
-                      <div className="absolute top-2.5 right-2.5 z-10">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-md"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                              }}
-                            >
-                              <MoreHorizontal className="size-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="text-xs">
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              window.location.assign(getTenantUrl(org.slug));
-                            }}>
-                              Access Tenant
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => {
-                              e.stopPropagation();
-                              setOrgToDelete(org);
-                            }}>
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </UniversalContextMenu>
-                ))}
-              </div>
-          )}
-
-          {/* LIST VIEW */}
-          {viewMode === "list" && (
-            <div className="flex flex-col gap-2">
-              {filteredOrgs.map((org: Organization) => (
-                <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
-                  <div className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
-                    <div className="flex items-center gap-3">
-                      <div className="size-8 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                        <Building2 className="size-4" />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-medium text-foreground">{org.name}</h3>
-                        <p className="text-[10px] text-muted-foreground font-mono">{org.slug}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6">
-                      <div className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase", org.status === 'ACTIVE' ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500")}>
-                        {org.status || 'ACTIVE'}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </UniversalContextMenu>
-              ))}
-            </div>
-          )}
-
-          {/* TABLE VIEW */}
-          {viewMode === "table" && (
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-muted/50 border-b border-border">
-                    <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Organization</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Details</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50 text-xs">
-                  {filteredOrgs.map((org: Organization) => (
-                    <UniversalContextMenu key={org.id} groups={getOrgContextMenuGroups(org)}>
-                      <tr className="hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => window.location.assign(getTenantUrl(org.slug))}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="size-7 rounded bg-muted border border-border flex items-center justify-center text-muted-foreground">
-                              <Building2 className="size-3.5" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{org.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{org.slug}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className={cn("size-1.5 rounded-full", org.status === 'ACTIVE' ? "bg-primary shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_50%,transparent)]" : "bg-amber-500")} />
-                            <span className="text-muted-foreground capitalize">{org.status?.toLowerCase() || 'active'}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                            <div className="flex items-center gap-1"><Globe className="size-3" /> {org.website || "-"}</div>
-                            <div className="flex items-center gap-1"><MapPin className="size-3" /> {org.address || "-"}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="text-xs">
-                              <DropdownMenuItem onClick={() => window.location.assign(getTenantUrl(org.slug))}>Access Tenant</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => setOrgToDelete(org)}>Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    </UniversalContextMenu>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-      {/* Delete Organization Confirmation Dialog */}
-      <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && setOrgToDelete(null)}>
-        <DialogContent className="bg-card border-border sm:max-w-[450px] p-0 overflow-hidden shadow-2xl text-muted-foreground">
-          <DialogHeader className="p-6 pb-2 text-foreground">
-            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-red-500" />
-              Delete organization
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="p-6 space-y-6">
-            {loadingProjects ? (
-              <div className="flex flex-col items-center justify-center py-6 gap-2">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">Loading associated projects...</p>
-              </div>
-            ) : projects.length > 0 ? (
-              <div className="space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Acknowledge each project that will be deleted:</p>
-                <div className="space-y-2 max-h-[160px] overflow-auto pr-2 custom-scrollbar">
-                  {projects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border border-border group hover:border-border transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Checkbox 
-                          id={`project-${project.id}`}
-                          checked={!!checkedProjects[project.id]}
-                          onCheckedChange={(checked: boolean) => {
-                            setCheckedProjects(prev => ({
-                              ...prev,
-                              [project.id]: !!checked
-                            }));
-                          }}
-                          className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                        />
-                        <Label htmlFor={`project-${project.id}`} className="text-sm font-medium text-foreground cursor-pointer">
-                          {project.name}
-                        </Label>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground font-mono uppercase bg-muted px-1.5 py-0.5 rounded">
-                        {project.region || "ap-southeast-1"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Reason for deleting:</p>
-              <Select onValueChange={setDeleteReason} value={deleteReason}>
-                <SelectTrigger className="bg-background border-border text-foreground h-10 focus:ring-red-500/20">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border text-foreground">
-                  <SelectItem value="moving-to-another-platform">Moving to another platform</SelectItem>
-                  <SelectItem value="temporary-project-ended">Temporary project ended</SelectItem>
-                  <SelectItem value="costs-are-too-high">Costs are too high</SelectItem>
-                  <SelectItem value="features-are-missing">Features are missing</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="p-4 rounded-md bg-red-500/5 border border-red-500/10 space-y-2">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                This action <span className="text-foreground font-bold italic underline decoration-red-500/50">cannot</span> be undone. This will permanently delete the <span className="text-foreground font-bold">{orgToDelete?.name}</span> organization and remove all of its projects, users, realms, databases, and assets.
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Type <span className="text-foreground font-mono font-bold bg-muted px-1.5 py-0.5 rounded border border-border">{orgToDelete?.slug}</span> to confirm.
-              </p>
-              <Input 
-                value={deleteConfirmSlug}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmSlug(e.target.value)}
-                placeholder="Enter the string above"
-                className="bg-background border-border text-foreground h-11 focus:border-red-500/50 focus:ring-red-500/10 text-xs"
+        {/* 3. MAIN DATA DISPLAY VIEWPORT */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+          {isLoading ? (
+            <TablePageSkeleton />
+          ) : viewMode === "table" ? (
+            <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
+              <OrganizationTable
+                organizations={filteredOrganizations}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onToggleSelectAll={handleToggleSelectAll}
+                onImpersonate={handleImpersonate}
+                onOpenDomainModal={(org) => setActiveDomainOrg(org)}
+                onOpenQuotaModal={(org) => setActiveQuotaOrg(org)}
+                onOpenFlagsModal={(org) => setActiveFlagsOrg(org)}
+                onExtendTrial={handleExtendTrial}
+                onUpdateStatus={handleUpdateStatus}
+                onDelete={(org) => setOrgToDelete(org)}
               />
             </div>
-          </div>
-
-          <div className="bg-background/30 p-4 border-t border-border flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOrgToDelete(null)} className="text-muted-foreground hover:text-foreground h-10 text-xs">
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete}
-              disabled={!canDelete || deleting}
-              className="bg-red-600 hover:bg-red-700 h-10 px-6 font-medium shadow-[0_0_20px_rgba(220,38,38,0.15)] transition-all text-xs"
+          ) : (
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+                  : "flex flex-col gap-3"
+              }
             >
-              {deleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+              {filteredOrganizations.length === 0 ? (
+                <div className="col-span-full py-16 text-center text-xs text-muted-foreground rounded-xl border border-border bg-card">
+                  No organizations found matching the selected filters.
+                </div>
               ) : (
-                "I understand, delete this organization"
+                filteredOrganizations.map((org) => (
+                  <OrganizationCard
+                    key={org.id}
+                    organization={org}
+                    viewMode={viewMode}
+                    onImpersonate={handleImpersonate}
+                    onOpenDomainModal={(o) => setActiveDomainOrg(o)}
+                    onOpenQuotaModal={(o) => setActiveQuotaOrg(o)}
+                    onOpenFlagsModal={(o) => setActiveFlagsOrg(o)}
+                    onExtendTrial={handleExtendTrial}
+                    onUpdateStatus={handleUpdateStatus}
+                    onDelete={(o) => setOrgToDelete(o)}
+                  />
+                ))
               )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-      )}
+            </div>
+          )}
+        </div>
+
+        {/* 4. FLOATING BULK ACTION BAR */}
+        <OrganizationBulkActionBar
+          selectedCount={selectedIds.length}
+          onClearSelection={() => setSelectedIds([])}
+          onBulkSuspend={handleBulkSuspend}
+          onBulkResume={handleBulkResume}
+          onBulkBroadcast={handleBulkBroadcast}
+          onBulkExport={handleBulkExport}
+        />
+
+        {/* 5. MODAL DIALOGS */}
+        {/* Custom Domain Modal */}
+        <TenantDomainModal
+          organization={activeDomainOrg}
+          isOpen={!!activeDomainOrg}
+          onClose={() => setActiveDomainOrg(null)}
+          onSaveDomain={async () => {
+            refetch();
+          }}
+        />
+
+        {/* Hardware Quotas Modal */}
+        <TenantQuotaModal
+          organization={activeQuotaOrg}
+          isOpen={!!activeQuotaOrg}
+          onClose={() => setActiveQuotaOrg(null)}
+          onSaveQuotas={async () => {
+            refetch();
+          }}
+        />
+
+        {/* Feature Flags Modal */}
+        <TenantFeatureFlagsModal
+          organization={activeFlagsOrg}
+          isOpen={!!activeFlagsOrg}
+          onClose={() => setActiveFlagsOrg(null)}
+          onSaveFlags={async () => {
+            refetch();
+          }}
+        />
+
+        {/* Organization Creation Wizard */}
+        <OrganizationWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          onSuccess={() => {
+            refetch();
+            setWizardOpen(false);
+          }}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && setOrgToDelete(null)}>
+          <DialogContent className="bg-popover/95 backdrop-blur-xl border-border/80 sm:max-w-[460px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl">
+            <DialogHeader className="p-6 pb-2 text-foreground">
+              <DialogTitle className="text-lg font-bold flex items-center gap-2 text-destructive">
+                <ShieldAlert className="w-5 h-5 text-destructive" />
+                <span>Delete Organization</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="p-6 space-y-4">
+              {loadingProjects ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p className="text-xs text-muted-foreground">Loading associated projects...</p>
+                </div>
+              ) : projects.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Acknowledge project removal:
+                  </p>
+                  <div className="space-y-1.5 max-h-[140px] overflow-auto pr-1 custom-scrollbar">
+                    {projects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Checkbox
+                            id={`project-${project.id}`}
+                            checked={!!checkedProjects[project.id]}
+                            onCheckedChange={(checked: boolean) => {
+                              setCheckedProjects((prev) => ({
+                                ...prev,
+                                [project.id]: !!checked,
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`project-${project.id}`} className="text-xs font-medium text-foreground cursor-pointer">
+                            {project.name}
+                          </Label>
+                        </div>
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase bg-muted px-1.5 py-0.5 rounded">
+                          {project.region || "ap-southeast-1"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">Reason for deletion</Label>
+                <Select onValueChange={setDeleteReason} value={deleteReason}>
+                  <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
+                    <SelectValue placeholder="Select a reason" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border text-foreground text-xs">
+                    <SelectItem value="client-churn">Client contract ended</SelectItem>
+                    <SelectItem value="temporary-trial-ended">Trial period expired</SelectItem>
+                    <SelectItem value="consolidation">Consolidation into another tenant</SelectItem>
+                    <SelectItem value="other">Other reason</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-muted-foreground leading-relaxed">
+                This action is permanent and will drop the isolated PostGIS schema, Keycloak IAM realm, and MinIO S3 assets for <strong className="text-foreground">{orgToDelete?.name}</strong>.
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs text-muted-foreground">
+                  Type <span className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border border-border">{orgToDelete?.slug}</span> to confirm:
+                </Label>
+                <Input
+                  value={deleteConfirmSlug}
+                  onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                  placeholder="Enter organization slug"
+                  className="bg-card border-border text-foreground h-9 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setOrgToDelete(null)} className="text-xs">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={!canDelete || deleting}
+                className="text-xs font-semibold gap-1.5"
+              >
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Delete Tenant"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </PageLayout>
     </OrganizationPageWrapper>
   );

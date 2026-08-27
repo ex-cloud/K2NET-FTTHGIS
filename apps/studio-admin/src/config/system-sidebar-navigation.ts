@@ -17,6 +17,34 @@ export type SidebarConfig = {
 };
 
 export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
+  organizations: {
+    title: "Organizations",
+    sections: [
+      {
+        title: "Tenant Directory",
+        items: [
+          { title: "All Organizations", url: "/organizations", icon: "Building2" },
+          { title: "Active Tenants", url: "/organizations?status=ACTIVE", icon: "CheckCircle" },
+          { title: "Trial Accounts", url: "/organizations?status=TRIAL", icon: "Clock" },
+          { title: "Provisioning Queue", url: "/organizations?status=PROVISIONING", icon: "UploadCloud" },
+          { title: "Suspended & Inactive", url: "/organizations?status=SUSPENDED", icon: "ShieldAlert" },
+        ],
+      },
+      {
+        title: "Entitlements & Limits",
+        items: [
+          { title: "Feature Flags & Add-ons", url: "/organizations?view=features", icon: "Sliders" },
+          { title: "FTTH Spatial Quotas", url: "/organizations?view=quotas", icon: "Network" },
+        ],
+      },
+      {
+        title: "Domains & Routing",
+        items: [
+          { title: "Custom Domains", url: "/organizations?view=domains", icon: "Globe" },
+        ],
+      },
+    ],
+  },
   logs: {
     title: "Global Logs",
     sections: [

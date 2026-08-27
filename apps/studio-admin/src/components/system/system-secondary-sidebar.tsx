@@ -138,6 +138,8 @@ export function SystemSecondarySidebar() {
     activeKey = "logs";
   } else if (pathname?.startsWith("/tasks")) {
     activeKey = "tasks";
+  } else if (pathname?.includes("/organizations")) {
+    activeKey = "organizations";
   }
 
   if (!activeKey) return null;
