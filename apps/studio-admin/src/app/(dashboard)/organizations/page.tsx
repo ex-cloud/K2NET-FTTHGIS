@@ -24,7 +24,7 @@ import {
   TablePageSkeleton,
 } from "@k2net/ui";
 import { Building2, ShieldAlert, Loader2, Plus, RefreshCw } from "lucide-react";
-import { OrganizationWizard } from "@/components/system/organization-wizard";
+import { OrganizationWizard } from "@/components/organizations/OrganizationWizard";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 
 // Modular Organization Components
