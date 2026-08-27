@@ -28,7 +28,7 @@ export interface Organization {
   // Admin Account Provisioning
   adminEmail?: string;
   adminUsername?: string;
-  status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL_EXPIRED' | 'DELETED';
+  status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'PROVISIONING' | 'OVERDUE' | 'TRIAL_EXPIRED' | 'PENDING_APPROVAL' | 'DELETED';
   trialExpiresAt?: string;
   createdAt?: string;
 }
@@ -124,6 +124,27 @@ export function useOrganizations() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ slug, org }: { slug: string; org: Partial<Organization> }) => {
+      if (!session?.accessToken) throw new Error("Not authenticated");
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/organizations/${slug}`, {
+        method: 'PUT',
+        body: JSON.stringify(org),
+        token: session.accessToken,
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => '');
+        throw new Error(errorText || 'Failed to update organization');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+    },
+  });
+
   const checkSlugAvailable = async (slug: string) => {
     if (!session?.accessToken) return false;
     try {
@@ -149,6 +170,7 @@ export function useOrganizations() {
     error: error instanceof Error ? error.message : null,
     refresh: refetch,
     createOrganization: createMutation.mutateAsync,
+    updateOrganization: updateMutation.mutateAsync,
     deleteOrganization: deleteMutation.mutateAsync,
     deleteOrg: deleteMutation.mutateAsync,
     checkSlugAvailable,

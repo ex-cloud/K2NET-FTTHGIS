@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,9 @@ import {
 } from "@k2net/ui";
 import {
   Globe,
-  CheckCircle2,
-  AlertCircle,
   Copy,
   RefreshCw,
   ShieldCheck,
-  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "./types";
@@ -42,7 +39,7 @@ export function TenantDomainModal({
   const [verifying, setVerifying] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (organization) {
       setDomainInput(organization.customDomain || "");
     }

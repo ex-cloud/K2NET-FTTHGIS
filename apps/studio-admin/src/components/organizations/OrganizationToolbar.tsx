@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import {
   Search,
   Filter,
@@ -9,10 +8,8 @@ import {
   List as ListIcon,
   Table as TableIcon,
   Plus,
-  SlidersHorizontal,
   ChevronDown,
   Layers,
-  Sparkles,
 } from "lucide-react";
 import {
   Button,
@@ -21,10 +18,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   ActionTooltip,
-  Badge,
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
-import type { OrganizationStatus, PlanTier } from "./types";
 
 interface OrganizationToolbarProps {
   searchQuery: string;

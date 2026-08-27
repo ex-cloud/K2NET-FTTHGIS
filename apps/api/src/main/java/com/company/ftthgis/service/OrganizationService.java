@@ -349,6 +349,12 @@ public class OrganizationService {
         org.setDescription(updatedOrg.getDescription());
         org.setAddress(updatedOrg.getAddress());
         org.setWebsite(updatedOrg.getWebsite());
+        if (updatedOrg.getStatus() != null) {
+            org.setStatus(updatedOrg.getStatus());
+        }
+        if (updatedOrg.getSubscriptionPlan() != null) {
+            org.setSubscriptionPlan(updatedOrg.getSubscriptionPlan());
+        }
 
         log.info("🔄 Updating organization profile: {} (Current Slug: {})", org.getName(), org.getSlug());
         return organizationRepository.save(org);

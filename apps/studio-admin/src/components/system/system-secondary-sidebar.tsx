@@ -61,6 +61,7 @@ import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { useTaskStore } from "@/store/task-store";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Users,
@@ -119,6 +120,17 @@ export function SystemSecondarySidebar() {
   // so the PanelLeft button in LogsTopHeader can also toggle the sidebar.
   const { isSidebarCollapsed: ctxCollapsed, setIsSidebarCollapsed: ctxSetCollapsed } =
     useLogsFilter();
+
+  const { organizations } = useOrganizations();
+  const orgCounts = React.useMemo(() => {
+    if (!organizations) return { active: 0, trial: 0, provisioning: 0, suspended: 0 };
+    return {
+      active: organizations.filter((o) => o.status === "ACTIVE").length,
+      trial: organizations.filter((o) => o.status === "TRIAL").length,
+      provisioning: organizations.filter((o) => o.status === "PROVISIONING").length,
+      suspended: organizations.filter((o) => o.status === "SUSPENDED" || o.status === "OVERDUE").length,
+    };
+  }, [organizations]);
 
   // Determine active config key based on URL pathname
   let activeKey: string | null = null;
@@ -186,7 +198,7 @@ export function SystemSecondarySidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-0.5 mt-2">
                     {section.items.map((item, idx) => {
-                      // Support query-param-based active detection (e.g. /tasks?quick=active)
+                      // Support query-param-based active detection (e.g. /tasks?quick=active or /organizations?status=ACTIVE)
                       let isActive: boolean;
                       if (item.url.includes("?")) {
                         const [itemPath, itemSearch] = item.url.split("?");
@@ -195,11 +207,9 @@ export function SystemSecondarySidebar() {
                           pathname === itemPath ||
                           pathname === `/system${itemPath}`;
                         const itemKeys = Array.from(itemParams.keys());
-                        const searchKeys = Array.from(searchParams.keys());
                         isActive =
                           pathMatch &&
-                          itemKeys.every((k) => searchParams.get(k) === itemParams.get(k)) &&
-                          searchKeys.every((k) => itemParams.get(k) === searchParams.get(k));
+                          itemKeys.every((k) => searchParams.get(k) === itemParams.get(k));
                       } else {
                         // No query params: active if on exact path or child route (e.g. /tasks/projects)
                         const isProjectsRoute =
@@ -210,20 +220,46 @@ export function SystemSecondarySidebar() {
                           pathname === item.url ||
                           pathname === `/system${item.url}` ||
                           isProjectsRoute;
+
                         const hasTaskFilter =
                           searchParams.has("quick") ||
                           searchParams.has("scope") ||
                           searchParams.has("type") ||
                           searchParams.has("project");
-                        // For /tasks (All Issues), only active when on exact /tasks and no query filters applied
-                        isActive =
-                          pathMatch &&
-                          (item.url === "/tasks"
-                            ? !hasTaskFilter && (pathname === "/tasks" || pathname === "/system/tasks")
-                            : true);
+
+                        const hasOrgFilter =
+                          searchParams.has("status") ||
+                          searchParams.has("view");
+
+                        // For base pages (/organizations or /tasks), only active when no query filter
+                        if (item.url === "/organizations") {
+                          isActive =
+                            (pathname === "/organizations" || pathname === "/system/organizations") &&
+                            !hasOrgFilter;
+                        } else if (item.url === "/tasks") {
+                          isActive =
+                            (pathname === "/tasks" || pathname === "/system/tasks") &&
+                            !hasTaskFilter;
+                        } else {
+                          isActive = pathMatch;
+                        }
                       }
+
                       const Icon = ICON_MAP[item.icon] || FileText;
                       const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
+
+                      // Specific badges for organization sub-menu
+                      let orgBadgeCount: number | null = null;
+                      if (item.url === "/organizations?status=ACTIVE") {
+                        orgBadgeCount = orgCounts.active;
+                      } else if (item.url === "/organizations?status=TRIAL" && orgCounts.trial > 0) {
+                        orgBadgeCount = orgCounts.trial;
+                      } else if (item.url === "/organizations?status=PROVISIONING" && orgCounts.provisioning > 0) {
+                        orgBadgeCount = orgCounts.provisioning;
+                      } else if (item.url === "/organizations?status=SUSPENDED" && orgCounts.suspended > 0) {
+                        orgBadgeCount = orgCounts.suspended;
+                      }
+
                       return (
                         <Link
                           key={idx}
@@ -236,9 +272,26 @@ export function SystemSecondarySidebar() {
                         >
                           <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
                           <span className="truncate flex-1">{item.title}</span>
+
+                          {/* Task B2B Escalations Badge */}
                           {isB2BLink && unreadB2BCount > 0 && (
                             <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
                               {unreadB2BCount}
+                            </span>
+                          )}
+
+                          {/* Organization Status Badge Counter */}
+                          {orgBadgeCount !== null && (
+                            <span
+                              className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                item.url.includes("status=ACTIVE")
+                                  ? "bg-primary/10 text-primary border border-primary/20"
+                                  : item.url.includes("status=SUSPENDED")
+                                  ? "bg-destructive/10 text-destructive border border-destructive/20"
+                                  : "bg-muted text-muted-foreground border border-border"
+                              }`}
+                            >
+                              {orgBadgeCount}
                             </span>
                           )}
                         </Link>

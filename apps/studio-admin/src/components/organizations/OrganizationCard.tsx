@@ -1,33 +1,30 @@
 "use client";
 
-import React from "react";
-import { Card, Badge, Button, ActionTooltip } from "@k2net/ui";
+import { useRouter } from "next/navigation";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import {
-  Building2,
   ExternalLink,
-  MoreHorizontal,
   Globe,
   Radio,
-  MessageSquare,
-  Sparkles,
-  Map,
   Clock,
+  RefreshCw,
   Phone,
   Mail,
+  Map,
+  MessageSquare,
+  Sparkles,
   Network,
-  RefreshCw,
   AlertTriangle,
   PauseCircle,
-  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
 import { OrganizationContextMenu } from "./OrganizationContextMenu";
-import { getTenantUrl } from "@/lib/domain";
 
 interface OrganizationCardProps {
   organization: EnrichedOrganization;
-  viewMode?: "grid" | "list";
+  viewMode: "grid" | "list";
   onImpersonate: (org: EnrichedOrganization) => void;
   onOpenDomainModal: (org: EnrichedOrganization) => void;
   onOpenQuotaModal: (org: EnrichedOrganization) => void;
@@ -39,7 +36,7 @@ interface OrganizationCardProps {
 
 export function OrganizationCard({
   organization: org,
-  viewMode = "grid",
+  viewMode,
   onImpersonate,
   onOpenDomainModal,
   onOpenQuotaModal,
@@ -48,6 +45,7 @@ export function OrganizationCard({
   onUpdateStatus,
   onDelete,
 }: OrganizationCardProps) {
+  const router = useRouter();
   const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
 
   const getStatusBadge = () => {
@@ -113,7 +111,7 @@ export function OrganizationCard({
           "group relative rounded-xl border border-border/80 bg-card/60 backdrop-blur-md p-4 transition-all duration-200 hover:border-primary/40 hover:bg-card/90 hover:shadow-lg cursor-pointer text-xs flex flex-col justify-between",
           viewMode === "list" ? "flex-row items-center gap-4" : "space-y-4"
         )}
-        onClick={() => onImpersonate(org)}
+        onClick={() => router.push(`/organizations/${org.slug}`)}
       >
         {/* Top Header Row */}
         <div className="flex items-start justify-between gap-3 w-full">

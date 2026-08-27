@@ -1,10 +1,7 @@
 "use client";
 
-import React from "react";
 import {
-  ShieldAlert,
   MessageSquare,
-  Network,
   Download,
   X,
   PlayCircle,

@@ -33,14 +33,15 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       {
         title: "Entitlements & Limits",
         items: [
-          { title: "Feature Flags & Add-ons", url: "/organizations?view=features", icon: "Sliders" },
-          { title: "FTTH Spatial Quotas", url: "/organizations?view=quotas", icon: "Network" },
+          { title: "Feature Flags & Add-ons", url: "/organizations/features", icon: "Sliders" },
+          { title: "FTTH Spatial Quotas", url: "/organizations/quotas", icon: "Network" },
         ],
       },
       {
         title: "Domains & Routing",
         items: [
-          { title: "Custom Domains", url: "/organizations?view=domains", icon: "Globe" },
+          { title: "Custom Domains", url: "/organizations/domains", icon: "Globe" },
+          { title: "VPN & Tunneling", url: "/organizations/vpn", icon: "ShieldCheck" },
         ],
       },
     ],

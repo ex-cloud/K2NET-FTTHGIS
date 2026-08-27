@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,6 @@ import {
   DialogFooter,
   Button,
   Switch,
-  Label,
 } from "@k2net/ui";
 import { Sliders, Map, Radio, MessageSquare, Sparkles, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +39,7 @@ export function TenantFeatureFlagsModal({
   );
   const [saving, setSaving] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (organization) {
       setFlags(organization.featureFlags);
     }

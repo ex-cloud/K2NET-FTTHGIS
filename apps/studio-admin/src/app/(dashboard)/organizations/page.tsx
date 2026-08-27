@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { getTenantUrl } from "@/lib/domain";
 import { useSession } from "next-auth/react";
@@ -23,12 +23,12 @@ import {
   PageLayout,
   TablePageSkeleton,
 } from "@k2net/ui";
-import { Building2, ShieldAlert, Loader2, Plus, RefreshCw } from "lucide-react";
+import { Building2, ShieldAlert, Loader2 } from "lucide-react";
 import { OrganizationWizard } from "@/components/organizations/OrganizationWizard";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 
 // Modular Organization Components
-import type { EnrichedOrganization, OrganizationStatus, PlanTier, OrganizationFeatureFlags } from "@/components/organizations/types";
+import type { EnrichedOrganization, OrganizationStatus, PlanTier } from "@/components/organizations/types";
 import { OrganizationKpiStrip } from "@/components/organizations/OrganizationKpiStrip";
 import { OrganizationToolbar } from "@/components/organizations/OrganizationToolbar";
 import { OrganizationTable } from "@/components/organizations/OrganizationTable";
@@ -47,14 +47,19 @@ interface Project {
 type ViewMode = "grid" | "list" | "table";
 
 export default function AdminOrganizationsPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { organizations: rawOrgs, loading: isLoading, error, refresh: refetch, deleteOrg } = useOrganizations();
   const { data: session } = useSession();
+
+  const {
+    organizations: rawOrgs,
+    loading: isLoading,
+    refresh: refetch,
+    updateOrganization,
+    deleteOrg,
+  } = useOrganizations();
 
   // URL query state
   const statusParam = searchParams.get("status") || "ALL";
-  const viewParam = searchParams.get("view");
 
   // Local View States
   const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -231,20 +236,58 @@ export default function AdminOrganizationsPage() {
       description: `New expiration: ${new Date(Date.now() + 14 * 86400000).toLocaleDateString()}`,
     });
   };
-
-  const handleUpdateStatus = (org: EnrichedOrganization, newStatus: OrganizationStatus) => {
-    toast.success(`Status updated to ${newStatus} for ${org.name}`);
+  const handleUpdateStatus = async (org: EnrichedOrganization, newStatus: OrganizationStatus) => {
+    try {
+      if (updateOrganization) {
+        await updateOrganization({
+          slug: org.slug,
+          org: { status: newStatus },
+        });
+      }
+      toast.success(`Organization ${org.name} status updated to ${newStatus}`);
+      refetch();
+    } catch {
+      toast.error(`Failed to update status for ${org.name}`);
+    }
   };
 
   // Bulk Actions
-  const handleBulkSuspend = () => {
-    toast.success(`${selectedIds.length} organizations suspended successfully`);
-    setSelectedIds([]);
+  const handleBulkSuspend = async () => {
+    try {
+      const targets = enrichedOrganizations.filter((o) => selectedIds.includes(o.id));
+      await Promise.all(
+        targets.map((t) =>
+          updateOrganization?.({
+            slug: t.slug,
+            org: { status: "SUSPENDED" },
+          })
+        )
+      );
+      toast.success(`${selectedIds.length} organizations suspended successfully`);
+      setSelectedIds([]);
+      refetch();
+    } catch {
+      toast.error("Failed to suspend some organizations");
+    }
   };
 
-  const handleBulkResume = () => {
-    toast.success(`${selectedIds.length} organizations resumed to active status`);
-    setSelectedIds([]);
+  const handleBulkResume = async () => {
+    try {
+      const targets = enrichedOrganizations.filter((o) => selectedIds.includes(o.id));
+      await Promise.all(
+        targets.map((t) =>
+          updateOrganization?.({
+            slug: t.slug,
+            org: { status: "ACTIVE" },
+          })
+        )
+      );
+      toast.success(`${selectedIds.length} organizations resumed to active status`);
+      setSelectedIds([]);
+      refetch();
+    } catch {
+      toast.error("Failed to resume some organizations");
+    }
   };
 
   const handleBulkBroadcast = () => {
@@ -452,8 +495,14 @@ export default function AdminOrganizationsPage() {
           organization={activeDomainOrg}
           isOpen={!!activeDomainOrg}
           onClose={() => setActiveDomainOrg(null)}
-          onSaveDomain={async () => {
-            refetch();
+          onSaveDomain={async (_orgId, domain) => {
+            if (activeDomainOrg && updateOrganization) {
+              await updateOrganization({
+                slug: activeDomainOrg.slug,
+                org: { website: domain ? (domain.startsWith("http") ? domain : `https://${domain}`) : "" },
+              });
+              refetch();
+            }
           }}
         />
 
@@ -462,8 +511,20 @@ export default function AdminOrganizationsPage() {
           organization={activeQuotaOrg}
           isOpen={!!activeQuotaOrg}
           onClose={() => setActiveQuotaOrg(null)}
-          onSaveQuotas={async () => {
-            refetch();
+          onSaveQuotas={async (_orgId, quotas) => {
+            if (activeQuotaOrg && updateOrganization) {
+              await updateOrganization({
+                slug: activeQuotaOrg.slug,
+                org: {
+                  subscriptionPlan: {
+                    name: quotas.planTier || activeQuotaOrg.planTier,
+                    maxProjects: quotas.maxOlts,
+                    maxOdps: quotas.maxOdps,
+                  },
+                },
+              });
+              refetch();
+            }
           }}
         />
 
@@ -472,7 +533,7 @@ export default function AdminOrganizationsPage() {
           organization={activeFlagsOrg}
           isOpen={!!activeFlagsOrg}
           onClose={() => setActiveFlagsOrg(null)}
-          onSaveFlags={async () => {
+          onSaveFlags={async (_orgId, _flags) => {
             refetch();
           }}
         />

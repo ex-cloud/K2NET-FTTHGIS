@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -13,23 +12,18 @@ import {
   ContextMenuShortcut,
 } from "@k2net/ui";
 import {
-  Building2,
   ExternalLink,
   MessageCircle,
   Mail,
   ShieldCheck,
+  CheckCircle2,
   Sliders,
   Globe,
   Network,
   Clock,
   Copy,
   Trash2,
-  PlayCircle,
   PauseCircle,
-  CheckCircle2,
-  AlertTriangle,
-  Sparkles,
-  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";

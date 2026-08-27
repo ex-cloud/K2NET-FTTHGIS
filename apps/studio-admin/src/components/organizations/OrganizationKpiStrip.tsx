@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Building2, UploadCloud, Network, AlertTriangle } from "lucide-react";
 import type { EnrichedOrganization } from "./types";
 

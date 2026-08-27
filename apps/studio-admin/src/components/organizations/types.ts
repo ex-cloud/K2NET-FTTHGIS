@@ -5,6 +5,7 @@ export type OrganizationStatus =
   | "OVERDUE"
   | "SUSPENDED"
   | "TRIAL_EXPIRED"
+  | "PENDING_APPROVAL"
   | "DELETED";
 
 export type SlaTier = "Platinum (99.9%)" | "Gold (99.5%)" | "Standard (99.0%)";

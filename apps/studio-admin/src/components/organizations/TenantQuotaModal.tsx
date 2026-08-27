@@ -17,7 +17,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@k2net/ui";
-import { Network, Server, HardDrive, Cpu, ShieldCheck } from "lucide-react";
+import { Network, Server, HardDrive, Cpu } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization, PlanTier } from "./types";
 

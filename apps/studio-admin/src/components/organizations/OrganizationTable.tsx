@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -10,38 +10,22 @@ import {
   TableCell,
   Checkbox,
   Badge,
-  Button,
   ActionTooltip,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@k2net/ui";
 import {
-  Building2,
   ExternalLink,
-  MoreHorizontal,
   Globe,
   Radio,
   MessageSquare,
   Sparkles,
   Map,
-  ShieldCheck,
   Clock,
   AlertTriangle,
   PauseCircle,
-  PlayCircle,
-  Copy,
-  Trash2,
-  Sliders,
-  Network,
-  CheckCircle2,
   RefreshCw,
   Phone,
   Mail,
 } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
 import { OrganizationContextMenu } from "./OrganizationContextMenu";
@@ -74,13 +58,9 @@ export function OrganizationTable({
   onUpdateStatus,
   onDelete,
 }: OrganizationTableProps) {
+  const router = useRouter();
   const allSelected = organizations.length > 0 && selectedIds.length === organizations.length;
   const someSelected = selectedIds.length > 0 && selectedIds.length < organizations.length;
-
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
-  };
 
   const getStatusBadge = (org: EnrichedOrganization) => {
     switch (org.status) {
@@ -143,26 +123,23 @@ export function OrganizationTable({
                 aria-label="Select all"
               />
             </TableHead>
-            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[200px]">
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">
               Organization
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-[140px]">
               Status
             </TableHead>
-            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[160px]">
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[180px]">
               Hardware Quota
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[180px]">
               Domain & SSL
             </TableHead>
-            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[130px]">
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">
               Add-on Flags
             </TableHead>
-            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[160px] pr-6">
               Technical PIC
-            </TableHead>
-            <TableHead className="w-[80px] text-right pr-6 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Actions
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -170,7 +147,7 @@ export function OrganizationTable({
         <TableBody>
           {organizations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-48 text-center text-muted-foreground text-xs">
+              <TableCell colSpan={7} className="h-48 text-center text-muted-foreground text-xs">
                 No organizations found matching the selected filters.
               </TableCell>
             </TableRow>
@@ -192,12 +169,12 @@ export function OrganizationTable({
                   onDelete={onDelete}
                 >
                   <TableRow
+                    onClick={() => router.push(`/organizations/${org.slug}`)}
                     className={cn(
                       "group border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer text-xs",
                       isSelected && "bg-primary/5 hover:bg-primary/10"
                     )}
                   >
-                    {/* Checkbox */}
                     <TableCell className="pl-6" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={isSelected}
@@ -206,8 +183,7 @@ export function OrganizationTable({
                       />
                     </TableCell>
 
-                    {/* Organization Identity */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs group-hover:border-primary/40 transition-colors">
                           {org.name.charAt(0).toUpperCase()}
@@ -239,26 +215,24 @@ export function OrganizationTable({
                       </div>
                     </TableCell>
 
-                    {/* Status */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3.5">
                       {getStatusBadge(org)}
                     </TableCell>
 
-                    {/* Hardware Quota */}
-                    <TableCell className="py-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-[11px] font-mono">
-                          <span className="text-foreground">
-                            {org.usedOlts}/{org.maxOlts} <span className="text-muted-foreground text-[9px]">OLTs</span>
+                    <TableCell className="py-3.5">
+                      <div className="space-y-1 w-full max-w-[160px]">
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-foreground font-medium">
+                            {org.usedOlts}/{org.maxOlts} OLTs
                           </span>
-                          <span className="text-muted-foreground text-[10px]">
+                          <span className="text-muted-foreground">
                             {org.usedOdps} ODPs
                           </span>
                         </div>
                         <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                           <div
                             className={cn(
-                              "h-full rounded-full transition-all",
+                              "h-full rounded-full transition-all duration-300",
                               oltPct > 80 ? "bg-amber-500" : "bg-primary"
                             )}
                             style={{ width: `${Math.min(100, oltPct)}%` }}
@@ -267,8 +241,7 @@ export function OrganizationTable({
                       </div>
                     </TableCell>
 
-                    {/* Custom Domain & SSL */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3.5">
                       {org.customDomain ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground">
@@ -290,8 +263,7 @@ export function OrganizationTable({
                       )}
                     </TableCell>
 
-                    {/* Feature Flags Indicators */}
-                    <TableCell className="py-3">
+                    <TableCell className="py-3.5">
                       <div className="flex items-center gap-1.5">
                         <ActionTooltip label={`GIS Spatial Core: ${org.featureFlags.gisCore ? "Enabled" : "Disabled"}`}>
                           <div className={cn("p-1 rounded", org.featureFlags.gisCore ? "text-primary bg-primary/10" : "text-muted-foreground/40")}>
@@ -319,20 +291,19 @@ export function OrganizationTable({
                       </div>
                     </TableCell>
 
-                    {/* PIC Contact */}
-                    <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="py-3.5 pr-6" onClick={(e) => e.stopPropagation()}>
                       <div className="space-y-0.5">
                         <span className="font-medium text-foreground block text-[11px]">
                           {org.picName || "Admin Support"}
                         </span>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <div className="flex items-center gap-2 text-muted-foreground">
                           {org.picPhone && (
                             <ActionTooltip label={`Chat WhatsApp (${org.picPhone})`}>
                               <a
                                 href={`https://wa.me/${org.picPhone.replace(/[^0-9]/g, "")}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-0.5 hover:text-primary transition-colors"
+                                className="hover:text-primary transition-colors"
                               >
                                 <Phone className="h-3 w-3" />
                               </a>
@@ -342,7 +313,7 @@ export function OrganizationTable({
                             <ActionTooltip label={`Email PIC (${org.picEmail})`}>
                               <a
                                 href={`mailto:${org.picEmail}`}
-                                className="p-0.5 hover:text-blue-500 transition-colors"
+                                className="hover:text-blue-500 transition-colors"
                               >
                                 <Mail className="h-3 w-3" />
                               </a>
@@ -353,62 +324,6 @@ export function OrganizationTable({
                           </span>
                         </div>
                       </div>
-                    </TableCell>
-
-                    {/* Actions Menu */}
-                    <TableCell className="py-3 text-right pr-6" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                          >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52 text-xs bg-popover/95 backdrop-blur-xl border-border/80 rounded-xl py-1 shadow-xl">
-                          <DropdownMenuItem
-                            onClick={() => onImpersonate(org)}
-                            className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            <span>Login as Tenant Admin</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuSeparator className="bg-border/40 my-1" />
-
-                          <DropdownMenuItem onClick={() => onOpenFlagsModal(org)} className="cursor-pointer gap-2">
-                            <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Feature Flags & Add-ons</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem onClick={() => onOpenDomainModal(org)} className="cursor-pointer gap-2">
-                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Custom Domain & SSL</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem onClick={() => onOpenQuotaModal(org)} className="cursor-pointer gap-2">
-                            <Network className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>Hardware Quotas</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem onClick={() => onExtendTrial(org)} className="cursor-pointer gap-2 text-amber-500">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>Extend Trial (+14 Days)</span>
-                          </DropdownMenuItem>
-
-                          <DropdownMenuSeparator className="bg-border/40 my-1" />
-
-                          <DropdownMenuItem
-                            onClick={() => onDelete(org)}
-                            className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete Organization</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 </OrganizationContextMenu>
