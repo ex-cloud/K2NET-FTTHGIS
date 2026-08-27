@@ -10,50 +10,43 @@ export function LinearAgentClusterFigure({
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const pillarsRef = useRef<(SVGGElement | null)[]>([]);
 
   const pillars = [
-    { id: "p1", x: -28, y: -28, width: 26, defaultH: 58, nx: -0.28, ny: -0.28 },
-    { id: "p2", x: 28,  y: -28, width: 26, defaultH: 34, nx: 0.28,  ny: -0.28 },
-    { id: "p3", x: -28, y: 28,  width: 26, defaultH: 82, nx: -0.28, ny: 0.28 },
-    { id: "p4", x: 28,  y: 28,  width: 26, defaultH: 48, nx: 0.28,  ny: 0.28 },
+    { id: "p1", x: -28, y: -28, width: 26, defaultH: 58, idx: 0 },
+    { id: "p2", x: 28,  y: -28, width: 26, defaultH: 34, idx: 1 },
+    { id: "p3", x: -28, y: 28,  width: 26, defaultH: 82, idx: 2 },
+    { id: "p4", x: 28,  y: 28,  width: 26, defaultH: 48, idx: 3 },
   ];
 
   const originY = size === "hero" ? 165 : 158;
 
-  // Directional Cursor Proximity Interaction
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
-    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+  // Direct Per-Pillar Hover Trigger
+  const handlePillarHover = (hoveredIdx: number) => {
+    if (!interactive) return;
 
-    pillars.forEach((p, idx) => {
-      const el = pillarsRef.current[idx];
+    pillars.forEach((p) => {
+      const el = pillarsRef.current[p.idx];
       if (!el) return;
 
-      // Calculate distance between cursor and this specific pillar
-      const dist = Math.hypot(nx - p.nx, ny - p.ny);
-      // Closer pillar gets higher lift (smooth Gaussian falloff)
-      const proximity = Math.exp(-Math.pow(dist / 0.45, 2));
-      const targetLift = -proximity * 22;
+      const isHovered = p.idx === hoveredIdx;
+      const targetLift = isHovered ? -24 : -6;
 
       gsap.to(el, {
         y: targetLift,
-        duration: 0.45,
-        ease: "power3.out",
+        duration: 0.35,
+        ease: "power2.out",
         overwrite: "auto",
       });
     });
   };
 
-  const handleMouseLeave = () => {
+  const handlePillarsLeave = () => {
     pillarsRef.current.forEach((el) => {
       if (!el) return;
       gsap.to(el, {
         y: 0,
-        duration: 0.65,
+        duration: 0.55,
         ease: "power3.out",
         overwrite: "auto",
       });
@@ -62,20 +55,18 @@ export function LinearAgentClusterFigure({
 
   return (
     <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full flex items-center justify-center select-none cursor-pointer group overflow-hidden",
+        "relative w-full flex items-center justify-center select-none overflow-hidden pointer-events-none",
         size === "hero" ? "h-[320px] max-w-[420px]" : "h-[240px]",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible pointer-events-auto"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        onMouseLeave={handlePillarsLeave}
       >
         <polygon
           points={`
@@ -84,10 +75,10 @@ export function LinearAgentClusterFigure({
             ${toIso(55, 55, 0, 140, originY)}
             ${toIso(-55, 55, 0, 140, originY)}
           `}
-          className="fill-black/70 filter blur-[8px]"
+          className="fill-black/70 filter blur-[8px] pointer-events-none"
         />
 
-        {pillars.map((p, idx) => {
+        {pillars.map((p) => {
           const w = p.width;
           const h = p.defaultH;
           const ox = 140;
@@ -106,10 +97,13 @@ export function LinearAgentClusterFigure({
             <g
               key={p.id}
               ref={(el) => {
-                pillarsRef.current[idx] = el;
+                pillarsRef.current[p.idx] = el;
               }}
+              className="cursor-pointer"
+              onMouseEnter={() => handlePillarHover(p.idx)}
+              onMouseMove={() => handlePillarHover(p.idx)}
             >
-              {/* Left Face (Deep Charcoal) */}
+              {/* Left Face */}
               <polygon
                 points={`${p4} ${p3} ${b3} ${b4}`}
                 fill="#09090b"
@@ -120,7 +114,7 @@ export function LinearAgentClusterFigure({
                 strokeLinecap="round"
               />
 
-              {/* Right Face (Deep Black) */}
+              {/* Right Face */}
               <polygon
                 points={`${p3} ${p2} ${b2} ${b3}`}
                 fill="#000000"
@@ -131,7 +125,7 @@ export function LinearAgentClusterFigure({
                 strokeLinecap="round"
               />
 
-              {/* Top Face (Matte Obsidian with Muted Zinc-500 Outline) */}
+              {/* Top Face */}
               <polygon
                 points={`${p1} ${p2} ${p3} ${p4}`}
                 fill="#121215"

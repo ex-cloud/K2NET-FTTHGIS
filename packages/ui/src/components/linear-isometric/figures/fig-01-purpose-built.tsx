@@ -14,7 +14,6 @@ export function LinearPurposeBuiltFigure({
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const slabsRef = useRef<(SVGGElement | null)[]>([]);
 
   const layers = [0, 1, 2, 3, 4, 5];
@@ -32,37 +31,45 @@ export function LinearPurposeBuiltFigure({
   const zTopFinal = topSlabIndex * (slabThickness + 2) + slabThickness;
   const topCenterY = originY - zTopFinal;
 
-  // Smooth directional cursor interaction
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
-    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+  // Direct hover on the slab stack
+  const handleSlabsHover = (e: React.MouseEvent<SVGGElement>) => {
+    if (!interactive) return;
+    const svgEl = e.currentTarget.ownerSVGElement;
+    if (!svgEl) return;
+    const rect = svgEl.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * 280;
+    const svgY = ((e.clientY - rect.top) / rect.height) * 240;
 
-    const liftIntensity = Math.max(0.4, 1.2 - ny * 1.2);
+    const dx = svgX - 140;
+    const dy = svgY - originY;
+
+    const nx = Math.max(-1, Math.min(1, dx / 55));
+    const ny = Math.max(-1, Math.min(1, dy / 50));
+
+    const liftIntensity = Math.max(0.4, 1.2 - ny * 1.1);
 
     slabsRef.current.forEach((slab, idx) => {
       if (!slab) return;
       const targetY = -idx * (5.5 * liftIntensity) - (idx === topSlabIndex ? 6 : 0);
-      const targetX = nx * (idx * 2.5);
+      const targetX = nx * (idx * 2.2);
 
       gsap.to(slab, {
         x: targetX,
         y: targetY,
-        duration: 0.45,
-        ease: "power3.out",
+        duration: 0.35,
+        ease: "power2.out",
         overwrite: "auto",
       });
     });
   };
 
-  const handleMouseLeave = () => {
+  const handleSlabsLeave = () => {
     slabsRef.current.forEach((slab) => {
       if (!slab) return;
       gsap.to(slab, {
         x: 0,
         y: 0,
-        duration: 0.65,
+        duration: 0.55,
         ease: "power3.out",
         overwrite: "auto",
       });
@@ -71,20 +78,18 @@ export function LinearPurposeBuiltFigure({
 
   return (
     <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full flex items-center justify-center select-none cursor-pointer group overflow-hidden",
+        "relative w-full flex items-center justify-center select-none overflow-hidden pointer-events-none",
         size === "hero" ? "h-[320px] max-w-[420px]" : "h-[240px]",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible pointer-events-auto"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        onMouseLeave={handleSlabsLeave}
       >
         <defs>
           <radialGradient id="apertureMutedGlow" cx="50%" cy="50%" r="50%">
@@ -99,127 +104,134 @@ export function LinearPurposeBuiltFigure({
           cy={originY + 45}
           rx="72"
           ry="32"
-          className="fill-black/80 filter blur-[10px]"
+          className="fill-black/80 filter blur-[10px] pointer-events-none"
         />
 
-        {/* 6 Layered Slabs with Rounded Muted Zinc Lines (Linear Style) */}
-        {layers.map((idx) => {
-          const zBase = idx * (slabThickness + 2);
-          const zTop = zBase + slabThickness;
-          const isTop = idx === topSlabIndex;
+        {/* 6 Layered Slabs with Direct Hover on Slab Stack */}
+        <g
+          className="cursor-pointer"
+          onMouseEnter={handleSlabsHover}
+          onMouseMove={handleSlabsHover}
+          onMouseLeave={handleSlabsLeave}
+        >
+          {layers.map((idx) => {
+            const zBase = idx * (slabThickness + 2);
+            const zTop = zBase + slabThickness;
+            const isTop = idx === topSlabIndex;
 
-          const p1 = toIso(-slabSize, -slabSize, zTop, 140, originY);
-          const p2 = toIso(slabSize, -slabSize, zTop, 140, originY);
-          const p3 = toIso(slabSize, slabSize, zTop, 140, originY);
-          const p4 = toIso(-slabSize, slabSize, zTop, 140, originY);
+            const p1 = toIso(-slabSize, -slabSize, zTop, 140, originY);
+            const p2 = toIso(slabSize, -slabSize, zTop, 140, originY);
+            const p3 = toIso(slabSize, slabSize, zTop, 140, originY);
+            const p4 = toIso(-slabSize, slabSize, zTop, 140, originY);
 
-          const b2 = toIso(slabSize, -slabSize, zBase, 140, originY);
-          const b3 = toIso(slabSize, slabSize, zBase, 140, originY);
-          const b4 = toIso(-slabSize, slabSize, zBase, 140, originY);
+            const b2 = toIso(slabSize, -slabSize, zBase, 140, originY);
+            const b3 = toIso(slabSize, slabSize, zBase, 140, originY);
+            const b4 = toIso(-slabSize, slabSize, zBase, 140, originY);
 
-          return (
-            <g
-              key={idx}
-              ref={(el) => {
-                slabsRef.current[idx] = el;
-              }}
-            >
-              {/* Left Face (Deep Matte Charcoal) */}
-              <polygon
-                points={`${p4} ${p3} ${b3} ${b4}`}
-                fill="#09090b"
-                stroke="#3f3f46"
-                strokeOpacity="0.6"
-                strokeWidth="0.85"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
+            return (
+              <g
+                key={idx}
+                ref={(el) => {
+                  slabsRef.current[idx] = el;
+                }}
+              >
+                {/* Left Face */}
+                <polygon
+                  points={`${p4} ${p3} ${b3} ${b4}`}
+                  fill="#09090b"
+                  stroke="#3f3f46"
+                  strokeOpacity="0.6"
+                  strokeWidth="0.85"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
 
-              {/* Right Face (Deep Black) */}
-              <polygon
-                points={`${p3} ${p2} ${b2} ${b3}`}
-                fill="#000000"
-                stroke="#27272a"
-                strokeOpacity="0.45"
-                strokeWidth="0.85"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
+                {/* Right Face */}
+                <polygon
+                  points={`${p3} ${p2} ${b2} ${b3}`}
+                  fill="#000000"
+                  stroke="#27272a"
+                  strokeOpacity="0.45"
+                  strokeWidth="0.85"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
 
-              {/* Top Face (Matte Obsidian + Thin Zinc-400 Outline) */}
-              <polygon
-                points={`${p1} ${p2} ${p3} ${p4}`}
-                fill="#121215"
-                stroke="#71717a"
-                strokeOpacity="0.8"
-                strokeWidth={isTop ? "1" : "0.85"}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
+                {/* Top Face */}
+                <polygon
+                  points={`${p1} ${p2} ${p3} ${p4}`}
+                  fill="#121215"
+                  stroke="#71717a"
+                  strokeOpacity="0.8"
+                  strokeWidth={isTop ? "1" : "0.85"}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
 
-              {/* Leading Specular Ridge Edge Highlight (Muted Zinc-300) */}
-              <line
-                x1={p4.split(",")[0]}
-                y1={p4.split(",")[1]}
-                x2={p3.split(",")[0]}
-                y2={p3.split(",")[1]}
-                stroke="#a1a1aa"
-                strokeOpacity="0.8"
-                strokeWidth="1.1"
-                strokeLinecap="round"
-              />
+                {/* Leading Specular Ridge Edge Highlight */}
+                <line
+                  x1={p4.split(",")[0]}
+                  y1={p4.split(",")[1]}
+                  x2={p3.split(",")[0]}
+                  y2={p3.split(",")[1]}
+                  stroke="#a1a1aa"
+                  strokeOpacity="0.8"
+                  strokeWidth="1.1"
+                  strokeLinecap="round"
+                />
 
-              {/* Top Slab: Exact Center Isometric Aperture with Official K2NET Logo */}
-              {isTop && (
-                <g>
-                  {/* Recessed Center Aperture Rim Cavity */}
-                  <ellipse
-                    cx="140"
-                    cy={topCenterY}
-                    rx={apertureRx}
-                    ry={apertureRy}
-                    fill="url(#apertureMutedGlow)"
-                    stroke="#a1a1aa"
-                    strokeOpacity="0.9"
-                    strokeWidth="1.1"
-                  />
-
-                  {/* Horizontal Linear Chords inside aperture */}
-                  {[-8, -4, 0, 4, 8].map((offset, cIdx) => {
-                    const halfW = Math.sqrt(Math.max(0, 1 - Math.pow(offset / apertureRy, 2))) * (apertureRx - 3);
-                    return (
-                      <line
-                        key={`chord-${cIdx}`}
-                        x1={140 - halfW}
-                        y1={topCenterY + offset}
-                        x2={140 + halfW}
-                        y2={topCenterY + offset}
-                        stroke="#71717a"
-                        strokeOpacity="0.4"
-                        strokeWidth="0.75"
-                        strokeLinecap="round"
-                      />
-                    );
-                  })}
-
-                  {/* Official K2NET Logo Image mapped into 30-degree isometric perspective */}
-                  <g
-                    transform={`translate(140, ${topCenterY}) matrix(0.866025 0.5 -0.866025 0.5 0 0)`}
-                  >
-                    <image
-                      href={K2NET_LOGO_B64}
-                      x={size === "hero" ? -24 : -19}
-                      y={size === "hero" ? -24 : -19}
-                      width={size === "hero" ? 48 : 38}
-                      height={size === "hero" ? 48 : 38}
-                      className="filter brightness-0 invert opacity-95 drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]"
+                {/* Top Slab: Exact Center Isometric Aperture with Official K2NET Logo */}
+                {isTop && (
+                  <g>
+                    {/* Recessed Center Aperture Rim Cavity */}
+                    <ellipse
+                      cx="140"
+                      cy={topCenterY}
+                      rx={apertureRx}
+                      ry={apertureRy}
+                      fill="url(#apertureMutedGlow)"
+                      stroke="#a1a1aa"
+                      strokeOpacity="0.9"
+                      strokeWidth="1.1"
                     />
+
+                    {/* Horizontal Linear Chords inside aperture */}
+                    {[-8, -4, 0, 4, 8].map((offset, cIdx) => {
+                      const halfW = Math.sqrt(Math.max(0, 1 - Math.pow(offset / apertureRy, 2))) * (apertureRx - 3);
+                      return (
+                        <line
+                          key={`chord-${cIdx}`}
+                          x1={140 - halfW}
+                          y1={topCenterY + offset}
+                          x2={140 + halfW}
+                          y2={topCenterY + offset}
+                          stroke="#71717a"
+                          strokeOpacity="0.4"
+                          strokeWidth="0.75"
+                          strokeLinecap="round"
+                        />
+                      );
+                    })}
+
+                    {/* Official K2NET Logo Image mapped into 30-degree isometric perspective */}
+                    <g
+                      transform={`translate(140, ${topCenterY}) matrix(0.866025 0.5 -0.866025 0.5 0 0)`}
+                    >
+                      <image
+                        href={K2NET_LOGO_B64}
+                        x={size === "hero" ? -24 : -19}
+                        y={size === "hero" ? -24 : -19}
+                        width={size === "hero" ? 48 : 38}
+                        height={size === "hero" ? 48 : 38}
+                        className="filter brightness-0 invert opacity-95 drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]"
+                      />
+                    </g>
                   </g>
-                </g>
-              )}
-            </g>
-          );
-        })}
+                )}
+              </g>
+            );
+          })}
+        </g>
       </svg>
     </div>
   );

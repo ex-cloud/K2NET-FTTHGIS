@@ -1,140 +1,189 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import gsap from "gsap";
 import { cn } from "../../../utils";
-import { toIso, type LinearFigureProps } from "../iso-utils";
+import { type LinearFigureProps } from "../iso-utils";
+
+const COS30 = 0.8660254;
+const SIN30 = 0.5;
+
+function pt(x: number, y: number, z: number, ox: number, oy: number) {
+  return {
+    x: ox + (x - y) * COS30,
+    y: oy + (x + y) * SIN30 - z,
+  };
+}
 
 export function LinearSpeedArrayFigure({
   className,
   size = "card",
   interactive = true,
 }: LinearFigureProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const bladesRef = useRef<(SVGGElement | null)[]>([]);
-
   const cardCount = 14;
-  // Render from back (0) to front (cardCount - 1) for proper isometric occlusion
-  const cards = Array.from({ length: cardCount }, (_, i) => i);
-  const originY = size === "hero" ? 175 : 165;
-  const cardDepth = size === "hero" ? 52 : 44;
-  const spacing = size === "hero" ? 9 : 8;
+  const REST_HEIGHT = 6;
+  const MAX_LIFT = size === "hero" ? 54 : 44;
 
-  // Directional Traveling Wave on Cursor Movement
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    // Normalized cursor along array: 0.0 (front-left) to 1.0 (back-right)
-    const cursorProgress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const originY = size === "hero" ? 160 : 150;
+  const originX = 140;
+  const slatWidth = 3.2;
+  const slatLength = size === "hero" ? 56 : 48;
+  const pitch = size === "hero" ? 6.2 : 5.4;
 
-    cards.forEach((i) => {
-      const el = bladesRef.current[i];
-      if (!el) return;
+  // Track height of each slat [0..13]
+  const [heights, setHeights] = useState<number[]>(() =>
+    Array(cardCount).fill(REST_HEIGHT)
+  );
 
-      // Card ratio from front (0.0) to back (1.0)
-      const cardRatio = i / (cardCount - 1);
-      // Distance from cursor to this specific slat
-      const diff = Math.abs(cardRatio - cursorProgress);
-      // Traveling Gaussian peak lift centered at cursor position
-      const waveLift = Math.exp(-Math.pow(diff / 0.18, 2)) * 48;
-      // Background slope accentuation when cursor is near the back
-      const slopeAccent = Math.pow(cardRatio, 2) * (cursorProgress > 0.6 ? 24 : 8);
+  const animatedHeights = useRef<number[]>(Array(cardCount).fill(REST_HEIGHT));
+  const rafId = useRef<number | null>(null);
 
-      gsap.to(el, {
-        y: -(waveLift + slopeAccent),
-        duration: 0.38,
+  // Base ground points for each slat
+  const slatBases = useRef(
+    Array.from({ length: cardCount }, (_, i) => {
+      const xi = (i - (cardCount - 1) / 2) * pitch;
+      const p1 = pt(xi - slatWidth / 2, -slatLength / 2, 0, originX, originY);
+      const p2 = pt(xi + slatWidth / 2, -slatLength / 2, 0, originX, originY);
+      const p3 = pt(xi + slatWidth / 2, slatLength / 2, 0, originX, originY);
+      const p4 = pt(xi - slatWidth / 2, slatLength / 2, 0, originX, originY);
+      return { xi, p1, p2, p3, p4 };
+    })
+  );
+
+  const updateHeights = useCallback(() => {
+    setHeights([...animatedHeights.current]);
+  }, []);
+
+  const animateTo = useCallback((targets: number[], duration = 0.35) => {
+    targets.forEach((target, i) => {
+      gsap.to(animatedHeights.current, {
+        [i]: target,
+        duration,
         ease: "power2.out",
         overwrite: "auto",
+        onUpdate: () => {
+          if (rafId.current === null) {
+            rafId.current = requestAnimationFrame(() => {
+              updateHeights();
+              rafId.current = null;
+            });
+          }
+        },
       });
     });
+  }, [updateHeights]);
+
+  // Per-slat direct hover trigger
+  const handleSlatHover = (hoveredIndex: number) => {
+    if (!interactive) return;
+    const targetHeights = Array.from({ length: cardCount }, (_, i) => {
+      const dist = Math.abs(i - hoveredIndex);
+      // Tight local wave: only the hovered slat and immediate neighbors rise
+      const lift = Math.exp(-Math.pow(dist / 1.6, 2)) * MAX_LIFT;
+      return REST_HEIGHT + lift;
+    });
+
+    animateTo(targetHeights, 0.28);
   };
 
   const handleMouseLeave = () => {
-    cards.forEach((i) => {
-      const el = bladesRef.current[i];
-      if (!el) return;
-      gsap.to(el, {
-        y: 0,
-        duration: 0.65,
-        ease: "power3.out",
-        overwrite: "auto",
-      });
-    });
+    animateTo(Array(cardCount).fill(REST_HEIGHT), 0.45);
   };
 
   return (
     <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative w-full flex items-center justify-center select-none cursor-pointer group overflow-hidden",
+        "relative w-full flex items-center justify-center select-none overflow-hidden pointer-events-none",
         size === "hero" ? "h-[320px] max-w-[420px]" : "h-[240px]",
         className
       )}
     >
       <svg
         viewBox="0 0 280 240"
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible pointer-events-auto"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        onMouseLeave={handleMouseLeave}
       >
         {/* Ambient Ground Shadow */}
         <ellipse
           cx="140"
-          cy={originY + 30}
-          rx="70"
-          ry="28"
-          className="fill-black/75 filter blur-[10px]"
+          cy={originY + 22}
+          rx="68"
+          ry="24"
+          className="fill-black/75 filter blur-[8px] pointer-events-none"
         />
 
-        {/* 14 Cascade Fin Slats rendered with subtle staircase in rest, wave on hover */}
-        {cards.map((i) => {
-          // Base resting height: low staircase (front is 6px, back is 30px)
-          const ratio = i / (cardCount - 1);
-          const baseHeight = 6 + Math.pow(ratio, 1.6) * 26;
+        {/* 14 True 3D Isometric Extruded Slats with direct per-slat hover */}
+        {slatBases.current.map((base, i) => {
+          const H = heights[i] || REST_HEIGHT;
+          const { p1, p2, p3, p4 } = base;
 
-          // Spatial position along isometric axis
-          const xPos = (i - cardCount / 2) * spacing;
-          const yPos = (i - cardCount / 2) * (spacing * 0.22);
+          // Top face vertices elevated by -H
+          const tp1 = `${p1.x},${p1.y - H}`;
+          const tp2 = `${p2.x},${p2.y - H}`;
+          const tp3 = `${p3.x},${p3.y - H}`;
+          const tp4 = `${p4.x},${p4.y - H}`;
 
-          const ox = 140;
-          const oy = originY;
-
-          const p1 = toIso(xPos, yPos - cardDepth / 2, baseHeight, ox, oy);
-          const p2 = toIso(xPos, yPos + cardDepth / 2, baseHeight, ox, oy);
-          const b1 = toIso(xPos, yPos - cardDepth / 2, 0, ox, oy);
-          const b2 = toIso(xPos, yPos + cardDepth / 2, 0, ox, oy);
+          const isRaised = H > REST_HEIGHT + 2;
 
           return (
             <g
               key={i}
-              ref={(el) => {
-                bladesRef.current[i] = el;
-              }}
+              className="cursor-pointer"
+              onMouseEnter={() => handleSlatHover(i)}
+              onMouseMove={() => handleSlatHover(i)}
             >
-              {/* Semi-transparent matte dark body so layered fins remain visible */}
+              {/* Left vertical side face */}
               <polygon
-                points={`${p1} ${p2} ${b2} ${b1}`}
+                points={`${tp4} ${tp3} ${p3.x},${p3.y} ${p4.x},${p4.y}`}
                 fill="#09090b"
-                fillOpacity="0.85"
                 stroke="#3f3f46"
-                strokeOpacity="0.6"
+                strokeOpacity={isRaised ? "0.85" : "0.5"}
                 strokeWidth="0.8"
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
 
-              {/* Leading Top Rim Zinc Ridge */}
-              <line
-                x1={p1.split(",")[0]}
-                y1={p1.split(",")[1]}
-                x2={p2.split(",")[0]}
-                y2={p2.split(",")[1]}
-                stroke={i === cardCount - 1 ? "#e4e4e7" : "#a1a1aa"}
-                strokeOpacity="0.85"
-                strokeWidth="1.1"
+              {/* Front-right vertical end cap */}
+              <polygon
+                points={`${tp3} ${tp2} ${p2.x},${p2.y} ${p3.x},${p3.y}`}
+                fill="#000000"
+                stroke="#27272a"
+                strokeOpacity={isRaised ? "0.65" : "0.4"}
+                strokeWidth="0.8"
+                strokeLinejoin="round"
                 strokeLinecap="round"
+              />
+
+              {/* Top horizontal face */}
+              <polygon
+                points={`${tp1} ${tp2} ${tp3} ${tp4}`}
+                fill={isRaised ? "#18181b" : "#121215"}
+                stroke={isRaised ? "#d4d4d8" : "#71717a"}
+                strokeOpacity={isRaised ? "1" : "0.75"}
+                strokeWidth={isRaised ? "0.95" : "0.8"}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+
+              {/* Leading Top Ridge Highlight */}
+              <line
+                x1={p4.x}
+                y1={p4.y - H}
+                x2={p3.x}
+                y2={p3.y - H}
+                stroke={isRaised ? "#ffffff" : "#a1a1aa"}
+                strokeOpacity={isRaised ? "1" : "0.7"}
+                strokeWidth={isRaised ? "1.2" : "0.85"}
+                strokeLinecap="round"
+              />
+
+              {/* Invisible expanded hit area for buttery-smooth interaction */}
+              <polygon
+                points={`${p1.x},${p1.y - MAX_LIFT} ${p2.x},${p2.y - MAX_LIFT} ${p3.x},${p3.y} ${p4.x},${p4.y}`}
+                fill="transparent"
+                stroke="transparent"
               />
             </g>
           );
