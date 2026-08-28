@@ -27,10 +27,6 @@ import {
   Building2,
   ShieldAlert,
   Loader2,
-  Plus,
-  RefreshCw,
-  LayoutGrid,
-  LayoutList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrganizationWizard } from "@/components/organizations/OrganizationWizard";
@@ -382,58 +378,14 @@ export default function AdminOrganizationsPage() {
     <OrganizationPageWrapper>
       <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-5 overflow-hidden">
         {/* ── Page Header ─────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 md:px-6 shrink-0">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-              <Building2 className="h-5 w-5 text-primary" />
-              <span>Organizations Command Center</span>
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Global oversight of all tenant ISP environments, hardware quotas, custom domains, and B2B subscriptions.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <ActionTooltip label={compactView ? "Standard View (Tampilkan KPI Strip)" : "Compact View (Sembunyikan KPI Strip)"}>
-              <button
-                onClick={() => setCompactView((v) => !v)}
-                className={cn(
-                  "p-2 rounded-lg border border-border bg-card transition-colors cursor-pointer",
-                  compactView
-                    ? "text-primary border-primary/40 bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                )}
-                aria-label="Toggle KPI cards"
-              >
-                {compactView ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
-              </button>
-            </ActionTooltip>
-
-            <ActionTooltip label="Refresh Data" shortcut="R">
-              <button
-                onClick={() => {
-                  refetch();
-                  toast.info("Refreshing organizations...");
-                }}
-                className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
-                aria-label="Refresh Data"
-              >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin text-primary")} />
-              </button>
-            </ActionTooltip>
-
-            <ActionTooltip label="Buat Organisasi Baru" shortcut="C">
-              <button
-                onClick={() => setWizardOpen(true)}
-                className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer"
-                aria-label="New Organization"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="text-xs font-semibold hidden sm:inline">New Organization</span>
-                <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
-              </button>
-            </ActionTooltip>
-          </div>
+        <div className="px-4 md:px-6 shrink-0">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
+            <Building2 className="h-5 w-5 text-primary" />
+            <span>Organizations Command Center</span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Global oversight of all tenant ISP environments, hardware quotas, custom domains, and B2B subscriptions.
+          </p>
         </div>
 
         {/* ── Inline KPI Stats Bar ────────────────────────────────── */}
