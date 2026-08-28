@@ -40,4 +40,10 @@ public abstract class AuditableEntity {
     @LastModifiedBy
     @Column(name = "updated_by")
     private String updatedBy;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
 }

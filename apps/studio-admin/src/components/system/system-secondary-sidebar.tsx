@@ -51,6 +51,7 @@ import {
   FlaskConical,
   FileCode,
   UserCheck,
+  Trash2,
 } from "lucide-react";
 import {
   Collapsible,
@@ -108,6 +109,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   FlaskConical,
   FileCode,
   UserCheck,
+  Trash2,
 };
 
 export function SystemSecondarySidebar() {

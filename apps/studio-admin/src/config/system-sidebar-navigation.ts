@@ -247,4 +247,15 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
     ],
   },
+  system: {
+    title: "System Recovery",
+    sections: [
+      {
+        title: "Data Recovery",
+        items: [
+          { title: "Recycle Bin", url: "/system/trash", icon: "Trash2" },
+        ],
+      },
+    ],
+  },
 };

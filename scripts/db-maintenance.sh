@@ -98,6 +98,22 @@ for tbl in "${TABLES[@]}"; do
 done
 echo -e "  ${GREEN}✓ VACUUM ANALYZE selesai pada seluruh tabel yang ada.${NC}"
 
+# 2b. Auto-Purge Soft-Deleted Records (> 30 Hari di Recycle Bin)
+echo -e "\n${YELLOW}🗑️  [2b] Membersihkan data Recycle Bin yang kadaluarsa (> 30 hari)...${NC}"
+PURGE_TABLES=("tasks" "network_edges" "network_nodes" "projects" "organizations")
+for tbl in "${PURGE_TABLES[@]}"; do
+  HAS_DEL=$(docker exec -i "$CONTAINER" psql -U postgres -d "$DATABASE" -t -c \
+    "SELECT 1 FROM information_schema.columns WHERE table_name = '$tbl' AND column_name = 'deleted_at';" 2>/dev/null | tr -d ' ' || echo "0")
+  if [ "$HAS_DEL" = "1" ]; then
+    PURGED_COUNT=$(docker exec -i "$CONTAINER" psql -U postgres -d "$DATABASE" -t -c \
+      "WITH deleted AS (DELETE FROM $tbl WHERE deleted_at < NOW() - INTERVAL '30 days' RETURNING *) SELECT COUNT(*) FROM deleted;" 2>/dev/null | tr -d ' ' || echo "0")
+    if [ "$PURGED_COUNT" -gt "0" ]; then
+      echo -e "  🔹 ${CYAN}$tbl${NC}: $PURGED_COUNT baris kadaluarsa (>30 hari) dibersihkan permanen."
+    fi
+  fi
+done
+echo -e "  ${GREEN}✓ Kebijakan retensi 30 hari Recycle Bin tervalidasi.${NC}"
+
 # 3. REINDEX CONCURRENTLY pada Tabel Audit
 echo -e "\n${YELLOW}🔄 [3/4] Menjalankan REINDEX TABLE CONCURRENTLY (Zero Lock)...${NC}"
 AUDIT_EXISTS=$(docker exec -i "$CONTAINER" psql -U postgres -d "$DATABASE" -t -c \
