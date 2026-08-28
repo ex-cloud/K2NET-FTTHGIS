@@ -112,7 +112,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     plan: "PRO" as PlanType,
 
     // Step 3: Network & VPN Integration
-    wireguardIp: "100.110.205." + (Math.floor(Math.random() * 180) + 20),
+    wireguardIp: "100.110.205.10",
     popGateway: "POP-ID-CGK-01",
     ldapEnabled: false,
     ldapUrl: "",
@@ -158,13 +158,6 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     isValidLdapUrl(formData.ldapUrl) &&
     isValidDn(formData.ldapBaseDn) &&
     isValidDn(formData.ldapBindDn);
-
-  const hasFieldError = (field: string, value: string, validator?: (v: string) => boolean) => {
-    if (!touchedFields[field]) return false;
-    if (!value.trim()) return true;
-    if (validator && !validator(value)) return true;
-    return false;
-  };
 
   const updateLdapField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -218,7 +211,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
       setDeployedData({
         slug: result?.slug || formData.slug,
-        adminPassword: result?.adminPassword || "K2net@" + Math.random().toString(36).slice(-8),
+        adminPassword: result?.adminPassword || "K2net@InitialPass2026",
         adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
       });
 
@@ -261,7 +254,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
         website: "",
         address: "",
         plan: "PRO",
-        wireguardIp: "100.110.205." + (Math.floor(Math.random() * 180) + 20),
+        wireguardIp: "100.110.205.10",
         popGateway: "POP-ID-CGK-01",
         ldapEnabled: false,
         ldapUrl: "",
