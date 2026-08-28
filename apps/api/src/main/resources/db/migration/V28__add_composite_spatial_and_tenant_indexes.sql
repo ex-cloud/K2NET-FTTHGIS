@@ -33,31 +33,28 @@ BEGIN
 END $$;
 
 -- 2. Multi-Tenant Relational B-Tree Indexes
-CREATE INDEX IF NOT EXISTS idx_projects_org_status 
-    ON projects (organization_id, status) 
-    WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_projects_org_created 
+    ON projects (organization_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_tasks_org_status_priority 
-    ON tasks (organization_id, status, priority) 
-    WHERE deleted_at IS NULL;
+    ON tasks (organization_id, status, priority);
 
-CREATE INDEX IF NOT EXISTS idx_users_org_role 
-    ON users (organization_id, role) 
-    WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_users_org_status 
+    ON users (organization_id, status);
 
 -- 3. Audit Logging & System Telemetry Indexes
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'audit_events') THEN
-        CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_timestamp 
-            ON audit_events (tenant_id, timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_audit_events_tenant_occurred 
+            ON audit_events (tenant_slug, occurred_at DESC);
     END IF;
 END $$;
 
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'database_backups') THEN
-        CREATE INDEX IF NOT EXISTS idx_database_backups_status_created 
-            ON database_backups (status, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_database_backups_status_time 
+            ON database_backups (status, backup_time DESC);
     END IF;
 END $$;
