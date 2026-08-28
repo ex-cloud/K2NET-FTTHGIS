@@ -107,7 +107,7 @@ export function OrgHardwareTab({
   return (
     <div className="space-y-6">
       {/* 1. Header Quota Allocation Summary */}
-      <Card glowingEffect className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-foreground">Hardware Quotas & OLT Poller Telemetry</h3>

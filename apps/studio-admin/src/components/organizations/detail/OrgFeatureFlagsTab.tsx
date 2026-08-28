@@ -44,7 +44,7 @@ export function OrgFeatureFlagsTab({
   return (
     <div className="space-y-6">
       {/* 1. Header with Save Action */}
-      <Card glowingEffect className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Sliders className="h-4 w-4 text-primary" />
@@ -74,7 +74,7 @@ export function OrgFeatureFlagsTab({
       {/* 2. Feature Toggles List */}
       <div className="space-y-3">
         {/* Flag 1: GIS Spatial Core */}
-        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
+        <Card className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Map className="h-5 w-5" />
@@ -98,7 +98,7 @@ export function OrgFeatureFlagsTab({
         </Card>
 
         {/* Flag 2: OLT Poller Gateway */}
-        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
+        <Card className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Radio className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function OrgFeatureFlagsTab({
         </Card>
 
         {/* Flag 3: WhatsApp Engine */}
-        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
+        <Card className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
               <MessageSquare className="h-5 w-5" />
@@ -146,7 +146,7 @@ export function OrgFeatureFlagsTab({
         </Card>
 
         {/* Flag 4: AI Copilot */}
-        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
+        <Card className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
               <Sparkles className="h-5 w-5" />
@@ -170,7 +170,7 @@ export function OrgFeatureFlagsTab({
         </Card>
 
         {/* Flag 5: Sandbox Mode */}
-        <Card glowingEffect className="flex items-center justify-between p-4 transition-all">
+        <Card className="flex items-center justify-between p-4 transition-all">
           <div className="flex items-center gap-3.5">
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
               <FlaskConical className="h-5 w-5" />

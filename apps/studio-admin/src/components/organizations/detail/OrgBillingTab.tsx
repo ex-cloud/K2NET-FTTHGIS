@@ -97,7 +97,7 @@ export function OrgBillingTab({
   return (
     <div className="space-y-6">
       {/* 1. Subscription & Payment Overview Card */}
-      <Card glowingEffect className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-primary" />
@@ -125,7 +125,7 @@ export function OrgBillingTab({
 
       {/* 2. Billing Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card glowingEffect className="p-4 space-y-1">
+        <Card className="p-4 space-y-1">
           <span className="text-[10px] font-mono uppercase text-foreground/75 dark:text-muted-foreground font-bold">Current Monthly Cost</span>
           <div className="flex items-baseline gap-1">
             <span className="text-xl font-bold font-mono text-foreground">
@@ -136,13 +136,13 @@ export function OrgBillingTab({
           <span className="text-[10px] text-muted-foreground">Termasuk PPN 11% & SLA Support</span>
         </Card>
 
-        <Card glowingEffect className="p-4 space-y-1">
+        <Card className="p-4 space-y-1">
           <span className="text-[10px] font-mono uppercase text-foreground/75 dark:text-muted-foreground font-bold">Next Invoice Date</span>
           <span className="text-xl font-bold font-mono text-foreground block">01 September 2026</span>
           <span className="text-[10px] text-muted-foreground">Otomatis diterbitkan melalui email PIC</span>
         </Card>
 
-        <Card glowingEffect className="p-4 space-y-1">
+        <Card className="p-4 space-y-1">
           <span className="text-[10px] font-mono uppercase text-foreground/75 dark:text-muted-foreground font-bold">Payment Method</span>
           <span className="text-xl font-bold font-mono text-foreground block">Xendit Gateway</span>
           <span className="text-[10px] text-primary flex items-center gap-1 font-mono">

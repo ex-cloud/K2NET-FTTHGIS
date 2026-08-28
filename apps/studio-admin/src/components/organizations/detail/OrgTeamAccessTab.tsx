@@ -168,7 +168,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
   return (
     <div className="space-y-6">
       {/* 1. Header with Invite Action */}
-      <Card glowingEffect className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />

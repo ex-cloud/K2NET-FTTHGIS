@@ -52,7 +52,7 @@ export function OrgNetworkDomainTab({
   return (
     <div className="space-y-6">
       {/* 1. Custom Domain & SSL Section */}
-      <Card glowingEffect className="p-5 space-y-4">
+      <Card className="p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function OrgNetworkDomainTab({
       </Card>
 
       {/* 2. VPN & Tunneling Infrastructure (Tailscale / IPsec) */}
-      <Card glowingEffect className="p-5 space-y-4">
+      <Card className="p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">

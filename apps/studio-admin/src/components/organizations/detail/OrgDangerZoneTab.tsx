@@ -57,7 +57,7 @@ export function OrgDangerZoneTab({
 
       <div className="space-y-4">
         {/* 1. Super Admin Impersonation */}
-        <Card glowingEffect className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               Super Admin Impersonation (God Mode)
@@ -79,7 +79,7 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 2. Suspend / Freeze Tenant */}
-        <Card glowingEffect className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               {isSuspended ? "Resume Tenant Operations" : "Suspend Organization Access"}
@@ -108,7 +108,7 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 3. Reset Keycloak IAM Realm */}
-        <Card glowingEffect className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-4">
           <div className="space-y-0.5 max-w-xl">
             <span className="text-sm font-semibold text-foreground block">
               Reset Keycloak IAM Realm Secret

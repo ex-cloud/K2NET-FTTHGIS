@@ -14,8 +14,10 @@ import {
   Cpu,
   Clock,
   Globe,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization } from "../types";
 
 interface OrgOverviewTabProps {
@@ -82,7 +84,80 @@ export function OrgOverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* 1. Live Health & Operational Status Banner */}
+      {/* 1. Master Identity & Key Properties Card */}
+      <Card className="p-5 space-y-4">
+        {/* Top Identity Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono text-base shadow-xs">
+              {org.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base font-bold tracking-tight text-foreground">
+                  {org.name}
+                </h1>
+                <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
+                  slug: {org.slug}
+                </span>
+                <a
+                  href={getTenantUrl(org.slug)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-primary flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono underline"
+                >
+                  <span>subdomain portal</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {org.description || "Enterprise FTTH ISP Tenant Environment"}
+              </p>
+            </div>
+          </div>
+
+          {/* Status & Plan Badges */}
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-xs gap-1.5 px-2.5 py-1">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span>{org.status}</span>
+            </Badge>
+            <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-xs font-semibold px-2.5 py-1">
+              {org.planTier} PLAN
+            </Badge>
+          </div>
+        </div>
+
+        {/* Key Properties Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-border/50 text-xs">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Lead PIC</span>
+            <span className="font-semibold text-foreground truncate block">{org.picName}</span>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">SLA Support</span>
+            <span className="font-semibold text-primary block">{org.slaTier}</span>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Hardware Slots</span>
+            <span className="font-mono text-foreground block">{org.usedOlts}/{org.maxOlts} OLTs</span>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">ODP Quota</span>
+            <span className="font-mono text-foreground block">{org.usedOdps}/{org.maxOdps}</span>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">MinIO Storage</span>
+            <span className="font-mono text-foreground block">{org.usedStorageGb}/{org.maxStorageGb} GB</span>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">API Latency</span>
+            <span className="font-mono text-primary block">{org.apiLatencyMs} ms</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* 2. Live Health & Operational Status Banner */}
       <div className="p-4 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
@@ -249,7 +324,7 @@ export function OrgOverviewTab({
       {/* 3. Subscription & Tenant Info Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Subscription Plan Card */}
-        <Card glowingEffect className="lg:col-span-1 p-5 space-y-4">
+        <Card className="lg:col-span-1 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">
               Subscription Tier
@@ -300,7 +375,7 @@ export function OrgOverviewTab({
         </Card>
 
         {/* Operational Telemetry & Activity Feed */}
-        <Card glowingEffect className="lg:col-span-2 p-5 space-y-4">
+        <Card className="lg:col-span-2 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">
               Audit & System Telemetry Log (Last 24 Hours)
