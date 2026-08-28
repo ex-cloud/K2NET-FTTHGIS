@@ -42,20 +42,24 @@ export function OrgFeatureFlagsTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 1. Header with Save Action */}
-      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Sliders className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">B2B Module Entitlements & Feature Flags</h3>
-            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[10px] font-mono">
-              {Object.values(flags).filter(Boolean).length} of 5 Active
-            </Badge>
+      <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <Sliders className="h-4 w-4" />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Kelola modul fitur tambahan yang dibeli oleh mitra ISP ini secara real-time.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-foreground">B2B Module Entitlements & Feature Flags</h3>
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0.2">
+                {Object.values(flags).filter(Boolean).length} of 5 Active
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Kelola modul fitur tambahan yang dibeli oleh mitra ISP ini secara real-time.
+            </p>
+          </div>
         </div>
 
         <ActionTooltip label="Save updated feature flag permissions for this tenant" shortcut="S">
@@ -63,135 +67,135 @@ export function OrgFeatureFlagsTab({
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+            className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
           >
             <Save className="h-3.5 w-3.5" />
             <span>{saving ? "Saving..." : "Save Entitlements"}</span>
           </Button>
         </ActionTooltip>
-      </Card>
+      </div>
 
-      {/* 2. Feature Toggles List */}
-      <div className="space-y-3">
+      {/* 2. Compact Feature Toggles List */}
+      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md divide-y divide-border/60 overflow-hidden shadow-2xs">
         {/* Flag 1: GIS Spatial Core */}
-        <Card className="flex items-center justify-between p-4 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-              <Map className="h-5 w-5" />
+        <div className="flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Map className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   GIS Spatial Mapping Core
                 </span>
-                <Badge variant="outline" className="border-border text-[9px] font-mono">CORE</Badge>
+                <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">CORE</Badge>
               </div>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 PostGIS spatial map rendering, ODC/ODP splitters, and fiber cable route tracing.
-              </span>
+              </p>
             </div>
           </div>
           <Switch
             checked={flags.gisCore}
             onCheckedChange={() => handleToggle("gisCore")}
           />
-        </Card>
+        </div>
 
         {/* Flag 2: OLT Poller Gateway */}
-        <Card className="flex items-center justify-between p-4 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-              <Radio className="h-5 w-5" />
+        <div className="flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Radio className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  OLT Snmp / Ssh Poller Gateway
+                <span className="text-xs font-semibold text-foreground">
+                  OLT SNMP / SSH Poller Gateway
                 </span>
-                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">PRO / ENT</Badge>
+                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0">PRO / ENT</Badge>
               </div>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Real-time optical telemetry, optical power level dBm monitoring, and port status tracking.
-              </span>
+              </p>
             </div>
           </div>
           <Switch
             checked={flags.oltPoller}
             onCheckedChange={() => handleToggle("oltPoller")}
           />
-        </Card>
+        </div>
 
         {/* Flag 3: WhatsApp Engine */}
-        <Card className="flex items-center justify-between p-4 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-              <MessageSquare className="h-5 w-5" />
+        <div className="flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+              <MessageSquare className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   WhatsApp Notification & Billing Engine
                 </span>
-                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 text-[9px] font-mono">ADD-ON</Badge>
+                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 text-[9px] font-mono px-1.5 py-0">ADD-ON</Badge>
               </div>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Automated monthly invoice reminders and optical outage alerts to subscribers.
-              </span>
+              </p>
             </div>
           </div>
           <Switch
             checked={flags.whatsappEngine}
             onCheckedChange={() => handleToggle("whatsappEngine")}
           />
-        </Card>
+        </div>
 
         {/* Flag 4: AI Copilot */}
-        <Card className="flex items-center justify-between p-4 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
-              <Sparkles className="h-5 w-5" />
+        <div className="flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
+              <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   AI Automated Fiber Routing Copilot
                 </span>
-                <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 text-[9px] font-mono">PREMIUM</Badge>
+                <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 text-[9px] font-mono px-1.5 py-0">PREMIUM</Badge>
               </div>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 AI automated cable shortest-path routing algorithm with obstacle detection.
-              </span>
+              </p>
             </div>
           </div>
           <Switch
             checked={flags.aiCopilot}
             onCheckedChange={() => handleToggle("aiCopilot")}
           />
-        </Card>
+        </div>
 
         {/* Flag 5: Sandbox Mode */}
-        <Card className="flex items-center justify-between p-4 transition-all">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
-              <FlaskConical className="h-5 w-5" />
+        <div className="flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-7 w-7 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+              <FlaskConical className="h-3.5 w-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   Sandbox & Topology Simulation Mode
                 </span>
-                <Badge variant="outline" className="border-border text-[9px] font-mono">TESTING</Badge>
+                <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">TESTING</Badge>
               </div>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Isolated sandbox testing environment with simulated OLTs and test customers.
-              </span>
+              </p>
             </div>
           </div>
           <Switch
             checked={flags.sandboxMode}
             onCheckedChange={() => handleToggle("sandboxMode")}
           />
-        </Card>
+        </div>
       </div>
     </div>
   );

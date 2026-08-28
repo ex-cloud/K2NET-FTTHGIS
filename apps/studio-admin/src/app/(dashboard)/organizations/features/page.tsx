@@ -221,7 +221,7 @@ export default function OrganizationFeaturesPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleBulkEnableEnterpriseAI}
-                className="text-xs font-semibold border-border bg-card hover:bg-accent text-foreground gap-1.5"
+                className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
               >
                 <Sparkles className="h-3.5 w-3.5 text-purple-500" />
                 <span>Enable AI on Enterprise</span>
@@ -236,7 +236,7 @@ export default function OrganizationFeaturesPage() {
                   refresh();
                   toast.success("Entitlements refreshed from backend");
                 }}
-                className="text-xs border-border bg-card hover:bg-accent text-muted-foreground gap-1.5"
+                className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>Refresh</span>
@@ -248,25 +248,25 @@ export default function OrganizationFeaturesPage() {
         {/* ── 2. Top Module Adoption KPI Bar ──────────────────────── */}
         <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   GIS Spatial Core
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Map className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {Math.round((stats.gisCore / totalOrgs) * 100)}%
                   </p>
                   <span className="text-xs font-mono text-muted-foreground">
                     {stats.gisCore}/{totalOrgs} Tenants
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Core map engine active</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Core map engine active</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
@@ -276,25 +276,25 @@ export default function OrganizationFeaturesPage() {
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   OLT Telemetry Poller
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Radio className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {Math.round((stats.oltPoller / totalOrgs) * 100)}%
                   </p>
                   <span className="text-xs font-mono text-muted-foreground">
                     {stats.oltPoller}/{totalOrgs} Tenants
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">SNMP & SSH telemetry active</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">SNMP & SSH telemetry active</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
@@ -304,25 +304,25 @@ export default function OrganizationFeaturesPage() {
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   WhatsApp Engine
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <div className="h-6 w-6 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
                   <MessageSquare className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {Math.round((stats.whatsapp / totalOrgs) * 100)}%
                   </p>
                   <span className="text-xs font-mono text-blue-500">
                     {stats.whatsapp}/{totalOrgs} Tenants
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Automated billing notices</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Automated billing notices</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
@@ -332,25 +332,25 @@ export default function OrganizationFeaturesPage() {
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   AI Fiber Copilot
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+                <div className="h-6 w-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
                   <Sparkles className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {Math.round((stats.aiCopilot / totalOrgs) * 100)}%
                   </p>
                   <span className="text-xs font-mono text-purple-500">
                     {stats.aiCopilot}/{totalOrgs} Tenants
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Automated cable routing AI</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Automated cable routing AI</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div

@@ -55,14 +55,14 @@ export function OrgDangerZoneTab({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* 1. Super Admin Impersonation */}
-        <Card className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
-            <span className="text-sm font-semibold text-foreground block">
+            <span className="text-xs font-semibold text-foreground block">
               Super Admin Impersonation (God Mode)
             </span>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Masuk langsung ke dashboard portal tenant sebagai Super Admin tanpa memerlukan kata sandi pengguna mitra.
             </p>
           </div>
@@ -70,7 +70,7 @@ export function OrgDangerZoneTab({
             <Button
               size="sm"
               onClick={onImpersonate}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
             >
               <span>Open Tenant Portal</span>
               <ExternalLink className="h-3.5 w-3.5" />
@@ -79,12 +79,12 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 2. Suspend / Freeze Tenant */}
-        <Card className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
-            <span className="text-sm font-semibold text-foreground block">
+            <span className="text-xs font-semibold text-foreground block">
               {isSuspended ? "Resume Tenant Operations" : "Suspend Organization Access"}
             </span>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               {isSuspended
                 ? "Mengaktifkan kembali seluruh endpoint API Kong, polling OLT, dan akses peta GIS tenant."
                 : "Membekukan sementara akses seluruh pengguna tenant dan menolak query peta GIS."}
@@ -97,8 +97,8 @@ export function OrgDangerZoneTab({
               onClick={() => onUpdateStatus(isSuspended ? "ACTIVE" : "SUSPENDED")}
               className={
                 isSuspended
-                  ? "text-xs border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0"
-                  : "text-xs border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0"
+                  ? "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0 shadow-2xs"
+                  : "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0 shadow-2xs"
               }
             >
               {isSuspended ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
@@ -108,13 +108,13 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 3. Reset Keycloak IAM Realm */}
-        <Card className="flex items-center justify-between p-4">
+        <Card className="flex items-center justify-between p-3.5">
           <div className="space-y-0.5 max-w-xl">
-            <span className="text-sm font-semibold text-foreground block">
+            <span className="text-xs font-semibold text-foreground block">
               Reset Keycloak IAM Realm Secret
             </span>
-            <p className="text-xs text-muted-foreground">
-              Mengatur ulang client secret OAuth2 dan melakukan sinkronisasi ulang role RBAC Keycloak untuk realm <code className="text-primary font-mono">{org.slug}-realm</code>.
+            <p className="text-[11px] text-muted-foreground">
+              Mengatur ulang client secret OAuth2 dan melakukan sinkronisasi ulang role RBAC Keycloak untuk realm <code className="text-primary font-mono text-[10px]">{org.slug}-realm</code>.
             </p>
           </div>
           <ActionTooltip label="Re-sync Keycloak client secrets & RBAC roles">
@@ -123,7 +123,7 @@ export function OrgDangerZoneTab({
               size="sm"
               onClick={handleResetRealm}
               disabled={resettingRealm}
-              className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
+              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
               <span>Reset IAM Realm</span>
@@ -132,24 +132,24 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 4. Delete Organization Permanently */}
-        <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-3.5">
           <div className="space-y-0.5 max-w-xl">
-            <span className="text-sm font-semibold text-destructive block">
+            <span className="text-xs font-semibold text-destructive block">
               Delete Organization Permanently
             </span>
-            <p className="text-xs text-muted-foreground">
-              Menghapus permanen skema PostGIS database, objek MinIO S3, akun Keycloak, dan seluruh data kabel/ODP organisasi ini. Tindakan ini tidak dapat dibatalkan.
+            <p className="text-[11px] text-muted-foreground">
+              Menghapus permanen skema database tenant, akun Keycloak, dan seluruh topologi peta GIS yang terafiliasi.
             </p>
           </div>
-          <ActionTooltip label="Initiate irreversible tenant destruction protocol">
+          <ActionTooltip label="Danger: Open permanent deletion confirmation dialog">
             <Button
               variant="destructive"
               size="sm"
               onClick={onDelete}
-              className="text-xs font-semibold gap-1.5 shrink-0"
+              className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              <span>Delete Organization</span>
+              <span>Delete Tenant</span>
             </Button>
           </ActionTooltip>
         </div>

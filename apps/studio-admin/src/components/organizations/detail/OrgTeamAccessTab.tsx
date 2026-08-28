@@ -168,16 +168,16 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
   return (
     <div className="space-y-6">
       {/* 1. Header with Invite Action */}
-      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">Tenant Team & Access Control</h3>
-            <Badge variant="outline" className="border-border text-[10px] font-mono">
+            <h3 className="text-xs font-bold text-foreground">Tenant Team & Access Control</h3>
+            <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">
               Realm: {org.slug}-realm
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Pengaturan akun staf, teknisi lapangan, dan hak akses RBAC Keycloak terisolasi.
           </p>
         </div>
@@ -186,13 +186,13 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
           <Button
             size="sm"
             onClick={() => setInviteOpen(true)}
-            className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+            className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
           >
             <UserPlus className="h-3.5 w-3.5" />
             <span>Invite Team Member</span>
           </Button>
         </ActionTooltip>
-      </Card>
+      </div>
 
       {/* 2. Team Members Table */}
       <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">

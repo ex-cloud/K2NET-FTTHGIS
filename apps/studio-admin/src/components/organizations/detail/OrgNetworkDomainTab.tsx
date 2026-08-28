@@ -52,14 +52,14 @@ export function OrgNetworkDomainTab({
   return (
     <div className="space-y-6">
       {/* 1. Custom Domain & SSL Section */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-4 md:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Custom Whitelabel Domain & SSL</h3>
+              <h3 className="text-xs font-bold text-foreground">Custom Whitelabel Domain & SSL</h3>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Konfigurasi domain kustom tenant dengan sertifikat otomatis Let&apos;s Encrypt Traefik.
             </p>
           </div>
@@ -71,7 +71,7 @@ export function OrgNetworkDomainTab({
                 size="sm"
                 onClick={handleCheckDns}
                 disabled={checkingDns}
-                className="text-xs border-border bg-card hover:bg-accent gap-1.5"
+                className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
               >
                 <RefreshCw className={cn("h-3 w-3", checkingDns && "animate-spin text-primary")} />
                 <span>Check DNS</span>
@@ -82,7 +82,7 @@ export function OrgNetworkDomainTab({
               <Button
                 size="sm"
                 onClick={onOpenDomainModal}
-                className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+                className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs"
               >
                 <Globe className="h-3.5 w-3.5" />
                 <span>Configure Domain</span>
@@ -91,7 +91,7 @@ export function OrgNetworkDomainTab({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
           {/* Active Domain FQDN */}
           <div className="rounded-lg bg-background/80 border border-border/60 p-3 space-y-1">
             <span className="text-[10px] font-mono text-muted-foreground block uppercase">Active Domain</span>
@@ -110,7 +110,7 @@ export function OrgNetworkDomainTab({
             <span className="text-[10px] font-mono text-muted-foreground block uppercase">Traefik TLS / SSL</span>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="font-mono text-xs font-semibold text-foreground">
                   Let&apos;s Encrypt Valid
                 </span>
@@ -138,17 +138,17 @@ export function OrgNetworkDomainTab({
       </Card>
 
       {/* 2. VPN & Tunneling Infrastructure (Tailscale / IPsec) */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-4 md:p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">VPN Mesh & BRAS Tunneling 🛡️</h3>
-              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">
+              <h3 className="text-xs font-bold text-foreground">VPN Mesh & BRAS Tunneling 🛡️</h3>
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[9px]">
                 TAILSCALE MESH ACTIVE
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Koneksi terenkripsi WireGuard menghubungkan BRAS/OLT mitra ke sistem pusat FTTH GIS.
             </p>
           </div>
@@ -159,7 +159,7 @@ export function OrgNetworkDomainTab({
               size="sm"
               onClick={handleTestVpn}
               disabled={testingVpn}
-              className="text-xs border-border bg-card hover:bg-accent gap-1.5 shrink-0"
+              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs"
             >
               <RefreshCw className={cn("h-3 w-3", testingVpn && "animate-spin text-primary")} />
               <span>Test Handshake</span>

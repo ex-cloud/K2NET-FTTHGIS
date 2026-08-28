@@ -25,54 +25,6 @@ interface OrgOverviewTabProps {
   onOpenPlanUpgrade?: () => void;
 }
 
-function RadialProgressGauge({
-  percentage,
-  strokeColor,
-  size = 54,
-  strokeWidth = 5,
-}: {
-  percentage: number;
-  strokeColor: string;
-  size?: number;
-  strokeWidth?: number;
-}) {
-  const clamped = Math.min(100, Math.max(0, percentage));
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (clamped / 100) * circumference;
-
-  return (
-    <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90" width={size} height={size}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          className="text-muted/30"
-          fill="transparent"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          className={cn("transition-all duration-700 ease-out", strokeColor)}
-          fill="transparent"
-        />
-      </svg>
-      <span className="absolute font-mono text-[10px] font-bold text-foreground">
-        {clamped}%
-      </span>
-    </div>
-  );
-}
-
 export function OrgOverviewTab({
   organization: org,
   onOpenPlanUpgrade,
@@ -85,18 +37,18 @@ export function OrgOverviewTab({
   return (
     <div className="space-y-6">
       {/* 1. Master Identity & Key Properties Card */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-4 md:p-5 space-y-4">
         {/* Top Identity Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono text-base shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold font-mono text-sm shadow-xs shrink-0">
               {org.name.charAt(0).toUpperCase()}
             </div>
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-base font-bold tracking-tight text-foreground">
+                <h2 className="text-base font-bold tracking-tight text-foreground">
                   {org.name}
-                </h1>
+                </h2>
                 <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
                   slug: {org.slug}
                 </span>
@@ -104,7 +56,7 @@ export function OrgOverviewTab({
                   href={getTenantUrl(org.slug)}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-primary flex items-center gap-1 text-[11px] text-muted-foreground/80 font-mono underline"
+                  className="hover:text-primary flex items-center gap-1 text-[11px] text-muted-foreground hover:underline font-mono transition-colors"
                 >
                   <span>subdomain portal</span>
                   <ExternalLink className="h-2.5 w-2.5" />
@@ -118,11 +70,11 @@ export function OrgOverviewTab({
 
           {/* Status & Plan Badges */}
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-xs gap-1.5 px-2.5 py-1">
-              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               <span>{org.status}</span>
             </Badge>
-            <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-xs font-semibold px-2.5 py-1">
+            <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px] font-semibold px-2 py-0.5">
               {org.planTier} PLAN
             </Badge>
           </div>
@@ -158,165 +110,165 @@ export function OrgOverviewTab({
       </Card>
 
       {/* 2. Live Health & Operational Status Banner */}
-      <div className="p-4 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
-        <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <Activity className="h-5 w-5 animate-pulse" />
+      <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <Activity className="h-4 w-4 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-foreground">Live Telemetry & Tenant Health</h3>
-              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[10px] font-mono px-2 py-0.5">
+              <h3 className="text-xs font-bold text-foreground">Live Telemetry & Tenant Health</h3>
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0.2">
                 OPERATIONAL
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               Poller engine active • Latency {org.apiLatencyMs}ms • Keycloak Realm Isolation Active
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <div className="px-3 py-1.5 rounded-lg bg-background border border-border flex items-center gap-2">
-            <Radio className="h-3.5 w-3.5 text-primary" />
-            <span className="text-muted-foreground">Poller Cycle:</span>
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <div className="px-2.5 py-1 rounded-md bg-background border border-border flex items-center gap-1.5 text-[11px]">
+            <Radio className="h-3 w-3 text-primary" />
+            <span className="text-muted-foreground">Poller:</span>
             <span className="font-semibold text-foreground">4s ago</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-background border border-border flex items-center gap-2">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            <span className="text-muted-foreground">SLA Target:</span>
+          <div className="px-2.5 py-1 rounded-md bg-background border border-border flex items-center gap-1.5 text-[11px]">
+            <ShieldCheck className="h-3 w-3 text-primary" />
+            <span className="text-muted-foreground">SLA:</span>
             <span className="font-semibold text-foreground">{org.slaTier}</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Visual Capacity & Resource Usage Cards (Radial Gauge) */}
+      {/* 3. Visual Capacity & Resource Usage Cards (Linear Precision Gauge) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: OLT Capacity */}
-        <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+        <Card glowingEffect className="p-4 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
               OLT Nodes
             </span>
-            <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Network className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Network className="h-3 w-3" />
             </div>
           </div>
           
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {org.usedOlts} <span className="text-sm font-normal text-muted-foreground">/ {org.maxOlts}</span>
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold tracking-tight text-foreground font-mono">
+                {org.usedOlts} <span className="text-xs font-normal text-muted-foreground">/ {org.maxOlts}</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {org.maxOlts - org.usedOlts} slot perangkat tersedia
-              </p>
+              <span className="text-xs font-mono font-semibold text-primary">{oltPct}%</span>
             </div>
-            <RadialProgressGauge
-              percentage={oltPct}
-              strokeColor={oltPct > 80 ? "text-amber-500" : "text-primary"}
-            />
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-primary transition-all duration-500" 
+                style={{ width: `${Math.min(100, Math.max(0, oltPct))}%` }}
+              />
+            </div>
           </div>
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <span>Hardware Utilization</span>
-            <span className="font-semibold text-foreground">{oltPct}%</span>
+            <span>{org.maxOlts - org.usedOlts} slot tersedia</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxOlts}</span>
           </div>
         </Card>
 
         {/* Card 2: ODP Enclosures */}
-        <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+        <Card glowingEffect className="p-4 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
               Mapped ODPs
             </span>
-            <div className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-              <Server className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+              <Server className="h-3 w-3" />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {org.usedOdps} <span className="text-sm font-normal text-muted-foreground">/ {org.maxOdps}</span>
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold tracking-tight text-foreground font-mono">
+                {org.usedOdps} <span className="text-xs font-normal text-muted-foreground">/ {org.maxOdps}</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Distribution enclosures
-              </p>
+              <span className="text-xs font-mono font-semibold text-blue-500">{odpPct}%</span>
             </div>
-            <RadialProgressGauge
-              percentage={odpPct}
-              strokeColor="text-blue-500"
-            />
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-blue-500 transition-all duration-500" 
+                style={{ width: `${Math.min(100, Math.max(0, odpPct))}%` }}
+              />
+            </div>
           </div>
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <span>Spatial Quota</span>
-            <span className="font-semibold text-foreground">{odpPct}%</span>
+            <span>Distribution splitters</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxOdps}</span>
           </div>
         </Card>
 
         {/* Card 3: Storage MinIO */}
-        <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+        <Card glowingEffect className="p-4 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
               GIS S3 Storage
             </span>
-            <div className="h-7 w-7 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
-              <Database className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+              <Database className="h-3 w-3" />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {org.usedStorageGb} <span className="text-sm font-normal text-muted-foreground">/ {org.maxStorageGb} GB</span>
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold tracking-tight text-foreground font-mono">
+                {org.usedStorageGb} <span className="text-xs font-normal text-muted-foreground">/ {org.maxStorageGb} GB</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                MinIO Bucket terisolasi
-              </p>
+              <span className="text-xs font-mono font-semibold text-purple-500">{storagePct}%</span>
             </div>
-            <RadialProgressGauge
-              percentage={storagePct}
-              strokeColor="text-purple-500"
-            />
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-purple-500 transition-all duration-500" 
+                style={{ width: `${Math.min(100, Math.max(0, storagePct))}%` }}
+              />
+            </div>
           </div>
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <span>Bucket Capacity</span>
-            <span className="font-semibold text-foreground">{storagePct}%</span>
+            <span>MinIO Bucket</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxStorageGb} GB</span>
           </div>
         </Card>
 
         {/* Card 4: API Rate Limit */}
-        <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+        <Card glowingEffect className="p-4 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
               Kong Gateway RPM
             </span>
-            <div className="h-7 w-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-              <Cpu className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+              <Cpu className="h-3 w-3" />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
-                {org.apiRateLimitUsed} <span className="text-sm font-normal text-muted-foreground">/ {org.apiRateLimitMax}</span>
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xl font-bold tracking-tight text-foreground font-mono">
+                {org.apiRateLimitUsed} <span className="text-xs font-normal text-muted-foreground">/ {org.apiRateLimitMax}</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Req/Min rate safety
-              </p>
+              <span className="text-xs font-mono font-semibold text-amber-500">{rpmPct}%</span>
             </div>
-            <RadialProgressGauge
-              percentage={rpmPct}
-              strokeColor="text-amber-500"
-            />
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-amber-500 transition-all duration-500" 
+                style={{ width: `${Math.min(100, Math.max(0, rpmPct))}%` }}
+              />
+            </div>
           </div>
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <span>Throughput Traffic</span>
-            <span className="font-semibold text-foreground">{rpmPct}%</span>
+            <span>Req/Min safety</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.apiRateLimitMax}</span>
           </div>
         </Card>
       </div>

@@ -327,15 +327,12 @@ export default function OrganizationDetailPage() {
         {/* ── 1. Top Linear Breadcrumbs Header ──────────────────────── */}
         <div className="px-6 py-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-xs">
-            <ActionTooltip label="Back to Organizations list" shortcut="Esc">
-              <Link
-                href="/organizations"
-                className="text-muted-foreground hover:text-foreground font-medium transition-colors flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Organizations</span>
-              </Link>
-            </ActionTooltip>
+            <Link
+              href="/organizations"
+              className="text-muted-foreground hover:text-foreground font-medium transition-colors"
+            >
+              Organizations
+            </Link>
             <span className="text-muted-foreground/60">›</span>
             <div className="flex items-center gap-1.5 font-semibold text-foreground">
               <Building2 className="w-3.5 h-3.5 text-primary" />
@@ -348,28 +345,14 @@ export default function OrganizationDetailPage() {
               ORG-{org.slug.toUpperCase()}
             </Badge>
 
-            <ActionTooltip label="Copy Technical Dossier as Markdown" shortcut="E">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportMarkdown}
-                className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
-              >
-                <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="hidden sm:inline">Export Spec</span>
-              </Button>
-            </ActionTooltip>
-
-            <ActionTooltip label="Open Tenant Workspace Portal" shortcut="Ctrl+Enter">
-              <Button
-                size="sm"
-                onClick={handleImpersonate}
-                className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-sm"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Open Portal</span>
-              </Button>
-            </ActionTooltip>
+            <button
+              onClick={handleExportMarkdown}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+              title="Copy Spec as Markdown"
+            >
+              <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="hidden sm:inline">Export Spec</span>
+            </button>
           </div>
         </div>
 

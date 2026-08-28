@@ -196,7 +196,7 @@ export default function OrganizationDomainsPage() {
                   refresh();
                   toast.success("Domain and TLS states refreshed");
                 }}
-                className="text-xs border-border bg-card hover:bg-accent text-muted-foreground gap-1.5"
+                className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>Refresh</span>
@@ -208,87 +208,87 @@ export default function OrganizationDomainsPage() {
         {/* ── 2. Top Domain & TLS Health Strip ────────────────────── */}
         <div className="px-4 md:px-6 shrink-0 animate-in fade-in-50 duration-150">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   Custom Domains Active
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Globe className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {organizations.filter((o) => !!o.customDomain).length}
                   </p>
                   <span className="text-xs font-mono text-primary font-semibold">100% Valid</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Whitelabel FQDNs configured</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Whitelabel FQDNs configured</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   Default Subdomains
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+                <div className="h-6 w-6 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
                   <Lock className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     {organizations.length}
                   </p>
                   <span className="text-xs font-mono text-muted-foreground">*.kdua.net</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Wildcard DNS routed via Traefik</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Wildcard DNS routed via Traefik</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: "100%" }} />
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   Let&apos;s Encrypt Auto-SSL
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <ShieldCheck className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-2xl font-bold tracking-tight text-foreground font-mono">
+                  <p className="text-xl font-bold tracking-tight text-foreground font-mono">
                     Active (TLS 1.3)
                   </p>
                   <span className="text-xs font-mono text-primary font-semibold">Auto-Renew</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Automated ACME challenge</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Automated ACME challenge</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
               </div>
             </Card>
 
-            <Card glowingEffect className="p-5 flex flex-col justify-between gap-3">
+            <Card className="p-4 flex flex-col justify-between gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground/75 dark:text-muted-foreground font-bold tracking-wider uppercase font-mono">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground font-mono">
                   CNAME Ingress Target
                 </span>
-                <div className="h-6 w-6 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+                <div className="h-6 w-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
                   <Terminal className="h-3.5 w-3.5" />
                 </div>
               </div>
               <div>
                 <div className="flex items-baseline justify-between">
-                  <p className="text-lg font-bold font-mono text-primary truncate max-w-[160px]">
+                  <p className="text-base font-bold font-mono text-primary truncate max-w-[160px]">
                     cname.kdua.net
                   </p>
                   <button
@@ -299,7 +299,7 @@ export default function OrganizationDomainsPage() {
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">Global load balancer target</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Global load balancer target</p>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 rounded-full" style={{ width: "100%" }} />

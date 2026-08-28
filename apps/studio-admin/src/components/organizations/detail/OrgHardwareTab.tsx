@@ -107,16 +107,16 @@ export function OrgHardwareTab({
   return (
     <div className="space-y-6">
       {/* 1. Header Quota Allocation Summary */}
-      <Card className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-foreground">Hardware Quotas & OLT Poller Telemetry</h3>
-            <Badge variant="outline" className="border-border text-[10px] font-mono">
+            <h3 className="text-xs font-bold text-foreground">Hardware Quotas & OLT Poller Telemetry</h3>
+            <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">
               {org.usedOlts} of {org.maxOlts} Slots Used
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Semua perangkat OLT yang terdaftar dimonitor secara berkala oleh <code className="text-primary font-mono">ftth-poller:5010</code>.
+          <p className="text-[11px] text-muted-foreground">
+            Semua perangkat OLT yang terdaftar dimonitor secara berkala oleh <code className="text-primary font-mono text-[10px]">ftth-poller:5010</code>.
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export function OrgHardwareTab({
               variant="outline"
               size="sm"
               onClick={onOpenQuotaModal}
-              className="text-xs font-semibold border-border bg-card hover:bg-accent gap-1.5"
+              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
             >
               <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Adjust Quota Limits</span>
@@ -137,14 +137,14 @@ export function OrgHardwareTab({
             <Button
               size="sm"
               onClick={onOpenQuotaModal}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Allocate OLT Slot</span>
             </Button>
           </ActionTooltip>
         </div>
-      </Card>
+      </div>
 
       {/* 2. OLT Hardware Devices Table */}
       <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
@@ -248,15 +248,15 @@ export function OrgHardwareTab({
 
                       {/* Actions */}
                       <TableCell className="py-3.5 pr-6 text-right">
-                        <ActionTooltip label="Test SNMP & SSH reachability" shortcut="P">
+                        <ActionTooltip label="Test SNMP & SSH Poller Response" shortcut="P">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleTestPing(olt)}
                             disabled={testingOltId === olt.id}
-                            className="h-7 text-xs border-border bg-card hover:bg-accent text-foreground gap-1 px-2 font-mono"
+                            className="h-7 px-2 text-xs font-semibold border-border bg-card hover:bg-muted gap-1 text-foreground shadow-2xs"
                           >
-                            <RefreshCw className={cn("h-3 w-3", testingOltId === olt.id && "animate-spin text-primary")} />
+                            <Terminal className="h-3 w-3 text-muted-foreground" />
                             <span>Ping / Test</span>
                           </Button>
                         </ActionTooltip>
