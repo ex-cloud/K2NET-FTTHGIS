@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
   Checkbox,
-  PageLayout,
   DashboardPageSkeleton,
   ActionTooltip,
 } from "@k2net/ui";
@@ -324,7 +323,7 @@ export default function OrganizationDetailPage() {
 
   return (
     <OrganizationPageWrapper>
-      <PageLayout className="p-0 flex flex-col h-full overflow-hidden bg-background">
+      <div className="flex flex-col h-full w-full bg-background overflow-hidden">
         {/* ── 1. Top Linear Breadcrumbs Header ──────────────────────── */}
         <div className="px-6 py-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm">
           <div className="flex items-center gap-2 text-xs">
@@ -407,9 +406,9 @@ export default function OrganizationDetailPage() {
         </div>
 
         {/* ── 3. Scrollable Body Content ────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-          {/* Header Card with Key Properties & Glowing Effect */}
-          <Card glowingEffect className="p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 w-full">
+          {/* Header Card with Key Properties */}
+          <Card className="p-5 space-y-4">
             {/* Top Identity Row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
@@ -672,7 +671,7 @@ export default function OrganizationDetailPage() {
             </div>
           </DialogContent>
         </Dialog>
-      </PageLayout>
+      </div>
     </OrganizationPageWrapper>
   );
 }

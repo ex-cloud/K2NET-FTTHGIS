@@ -83,7 +83,7 @@ export function OrgOverviewTab({
   return (
     <div className="space-y-6">
       {/* 1. Live Health & Operational Status Banner */}
-      <Card glowingEffect className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Activity className="h-5 w-5 animate-pulse" />
@@ -113,7 +113,7 @@ export function OrgOverviewTab({
             <span className="font-semibold text-foreground">{org.slaTier}</span>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* 2. Visual Capacity & Resource Usage Cards (Radial Gauge) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
