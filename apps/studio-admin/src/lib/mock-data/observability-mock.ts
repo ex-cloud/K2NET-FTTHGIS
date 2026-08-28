@@ -80,12 +80,12 @@ export const kongTrafficMock = [
 // ─── Phase 8: Identity / Keycloak ─────────────────────────────────────────────
 
 export const authEventsMock = [
-  { id: "e1", event: "Login Success", user: "admin@k2net.id", ip: "10.0.0.1", timestamp: "2026-07-25 03:01:12", type: "success" },
+  { id: "e1", event: "Login Success", user: "admin@kdua.net", ip: "10.0.0.1", timestamp: "2026-07-25 03:01:12", type: "success" },
   { id: "e2", event: "Token Refresh", user: "user@tenant-alpha.com", ip: "10.0.0.5", timestamp: "2026-07-25 02:58:44", type: "info" },
   { id: "e3", event: "Login Success", user: "staff@tenant-beta.id", ip: "10.0.0.8", timestamp: "2026-07-25 02:52:30", type: "success" },
   { id: "e4", event: "Brute Force Block", user: "unknown", ip: "185.220.101.4", timestamp: "2026-07-25 02:45:19", type: "error" },
   { id: "e5", event: "Logout", user: "staff@tenant-alpha.com", ip: "10.0.0.6", timestamp: "2026-07-25 02:30:05", type: "info" },
-  { id: "e6", event: "MFA Challenge", user: "admin@k2net.id", ip: "10.0.0.1", timestamp: "2026-07-25 02:15:33", type: "info" },
+  { id: "e6", event: "MFA Challenge", user: "admin@kdua.net", ip: "10.0.0.1", timestamp: "2026-07-25 02:15:33", type: "info" },
   { id: "e7", event: "Login Failed", user: "user@tenant-gamma.net", ip: "203.0.113.42", timestamp: "2026-07-25 01:58:20", type: "warning" },
   { id: "e8", event: "Token Refresh", user: "admin@tenant-beta.id", ip: "10.0.0.3", timestamp: "2026-07-25 01:45:08", type: "info" },
 ];

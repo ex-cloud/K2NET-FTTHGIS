@@ -77,20 +77,28 @@ const DEFAULT_OBSERVABILITY: DbObservabilityData = {
   largeObjects: [],
 };
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:db_metrics";
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useDbObservability(pollIntervalMs = 30_000) {
   const { data: session } = useSession();
-  const [data, setData] = useState<DbMetricsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<DbMetricsResponse>(CACHE_KEY);
+  const [data, setData] = useState<DbMetricsResponse | null>(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(cached ? new Date() : null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) {
       setLoading(false);
       return;
+    }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) {
+      setLoading(true);
     }
     try {
       const res = await fetch("/api/observability/db-metrics", {
@@ -99,6 +107,7 @@ export function useDbObservability(pollIntervalMs = 30_000) {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: DbMetricsResponse = await res.json();
+      memoryCache.set(CACHE_KEY, json);
       setData(json);
       setLastUpdated(new Date());
       setError(null);
@@ -111,12 +120,17 @@ export function useDbObservability(pollIntervalMs = 30_000) {
 
   // Initial fetch + polling
   useEffect(() => {
-    fetchMetrics();
-    intervalRef.current = setInterval(fetchMetrics, pollIntervalMs);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      // Data is fresh, run a silent background revalidation
+      fetchMetrics(true);
+    } else {
+      fetchMetrics(!!cached);
+    }
+    intervalRef.current = setInterval(() => fetchMetrics(true), pollIntervalMs);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [fetchMetrics, pollIntervalMs]);
+  }, [fetchMetrics, pollIntervalMs, cached]);
 
   // Derived values with safe defaults
   const charts = data?.charts ?? {
@@ -137,6 +151,6 @@ export function useDbObservability(pollIntervalMs = 30_000) {
     loading,
     error,
     lastUpdated,
-    refresh: fetchMetrics,
+    refresh: () => fetchMetrics(false),
   };
 }

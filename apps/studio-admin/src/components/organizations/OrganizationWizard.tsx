@@ -32,6 +32,7 @@ import {
   DialogTitle, 
   DialogDescription, 
 } from "@k2net/ui";
+import { getTenantUrl, getDefaultTenantHost } from "@/lib/domain";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -425,7 +426,11 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     placeholder="nusantara-fiber"
                     className="flex-1 bg-transparent border-none outline-none px-1 text-primary font-mono font-bold"
                   />
-                  <span className="text-muted-foreground font-mono">.kdua.net</span>
+                  <span className="text-muted-foreground font-mono">
+                    {typeof window !== "undefined" && window.location.hostname.includes("gis.kdua.net")
+                      ? "-gis.kdua.net"
+                      : ".gis.kdua.net"}
+                  </span>
                 </div>
                 {slugError && (
                   <p className="text-[11px] text-destructive flex items-center gap-1 mt-1 font-mono">
@@ -796,12 +801,12 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                 <div className="flex items-center justify-between border-b border-border/50 pb-2 text-xs">
                   <span className="text-muted-foreground font-mono">PORTAL URL</span>
                   <a
-                    href={`https://${deployedData.slug}.kdua.net`}
+                    href={getTenantUrl(deployedData.slug)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-primary font-bold font-mono flex items-center gap-1 hover:underline"
                   >
-                    <span>https://{deployedData.slug}.kdua.net</span>
+                    <span>{getTenantUrl(deployedData.slug)}</span>
                     <ExternalLink className="size-3" />
                   </a>
                 </div>

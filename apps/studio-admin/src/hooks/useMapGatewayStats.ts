@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { memoryCache } from "@/lib/memoryCache";
 
 export interface MapGatewayStats {
   tileRps: number;
@@ -51,16 +52,25 @@ function buildChartData(stats: MapGatewayStats): MapTilePoint[] {
   });
 }
 
+const CACHE_KEY = "obs:map_stats";
+
+interface MapStatsCacheData {
+  stats: MapGatewayStats;
+  chartData: MapTilePoint[];
+}
+
 export function useMapGatewayStats() {
   const { data: session } = useSession();
-  const [stats, setStats] = useState<MapGatewayStats>(DEFAULT_STATS);
-  const [chartData, setChartData] = useState<MapTilePoint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<MapStatsCacheData>(CACHE_KEY);
+  const [stats, setStats] = useState<MapGatewayStats>(cached?.stats || DEFAULT_STATS);
+  const [chartData, setChartData] = useState<MapTilePoint[]>(cached?.chartData || []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) { setLoading(false); return; }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
       // map-gateway (Go, port 5003) exposes /stats proxied via Next.js API
@@ -85,15 +95,17 @@ export function useMapGatewayStats() {
       };
 
       if (mounted.current) {
+        const cd = buildChartData(mapped);
+        memoryCache.set(CACHE_KEY, { stats: mapped, chartData: cd });
         setStats(mapped);
-        setChartData(buildChartData(mapped));
+        setChartData(cd);
         if (mapped.status === "degraded") {
           setError("map-gateway degraded — using telemetry fallback");
         } else {
           setError(null);
         }
       }
-    } catch (err) {
+    } catch {
       if (mounted.current) {
         setError("map-gateway stats unavailable — using estimated values");
         // Show reasonable fallback values
@@ -113,10 +125,17 @@ export function useMapGatewayStats() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchStats();
-    const interval = setInterval(fetchStats, 60_000);
-    return () => { mounted.current = false; clearInterval(interval); };
-  }, [fetchStats]);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      fetchStats(true);
+    } else {
+      fetchStats(!!cached);
+    }
+    const interval = setInterval(() => fetchStats(true), 60_000);
+    return () => {
+      mounted.current = false;
+      clearInterval(interval);
+    };
+  }, [fetchStats, cached]);
 
-  return { stats, chartData, loading, error, refresh: fetchStats };
+  return { stats, chartData, loading, error, refresh: () => fetchStats(false) };
 }

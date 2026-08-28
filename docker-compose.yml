@@ -469,6 +469,7 @@ services:
       - "traefik.http.routers.frontend-admin.entrypoints=websecure"
       - "traefik.http.routers.frontend-admin.tls=true"
       - "traefik.http.routers.frontend-admin.priority=10"
+      - "traefik.http.routers.frontend-admin.middlewares=secHeaders@file"
       - "traefik.http.services.frontend-admin.loadbalancer.server.port=3001"
     depends_on:
       backend:

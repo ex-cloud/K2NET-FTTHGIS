@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://gis.k2net.id"><strong>Live App »</strong></a>
+  <a href="https://system-gis.kdua.net"><strong>Live App »</strong></a>
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@
 
 - [x] **Interactive GIS Dashboard** — Visualisasi aset jaringan fiber optik secara *real-time* (jalur kabel backbone/distribusi, tiang, penempatan ODC/ODP, status redaman, dan pemetaan port pelanggan) berbasis MapLibre GL JS.
 - [x] **Web-QGIS Design & Simulation Mode** — Fitur cerdas pemisahan area *Operasional (O&M)* dan *Perencanaan (Planning)*. Admin tenant dapat mensimulasikan coretan jalur ekspansi, menghitung otomatis kebutuhan kabel (*Bill of Quantity - BoQ*), mendeteksi *Blank Spot* pemukiman via **Buffer Analysis**, serta menggambar jalur kabel otomatis mengikuti jalan raya raya via **pgRouting**.
-- [x] **Multi-Tenant Monorepo Architecture** — Isolasi data tingkat tinggi antar organisasi/ISP secara logis pada level database, storage, dan routing terpusat menggunakan sub-domain dinamis (`<tenant>.gis.k2net.id`) dikelola dalam satu repositori terpadu. Meskipun menggunakan satu repositori terpadu, setiap tenant memiliki ruang kerja (namespace) yang terisolasi baik dari segi data, konfigurasi, maupun akses.
+- [x] **Multi-Tenant Monorepo Architecture** — Isolasi data tingkat tinggi antar organisasi/ISP secara logis pada level database, storage, dan routing terpusat menggunakan sub-domain dinamis (`<tenant>-gis.kdua.net`) dikelola dalam satu repositori terpadu. Meskipun menggunakan satu repositori terpadu, setiap tenant memiliki ruang kerja (namespace) yang terisolasi baik dari segi data, konfigurasi, maupun akses.
 - [x] **Identity Management & SSO** — Autentikasi terpusat berskala industri menggunakan Keycloak OpenID Connect (OIDC) yang mendukung proteksi multi-realm serta integrasi Social Auth.
 - [x] **Enterprise REST API Core** — Backend kokoh penopang logika bisnis utama (siklus hidup pelanggan, *automated billing engine* penagihan otomatis massal, inventaris perangkat, dan kontrol akses berbasis peran/RBAC).
 - [x] **Automated Provisioning SNMP Poller** — Layanan latar belakang (*daemon*) Go Poller asinkron terhubung via Redis Queue untuk mengotomatisasi perintah jaringan riil (*Zero-Touch Configuration*, pencarian otomatis SN modem baru, isolir otomatis saat jatuh tempo, dan buka isolir).

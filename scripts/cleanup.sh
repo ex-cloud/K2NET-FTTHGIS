@@ -266,6 +266,42 @@ if command -v journalctl &>/dev/null; then
   fi
 fi
 
+# 3e. Rotasi & Kompresi Log Akses Traefik (Jika > 50MB)
+TRAEFIK_LOG_DIR="/opt/project5/docker/traefik/logs"
+TRAEFIK_ACCESS_LOG="$TRAEFIK_LOG_DIR/access.log"
+if [ -f "$TRAEFIK_ACCESS_LOG" ]; then
+  TRAEFIK_LOG_SIZE=$(stat -c%s "$TRAEFIK_ACCESS_LOG" 2>/dev/null || stat -f%z "$TRAEFIK_ACCESS_LOG" 2>/dev/null || echo 0)
+  # Jika ukuran lebih dari 50MB (52428800 bytes)
+  if [ "$TRAEFIK_LOG_SIZE" -gt 52428800 ]; then
+    log "📦 Traefik access.log melebihi 50MB ($(du -h "$TRAEFIK_ACCESS_LOG" | cut -f1)) — Melakukan rotasi..."
+    if [ "$DRY_RUN" = false ]; then
+      ROTATED_FILE="$TRAEFIK_LOG_DIR/access_$(date +"%Y%m%d_%H%M%S").log"
+      cp "$TRAEFIK_ACCESS_LOG" "$ROTATED_FILE"
+      : > "$TRAEFIK_ACCESS_LOG"
+      gzip -9 "$ROTATED_FILE" 2>/dev/null || true
+      log "   ✅ Traefik access.log dirotasi dan dikompresi (.gz)."
+    else
+      log "   [DRY RUN] Akan merotasi dan mengompresi $TRAEFIK_ACCESS_LOG."
+    fi
+  fi
+
+  # Hapus arsip log Traefik lama (> 14 hari)
+  OLD_TRAEFIK_ARCHIVES=$(find "$TRAEFIK_LOG_DIR" -name "access_*.log.gz" -mtime +14 2>/dev/null | wc -l)
+  if [ "$DRY_RUN" = false ] && [ "$OLD_TRAEFIK_ARCHIVES" -gt 0 ]; then
+    find "$TRAEFIK_LOG_DIR" -name "access_*.log.gz" -mtime +14 -delete
+    log "   ✅ $OLD_TRAEFIK_ARCHIVES arsip log Traefik (>14 hari) dibersihkan."
+  fi
+fi
+
+# 3f. Safe Dangling Docker Volume Pruning (Hanya anonymous volumes yang tidak digunakan)
+log "🗑️  Memeriksa Dangling Docker Anonymous Volumes..."
+if [ "$DRY_RUN" = false ]; then
+  docker volume prune -f >> "$LOG_FILE" 2>&1 || true
+  log "   ✅ Dangling volumes dibersihkan."
+else
+  log "   [DRY RUN] Akan menjalankan safe volume prune."
+fi
+
 # ==============================================================================
 # BAGIAN 4: LAPORAN AKHIR
 # ==============================================================================

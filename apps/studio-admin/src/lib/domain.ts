@@ -22,18 +22,6 @@ export function parseDomain(hostname: string) {
     if (hostOnly !== baseDomain) {
       subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
     }
-  } else if (hostOnly.endsWith("gis-staging.k2net.id")) {
-    baseDomain = "gis-staging.k2net.id";
-    isHyphen = true;
-    if (hostOnly !== baseDomain) {
-      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
-    }
-  } else if (hostOnly.endsWith("gis.k2net.id")) {
-    baseDomain = "gis.k2net.id";
-    isHyphen = true;
-    if (hostOnly !== baseDomain) {
-      subdomain = hostOnly.substring(0, hostOnly.length - baseDomain.length - 1);
-    }
   } else if (hostOnly.endsWith("lvh.me")) {
     baseDomain = "lvh.me";
     isHyphen = false;
@@ -122,6 +110,40 @@ export function getTenantUrl(slug: string, path: string = "/dashboard"): string 
     }
   } catch {
     return `http://${slug}.localhost:3000${path}`;
+  }
+}
+
+/**
+ * Constructs the default tenant hostname string (e.g. kircon-gis.kdua.net or kircon.localhost).
+ */
+export function getDefaultTenantHost(slug: string): string {
+  try {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      const { baseDomain, isHyphen } = parseDomain(hostname);
+      if (isHyphen) {
+        return `${slug}-${baseDomain}`;
+      } else {
+        return `${slug}.${baseDomain}`;
+      }
+    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const url = new URL(appUrl);
+    let fallbackHost = url.host;
+    let isHyphen = false;
+    if (fallbackHost.startsWith("system-")) {
+      fallbackHost = fallbackHost.substring(7);
+      isHyphen = true;
+    } else if (fallbackHost.startsWith("system.")) {
+      fallbackHost = fallbackHost.substring(7);
+    }
+    if (isHyphen) {
+      return `${slug}-${fallbackHost}`;
+    } else {
+      return `${slug}.${fallbackHost}`;
+    }
+  } catch {
+    return `${slug}.localhost`;
   }
 }
 

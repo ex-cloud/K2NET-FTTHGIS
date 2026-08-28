@@ -23,6 +23,13 @@ http:
       stripPrefix:
         prefixes:
           - "/poller"
+    secHeaders:
+      headers:
+        sslRedirect: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "strict-origin-when-cross-origin"
 
   services:
     poller-service:

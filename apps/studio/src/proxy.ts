@@ -15,7 +15,7 @@ export async function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     try {
       const url = new URL(process.env.NEXT_PUBLIC_APP_URL);
-      rootDomain = url.host; // e.g. system-gis.k2net.id or system.gis.k2net.id
+      rootDomain = url.host; // e.g. system-gis.kdua.net or system.gis.kdua.net
     } catch {
       rootDomain = process.env.NEXT_PUBLIC_APP_URL.replace("http://", "").replace("https://", "");
     }

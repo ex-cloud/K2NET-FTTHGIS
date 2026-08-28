@@ -36,19 +36,31 @@ const DEFAULT_STATS: KeycloakStats = {
   connections: [],
 };
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:keycloak_data";
+
+interface KeycloakCacheData {
+  events: KeycloakEvent[];
+  stats: KeycloakStats;
+}
+
 export function useKeycloakObservability() {
   const { data: session } = useSession();
-  const [events, setEvents] = useState<KeycloakEvent[]>([]);
-  const [stats, setStats] = useState<KeycloakStats>(DEFAULT_STATS);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<KeycloakCacheData>(CACHE_KEY);
+  const [events, setEvents] = useState<KeycloakEvent[]>(cached?.events || []);
+  const [stats, setStats] = useState<KeycloakStats>(cached?.stats || DEFAULT_STATS);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) {
       setLoading(false);
       return;
     }
+
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
@@ -66,7 +78,9 @@ export function useKeycloakObservability() {
       const statsData = await statsRes.json();
 
       if (mounted.current) {
-        setEvents(Array.isArray(eventsData) ? eventsData : []);
+        const ev = Array.isArray(eventsData) ? eventsData : [];
+        memoryCache.set(CACHE_KEY, { events: ev, stats: statsData });
+        setEvents(ev);
         setStats(statsData);
         setError(null);
       }
@@ -81,13 +95,17 @@ export function useKeycloakObservability() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchData();
-    const interval = setInterval(fetchData, 30_000);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      fetchData(true);
+    } else {
+      fetchData(!!cached);
+    }
+    const interval = setInterval(() => fetchData(true), 30_000);
     return () => {
       mounted.current = false;
       clearInterval(interval);
     };
-  }, [fetchData]);
+  }, [fetchData, cached]);
 
   // Format event type to readable label
   function formatEventType(type: string): { label: string; severity: "success" | "error" | "warning" | "info" } {
@@ -112,5 +130,13 @@ export function useKeycloakObservability() {
     });
   }
 
-  return { events, stats, loading, error, refresh: fetchData, formatEventType, formatEventTime };
+  return {
+    events,
+    stats,
+    loading,
+    error,
+    refresh: () => fetchData(false),
+    formatEventType,
+    formatEventTime,
+  };
 }

@@ -1,0 +1,35 @@
+# ==============================================================================
+# K2NET FTTH GIS — Master Server Crontab Schedule (24/7 Automated Lifecycle)
+# ==============================================================================
+# Cara Pasang di Server Host (AlmaLinux / Rocky Linux / Ubuntu):
+#   crontab -e
+# Lalu salin seluruh baris di bawah ini dan simpan.
+# ==============================================================================
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# 1. Backup Harian Database PostgreSQL (ftth_gis & keycloak_db) — Pukul 00:00 WIB
+00 00 * * * /bin/bash /opt/project5/scripts/backup.sh >> /opt/project5/backups/backup_cron.log 2>&1
+
+# 2. Backup Harian MinIO S3 Object Storage Data — Pukul 01:00 WIB
+00 01 * * * /bin/bash /opt/project5/scripts/backup-minio.sh >> /opt/project5/backups/minio_cron.log 2>&1
+
+# 3. Backup Harian Codebase Repository — Pukul 02:00 WIB
+00 02 * * * /bin/bash /opt/project5/scripts/backup-code.sh >> /opt/project5/backups/code_cron.log 2>&1
+
+# 4. Backup Mingguan Volume Docker (Grafana, Prometheus, Keycloak) — Setiap Hari Minggu Pukul 03:00 WIB
+00 03 * * 0 /bin/bash /opt/project5/scripts/backup-docker-volumes.sh >> /opt/project5/backups/docker_cron.log 2>&1
+
+# 5. Pemeliharaan Mingguan Database PostgreSQL (VACUUM ANALYZE & REINDEX) — Setiap Hari Minggu Pukul 03:30 WIB
+30 03 * * 0 /bin/bash /opt/project5/scripts/db-maintenance.sh >> /opt/project5/backups/db_maintenance.log 2>&1
+
+# 6. Sinkronisasi Harian Offsite Cloud (Nextcloud WebDAV) — Pukul 04:00 WIB
+00 04 * * * /bin/bash /opt/project5/scripts/sync-nextcloud.sh >> /opt/project5/backups/nextcloud_cron.log 2>&1
+
+# 7. Uji Pulih Bencana (DR Test Restore) Otomatis — Setiap Tanggal 1 Awal Bulan Pukul 04:30 WIB
+30 04 1 * * /bin/bash /opt/project5/scripts/test-restore-backup.sh >> /opt/project5/backups/dr_cron.log 2>&1
+
+# 8. Pembersihan Mingguan Docker Build Cache & Log Traefik — Setiap Hari Minggu Pukul 05:00 WIB
+00 05 * * 0 /bin/bash /opt/project5/scripts/cleanup.sh >> /opt/project5/backups/cleanup_cron.log 2>&1
+
+# ==============================================================================

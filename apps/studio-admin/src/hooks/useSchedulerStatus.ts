@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:scheduler_status";
 import type { SchedulerJob, BackupArtifact } from "@/lib/mock-data/observability-mock";
 
 // ─── API response types (from BackupStatusController) ────────────────────────
@@ -60,12 +63,19 @@ export interface DevopsBackupInfo {
   nextBackupTime: string;
 }
 
+interface SchedulerCacheData {
+  jobs: SchedulerJob[];
+  artifacts: BackupArtifact[];
+  devopsBackupInfo: DevopsBackupInfo | null;
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useSchedulerStatus() {
   const { data: session } = useSession();
+  const cached = memoryCache.get<SchedulerCacheData>(CACHE_KEY);
   const [jobs, setJobs] = useState<SchedulerJob[]>(
-    JOB_STATIC.map(s => ({
+    cached?.jobs || JOB_STATIC.map(s => ({
       ...s,
       lastStatus: "UNKNOWN" as const,
       lastRunAt: "—",
@@ -73,17 +83,19 @@ export function useSchedulerStatus() {
       nextRunAt: computeNextRun(s.cronExpression),
     }))
   );
-  const [artifacts, setArtifacts] = useState<BackupArtifact[]>([]);
-  const [devopsBackupInfo, setDevopsBackupInfo] = useState<DevopsBackupInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [artifacts, setArtifacts] = useState<BackupArtifact[]>(cached?.artifacts || []);
+  const [devopsBackupInfo, setDevopsBackupInfo] = useState<DevopsBackupInfo | null>(cached?.devopsBackupInfo || null);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) {
       setLoading(false);
       return;
     }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
+
     const headers = { Authorization: `Bearer ${session.accessToken}` };
 
     try {
@@ -93,13 +105,17 @@ export function useSchedulerStatus() {
         fetch("/api/v1/system/devops-stats",            { headers, cache: "no-store" }),
       ]);
 
+      let mergedJobs = jobs;
+      let nextArtifacts = artifacts;
+      let nextDevops = devopsBackupInfo;
+
       if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {
         const jobsData: JobStatusResponse[] = await jobsRes.value.json();
         const jobStatusMap: Record<string, JobStatusResponse> = {};
         jobsData.forEach(j => { jobStatusMap[j.scriptKey] = j; });
 
         // Merge static metadata with live status
-        const merged: SchedulerJob[] = JOB_STATIC.map(s => {
+        mergedJobs = JOB_STATIC.map(s => {
           const live = jobStatusMap[s.scriptKey];
           return {
             ...s,
@@ -111,7 +127,7 @@ export function useSchedulerStatus() {
         });
 
         if (mounted.current) {
-          setJobs(merged);
+          setJobs(mergedJobs);
           setError(null);
         }
       } else if (jobsRes.status === "rejected" || !jobsRes.value.ok) {
@@ -123,7 +139,7 @@ export function useSchedulerStatus() {
         const devopsData = await devopsRes.value.json();
         if (devopsData?.lastBackup && mounted.current) {
           const lb = devopsData.lastBackup;
-          setDevopsBackupInfo({
+          nextDevops = {
             lastBackupTime: lb.lastBackupTime ?? "—",
             status: lb.status ?? lb.lastStatus ?? "UNKNOWN",
             success: lb.success ?? false,
@@ -132,7 +148,8 @@ export function useSchedulerStatus() {
             nextcloudStatus: lb.nextcloudStatus ?? "UNKNOWN",
             nextcloudSyncTime: lb.nextcloudSyncTime ?? "—",
             nextBackupTime: lb.nextBackupTime ?? "—",
-          });
+          };
+          setDevopsBackupInfo(nextDevops);
         }
       }
 
@@ -206,5 +223,14 @@ export function useSchedulerStatus() {
     };
   }, [fetchData]);
 
-  return { jobs, artifacts, devopsBackupInfo, loading, error, refresh: fetchData, triggerJob, deleteArtifact };
+  return {
+    jobs,
+    artifacts,
+    devopsBackupInfo,
+    loading,
+    error,
+    refresh: () => fetchData(false),
+    triggerJob,
+    deleteArtifact,
+  };
 }

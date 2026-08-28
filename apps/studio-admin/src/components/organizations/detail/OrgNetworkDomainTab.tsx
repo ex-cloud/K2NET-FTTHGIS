@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getDefaultTenantHost } from "@/lib/domain";
 import type { EnrichedOrganization } from "../types";
 
 interface OrgNetworkDomainTabProps {
@@ -34,7 +35,7 @@ export function OrgNetworkDomainTab({
     setTimeout(() => {
       setCheckingDns(false);
       toast.success("DNS CNAME verification successful", {
-        description: `${org.customDomain || org.slug + ".kdua.net"} correctly points to cname.kdua.net with valid SSL.`,
+        description: `${org.customDomain || getDefaultTenantHost(org.slug)} correctly points to cname.kdua.net with valid SSL.`,
       });
     }, 1000);
   };
@@ -97,7 +98,7 @@ export function OrgNetworkDomainTab({
             <span className="text-[10px] font-mono text-muted-foreground block uppercase">Active Domain</span>
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-bold text-foreground">
-                {org.customDomain || `${org.slug}.kdua.net`}
+                {org.customDomain || getDefaultTenantHost(org.slug)}
               </span>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[9px]">
                 {org.customDomain ? "CUSTOM" : "DEFAULT"}

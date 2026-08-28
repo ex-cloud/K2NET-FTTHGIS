@@ -51,20 +51,26 @@ const DEFAULT_SUMMARY: OltPollerSummary = {
   lastPolledAt: null,
 };
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:olt_poller";
+
 export function useOltPollerObservability() {
   const { data: session } = useSession();
-  const [data, setData] = useState<OltPollerData>({
+  const cached = memoryCache.get<OltPollerData>(CACHE_KEY);
+  const [data, setData] = useState<OltPollerData>(cached || {
     pollerInfo: DEFAULT_POLLER_INFO,
     devices: [],
     summary: DEFAULT_SUMMARY,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(cached ? new Date() : null);
   const mounted = useRef(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) { setLoading(false); return; }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
       const res = await fetch("/api/observability/olt-poller", {
@@ -76,11 +82,12 @@ export function useOltPollerObservability() {
       const json: OltPollerData = await res.json();
 
       if (mounted.current) {
+        memoryCache.set(CACHE_KEY, json);
         setData(json);
         setError(null);
         setLastUpdated(new Date());
       }
-    } catch (err) {
+    } catch {
       if (mounted.current) {
         setError("OLT Poller telemetry unavailable");
         setData({
@@ -96,10 +103,14 @@ export function useOltPollerObservability() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchData();
-    const interval = setInterval(fetchData, 30_000);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      fetchData(true);
+    } else {
+      fetchData(!!cached);
+    }
+    const interval = setInterval(() => fetchData(true), 30_000);
     return () => { mounted.current = false; clearInterval(interval); };
-  }, [fetchData]);
+  }, [fetchData, cached]);
 
   const formatLastPolled = (iso: string | null): string => {
     if (!iso) return "—";
@@ -121,7 +132,7 @@ export function useOltPollerObservability() {
     loading,
     error,
     lastUpdated,
-    refresh: fetchData,
+    refresh: () => fetchData(false),
     formatLastPolled,
   };
 }

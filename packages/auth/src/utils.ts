@@ -20,7 +20,7 @@ export function logInfo(msg: string) {
 
 /**
  * Returns the shared cookie domain for the K2NET platform.
- * - Production: `.k2net.id` (shared across all subdomains)
+ * - Production: `.kdua.net` (shared across all subdomains)
  * - Localhost/IP: undefined (host-only cookies)
  */
 export function getCookieDomain(): string | undefined {
@@ -35,12 +35,9 @@ export function getCookieDomain(): string | undefined {
     ) {
       return undefined;
     }
-    // Shared cookie domain for system-gis.kdua.net, *.gis.kdua.net, and legacy k2net.id
+    // Shared cookie domain for system-gis.kdua.net and *.gis.kdua.net
     if (hostname === "kdua.net" || hostname.endsWith(".kdua.net")) {
       return ".kdua.net";
-    }
-    if (hostname === "k2net.id" || hostname.endsWith(".k2net.id")) {
-      return ".k2net.id";
     }
     return undefined;
   } catch {
@@ -70,8 +67,8 @@ export function generateGravatar(email: string | null | undefined): string | nul
  * Extracts the Keycloak realm name from the request host header.
  * 
  * Examples:
- * - `system-gis.k2net.id` → `ftth-realm` (system admin = default realm)
- * - `kircon-gis.k2net.id` → `kircon`
+ * - `system-gis.kdua.net` → `ftth-realm` (system admin = default realm)
+ * - `kircon-gis.kdua.net` → `kircon`
  * - `localhost:3000`       → `ftth-realm`
  */
 export function getRealmFromHost(host: string): string {

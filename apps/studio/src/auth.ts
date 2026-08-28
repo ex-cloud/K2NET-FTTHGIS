@@ -143,16 +143,13 @@ function getCookieDomain() {
       return undefined;
     }
 
-    // Shared cookie domain for the trusted platform domains (kdua.net & legacy k2net.id).
+    // Shared cookie domain for the trusted platform domain (kdua.net).
     if (hostname === "kdua.net" || hostname.endsWith(".kdua.net")) {
       return ".kdua.net";
     }
-    if (hostname === "k2net.id" || hostname.endsWith(".k2net.id")) {
-      return ".k2net.id";
-    }
 
-    // For hyphen-style hosts like system-gis.k2net.id, use host-only cookies.
-    // Browser rejects `.gis.k2net.id` for this pattern because it is not a parent domain.
+    // For hyphen-style hosts like system-gis.kdua.net, use host-only cookies.
+    // Browser rejects `.gis.kdua.net` for this pattern because it is not a parent domain.
     return undefined;
   } catch {
     return undefined;
@@ -531,8 +528,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth(baseAuthOptions);
 /**
  * Cleanly extract the Keycloak realm name from the request hostname/headers.
  * Examples:
- * - system-gis.k2net.id -> ftth-realm
- * - garut-gis.k2net.id -> garut
+ * - system-gis.kdua.net -> ftth-realm
+ * - garut-gis.kdua.net -> garut
  * - localhost:3000 -> ftth-realm (default fallback)
  */
 export function getRealmFromHost(host: string): string {

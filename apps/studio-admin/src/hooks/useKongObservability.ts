@@ -18,20 +18,28 @@ export interface KongMetrics {
   error?: string;
 }
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_ROUTES_KEY = "obs:kong_routes";
+const CACHE_TRAFFIC_KEY = "obs:kong_traffic";
+
 // ─── useKongRoutes ────────────────────────────────────────────────────────────
 
 export function useKongRoutes() {
-  const [routes, setRoutes] = useState<KongRouteDisplay[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<KongRouteDisplay[]>(CACHE_ROUTES_KEY);
+  const [routes, setRoutes] = useState<KongRouteDisplay[]>(cached || []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchRoutes = useCallback(async () => {
+  const fetchRoutes = useCallback(async (isSilent = false) => {
+    if (!isSilent && !memoryCache.get(CACHE_ROUTES_KEY)) setLoading(true);
     try {
       const res = await fetch("/api/observability/kong-routes", { cache: "no-store" });
       const data = await res.json();
       if (mounted.current) {
         if (data.data?.length > 0) {
+          memoryCache.set(CACHE_ROUTES_KEY, data.data);
           setRoutes(data.data);
           setError(null);
         } else if (data.error) {
@@ -39,7 +47,7 @@ export function useKongRoutes() {
           setRoutes([]);
         }
       }
-    } catch (err) {
+    } catch {
       if (mounted.current) {
         setError("Kong Admin API unreachable");
         setRoutes([]);
@@ -51,30 +59,37 @@ export function useKongRoutes() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchRoutes();
-    const interval = setInterval(fetchRoutes, 30_000);
+    if (memoryCache.isFresh(CACHE_ROUTES_KEY, 15_000)) {
+      fetchRoutes(true);
+    } else {
+      fetchRoutes(!!cached);
+    }
+    const interval = setInterval(() => fetchRoutes(true), 30_000);
     return () => {
       mounted.current = false;
       clearInterval(interval);
     };
-  }, [fetchRoutes]);
+  }, [fetchRoutes, cached]);
 
-  return { routes, loading, error, refresh: fetchRoutes };
+  return { routes, loading, error, refresh: () => fetchRoutes(false) };
 }
 
 // ─── useKongTraffic ───────────────────────────────────────────────────────────
 
 export function useKongTraffic() {
-  const [metrics, setMetrics] = useState<KongMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<KongMetrics>(CACHE_TRAFFIC_KEY);
+  const [metrics, setMetrics] = useState<KongMetrics | null>(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchTraffic = useCallback(async () => {
+  const fetchTraffic = useCallback(async (isSilent = false) => {
+    if (!isSilent && !memoryCache.get(CACHE_TRAFFIC_KEY)) setLoading(true);
     try {
       const res = await fetch("/api/observability/kong-traffic", { cache: "no-store" });
       const data: KongMetrics = await res.json();
       if (mounted.current) {
+        memoryCache.set(CACHE_TRAFFIC_KEY, data);
         setMetrics(data);
         setError(data.error ?? null);
       }
@@ -89,13 +104,17 @@ export function useKongTraffic() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchTraffic();
-    const interval = setInterval(fetchTraffic, 10_000); // 10s refresh for traffic
+    if (memoryCache.isFresh(CACHE_TRAFFIC_KEY, 10_000)) {
+      fetchTraffic(true);
+    } else {
+      fetchTraffic(!!cached);
+    }
+    const interval = setInterval(() => fetchTraffic(true), 10_000);
     return () => {
       mounted.current = false;
       clearInterval(interval);
     };
-  }, [fetchTraffic]);
+  }, [fetchTraffic, cached]);
 
-  return { metrics, loading, error, refresh: fetchTraffic };
+  return { metrics, loading, error, refresh: () => fetchTraffic(false) };
 }

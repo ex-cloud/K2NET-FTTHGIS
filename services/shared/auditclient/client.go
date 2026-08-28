@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 
+	"gateways/shared/httpclient"
 	"gateways/shared/logger"
 	"go.uber.org/zap"
 )
@@ -74,10 +75,8 @@ func New(auditURL, gatewayToken string) *Client {
 	return &Client{
 		baseURL:      auditURL,
 		gatewayToken: gatewayToken,
-		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
-		disabled: disabled,
+		httpClient:   httpclient.NewClient(5 * time.Second),
+		disabled:     disabled,
 	}
 }
 

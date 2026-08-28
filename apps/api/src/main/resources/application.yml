@@ -20,6 +20,15 @@ spring:
     username: postgres
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: FtthHikariCP
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000        # 5 minutes
+      max-lifetime: 1800000       # 30 minutes
+      connection-timeout: 20000   # 20 seconds
+      leak-detection-threshold: 30000 # 30 seconds
+      validation-timeout: 5000    # 5 seconds
 
   jpa:
     open-in-view: false

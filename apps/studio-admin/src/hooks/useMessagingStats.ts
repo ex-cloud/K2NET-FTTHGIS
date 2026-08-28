@@ -37,16 +37,27 @@ const DEFAULT_STATS: MessagingStats = {
   status: "loading",
 };
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:messaging_stats";
+
+interface MessagingCacheData {
+  stats: MessagingStats;
+  queue: MessageQueueItem[];
+}
+
 export function useMessagingStats() {
   const { data: session } = useSession();
-  const [stats, setStats] = useState<MessagingStats>(DEFAULT_STATS);
-  const [queue, setQueue] = useState<MessageQueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<MessagingCacheData>(CACHE_KEY);
+  const [stats, setStats] = useState<MessagingStats>(cached?.stats || DEFAULT_STATS);
+  const [queue, setQueue] = useState<MessageQueueItem[]>(cached?.queue || []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) { setLoading(false); return; }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
       // notification-gateway (Go, port 5001) exposes /stats + /queue
@@ -83,11 +94,12 @@ export function useMessagingStats() {
       );
 
       if (mounted.current) {
+        memoryCache.set(CACHE_KEY, { stats: mapped, queue: queueItems });
         setStats(mapped);
         setQueue(queueItems);
         setError(null);
       }
-    } catch (err) {
+    } catch {
       if (mounted.current) {
         setError("notification-gateway stats unavailable");
         setStats({
@@ -103,10 +115,14 @@ export function useMessagingStats() {
 
   useEffect(() => {
     mounted.current = true;
-    fetchStats();
-    const interval = setInterval(fetchStats, 30_000);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      fetchStats(true);
+    } else {
+      fetchStats(!!cached);
+    }
+    const interval = setInterval(() => fetchStats(true), 30_000);
     return () => { mounted.current = false; clearInterval(interval); };
-  }, [fetchStats]);
+  }, [fetchStats, cached]);
 
-  return { stats, queue, loading, error, refresh: fetchStats };
+  return { stats, queue, loading, error, refresh: () => fetchStats(false) };
 }

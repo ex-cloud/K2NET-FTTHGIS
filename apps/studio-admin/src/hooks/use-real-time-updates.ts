@@ -155,6 +155,18 @@ export function useRealTimeUpdates(projectId?: string) {
         eventSource.addEventListener("MINOR_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "MINOR"));
         eventSource.addEventListener("CUSTOMER_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "INFO"));
         eventSource.addEventListener("SILENT_STATUS_CHANGE", (e) => handleUpdate(JSON.parse(e.data), "SILENT"));
+        
+        // Multi-Tenant & Organization Status Change Invalidation
+        eventSource.addEventListener("ORGANIZATION_UPDATED", () => {
+          queryClient.invalidateQueries({ queryKey: ["organizations"] });
+          queryClient.invalidateQueries({ queryKey: ["systemSettings"] });
+        });
+        eventSource.addEventListener("TENANT_CHANGED", () => {
+          queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        });
+        eventSource.addEventListener("SUBSCRIPTION_CHANGED", () => {
+          queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        });
 
         eventSource.onerror = (err) => {
           console.error("[SSE] Connection error:", err);

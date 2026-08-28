@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 
 import { QueryProvider } from "./query-provider";
 import { ErrorBoundary } from "./error-boundary";
+import { NetworkStatusIndicator } from "./NetworkStatusIndicator";
 
 export function Providers({ children, session }: { children: React.ReactNode, session?: Session | null }) {
   return (
@@ -23,6 +24,7 @@ export function Providers({ children, session }: { children: React.ReactNode, se
             <ErrorBoundary>
               <AuthGuard>{children}</AuthGuard>
             </ErrorBoundary>
+            <NetworkStatusIndicator />
             <Toaster />
           </ThemeProvider>
       </QueryProvider>

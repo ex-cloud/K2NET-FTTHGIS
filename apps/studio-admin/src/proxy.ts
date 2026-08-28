@@ -1,7 +1,7 @@
 /**
  * apps/studio-admin/src/proxy.ts
  *
- * Middleware for the Admin Portal (system-gis.k2net.id / system.lvh.me).
+ * Middleware for the Admin Portal (system-gis.kdua.net / system.lvh.me).
  *
  * Responsibilities:
  * 1. Detect `system` subdomain (or direct access to admin port)

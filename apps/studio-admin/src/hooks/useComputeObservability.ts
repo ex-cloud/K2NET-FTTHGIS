@@ -76,18 +76,26 @@ export interface ComputeMetricsResponse {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+import { memoryCache } from "@/lib/memoryCache";
+
+const CACHE_KEY = "obs:compute_metrics";
+
 export function useComputeObservability(pollIntervalMs = 30_000) {
   const { data: session } = useSession();
-  const [data, setData] = useState<ComputeMetricsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = memoryCache.get<ComputeMetricsResponse>(CACHE_KEY);
+  const [data, setData] = useState<ComputeMetricsResponse | null>(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(cached ? new Date() : null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) {
       setLoading(false);
       return;
+    }
+    if (!isSilent && !memoryCache.get(CACHE_KEY)) {
+      setLoading(true);
     }
     try {
       const res = await fetch("/api/observability/compute-metrics", {
@@ -96,6 +104,7 @@ export function useComputeObservability(pollIntervalMs = 30_000) {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: ComputeMetricsResponse = await res.json();
+      memoryCache.set(CACHE_KEY, json);
       setData(json);
       setLastUpdated(new Date());
       setError(null);
@@ -107,12 +116,16 @@ export function useComputeObservability(pollIntervalMs = 30_000) {
   }, [session?.accessToken]);
 
   useEffect(() => {
-    fetchMetrics();
-    intervalRef.current = setInterval(fetchMetrics, pollIntervalMs);
+    if (memoryCache.isFresh(CACHE_KEY, 15_000)) {
+      fetchMetrics(true);
+    } else {
+      fetchMetrics(!!cached);
+    }
+    intervalRef.current = setInterval(() => fetchMetrics(true), pollIntervalMs);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [fetchMetrics, pollIntervalMs]);
+  }, [fetchMetrics, pollIntervalMs, cached]);
 
   // Safe defaults
   const charts = data?.charts ?? { cpu: [], memory: [], http: [] };
@@ -154,6 +167,6 @@ export function useComputeObservability(pollIntervalMs = 30_000) {
     loading,
     error,
     lastUpdated,
-    refresh: fetchMetrics,
+    refresh: () => fetchMetrics(false),
   };
 }

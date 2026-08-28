@@ -43,6 +43,7 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
 import type { EnrichedOrganization, PlanTier, OrganizationStatus } from "@/components/organizations/types";
 import { cn } from "@/lib/utils";
+import { getDefaultTenantHost } from "@/lib/domain";
 import { getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationDomainsPage() {
@@ -355,7 +356,7 @@ export default function OrganizationDomainsPage() {
                 <TableBody>
                   {filteredOrgs.map((org) => {
                     const hasCustom = !!org.customDomain;
-                    const activeDomain = org.customDomain || `${org.slug}.kdua.net`;
+                    const activeDomain = org.customDomain || getDefaultTenantHost(org.slug);
 
                     return (
                       <ContextMenu key={org.id}>
