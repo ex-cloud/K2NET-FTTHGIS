@@ -38,18 +38,27 @@ const JOB_STATIC: Omit<SchedulerJob, "lastStatus" | "lastRunAt" | "lastDuration"
 ];
 
 // Compute "nextRunAt" label from cron expression (simplified for the 8 known jobs)
-function computeNextRun(cronExpression: string): string {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun
-  const [, hourStr,, , dowStr] = cronExpression.split(" ");
-  const hour = parseInt(hourStr, 10);
-  const isWeekly = dowStr === "0";
+function computeNextRun(cronExpr: string): string {
+  try {
+    const parts = cronExpr.trim().split(/\s+/);
+    if (parts.length < 5) return "—";
+    const [min, hour] = parts;
+    const now = new Date();
+    const targetH = parseInt(hour, 10);
+    const targetM = parseInt(min, 10);
+    if (isNaN(targetH) || isNaN(targetM)) return "—";
 
-  if (isWeekly) {
-    return `Sun ${hour.toString().padStart(2, "0")}:00`;
+    const next = new Date(now);
+    next.setHours(targetH, targetM, 0, 0);
+    if (next <= now) {
+      next.setDate(next.getDate() + 1);
+    }
+    return next.toLocaleDateString("id-ID", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+    });
+  } catch {
+    return "—";
   }
-  const tomorrow = now.getHours() >= hour;
-  return tomorrow ? `Tomorrow ${hour.toString().padStart(2, "0")}:00` : `Today ${hour.toString().padStart(2, "0")}:00`;
 }
 
 export interface DevopsBackupInfo {
@@ -105,9 +114,9 @@ export function useSchedulerStatus() {
         fetch("/api/v1/system/devops-stats",            { headers, cache: "no-store" }),
       ]);
 
-      let mergedJobs = jobs;
-      let nextArtifacts = artifacts;
-      let nextDevops = devopsBackupInfo;
+      let updatedJobs = jobs;
+      let updatedArtifacts = artifacts;
+      let updatedDevops = devopsBackupInfo;
 
       if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {
         const jobsData: JobStatusResponse[] = await jobsRes.value.json();
@@ -115,7 +124,7 @@ export function useSchedulerStatus() {
         jobsData.forEach(j => { jobStatusMap[j.scriptKey] = j; });
 
         // Merge static metadata with live status
-        mergedJobs = JOB_STATIC.map(s => {
+        updatedJobs = JOB_STATIC.map(s => {
           const live = jobStatusMap[s.scriptKey];
           return {
             ...s,
@@ -127,7 +136,7 @@ export function useSchedulerStatus() {
         });
 
         if (mounted.current) {
-          setJobs(mergedJobs);
+          setJobs(updatedJobs);
           setError(null);
         }
       } else if (jobsRes.status === "rejected" || !jobsRes.value.ok) {
@@ -139,7 +148,7 @@ export function useSchedulerStatus() {
         const devopsData = await devopsRes.value.json();
         if (devopsData?.lastBackup && mounted.current) {
           const lb = devopsData.lastBackup;
-          nextDevops = {
+          updatedDevops = {
             lastBackupTime: lb.lastBackupTime ?? "—",
             status: lb.status ?? lb.lastStatus ?? "UNKNOWN",
             success: lb.success ?? false,
@@ -149,14 +158,14 @@ export function useSchedulerStatus() {
             nextcloudSyncTime: lb.nextcloudSyncTime ?? "—",
             nextBackupTime: lb.nextBackupTime ?? "—",
           };
-          setDevopsBackupInfo(nextDevops);
+          setDevopsBackupInfo(updatedDevops);
         }
       }
 
       // Artifacts (best-effort, non-blocking)
       if (artifactsRes.status === "fulfilled" && artifactsRes.value.ok) {
         const artData: ArtifactResponse[] = await artifactsRes.value.json();
-        const artMapped: BackupArtifact[] = artData.map((a, i) => ({
+        updatedArtifacts = artData.map((a, i) => ({
           id: `a${i + 1}`,
           artifactName: a.artifactName,
           sourceScript: a.storageTarget.includes("code") ? "backup-code.sh"
@@ -169,8 +178,14 @@ export function useSchedulerStatus() {
           completedAt: a.completedAt,
           checksumSha256: a.checksumSha256 ?? "a3f9c2d1e8b74f56a9c0",
         }));
-        if (mounted.current) setArtifacts(artMapped);
+        if (mounted.current) setArtifacts(updatedArtifacts);
       }
+
+      memoryCache.set(CACHE_KEY, {
+        jobs: updatedJobs,
+        artifacts: updatedArtifacts,
+        devopsBackupInfo: updatedDevops,
+      });
     } catch (err) {
       if (mounted.current) {
         setError(err instanceof Error ? err.message : "Backup status API unavailable");
