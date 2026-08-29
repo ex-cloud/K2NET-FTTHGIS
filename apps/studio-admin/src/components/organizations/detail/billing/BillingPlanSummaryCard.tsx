@@ -24,7 +24,14 @@ export function BillingPlanSummaryCard({
   maxStorageGb,
   onOpenChangePlan,
 }: BillingPlanSummaryCardProps) {
-  const priceNum = summary?.planPrice !== undefined ? Number(summary.planPrice) : 0;
+  const tierUpper = (currentTier || "").toUpperCase();
+  const defaultTierPrice = tierUpper.includes("ENTERPRISE")
+    ? 14500000
+    : tierUpper.includes("PRO")
+    ? 4900000
+    : 0;
+
+  const priceNum = summary?.planPrice !== undefined ? Number(summary.planPrice) : defaultTierPrice;
   const formattedPrice = priceNum > 0 ? `Rp ${priceNum.toLocaleString("id-ID")}` : "Free Trial";
 
   // Dynamic next invoice date: 1st of next month
