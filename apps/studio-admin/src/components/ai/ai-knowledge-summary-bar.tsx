@@ -7,7 +7,8 @@ import {
   HardDrive, 
   CheckCircle2, 
   HelpCircle, 
-  FolderSync 
+  FolderSync,
+  Loader2
 } from "lucide-react";
 import { Button, Badge } from "@k2net/ui";
 import { ServerSyncStatus } from "@/lib/actions/gateways";
@@ -106,7 +107,11 @@ export function AiKnowledgeSummaryBar({
               disabled={isSyncing}
               className="text-xs h-8 gap-1.5 bg-amber-600 hover:bg-amber-500 text-primary-foreground font-semibold cursor-pointer shadow-xs"
             >
-              <FolderSync className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+              {isSyncing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FolderSync className="w-3.5 h-3.5" />
+              )}
               {isSyncing ? "Menyinkronkan..." : "Sinkronkan Sekarang"}
             </Button>
           </div>

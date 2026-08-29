@@ -329,7 +329,15 @@ public class OrganizationService {
     @Transactional
     public Organization updateOrganization(String oldSlug, Organization updatedOrg) {
         // SECONDARY DEFENSE: Ensure caller is authorized even if Controller is bypassed internally
-        if (!tenantSecurity.isOwner(oldSlug)) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isSuperAdmin = false;
+        if (auth != null && auth.getAuthorities() != null) {
+            isSuperAdmin = auth.getAuthorities().stream().anyMatch(a ->
+                    a.getAuthority().equalsIgnoreCase("ROLE_super_admin") ||
+                    a.getAuthority().equalsIgnoreCase("super_admin")
+            );
+        }
+        if (!isSuperAdmin && !tenantSecurity.isOwner(oldSlug)) {
             log.error("🛡️ SECURITY BREACH ATTEMPT: Unauthorized update to organization '{}'", oldSlug);
             throw new SecurityException("You do not have permission to modify this organization.");
         }
@@ -338,7 +346,7 @@ public class OrganizationService {
                 .orElseThrow(() -> new RuntimeException("Organization not found with slug: " + oldSlug));
 
         // Handle Slug Change Validation
-        if (updatedOrg.getSlug() != null && !updatedOrg.getSlug().equals(org.getSlug())) {
+        if (updatedOrg.getSlug() != null && !updatedOrg.getSlug().trim().isEmpty() && !updatedOrg.getSlug().equals(org.getSlug())) {
             if (organizationRepository.existsBySlug(updatedOrg.getSlug())) {
                 throw new RuntimeException("Slug '" + updatedOrg.getSlug() + "' is already taken!");
             }
@@ -350,16 +358,26 @@ public class OrganizationService {
         String oldLogoUrl = org.getLogoUrl();
         String newLogoUrl = updatedOrg.getLogoUrl();
 
-        if (oldLogoUrl != null && !oldLogoUrl.isEmpty() && !oldLogoUrl.equals(newLogoUrl)) {
+        if (oldLogoUrl != null && !oldLogoUrl.isEmpty() && newLogoUrl != null && !oldLogoUrl.equals(newLogoUrl)) {
             log.info("🗑️ Detected logo change for {}. Deleting old file: {}", oldSlug, oldLogoUrl);
             fileStorageService.deleteFile(oldLogoUrl);
         }
 
-        org.setName(updatedOrg.getName());
-        org.setLogoUrl(newLogoUrl);
-        org.setDescription(updatedOrg.getDescription());
-        org.setAddress(updatedOrg.getAddress());
-        org.setWebsite(updatedOrg.getWebsite());
+        if (updatedOrg.getName() != null && !updatedOrg.getName().trim().isEmpty()) {
+            org.setName(updatedOrg.getName());
+        }
+        if (newLogoUrl != null) {
+            org.setLogoUrl(newLogoUrl);
+        }
+        if (updatedOrg.getDescription() != null) {
+            org.setDescription(updatedOrg.getDescription());
+        }
+        if (updatedOrg.getAddress() != null) {
+            org.setAddress(updatedOrg.getAddress());
+        }
+        if (updatedOrg.getWebsite() != null) {
+            org.setWebsite(updatedOrg.getWebsite());
+        }
         if (updatedOrg.getStatus() != null) {
             org.setStatus(updatedOrg.getStatus());
         }

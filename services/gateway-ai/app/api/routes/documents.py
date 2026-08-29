@@ -34,6 +34,7 @@ from app.services.rag_retriever import DocumentChunker
 from app.services.llm_engine import LLMEngine
 from app.services.audit_client import audit_client
 from app.core.config import settings
+import asyncio
 import uuid
 import logging
 import os
@@ -1493,6 +1494,13 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                         },
                     )
                 else:
+                    actor_uuid = None
+                    if actor_id:
+                        try:
+                            actor_uuid = str(uuid.UUID(str(actor_id)))
+                        except Exception:
+                            actor_uuid = None
+
                     await session.execute(
                         text("""
                             INSERT INTO ai_documents
@@ -1509,7 +1517,7 @@ async def _sync_all_server_docs(docs_dir: str, tenant_id: uuid.UUID, actor_id: O
                             "fn": rel_path,
                             "size": len(raw_file_content.encode("utf-8")),
                             "raw_content": raw_file_content,
-                            "actor": actor_id or "system-sync",
+                            "actor": actor_uuid,
                         },
                     )
 

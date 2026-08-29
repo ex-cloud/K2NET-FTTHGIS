@@ -10,7 +10,8 @@ import {
   ChevronDown, 
   Check, 
   ShieldCheck, 
-  Clock 
+  Clock,
+  Loader2
 } from "lucide-react";
 import { 
   Input, 
@@ -266,7 +267,11 @@ export function AiKnowledgeToolbar({
             className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
             aria-label="Sinkronkan Direktori Server Docs"
           >
-            <FolderSync className={`w-4 h-4 ${isSyncing ? "animate-spin text-primary" : ""}`} />
+            {isSyncing ? (
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            ) : (
+              <FolderSync className="w-4 h-4" />
+            )}
           </button>
         </ActionTooltip>
 

@@ -44,10 +44,12 @@ export function useAiKnowledge() {
 
   const limit = 30;
 
-  const fetchStatsAndSync = useCallback(async () => {
+  const fetchStatsAndSync = useCallback(async (silent = false) => {
     try {
-      setStatsLoading(true);
-      setSyncStatusLoading(true);
+      if (!silent) {
+        setStatsLoading(true);
+        setSyncStatusLoading(true);
+      }
       const [statsData, syncData] = await Promise.all([
         getAiKnowledgeStats().catch(() => null),
         getAiServerSyncStatus().catch(() => null),
@@ -57,7 +59,7 @@ export function useAiKnowledge() {
         if (syncData) setSyncStatus(syncData);
       }
     } finally {
-      if (mounted.current) {
+      if (mounted.current && !silent) {
         setStatsLoading(false);
         setSyncStatusLoading(false);
       }
@@ -65,14 +67,16 @@ export function useAiKnowledge() {
   }, []);
 
   const fetchDocuments = useCallback(
-    async (resetList = true) => {
+    async (resetList = true, silent = false) => {
       if (resetList) {
-        setLoading(true);
-        loadingRef.current = true;
+        if (!silent) {
+          setLoading(true);
+          loadingRef.current = true;
+          setDocuments([]);
+        }
         offsetRef.current = 0;
         hasMoreRef.current = true;
         setHasMore(true);
-        setDocuments([]);
       } else {
         if (loadingRef.current || loadingMoreRef.current || !hasMoreRef.current || isFetchingRef.current) {
           return;
@@ -120,11 +124,11 @@ export function useAiKnowledge() {
       } catch (err: any) {
         if (mounted.current) {
           setError(err.message || "Gagal memuat dokumen AI");
-          if (resetList) setDocuments([]);
+          if (resetList && !silent) setDocuments([]);
         }
       } finally {
         if (mounted.current) {
-          setLoading(false);
+          if (!silent) setLoading(false);
           setLoadingMore(false);
           loadingRef.current = false;
           loadingMoreRef.current = false;
@@ -135,6 +139,11 @@ export function useAiKnowledge() {
     [selectedCategory, selectedScope, selectedStatus, searchQuery]
   );
 
+  const refresh = useCallback((silent = false) => {
+    fetchStatsAndSync(silent);
+    fetchDocuments(true, silent);
+  }, [fetchStatsAndSync, fetchDocuments]);
+
   // Re-fetch whenever filters change
   useEffect(() => {
     mounted.current = true;
@@ -143,17 +152,13 @@ export function useAiKnowledge() {
     return () => {
       mounted.current = false;
     };
-  }, [selectedCategory, selectedScope, selectedStatus]);
+  }, [fetchStatsAndSync, fetchDocuments, selectedCategory, selectedScope, selectedStatus]);
 
   const fetchMore = useCallback(async () => {
-    if (loadingRef.current || loadingMoreRef.current || !hasMoreRef.current) return;
-    await fetchDocuments(false);
-  }, [fetchDocuments]);
-
-  const refresh = useCallback(async () => {
-    fetchStatsAndSync();
-    await fetchDocuments(true);
-  }, [fetchStatsAndSync, fetchDocuments]);
+    if (!loadingMore && hasMore) {
+      await fetchDocuments(false);
+    }
+  }, [fetchDocuments, loadingMore, hasMore]);
 
   const handleSearchSubmit = useCallback((e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -163,7 +168,7 @@ export function useAiKnowledge() {
   const approve = useCallback(async (id: string, title: string) => {
     try {
       await approveAiDocument(id);
-      toast.success(`Dokumen "${title}" berhasil disetujui dan diindeks ke pgvector!`);
+      toast.success(`Dokumen "${title}" disetujui & aktif untuk RAG context.`);
       refresh();
     } catch (err: any) {
       toast.error(err.message || "Gagal menyetujui dokumen");
@@ -203,14 +208,14 @@ export function useAiKnowledge() {
     try {
       const res = await triggerServerDocsSync();
       toast.success(res.message || "Sinkronisasi direktori server /opt/project5/docs dimulai di latar belakang!");
-      // Progressive polling to show real-time chunk & metadata updates
-      const t1 = setTimeout(() => refresh(), 3000);
-      const t2 = setTimeout(() => refresh(), 7000);
-      const t3 = setTimeout(() => refresh(), 12000);
+      // Progressive silent polling so table and cards update smoothly without flashing or skeleton reloading
+      const t1 = setTimeout(() => refresh(true), 3000);
+      const t2 = setTimeout(() => refresh(true), 6000);
+      const t3 = setTimeout(() => refresh(true), 10000);
       const t4 = setTimeout(() => {
-        refresh();
+        refresh(true);
         setIsSyncing(false);
-      }, 18000);
+      }, 15000);
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);

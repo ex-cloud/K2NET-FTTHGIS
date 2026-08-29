@@ -118,7 +118,7 @@ public class OrganizationController {
     }
 
     @PutMapping("/{slug}")
-    @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
     public ResponseEntity<Organization> update(@PathVariable String slug, @RequestBody Organization org) {
         return ResponseEntity.ok(organizationService.updateOrganization(slug, org));
     }

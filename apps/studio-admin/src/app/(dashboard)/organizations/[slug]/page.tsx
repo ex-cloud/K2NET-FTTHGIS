@@ -490,6 +490,7 @@ export default function OrganizationDetailPage() {
               await updateOrganization({
                 slug: org.slug,
                 org: {
+                  name: org.name,
                   subscriptionPlan: {
                     name: toBackendPlanName(quotas.planTier || org.planTier),
                     maxProjects: quotas.maxOlts,
