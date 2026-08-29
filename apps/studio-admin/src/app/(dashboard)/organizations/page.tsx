@@ -43,7 +43,13 @@ import { OrganizationWizard } from "@/components/organizations/OrganizationWizar
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 
 // Modular Organization Components
-import type { EnrichedOrganization, OrganizationStatus, PlanTier } from "@/components/organizations/types";
+import {
+  type EnrichedOrganization,
+  type OrganizationStatus,
+  type PlanTier,
+  normalizePlanTier,
+  toBackendPlanName,
+} from "@/components/organizations/types";
 import { OrganizationKpiStrip } from "@/components/organizations/OrganizationKpiStrip";
 import { OrganizationToolbar } from "@/components/organizations/OrganizationToolbar";
 import { OrganizationTable } from "@/components/organizations/OrganizationTable";
@@ -125,7 +131,7 @@ export default function AdminOrganizationsPage() {
   // Transform raw organizations to enriched type
   const enrichedOrganizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const planName = (org.subscriptionPlan?.name || "Professional") as PlanTier;
+      const planTier = normalizePlanTier(org.subscriptionPlan?.name);
       const status = (org.status || "ACTIVE") as OrganizationStatus;
 
       return {
@@ -137,21 +143,21 @@ export default function AdminOrganizationsPage() {
         website: org.website,
         logoUrl: org.logoUrl,
         status: status,
-        planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+        planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
 
         // Default Contact PIC
         picName: org.adminUsername ? `${org.adminUsername}` : "Andiansyah",
         picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
         picPhone: "+62 812-8899-0011",
-        slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : planName === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
         // Hardware quotas
-        maxOlts: org.subscriptionPlan?.maxProjects || (planName === "Enterprise" ? 20 : planName === "Starter" ? 2 : 5),
+        maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
         usedOlts: Math.max(1, (idx + 1) * 2 % 5),
-        maxOdps: org.subscriptionPlan?.maxOdps || (planName === "Enterprise" ? 10000 : planName === "Starter" ? 500 : 2500),
+        maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
         usedOdps: Math.max(40, (idx + 1) * 320 % 2400),
-        maxStorageGb: planName === "Enterprise" ? 100 : 10,
+        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
         usedStorageGb: Number((((idx + 1) * 1.8) % 8.5).toFixed(1)),
 
         // Custom Domain
@@ -162,18 +168,20 @@ export default function AdminOrganizationsPage() {
         // Feature flags
         featureFlags: {
           gisCore: true,
-          oltPoller: planName !== "Starter",
+          oltPoller: planTier !== "Starter",
           whatsappEngine: true,
-          aiCopilot: planName === "Enterprise",
+          aiCopilot: planTier === "Enterprise",
           sandboxMode: false,
         },
 
         // Rate limits
         apiRateLimitUsed: Math.max(120, (idx + 1) * 850 % 4800),
-        apiRateLimitMax: planName === "Enterprise" ? 20000 : 5000,
+        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
         apiLatencyMs: 38 + (idx * 4),
 
-        trialDaysLeft: status === "TRIAL" ? 12 : undefined,
+        trialDaysLeft: org.trialExpiresAt
+          ? Math.max(0, Math.ceil((new Date(org.trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+          : (status === "TRIAL" ? 7 : undefined),
       };
     });
   }, [rawOrgs]);
@@ -675,7 +683,7 @@ export default function AdminOrganizationsPage() {
                 slug: activeQuotaOrg.slug,
                 org: {
                   subscriptionPlan: {
-                    name: quotas.planTier || activeQuotaOrg.planTier,
+                    name: toBackendPlanName(quotas.planTier || activeQuotaOrg.planTier),
                     maxProjects: quotas.maxOlts,
                     maxOdps: quotas.maxOdps,
                   },

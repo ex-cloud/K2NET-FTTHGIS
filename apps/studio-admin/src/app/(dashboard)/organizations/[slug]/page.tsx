@@ -44,7 +44,13 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import { cn } from "@/lib/utils";
 
 // Types & Modular Sub-Tabs
-import type { EnrichedOrganization, OrganizationStatus, PlanTier } from "@/components/organizations/types";
+import {
+  type EnrichedOrganization,
+  type OrganizationStatus,
+  type PlanTier,
+  normalizePlanTier,
+  toBackendPlanName,
+} from "@/components/organizations/types";
 import { OrgOverviewTab } from "@/components/organizations/detail/OrgOverviewTab";
 import { OrgHardwareTab } from "@/components/organizations/detail/OrgHardwareTab";
 import { OrgNetworkDomainTab } from "@/components/organizations/detail/OrgNetworkDomainTab";
@@ -105,7 +111,7 @@ export default function OrganizationDetailPage() {
   // Transform to Enriched Organization
   const org: EnrichedOrganization | null = useMemo(() => {
     if (!rawOrg) return null;
-    const planName = (rawOrg.subscriptionPlan?.name || "Professional") as PlanTier;
+    const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
     const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
 
     return {
@@ -117,19 +123,19 @@ export default function OrganizationDetailPage() {
       website: rawOrg.website,
       logoUrl: rawOrg.logoUrl,
       status: status,
-      planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+      planTier: planTier,
       createdAt: rawOrg.createdAt || "2026-08-20",
 
       picName: rawOrg.adminUsername ? `${rawOrg.adminUsername}` : "Andiansyah",
       picEmail: rawOrg.adminEmail || `admin@${rawOrg.slug}.kdua.net`,
       picPhone: "+62 812-8899-0011",
-      slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : planName === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+      slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
-      maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planName === "Enterprise" ? 20 : planName === "Starter" ? 2 : 5),
+      maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
       usedOlts: 2,
-      maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planName === "Enterprise" ? 10000 : planName === "Starter" ? 500 : 2500),
+      maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
       usedOdps: 640,
-      maxStorageGb: planName === "Enterprise" ? 100 : 10,
+      maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
       usedStorageGb: 3.6,
 
       customDomain: rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net") ? rawOrg.website.replace(/^https?:\/\//, "") : undefined,
@@ -138,16 +144,18 @@ export default function OrganizationDetailPage() {
 
       featureFlags: {
         gisCore: true,
-        oltPoller: planName !== "Starter",
+        oltPoller: planTier !== "Starter",
         whatsappEngine: true,
-        aiCopilot: planName === "Enterprise",
+        aiCopilot: planTier === "Enterprise",
         sandboxMode: false,
       },
 
       apiRateLimitUsed: 850,
-      apiRateLimitMax: planName === "Enterprise" ? 20000 : 5000,
+      apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
       apiLatencyMs: 38,
-      trialDaysLeft: status === "TRIAL" ? 12 : undefined,
+      trialDaysLeft: rawOrg.trialExpiresAt
+        ? Math.max(0, Math.ceil((new Date(rawOrg.trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+        : (status === "TRIAL" ? 7 : undefined),
     };
   }, [rawOrg]);
 
@@ -459,7 +467,7 @@ export default function OrganizationDetailPage() {
                 slug: org.slug,
                 org: {
                   subscriptionPlan: {
-                    name: quotas.planTier || org.planTier,
+                    name: toBackendPlanName(quotas.planTier || org.planTier),
                     maxProjects: quotas.maxOlts,
                     maxOdps: quotas.maxOdps,
                   },

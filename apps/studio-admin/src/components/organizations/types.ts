@@ -12,6 +12,31 @@ export type SlaTier = "Platinum (99.9%)" | "Gold (99.5%)" | "Standard (99.0%)";
 
 export type PlanTier = "Starter" | "Professional" | "Enterprise" | "Custom";
 
+export function normalizePlanTier(name?: string): PlanTier {
+  if (!name) return "Professional";
+  const upper = name.toUpperCase();
+  if (upper === "FREE" || upper === "STARTER" || upper.includes("TRIAL")) return "Starter";
+  if (upper === "PRO" || upper === "PROFESSIONAL") return "Professional";
+  if (upper === "ENTERPRISE") return "Enterprise";
+  if (upper === "CUSTOM") return "Custom";
+  return "Professional";
+}
+
+export function toBackendPlanName(tier: PlanTier | string): string {
+  switch (tier) {
+    case "Starter":
+      return "FREE";
+    case "Professional":
+      return "PRO";
+    case "Enterprise":
+      return "ENTERPRISE";
+    case "Custom":
+      return "ENTERPRISE";
+    default:
+      return typeof tier === "string" ? tier.toUpperCase() : "PRO";
+  }
+}
+
 export interface OrganizationFeatureFlags {
   gisCore: boolean;
   oltPoller: boolean;

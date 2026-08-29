@@ -42,13 +42,19 @@ import { toast } from "sonner";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
-import type { EnrichedOrganization, PlanTier, OrganizationStatus } from "@/components/organizations/types";
+import {
+  type EnrichedOrganization,
+  type PlanTier,
+  type OrganizationStatus,
+  normalizePlanTier,
+  toBackendPlanName,
+} from "@/components/organizations/types";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationQuotasPage() {
   const router = useRouter();
-  const { organizations: rawOrgs, loading, refresh } = useOrganizations();
+  const { organizations: rawOrgs, loading, refresh, updateOrganization } = useOrganizations();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [planFilter, setPlanFilter] = useState("ALL");
@@ -57,35 +63,35 @@ export default function OrganizationQuotasPage() {
   // Enriched organizations
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const planName = (org.subscriptionPlan?.name || "Professional") as PlanTier;
+      const planTier = normalizePlanTier(org.subscriptionPlan?.name);
       return {
         id: org.id || `org-${org.slug || idx}`,
         name: org.name || org.slug,
         slug: org.slug,
         description: org.description,
         status: (org.status || "ACTIVE") as OrganizationStatus,
-        planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+        planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
         picName: org.adminUsername || "Andiansyah",
         picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
-        slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : "Gold (99.5%)",
-        maxOlts: org.subscriptionPlan?.maxProjects || (planName === "Enterprise" ? 20 : planName === "Starter" ? 2 : 5),
+        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+        maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
         usedOlts: 2,
-        maxOdps: org.subscriptionPlan?.maxOdps || (planName === "Enterprise" ? 10000 : planName === "Starter" ? 500 : 2500),
+        maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
         usedOdps: 640,
-        maxStorageGb: planName === "Enterprise" ? 100 : 10,
+        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
         usedStorageGb: 3.6,
         domainVerified: true,
         domainSslActive: true,
         featureFlags: {
           gisCore: true,
-          oltPoller: planName !== "Starter",
+          oltPoller: planTier !== "Starter",
           whatsappEngine: true,
-          aiCopilot: planName === "Enterprise",
+          aiCopilot: planTier === "Enterprise",
           sandboxMode: false,
         },
         apiRateLimitUsed: 850,
-        apiRateLimitMax: planName === "Enterprise" ? 20000 : 5000,
+        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
         apiLatencyMs: 38,
       };
     });
@@ -534,8 +540,20 @@ export default function OrganizationQuotasPage() {
           organization={selectedOrgForQuota}
           isOpen={!!selectedOrgForQuota}
           onClose={() => setSelectedOrgForQuota(null)}
-          onSaveQuotas={async () => {
-            refresh();
+          onSaveQuotas={async (_orgId, quotas) => {
+            if (selectedOrgForQuota && updateOrganization) {
+              await updateOrganization({
+                slug: selectedOrgForQuota.slug,
+                org: {
+                  subscriptionPlan: {
+                    name: toBackendPlanName(quotas.planTier || selectedOrgForQuota.planTier),
+                    maxProjects: quotas.maxOlts,
+                    maxOdps: quotas.maxOdps,
+                  },
+                },
+              });
+              refresh();
+            }
           }}
         />
       </div>

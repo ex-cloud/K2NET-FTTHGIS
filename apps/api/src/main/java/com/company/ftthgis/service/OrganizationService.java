@@ -158,8 +158,19 @@ public class OrganizationService {
         log.info("🚀 Creating new organization: {} with slug: {}", request.getName(), request.getSlug());
 
         // Lookup Subscription Plan
+        String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
+        String normalizedPlan = "FREE";
+        if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "FREE";
+        } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "PRO";
+        } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "ENTERPRISE";
+        }
+
+        final String targetPlanName = normalizedPlan;
         SubscriptionPlan plan = subscriptionPlanRepository
-                .findByName(request.getPlan() != null ? request.getPlan() : "FREE")
+                .findByName(targetPlanName)
                 .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
 
         // 1. Save Organization Profile
@@ -173,7 +184,7 @@ public class OrganizationService {
                 .status(Organization.OrganizationStatus.ACTIVE);
 
         // Handle Trial Expiry for FREE plan (7 Days Trial)
-        if (plan != null && "FREE".equalsIgnoreCase(plan.getName())) {
+        if ("FREE".equalsIgnoreCase(targetPlanName)) {
             log.info("🎁 FREE Plan detected for {}. Setting 7-day trial expiry.", request.getSlug());
             orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
         }
@@ -352,8 +363,29 @@ public class OrganizationService {
         if (updatedOrg.getStatus() != null) {
             org.setStatus(updatedOrg.getStatus());
         }
-        if (updatedOrg.getSubscriptionPlan() != null) {
-            org.setSubscriptionPlan(updatedOrg.getSubscriptionPlan());
+        if (updatedOrg.getSubscriptionPlan() != null && updatedOrg.getSubscriptionPlan().getName() != null) {
+            String rawPlan = updatedOrg.getSubscriptionPlan().getName().trim();
+            String normalizedPlan = "PRO";
+            if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
+                normalizedPlan = "FREE";
+            } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
+                normalizedPlan = "PRO";
+            } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
+                normalizedPlan = "ENTERPRISE";
+            }
+
+            Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(normalizedPlan);
+            if (planOpt.isPresent()) {
+                org.setSubscriptionPlan(planOpt.get());
+                if ("FREE".equalsIgnoreCase(normalizedPlan)) {
+                    if (org.getTrialExpiresAt() == null) {
+                        org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+                    }
+                } else {
+                    org.setTrialExpiresAt(null);
+                }
+                log.info("💳 Updated subscription plan for {} to {}", org.getSlug(), normalizedPlan);
+            }
         }
 
         log.info("🔄 Updating organization profile: {} (Current Slug: {})", org.getName(), org.getSlug());
@@ -677,7 +709,17 @@ public class OrganizationService {
             return false;
         }
 
-        Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(planName);
+        String rawPlan = planName != null ? planName.trim() : "PRO";
+        String normalizedPlan = "PRO";
+        if ("Starter".equalsIgnoreCase(rawPlan) || "FREE".equalsIgnoreCase(rawPlan) || "Trial".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "FREE";
+        } else if ("Professional".equalsIgnoreCase(rawPlan) || "PRO".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "PRO";
+        } else if ("Enterprise".equalsIgnoreCase(rawPlan) || "ENTERPRISE".equalsIgnoreCase(rawPlan) || "Custom".equalsIgnoreCase(rawPlan)) {
+            normalizedPlan = "ENTERPRISE";
+        }
+
+        Optional<SubscriptionPlan> planOpt = subscriptionPlanRepository.findByName(normalizedPlan);
         if (planOpt.isEmpty()) {
             log.error("Subscription plan not found: {}", planName);
             return false;
@@ -687,11 +729,17 @@ public class OrganizationService {
         SubscriptionPlan plan = planOpt.get();
 
         org.setSubscriptionPlan(plan);
-        org.setStatus(Organization.OrganizationStatus.ACTIVE);
-        org.setTrialExpiresAt(null); // Clear trial since they have upgraded/paid
+        if ("FREE".equalsIgnoreCase(normalizedPlan)) {
+            if (org.getTrialExpiresAt() == null) {
+                org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+            }
+        } else {
+            org.setStatus(Organization.OrganizationStatus.ACTIVE);
+            org.setTrialExpiresAt(null); // Clear trial since they have upgraded/paid
+        }
 
         organizationRepository.save(org);
-        log.info("✅ Successfully upgraded organization '{}' to plan '{}'", slug, planName);
+        log.info("✅ Successfully upgraded organization '{}' to plan '{}'", slug, normalizedPlan);
         return true;
     }
 

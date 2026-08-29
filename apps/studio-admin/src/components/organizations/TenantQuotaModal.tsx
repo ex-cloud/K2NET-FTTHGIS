@@ -41,6 +41,31 @@ export function TenantQuotaModal({
   const [apiRateLimitMax, setApiRateLimitMax] = useState(organization?.apiRateLimitMax || 5000);
   const [saving, setSaving] = useState(false);
 
+  const handlePlanChange = (tier: PlanTier) => {
+    setPlanTier(tier);
+    if (tier === "Starter") {
+      setMaxOlts(2);
+      setMaxOdps(500);
+      setMaxStorageGb(10);
+      setApiRateLimitMax(2000);
+    } else if (tier === "Professional") {
+      setMaxOlts(5);
+      setMaxOdps(2500);
+      setMaxStorageGb(25);
+      setApiRateLimitMax(5000);
+    } else if (tier === "Enterprise") {
+      setMaxOlts(20);
+      setMaxOdps(10000);
+      setMaxStorageGb(100);
+      setApiRateLimitMax(20000);
+    } else if (tier === "Custom") {
+      setMaxOlts(50);
+      setMaxOdps(25000);
+      setMaxStorageGb(500);
+      setApiRateLimitMax(50000);
+    }
+  };
+
   React.useEffect(() => {
     if (organization) {
       setPlanTier(organization.planTier);
@@ -92,7 +117,7 @@ export function TenantQuotaModal({
           {/* Plan Tier Selector */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">Subscription Tier</Label>
-            <Select value={planTier} onValueChange={(v) => setPlanTier(v as PlanTier)}>
+            <Select value={planTier} onValueChange={(v) => handlePlanChange(v as PlanTier)}>
               <SelectTrigger className="h-9 text-xs bg-card border-border text-foreground">
                 <SelectValue placeholder="Select tier" />
               </SelectTrigger>

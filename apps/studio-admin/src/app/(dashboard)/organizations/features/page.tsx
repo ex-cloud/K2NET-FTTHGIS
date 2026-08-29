@@ -48,7 +48,13 @@ import {
 import { toast } from "sonner";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
-import type { EnrichedOrganization, PlanTier, OrganizationFeatureFlags, OrganizationStatus } from "@/components/organizations/types";
+import {
+  type EnrichedOrganization,
+  type PlanTier,
+  type OrganizationFeatureFlags,
+  type OrganizationStatus,
+  normalizePlanTier,
+} from "@/components/organizations/types";
 import { getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationFeaturesPage() {
@@ -62,15 +68,15 @@ export default function OrganizationFeaturesPage() {
   // Transform raw organizations to enriched type
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((o: Organization) => {
-      const planName = (o.subscriptionPlan?.name || "Professional") as PlanTier;
+      const planTier = normalizePlanTier(o.subscriptionPlan?.name);
       const status = (o.status || "ACTIVE") as OrganizationStatus;
 
       // Default feature flags based on plan tier
       const defaultFlags: OrganizationFeatureFlags = {
         gisCore: true,
-        oltPoller: planName !== "Starter",
+        oltPoller: planTier !== "Starter",
         whatsappEngine: true,
-        aiCopilot: planName === "Enterprise",
+        aiCopilot: planTier === "Enterprise",
         sandboxMode: false,
       };
 
@@ -85,19 +91,19 @@ export default function OrganizationFeaturesPage() {
         website: o.website,
         logoUrl: o.logoUrl,
         status: status,
-        planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+        planTier: planTier,
         createdAt: o.createdAt || "2026-08-20",
 
         picName: o.adminUsername ? `${o.adminUsername}` : "Andiansyah",
         picEmail: o.adminEmail || `admin@${o.slug}.kdua.net`,
         picPhone: "+62 812-8899-0011",
-        slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : planName === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
-        maxOlts: o.subscriptionPlan?.maxProjects || (planName === "Enterprise" ? 20 : planName === "Starter" ? 2 : 5),
+        maxOlts: o.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
         usedOlts: 2,
-        maxOdps: o.subscriptionPlan?.maxOdps || (planName === "Enterprise" ? 10000 : planName === "Starter" ? 500 : 2500),
+        maxOdps: o.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
         usedOdps: 640,
-        maxStorageGb: planName === "Enterprise" ? 100 : 10,
+        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
         usedStorageGb: 3.6,
 
         customDomain: o.website?.includes(".") && !o.website.includes("kdua.net") ? o.website.replace(/^https?:\/\//, "") : undefined,
@@ -107,8 +113,9 @@ export default function OrganizationFeaturesPage() {
         featureFlags: customFlags,
 
         apiRateLimitUsed: 850,
-        apiRateLimitMax: planName === "Enterprise" ? 20000 : 5000,
+        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
         apiLatencyMs: 38,
+        trialDaysLeft: status === "TRIAL" ? 12 : undefined,
       };
     });
   }, [rawOrgs, flagsState]);

@@ -41,7 +41,12 @@ import { toast } from "sonner";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
-import type { EnrichedOrganization, PlanTier, OrganizationStatus } from "@/components/organizations/types";
+import {
+  type EnrichedOrganization,
+  type PlanTier,
+  type OrganizationStatus,
+  normalizePlanTier,
+} from "@/components/organizations/types";
 import { cn } from "@/lib/utils";
 import { getDefaultTenantHost } from "@/lib/domain";
 import { getTenantUrl } from "@/lib/domain";
@@ -62,7 +67,7 @@ export default function OrganizationDomainsPage() {
   // Enriched organizations
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const planName = (org.subscriptionPlan?.name || "Professional") as PlanTier;
+      const planTier = normalizePlanTier(org.subscriptionPlan?.name);
       const customDomain = org.website?.includes(".") && !org.website.includes("kdua.net")
         ? org.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
         : idx % 3 === 0
@@ -75,11 +80,11 @@ export default function OrganizationDomainsPage() {
         slug: org.slug,
         description: org.description,
         status: (org.status || "ACTIVE") as OrganizationStatus,
-        planTier: ["Starter", "Professional", "Enterprise", "Custom"].includes(planName) ? planName : "Professional",
+        planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
         picName: org.adminUsername || "Andiansyah",
         picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
-        slaTier: planName === "Enterprise" ? "Platinum (99.9%)" : "Gold (99.5%)",
+        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
         maxOlts: 5,
         usedOlts: 2,
         maxOdps: 2500,
@@ -93,7 +98,7 @@ export default function OrganizationDomainsPage() {
           gisCore: true,
           oltPoller: true,
           whatsappEngine: true,
-          aiCopilot: planName === "Enterprise",
+          aiCopilot: planTier === "Enterprise",
           sandboxMode: false,
         },
         apiRateLimitUsed: 850,
