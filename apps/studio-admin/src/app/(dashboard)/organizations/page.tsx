@@ -52,6 +52,7 @@ import { OrganizationBulkActionBar } from "@/components/organizations/Organizati
 import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import { TenantFeatureFlagsModal } from "@/components/organizations/TenantFeatureFlagsModal";
+import { TenantImportModal } from "@/components/organizations/TenantImportModal";
 
 interface Project {
   id: string;
@@ -95,6 +96,7 @@ export default function AdminOrganizationsPage() {
   const [planFilter, setPlanFilter] = useState<string>("ALL");
   const [compactView, setCompactView] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Table multi-selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -344,6 +346,52 @@ export default function AdminOrganizationsPage() {
     setSelectedIds([]);
   };
 
+  const handleBulkBackupJson = async () => {
+    if (selectedIds.length === 0 || !session?.accessToken) return;
+    const selectedOrgs = enrichedOrganizations.filter((o) => selectedIds.includes(o.id));
+    toast.info(`Mempersiapkan paket cadangan untuk ${selectedOrgs.length} organisasi...`);
+
+    try {
+      const backups = await Promise.all(
+        selectedOrgs.map(async (org) => {
+          try {
+            const res = await fetch(`/api/v1/organizations/${org.slug}/export-backup`, {
+              headers: { Authorization: `Bearer ${session.accessToken}` },
+            });
+            if (res.ok) return await res.json();
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const validBackups = backups.filter(Boolean);
+      const exportData = {
+        platform: "K2NET FTTH GIS Enterprise",
+        exportedAt: new Date().toISOString(),
+        totalTenants: validBackups.length,
+        tenants: validBackups,
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tenants-backup-bundle-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Berhasil mengunduh paket cadangan JSON (${validBackups.length} tenant)`);
+    } catch (err: any) {
+      toast.error("Gagal mengunduh cadangan JSON");
+    }
+  };
+
   // Delete flow state
   const [deleteMode, setDeleteMode] = useState<"soft" | "nuclear">("soft");
   const [impactSummary, setImpactSummary] = useState<ImpactSummary | null>(null);
@@ -527,6 +575,7 @@ export default function AdminOrganizationsPage() {
               loading={isLoading}
               onRefresh={refetch}
               onNewOrganization={() => setWizardOpen(true)}
+              onImportBackup={() => setIsImportModalOpen(true)}
             />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -591,6 +640,7 @@ export default function AdminOrganizationsPage() {
           onBulkResume={handleBulkResume}
           onBulkBroadcast={handleBulkBroadcast}
           onBulkExport={handleBulkExport}
+          onBulkBackupJson={handleBulkBackupJson}
         />
 
         {/* 5. MODAL DIALOGS */}
@@ -899,6 +949,13 @@ export default function AdminOrganizationsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Tenant Import Modal */}
+        <TenantImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => refetch()}
+        />
       </div>
     </OrganizationPageWrapper>
   );

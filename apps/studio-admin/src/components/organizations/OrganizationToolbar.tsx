@@ -10,6 +10,7 @@ import {
   Plus,
   ChevronDown,
   Layers,
+  Upload,
 } from "lucide-react";
 import {
   Button,
@@ -35,6 +36,7 @@ interface OrganizationToolbarProps {
   loading: boolean;
   onRefresh: () => void;
   onNewOrganization: () => void;
+  onImportBackup?: () => void;
 }
 
 export function OrganizationToolbar({
@@ -51,6 +53,7 @@ export function OrganizationToolbar({
   loading,
   onRefresh,
   onNewOrganization,
+  onImportBackup,
 }: OrganizationToolbarProps) {
   const hasActiveFilter = statusFilter !== "ALL" || planFilter !== "ALL" || searchQuery.trim() !== "";
 
@@ -237,6 +240,21 @@ export function OrganizationToolbar({
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
             </Button>
           </ActionTooltip>
+
+          {/* Import Backup Button */}
+          {onImportBackup && (
+            <ActionTooltip label="Impor Cadangan Tenant (.JSON)">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImportBackup}
+                className="h-8 text-xs font-medium gap-1.5 border-border bg-card hover:bg-accent text-foreground shadow-xs"
+              >
+                <Upload className="h-3.5 w-3.5 text-primary" />
+                <span>Import Backup</span>
+              </Button>
+            </ActionTooltip>
+          )}
 
           {/* New Organization Button */}
           <ActionTooltip label="Create New Organization" shortcut="N">

@@ -570,6 +570,101 @@ public class OrganizationService {
     }
 
     @Transactional
+    public Organization importTenantBackup(com.company.ftthgis.api.tenant.dto.OrganizationImportRequest request) {
+        if (request.getOrganization() == null) {
+            throw new IllegalArgumentException("Organization payload is required in backup file");
+        }
+
+        java.util.Map<String, Object> orgMap = request.getOrganization();
+        String name = (String) orgMap.getOrDefault("name", "Imported Tenant");
+        String slug = (String) orgMap.getOrDefault("slug", "tenant-" + System.currentTimeMillis());
+        String planName = (String) orgMap.getOrDefault("plan", "FREE");
+        String website = (String) orgMap.getOrDefault("website", "");
+        String address = (String) orgMap.getOrDefault("address", "");
+
+        log.info("📦 Importing tenant backup for slug: '{}' (Name: '{}')", slug, name);
+
+        // Check if organization already exists
+        Optional<Organization> existingOpt = organizationRepository.findBySlug(slug);
+        Organization org;
+
+        if (existingOpt.isPresent()) {
+            org = existingOpt.get();
+            log.info("🔄 Organization '{}' exists. Restoring and updating from backup...", slug);
+            org.setName(name);
+            org.setWebsite(website);
+            org.setAddress(address);
+            org.setDeletedAt(null);
+            org.setDeletedBy(null);
+            org.setStatus(Organization.OrganizationStatus.ACTIVE);
+            org = organizationRepository.save(org);
+        } else {
+            SubscriptionPlan plan = subscriptionPlanRepository.findByName(planName)
+                    .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
+
+            org = Organization.builder()
+                    .name(name)
+                    .slug(slug)
+                    .website(website)
+                    .address(address)
+                    .subscriptionPlan(plan)
+                    .status(Organization.OrganizationStatus.ACTIVE)
+                    .build();
+            org = organizationRepository.save(org);
+
+            // Default config
+            OrganizationConfig config = OrganizationConfig.builder()
+                    .organization(org)
+                    .build();
+            organizationConfigRepository.save(config);
+        }
+
+        // Ensure Keycloak Realm is created & enabled
+        try {
+            keycloakService.ensureRealmExists(slug);
+            keycloakService.setRealmEnabled(slug, true);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical failure provisioning Keycloak realm for imported tenant {}: {}", slug, e.getMessage());
+        }
+
+        // Import projects if present
+        if (request.getProjects() != null && !request.getProjects().isEmpty()) {
+            for (java.util.Map<String, Object> projMap : request.getProjects()) {
+                String projName = (String) projMap.getOrDefault("name", "Default Project");
+                String projCode = (String) projMap.getOrDefault("code", "PRJ-" + slug.toUpperCase());
+                String region = (String) projMap.getOrDefault("region", "ap-southeast-1");
+
+                try {
+                    com.company.ftthgis.domain.tenant.entity.Project project = com.company.ftthgis.domain.tenant.entity.Project.builder()
+                            .name(projName)
+                            .code(projCode)
+                            .region(region)
+                            .organization(org)
+                            .build();
+                    projectRepository.save(project);
+                } catch (Exception projEx) {
+                    log.warn("⚠️ Failed to import project {}: {}", projCode, projEx.getMessage());
+                }
+            }
+        }
+
+        try {
+            auditLoggingService.logEvent(
+                "system",
+                "TENANT_IMPORTED",
+                "ORGANIZATION",
+                org.getId().toString(),
+                java.util.Map.of("name", org.getName(), "slug", org.getSlug()),
+                new java.util.HashMap<>(),
+                new java.util.HashMap<>()
+            );
+        } catch (Exception ignored) {}
+
+        log.info("✅ SUCCESS: Tenant '{}' imported and provisioned successfully.", slug);
+        return org;
+    }
+
+    @Transactional
     public void deleteOrganization(String idOrSlug) {
         deleteOrganization(idOrSlug, "soft", "Recycle Bin Deletion");
     }

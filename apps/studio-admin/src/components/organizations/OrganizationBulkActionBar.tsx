@@ -1,8 +1,7 @@
-"use client";
-
 import {
   MessageSquare,
   Download,
+  FileJson,
   X,
   PlayCircle,
   PauseCircle,
@@ -16,6 +15,7 @@ interface OrganizationBulkActionBarProps {
   onBulkResume: () => void;
   onBulkBroadcast: () => void;
   onBulkExport: () => void;
+  onBulkBackupJson?: () => void;
 }
 
 export function OrganizationBulkActionBar({
@@ -25,6 +25,7 @@ export function OrganizationBulkActionBar({
   onBulkResume,
   onBulkBroadcast,
   onBulkExport,
+  onBulkBackupJson,
 }: OrganizationBulkActionBarProps) {
   if (selectedCount === 0) return null;
 
@@ -90,6 +91,20 @@ export function OrganizationBulkActionBar({
               <span>Export CSV</span>
             </Button>
           </ActionTooltip>
+
+          {onBulkBackupJson && (
+            <ActionTooltip label="Unduh paket arsip cadangan (.JSON) organisasi terpilih">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onBulkBackupJson}
+                className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 text-foreground gap-1.5"
+              >
+                <FileJson className="h-3 w-3 text-primary" />
+                <span>Backup JSON</span>
+              </Button>
+            </ActionTooltip>
+          )}
         </div>
 
         {/* Clear Selection Button */}

@@ -146,6 +146,12 @@ public class OrganizationController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/import-backup")
+    @PreAuthorize("hasRole('super_admin')")
+    public ResponseEntity<Organization> importBackup(@RequestBody com.company.ftthgis.api.tenant.dto.OrganizationImportRequest request) {
+        return ResponseEntity.ok(organizationService.importTenantBackup(request));
+    }
+
     @PostMapping("/{slug}/sync-keycloak")
     @PreAuthorize("hasRole('super_admin')")
     public ResponseEntity<Void> syncKeycloak(@PathVariable String slug) {
