@@ -349,7 +349,7 @@ export default function AdminOrganizationsPage() {
   const handleBulkBackupJson = async () => {
     if (selectedIds.length === 0 || !session?.accessToken) return;
     const selectedOrgs = enrichedOrganizations.filter((o) => selectedIds.includes(o.id));
-    toast.info(`Mempersiapkan paket cadangan untuk ${selectedOrgs.length} organisasi...`);
+    const toastId = toast.loading(`Mempersiapkan paket cadangan untuk ${selectedOrgs.length} organisasi...`);
 
     try {
       const backups = await Promise.all(
@@ -386,9 +386,13 @@ export default function AdminOrganizationsPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Berhasil mengunduh paket cadangan JSON (${validBackups.length} tenant)`);
+      toast.success(`Berhasil mengunduh paket cadangan JSON (${validBackups.length} tenant)`, {
+        id: toastId,
+      });
     } catch (err: any) {
-      toast.error("Gagal mengunduh cadangan JSON");
+      toast.error("Gagal mengunduh cadangan JSON", {
+        id: toastId,
+      });
     }
   };
 

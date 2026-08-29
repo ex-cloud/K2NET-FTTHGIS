@@ -14,6 +14,7 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     List<Project> findByOrganizationId(UUID orgId);
     List<Project> findByOrganizationSlug(String slug);
     long countByOrganizationId(UUID orgId);
+    boolean existsByCodeAndOrganizationId(String code, UUID organizationId);
 
     @Query("SELECT p FROM Project p JOIN p.members m WHERE p.organization.slug = :slug AND m.user.id = :userId")
     List<Project> findByOrganizationSlugAndUserId(@Param("slug") String slug, @Param("userId") UUID userId);

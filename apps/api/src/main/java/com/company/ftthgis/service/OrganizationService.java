@@ -612,11 +612,9 @@ public class OrganizationService {
                     .build();
             org = organizationRepository.save(org);
 
-            // Default config
-            OrganizationConfig config = OrganizationConfig.builder()
-                    .organization(org)
-                    .build();
-            organizationConfigRepository.save(config);
+            // Default configs
+            saveConfig(org, "keycloak_realm", slug);
+            saveConfig(org, "import_source", "json_backup");
         }
 
         // Ensure Keycloak Realm is created & enabled
@@ -634,16 +632,18 @@ public class OrganizationService {
                 String projCode = (String) projMap.getOrDefault("code", "PRJ-" + slug.toUpperCase());
                 String region = (String) projMap.getOrDefault("region", "ap-southeast-1");
 
-                try {
-                    com.company.ftthgis.domain.tenant.entity.Project project = com.company.ftthgis.domain.tenant.entity.Project.builder()
-                            .name(projName)
-                            .code(projCode)
-                            .region(region)
-                            .organization(org)
-                            .build();
-                    projectRepository.save(project);
-                } catch (Exception projEx) {
-                    log.warn("⚠️ Failed to import project {}: {}", projCode, projEx.getMessage());
+                if (!projectRepository.existsByCodeAndOrganizationId(projCode, org.getId())) {
+                    try {
+                        com.company.ftthgis.domain.tenant.entity.Project project = com.company.ftthgis.domain.tenant.entity.Project.builder()
+                                .name(projName)
+                                .code(projCode)
+                                .region(region)
+                                .organization(org)
+                                .build();
+                        projectRepository.save(project);
+                    } catch (Exception projEx) {
+                        log.warn("⚠️ Failed to import project {}: {}", projCode, projEx.getMessage());
+                    }
                 }
             }
         }
