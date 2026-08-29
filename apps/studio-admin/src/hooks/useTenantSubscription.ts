@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   getSubscriptionSummary,
+  getAvailableSubscriptionPlans,
   upgradeSubscriptionPlan,
   downgradeSubscriptionPlan,
   getProrationEstimate,
@@ -11,14 +12,33 @@ import {
   extendTrialPeriod,
   updateDunningStatus,
   type SubscriptionSummary,
+  type SubscriptionPlanInfo,
   type ProrationEstimate,
 } from "@/lib/actions/gateways/subscription";
 
 export function useTenantSubscription(slug?: string) {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
+  const [availablePlans, setAvailablePlans] = useState<SubscriptionPlanInfo[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+
+  const fetchPlans = useCallback(async () => {
+    try {
+      setPlansLoading(true);
+      const plans = await getAvailableSubscriptionPlans();
+      if (mounted.current) {
+        setAvailablePlans(plans);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      if (mounted.current) {
+        setPlansLoading(false);
+      }
+    }
+  }, []);
 
   const fetchSummary = useCallback(async (silent = false) => {
     if (!slug) return;
@@ -43,10 +63,11 @@ export function useTenantSubscription(slug?: string) {
   useEffect(() => {
     mounted.current = true;
     fetchSummary();
+    fetchPlans();
     return () => {
       mounted.current = false;
     };
-  }, [fetchSummary]);
+  }, [fetchSummary, fetchPlans]);
 
   const upgrade = useCallback(
     async (params: {
@@ -160,9 +181,12 @@ export function useTenantSubscription(slug?: string) {
 
   return {
     summary,
+    availablePlans,
+    plansLoading,
     loading,
     error,
     refetch: fetchSummary,
+    refetchPlans: fetchPlans,
     upgrade,
     downgrade,
     getProrateCalc,

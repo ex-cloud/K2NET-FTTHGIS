@@ -233,3 +233,129 @@ export async function updateDunningStatus(
   }
   return res.json();
 }
+
+export interface SubscriptionPlanFeature {
+  title: string;
+  detail: string;
+}
+
+export interface SubscriptionPlanInfo {
+  id?: string;
+  name: string;
+  code: string;
+  price: string;
+  numericPrice: number;
+  period: string;
+  description: string;
+  popular?: boolean;
+  maxOlts: number;
+  maxOdps: number;
+  maxOdcs: number;
+  maxStorageGb: number;
+  apiRpm: number;
+  hasSso: boolean;
+  hasApiAccess: boolean;
+  features: SubscriptionPlanFeature[];
+}
+
+export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanInfo[]> {
+  await verifySuperAdmin();
+  const token = getGatewayToken();
+  try {
+    const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/organizations/plans`, {
+      headers: {
+        "X-Gateway-Token": token,
+      },
+      next: { revalidate: 60 },
+    });
+
+    if (res.ok) {
+      const rawPlans: any[] = await res.json();
+      if (Array.isArray(rawPlans) && rawPlans.length > 0) {
+        const mapped: SubscriptionPlanInfo[] = rawPlans.map((p) => {
+          const numPrice = Number(p.price || 0);
+          const formattedPrice =
+            numPrice === 0
+              ? "Free Trial"
+              : `Rp ${numPrice.toLocaleString("id-ID")}`;
+
+          const maxOlts = Number(p.maxProjects || 0);
+          const maxOdps = Number(p.maxOdps || 0);
+          const maxOdcs = Number(p.maxOdcs || 0);
+          const maxCustomers = Number(p.maxCustomers || 0);
+          const maxStorageGb = maxOlts >= 20 ? 100 : maxOlts >= 5 ? 50 : 10;
+          const apiRpm = p.hasApiAccess ? (maxOlts >= 20 ? 20000 : 5000) : 2000;
+          const hasSso = Boolean(p.hasSso);
+          const hasApiAccess = Boolean(p.hasApiAccess);
+
+          const features: SubscriptionPlanFeature[] = [
+            {
+              title: `Maks. ${maxOlts} OLT & ${maxOdps.toLocaleString("id-ID")} ODP`,
+              detail: "Alokasi kapasitas pemetaan topologi kabel fiber optik",
+            },
+            {
+              title: `Maks. ${maxOdcs.toLocaleString("id-ID")} ODC & ${maxCustomers.toLocaleString("id-ID")} Pelanggan`,
+              detail: "Kapasitas distribusi FAT / closure dan data pelanggan",
+            },
+            {
+              title: `${maxStorageGb} GB MinIO S3 Storage`,
+              detail: "Penyimpanan berkas foto redaman, surat jalan, dan dokumen",
+            },
+            {
+              title: hasApiAccess ? `API Access (${apiRpm.toLocaleString("id-ID")} RPM)` : "Standard API Rate Limit",
+              detail: hasApiAccess
+                ? "Integrasi REST API, webhook, dan SNMP OLT Poller telemetry"
+                : "Akses integrasi sistem billing dan CRM",
+            },
+            {
+              title: hasSso ? "Keycloak SSO / LDAP Federation" : "Standard Email & Password Auth",
+              detail: hasSso
+                ? "Integrasi IAM keamanan terpusat & multi-faktor autentikasi"
+                : "Manajemen kredensial tim operasional",
+            },
+            {
+              title: maxOlts >= 20 ? "Platinum 99.9% 24/7 SLA Matrix" : maxOlts >= 5 ? "Gold 99.5% SLA Support" : "Standard Community Support",
+              detail: maxOlts >= 20
+                ? "Dedicated Technical Account Manager & prioritas eskalasi"
+                : "Dukungan bantuan tiket teknis dan forum komunitas",
+            },
+          ];
+
+          return {
+            id: p.id,
+            name: p.name,
+            code: p.name,
+            price: formattedPrice,
+            numericPrice: numPrice,
+            period: "/ month",
+            description: p.description || `Paket layanan infrastruktur GIS FTTH terkelola tier ${p.name}.`,
+            popular: false,
+            maxOlts,
+            maxOdps,
+            maxOdcs,
+            maxStorageGb,
+            apiRpm,
+            hasSso,
+            hasApiAccess,
+            features,
+          };
+        });
+
+        // Sort ascending by price
+        mapped.sort((a, b) => a.numericPrice - b.numericPrice);
+
+        // Mark popular tier dynamically (the middle tier if 3 or more plans)
+        if (mapped.length >= 3) {
+          const midIdx = Math.floor(mapped.length / 2);
+          mapped[midIdx].popular = true;
+        }
+
+        return mapped;
+      }
+    }
+  } catch {
+    // Network or server unreachable
+  }
+
+  return [];
+}
