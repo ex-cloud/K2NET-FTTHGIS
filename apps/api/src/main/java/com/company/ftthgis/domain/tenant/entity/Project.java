@@ -33,9 +33,11 @@ public class Project extends OrganizationAwareEntity {
     @Column(name = "id", nullable = false, unique = true)
     private UUID id;
 
+    @NotAudited
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @NotAudited
     @Column(name = "deleted_by")
     private String deletedBy;
 

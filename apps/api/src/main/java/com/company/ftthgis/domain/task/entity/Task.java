@@ -47,9 +47,11 @@ public class Task extends OrganizationAwareEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
+    @org.hibernate.envers.NotAudited
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @org.hibernate.envers.NotAudited
     @Column(name = "deleted_by")
     private String deletedBy;
 
