@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Switch, Card, ActionTooltip } from "@k2net/ui";
+import { Badge, Button, Switch, ActionTooltip } from "@k2net/ui";
 import {
   Sliders,
   Map,

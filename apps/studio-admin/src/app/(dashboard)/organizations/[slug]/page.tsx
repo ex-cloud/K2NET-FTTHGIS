@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import {
   Button,
   Badge,
-  Card,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -26,14 +25,16 @@ import {
 } from "@k2net/ui";
 import {
   Building2,
-  ExternalLink,
   FileDown,
   Activity,
   Network,
   Globe,
   Users,
-  Sliders,
+  FileText,
+  Webhook,
+  Database,
   CreditCard,
+  History,
   ShieldAlert,
   Loader2,
   ArrowLeft,
@@ -47,7 +48,6 @@ import { cn } from "@/lib/utils";
 import {
   type EnrichedOrganization,
   type OrganizationStatus,
-  type PlanTier,
   normalizePlanTier,
   toBackendPlanName,
   calculateTrialDaysLeft,
@@ -56,8 +56,11 @@ import { OrgOverviewTab } from "@/components/organizations/detail/OrgOverviewTab
 import { OrgHardwareTab } from "@/components/organizations/detail/OrgHardwareTab";
 import { OrgNetworkDomainTab } from "@/components/organizations/detail/OrgNetworkDomainTab";
 import { OrgTeamAccessTab } from "@/components/organizations/detail/OrgTeamAccessTab";
-import { OrgFeatureFlagsTab } from "@/components/organizations/detail/OrgFeatureFlagsTab";
+import { OrgDocumentsTab } from "@/components/organizations/detail/OrgDocumentsTab";
+import { OrgApiWebhooksTab } from "@/components/organizations/detail/OrgApiWebhooksTab";
+import { OrgDataBackupsTab } from "@/components/organizations/detail/OrgDataBackupsTab";
 import { OrgBillingTab } from "@/components/organizations/detail/OrgBillingTab";
+import { OrgAuditLogsTab } from "@/components/organizations/detail/OrgAuditLogsTab";
 import { OrgDangerZoneTab } from "@/components/organizations/detail/OrgDangerZoneTab";
 
 // Modals
@@ -70,8 +73,11 @@ type DetailTab =
   | "hardware"
   | "network"
   | "team"
-  | "features"
+  | "documents"
+  | "api"
+  | "backups"
   | "billing"
+  | "audit"
   | "danger";
 
 interface Project {
@@ -206,10 +212,16 @@ export default function OrganizationDetailPage() {
       } else if (e.key === "4") {
         setActiveTab("team");
       } else if (e.key === "5") {
-        setActiveTab("features");
+        setActiveTab("documents");
       } else if (e.key === "6") {
-        setActiveTab("billing");
+        setActiveTab("api");
       } else if (e.key === "7") {
+        setActiveTab("backups");
+      } else if (e.key === "8") {
+        setActiveTab("billing");
+      } else if (e.key === "9") {
+        setActiveTab("audit");
+      } else if (e.key === "0") {
         setActiveTab("danger");
       }
     };
@@ -368,16 +380,20 @@ export default function OrganizationDetailPage() {
           {[
             { id: "overview", label: "Overview", icon: Activity },
             { id: "hardware", label: "Hardware & OLTs", icon: Network },
-            { id: "network", label: "Domain & VPN", icon: Globe },
+            { id: "network", label: "Network & VPN", icon: Globe },
             { id: "team", label: "Team & Access", icon: Users },
-            { id: "features", label: "Feature Flags", icon: Sliders },
-            { id: "billing", label: "Billing & Invoices", icon: CreditCard },
+            { id: "documents", label: "Documents & Legal", icon: FileText },
+            { id: "api", label: "API & Webhooks", icon: Webhook },
+            { id: "backups", label: "Data & Backups", icon: Database },
+            { id: "billing", label: "Billing", icon: CreditCard },
+            { id: "audit", label: "Audit & Logs", icon: History },
             { id: "danger", label: "Danger Zone", icon: ShieldAlert },
           ].map((tab, idx) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const shortcutKey = idx === 9 ? "0" : `${idx + 1}`;
             return (
-              <ActionTooltip key={tab.id} label={`Switch to ${tab.label}`} shortcut={`${idx + 1}`}>
+              <ActionTooltip key={tab.id} label={`Switch to ${tab.label}`} shortcut={shortcutKey}>
                 <button
                   onClick={() => setActiveTab(tab.id as DetailTab)}
                   className={cn(
@@ -418,10 +434,16 @@ export default function OrganizationDetailPage() {
           {activeTab === "team" && (
             <OrgTeamAccessTab organization={org} />
           )}
-          {activeTab === "features" && (
-            <OrgFeatureFlagsTab
+          {activeTab === "documents" && (
+            <OrgDocumentsTab organization={org} />
+          )}
+          {activeTab === "api" && (
+            <OrgApiWebhooksTab organization={org} />
+          )}
+          {activeTab === "backups" && (
+            <OrgDataBackupsTab
               organization={org}
-              onSaveFlags={() => refresh()}
+              onOpenImportModal={() => {}}
             />
           )}
           {activeTab === "billing" && (
@@ -429,6 +451,9 @@ export default function OrganizationDetailPage() {
               organization={org}
               onOpenPlanUpgrade={() => setQuotaModalOpen(true)}
             />
+          )}
+          {activeTab === "audit" && (
+            <OrgAuditLogsTab organization={org} />
           )}
           {activeTab === "danger" && (
             <OrgDangerZoneTab

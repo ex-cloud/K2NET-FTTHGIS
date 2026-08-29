@@ -6,14 +6,10 @@ import {
   Server,
   Network,
   Database,
-  Users,
   CreditCard,
-  CheckCircle2,
   Radio,
   ShieldCheck,
   Cpu,
-  Clock,
-  Globe,
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -326,62 +322,129 @@ export function OrgOverviewTab({
           </div>
         </Card>
 
-        {/* Operational Telemetry & Activity Feed */}
+        {/* B2B Feature Flags & Module Entitlements Engine */}
         <Card className="lg:col-span-2 p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">
-              Audit & System Telemetry Log (Last 24 Hours)
-            </h4>
-            <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
-              <Clock className="h-3 w-3" />
-              <span>Auto-refresh 30s</span>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">
+                B2B Module Entitlements & Feature Flags
+              </h4>
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono px-1.5 py-0.2">
+                {Object.values(org.featureFlags || {}).filter(Boolean).length} of 5 Active
+              </Badge>
+            </div>
+            <span className="text-[11px] font-mono text-muted-foreground">
+              Instant Tenant Sync
             </span>
           </div>
 
           <div className="space-y-2.5">
-            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
-              <div className="h-6 w-6 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">SNMP Optical Poller Heartbeat</span>
-                  <span className="text-[10px] font-mono text-muted-foreground">05:42 WIB</span>
+            {/* GIS Core */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Database className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Berhasil mengambil status 2 OLT node. 14 PON ports aktif dengan power margin rata-rata -18.4 dBm.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">GIS Spatial Mapping Core</span>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">CORE</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    PostGIS spatial rendering, ODC/ODP splitters, dan fiber cable route tracing.
+                  </p>
+                </div>
               </div>
+              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">
+                ENABLED
+              </Badge>
             </div>
 
-            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
-              <div className="h-6 w-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0 mt-0.5">
-                <Globe className="h-3.5 w-3.5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">Let&apos;s Encrypt Auto-SSL Renewal Check</span>
-                  <span className="text-[10px] font-mono text-muted-foreground">02:15 WIB</span>
+            {/* OLT Poller */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                  <Radio className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Sertifikat wildcard HTTPS Traefik valid hingga 25 November 2026.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">Dedicated SNMP OLT Poller</span>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">DAEMON</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Background SNMP daemon polling live optical RX/TX power dan ONT alarms.
+                  </p>
+                </div>
               </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "font-mono text-[10px]",
+                  org.featureFlags?.oltPoller
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-muted text-muted-foreground"
+                )}
+              >
+                {org.featureFlags?.oltPoller ? "ENABLED" : "DISABLED"}
+              </Badge>
             </div>
 
-            <div className="flex items-start gap-3 p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
-              <div className="h-6 w-6 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0 mt-0.5">
-                <Users className="h-3.5 w-3.5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">Admin Session Login via Keycloak</span>
-                  <span className="text-[10px] font-mono text-muted-foreground">Kemarin 21:04</span>
+            {/* WhatsApp Engine */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Activity className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  User <strong className="text-foreground">{org.picName || "admin"}</strong> berhasil login ke portal tenant dari IP 180.252.110.12.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">WhatsApp & SMS Gateway Engine</span>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">GATEWAY</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Notifikasi tagihan invoice otomatis, blast broadcast tiket, dan SMS OTP via port 5001.
+                  </p>
+                </div>
               </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "font-mono text-[10px]",
+                  org.featureFlags?.whatsappEngine
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-muted text-muted-foreground"
+                )}
+              >
+                {org.featureFlags?.whatsappEngine ? "ENABLED" : "DISABLED"}
+              </Badge>
+            </div>
+
+            {/* AI Copilot */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
+                  <Cpu className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">AI Fiber Copilot & Diagnostics</span>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">ENTERPRISE</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Analisis kerusakan kabel fiber optik otomatis dan asisten troubleshooting NOC cerdas.
+                  </p>
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "font-mono text-[10px]",
+                  org.featureFlags?.aiCopilot
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-muted text-muted-foreground"
+                )}
+              >
+                {org.featureFlags?.aiCopilot ? "ENABLED" : "TIER LOCKED"}
+              </Badge>
             </div>
           </div>
         </Card>

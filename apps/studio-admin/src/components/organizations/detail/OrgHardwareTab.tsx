@@ -11,7 +11,6 @@ import {
   TableBody,
   TableCell,
   ActionTooltip,
-  Card,
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
@@ -22,13 +21,11 @@ import {
 import {
   Network,
   Plus,
-  RefreshCw,
   Sliders,
   Copy,
   Terminal,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "../types";
 
 interface OrgHardwareTabProps {

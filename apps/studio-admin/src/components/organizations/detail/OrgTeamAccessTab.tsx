@@ -21,7 +21,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Card,
   ActionTooltip,
   ContextMenu,
   ContextMenuTrigger,
