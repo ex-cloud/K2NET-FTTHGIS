@@ -49,6 +49,7 @@ import {
   type PlanTier,
   normalizePlanTier,
   toBackendPlanName,
+  calculateTrialDaysLeft,
 } from "@/components/organizations/types";
 import { OrganizationKpiStrip } from "@/components/organizations/OrganizationKpiStrip";
 import { OrganizationToolbar } from "@/components/organizations/OrganizationToolbar";
@@ -179,9 +180,7 @@ export default function AdminOrganizationsPage() {
         apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
         apiLatencyMs: 38 + (idx * 4),
 
-        trialDaysLeft: org.trialExpiresAt
-          ? Math.max(0, Math.ceil((new Date(org.trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-          : (status === "TRIAL" ? 7 : undefined),
+        trialDaysLeft: calculateTrialDaysLeft(org.trialExpiresAt, status),
       };
     });
   }, [rawOrgs]);

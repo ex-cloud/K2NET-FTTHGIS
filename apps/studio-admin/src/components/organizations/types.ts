@@ -37,6 +37,19 @@ export function toBackendPlanName(tier: PlanTier | string): string {
   }
 }
 
+export function calculateTrialDaysLeft(trialExpiresAt?: string, status?: string): number | undefined {
+  if (trialExpiresAt) {
+    try {
+      const exp = new Date(trialExpiresAt).getTime();
+      const now = Date.now();
+      return Math.max(0, Math.ceil((exp - now) / 86400000));
+    } catch {
+      return 7;
+    }
+  }
+  return status === "TRIAL" ? 7 : undefined;
+}
+
 export interface OrganizationFeatureFlags {
   gisCore: boolean;
   oltPoller: boolean;

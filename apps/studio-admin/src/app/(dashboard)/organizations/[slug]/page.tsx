@@ -50,6 +50,7 @@ import {
   type PlanTier,
   normalizePlanTier,
   toBackendPlanName,
+  calculateTrialDaysLeft,
 } from "@/components/organizations/types";
 import { OrgOverviewTab } from "@/components/organizations/detail/OrgOverviewTab";
 import { OrgHardwareTab } from "@/components/organizations/detail/OrgHardwareTab";
@@ -153,9 +154,7 @@ export default function OrganizationDetailPage() {
       apiRateLimitUsed: 850,
       apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
       apiLatencyMs: 38,
-      trialDaysLeft: rawOrg.trialExpiresAt
-        ? Math.max(0, Math.ceil((new Date(rawOrg.trialExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-        : (status === "TRIAL" ? 7 : undefined),
+      trialDaysLeft: calculateTrialDaysLeft(rawOrg.trialExpiresAt, status),
     };
   }, [rawOrg]);
 
