@@ -5,11 +5,16 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.locationtech.jts.geom.Point;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "network_nodes")
+@SQLDelete(sql = "UPDATE network_nodes SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "node_type")
 @EntityListeners(MapCacheEntityListener.class)
@@ -24,6 +29,12 @@ public abstract class NetworkNode extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
 
     @Column(unique = true)
     private Long osmid;

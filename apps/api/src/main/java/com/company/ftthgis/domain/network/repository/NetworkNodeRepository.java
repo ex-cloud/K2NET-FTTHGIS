@@ -31,4 +31,5 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> 
     List<AssetMapProjection> findAllByOrgSlugAndProjectId(@Param("orgSlug") String orgSlug, @Param("projectId") UUID projectId);
 
     void deleteByOrganizationId(UUID organizationId);
+    long countByOrganizationId(UUID organizationId);
 }

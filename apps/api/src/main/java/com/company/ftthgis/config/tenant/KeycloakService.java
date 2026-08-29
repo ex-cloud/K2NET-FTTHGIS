@@ -574,6 +574,26 @@ public class KeycloakService {
     }
 
     /**
+     * Disables or enables a realm in Keycloak.
+     * When disabled, all tenant users are immediately locked out and cannot authenticate.
+     */
+    public void setRealmEnabled(String realmName, boolean enabled) {
+        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+            log.warn("🛡️ Security Alert: Attempted to modify enabled state of protected realm: {}", realmName);
+            return;
+        }
+        try {
+            var realmResource = keycloak.realm(realmName);
+            var rep = realmResource.toRepresentation();
+            rep.setEnabled(enabled);
+            realmResource.update(rep);
+            log.info("🔒 SUCCESS: Keycloak Realm '{}' enabled set to {}", realmName, enabled);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical failure updating Keycloak realm enabled state for {}: {}", realmName, e.getMessage());
+        }
+    }
+
+    /**
      * Deletes a realm from Keycloak. Use with caution!
      */
     public void deleteRealm(String realmName) {

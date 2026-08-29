@@ -18,9 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -360,78 +360,218 @@ public class OrganizationService {
         return organizationRepository.save(org);
     }
 
+    private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
+
+    public java.util.Map<String, Object> getImpactSummary(String idOrSlug) {
+        Organization org = organizationRepository.findBySlug(idOrSlug)
+                .or(() -> {
+                    try {
+                        return organizationRepository.findById(UUID.fromString(idOrSlug));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new RuntimeException("Organization not found with slug or id: " + idOrSlug));
+
+        long projectsCount = projectRepository.countByOrganizationId(org.getId());
+        long nodesCount = networkNodeRepository.countByOrganizationId(org.getId());
+        long cablesCount = fiberCableRepository.countByOrganizationId(org.getId());
+        long usersCount = userRepository.countByOrganizationId(org.getId());
+
+        java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        summary.put("organizationId", org.getId());
+        summary.put("organizationName", org.getName());
+        summary.put("slug", org.getSlug());
+        summary.put("projectsCount", projectsCount);
+        summary.put("nodesCount", nodesCount);
+        summary.put("cablesCount", cablesCount);
+        summary.put("usersCount", usersCount);
+        summary.put("keycloakRealm", org.getSlug());
+        summary.put("status", org.getStatus() != null ? org.getStatus().toString() : "ACTIVE");
+        return summary;
+    }
+
+    public java.util.Map<String, Object> exportTenantBackup(String idOrSlug) {
+        Organization org = organizationRepository.findBySlug(idOrSlug)
+                .or(() -> {
+                    try {
+                        return organizationRepository.findById(UUID.fromString(idOrSlug));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new RuntimeException("Organization not found with slug or id: " + idOrSlug));
+
+        java.util.List<com.company.ftthgis.domain.tenant.entity.Project> projects = projectRepository.findByOrganizationId(org.getId());
+        java.util.Map<String, Object> backup = new java.util.HashMap<>();
+        backup.put("exportedAt", java.time.Instant.now().toString());
+        backup.put("platform", "K2NET FTTH GIS Enterprise Platform");
+        backup.put("organization", java.util.Map.of(
+                "id", org.getId(),
+                "name", org.getName(),
+                "slug", org.getSlug(),
+                "website", org.getWebsite() != null ? org.getWebsite() : "",
+                "address", org.getAddress() != null ? org.getAddress() : "",
+                "plan", org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "FREE"
+        ));
+        backup.put("projects", projects.stream().map(p -> java.util.Map.of(
+                "id", p.getId(),
+                "name", p.getName(),
+                "code", p.getCode(),
+                "region", p.getRegion() != null ? p.getRegion() : ""
+        )).toList());
+        backup.put("summary", getImpactSummary(idOrSlug));
+        return backup;
+    }
+
     @Transactional
-    public void deleteOrganization(String slug) {
-        // SECONDARY DEFENSE: Prevent unauthorized nuclear deletion
+    public void deleteOrganization(String idOrSlug, String mode, String reason) {
+        Organization org = organizationRepository.findBySlug(idOrSlug)
+                .or(() -> {
+                    try {
+                        return organizationRepository.findById(UUID.fromString(idOrSlug));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new RuntimeException("Organization not found with slug or id: " + idOrSlug));
+
+        String slug = org.getSlug();
+
+        // SECONDARY DEFENSE: Prevent unauthorized deletion
         if (!tenantSecurity.isOwner(slug)) {
             log.error("🛡️ CRITICAL SECURITY INCIDENT: Unauthorized deletion attempt for organization '{}'", slug);
             throw new SecurityException("You do not have permission to delete this organization. Incident logged.");
         }
 
-        Organization org = organizationRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Organization not found with slug: " + slug));
-
-        log.warn("⚠️ NUCLEAR DELETE INITIATED: {} (Slug: {})", org.getName(), slug);
-
-        try {
-            // 1. Delete Keycloak Realm (Infrastructure Cleanup)
-            log.info("🛡️ Deleting Keycloak Realm: {}", slug);
-            keycloakService.deleteRealm(slug);
-
-            // 2. Delete All Network Assets (Data Cleanup)
-            // Order is important due to foreign key constraints
-            log.info("📡 Cleaning up network assets for organization: {}", slug);
-            
-            // Delete customers and fiber cables first
-            customerRepository.deleteByOrganizationId(org.getId());
-            fiberCableRepository.deleteByOrganizationId(org.getId());
-            
-            // Delete network nodes (OLT, ODC, ODP)
-            // Since they are in a joined inheritance, we delete via the repositories
-            assetRepository.deleteByOrganizationId(org.getId());
-            networkNodeRepository.deleteByOrganizationId(org.getId());
-
-            // 3. Cleanup Users (Permanently Delete Tenant Users)
-            List<com.company.ftthgis.domain.user.entity.User> users = userRepository.findByOrganizationId(org.getId());
-            log.info("👤 Deleting {} users associated with organization: {}", users.size(), slug);
-            userRepository.deleteAll(users);
-
-            // 4. Delete Keycloak Realm
-            log.info("🛡️ Deleting Keycloak Realm for: {}", slug);
+        // TIER 2: NUCLEAR WIPE MODE (Permanent Physical Destruction)
+        if ("nuclear".equalsIgnoreCase(mode)) {
+            log.warn("⚠️ NUCLEAR DELETE INITIATED: {} (Slug: {})", org.getName(), slug);
             try {
-                keycloakService.deleteRealm(slug);
-            } catch (Exception e) {
-                log.warn("⚠️ Non-critical failure deleting Keycloak realm: {}. Manual cleanup may be required.", e.getMessage());
-            }
+                // 1. Delete Keycloak Realm (Infrastructure Cleanup)
+                log.info("🛡️ Deleting Keycloak Realm: {}", slug);
+                try {
+                    keycloakService.deleteRealm(slug);
+                } catch (Exception e) {
+                    log.warn("⚠️ Non-critical failure deleting Keycloak realm: {}. Manual cleanup may be required.", e.getMessage());
+                }
 
-            // 5. Delete Organization Profile & Configs
-            // Configs will be deleted automatically due to CascadeType.ALL in Organization entity
-            if (org.getLogoUrl() != null && !org.getLogoUrl().isEmpty()) {
-                log.info("🗑️ Deleting logo file for deleted organization: {}", org.getLogoUrl());
-                fileStorageService.deleteFile(org.getLogoUrl());
+                // 2. Delete All Network Assets (Data Cleanup)
+                log.info("📡 Cleaning up network assets for organization: {}", slug);
+                customerRepository.deleteByOrganizationId(org.getId());
+                fiberCableRepository.deleteByOrganizationId(org.getId());
+                assetRepository.deleteByOrganizationId(org.getId());
+                networkNodeRepository.deleteByOrganizationId(org.getId());
+
+                // 3. Cleanup Users (Permanently Delete Tenant Users)
+                List<com.company.ftthgis.domain.user.entity.User> users = userRepository.findByOrganizationId(org.getId());
+                log.info("👤 Deleting {} users associated with organization: {}", users.size(), slug);
+                userRepository.deleteAll(users);
+
+                // 4. Delete Organization Profile & Configs
+                if (org.getLogoUrl() != null && !org.getLogoUrl().isEmpty()) {
+                    log.info("🗑️ Deleting logo file for deleted organization: {}", org.getLogoUrl());
+                    try {
+                        fileStorageService.deleteFile(org.getLogoUrl());
+                    } catch (Exception ignored) {}
+                }
+                organizationRepository.delete(org);
+
+                try {
+                    auditLoggingService.logEvent(
+                        "system",
+                        "TENANT_NUCLEAR_DELETED",
+                        "ORGANIZATION",
+                        org.getId().toString(),
+                        java.util.Map.of("name", org.getName(), "slug", org.getSlug(), "status", "NUCLEAR_DELETED"),
+                        new java.util.HashMap<>(),
+                        new java.util.HashMap<>()
+                    );
+                } catch (Exception auditEx) {
+                    log.error("Failed to log TENANT_NUCLEAR_DELETED audit event: {}", auditEx.getMessage());
+                }
+
+                log.info("✅ SUCCESS: Organization '{}' and all associated resources have been nuked.", slug);
+                return;
+            } catch (Exception e) {
+                log.error("❌ ERROR during nuclear organization deletion for {}: {}", slug, e.getMessage());
+                throw new RuntimeException("Failed to perform nuclear organization cleanup: " + e.getMessage(), e);
             }
-            organizationRepository.delete(org);
+        }
+
+        // TIER 1: SOFT DELETE / GRACE PERIOD (30 Hari ke Recycle Bin)
+        log.warn("🗑️ TIER 1 SOFT DELETE INITIATED: {} (Slug: {}) - Reason: {}", org.getName(), slug, reason);
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = auth != null ? auth.getName() : "admin";
+            org.setDeletedAt(java.time.LocalDateTime.now());
+            org.setDeletedBy(currentUsername);
+            org.setStatus(Organization.OrganizationStatus.SUSPENDED);
+            organizationRepository.save(org);
+
+            // Immediate Lockout: Disable Keycloak Realm so tenant users cannot authenticate
+            keycloakService.setRealmEnabled(slug, false);
 
             try {
                 auditLoggingService.logEvent(
                     "system",
-                    "TENANT_DELETED",
+                    "TENANT_SOFT_DELETED",
                     "ORGANIZATION",
                     org.getId().toString(),
-                    java.util.Map.of("name", org.getName(), "slug", org.getSlug(), "status", org.getStatus().toString()),
+                    java.util.Map.of("name", org.getName(), "slug", org.getSlug(), "mode", "SOFT_DELETE", "reason", reason != null ? reason : "Recycle Bin Grace Period"),
                     new java.util.HashMap<>(),
                     new java.util.HashMap<>()
                 );
             } catch (Exception auditEx) {
-                log.error("Failed to log TENANT_DELETED audit event: {}", auditEx.getMessage());
+                log.error("Failed to log TENANT_SOFT_DELETED audit event: {}", auditEx.getMessage());
             }
 
-            log.info("✅ SUCCESS: Organization '{}' and all associated resources have been nuked.", slug);
-
+            log.info("✅ SUCCESS: Organization '{}' moved to Recycle Bin (Keycloak Realm disabled).", slug);
         } catch (Exception e) {
-            log.error("❌ ERROR during organization deletion for {}: {}", slug, e.getMessage());
-            throw new RuntimeException("Failed to perform full organization cleanup: " + e.getMessage(), e);
+            log.error("❌ ERROR during soft deletion for {}: {}", slug, e.getMessage());
+            throw new RuntimeException("Gagal memindahkan organisasi ke Recycle Bin: " + e.getMessage(), e);
         }
+    }
+
+    @Transactional
+    public void restoreOrganization(String idOrSlug) {
+        Organization org = organizationRepository.findBySlug(idOrSlug)
+                .or(() -> {
+                    try {
+                        return organizationRepository.findById(UUID.fromString(idOrSlug));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new RuntimeException("Organization not found with slug or id: " + idOrSlug));
+
+        String slug = org.getSlug();
+        org.setDeletedAt(null);
+        org.setDeletedBy(null);
+        org.setStatus(Organization.OrganizationStatus.ACTIVE);
+        organizationRepository.save(org);
+
+        // Re-enable Keycloak realm
+        keycloakService.setRealmEnabled(slug, true);
+
+        try {
+            auditLoggingService.logEvent(
+                "system",
+                "TENANT_RESTORED",
+                "ORGANIZATION",
+                org.getId().toString(),
+                java.util.Map.of("name", org.getName(), "slug", org.getSlug()),
+                new java.util.HashMap<>(),
+                new java.util.HashMap<>()
+            );
+        } catch (Exception ignored) {}
+
+        log.info("🔄 SUCCESS: Organization '{}' restored and Keycloak realm re-enabled.", slug);
+    }
+
+    @Transactional
+    public void deleteOrganization(String idOrSlug) {
+        deleteOrganization(idOrSlug, "soft", "Recycle Bin Deletion");
     }
 
     @Transactional

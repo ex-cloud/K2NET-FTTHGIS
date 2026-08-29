@@ -16,6 +16,9 @@ apps/api/src/main/resources/application-prod.properties
 # =============================================
 minio_data/
 backups/
+docker/traefik/logs/
+logs/
+*.log
 
 # =============================================
 # 🔴 DOKUMEN INTERNAL & CATATAN PRIBADI

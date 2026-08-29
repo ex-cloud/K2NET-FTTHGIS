@@ -18,6 +18,10 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -35,6 +39,12 @@ public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
 
     @Column(nullable = false)
     private String name;

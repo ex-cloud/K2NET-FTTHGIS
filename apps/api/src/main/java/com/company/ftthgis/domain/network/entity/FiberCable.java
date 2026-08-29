@@ -5,11 +5,16 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.envers.Audited;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.locationtech.jts.geom.LineString;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "network_edges")
+@SQLDelete(sql = "UPDATE network_edges SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @EntityListeners(MapCacheEntityListener.class)
 @Getter
 @Setter
@@ -22,6 +27,12 @@ public class FiberCable extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
 
     @Column(nullable = false, unique = true)
     private String code;

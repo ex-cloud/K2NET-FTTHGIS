@@ -40,4 +40,5 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, UUID> {
         Double sumLengthByProjectId(@Param("projectId") UUID projectId);
 
         void deleteByOrganizationId(UUID organizationId);
+        long countByOrganizationId(UUID organizationId);
 }

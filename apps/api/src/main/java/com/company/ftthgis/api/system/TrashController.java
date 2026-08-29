@@ -22,6 +22,7 @@ import java.util.*;
 public class TrashController {
 
     private final JdbcTemplate jdbcTemplate;
+    private final com.company.ftthgis.service.OrganizationService organizationService;
 
     public record TrashItemResponse(
             String id,
@@ -237,6 +238,17 @@ public class TrashController {
             return ResponseEntity.badRequest().body(Map.of("error", "type and id are required"));
         }
 
+        if ("ORGANIZATION".equalsIgnoreCase(req.type())) {
+            try {
+                organizationService.restoreOrganization(req.id());
+                log.info("[Trash] Restored organization and re-enabled Keycloak realm for id {}", req.id());
+                return ResponseEntity.ok(Map.of("success", true, "message", "Organization restored and Keycloak realm re-enabled"));
+            } catch (Exception e) {
+                log.error("[Trash] Failed to restore organization", e);
+                return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            }
+        }
+
         String table = resolveTable(req.type());
         if (table == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid entity type: " + req.type()));
@@ -263,6 +275,17 @@ public class TrashController {
     public ResponseEntity<?> permanentDelete(@RequestBody TrashActionRequest req) {
         if (req.type() == null || req.id() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "type and id are required"));
+        }
+
+        if ("ORGANIZATION".equalsIgnoreCase(req.type())) {
+            try {
+                organizationService.deleteOrganization(req.id(), "nuclear", "Recycle Bin Permanent Nuclear Wipe");
+                log.info("[Trash] Nuclear deleted organization and destroyed Keycloak realm for id {}", req.id());
+                return ResponseEntity.ok(Map.of("success", true, "message", "Organization and Keycloak realm permanently destroyed"));
+            } catch (Exception e) {
+                log.error("[Trash] Failed to permanently delete organization", e);
+                return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+            }
         }
 
         String table = resolveTable(req.type());

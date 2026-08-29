@@ -27,6 +27,16 @@ import {
   Building2,
   ShieldAlert,
   Loader2,
+  Download,
+  Trash2,
+  Flame,
+  Archive,
+  FolderGit2,
+  Network,
+  Users,
+  KeyRound,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrganizationWizard } from "@/components/organizations/OrganizationWizard";
@@ -47,6 +57,18 @@ interface Project {
   id: string;
   name: string;
   region: string;
+}
+
+interface ImpactSummary {
+  organizationId: string;
+  organizationName: string;
+  slug: string;
+  projectsCount: number;
+  nodesCount: number;
+  cablesCount: number;
+  usersCount: number;
+  keycloakRealm: string;
+  status: string;
 }
 
 type ViewMode = "grid" | "list" | "table";
@@ -322,47 +344,105 @@ export default function AdminOrganizationsPage() {
     setSelectedIds([]);
   };
 
-  // Delete flow
+  // Delete flow state
+  const [deleteMode, setDeleteMode] = useState<"soft" | "nuclear">("soft");
+  const [impactSummary, setImpactSummary] = useState<ImpactSummary | null>(null);
+  const [loadingImpact, setLoadingImpact] = useState<boolean>(false);
+  const [exportingBackup, setExportingBackup] = useState<boolean>(false);
+  const [confirmUnderstandNuclear, setConfirmUnderstandNuclear] = useState<boolean>(false);
+
   useEffect(() => {
     if (!orgToDelete || !session?.accessToken) {
       setProjects([]);
       setCheckedProjects({});
       setDeleteReason("");
       setDeleteConfirmSlug("");
+      setDeleteMode("soft");
+      setImpactSummary(null);
+      setConfirmUnderstandNuclear(false);
       return;
     }
 
-    const fetchProjects = async () => {
+    const fetchDetails = async () => {
       setLoadingProjects(true);
+      setLoadingImpact(true);
       try {
-        const res = await fetch(`/api/v1/organizations/${orgToDelete.slug}/projects`, {
-          headers: { Authorization: `Bearer ${session.accessToken}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setProjects(data);
+        const [projRes, impactRes] = await Promise.all([
+          fetch(`/api/v1/organizations/${orgToDelete.slug}/projects`, {
+            headers: { Authorization: `Bearer ${session.accessToken}` },
+          }),
+          fetch(`/api/v1/organizations/${orgToDelete.slug}/impact-summary`, {
+            headers: { Authorization: `Bearer ${session.accessToken}` },
+          }),
+        ]);
+
+        if (projRes.ok) {
+          const projData = await projRes.json();
+          setProjects(projData);
+        }
+        if (impactRes.ok) {
+          const impactData = await impactRes.json();
+          setImpactSummary(impactData);
         }
       } catch (err) {
-        console.error("Error fetching projects", err);
+        console.error("Error fetching organization deletion details", err);
       } finally {
         setLoadingProjects(false);
+        setLoadingImpact(false);
       }
     };
-    fetchProjects();
+    fetchDetails();
   }, [orgToDelete, session?.accessToken]);
+
+  const handleExportBackup = async () => {
+    if (!orgToDelete || !session?.accessToken) return;
+    setExportingBackup(true);
+    try {
+      const res = await fetch(`/api/v1/organizations/${orgToDelete.slug}/export-backup`, {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `tenant-backup-${orgToDelete.slug}-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success(`Arsip cadangan ${orgToDelete.name} berhasil diunduh`);
+      } else {
+        toast.error("Gagal mengekspor data cadangan tenant");
+      }
+    } catch (err) {
+      toast.error("Terjadi kesalahan saat mengunduh data cadangan");
+    } finally {
+      setExportingBackup(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!orgToDelete) return;
     setDeleting(true);
     try {
       if (deleteOrg) {
-        await deleteOrg(orgToDelete.id);
+        await deleteOrg({
+          idOrSlug: orgToDelete.slug || orgToDelete.id,
+          mode: deleteMode,
+          reason: deleteReason,
+        });
       }
-      toast.success(`Organization ${orgToDelete.name} deleted successfully`);
+      if (deleteMode === "soft") {
+        toast.success(`Organisasi ${orgToDelete.name} dipindahkan ke Recycle Bin (Grace Period 30 Hari)`);
+      } else {
+        toast.success(`Organisasi ${orgToDelete.name} dan seluruh asetnya telah dimusnahkan secara permanen`);
+      }
       setOrgToDelete(null);
       refetch();
-    } catch (err) {
-      toast.error("Failed to delete organization");
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal memproses penghapusan organisasi");
     } finally {
       setDeleting(false);
     }
@@ -370,9 +450,12 @@ export default function AdminOrganizationsPage() {
 
   const canDelete =
     orgToDelete &&
-    deleteConfirmSlug === orgToDelete.slug &&
     deleteReason !== "" &&
-    (projects.length === 0 || projects.every((p) => checkedProjects[p.id]));
+    (deleteMode === "soft"
+      ? true
+      : deleteConfirmSlug === orgToDelete.slug &&
+        confirmUnderstandNuclear &&
+        (projects.length === 0 || projects.every((p) => checkedProjects[p.id])));
 
   return (
     <OrganizationPageWrapper>
@@ -569,101 +652,249 @@ export default function AdminOrganizationsPage() {
           }}
         />
 
-        {/* Delete Confirmation Dialog */}
+        {/* 2-Tier Enterprise Deletion Dialog */}
         <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && setOrgToDelete(null)}>
-          <DialogContent className="bg-popover/95 backdrop-blur-xl border-border/80 sm:max-w-[460px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl">
-            <DialogHeader className="p-6 pb-2 text-foreground">
-              <DialogTitle className="text-lg font-bold flex items-center gap-2 text-destructive">
-                <ShieldAlert className="w-5 h-5 text-destructive" />
-                <span>Delete Organization</span>
-              </DialogTitle>
+          <DialogContent className="bg-popover/95 backdrop-blur-xl border-border/80 sm:max-w-[580px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="p-6 pb-3 text-foreground border-b border-border/60">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-base font-bold flex items-center gap-2.5 text-foreground">
+                  <div className={cn(
+                    "p-2 rounded-xl border flex items-center justify-center",
+                    deleteMode === "soft" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-destructive/10 border-destructive/20 text-destructive"
+                  )}>
+                    {deleteMode === "soft" ? <Archive className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <span className="block text-sm font-semibold">Penghapusan Tenant & Manajemen Siklus Hidup</span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      Organisasi: <strong className="text-foreground">{orgToDelete?.name}</strong> (<span className="font-mono">{orgToDelete?.slug}</span>)
+                    </span>
+                  </div>
+                </DialogTitle>
+              </div>
             </DialogHeader>
 
-            <div className="p-6 space-y-4">
-              {loadingProjects ? (
-                <div className="flex flex-col items-center justify-center py-6 gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <p className="text-xs text-muted-foreground">Loading associated projects...</p>
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+              {/* 1. Ringkasan Dampak Nyata (Impact Summary Cards) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-foreground/80">Ringkasan Dampak Aset Organisasi</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">IAM Realm: {orgToDelete?.slug}</span>
                 </div>
-              ) : projects.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Acknowledge project removal:
-                  </p>
-                  <div className="space-y-1.5 max-h-[140px] overflow-auto pr-1 custom-scrollbar">
-                    {projects.map((project) => (
-                      <div
-                        key={project.id}
-                        className="flex items-center justify-between p-2.5 rounded-lg bg-card border border-border"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Checkbox
-                            id={`project-${project.id}`}
-                            checked={!!checkedProjects[project.id]}
-                            onCheckedChange={(checked: boolean) => {
-                              setCheckedProjects((prev) => ({
-                                ...prev,
-                                [project.id]: !!checked,
-                              }));
-                            }}
-                          />
-                          <Label htmlFor={`project-${project.id}`} className="text-xs font-medium text-foreground cursor-pointer">
-                            {project.name}
-                          </Label>
-                        </div>
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase bg-muted px-1.5 py-0.5 rounded">
-                          {project.region || "ap-southeast-1"}
-                        </span>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="p-2.5 rounded-xl bg-card border border-border flex flex-col items-center justify-center text-center">
+                    <FolderGit2 className="w-4 h-4 text-primary mb-1" />
+                    <span className="text-sm font-bold text-foreground">
+                      {loadingImpact ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : impactSummary?.projectsCount ?? 0}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Proyek GIS</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border flex flex-col items-center justify-center text-center">
+                    <Network className="w-4 h-4 text-primary mb-1" />
+                    <span className="text-sm font-bold text-foreground">
+                      {loadingImpact ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : impactSummary?.nodesCount ?? 0}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Node Aset</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border flex flex-col items-center justify-center text-center">
+                    <Building2 className="w-4 h-4 text-primary mb-1" />
+                    <span className="text-sm font-bold text-foreground">
+                      {loadingImpact ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : impactSummary?.cablesCount ?? 0}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Kabel FO</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-card border border-border flex flex-col items-center justify-center text-center">
+                    <Users className="w-4 h-4 text-primary mb-1" />
+                    <span className="text-sm font-bold text-foreground">
+                      {loadingImpact ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : impactSummary?.usersCount ?? 0}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Akun User</span>
                   </div>
                 </div>
-              ) : null}
+              </div>
 
+              {/* 2. Tombol Ekspor Cadangan Data (Pre-Deletion Backup) */}
+              <div className="p-3 rounded-xl bg-card border border-border flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 text-primary" />
+                    Ekspor Cadangan Tenant (.JSON)
+                  </span>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Simpan salinan topologi peta GIS, struktur data, dan konfigurasi sebelum dihapus.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportBackup}
+                  disabled={exportingBackup}
+                  className="h-8 text-xs font-medium shrink-0 border-border bg-background hover:bg-muted"
+                >
+                  {exportingBackup ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  Unduh Backup
+                </Button>
+              </div>
+
+              {/* 3. Pilihan Mode Penghapusan (2-Tier Selection) */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-foreground">Pilih Metode Penghapusan</Label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Mode 1: Soft Delete (Recycle Bin) */}
+                  <div
+                    onClick={() => setDeleteMode("soft")}
+                    className={cn(
+                      "p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3",
+                      deleteMode === "soft"
+                        ? "bg-primary/5 border-primary shadow-sm"
+                        : "bg-card border-border hover:border-border/80 opacity-80"
+                    )}
+                  >
+                    <div className="pt-0.5">
+                      <div className={cn(
+                        "w-4 h-4 rounded-full border flex items-center justify-center",
+                        deleteMode === "soft" ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground"
+                      )}>
+                        {deleteMode === "soft" && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+                      </div>
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Archive className="w-3.5 h-3.5 text-amber-500" />
+                          Pindahkan ke Recycle Bin (Grace Period 30 Hari)
+                        </span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          Direkomendasikan (Aman)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Keycloak Realm dinonaktifkan seketika (semua user langsung logout). Data tersimpan aman di <strong>Recycle Bin</strong> selama 30 hari dan dapat dipulihkan sewaktu-waktu dengan 1-klik.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mode 2: Nuclear Hard Wipe */}
+                  <div
+                    onClick={() => setDeleteMode("nuclear")}
+                    className={cn(
+                      "p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3",
+                      deleteMode === "nuclear"
+                        ? "bg-destructive/5 border-destructive shadow-sm"
+                        : "bg-card border-border hover:border-border/80 opacity-80"
+                    )}
+                  >
+                    <div className="pt-0.5">
+                      <div className={cn(
+                        "w-4 h-4 rounded-full border flex items-center justify-center",
+                        deleteMode === "nuclear" ? "border-destructive bg-destructive text-destructive-foreground" : "border-muted-foreground"
+                      )}>
+                        {deleteMode === "nuclear" && <div className="w-1.5 h-1.5 rounded-full bg-background" />}
+                      </div>
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-destructive flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-destructive" />
+                          Hapus Fisik Permanen Langsung (Nuclear Wipe)
+                        </span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                          Danger Zone
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Keycloak Realm, seluruh titik PostGIS, dan berkas di storage akan <strong>dimusnahkan fisik seketika</strong> tanpa masa tenggang.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Alasan Penghapusan */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Reason for deletion</Label>
+                <Label className="text-xs font-semibold text-foreground">Alasan Penghapusan Tenant</Label>
                 <Select onValueChange={setDeleteReason} value={deleteReason}>
                   <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
-                    <SelectValue placeholder="Select a reason" />
+                    <SelectValue placeholder="Pilih alasan penghapusan" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-foreground text-xs">
-                    <SelectItem value="client-churn">Client contract ended</SelectItem>
-                    <SelectItem value="temporary-trial-ended">Trial period expired</SelectItem>
-                    <SelectItem value="consolidation">Consolidation into another tenant</SelectItem>
-                    <SelectItem value="other">Other reason</SelectItem>
+                    <SelectItem value="client-churn">Kontrak ISP / Klien telah berakhir</SelectItem>
+                    <SelectItem value="temporary-trial-ended">Masa uji coba (Trial) telah habis</SelectItem>
+                    <SelectItem value="consolidation">Konsolidasi ke tenant / cabang lain</SelectItem>
+                    <SelectItem value="administrative-purge">Pembersihan administratif / testing</SelectItem>
+                    <SelectItem value="other">Alasan lainnya</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-muted-foreground leading-relaxed">
-                This action is permanent and will drop the isolated PostGIS schema, Keycloak IAM realm, and MinIO S3 assets for <strong className="text-foreground">{orgToDelete?.name}</strong>.
-              </div>
+              {/* 5. Konfirmasi Ekstra Khusus Nuclear Mode */}
+              {deleteMode === "nuclear" && (
+                <div className="space-y-3 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-xs">
+                  <div className="flex items-start gap-2 text-destructive">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p className="leading-relaxed">
+                      Tindakan ini permanen. Seluruh Keycloak realm, user, ODP, ODC, dan kabel untuk <strong className="text-foreground">{orgToDelete?.name}</strong> akan langsung dihapus tanpa bisa dibatalkan.
+                    </p>
+                  </div>
 
-              <div className="space-y-1.5 pt-1">
-                <Label className="text-xs text-muted-foreground">
-                  Type <span className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border border-border">{orgToDelete?.slug}</span> to confirm:
-                </Label>
-                <Input
-                  value={deleteConfirmSlug}
-                  onChange={(e) => setDeleteConfirmSlug(e.target.value)}
-                  placeholder="Enter organization slug"
-                  className="bg-card border-border text-foreground h-9 text-xs font-mono"
-                />
-              </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Checkbox
+                      id="confirm-nuclear"
+                      checked={confirmUnderstandNuclear}
+                      onCheckedChange={(checked: boolean) => setConfirmUnderstandNuclear(!!checked)}
+                    />
+                    <Label htmlFor="confirm-nuclear" className="text-xs font-medium text-foreground cursor-pointer">
+                      Saya memahami data akan dimusnahkan secara permanen
+                    </Label>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Ketik slug <span className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border border-border">{orgToDelete?.slug}</span> untuk konfirmasi:
+                    </Label>
+                    <Input
+                      value={deleteConfirmSlug}
+                      onChange={(e) => setDeleteConfirmSlug(e.target.value)}
+                      placeholder="Masukkan slug organisasi"
+                      className="bg-card border-border text-foreground h-9 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2">
+            <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2 shrink-0">
               <Button variant="ghost" size="sm" onClick={() => setOrgToDelete(null)} className="text-xs">
-                Cancel
+                Batal
               </Button>
               <Button
-                variant="destructive"
+                variant={deleteMode === "nuclear" ? "destructive" : "default"}
                 size="sm"
                 onClick={handleDelete}
                 disabled={!canDelete || deleting}
-                className="text-xs font-semibold gap-1.5"
+                className={cn(
+                  "text-xs font-semibold gap-1.5",
+                  deleteMode === "soft" && "bg-amber-600 hover:bg-amber-700 text-primary-foreground"
+                )}
               >
-                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Delete Tenant"}
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : deleteMode === "soft" ? (
+                  <>
+                    <Archive className="w-3.5 h-3.5" />
+                    Pindahkan ke Recycle Bin
+                  </>
+                ) : (
+                  <>
+                    <Flame className="w-3.5 h-3.5" />
+                    Musnahkan Permanen
+                  </>
+                )}
               </Button>
             </div>
           </DialogContent>

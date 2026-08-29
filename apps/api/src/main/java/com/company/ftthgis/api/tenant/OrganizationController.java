@@ -123,10 +123,26 @@ public class OrganizationController {
         return ResponseEntity.ok(organizationService.updateOrganization(slug, org));
     }
 
-    @DeleteMapping("/{slug}")
-    @PreAuthorize("@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.delete')")
-    public ResponseEntity<Void> delete(@PathVariable String slug) {
-        organizationService.deleteOrganization(slug);
+    @GetMapping("/{idOrSlug}/impact-summary")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    public ResponseEntity<java.util.Map<String, Object>> getImpactSummary(@PathVariable String idOrSlug) {
+        return ResponseEntity.ok(organizationService.getImpactSummary(idOrSlug));
+    }
+
+    @GetMapping("/{idOrSlug}/export-backup")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    public ResponseEntity<java.util.Map<String, Object>> exportBackup(@PathVariable String idOrSlug) {
+        return ResponseEntity.ok(organizationService.exportTenantBackup(idOrSlug));
+    }
+
+    @DeleteMapping("/{idOrSlug}")
+    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.delete'))")
+    public ResponseEntity<Void> delete(
+            @PathVariable String idOrSlug,
+            @RequestParam(required = false, defaultValue = "soft") String mode,
+            @RequestParam(required = false) String reason
+    ) {
+        organizationService.deleteOrganization(idOrSlug, mode, reason);
         return ResponseEntity.ok().build();
     }
 

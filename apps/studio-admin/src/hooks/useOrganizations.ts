@@ -105,10 +105,15 @@ export function useOrganizations() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (idOrSlug: string) => {
+    mutationFn: async (args: string | { idOrSlug: string; mode?: 'soft' | 'nuclear'; reason?: string }) => {
       if (!session?.accessToken) throw new Error("Not authenticated");
+      const targetId = typeof args === 'string' ? args : args.idOrSlug;
+      const targetMode = typeof args === 'string' ? 'soft' : (args.mode || 'soft');
+      const targetReason = typeof args === 'string' ? '' : (args.reason || '');
+
       const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/organizations/${idOrSlug}`, {
+      const params = new URLSearchParams({ mode: targetMode, reason: targetReason });
+      const res = await httpClient(`${baseUrl}/organizations/${targetId}?${params.toString()}`, {
         method: 'DELETE',
         token: session.accessToken,
       });
@@ -121,6 +126,7 @@ export function useOrganizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['trash-items'] });
     },
   });
 
