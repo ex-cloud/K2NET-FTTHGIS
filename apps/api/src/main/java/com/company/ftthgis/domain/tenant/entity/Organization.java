@@ -88,12 +88,67 @@ public class Organization {
     @Column(name = "trial_expires_at")
     private java.time.LocalDateTime trialExpiresAt;
 
+    @Column(name = "grace_period_until")
+    private java.time.LocalDateTime gracePeriodUntil;
+
+    @Column(name = "booster_odps")
+    @lombok.Builder.Default
+    private Integer boosterOdps = 0;
+
+    @Column(name = "booster_olts")
+    @lombok.Builder.Default
+    private Integer boosterOlts = 0;
+
+    @Column(name = "booster_expires_at")
+    private java.time.LocalDateTime boosterExpiresAt;
+
+    @Column(name = "dunning_level")
+    @lombok.Builder.Default
+    private Integer dunningLevel = 0;
+
+    @Column(name = "plan_cycle")
+    @lombok.Builder.Default
+    private String planCycle = "MONTHLY";
+
+    @Column(name = "over_quota_mode")
+    @lombok.Builder.Default
+    private Boolean overQuotaMode = false;
+
     public enum OrganizationStatus {
         ACTIVE,
+        TRIAL,
         PENDING_APPROVAL,
+        OVERDUE,
+        OVER_QUOTA,
         SUSPENDED,
         TRIAL_EXPIRED,
         DELETED
+    }
+
+    public boolean isBoosterActive() {
+        return boosterExpiresAt != null && boosterExpiresAt.isAfter(java.time.LocalDateTime.now());
+    }
+
+    public int getEffectiveMaxOlts(Integer baseOlts) {
+        int base = baseOlts != null ? baseOlts : (subscriptionPlan != null && subscriptionPlan.getMaxProjects() != null ? subscriptionPlan.getMaxProjects() : 5);
+        return base + (isBoosterActive() && boosterOlts != null ? boosterOlts : 0);
+    }
+
+    public int getEffectiveMaxOdps(Integer baseOdps) {
+        int base = baseOdps != null ? baseOdps : (subscriptionPlan != null && subscriptionPlan.getMaxOdps() != null ? subscriptionPlan.getMaxOdps() : 1000);
+        return base + (isBoosterActive() && boosterOdps != null ? boosterOdps : 0);
+    }
+
+    public boolean isTrialExpired() {
+        return trialExpiresAt != null && trialExpiresAt.isBefore(java.time.LocalDateTime.now());
+    }
+
+    public boolean isSoftLocked() {
+        if (dunningLevel != null && dunningLevel >= 3) return true;
+        if (isTrialExpired()) {
+            return gracePeriodUntil == null || gracePeriodUntil.isBefore(java.time.LocalDateTime.now());
+        }
+        return false;
     }
 
     @com.fasterxml.jackson.annotation.JsonProperty("settings")

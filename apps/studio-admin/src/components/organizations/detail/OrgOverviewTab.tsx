@@ -11,10 +11,14 @@ import {
   ShieldCheck,
   Cpu,
   ExternalLink,
+  Zap,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization } from "../types";
+import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 
 interface OrgOverviewTabProps {
   organization: EnrichedOrganization;
@@ -25,13 +29,39 @@ export function OrgOverviewTab({
   organization: org,
   onOpenPlanUpgrade,
 }: OrgOverviewTabProps) {
-  const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
-  const odpPct = org.maxOdps > 0 ? Math.round((org.usedOdps / org.maxOdps) * 100) : 0;
+  const { summary } = useTenantSubscription(org.slug);
+
+  const effectiveMaxOlts = summary?.effectiveMaxOlts ?? org.maxOlts;
+  const effectiveMaxOdps = summary?.effectiveMaxOdps ?? org.maxOdps;
+  const usedOlts = summary?.usedOlts ?? org.usedOlts;
+  const usedOdps = summary?.usedOdps ?? org.usedOdps;
+
+  const oltPct = effectiveMaxOlts > 0 ? Math.round((usedOlts / effectiveMaxOlts) * 100) : 0;
+  const odpPct = effectiveMaxOdps > 0 ? Math.round((usedOdps / effectiveMaxOdps) * 100) : 0;
   const storagePct = org.maxStorageGb > 0 ? Math.round((org.usedStorageGb / org.maxStorageGb) * 100) : 0;
   const rpmPct = org.apiRateLimitMax > 0 ? Math.min(100, Math.round((org.apiRateLimitUsed / org.apiRateLimitMax) * 100)) : 0;
 
+  const activeStatus = summary?.status ?? org.status;
+  const isBoosterActive = summary?.isBoosterActive ?? false;
+
   return (
     <div className="space-y-6">
+      {/* Booster Notification Banner */}
+      {isBoosterActive && (
+        <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between text-xs text-foreground">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500 shrink-0" />
+            <span className="font-bold">Emergency Quota Booster Aktif:</span>
+            <span className="text-foreground/80">
+              +{summary?.boosterOdps} ODP & +{summary?.boosterOlts} OLT (Sisa {summary?.boosterDaysRemaining} hari).
+            </span>
+          </div>
+          <Badge variant="outline" className="border-amber-500/40 text-amber-500 font-mono text-[10px]">
+            BURSTING ACTIVE
+          </Badge>
+        </div>
+      )}
+
       {/* 1. Master Identity & Key Properties Card */}
       <Card className="p-4 md:p-5 space-y-4">
         {/* Top Identity Row */}
@@ -65,13 +95,19 @@ export function OrgOverviewTab({
           </div>
 
           {/* Status & Plan Badges */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {summary?.isOverQuota && (
+              <Badge variant="destructive" className="font-mono text-[10px] gap-1 px-2 py-0.5">
+                <AlertTriangle className="h-3 w-3" />
+                <span>OVER_QUOTA</span>
+              </Badge>
+            )}
             <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              <span>{org.status}</span>
+              <span>{activeStatus}</span>
             </Badge>
             <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px] font-semibold px-2 py-0.5">
-              {org.planTier} PLAN
+              {summary?.planTier ?? org.planTier} PLAN
             </Badge>
           </div>
         </div>
@@ -88,11 +124,11 @@ export function OrgOverviewTab({
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">Hardware Slots</span>
-            <span className="font-mono text-foreground block">{org.usedOlts}/{org.maxOlts} OLTs</span>
+            <span className="font-mono text-foreground block">{usedOlts}/{effectiveMaxOlts} OLTs</span>
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">ODP Quota</span>
-            <span className="font-mono text-foreground block">{org.usedOdps}/{org.maxOdps}</span>
+            <span className="font-mono text-foreground block">{usedOdps}/{effectiveMaxOdps}</span>
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-mono text-foreground/75 dark:text-muted-foreground font-semibold block">MinIO Storage</span>

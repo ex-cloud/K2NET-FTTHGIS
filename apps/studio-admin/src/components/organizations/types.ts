@@ -100,4 +100,21 @@ export interface EnrichedOrganization {
   // Lifecycle Details
   provisioningStep?: number; // 1: DB Schema, 2: IAM Realm, 3: Kong Route, 4: MinIO S3
   trialDaysLeft?: number;
+  trialExpiresAt?: string;
+  isTrialExpired?: boolean;
+  gracePeriodUntil?: string;
+  dunningLevel?: number;
+  planCycle?: "MONTHLY" | "YEARLY";
+  overQuotaMode?: boolean;
+  isOverQuota?: boolean;
+  isSoftLocked?: boolean;
+
+  // Emergency Quota Booster
+  isBoosterActive?: boolean;
+  boosterOdps?: number;
+  boosterOlts?: number;
+  boosterExpiresAt?: string;
+  boosterDaysRemaining?: number;
+  effectiveMaxOlts?: number;
+  effectiveMaxOdps?: number;
 }
