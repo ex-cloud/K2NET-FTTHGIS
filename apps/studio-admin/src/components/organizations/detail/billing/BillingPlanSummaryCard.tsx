@@ -12,6 +12,7 @@ interface BillingPlanSummaryCardProps {
   effectiveMaxOlts: number;
   effectiveMaxOdps: number;
   maxStorageGb: number;
+  isLoading?: boolean;
   onOpenChangePlan: () => void;
 }
 
@@ -22,17 +23,18 @@ export function BillingPlanSummaryCard({
   effectiveMaxOlts,
   effectiveMaxOdps,
   maxStorageGb,
+  isLoading = false,
   onOpenChangePlan,
 }: BillingPlanSummaryCardProps) {
-  const tierUpper = (currentTier || "").toUpperCase();
-  const defaultTierPrice = tierUpper.includes("ENTERPRISE")
-    ? 14500000
-    : tierUpper.includes("PRO")
-    ? 4900000
-    : 0;
-
-  const priceNum = summary?.planPrice !== undefined ? Number(summary.planPrice) : defaultTierPrice;
-  const formattedPrice = priceNum > 0 ? `Rp ${priceNum.toLocaleString("id-ID")}` : "Free Trial";
+  const priceNum = Number(summary?.planPrice || 0);
+  const formattedPrice =
+    isLoading
+      ? "—"
+      : priceNum > 0
+      ? `Rp ${priceNum.toLocaleString("id-ID")}`
+      : summary?.planPrice !== undefined
+      ? "Free Trial"
+      : "—";
 
   // Dynamic next invoice date: 1st of next month
   const nextInvoiceDate = new Date();
@@ -58,14 +60,26 @@ export function BillingPlanSummaryCard({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h5 className="text-base font-extrabold text-foreground">{currentTier} Plan</h5>
-                <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] font-mono">
-                  {summary?.status || orgStatus}
-                </Badge>
+                {isLoading ? (
+                  <div className="h-5 w-36 bg-muted animate-pulse rounded" />
+                ) : (
+                  <>
+                    <h5 className="text-base font-extrabold text-foreground">{currentTier} Plan</h5>
+                    <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px] font-mono">
+                      {summary?.status || orgStatus}
+                    </Badge>
+                  </>
+                )}
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold font-mono text-foreground">{formattedPrice}</span>
-                {priceNum > 0 && <span className="text-xs text-muted-foreground font-mono">/ bulan</span>}
+                {isLoading ? (
+                  <div className="h-6 w-24 bg-muted animate-pulse rounded my-0.5" />
+                ) : (
+                  <>
+                    <span className="text-lg font-bold font-mono text-foreground">{formattedPrice}</span>
+                    {priceNum > 0 && <span className="text-xs text-muted-foreground font-mono">/ bulan</span>}
+                  </>
+                )}
               </div>
             </div>
 
@@ -73,7 +87,8 @@ export function BillingPlanSummaryCard({
             <Button
               size="sm"
               onClick={onOpenChangePlan}
-              className="h-8 px-3.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+              disabled={isLoading}
+              className="h-8 px-3.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <CreditCard className="h-3.5 w-3.5" />
               <span>Change subscription plan</span>
@@ -86,20 +101,24 @@ export function BillingPlanSummaryCard({
                 Maksimal Hardware
               </span>
               <span className="font-semibold text-foreground">
-                {effectiveMaxOlts} OLT · {effectiveMaxOdps.toLocaleString("id-ID")} ODP
+                {isLoading ? "—" : `${effectiveMaxOlts} OLT · ${effectiveMaxOdps.toLocaleString("id-ID")} ODP`}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-foreground/75 dark:text-muted-foreground block">
                 Penyimpanan MinIO
               </span>
-              <span className="font-semibold text-foreground">{maxStorageGb} GB Dedicated S3</span>
+              <span className="font-semibold text-foreground">
+                {isLoading ? "—" : `${maxStorageGb} GB Dedicated S3`}
+              </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-foreground/75 dark:text-muted-foreground block">
                 Siklus Tagihan
               </span>
-              <span className="font-semibold text-foreground">Bulanan ({nextInvoiceStr})</span>
+              <span className="font-semibold text-foreground">
+                {isLoading ? "—" : `Bulanan (${nextInvoiceStr})`}
+              </span>
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@k2net/ui";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { SubscriptionPlanInfo } from "./billing-types";
 
@@ -21,6 +21,8 @@ interface BillingChangePlanSheetProps {
   currentTier: string;
   availablePlans: SubscriptionPlanInfo[];
   plansLoading: boolean;
+  plansError?: string | null;
+  onRetryPlans?: () => void;
   onSelectPlan: (plan: SubscriptionPlanInfo) => void;
 }
 
@@ -31,6 +33,8 @@ export function BillingChangePlanSheet({
   currentTier,
   availablePlans,
   plansLoading,
+  plansError,
+  onRetryPlans,
   onSelectPlan,
 }: BillingChangePlanSheetProps) {
   return (
@@ -49,9 +53,49 @@ export function BillingChangePlanSheet({
         </SheetHeader>
 
         {plansLoading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-xs font-mono">Memuat daftar paket dari database...</span>
+          /* Sleek Skeleton Cards while loading */
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            {[1, 2, 3].map((idx) => (
+              <div key={idx} className="rounded-xl border border-border bg-card/40 p-5 space-y-4 animate-pulse h-[340px] flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="h-4 w-24 bg-muted rounded" />
+                  <div className="h-3 w-full bg-muted/60 rounded" />
+                  <div className="h-7 w-32 bg-muted rounded my-2" />
+                  <div className="h-8 w-full bg-muted/80 rounded" />
+                  <div className="space-y-2 pt-3">
+                    <div className="h-3 w-full bg-muted/50 rounded" />
+                    <div className="h-3 w-4/5 bg-muted/50 rounded" />
+                    <div className="h-3 w-3/4 bg-muted/50 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : plansError || availablePlans.length === 0 ? (
+          /* Friendly Error / Retry state */
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-6 text-center space-y-3">
+            <div className="flex justify-center">
+              <div className="p-3 rounded-full bg-amber-500/20 text-amber-500">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h5 className="text-sm font-bold text-foreground">Gagal memuat paket dari server</h5>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                Terjadi kendala saat menghubungkan ke database paket langganan. Silakan coba muat ulang data paket.
+              </p>
+            </div>
+            {onRetryPlans && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRetryPlans}
+                className="text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-semibold gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Coba Lagi</span>
+              </Button>
+            )}
           </div>
         ) : (
           /* Dynamic Plans Grid */

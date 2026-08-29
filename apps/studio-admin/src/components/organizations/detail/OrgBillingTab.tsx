@@ -29,12 +29,15 @@ export function OrgBillingTab({
     summary,
     availablePlans,
     plansLoading,
+    plansError,
+    loading: subLoading,
     upgrade,
     downgrade,
     getProrateCalc,
     extendTrial,
     updateDunning,
     refetch,
+    refetchPlans,
   } = useTenantSubscription(org.slug);
 
   // Modals & Sheets state
@@ -66,15 +69,13 @@ export function OrgBillingTab({
   const storagePct = maxStorageGb > 0 ? Math.round((usedStorageGb / maxStorageGb) * 100) : 0;
 
   // Dynamic Invoices data derived from active subscription & real dates
-  const tierUpper = (currentTier || "").toUpperCase();
-  const defaultTierPrice = tierUpper.includes("ENTERPRISE")
-    ? 14500000
-    : tierUpper.includes("PRO")
-    ? 4900000
-    : 0;
-
-  const activePlanPrice = summary?.planPrice !== undefined ? Number(summary.planPrice) : defaultTierPrice;
-  const currentPlanAmountStr = activePlanPrice > 0 ? `Rp ${activePlanPrice.toLocaleString("id-ID")}` : "Free Trial";
+  const activePlanPrice = Number(summary?.planPrice || 0);
+  const currentPlanAmountStr =
+    activePlanPrice > 0
+      ? `Rp ${activePlanPrice.toLocaleString("id-ID")}`
+      : summary?.planPrice !== undefined
+      ? "Free Trial"
+      : "—";
   const nowYear = new Date().getFullYear();
 
   const invoices: TenantInvoice[] = [
@@ -295,6 +296,7 @@ export function OrgBillingTab({
         effectiveMaxOlts={effectiveMaxOlts}
         effectiveMaxOdps={effectiveMaxOdps}
         maxStorageGb={maxStorageGb}
+        isLoading={subLoading}
         onOpenChangePlan={() => setIsChangePlanSheetOpen(true)}
       />
 
@@ -325,6 +327,8 @@ export function OrgBillingTab({
         currentTier={currentTier}
         availablePlans={availablePlans}
         plansLoading={plansLoading}
+        plansError={plansError}
+        onRetryPlans={refetchPlans}
         onSelectPlan={handleSelectPlanFromSheet}
       />
 

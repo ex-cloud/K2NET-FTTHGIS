@@ -20,6 +20,7 @@ export function useTenantSubscription(slug?: string) {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlanInfo[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [plansError, setPlansError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
@@ -27,12 +28,20 @@ export function useTenantSubscription(slug?: string) {
   const fetchPlans = useCallback(async () => {
     try {
       setPlansLoading(true);
+      setPlansError(null);
       const plans = await getAvailableSubscriptionPlans();
       if (mounted.current) {
-        setAvailablePlans(plans);
+        if (plans.length === 0) {
+          setPlansError("Gagal memuat paket dari server");
+        } else {
+          setAvailablePlans(plans);
+          setPlansError(null);
+        }
       }
-    } catch {
-      // Fallback
+    } catch (err: any) {
+      if (mounted.current) {
+        setPlansError(err?.message || "Gagal memuat paket dari server");
+      }
     } finally {
       if (mounted.current) {
         setPlansLoading(false);
@@ -183,6 +192,7 @@ export function useTenantSubscription(slug?: string) {
     summary,
     availablePlans,
     plansLoading,
+    plansError,
     loading,
     error,
     refetch: fetchSummary,
