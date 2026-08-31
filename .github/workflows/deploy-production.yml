@@ -76,11 +76,15 @@ jobs:
             frontend:
               - 'apps/studio-admin/**'
               - 'packages/**'
+              - 'package.json'
+              - 'scripts/**'
               - 'pnpm-workspace.yaml'
               - 'pnpm-lock.yaml'
             frontend_tenant:
               - 'apps/studio-tenant/**'
               - 'packages/**'
+              - 'package.json'
+              - 'scripts/**'
               - 'pnpm-workspace.yaml'
               - 'pnpm-lock.yaml'
             backend:
