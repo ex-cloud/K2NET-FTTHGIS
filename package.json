@@ -13,7 +13,7 @@
     "verify:backend": "bash scripts/verify-all.sh backend",
     "verify:gateways": "bash scripts/verify-all.sh gateways",
     "verify:infra": "bash scripts/verify-all.sh infra",
-    "audit:colors": "grep -rn 'text-zinc-\\|bg-zinc-\\|border-zinc-\\|text-white\\|bg-emerald-\\|text-emerald-\\|border-emerald-' apps/studio-admin/src --include='*.tsx' --include='*.ts' | grep -v 'node_modules'"
+    "audit:colors": "bash scripts/audit-colors.sh"
   },
   "devDependencies": {
     "turbo": "^2.0.0"

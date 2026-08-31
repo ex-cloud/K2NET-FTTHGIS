@@ -5,13 +5,13 @@ use (
 	./gateway-export
 	./gateway-olt
 	./gateway-scheduler
+	./gateway-task
 	./gateway-whatsapp
 	./map-gateway
 	./notification-gateway
 	./observability-gateway
 	./payment-gateway
 	./poller
-	./gateway-task
 	./shared
 	./storage-gateway
 )

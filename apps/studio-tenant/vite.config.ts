@@ -34,11 +34,21 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          router: ["@tanstack/react-router"],
-          maplibre: ["maplibre-gl"],
-          query: ["@tanstack/react-query"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("maplibre-gl") || id.includes("react-map-gl")) {
+              return "maplibre";
+            }
+            if (id.includes("@tanstack/react-router")) {
+              return "router";
+            }
+            if (id.includes("@tanstack/react-query")) {
+              return "query";
+            }
+            if (id.includes("react") || id.includes("react-dom") || id.includes("clsx") || id.includes("tailwind-merge")) {
+              return "vendor";
+            }
+          }
         },
       },
     },

@@ -13,6 +13,7 @@ COPY payment-gateway/go.mod payment-gateway/go.sum ./payment-gateway/
 COPY poller/go.mod poller/go.sum ./poller/
 COPY storage-gateway/go.mod storage-gateway/go.sum ./storage-gateway/
 COPY gateway-task/go.mod gateway-task/go.sum ./gateway-task/
+COPY observability-gateway/go.mod ./observability-gateway/
 RUN go work sync
 COPY shared/ ./shared/
 COPY gateway-audit/ ./gateway-audit/

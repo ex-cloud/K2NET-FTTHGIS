@@ -13,6 +13,7 @@ COPY gateway-olt/go.mod gateway-olt/go.sum ./gateway-olt/
 COPY gateway-scheduler/go.mod gateway-scheduler/go.sum ./gateway-scheduler/
 COPY gateway-whatsapp/go.mod gateway-whatsapp/go.sum ./gateway-whatsapp/
 COPY gateway-task/go.mod gateway-task/go.sum ./gateway-task/
+COPY observability-gateway/go.mod ./observability-gateway/
 RUN go work sync
 COPY shared/ ./shared/
 COPY payment-gateway/ ./payment-gateway/
