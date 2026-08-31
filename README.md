@@ -11,15 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://system-gis.kdua.net"><strong>Portal Utama Super Admin »</strong></a> •
-  <a href="https://gis.kdua.net"><strong>Portal Tenant ISP »</strong></a> •
-  <a href="https://auth-gis.kdua.net"><strong>Keycloak IAM »</strong></a>
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Vite%206-React%2019-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite SPA">
-  <img src="https://img.shields.io/badge/Next.js-16%20(React%2019)-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js">
   <img src="https://img.shields.io/badge/Go-1.25%20(13%20Gateways)-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/Python-3.11%20(AI%20RAG)-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python AI">
   <img src="https://img.shields.io/badge/PostgreSQL-16%20+%20PostGIS%204.0-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
@@ -35,7 +28,7 @@
 
 - 🗺️ **Interactive GIS & Vector Tiles** — Visualisasi aset jaringan fiber optik secara *real-time* (jalur kabel backbone/distribusi, tiang, penempatan ODC/ODP, status redaman dBm, dan pemetaan port pelanggan) bertenaga MapLibre GL JS dan Martin PostGIS MVT Server.
 - 📐 **Web-QGIS Design & pgRouting** — Simulasi perencanaan jalur ekspansi kabel baru, kalkulasi otomatis kebutuhan material (*Bill of Quantity / BoQ*), deteksi area *Blank Spot* via Buffer Analysis, serta *auto-tracing* kabel mengikuti koridor jalan raya via pgRouting.
-- 🏢 **Multi-Tenant ISP Lifecycle Engine** — Isolasi data logis tingkat tinggi antar organisasi/ISP pada level database (Row-Level Filter), storage (MinIO S3 Tenant Buckets), dan routing subdomain dinamis (`<tenant>-gis.kdua.net`), dilengkapi proteksi anti-spoofing header di layer edge Kong.
+- 🏢 **Multi-Tenant ISP Lifecycle Engine** — Isolasi data logis tingkat tinggi antar organisasi/ISP pada level database (Row-Level Filter), storage (MinIO S3 Tenant Buckets), dan routing subdomain dinamis, dilengkapi proteksi anti-spoofing header di layer edge Kong.
 - ⚡ **Automated Provisioning SNMP Poller** — Daemon Go Poller asinkron terhubung via Redis Queue untuk mengotomatisasi perintah jaringan perangkat keras OLT riil (*Zero-Touch SN Discovery*, isolir massal otomatis saat tagihan jatuh tempo, dan pembukaan isolir instan pasca-bayar).
 - 🤖 **AI Fiber Copilot & RAG Knowledge Base** — Asisten teknis AI terintegrasi (Python FastEmbed + pgvector) untuk diagnosa redaman serat optik, rekomendasi rute penarikan kabel, pemetaan SOP jaringan, dan FAQ teknisi lapangan.
 - 🔐 **Identity & Access Management (IAM)** — Autentikasi terpusat berskala industri menggunakan Keycloak 26 OpenID Connect (OIDC) dengan standard Authorization Code + PKCE (`S256`), RBAC Matrix 6 level, dan token enrichment.
@@ -62,8 +55,8 @@
              ▼                          ▼   │   ▼                          ▼
     ┌──────────────────┐       ┌─────────┐  │ ┌───────────┐       ┌─────────────────┐
     │  Studio Admin    │       │Keycloak │  │ │Martin MVT │       │ Studio Tenant   │
-    │ (Next.js 16 SSR) │       │ (IAM)   │  │ │Tile Server│       │ (Vite + React)  │
-    │system-gis.kdua...│       │Port 8081│  │ │ Port 3000 │       │  gis.kdua.net   │
+    │  (Vite 6 SPA)    │       │ (IAM)   │  │ │Tile Server│       │ (Vite 6 SPA)    │
+    │  (Admin Portal)  │       │Port 8081│  │ │ Port 3000 │       │ (Tenant Portal) │
     └────────┬─────────┘       └─────────┘  │ └───────────┘       └────────┬────────┘
              │                              ▼                              │
              │                   ┌─────────────────────┐                   │
@@ -103,8 +96,8 @@
 |:---|:---:|:---|:---|
 | **Traefik Reverse Proxy** | `80` / `443` | Traefik v3 (Go) | Ingress edge controller & terminasi SSL Cloudflare |
 | **Kong API Gateway** | `8000` / `8001` | Kong 3.9 (OpenResty) | Gatekeeper JWT token verify, rate limiter, & CORS |
-| **Studio Admin Portal** | `3001` (`:3000`) | Next.js 16 (Node.js) | Portal Utama Super Admin (`system-gis.kdua.net`) |
-| **Studio Tenant Portal** | `80` (`:3000`) | Vite 6 + Nginx Alpine | Portal Tenant ISP (`gis.kdua.net` & `*.gis.kdua.net`) (<20MB RAM) |
+| **Studio Admin Portal** | `3001` | Vite 6 + Nginx Alpine | Portal Utama Super Admin (<20MB RAM) |
+| **Studio Tenant Portal** | `80` (`:3000`) | Vite 6 + Nginx Alpine | Portal Tenant ISP (<20MB RAM) |
 | **Core Backend API** | `9090` | Spring Boot 3 / Java 21 | REST API Engine bisnis FTTH, Lifecycle, & RBAC |
 | **Keycloak IAM** | `8081` | Keycloak 26 (Quarkus) | Identity Provider (OIDC SSO, Realms, User Federation) |
 | **Martin Tile Server** | `3000` | Martin (Rust) | High-performance Map Vector Tile (MVT) streamer |
@@ -137,9 +130,8 @@
 K2NET-FTTHGIS/
 ├── apps/
 │   ├── api/                     # Spring Boot 3 Core Backend (Java 21, Flyway, JPA)
-│   ├── studio-admin/            # Portal Utama Super Admin Next.js 16 (system-gis.kdua.net)
-│   ├── studio-tenant/           # Portal Tenant ISP Vite 6 + React 19 (gis.kdua.net)
-│   ├── studio/                  # Arsip Baseline Referensi Historis
+│   ├── studio-admin/            # Portal Utama Super Admin (Vite 6 + React 19)
+│   ├── studio-tenant/           # Portal Tenant ISP (Vite 6 + React 19)
 │   ├── www/                     # Landing Page & Company Profile
 │   └── docs/                    # Dokumentasi Teknis & Panduan Pengembang
 │
@@ -188,7 +180,7 @@ K2NET-FTTHGIS/
 ├── .github/workflows/           # CI/CD Workflows (GitHub Actions)
 │   ├── deploy-production.yml    # Lint -> External Build -> SSH Pull & Restart
 │   ├── studio-tenant-ci.yml     # Vite Studio Tenant SPA CI/CD
-│   ├── studio-admin-ci.yml      # Studio Admin Next.js CI/CD
+│   ├── studio-admin-ci.yml      # Studio Admin SPA CI/CD
 │   ├── api-ci.yml               # Spring Boot Core CI/CD
 │   └── gateways-ci.yml          # Go Microservices CI/CD
 ├── docker-compose.yml           # Production Orchestration (20+ Containers)
@@ -215,7 +207,7 @@ cp .env.example .env
 
 ### 2. Validasi & Quality Gate Lokal Sebelum Deploy:
 ```bash
-# Validasi Frontend Suite (Audit warna hardcode + typecheck + build)
+# Validasi Frontend Suite (Audit warna hardcode + typecheck)
 pnpm verify:admin
 
 # Validasi Go Gateway Mesh
