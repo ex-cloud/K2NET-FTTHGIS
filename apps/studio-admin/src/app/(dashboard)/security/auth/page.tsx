@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useSecuritySettings } from "@/hooks/useSecuritySettings";
 import { useState, useEffect } from "react";

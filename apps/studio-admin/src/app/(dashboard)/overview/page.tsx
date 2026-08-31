@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useMemo, useState } from "react";
 import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";

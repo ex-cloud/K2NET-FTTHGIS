@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useCallback, useRef, useState } from "react";
 import { getBackendBaseUrl } from "@/lib/api-config";

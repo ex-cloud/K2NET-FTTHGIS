@@ -1,7 +1,7 @@
-"use client";
+
 
 import React from "react";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { CalendarClock, RefreshCw, XCircle, ExternalLink } from "lucide-react";
 import { useSchedulerStatus } from "@/hooks/useSchedulerStatus";

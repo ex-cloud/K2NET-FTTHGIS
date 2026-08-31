@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState } from "react";
-import Image from "next/image";
+import { Image } from "@/lib/navigation-compat";
 import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Palette, Save, RefreshCw, Upload, ShieldCheck } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 import { ArrowRight } from "lucide-react";
 import type { OverviewMetricCardProps } from "./overview-types";
 import { cn } from "@/lib/utils";

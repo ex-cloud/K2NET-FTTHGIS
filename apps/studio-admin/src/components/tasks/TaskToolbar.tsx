@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { Search, ChevronDown, RefreshCw, Filter, FolderKanban } from "lucide-react";

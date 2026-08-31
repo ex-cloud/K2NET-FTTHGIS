@@ -1,8 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { KongRouteDisplay } from "@/app/api/observability/kong-routes/route";
-import type { KongTrafficPoint } from "@/app/api/observability/kong-traffic/route";
+import type { KongRouteDisplay, KongTrafficPoint } from "@/types/kong-observability";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

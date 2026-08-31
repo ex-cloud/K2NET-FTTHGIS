@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Building2, UploadCloud, Network, AlertTriangle } from "lucide-react";
 import { Card } from "@k2net/ui";

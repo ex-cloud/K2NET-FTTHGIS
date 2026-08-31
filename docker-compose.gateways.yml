@@ -293,6 +293,30 @@ services:
           cpus: '0.75'
           memory: 768M
 
+  observability-gateway:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/observability-gateway:latest
+    build:
+      context: ./services
+      dockerfile: observability-gateway/Dockerfile
+    container_name: ftth-observability-gateway
+    restart: always
+    env_file:
+      - ./services/.env
+    environment:
+      - PORT=5013
+      - PROMETHEUS_URL=http://ftth-prometheus:9090
+      - POLLER_URL=http://ftth-poller:5010
+      - BACKEND_URL=http://backend:9090
+      - GATEWAY_TOKEN=${GATEWAY_TOKEN}
+      - ENV_FILE_PATH=/opt/project5/services/.env
+    volumes:
+      - /etc/ftth/gateways.env:/opt/project5/services/.env
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   default:
     name: project5_default

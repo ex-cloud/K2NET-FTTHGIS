@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useState, useEffect } from "react";

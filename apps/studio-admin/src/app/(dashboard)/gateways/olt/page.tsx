@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useState } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getOltDevices, OLTDevice } from "@/lib/actions/gateways";

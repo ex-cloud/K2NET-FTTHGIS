@@ -1,6 +1,6 @@
-"use client";
 
-import { useRouter } from "next/navigation";
+
+import { useRouter } from "@/lib/navigation-compat";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import {
   ExternalLink,

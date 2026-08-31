@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { Network, HardDrive, Cpu } from "lucide-react";

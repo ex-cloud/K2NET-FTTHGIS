@@ -1,8 +1,8 @@
-"use client";
+
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname } from "@/lib/navigation-compat";
+import { Link } from "@/lib/navigation-compat";
 import {
   ShieldCheck,
   UserCog,

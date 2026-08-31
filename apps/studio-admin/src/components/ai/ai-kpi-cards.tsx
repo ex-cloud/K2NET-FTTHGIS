@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { Cpu, BookOpen, BrainCircuit, Sparkles, ShieldCheck, Zap } from "lucide-react";

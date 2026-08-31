@@ -1,12 +1,12 @@
-"use client";
+
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "@/lib/navigation-compat";
 import { FlaskConical, Plus, Network, Database } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
-import { simulateVectorSearch } from "@/lib/actions/gateways";
+import { simulateVectorSearch, type VectorSearchResultItem } from "@/lib/actions/gateways";
 import { AiSemanticSimulator } from "@/components/ai/ai-semantic-simulator";
 
 function AiSimulatorContent() {
@@ -19,7 +19,7 @@ function AiSimulatorContent() {
   const [simMinSimilarity, setSimMinSimilarity] = useState(0.2);
   const [simLimit, setSimLimit] = useState(4);
   const [simScope, setSimScope] = useState("GENERAL");
-  const [simResults, setSimResults] = useState<any[]>([]);
+  const [simResults, setSimResults] = useState<VectorSearchResultItem[]>([]);
   const [simTotalMatches, setSimTotalMatches] = useState(0);
   const [simSearching, setSimSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);

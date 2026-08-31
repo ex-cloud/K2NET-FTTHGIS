@@ -1,9 +1,9 @@
-"use client";
+
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { useParams, useRouter } from "@/lib/navigation-compat";
+import { useSession } from "@/lib/auth-compat";
+import { Link } from "@/lib/navigation-compat";
 import {
   Box,
   Plus,

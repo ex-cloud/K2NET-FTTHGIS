@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@k2net/design-system/theme.css";
+
+:root {
+  --font-sans-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono-family: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+}

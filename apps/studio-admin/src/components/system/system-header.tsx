@@ -1,8 +1,8 @@
-"use client";
+
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/lib/navigation-compat";
+import { usePathname } from "@/lib/navigation-compat";
 import { HelpCircle, MessageSquare, ShieldCheck, Menu, Search, Sparkles } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { Separator } from "@k2net/ui";
@@ -14,7 +14,7 @@ import { useCommandPalette } from "../command-palette/command-palette-provider";
 
 import { getLogoUrl } from "@/lib/domain";
 
-import Image from "next/image";
+import { Image } from "@/lib/navigation-compat";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getRouteHeaderTitle } from "@/lib/route-utils";
 

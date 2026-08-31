@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useState } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getNotificationLogs, NotificationLog } from "@/lib/actions/gateways";

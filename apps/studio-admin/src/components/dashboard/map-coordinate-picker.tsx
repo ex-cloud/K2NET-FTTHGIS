@@ -1,21 +1,22 @@
-"use client";
-
 import * as React from "react";
-import Map, { MapRef } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import Map, { 
+  type MapRef, 
+  type MapLayerMouseEvent, 
+  type StyleSpecification,
+  type ViewStateChangeEvent 
+} from "@k2net/map";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
-  DialogDescription
+  DialogDescription,
+  Button
 } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/lib/navigation-compat";
 import { Crosshair, MapPin, Check, X, Plus, Minus, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MapLayerMouseEvent, StyleSpecification } from "maplibre-gl";
 
 const MAP_STYLES = {
   light: "https://tiles.openfreemap.org/styles/bright",
@@ -65,7 +66,7 @@ export function MapCoordinatePicker({
   const { theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   const [isSatellite, setIsSatellite] = React.useState(false);
-  
+
   const [viewState, setViewState] = React.useState({
     longitude: 107.6191, // Default Bandung
     latitude: -6.9175,
@@ -211,7 +212,7 @@ export function MapCoordinatePicker({
         <div className="relative h-[550px] w-full">
           <Map
             {...viewState}
-            onMove={evt => setViewState(evt.viewState)}
+            onMove={(evt: ViewStateChangeEvent) => setViewState(evt.viewState)}
             onClick={handleMapClick}
             mapStyle={currentMapStyle as StyleSpecification}
             style={{ width: '100%', height: '100%' }}

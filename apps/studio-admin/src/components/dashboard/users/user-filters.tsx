@@ -1,4 +1,4 @@
-"use client";
+
 
 import { RefreshCw, Shield, UserCheck, Building2, X } from "lucide-react";
 import { Button } from "@k2net/ui";
@@ -11,7 +11,7 @@ import {
 } from "@k2net/ui";
 import { Label } from "@k2net/ui";
 import { Input } from "@k2net/ui";
-import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { useSearchParams, usePathname, useRouter } from "@/lib/navigation-compat";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 

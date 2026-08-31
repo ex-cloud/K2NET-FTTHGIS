@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useEffect } from "react";
 import {
@@ -38,7 +38,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { cn } from "@/lib/utils";
@@ -206,7 +206,7 @@ export function NewProjectDialog({
   const handleUploadImage = async (file: File): Promise<{ url: string; filename?: string }> => {
     try {
       const { uploadTaskAttachment } = await import("@/lib/storage-client");
-      const res = await uploadTaskAttachment(file, session?.accessToken);
+      const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
       if (res && res.url) {
         toast.success(`Gambar ${file.name} berhasil diunggah ke MinIO`);
         return { url: res.url, filename: file.name };
@@ -261,7 +261,7 @@ export function NewProjectDialog({
 
       const res = await httpClient(`${baseUrl}/tasks`, {
         method: "POST",
-        token: session.accessToken,
+        token: session.accessToken as string,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });

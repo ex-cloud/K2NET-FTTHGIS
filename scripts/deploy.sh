@@ -58,7 +58,7 @@ IS_GO_GATEWAY="false"
 if [ -n "$2" ]; then
   if [ "$ENV" = "staging" ]; then
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|observability-gateway)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -83,7 +83,7 @@ if [ -n "$2" ]; then
     esac
   else
     case "$2" in
-      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task)
+      map-gateway|notification-gateway|payment-gateway|storage-gateway|gateway-whatsapp|gateway-scheduler|gateway-export|gateway-olt|gateway-audit|poller|gateway-task|observability-gateway)
         IS_GO_GATEWAY="true"
         TARGET_SERVICE="$2"
         ;;
@@ -113,6 +113,8 @@ if [ "$ENV" = "production" ]; then
   echo "🔒 Production Mode: Pulling pre-built Docker images from ghcr.io (NO build on server)..."
   if [ "$TARGET_SERVICE" = "frontend-admin" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
+  elif [ "$TARGET_SERVICE" = "frontend-tenant" ]; then
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-tenant:latest || true
   elif [ "$TARGET_SERVICE" = "backend" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
   elif [ "$IS_GO_GATEWAY" = "true" ]; then
@@ -131,8 +133,10 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/observability-gateway:latest || true
   else
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/frontend-tenant:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/backend:latest || true
     echo "Pulling all Go gateways..."
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/map-gateway:latest || true
@@ -146,6 +150,7 @@ if [ "$ENV" = "production" ]; then
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-audit:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/gateway-task:latest || true
     docker pull ghcr.io/ex-cloud/k2net-ftthgis/poller:latest || true
+    docker pull ghcr.io/ex-cloud/k2net-ftthgis/observability-gateway:latest || true
   fi
 
   if [ -n "$TARGET_SERVICE" ]; then

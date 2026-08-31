@@ -1,8 +1,8 @@
-"use client";
+
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "@/lib/navigation-compat";
+import { useSession } from "@/lib/auth-compat";
 import { KanbanBoard } from "@k2net/ui";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
@@ -302,7 +302,7 @@ export default function TasksPage() {
     handleConfirmBatchDelete,
   } = useTaskBatchActions({
     filteredTasks,
-    sessionToken: session?.accessToken,
+    sessionToken: session?.accessToken ?? undefined,
     onSaveTask: handleSaveTask,
     refresh,
     setLocalTasks,

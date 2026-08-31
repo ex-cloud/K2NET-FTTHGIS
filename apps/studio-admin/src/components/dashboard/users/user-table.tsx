@@ -1,4 +1,4 @@
-"use client";
+
 
 import {
   Edit,
@@ -31,7 +31,7 @@ import {
   ContextMenuGroupConfig,
 } from "@k2net/ui";
 import { PaginatedResponse, User } from "@/types/user";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { UpdateUserDialog } from "./update-user-dialog";

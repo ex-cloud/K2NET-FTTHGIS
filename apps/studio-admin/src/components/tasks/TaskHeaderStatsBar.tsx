@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { ClipboardList, Plus, PanelRight, HelpCircle, Keyboard, LayoutGrid, LayoutList } from "lucide-react";

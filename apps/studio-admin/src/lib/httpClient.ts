@@ -1,4 +1,4 @@
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-compat";
 import { useUIStore } from "@/store/ui-store";
 
 export interface HttpClientOptions extends RequestInit {
@@ -114,7 +114,7 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
           if (retryResponse.status !== 401) break;
         }
       } else {
-        signOut({ callbackUrl: "/login" });
+        signOut();
       }
       
       return response;

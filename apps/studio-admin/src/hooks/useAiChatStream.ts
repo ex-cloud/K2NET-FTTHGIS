@@ -1,4 +1,4 @@
-"use client";
+
 
 /**
  * K2NET AI Chat Stream Hook
@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 export const SESSIONS_STORAGE_KEY = "k2net_ai_chat_sessions";
 export const ACTIVE_SESSION_ID_KEY = "k2net_ai_active_session_id";

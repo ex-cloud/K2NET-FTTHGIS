@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { getAuditEvents } from "@/lib/actions/gateways";
 
 // ─── Group Definitions ────────────────────────────────────────────────────────

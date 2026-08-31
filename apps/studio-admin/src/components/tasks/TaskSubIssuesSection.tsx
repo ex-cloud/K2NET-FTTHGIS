@@ -1,8 +1,8 @@
-"use client";
+
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { useSession } from "@/lib/auth-compat";
+import { Link } from "@/lib/navigation-compat";
 import {
   ChevronDown,
   ChevronRight,

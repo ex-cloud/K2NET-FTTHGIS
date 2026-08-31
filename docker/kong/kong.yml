@@ -43,33 +43,6 @@ services:
               claims_to_verify:
                 - exp
               run_on_preflight: false
-          - name: post-function
-            config:
-              access:
-                - |
-                  local claims = kong.ctx.shared.jwt_claims
-                  if claims then
-                      kong.service.request.set_header("X-User-Id", claims.sub or "")
-                      kong.service.request.set_header("X-User-Email", claims.email or "")
-                      kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
-
-                      local iss = claims.iss
-                      if iss then
-                          local parts = {}
-                          for part in string.gmatch(iss, "[^/]+") do
-                              table.insert(parts, part)
-                          end
-                          local realm = parts[#parts]
-                          if realm ~= "ftth-realm" then
-                              kong.service.request.set_header("X-Tenant-Id", realm)
-                          end
-                      end
-                  else
-                      kong.service.request.clear_header("X-User-Id")
-                      kong.service.request.clear_header("X-User-Email")
-                      kong.service.request.clear_header("X-User-Username")
-                      kong.service.request.clear_header("X-Tenant-Id")
-                  end
       - name: backend-actuator-route
         paths:
           - /actuator
@@ -320,6 +293,29 @@ services:
                   - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
                   - "X-Tenant-ID:00000000-0000-0000-0000-000000000000"
 
+  # ─── 12. Observability Gateway (Go - Port 5013) ───────────────────────────
+  - name: observability-gateway
+    url: http://ftth-observability-gateway:5013
+    routes:
+      - name: observability-gateway-route
+        paths:
+          - /api/gateway/observability
+        strip_path: true
+        methods:
+          - GET
+          - OPTIONS
+        plugins:
+          - name: jwt
+            config:
+              anonymous: anonymous-user
+              claims_to_verify:
+                - exp
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
+
 # ====================================================
 # Global Plugins
 # ====================================================
@@ -348,14 +344,45 @@ plugins:
       credentials: true
       max_age: 3600
 
-  # ─── HTTP Log ───────────────────────────────────────────────────────────────
-  - name: http-log
+  # ─── Multi-Tenant Claims Extraction & Anti-Spoofing (Global Mesh) ───────────
+  - name: post-function
     config:
-      http_endpoint: http://gateway-audit:5009/api/v1/audit/events/kong
-      method: POST
-      timeout: 2000
-      keepalive: 60000
-      headers:
-        X-Gateway-Token: 2dcac271c2b24a4de521951d1a413000
+      access:
+        - |
+          -- 1. Explicitly clear all upstream tenant & user headers from incoming client request (Anti-Spoofing)
+          kong.service.request.clear_header("X-Tenant-Id")
+          kong.service.request.clear_header("X-Tenant-ID")
+          kong.service.request.clear_header("X-User-Id")
+          kong.service.request.clear_header("X-User-Email")
+          kong.service.request.clear_header("X-User-Username")
+          kong.service.request.clear_header("X-Actor-ID")
+
+          -- 2. Extract verified claims from Keycloak JWT token
+          local claims = kong.ctx.shared.jwt_claims
+          if claims then
+              kong.service.request.set_header("X-User-Id", claims.sub or "")
+              kong.service.request.set_header("X-User-Email", claims.email or "")
+              kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
+              kong.service.request.set_header("X-Actor-ID", claims.sub or "")
+
+              local tenantId = claims.tenant_id or claims.organization_id or claims.tenant_slug
+              if tenantId and tenantId ~= "" then
+                  kong.service.request.set_header("X-Tenant-Id", tenantId)
+                  kong.service.request.set_header("X-Tenant-ID", tenantId)
+              else
+                  local iss = claims.iss
+                  if iss then
+                      local parts = {}
+                      for part in string.gmatch(iss, "[^/]+") do
+                          table.insert(parts, part)
+                      end
+                      local realm = parts[#parts]
+                      if realm ~= "ftth-realm" then
+                          kong.service.request.set_header("X-Tenant-Id", realm)
+                          kong.service.request.set_header("X-Tenant-ID", realm)
+                      end
+                  end
+              end
+          end
 
 

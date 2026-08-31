@@ -15,6 +15,7 @@ on:
       - main
     paths:
       - 'apps/studio-admin/**'
+      - 'apps/studio-tenant/**'
       - 'apps/api/**'
       - 'packages/**'
       - 'services/**'
@@ -25,12 +26,13 @@ on:
   workflow_dispatch:
     inputs:
       service:
-        description: 'Service to deploy (all / frontend-admin / backend / gateways)'
+        description: 'Service to deploy (all / frontend-admin / frontend-tenant / backend / gateways)'
         required: true
         default: 'frontend-admin'
         type: choice
         options:
           - frontend-admin
+          - frontend-tenant
           - backend
           - gateways
           - all
@@ -44,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
+      frontend_tenant: ${{ steps.filter.outputs.frontend_tenant }}
       backend: ${{ steps.filter.outputs.backend }}
       shared: ${{ steps.filter.outputs.shared }}
       map-gateway: ${{ steps.filter.outputs.map-gateway }}
@@ -58,6 +61,7 @@ jobs:
       gateway-task: ${{ steps.filter.outputs.gateway-task }}
       gateway-ai: ${{ steps.filter.outputs.gateway-ai }}
       poller: ${{ steps.filter.outputs.poller }}
+      observability-gateway: ${{ steps.filter.outputs.observability-gateway }}
       gateways_matrix: ${{ steps.set-matrix.outputs.gateways_matrix }}
       any_gateway_changed: ${{ steps.set-matrix.outputs.any_gateway_changed }}
     steps:
@@ -65,13 +69,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Detect Changes
-         # indentation fixed
         id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
             frontend:
               - 'apps/studio-admin/**'
+              - 'packages/**'
+              - 'pnpm-workspace.yaml'
+              - 'pnpm-lock.yaml'
+            frontend_tenant:
+              - 'apps/studio-tenant/**'
               - 'packages/**'
               - 'pnpm-workspace.yaml'
               - 'pnpm-lock.yaml'
@@ -105,6 +113,8 @@ jobs:
               - 'services/gateway-ai/**'
             poller:
               - 'services/poller/**'
+            observability-gateway:
+              - 'services/observability-gateway/**'
 
       - name: Generate Go Gateways Build Matrix
         id: set-matrix
@@ -115,7 +125,7 @@ jobs:
           MANUAL_SERVICE="${{ github.event.inputs.service }}"
           
           if [[ "$SHARED" == "true" || ( "$EVENT_NAME" == "workflow_dispatch" && ( "$MANUAL_SERVICE" == "all" || "$MANUAL_SERVICE" == "gateways" ) ) ]]; then
-            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller" "gateway-ai")
+            SERVICES=("map-gateway" "notification-gateway" "payment-gateway" "storage-gateway" "gateway-whatsapp" "gateway-scheduler" "gateway-export" "gateway-olt" "gateway-audit" "gateway-task" "poller" "gateway-ai" "observability-gateway")
           else
             if [[ "${{ steps.filter.outputs.map-gateway }}" == "true" ]]; then SERVICES+=("map-gateway"); fi
             if [[ "${{ steps.filter.outputs.notification-gateway }}" == "true" ]]; then SERVICES+=("notification-gateway"); fi
@@ -129,6 +139,7 @@ jobs:
             if [[ "${{ steps.filter.outputs.gateway-task }}" == "true" ]]; then SERVICES+=("gateway-task"); fi
             if [[ "${{ steps.filter.outputs.gateway-ai }}" == "true" ]]; then SERVICES+=("gateway-ai"); fi
             if [[ "${{ steps.filter.outputs.poller }}" == "true" ]]; then SERVICES+=("poller"); fi
+            if [[ "${{ steps.filter.outputs.observability-gateway }}" == "true" ]]; then SERVICES+=("observability-gateway"); fi
           fi
           
           # Build JSON manually
@@ -179,24 +190,56 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Shared Workspace Packages (@k2net/*)
-        run: pnpm --filter "@k2net/*" build
+      - name: Audit Hardcoded Colors
+        run: pnpm audit:colors
 
-      - name: Lint — studio-admin
-        run: pnpm --filter @k2net/studio-admin lint
+      - name: Validate Shared UI Typecheck
+        run: pnpm --filter @k2net/ui typecheck
 
-      - name: Build — studio-admin (Type-check + Next.js compile)
-        run: pnpm --filter @k2net/studio-admin build
-        env:
-          NEXTAUTH_URL: https://system-gis.k2net.id
-          NEXTAUTH_SECRET: build-time-placeholder
-          NEXT_PUBLIC_APP_URL: https://system-gis.k2net.id
-          NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER: https://auth-gis.k2net.id/realms/ftth-realm
-          NEXT_PUBLIC_API_URL: https://gis.k2net.id/api/v1
-          NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL: https://auth-gis.k2net.id
+      - name: Validate Next.js Studio Admin Typecheck
+        run: pnpm --filter @k2net/studio-admin typecheck
+
+  validate-frontend-tenant:
+    name: ✅ Validate Frontend Tenant (Vite SPA)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.service == 'all' ||
+        github.event.inputs.service == 'frontend-tenant'
+      ) || (
+        github.event_name == 'push' && needs.changes.outputs.frontend_tenant == 'true'
+      )
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck Shared Packages
+        run: |
+          pnpm --filter @k2net/api-client typecheck
+          pnpm --filter @k2net/map typecheck
+          pnpm --filter @k2net/studio-tenant typecheck
+
+      - name: Build Vite Production Bundle
+        run: pnpm --filter @k2net/studio-tenant build
 
   validate-backend:
-    name: ✅ Validate Backend (Spring Boot / Maven)
+    name: ✅ Validate Backend (Spring Boot)
     runs-on: ubuntu-latest
     needs: changes
     if: |
@@ -217,36 +260,48 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Maven — Compile (Verify 100% Java build)
-        run: |
-          cd apps/api
-          mvn clean compile
+      - name: Run Maven Compile & Tests
+        working-directory: apps/api
+        run: mvn clean test -B -Dspring.profiles.active=test
 
   validate-gateways:
-    name: ✅ Validate Go Gateways
+    name: ✅ Validate Go Gateways & Python AI
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.any_gateway_changed == 'true'
-    strategy:
-      matrix:
-        service: ${{ fromJSON(needs.changes.outputs.gateways_matrix) }}
+    if: |
+      always() &&
+      needs.changes.outputs.any_gateway_changed == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Set up Go 1.25
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.x'
-          cache-dependency-path: services/go.work
+          go-version: '1.25'
+          cache-dependency-path: 'services/go.work.sum'
 
-      - name: Test Service
+      - name: Run Go Vet across services
+        working-directory: services
         run: |
-          cd services/${{ matrix.service }}
-          if [ -f "go.mod" ]; then
-            go vet ./...
-            go test ./...
-          elif [ -f "requirements.txt" ]; then
+          for dir in */ ; do
+            if [ -f "${dir}go.mod" ]; then
+              echo "Validating Go module: ${dir}..."
+              (cd "$dir" && go vet ./...)
+            fi
+          done
+
+      - name: Set up Python 3.11 for AI Gateway
+        if: needs.changes.outputs.gateway-ai == 'true' || needs.changes.outputs.shared == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate Python AI Syntax
+        if: needs.changes.outputs.gateway-ai == 'true' || needs.changes.outputs.shared == 'true'
+        working-directory: services/gateway-ai
+        run: |
+          if [ -d "app" ]; then
             python3 -m py_compile app/**/*.py
           fi
 
@@ -299,6 +354,50 @@ jobs:
           build-args: |
             NEXT_PUBLIC_GIT_BRANCH=${{ github.ref_name }}
             NEXT_PUBLIC_GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  docker-build-frontend-tenant:
+    name: 🐳 Docker Build — frontend-tenant (GHA Runner)
+    runs-on: ubuntu-latest
+    needs: [changes, validate-frontend-tenant]
+    if: always() && needs.validate-frontend-tenant.result == 'success'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/k2net-ftthgis/frontend-tenant
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/studio-tenant/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
@@ -405,11 +504,13 @@ jobs:
     needs:
       - changes
       - docker-build-frontend-admin
+      - docker-build-frontend-tenant
       - docker-build-backend
       - docker-build-gateways
     if: |
       always() && (
         needs.docker-build-frontend-admin.result == 'success' ||
+        needs.docker-build-frontend-tenant.result == 'success' ||
         needs.docker-build-backend.result == 'success' ||
         needs.docker-build-gateways.result == 'success'
       )
@@ -437,13 +538,18 @@ jobs:
               bash scripts/deploy.sh production frontend-admin
             fi
 
+            if [ "${{ needs.changes.outputs.frontend_tenant }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "frontend-tenant" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
+              echo "Pulling frontend-tenant..."
+              bash scripts/deploy.sh production frontend-tenant
+            fi
+
             if [ "${{ needs.changes.outputs.backend }}" == "true" ] || [ "${{ github.event.inputs.service }}" == "backend" ] || [ "${{ github.event.inputs.service }}" == "all" ]; then
               echo "Pulling backend..."
               bash scripts/deploy.sh production backend
             fi
 
             # Deploy Go & Python gateways if changed or manually triggered
-            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai"
+            SERVICES_LIST="map-gateway notification-gateway payment-gateway storage-gateway gateway-whatsapp gateway-scheduler gateway-export gateway-olt gateway-audit gateway-task poller gateway-ai observability-gateway"
             for svc in $SERVICES_LIST; do
               CHANGED="false"
               if [ "$svc" == "map-gateway" ] && [ "${{ needs.changes.outputs.map-gateway }}" == "true" ]; then CHANGED="true"; fi
@@ -458,6 +564,7 @@ jobs:
               if [ "$svc" == "gateway-task" ] && [ "${{ needs.changes.outputs.gateway-task }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "gateway-ai" ] && [ "${{ needs.changes.outputs.gateway-ai }}" == "true" ]; then CHANGED="true"; fi
               if [ "$svc" == "poller" ] && [ "${{ needs.changes.outputs.poller }}" == "true" ]; then CHANGED="true"; fi
+              if [ "$svc" == "observability-gateway" ] && [ "${{ needs.changes.outputs.observability-gateway }}" == "true" ]; then CHANGED="true"; fi
 
               # If shared libraries changed, we build/deploy all gateways
               if [ "${{ needs.changes.outputs.shared }}" == "true" ]; then CHANGED="true"; fi

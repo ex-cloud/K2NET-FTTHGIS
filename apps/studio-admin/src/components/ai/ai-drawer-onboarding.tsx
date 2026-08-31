@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Sparkles, Check } from "lucide-react";
 import { Badge } from "@k2net/ui";

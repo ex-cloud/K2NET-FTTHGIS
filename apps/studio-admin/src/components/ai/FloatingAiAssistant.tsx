@@ -1,4 +1,4 @@
-"use client";
+
 
 /**
  * K2NET Floating AI Assistant — Orchestrator

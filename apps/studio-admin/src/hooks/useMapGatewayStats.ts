@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { memoryCache } from "@/lib/memoryCache";
 
 export interface MapGatewayStats {

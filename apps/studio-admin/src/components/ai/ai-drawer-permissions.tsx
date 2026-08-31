@@ -1,4 +1,4 @@
-"use client";
+
 
 import { ChevronDown, Check, Loader2, Search, ShieldCheck, Cpu, Activity, MapPin, Database, GitPullRequest, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";

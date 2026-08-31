@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Avatar, AvatarFallback, AvatarImage } from "@k2net/ui";
 import { Button } from "@k2net/ui";
@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@k2net/ui";
 import { Dot, ShieldCheck } from "lucide-react";
-import { useTheme } from "next-themes";
-import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "@/lib/navigation-compat";
+import { signOut, useSession } from "@/lib/auth-compat";
 import { getSystemUrl, parseDomain } from "@/lib/domain";
 import * as React from "react";
 
@@ -102,7 +102,7 @@ export function UserNav() {
     }
 
     // 2. Sign out locally from NextAuth
-    await signOut({ redirect: false });
+    await signOut();
 
     // 3. Redirect to Keycloak for federated logout if possible
     if (issuer && idToken) {

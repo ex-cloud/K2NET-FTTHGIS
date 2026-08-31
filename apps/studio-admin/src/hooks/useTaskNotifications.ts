@@ -1,11 +1,11 @@
-"use client";
+
 
 import { useEffect, useRef, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";
 import { useTaskStore } from "@/store/task-store";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 
 interface TaskEventPayload {
   id: string;

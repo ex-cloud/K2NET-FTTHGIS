@@ -1,14 +1,14 @@
-"use client";
+
 
 import React, { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { PageLayout } from "@k2net/ui";
 import { ChevronLeft, Loader2, ClipboardList, Cpu, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-compat';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
 import { cn } from "@/lib/utils";

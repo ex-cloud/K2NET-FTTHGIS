@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -18,7 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { cn } from "@/lib/utils";
@@ -108,7 +108,7 @@ export function NewTaskDialog({
     toast.info("Mengunggah dan mengompresi berkas via MinIO storage-gateway...");
     try {
       const { uploadTaskAttachment } = await import("@/lib/storage-client");
-      const res = await uploadTaskAttachment(file, session?.accessToken);
+      const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
       if (res.url) {
         const isImg = file.type.startsWith("image/");
         const markdown = isImg ? `\n\n![${file.name}](${res.url})` : `\n\n[📎 ${file.name}](${res.url})`;
@@ -160,7 +160,7 @@ export function NewTaskDialog({
 
       const res = await httpClient(`${baseUrl}/tasks`, {
         method: "POST",
-        token: session.accessToken,
+        token: session.accessToken as string,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });

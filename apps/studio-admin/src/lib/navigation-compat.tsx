@@ -1,0 +1,107 @@
+import React from "react";
+import { Link as TanStackLink, useNavigate, useLocation } from "@tanstack/react-router";
+
+// ── useTheme shim (replaces next-themes) ────────────────────────────────────
+// Re-export useTheme and Theme from shared @k2net/ui
+export { useTheme } from "@k2net/ui";
+export type { Theme } from "@k2net/ui";
+
+
+export interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  href?: string;
+  to?: string;
+  children?: React.ReactNode;
+  className?: string;
+  prefetch?: boolean;
+}
+
+export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
+  ({ href, to, children, className, ...props }, ref) => {
+    const target = to || href || "/";
+    
+    // External link
+    if (target.startsWith("http://") || target.startsWith("https://") || target.startsWith("mailto:")) {
+      return (
+        <a ref={ref} href={target} className={className} {...props}>
+          {children}
+        </a>
+      );
+    }
+
+    return (
+      <TanStackLink
+        ref={ref}
+        to={target}
+        className={className}
+        {...props}
+      >
+        {children}
+      </TanStackLink>
+    );
+  }
+);
+Link.displayName = "Link";
+
+export function useRouter() {
+  const navigate = useNavigate();
+  return {
+    push: (url: string, _options?: Record<string, unknown>) => navigate({ to: url }),
+    replace: (url: string, _options?: Record<string, unknown>) => navigate({ to: url, replace: true }),
+    back: () => window.history.back(),
+    refresh: () => window.location.reload(),
+    prefetch: () => {},
+  };
+}
+
+export function usePathname(): string {
+  try {
+    const location = useLocation();
+    return location.pathname;
+  } catch {
+    return window.location.pathname;
+  }
+}
+
+export function useSearchParams(): URLSearchParams {
+  return new URLSearchParams(window.location.search);
+}
+
+export function useParams<T = Record<string, string>>(): T {
+  // TanStack Router: params are accessed per-route; fallback reads from URL
+  const search = new URLSearchParams(window.location.search);
+  const pathSegments = window.location.pathname.split("/").filter(Boolean);
+  const params: Record<string, string> = {};
+  // common dynamic segment patterns: last path segment
+  if (pathSegments.length > 0) {
+    params["id"] = pathSegments[pathSegments.length - 1];
+    params["slug"] = pathSegments[pathSegments.length - 1];
+  }
+  search.forEach((v, k) => { params[k] = v; });
+  return params as T;
+}
+
+export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  src: string;
+  alt: string;
+  width?: number | string;
+  height?: number | string;
+  priority?: boolean;
+  unoptimized?: boolean;
+  fill?: boolean;
+}
+
+export function Image({ src, alt, width, height, className, ...props }: ImageProps) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      loading={props.priority ? "eager" : "lazy"}
+      {...props}
+    />
+  );
+}
+
+export default Link;

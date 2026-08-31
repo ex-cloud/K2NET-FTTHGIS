@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useEffect, useState } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getSchedulerJobs, SchedulerJob } from "@/lib/actions/gateways";

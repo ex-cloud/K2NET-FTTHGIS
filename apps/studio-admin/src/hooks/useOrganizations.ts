@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-compat';
 import { useEffect } from 'react';
 
 export interface Organization {

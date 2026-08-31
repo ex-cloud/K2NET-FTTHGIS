@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useComputeObservability } from "@/hooks/useComputeObservability";

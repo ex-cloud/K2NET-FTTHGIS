@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 
@@ -26,7 +26,7 @@ export function useTeamUsers() {
       try {
         const baseUrl = getBackendBaseUrl();
         const res = await httpClient(`${baseUrl}/users?page=0&size=100`, {
-          token: session.accessToken,
+          token: session.accessToken ?? undefined,
         });
         if (res.ok) {
           const data = await res.json();

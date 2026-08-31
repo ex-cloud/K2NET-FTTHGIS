@@ -1,4 +1,4 @@
-"use client";
+
 
 import { FormPageSkeleton } from "@k2net/ui";
 

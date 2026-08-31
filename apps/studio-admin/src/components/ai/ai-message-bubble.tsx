@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useCallback } from "react";
 import { Sparkles, Check, Copy, Loader2, ChevronDown, BrainCircuit, ThumbsUp, ThumbsDown } from "lucide-react";

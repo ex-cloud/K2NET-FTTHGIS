@@ -1,15 +1,5 @@
 http:
   routers:
-    poller-router:
-      rule: "(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && PathPrefix(`/poller/`)"
-      entrypoints:
-        - websecure
-      tls: {}
-      middlewares:
-        - poller-stripprefix
-      service: poller-service
-      priority: 15
-
     sms-webhook-router:
       rule: "(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && PathPrefix(`/webhooks/sms`)"
       entrypoints:
@@ -19,10 +9,6 @@ http:
       priority: 15
 
   middlewares:
-    poller-stripprefix:
-      stripPrefix:
-        prefixes:
-          - "/poller"
     secHeaders:
       headers:
         sslRedirect: true
@@ -32,11 +18,7 @@ http:
         referrerPolicy: "strict-origin-when-cross-origin"
 
   services:
-    poller-service:
-      loadBalancer:
-        servers:
-          - url: "http://ftth-poller:5010"
     sms-webhook-service:
       loadBalancer:
         servers:
-          - url: "http://host.docker.internal:5001"
+          - url: "http://ftth-notification-gateway:5001"

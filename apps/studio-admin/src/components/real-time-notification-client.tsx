@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useRealTimeUpdates } from "@/hooks/use-real-time-updates";
-import { useParams } from "next/navigation";
+import { useParams } from "@/lib/navigation-compat";
 
 /**
  * Empty client component that just initializes the real-time hook.

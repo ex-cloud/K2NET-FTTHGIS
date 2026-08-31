@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { 
@@ -21,6 +21,7 @@ import {
   Badge 
 } from "@k2net/ui";
 import { CATEGORIES, KNOWLEDGE_SCOPES } from "./types";
+import type { VectorSearchResultItem } from "@/lib/actions/gateways/ai";
 
 interface AiSemanticSimulatorProps {
   simQuery: string;
@@ -31,7 +32,7 @@ interface AiSemanticSimulatorProps {
   setSimLimit: (l: number) => void;
   simScope: string;
   setSimScope: (s: string) => void;
-  simResults: any[];
+  simResults: VectorSearchResultItem[];
   simTotalMatches: number;
   simSearching: boolean;
   hasSearched: boolean;

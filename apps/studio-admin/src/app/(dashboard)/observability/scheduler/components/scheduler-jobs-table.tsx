@@ -1,8 +1,8 @@
-"use client";
+
 
 import React, { useState } from "react";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { Link } from "@/lib/navigation-compat";
+import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
 import { Clock, Loader2, Play, Info, HardDrive, CloudUpload, RefreshCw, Timer } from "lucide-react";

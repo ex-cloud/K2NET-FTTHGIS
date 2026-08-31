@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth-compat';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
 

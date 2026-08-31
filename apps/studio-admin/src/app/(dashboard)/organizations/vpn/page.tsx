@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 import {
   Table,
   TableHeader,

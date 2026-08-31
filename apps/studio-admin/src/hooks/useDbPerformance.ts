@@ -1,6 +1,6 @@
-"use client";
 
-import { useSession } from "next-auth/react";
+
+import { useSession } from "@/lib/auth-compat";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface SlowQuery {

@@ -1,8 +1,7 @@
-"use client";
+
 
 import React, { useState, useCallback, useEffect } from "react";
-import Map, { Source, Layer, NavigationControl, Popup } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import Map, { Source, Layer, NavigationControl, Popup } from "@k2net/map";
 import { Badge, Button } from "@k2net/ui";
 import {
   MapPin,
@@ -17,8 +16,8 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from 'next-auth/react';
+import { useRouter } from "@/lib/navigation-compat";
+import { useSession } from '@/lib/auth-compat';
 import { httpClient } from '@/lib/httpClient';
 import { getBackendBaseUrl } from '@/lib/api-config';
 

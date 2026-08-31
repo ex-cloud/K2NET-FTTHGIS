@@ -1,4 +1,4 @@
-"use client";
+
 
 import { CardGridSkeleton } from "@k2net/ui";
 

@@ -1,4 +1,4 @@
-"use client";
+
 
 import { LogsContainer } from "@/components/logs/logs-container";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";

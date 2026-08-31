@@ -1,33 +1,26 @@
-"use client";
-
-import type { Session } from "next-auth";
-
-import { SessionProvider } from "next-auth/react";
+import * as React from "react";
 import { ThemeProvider } from "./theme-provider";
 import { AuthGuard } from "./auth-guard";
 import { Toaster } from "sonner";
-
 import { QueryProvider } from "./query-provider";
 import { ErrorBoundary } from "./error-boundary";
 import { NetworkStatusIndicator } from "./NetworkStatusIndicator";
 
-export function Providers({ children, session }: { children: React.ReactNode, session?: Session | null }) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider session={session} refetchInterval={300} refetchOnWindowFocus={true}>
-      <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ErrorBoundary>
-              <AuthGuard>{children}</AuthGuard>
-            </ErrorBoundary>
-            <NetworkStatusIndicator />
-            <Toaster />
-          </ThemeProvider>
-      </QueryProvider>
-    </SessionProvider>
+    <QueryProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <ErrorBoundary>
+          <AuthGuard>{children}</AuthGuard>
+        </ErrorBoundary>
+        <NetworkStatusIndicator />
+        <Toaster />
+      </ThemeProvider>
+    </QueryProvider>
   );
 }

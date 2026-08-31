@@ -1,10 +1,10 @@
-"use client";
+
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Check, Loader2, Save, LayoutGrid, List, Lock, ShieldCheck, AlertTriangle, Server, Users } from "lucide-react";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
 import {

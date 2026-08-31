@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useState } from "react";
 import { Badge } from "@k2net/ui";

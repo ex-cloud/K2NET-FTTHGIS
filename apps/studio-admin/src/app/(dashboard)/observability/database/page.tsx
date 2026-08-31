@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useState, useEffect } from "react";
 import {
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
 import { useDbObservability } from "@/hooks/useDbObservability";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

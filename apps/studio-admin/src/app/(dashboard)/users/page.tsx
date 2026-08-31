@@ -1,42 +1,33 @@
+import { useSearchParams } from "@/lib/navigation-compat";
 import { UserStats } from "@/components/dashboard/users/user-stats";
 import { UserTable } from "@/components/dashboard/users/user-table";
 import { UserFilters } from "@/components/dashboard/users/user-filters";
 import { UsersPageWrapper } from "@/components/page-guards/users-page-wrapper";
-import { auth } from "@/auth";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@k2net/auth/client";
 import { getUsers, getUserStats } from "@/lib/api/users";
 import { PageLayout } from "@k2net/ui";
 
-export default async function GlobalUsersPage(props: {
-  searchParams: Promise<{
-    page?: string;
-    q?: string;
-    role?: string;
-    status?: string;
-    org?: string;
-  }>;
-}) {
-  const searchParams = await props.searchParams;
-  const page = Number(searchParams.page) || 0;
-  const search = searchParams.q || "";
+export default function GlobalUsersPage() {
+  const searchParams = useSearchParams();
+  const page = Number(searchParams.get("page")) || 0;
+  const search = searchParams.get("q") || "";
+  const role = searchParams.get("role") || undefined;
+  const status = searchParams.get("status") || undefined;
+  const org = searchParams.get("org") || undefined;
+  const { token } = useAuth();
 
-  const session = await auth();
-  const token = session?.accessToken as string | undefined;
+  const { data: usersData } = useQuery({
+    queryKey: ["users", page, search, role, status, org],
+    queryFn: () => getUsers(page, 10, search, role, status, org, token || ""),
+    enabled: !!token,
+  });
 
-  let usersData = null;
-  let statsData = null;
-
-  if (token) {
-    try {
-      const [users, stats] = await Promise.all([
-        getUsers(page, 10, search, searchParams.role, searchParams.status, searchParams.org, token),
-        getUserStats(token),
-      ]);
-      usersData = users;
-      statsData = stats;
-    } catch (e) {
-      console.error("Fetch global users error", e);
-    }
-  }
+  const { data: statsData } = useQuery({
+    queryKey: ["userStats"],
+    queryFn: () => getUserStats(token || ""),
+    enabled: !!token,
+  });
 
   return (
     <UsersPageWrapper>
@@ -45,10 +36,10 @@ export default async function GlobalUsersPage(props: {
         sidePanel={<UserFilters />}
       >
         <div className="shrink-0">
-          <UserStats stats={statsData} />
+          <UserStats stats={statsData ?? null} />
         </div>
         <div className="flex-1 min-h-0">
-          <UserTable data={usersData} currentPage={page} isGlobalView={true} token={token} />
+          <UserTable data={usersData ?? null} currentPage={page} isGlobalView={true} token={token || undefined} />
         </div>
       </PageLayout>
     </UsersPageWrapper>

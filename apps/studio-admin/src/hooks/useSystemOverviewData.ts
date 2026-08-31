@@ -1,8 +1,8 @@
-"use client";
+
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
 import { toast } from "sonner";
 import type { DevOpsStats, UserStats } from "@/components/system/overview/overview-types";

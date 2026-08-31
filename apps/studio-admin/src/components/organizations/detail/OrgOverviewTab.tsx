@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Badge, Button, Card } from "@k2net/ui";
 import {

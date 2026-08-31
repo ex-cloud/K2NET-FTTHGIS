@@ -1,6 +1,6 @@
-"use client";
 
-import { useSearchParams, usePathname, useRouter } from "next/navigation";
+
+import { useSearchParams, usePathname, useRouter } from "@/lib/navigation-compat";
 import { Search } from "lucide-react";
 import { Input } from "@k2net/ui";
 import { useEffect, useState } from "react";

@@ -1,4 +1,4 @@
-"use client";
+
 
 import { ReactNode } from "react";
 import { PermissionGuard } from "@/hooks/use-permissions";

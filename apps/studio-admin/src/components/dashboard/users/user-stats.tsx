@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
 import { Users, UserCheck, Clock } from "lucide-react";

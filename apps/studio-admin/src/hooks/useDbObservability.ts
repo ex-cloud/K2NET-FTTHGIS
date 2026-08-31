@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

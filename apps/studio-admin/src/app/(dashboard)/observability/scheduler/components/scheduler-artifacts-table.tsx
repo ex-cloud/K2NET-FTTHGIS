@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
 import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";

@@ -167,7 +167,7 @@ log "━━━━━━━━━━━━━━━━━━━━━━━━━
 log "🔨 [2/4] Build Artifacts & Developer Caches"
 log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# 2a. Next.js build output — diregenerasi otomatis saat Docker build
+# 2a. Next.js & Vite SPA build outputs — diregenerasi otomatis saat Docker build
 NEXT_DIR="/opt/project5/apps/studio/.next"
 if [ -d "$NEXT_DIR" ]; then
   NEXT_SIZE=$(dir_size "$NEXT_DIR")
@@ -180,7 +180,35 @@ if [ -d "$NEXT_DIR" ]; then
   fi
 fi
 
-# 2b. Maven target/ — diregenerasi saat Docker build Spring Boot
+# 2b. Vite SPA dist/ outputs (studio-admin & studio-tenant)
+for VITE_DIST in "/opt/project5/apps/studio-admin/dist" "/opt/project5/apps/studio-tenant/dist"; do
+  if [ -d "$VITE_DIST" ]; then
+    VITE_SIZE=$(dir_size "$VITE_DIST")
+    log "🗑️  Vite SPA dist ($VITE_DIST): $VITE_SIZE"
+    if [ "$DRY_RUN" = false ]; then
+      rm -rf "$VITE_DIST"
+      log "   ✅ $(basename $(dirname "$VITE_DIST"))/dist dihapus."
+    else
+      log "   [DRY RUN] Akan hapus $VITE_DIST ($VITE_SIZE)."
+    fi
+  fi
+done
+
+# 2c. Vite internal build cache (.vite)
+for VITE_CACHE in "/opt/project5/apps/studio-admin/node_modules/.vite" "/opt/project5/apps/studio-tenant/node_modules/.vite"; do
+  if [ -d "$VITE_CACHE" ]; then
+    VITE_CACHE_SIZE=$(dir_size "$VITE_CACHE")
+    log "🗑️  Vite build cache ($VITE_CACHE): $VITE_CACHE_SIZE"
+    if [ "$DRY_RUN" = false ]; then
+      rm -rf "$VITE_CACHE"
+      log "   ✅ Vite cache dihapus."
+    else
+      log "   [DRY RUN] Akan hapus $VITE_CACHE ($VITE_CACHE_SIZE)."
+    fi
+  fi
+done
+
+# 2d. Maven target/ — diregenerasi saat Docker build Spring Boot
 MAVEN_TARGET="/opt/project5/apps/api/target"
 if [ -d "$MAVEN_TARGET" ]; then
   MAVEN_SIZE=$(dir_size "$MAVEN_TARGET")
@@ -193,7 +221,7 @@ if [ -d "$MAVEN_TARGET" ]; then
   fi
 fi
 
-# 2c. Go build cache host (bukan di dalam Docker) — diregenerasi saat build
+# 2e. Go build cache host (bukan di dalam Docker) — diregenerasi saat build
 GO_CACHE="${HOME}/.cache/go-build"
 if [ -d "$GO_CACHE" ]; then
   GO_SIZE=$(dir_size "$GO_CACHE")
@@ -207,7 +235,7 @@ if [ -d "$GO_CACHE" ]; then
   fi
 fi
 
-# 2d. TypeScript language server cache
+# 2f. TypeScript language server cache
 TS_CACHE="${HOME}/.cache/typescript"
 if [ -d "$TS_CACHE" ]; then
   TS_SIZE=$(dir_size "$TS_CACHE")
@@ -343,18 +371,8 @@ NOTIF_BODY="📅 $(date +"%d %b %Y, %H:%M WIB")\n💾 Sebelum : $DISK_BEFORE\n�
 
 # --- Kirim ke Discord ---
 if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-  log "📣 Mengirim notifikasi ke Discord..."
-  DISCORD_PAYLOAD=$(cat <<JSON
-{
-  "embeds": [{
-    "title": "$NOTIF_TITLE",
-    "description": "$(printf '%s' "$NOTIF_BODY" | sed 's/\\n/\n/g')",
-    "color": 3066993,
-    "footer": { "text": "FTTH GIS Server Maintenance" }
-  }]
-}
-JSON
-)
+  DISCORD_BODY="📅 $(date +"%d %b %Y, %H:%M WIB")\\n💾 Sebelum : $DISK_BEFORE\\n✅ Sesudah  : $DISK_AFTER\\n📂 Tersedia : $DISK_AVAIL\\n📄 Log      : $LOG_FILE"
+  DISCORD_PAYLOAD="{\"embeds\": [{\"title\": \"$NOTIF_TITLE\", \"description\": \"$DISCORD_BODY\", \"color\": 3066993, \"footer\": {\"text\": \"FTTH GIS Server Maintenance\"}}]}"
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
     -X POST \
     -H "Content-Type: application/json" \

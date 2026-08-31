@@ -1,4 +1,4 @@
-"use client";
+
 
 import { FloatingBanner } from "@k2net/ui";
 

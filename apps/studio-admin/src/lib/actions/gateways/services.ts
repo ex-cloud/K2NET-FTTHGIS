@@ -1,11 +1,16 @@
-"use server";
-
-import { auth } from "@/auth";
+import { httpClient } from "@/lib/httpClient";
 import {
   getGatewayToken,
   verifySuperAdmin,
   GATEWAY_URL_MAP,
 } from "./common";
+
+const getBackendBaseUrl = () => {
+  return (
+    (typeof window !== "undefined" && window.__K2NET_API_URL__) ||
+    "/api/v1"
+  );
+};
 
 // ─────────────────────────────────────────────
 // Storage Gateway: GET /api/v1/stats
@@ -31,7 +36,7 @@ export async function getStorageStats(): Promise<StorageStats> {
     headers: {
       "X-Gateway-Token": token,
     },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -64,7 +69,7 @@ export async function getSchedulerJobs(): Promise<SchedulerJob[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/scheduler/jobs`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -100,7 +105,7 @@ export async function getAuditEvents(): Promise<AuditEvent[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/audit/events`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -134,7 +139,7 @@ export async function getOltDevices(): Promise<OLTDevice[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/olt`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -168,7 +173,7 @@ export async function getExportJobs(): Promise<ExportJob[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/export/jobs`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -200,7 +205,7 @@ export async function getPollerDeviceStatus(): Promise<PollerDeviceStatus[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/devices/status`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -232,7 +237,7 @@ export async function getNotificationLogs(): Promise<NotificationLog[]> {
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/notification/logs`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -259,22 +264,10 @@ export type PaymentTransaction = {
   updatedAt: string;
 };
 
-export async function getRecentPayments(): Promise<PaymentTransaction[]> {
+export async function getRecentPayments(token?: string): Promise<PaymentTransaction[]> {
   await verifySuperAdmin();
-
-  const session = await auth();
-  const token = session?.accessToken as string | undefined;
-  if (!token) {
-    throw new Error("Unauthorized: Access token missing");
-  }
-
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9090/api/v1";
-  const res = await fetch(`${backendUrl}/payments/recent`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    next: { revalidate: 0 },
-  });
+  const backendUrl = getBackendBaseUrl();
+  const res = await httpClient(`${backendUrl}/payments/recent`, { token });
 
   if (!res.ok) {
     throw new Error(`Failed to fetch recent payments: ${res.statusText}`);
@@ -283,21 +276,12 @@ export async function getRecentPayments(): Promise<PaymentTransaction[]> {
   return res.json();
 }
 
-export async function triggerPaymentReconciliation(): Promise<{ success: boolean; message: string }> {
+export async function triggerPaymentReconciliation(token?: string): Promise<{ success: boolean; message: string }> {
   await verifySuperAdmin();
-
-  const session = await auth();
-  const token = session?.accessToken as string | undefined;
-  if (!token) {
-    throw new Error("Unauthorized: Access token missing");
-  }
-
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9090/api/v1";
-  const res = await fetch(`${backendUrl}/payments/reconcile`, {
+  const backendUrl = getBackendBaseUrl();
+  const res = await httpClient(`${backendUrl}/payments/reconcile`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    token,
   });
 
   if (!res.ok) {

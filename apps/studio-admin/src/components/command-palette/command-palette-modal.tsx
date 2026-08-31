@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 import {
   CommandPaletteRoot,
   CommandPaletteInput,
@@ -13,7 +13,7 @@ import { useOrganizations } from "@/hooks/useOrganizations";
 import { toast } from "sonner";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import {
   LayoutDashboard,
   Users,
@@ -111,7 +111,7 @@ export function CommandPaletteModal({
             const baseUrl = getBackendBaseUrl();
             const res = await httpClient(`${baseUrl}/system/cache/purge`, {
               method: "POST",
-              token: session?.accessToken,
+              token: session?.accessToken ?? undefined,
             });
             if (res.ok) {
               toast.success("Redis Cache berhasil dibersihkan!");
@@ -137,7 +137,7 @@ export function CommandPaletteModal({
             const baseUrl = getBackendBaseUrl();
             await httpClient(`${baseUrl}/system/gateway/reload-kong`, {
               method: "POST",
-              token: session?.accessToken,
+              token: session?.accessToken ?? undefined,
             });
             toast.success("Konfigurasi rute Kong API Gateway diperbarui!");
           } catch {

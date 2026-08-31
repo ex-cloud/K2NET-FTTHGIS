@@ -1,10 +1,10 @@
-"use client";
+
 
 import { Badge } from "@k2net/ui";
 import { Button } from "@k2net/ui";
 import { Card } from "@k2net/ui";
 import { ExternalLink, Server } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import type { ServiceNode } from "./overview-types";
 import type { SubNode } from "./overview-map-types";

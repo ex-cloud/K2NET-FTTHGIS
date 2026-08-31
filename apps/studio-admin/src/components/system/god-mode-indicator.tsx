@@ -1,8 +1,8 @@
-"use client";
+
 
 import * as React from "react";
 import { ShieldCheck } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { getCurrentOrgSlug, getSystemUrl } from "@/lib/domain";
 
 export function GodModeIndicator() {

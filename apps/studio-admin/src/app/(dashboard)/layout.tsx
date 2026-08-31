@@ -1,9 +1,9 @@
-"use client";
+
 
 import { SystemHeader } from "@/components/system/system-header";
 import { AdminSidebar } from "@/components/system/admin-sidebar";
 import { SidebarModeProvider, useSidebarMode } from "@/components/sidebar-mode-context";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation-compat";
 import { SystemSecondarySidebar } from "@/components/system/system-secondary-sidebar";
 import { CommandPaletteProvider } from "@/components/command-palette/command-palette-provider";
 

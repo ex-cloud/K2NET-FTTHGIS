@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import {
   Dialog,

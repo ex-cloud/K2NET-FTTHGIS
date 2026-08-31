@@ -1,4 +1,4 @@
-"use client";
+
 
 import * as React from "react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";

@@ -1,4 +1,4 @@
-"use client";
+
 
 import * as React from "react";
 import { 
@@ -36,7 +36,7 @@ import { getTenantUrl, getDefaultTenantHost } from "@/lib/domain";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 interface WizardProps {
   open: boolean;

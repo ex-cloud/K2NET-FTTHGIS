@@ -1,4 +1,4 @@
-"use client";
+
 
 import { CheckCircle2, Clock, Database, DatabaseBackup, Github, HardDrive, Shield } from "lucide-react";
 import { GitBranch } from "lucide-react";

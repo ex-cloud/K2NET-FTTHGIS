@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import { Wrench, CheckCircle2, Clock, RefreshCw, AlertCircle } from "lucide-react";

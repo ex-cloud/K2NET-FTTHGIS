@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useEffect } from "react";
 import {
@@ -63,7 +63,7 @@ export function AiEditKnowledgeModal({
 
     setTitle(document.title);
     setCategory(document.category || "GENERAL");
-    setScope(document.scope || "GLOBAL");
+    setScope((document.scope as KnowledgeScope) || "GLOBAL");
     setContent(document.raw_content || "");
 
     setFetchingDetail(true);

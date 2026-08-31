@@ -1,4 +1,4 @@
-name: Next.js Studio Tenant CI/CD
+name: Studio Tenant (Vite SPA) CI/CD
 
 on:
   push:
@@ -23,7 +23,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Lint Next.js Tenant
+    name: Typecheck & Build Studio Tenant SPA
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -44,9 +44,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint and Build
+      - name: Typecheck & Build
         run: |
-          pnpm --filter @k2net/studio-tenant run lint || true
+          pnpm --filter @k2net/api-client typecheck
+          pnpm --filter @k2net/map typecheck
+          pnpm --filter @k2net/studio-tenant typecheck
           pnpm --filter @k2net/studio-tenant build
 
   deploy:

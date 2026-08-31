@@ -3,7 +3,7 @@ import { Badge } from "@k2net/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { ArrowRight, ExternalLink, type LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 
 interface OverviewDevOpsCardProps {
   eyebrow: string;

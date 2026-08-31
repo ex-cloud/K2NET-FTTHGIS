@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import {
   ChevronDown,
   BarChart3,

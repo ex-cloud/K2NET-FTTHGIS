@@ -137,7 +137,8 @@ export function RichTextEditor({
     onUpdate: ({ editor: ed }) => {
       if (isUpdatingFromProps.current) return;
       try {
-        const md = (ed.storage as any).markdown?.getMarkdown() || "";
+        const storage = ed.storage as unknown as Record<string, { getMarkdown?: () => string } | undefined>;
+        const md = storage.markdown?.getMarkdown?.() || "";
         onChange(md);
       } catch {
         onChange(ed.getHTML());
@@ -149,7 +150,8 @@ export function RichTextEditor({
   useEffect(() => {
     if (!editor) return;
     try {
-      const currentMd = (editor.storage as any).markdown?.getMarkdown() || "";
+      const storage = editor.storage as unknown as Record<string, { getMarkdown?: () => string } | undefined>;
+      const currentMd = storage.markdown?.getMarkdown?.() || "";
       if (value !== currentMd && !editor.isFocused) {
         isUpdatingFromProps.current = true;
         editor.commands.setContent(value || "");

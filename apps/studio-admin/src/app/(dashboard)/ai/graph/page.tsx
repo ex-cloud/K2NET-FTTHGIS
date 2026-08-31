@@ -1,6 +1,6 @@
-"use client";
 
-import { useRouter } from "next/navigation";
+
+import { useRouter } from "@/lib/navigation-compat";
 import { Network, ArrowLeft, Plus, FlaskConical } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";

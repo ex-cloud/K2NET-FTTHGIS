@@ -1,8 +1,8 @@
-"use client";
+
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useParams, useRouter } from "@/lib/navigation-compat";
+import { useSession } from "@/lib/auth-compat";
 import {
   ChevronLeft,
   Loader2,

@@ -1,10 +1,10 @@
-"use client";
+
 
 import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation-compat";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { getTenantUrl } from "@/lib/domain";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import {
   Button,

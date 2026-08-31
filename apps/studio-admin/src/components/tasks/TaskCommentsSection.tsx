@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import {
   MessageSquare,
   Smile,
@@ -104,7 +104,7 @@ export function TaskCommentsSection({
     toast.info("Mengunggah berkas via MinIO storage-gateway...");
     try {
       const { uploadTaskAttachment } = await import("@/lib/storage-client");
-      const res = await uploadTaskAttachment(file, session?.accessToken);
+      const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
       if (res.url) {
         const isImg = file.type.startsWith("image/");
         const markdown = isImg ? `\n\n![${file.name}](${res.url})` : `\n\n[📎 ${file.name}](${res.url})`;

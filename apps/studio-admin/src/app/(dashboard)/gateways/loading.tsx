@@ -1,4 +1,4 @@
-"use client";
+
 
 import { PageHeaderSkeleton } from "@k2net/ui";
 

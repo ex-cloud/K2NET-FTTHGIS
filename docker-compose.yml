@@ -424,6 +424,35 @@ services:
           cpus: '1.0'
           memory: 512M
 
+  # Frontend Portal Tenant ISP (Vite + React SPA — Nginx Alpine <20MB RAM)
+  frontend-tenant:
+    image: ghcr.io/ex-cloud/k2net-ftthgis/frontend-tenant:latest
+    build:
+      context: .
+      dockerfile: apps/studio-tenant/Dockerfile
+    container_name: ftth-frontend-tenant
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-tenant.rule=Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)"
+      - "traefik.http.routers.frontend-tenant.entrypoints=websecure"
+      - "traefik.http.routers.frontend-tenant.tls=true"
+      - "traefik.http.routers.frontend-tenant.priority=5"
+      - "traefik.http.routers.frontend-tenant.middlewares=secHeaders@file"
+      - "traefik.http.services.frontend-tenant.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 64M
+
   # Frontend Portal Utama (System Admin)
   frontend-admin:
     image: ghcr.io/ex-cloud/k2net-ftthgis/frontend-admin:latest

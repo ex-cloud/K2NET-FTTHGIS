@@ -1,4 +1,4 @@
-"use client";
+
 
 import * as React from "react";
 import {
@@ -6,7 +6,7 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
 } from "@k2net/ui";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation-compat";
 import { Plug2 } from "lucide-react";
 import { Button } from "@k2net/ui";
 

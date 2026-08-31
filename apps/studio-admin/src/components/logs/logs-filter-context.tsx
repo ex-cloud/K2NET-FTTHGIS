@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { createContext, useContext, useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "@/lib/navigation-compat";
 import { AuditStreamEntry, LOG_GROUPS, LogGroupKey } from "@/hooks/use-audit-log-stream";
 
 // Re-export so consumers can import from one place

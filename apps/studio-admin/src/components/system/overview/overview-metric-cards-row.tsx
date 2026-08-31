@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Building2, Users, MapPin, Globe, ClipboardList } from "lucide-react";
 import { OverviewMetricCard } from "./overview-metric-card";

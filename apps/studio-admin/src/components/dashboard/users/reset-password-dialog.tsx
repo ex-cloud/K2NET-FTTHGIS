@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useState, useEffect } from "react";
 import { User } from "@/types/user";
@@ -17,7 +17,7 @@ import { Checkbox } from "@k2net/ui";
 import { Key, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 interface ResetPasswordDialogProps {
   user: User;

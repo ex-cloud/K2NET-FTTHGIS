@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useState } from "react";
 import { Button, Card, ActionTooltip } from "@k2net/ui";

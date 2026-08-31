@@ -1,21 +1,14 @@
-"use server";
-
-import { auth } from "@/auth";
 import {
   getGatewayToken,
   verifySuperAdmin,
 } from "./common";
 
 const BACKEND_BASE_URL =
-  process.env.BACKEND_API_URL ||
-  process.env.BACKEND_INTERNAL_URL ||
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") ||
-  "http://backend:9090";
+  (typeof window !== "undefined" && window.__K2NET_API_URL__) ||
+  "/api/v1";
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const session = await auth();
-  const token = session?.accessToken as string | undefined;
+function getAuthHeaders(explicitToken?: string): Record<string, string> {
+  const token = explicitToken || (typeof window !== "undefined" ? window.__K2NET_AUTH__?.token : undefined);
   const gatewayToken = getGatewayToken();
   const headers: Record<string, string> = {
     "X-Gateway-Token": gatewayToken,
@@ -79,7 +72,7 @@ export async function getSubscriptionSummary(slug: string): Promise<Subscription
   const headers = await getAuthHeaders();
   const res = await fetch(`${BACKEND_BASE_URL}/api/v1/organizations/${slug}/subscription`, {
     headers,
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -161,7 +154,7 @@ export async function getProrationEstimate(
     )}&targetCycle=${encodeURIComponent(targetCycle)}`,
     {
       headers,
-      next: { revalidate: 0 },
+      cache: "no-store",
     }
   );
 
@@ -285,11 +278,11 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
   try {
     const res = await fetch(`${BACKEND_BASE_URL}/api/v1/organizations/plans`, {
       headers,
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
 
     if (res.ok) {
-      const rawPlans: any[] = await res.json();
+      const rawPlans = (await res.json()) as Array<Record<string, unknown>>;
       if (Array.isArray(rawPlans) && rawPlans.length > 0) {
         const mapped: SubscriptionPlanInfo[] = rawPlans.map((p) => {
           const numPrice = Number(p.price || 0);
@@ -341,13 +334,13 @@ export async function getAvailableSubscriptionPlans(): Promise<SubscriptionPlanI
           ];
 
           return {
-            id: p.id,
-            name: p.name,
-            code: p.name,
+            id: String(p.id || ""),
+            name: String(p.name || ""),
+            code: String(p.name || ""),
             price: formattedPrice,
             numericPrice: numPrice,
             period: "/ month",
-            description: p.description || `Paket layanan infrastruktur GIS FTTH terkelola tier ${p.name}.`,
+            description: String(p.description || `Paket layanan infrastruktur GIS FTTH terkelola tier ${p.name || ""}.`),
             popular: false,
             maxOlts,
             maxOdps,

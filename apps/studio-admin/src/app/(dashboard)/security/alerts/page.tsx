@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useSecuritySettings, SecurityEvent } from "@/hooks/useSecuritySettings";
 import { useState, useEffect, useMemo } from "react";
@@ -32,8 +32,7 @@ import {
   UniversalContextMenu,
   ContextMenuGroupConfig,
 } from "@k2net/ui";
-import Map, { Marker } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import Map, { Marker } from "@k2net/map";
 
 // Deterministic coordinate lookup matching Java GeoIpService
 function getCoordsForIp(ipAddress: string) {

@@ -1,14 +1,14 @@
-"use client";
+
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { Separator } from "@k2net/ui";
 import { BreadcrumbNav } from "./breadcrumb-nav";
 import { UserNav } from "./user-nav";
 import { GodModeIndicator } from "./system/god-mode-indicator";
-import Image from "next/image";
+import { Image } from "@/lib/navigation-compat";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 export function GlobalHeader() {

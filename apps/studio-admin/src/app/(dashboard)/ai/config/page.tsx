@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 import { Cpu, Database, RefreshCw, Sparkles } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";

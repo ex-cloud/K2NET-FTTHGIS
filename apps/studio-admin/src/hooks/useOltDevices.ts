@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 // ─── Local type (shape matches oltDevicesMock in observability-mock.ts) ───────
 export interface OltDevice {

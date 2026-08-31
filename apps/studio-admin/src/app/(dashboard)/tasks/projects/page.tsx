@@ -1,7 +1,7 @@
-"use client";
+
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation-compat";
 import {
   FolderKanban,
   Plus,
@@ -30,7 +30,7 @@ import {
   DropdownMenuItem,
 } from "@k2net/ui";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useTasksQuery, type Task } from "@/hooks/useTasksQuery";

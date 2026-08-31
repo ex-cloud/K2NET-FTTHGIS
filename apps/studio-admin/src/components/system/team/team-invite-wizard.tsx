@@ -1,4 +1,4 @@
-"use client";
+
 
 import * as React from "react";
 import { 
@@ -28,8 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@k2net/ui";
-import { useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useParams } from "@/lib/navigation-compat";
+import { useSession } from "@/lib/auth-compat";
 import axios from "axios";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { toast } from "sonner";

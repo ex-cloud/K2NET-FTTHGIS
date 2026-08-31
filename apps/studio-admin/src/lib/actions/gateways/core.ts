@@ -1,5 +1,3 @@
-"use server";
-
 import {
   getGatewayToken,
   verifySuperAdmin,
@@ -43,7 +41,7 @@ export async function getGatewayConfig(): Promise<ConfigResponse> {
     headers: {
       "X-Gateway-Token": token,
     },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -84,7 +82,7 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
     headers: {
       "X-Gateway-Token": token,
     },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -114,7 +112,7 @@ export async function getGatewayStatus(): Promise<StatusResponse> {
 
         const pingRes = await fetch(url, {
           signal: controller.signal,
-          next: { revalidate: 0 },
+          cache: "no-store",
         });
         clearTimeout(id);
 
@@ -188,7 +186,7 @@ export async function getGatewayConfigByKey(gatewayKey: string): Promise<ConfigR
   const token = getGatewayToken();
   const res = await fetch(`${baseUrl}/api/v1/config`, {
     headers: { "X-Gateway-Token": token },
-    next: { revalidate: 0 },
+    cache: "no-store",
   });
 
   if (!res.ok) {

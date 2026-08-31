@@ -1,4 +1,4 @@
-"use client";
+
 
 import React from "react";
 import { Copy, Check, User, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";

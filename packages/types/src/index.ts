@@ -1,4 +1,6 @@
 import { z } from "zod";
+export * from "zod";
+export { z };
 
 // ==========================================
 // User & Auth Types

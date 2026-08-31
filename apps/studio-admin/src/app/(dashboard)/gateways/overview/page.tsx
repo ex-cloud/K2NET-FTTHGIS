@@ -1,8 +1,8 @@
-"use client";
+
 
 import { useEffect, useState } from "react";
 import { getGatewayStatus, GatewayServiceStatus } from "@/lib/actions/gateways";
-import Link from "next/link";
+import { Link } from "@/lib/navigation-compat";
 import { 
   Cpu, 
   RefreshCw, 

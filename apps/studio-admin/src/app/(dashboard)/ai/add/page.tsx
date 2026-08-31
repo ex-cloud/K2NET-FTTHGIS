@@ -1,7 +1,7 @@
-"use client";
+
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { UploadCloud, Database, FileCode } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";

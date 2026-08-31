@@ -1,0 +1,38 @@
+{
+  "name": "@k2net/studio-tenant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@k2net/api-client": "workspace:*",
+    "@k2net/auth": "workspace:*",
+    "@k2net/design-system": "workspace:*",
+    "@k2net/map": "workspace:*",
+    "@k2net/types": "workspace:*",
+    "@k2net/ui": "workspace:*",
+    "@tanstack/react-query": "^5.67.0",
+    "@tanstack/react-router": "^1.114.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.9",
+    "@types/node": "^20.17.24",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.9",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
+  }
+}

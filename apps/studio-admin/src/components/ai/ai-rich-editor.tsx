@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useCallback } from "react";
 import { RichTextEditor, RichTextEditorProps } from "@k2net/ui";

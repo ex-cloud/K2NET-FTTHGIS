@@ -1,0 +1,26 @@
+{
+  "name": "@k2net/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified, type-safe API client for K2NET FTTH GIS services via Kong Gateway",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@k2net/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

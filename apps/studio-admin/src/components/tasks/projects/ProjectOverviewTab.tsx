@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useState, useCallback } from "react";
 import {
@@ -28,7 +28,7 @@ import { type TeamUser } from "@/hooks/useTeamUsers";
 import { LinearDatePicker } from "@/components/tasks/LinearDatePicker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-compat";
 
 interface ProjectOverviewTabProps {
   title: string;
@@ -96,7 +96,7 @@ export function ProjectOverviewTab({
     async (file: File): Promise<{ url: string; filename?: string }> => {
       try {
         const { uploadTaskAttachment } = await import("@/lib/storage-client");
-        const res = await uploadTaskAttachment(file, session?.accessToken);
+        const res = await uploadTaskAttachment(file, session?.accessToken ?? undefined);
         if (res && res.url) {
           toast.success(`Gambar ${file.name} berhasil diunggah ke MinIO`);
           return { url: res.url, filename: file.name };

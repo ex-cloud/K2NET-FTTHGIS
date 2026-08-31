@@ -1,4 +1,4 @@
-"use client";
+
 
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import { type Task } from "@/hooks/useTasksQuery";
