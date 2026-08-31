@@ -210,7 +210,7 @@ if $BUILD_CMD; then
           CONTAINER_PORT="3001"
         elif [ "$TARGET_SERVICE" = "frontend-tenant" ] || [ "$TARGET_SERVICE" = "studio-tenant" ]; then
           CONTAINER_NAME="ftth-frontend-tenant"
-          CONTAINER_PORT="3002"
+          CONTAINER_PORT="80"
         fi
         CONTAINER_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_NAME" 2>/dev/null || echo "127.0.0.1")
         FRONTEND_URL="http://$CONTAINER_IP:$CONTAINER_PORT"

@@ -69,6 +69,7 @@ interface KeycloakParsedClaims {
       onLoad: "check-sso",
       pkceMethod: "S256",
       checkLoginIframe: false,
+      silentCheckSsoFallback: false,
       silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
       ...initOptions,
     };
