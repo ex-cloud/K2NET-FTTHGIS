@@ -24,7 +24,7 @@ COPY packages/ ./packages/
 COPY apps/studio-admin/ ./apps/studio-admin/
 
 # Build shared workspace packages first
-RUN pnpm --filter "@k2net/*" build
+RUN pnpm --filter "./packages/*" build
 
 # Vite build args (baked into static bundle at build time)
 ARG VITE_KEYCLOAK_URL

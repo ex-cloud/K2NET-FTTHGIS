@@ -45,11 +45,11 @@ class TaskControllerSecurityTest {
     }
 
     @Test
-    void deleteEndpointIsSuperAdminOnly() throws NoSuchMethodException {
-        Method method = TaskController.class.getDeclaredMethod("delete", UUID.class);
+    void deleteEndpointIsProtected() throws NoSuchMethodException {
+        Method method = TaskController.class.getDeclaredMethod("delete", Jwt.class, UUID.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "Delete endpoint should require authorization");
-        assertEquals("hasRole('ROLE_SUPER_ADMIN')", annotation.value());
+        assertEquals("isAuthenticated()", annotation.value());
     }
 
     @Test
