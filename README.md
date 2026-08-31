@@ -97,7 +97,7 @@
 | **Traefik Reverse Proxy** | `80` / `443` | Traefik v3 (Go) | Ingress edge controller & terminasi SSL Cloudflare |
 | **Kong API Gateway** | `8000` / `8001` | Kong 3.9 (OpenResty) | Gatekeeper JWT token verify, rate limiter, & CORS |
 | **Studio Admin Portal** | `3001` | Vite 6 + Nginx Alpine | Portal Utama Super Admin (<20MB RAM) |
-| **Studio Tenant Portal** | `80` (`:3000`) | Vite 6 + Nginx Alpine | Portal Tenant ISP (<20MB RAM) |
+| **Studio Tenant Portal** | `3002` | Vite 6 + Nginx Alpine | Portal Tenant ISP (<20MB RAM) |
 | **Core Backend API** | `9090` | Spring Boot 3 / Java 21 | REST API Engine bisnis FTTH, Lifecycle, & RBAC |
 | **Keycloak IAM** | `8081` | Keycloak 26 (Quarkus) | Identity Provider (OIDC SSO, Realms, User Federation) |
 | **Martin Tile Server** | `3000` | Martin (Rust) | High-performance Map Vector Tile (MVT) streamer |

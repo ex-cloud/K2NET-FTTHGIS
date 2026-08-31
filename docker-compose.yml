@@ -441,9 +441,9 @@ services:
       - "traefik.http.routers.frontend-tenant.tls=true"
       - "traefik.http.routers.frontend-tenant.priority=5"
       - "traefik.http.routers.frontend-tenant.middlewares=secHeaders@file"
-      - "traefik.http.services.frontend-tenant.loadbalancer.server.port=80"
+      - "traefik.http.services.frontend-tenant.loadbalancer.server.port=3002"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3002/health"]
       interval: 30s
       timeout: 5s
       retries: 3

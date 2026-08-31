@@ -24,9 +24,9 @@ FROM nginx:1.27-alpine
 COPY apps/studio-tenant/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/studio-tenant/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 3002
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget --spider -q http://127.0.0.1/health || exit 1
+  CMD wget --spider -q http://127.0.0.1:3002/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
