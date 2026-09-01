@@ -20,18 +20,22 @@ export function ProtectedRoute({
 
   React.useEffect(() => {
     if (initialized && !authenticated && autoRedirect) {
-      login();
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        const currentPath = window.location.pathname + window.location.search;
+        const target = currentPath === "/" ? "/login" : `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
+        window.location.replace(target);
+      }
     }
-  }, [initialized, authenticated, autoRedirect, login]);
+  }, [initialized, authenticated, autoRedirect]);
 
-  if (!initialized || (!authenticated && autoRedirect)) {
+  if (!initialized) {
     return (
       fallback || (
         <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <span className="text-xs font-mono">
-              {!initialized ? "Memverifikasi sesi keamanan..." : "Mengalihkan ke Portal Login Keycloak..."}
+              Memverifikasi sesi keamanan...
             </span>
           </div>
         </div>
@@ -40,6 +44,19 @@ export function ProtectedRoute({
   }
 
   if (!authenticated) {
+    if (autoRedirect) {
+      return (
+        <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-xs font-mono">
+              Mengalihkan ke Portal Login...
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background p-6">
         <div className="max-w-md space-y-4 text-center">
@@ -47,12 +64,12 @@ export function ProtectedRoute({
           <p className="text-sm text-muted-foreground">
             Sesi login Anda tidak aktif atau telah kedaluwarsa. Silakan masuk kembali ke sistem.
           </p>
-          <button
-            onClick={() => login()}
+          <a
+            href="/login"
             className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 cursor-pointer"
           >
-            Masuk dengan SSO
-          </button>
+            Masuk ke Portal
+          </a>
         </div>
       </div>
     );

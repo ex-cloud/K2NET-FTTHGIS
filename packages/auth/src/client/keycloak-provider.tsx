@@ -65,12 +65,13 @@ interface KeycloakParsedClaims {
       clientId: config.clientId,
     });
 
+    setKeycloakInstance(kc);
+
     const defaultInitOptions: Keycloak.KeycloakInitOptions = {
       onLoad: "check-sso",
       pkceMethod: "S256",
       checkLoginIframe: false,
-      silentCheckSsoFallback: false,
-      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+      enableLogging: false,
       ...initOptions,
     };
 
@@ -97,7 +98,9 @@ interface KeycloakParsedClaims {
         }
       })
       .catch((err) => {
-        console.error("[KeycloakProvider] Init failed:", err);
+        console.warn("[KeycloakProvider] Check-SSO unauthenticated:", err);
+        setKeycloakInstance(kc);
+        setAuthenticated(false);
         setInitialized(true);
         if (config.onAuthError) {
           config.onAuthError(err);
@@ -156,7 +159,15 @@ interface KeycloakParsedClaims {
 
   const login = async (options?: Keycloak.KeycloakLoginOptions) => {
     if (keycloakInstance) {
-      await keycloakInstance.login(options);
+      try {
+        await keycloakInstance.login(options);
+      } catch (e) {
+        console.error("[KeycloakProvider] login() failed, falling back to direct redirect:", e);
+        const redirect = options?.redirectUri || window.location.href;
+        window.location.href = `${config.url}/realms/${config.realm}/protocol/openid-connect/auth?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=openid`;
+      }
+    } else {
+      window.location.href = "/login";
     }
   };
 
