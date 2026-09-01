@@ -114,7 +114,7 @@ public class KeycloakService {
                         existingRealm.setClientSessionIdleTimeout(0);
                         existingRealm.setClientSessionMaxLifespan(0);
 
-                        existingRealm.setRevokeRefreshToken(false);
+                        existingRealm.setRevokeRefreshToken(true);
                         existingRealm.setRefreshTokenMaxReuse(0);
 
                         keycloak.realm(realmName).update(existingRealm);
@@ -246,8 +246,8 @@ public class KeycloakService {
                 realm.setClientSessionIdleTimeout(0);
                 realm.setClientSessionMaxLifespan(0);
 
-                // Refresh token revocation: each refresh token can only be used once
-                realm.setRevokeRefreshToken(false);
+                // Refresh token revocation: each refresh token can only be used once (Token Rotation)
+                realm.setRevokeRefreshToken(true);
                 realm.setRefreshTokenMaxReuse(0); // no reuse allowed
 
                 log.info("✅ SUCCESS: Template realm loaded, flows/configs cleaned, SMTP secrets restored, and session/token lifespans configured.");
@@ -317,46 +317,38 @@ public class KeycloakService {
             client.setStandardFlowEnabled(true); // Authorization Code Flow + PKCE S256
             client.setServiceAccountsEnabled(false);
             
-            // DYNAMIC REDIRECT URIS (Option B: Automated Provisioning)
-            // Logic: http[s]://[realm]-[rootHost]/* (production) or http[s]://[realm].[rootHost]/* (local)
-            String protocol = "http://";
-            String host = frontendUrl;
-            if (frontendUrl.contains("://")) {
-                String[] parts = frontendUrl.split("://");
-                protocol = parts[0] + "://";
-                host = parts[1];
-            }
-            
-            String rootHost = host;
-            boolean isHyphen = false;
-            if (host.startsWith("system-")) {
-                rootHost = host.substring(7);
-                isHyphen = true;
-            } else if (host.startsWith("system.")) {
-                rootHost = host.substring(7);
-            }
-            
-            String tenantUrl;
+            // Comprehensive Valid Redirect URIs covering production multi-tenant subdomains & local development
             List<String> redirects = new ArrayList<>();
-            redirects.add(protocol + host + "/*");
+            redirects.add("https://system-gis.kdua.net/*");
+            redirects.add("https://system.gis.kdua.net/*");
+            redirects.add("https://gis.kdua.net/*");
+            redirects.add("https://*.gis.kdua.net/*");
+            redirects.add("https://*-gis.kdua.net/*");
+            redirects.add("http://localhost:3000/*");
+            redirects.add("http://localhost:3001/*");
+            redirects.add("http://localhost:3002/*");
+            redirects.add("http://*.localhost:3000/*");
+            redirects.add("http://*.localhost:3002/*");
             
-            if ("ftth-realm".equals(realmName) || "master".equals(realmName)) {
-                tenantUrl = protocol + (isHyphen ? "system-" : "system.") + rootHost;
-                redirects.add(tenantUrl + "/*");
-            } else {
-                tenantUrl = protocol + realmName + (isHyphen ? "-" : ".") + rootHost;
-                redirects.add(tenantUrl + "/*");
+            if (frontendUrl != null && !frontendUrl.isBlank()) {
+                String normalized = frontendUrl.startsWith("http") ? frontendUrl : "https://" + frontendUrl;
+                redirects.add(normalized + "/*");
+            }
+
+            if (!"ftth-realm".equals(realmName) && !"master".equals(realmName)) {
+                redirects.add("https://" + realmName + "-gis.kdua.net/*");
+                redirects.add("https://" + realmName + ".gis.kdua.net/*");
             }
 
             client.setRedirectUris(redirects);
-            client.setWebOrigins(List.of("*"));
+            client.setWebOrigins(List.of("+", "*"));
 
             if (existing.isEmpty()) {
                 realmResource.clients().create(client);
-                log.info("✅ SUCCESS: Created '{}' PKCE client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
+                log.info("✅ SUCCESS: Created '{}' PKCE client in realm: {} with Redirects: {}", provisionClientId, realmName, redirects);
             } else {
                 realmResource.clients().get(client.getId()).update(client);
-                log.info("🔄 SUCCESS: Updated '{}' PKCE client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
+                log.info("🔄 SUCCESS: Updated '{}' PKCE client in realm: {} with Redirects: {}", provisionClientId, realmName, redirects);
             }
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to sync client in realm '{}': {}", realmName, e.getMessage());
