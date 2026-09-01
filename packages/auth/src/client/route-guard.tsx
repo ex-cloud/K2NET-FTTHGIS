@@ -6,6 +6,7 @@ export interface ProtectedRouteProps {
   requiredRoles?: string[];
   fallback?: React.ReactNode;
   unauthorizedFallback?: React.ReactNode;
+  autoRedirect?: boolean;
 }
 
 export function ProtectedRoute({
@@ -13,16 +14,25 @@ export function ProtectedRoute({
   requiredRoles = [],
   fallback,
   unauthorizedFallback,
+  autoRedirect = true,
 }: ProtectedRouteProps) {
   const { initialized, authenticated, hasAnyRole, login } = useAuth();
 
-  if (!initialized) {
+  React.useEffect(() => {
+    if (initialized && !authenticated && autoRedirect) {
+      login();
+    }
+  }, [initialized, authenticated, autoRedirect, login]);
+
+  if (!initialized || (!authenticated && autoRedirect)) {
     return (
       fallback || (
         <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <span className="text-xs font-mono">Memverifikasi sesi keamanan...</span>
+            <span className="text-xs font-mono">
+              {!initialized ? "Memverifikasi sesi keamanan..." : "Mengalihkan ke Portal Login Keycloak..."}
+            </span>
           </div>
         </div>
       )

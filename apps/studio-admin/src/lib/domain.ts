@@ -38,7 +38,7 @@ export function parseDomain(hostname: string) {
     }
   } else {
     // Dynamic fallback based on env
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "http://localhost:3001";
     try {
       const url = new URL(appUrl);
       baseDomain = url.host;
@@ -59,7 +59,7 @@ export function parseDomain(hostname: string) {
         }
       }
     } catch {
-      baseDomain = "localhost:3000";
+      baseDomain = "localhost:3001";
     }
   }
 
@@ -82,16 +82,17 @@ export function getTenantUrl(slug: string, path: string = "/dashboard"): string 
       const port = window.location.port;
       
       const { baseDomain, isHyphen } = parseDomain(hostname);
-      const portSuffix = port ? `:${port}` : "";
+      // In local development, tenant SPA is on port 3002
+      const tenantPort = (hostname === "localhost" || hostname === "127.0.0.1" || hostname.endsWith(".localhost")) ? ":3002" : (port ? `:${port}` : "");
       
       if (isHyphen) {
-        return `${protocol}//${slug}-${baseDomain}${portSuffix}${path}`;
+        return `${protocol}//${slug}-${baseDomain}${tenantPort}${path}`;
       } else {
-        return `${protocol}//${slug}.${baseDomain}${portSuffix}${path}`;
+        return `${protocol}//${slug}.${baseDomain}${tenantPort}${path}`;
       }
     }
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "http://localhost:3001";
     const url = new URL(appUrl);
     protocol = url.protocol;
     let fallbackHost = url.host;
@@ -109,7 +110,7 @@ export function getTenantUrl(slug: string, path: string = "/dashboard"): string 
       return `${protocol}//${slug}.${fallbackHost}${path}`;
     }
   } catch {
-    return `http://${slug}.localhost:3000${path}`;
+    return `http://${slug}.localhost:3002${path}`;
   }
 }
 
@@ -127,7 +128,7 @@ export function getDefaultTenantHost(slug: string): string {
         return `${slug}.${baseDomain}`;
       }
     }
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "http://localhost:3001";
     const url = new URL(appUrl);
     let fallbackHost = url.host;
     let isHyphen = false;
@@ -151,7 +152,10 @@ export function getDefaultTenantHost(slug: string): string {
  * Returns the base application URL (root domain).
  */
 export function getBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "http://localhost:3001";
 }
 
 /**
@@ -181,7 +185,7 @@ export function getSystemUrl(path: string = "/organizations"): string {
     }
     return `${url.protocol}//system.${url.host}${path}`;
   } catch {
-    return `http://system.localhost:3000${path}`;
+    return `http://system.localhost:3001${path}`;
   }
 }
 

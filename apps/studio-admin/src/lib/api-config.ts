@@ -27,20 +27,6 @@ export const getBackendBaseUrl = () => {
   return "http://localhost:9090/api/v1";
 };
 
-export const getMartinBaseUrl = () => {
-  const defaultUrl =
-    process.env.NEXT_PUBLIC_MARTIN_URL || "http://127.0.0.1:3001";
-
-  if (typeof window !== "undefined") {
-    const { hostname, protocol } = window.location;
-    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-      // In production, Martin is proxied under the main host via Nginx
-      return `${protocol}//${hostname}`;
-    }
-  }
-
-  return defaultUrl;
-};
 
 export const getPollerBaseUrl = () => {
   if (typeof window !== "undefined") {
@@ -57,5 +43,5 @@ export const getAuthUrl = () => {
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
-  return process.env.NEXTAUTH_URL || "http://127.0.0.1:3000";
+  return (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_URL) || "http://127.0.0.1:3001";
 };

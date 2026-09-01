@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, createRouter, Navigate } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, Navigate, Outlet } from "@tanstack/react-router";
 import { ProtectedRoute } from "@k2net/auth/client";
 import { AdminLayout } from "./layouts/AdminLayout";
 import * as React from "react";
@@ -174,6 +174,9 @@ const SettingsGisSpatialPage = React.lazy(() =>
 const Assets3dPage = React.lazy(() =>
   import("./app/(dashboard)/assets-3d/page").then((m) => ({ default: m.default }))
 );
+const LoginPage = React.lazy(() =>
+  import("./app/login/page").then((m) => ({ default: m.default }))
+);
 
 // ----------------------------------------------------------------
 // Suspense fallback
@@ -197,6 +200,18 @@ function Lazy({ children }: { children: React.ReactNode }) {
 // Routes
 // ----------------------------------------------------------------
 const rootRoute = createRootRoute({
+  component: () => <Outlet />,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: () => <Lazy><LoginPage /></Lazy>,
+});
+
+const authenticatedLayoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "admin-authenticated",
   component: () => (
     <ProtectedRoute requiredRoles={["super_admin", "ROLE_SUPER_ADMIN"]}>
       <AdminLayout />
@@ -205,101 +220,101 @@ const rootRoute = createRootRoute({
 });
 
 const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/",
   component: () => <Navigate to="/overview" />,
 });
 
 const overviewRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/overview",
   component: () => <Lazy><SystemOverviewPage /></Lazy>,
 });
 
 // Organizations
-const orgsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations", component: () => <Lazy><OrganizationsPage /></Lazy> });
-const orgSlugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations/$slug", component: () => <Lazy><OrganizationSlugPage /></Lazy> });
-const orgQuotasRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations/quotas", component: () => <Lazy><OrganizationQuotasPage /></Lazy> });
-const orgFeaturesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations/features", component: () => <Lazy><OrganizationFeaturesPage /></Lazy> });
-const orgDomainsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations/domains", component: () => <Lazy><OrganizationDomainsPage /></Lazy> });
-const orgVpnRoute = createRoute({ getParentRoute: () => rootRoute, path: "/organizations/vpn", component: () => <Lazy><OrganizationVpnPage /></Lazy> });
+const orgsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations", component: () => <Lazy><OrganizationsPage /></Lazy> });
+const orgSlugRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/$slug", component: () => <Lazy><OrganizationSlugPage /></Lazy> });
+const orgQuotasRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/quotas", component: () => <Lazy><OrganizationQuotasPage /></Lazy> });
+const orgFeaturesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/features", component: () => <Lazy><OrganizationFeaturesPage /></Lazy> });
+const orgDomainsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/domains", component: () => <Lazy><OrganizationDomainsPage /></Lazy> });
+const orgVpnRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/vpn", component: () => <Lazy><OrganizationVpnPage /></Lazy> });
 
 // Users
-const usersRoute = createRoute({ getParentRoute: () => rootRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
-const usersRolesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/users/roles", component: () => <Lazy><UsersRolesPage /></Lazy> });
-const usersSessionsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/users/sessions", component: () => <Lazy><UsersSessionsPage /></Lazy> });
+const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
+const usersRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/roles", component: () => <Lazy><UsersRolesPage /></Lazy> });
+const usersSessionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users/sessions", component: () => <Lazy><UsersSessionsPage /></Lazy> });
 
 // Observability
-const obsOverviewRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/overview", component: () => <Lazy><ObservabilityOverviewPage /></Lazy> });
-const obsApiGatewayRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/api-gateway", component: () => <Lazy><ObservabilityApiGatewayPage /></Lazy> });
-const obsComputeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/compute", component: () => <Lazy><ObservabilityComputePage /></Lazy> });
-const obsDatabaseRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/database", component: () => <Lazy><ObservabilityDatabasePage /></Lazy> });
-const obsIdentityRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/identity", component: () => <Lazy><ObservabilityIdentityPage /></Lazy> });
-const obsMessagingRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/messaging", component: () => <Lazy><ObservabilityMessagingPage /></Lazy> });
-const obsOltPollerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/olt-poller", component: () => <Lazy><ObservabilityOltPollerPage /></Lazy> });
-const obsSchedulerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/scheduler", component: () => <Lazy><ObservabilitySchedulerPage /></Lazy> });
-const obsQueryPerfRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/query-performance", component: () => <Lazy><ObservabilityQueryPerfPage /></Lazy> });
-const obsSpatialMapRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability/spatial-map", component: () => <Lazy><ObservabilitySpatialMapPage /></Lazy> });
-const obsRedirectRoute = createRoute({ getParentRoute: () => rootRoute, path: "/observability", component: () => <Navigate to="/observability/overview" /> });
+const obsOverviewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/overview", component: () => <Lazy><ObservabilityOverviewPage /></Lazy> });
+const obsApiGatewayRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/api-gateway", component: () => <Lazy><ObservabilityApiGatewayPage /></Lazy> });
+const obsComputeRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/compute", component: () => <Lazy><ObservabilityComputePage /></Lazy> });
+const obsDatabaseRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/database", component: () => <Lazy><ObservabilityDatabasePage /></Lazy> });
+const obsIdentityRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/identity", component: () => <Lazy><ObservabilityIdentityPage /></Lazy> });
+const obsMessagingRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/messaging", component: () => <Lazy><ObservabilityMessagingPage /></Lazy> });
+const obsOltPollerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/olt-poller", component: () => <Lazy><ObservabilityOltPollerPage /></Lazy> });
+const obsSchedulerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/scheduler", component: () => <Lazy><ObservabilitySchedulerPage /></Lazy> });
+const obsQueryPerfRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/query-performance", component: () => <Lazy><ObservabilityQueryPerfPage /></Lazy> });
+const obsSpatialMapRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/spatial-map", component: () => <Lazy><ObservabilitySpatialMapPage /></Lazy> });
+const obsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability", component: () => <Navigate to="/observability/overview" /> });
 
 // Gateways
-const gatewaysOverviewRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/overview", component: () => <Lazy><GatewaysOverviewPage /></Lazy> });
-const gatewaysRedirectRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways", component: () => <Navigate to="/gateways/overview" /> });
-const gatewaysNotifRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/notification", component: () => <Lazy><GatewaysNotificationPage /></Lazy> });
-const gatewaysPaymentRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/payment", component: () => <Lazy><GatewaysPaymentPage /></Lazy> });
-const gatewaysMapRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/map", component: () => <Lazy><GatewaysMapPage /></Lazy> });
-const gatewaysStorageRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/storage", component: () => <Lazy><GatewaysStoragePage /></Lazy> });
-const gatewaysWhatsappRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/whatsapp", component: () => <Lazy><GatewaysWhatsappPage /></Lazy> });
-const gatewaysSchedulerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/scheduler", component: () => <Lazy><GatewaysSchedulerPage /></Lazy> });
-const gatewaysExportRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/export", component: () => <Lazy><GatewaysExportPage /></Lazy> });
-const gatewaysOltRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/olt", component: () => <Lazy><GatewaysOltPage /></Lazy> });
-const gatewaysAuditRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/audit", component: () => <Lazy><GatewaysAuditPage /></Lazy> });
-const gatewaysPollerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/gateways/poller", component: () => <Lazy><GatewaysPollerPage /></Lazy> });
+const gatewaysOverviewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/overview", component: () => <Lazy><GatewaysOverviewPage /></Lazy> });
+const gatewaysRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways", component: () => <Navigate to="/gateways/overview" /> });
+const gatewaysNotifRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/notification", component: () => <Lazy><GatewaysNotificationPage /></Lazy> });
+const gatewaysPaymentRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/payment", component: () => <Lazy><GatewaysPaymentPage /></Lazy> });
+const gatewaysMapRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/map", component: () => <Lazy><GatewaysMapPage /></Lazy> });
+const gatewaysStorageRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/storage", component: () => <Lazy><GatewaysStoragePage /></Lazy> });
+const gatewaysWhatsappRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/whatsapp", component: () => <Lazy><GatewaysWhatsappPage /></Lazy> });
+const gatewaysSchedulerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/scheduler", component: () => <Lazy><GatewaysSchedulerPage /></Lazy> });
+const gatewaysExportRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/export", component: () => <Lazy><GatewaysExportPage /></Lazy> });
+const gatewaysOltRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/olt", component: () => <Lazy><GatewaysOltPage /></Lazy> });
+const gatewaysAuditRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/audit", component: () => <Lazy><GatewaysAuditPage /></Lazy> });
+const gatewaysPollerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/poller", component: () => <Lazy><GatewaysPollerPage /></Lazy> });
 
 // Security
-const securityRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security", component: () => <Navigate to="/security/alerts" /> });
+const securityRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security", component: () => <Navigate to="/security/alerts" /> });
 
-const securityAlertsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/alerts", component: () => <Lazy><SecurityAlertsPage /></Lazy> });
-const securityAuditRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/audit", component: () => <Lazy><SecurityAuditPage /></Lazy> });
-const securityAuthRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/auth", component: () => <Lazy><SecurityAuthPage /></Lazy> });
-const securityComplianceRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/compliance", component: () => <Lazy><SecurityCompliancePage /></Lazy> });
-const securityRolesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/roles", component: () => <Lazy><SecurityRolesPage /></Lazy> });
-const securityPermissionsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/permissions", component: () => <Lazy><SecurityPermissionsPage /></Lazy> });
-const securityPasswordRoute = createRoute({ getParentRoute: () => rootRoute, path: "/security/password-policy", component: () => <Lazy><SecurityPasswordPolicyPage /></Lazy> });
+const securityAlertsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/alerts", component: () => <Lazy><SecurityAlertsPage /></Lazy> });
+const securityAuditRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/audit", component: () => <Lazy><SecurityAuditPage /></Lazy> });
+const securityAuthRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/auth", component: () => <Lazy><SecurityAuthPage /></Lazy> });
+const securityComplianceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/compliance", component: () => <Lazy><SecurityCompliancePage /></Lazy> });
+const securityRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/roles", component: () => <Lazy><SecurityRolesPage /></Lazy> });
+const securityPermissionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/permissions", component: () => <Lazy><SecurityPermissionsPage /></Lazy> });
+const securityPasswordRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/password-policy", component: () => <Lazy><SecurityPasswordPolicyPage /></Lazy> });
 
 // Logs
-const logsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/logs", component: () => <Lazy><LogsPage /></Lazy> });
+const logsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/logs", component: () => <Lazy><LogsPage /></Lazy> });
 
 // Tasks
-const tasksRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks", component: () => <Lazy><TasksPage /></Lazy> });
-const tasksNewRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks/new", component: () => <Lazy><TasksNewPage /></Lazy> });
-const tasksIdRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
-const tasksProjectsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks/projects", component: () => <Lazy><TasksProjectsPage /></Lazy> });
-const tasksProjectIdRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
+const tasksRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks", component: () => <Lazy><TasksPage /></Lazy> });
+const tasksNewRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/new", component: () => <Lazy><TasksNewPage /></Lazy> });
+const tasksIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/$id", component: () => <Lazy><TasksIdPage /></Lazy> });
+const tasksProjectsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects", component: () => <Lazy><TasksProjectsPage /></Lazy> });
+const tasksProjectIdRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/tasks/projects/$id", component: () => <Lazy><TasksProjectIdPage /></Lazy> });
 
 // AI
-const aiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai", component: () => <Lazy><AiPage /></Lazy> });
-const aiAddRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/add", component: () => <Lazy><AiAddPage /></Lazy> });
-const aiConfigRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/config", component: () => <Lazy><AiConfigPage /></Lazy> });
-const aiTemplatesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/templates", component: () => <Lazy><AiTemplatesPage /></Lazy> });
-const aiPromptsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/prompts", component: () => <Lazy><AiPromptsPage /></Lazy> });
-const aiSimulatorRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/simulator", component: () => <Lazy><AiSimulatorPage /></Lazy> });
-const aiGraphRoute = createRoute({ getParentRoute: () => rootRoute, path: "/ai/graph", component: () => <Lazy><AiGraphPage /></Lazy> });
+const aiRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai", component: () => <Lazy><AiPage /></Lazy> });
+const aiAddRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/add", component: () => <Lazy><AiAddPage /></Lazy> });
+const aiConfigRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/config", component: () => <Lazy><AiConfigPage /></Lazy> });
+const aiTemplatesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/templates", component: () => <Lazy><AiTemplatesPage /></Lazy> });
+const aiPromptsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/prompts", component: () => <Lazy><AiPromptsPage /></Lazy> });
+const aiSimulatorRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/simulator", component: () => <Lazy><AiSimulatorPage /></Lazy> });
+const aiGraphRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/ai/graph", component: () => <Lazy><AiGraphPage /></Lazy> });
 
 // Settings
-const settingsRedirectRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: () => <Navigate to="/settings/general" /> });
-const settingsGeneralRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/general", component: () => <Lazy><SettingsGeneralPage /></Lazy> });
-const settingsBrandingRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/branding", component: () => <Lazy><SettingsBrandingPage /></Lazy> });
-const settingsSmtpRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/smtp-mail", component: () => <Lazy><SettingsSmtpPage /></Lazy> });
-const settingsGisSpatialRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/gis-spatial", component: () => <Lazy><SettingsGisSpatialPage /></Lazy> });
+const settingsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings", component: () => <Navigate to="/settings/general" /> });
+const settingsGeneralRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/general", component: () => <Lazy><SettingsGeneralPage /></Lazy> });
+const settingsBrandingRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/branding", component: () => <Lazy><SettingsBrandingPage /></Lazy> });
+const settingsSmtpRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/smtp-mail", component: () => <Lazy><SettingsSmtpPage /></Lazy> });
+const settingsGisSpatialRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/gis-spatial", component: () => <Lazy><SettingsGisSpatialPage /></Lazy> });
 
 // Assets 3D
-const assets3dRoute = createRoute({ getParentRoute: () => rootRoute, path: "/assets-3d", component: () => <Lazy><Assets3dPage /></Lazy> });
+const assets3dRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/assets-3d", component: () => <Lazy><Assets3dPage /></Lazy> });
 
 // ----------------------------------------------------------------
 // Route tree
 // ----------------------------------------------------------------
-const routeTree = rootRoute.addChildren([
+const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
   overviewRoute,
   // Orgs
@@ -323,6 +338,8 @@ const routeTree = rootRoute.addChildren([
   settingsRedirectRoute, settingsGeneralRoute, settingsBrandingRoute, settingsSmtpRoute, settingsGisSpatialRoute,
   assets3dRoute,
 ]);
+
+const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
 
 export const router = createRouter({ routeTree });
 

@@ -32,6 +32,18 @@ services:
   - name: backend-service
     url: http://backend:9090
     routes:
+      # Public pre-login routes — no JWT needed (Spring Boot Security handles permitAll)
+      - name: backend-public-routes
+        paths:
+          - /api/v1/auth
+          - /api/v1/organizations/check-slug
+          - /api/v1/organizations/register
+          - /api/v1/network/map
+          - /api/v1/network/mvt
+          - /api/v1/network/notifications
+        strip_path: false
+
+      # Protected API routes — strict RS256 JWT required (401 if invalid or missing)
       - name: backend-api-route
         paths:
           - /api/v1
@@ -39,7 +51,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
               run_on_preflight: false
@@ -67,7 +78,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -82,7 +92,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
       - name: payment-webhook-route
@@ -103,7 +112,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -118,7 +126,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -133,7 +140,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -169,7 +175,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -184,7 +189,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -199,7 +203,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
       - name: ont-route
@@ -209,7 +212,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -224,7 +226,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -239,7 +240,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
 
@@ -283,7 +283,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
           - name: request-transformer
@@ -307,7 +306,6 @@ services:
         plugins:
           - name: jwt
             config:
-              anonymous: anonymous-user
               claims_to_verify:
                 - exp
           - name: request-transformer

@@ -203,8 +203,8 @@ if $BUILD_CMD; then
       # Now check frontend
       echo "Checking health of frontend..."
       if [ "$ENV" = "production" ]; then
-        CONTAINER_NAME="ftth-frontend"
-        CONTAINER_PORT="3000"
+        CONTAINER_NAME="ftth-frontend-admin"
+        CONTAINER_PORT="3001"
         if [ "$TARGET_SERVICE" = "frontend-admin" ] || [ "$TARGET_SERVICE" = "studio-admin" ]; then
           CONTAINER_NAME="ftth-frontend-admin"
           CONTAINER_PORT="3001"

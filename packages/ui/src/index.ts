@@ -47,6 +47,9 @@ export * from "./components/rich-text-editor";
 // Technical Isometric Wireframe Figures & Pure SVG Animated Mascot (Linear Style)
 export * from "./components/linear-isometric";
 
+// Shared Auth Components (Linear Style)
+export * from "./components/auth";
+
 // Error Pages
 export * from "./components/errors/NotFoundError";
 export * from "./components/errors/TenantDomainError";

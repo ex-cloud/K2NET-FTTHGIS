@@ -13,6 +13,7 @@ import org.keycloak.representations.idm.AuthenticationExecutionInfoRepresentatio
 import org.springframework.stereotype.Service;
 import com.company.ftthgis.config.KeycloakProperties;
 import com.company.ftthgis.service.SystemSettingService;
+import com.company.ftthgis.service.KongConfigSyncService;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class KeycloakService {
     private final Keycloak keycloak;
     private final KeycloakProperties properties;
     private final SystemSettingService settingsService;
+    private final KongConfigSyncService kongConfigSyncService;
 
     @org.springframework.beans.factory.annotation.Value("${app.security.keycloak.provision-client-id:ftth-gis-frontend}")
     private String provisionClientId;
@@ -56,7 +58,14 @@ public class KeycloakService {
      * Uses the singleton Keycloak admin client.
      */
     public void ensureRealmExists(String realmName) {
-        log.info("🛡️ Ensuring Keycloak Realm exists: {}", realmName);
+        ensureRealmExists(realmName, false);
+    }
+
+    /**
+     * Ensures a realm exists for a tenant with specific SSO plan gating.
+     */
+    public void ensureRealmExists(String realmName, boolean hasSso) {
+        log.info("🛡️ Ensuring Keycloak Realm exists: {} (hasSso: {})", realmName, hasSso);
         try {
             // 0. Check if the realm already exists to avoid creation conflicts
             try {
@@ -70,6 +79,7 @@ public class KeycloakService {
                     // Sync SMTP configuration for the existing realm
                     try {
                         org.keycloak.representations.idm.RealmRepresentation existingRealm = keycloak.realm(realmName).toRepresentation();
+                        existingRealm.setLoginTheme("ftth-gis");
                         java.util.Map<String, String> smtpServer = existingRealm.getSmtpServer();
                         if (smtpServer == null) {
                             smtpServer = new java.util.HashMap<>();
@@ -93,24 +103,19 @@ public class KeycloakService {
                         existingRealm.setSmtpServer(smtpServer);
 
                         // === Session & Token Lifespan Configuration ===
-                        // SSO Session: controls browser SSO cookie lifetime
                         existingRealm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
                         existingRealm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
                         existingRealm.setAccessTokenLifespan(300);       // 5 minutes access token lifespan
 
-                        // Offline Session: controls refresh token absolute lifetime
-                        // This is the ROOT setting that prevents infinite sessions
-                        existingRealm.setOfflineSessionMaxLifespanEnabled(true); // CRITICAL: enable max lifespan!
+                        existingRealm.setOfflineSessionMaxLifespanEnabled(true);
                         existingRealm.setOfflineSessionMaxLifespan(259200);      // 3 days absolute max (72 hours)
                         existingRealm.setOfflineSessionIdleTimeout(86400);       // 1 day idle timeout for offline sessions
 
-                        // Client Session: inherit from realm (0 = use realm defaults)
                         existingRealm.setClientSessionIdleTimeout(0);
                         existingRealm.setClientSessionMaxLifespan(0);
 
-                        // Refresh token revocation: each refresh token can only be used once
                         existingRealm.setRevokeRefreshToken(false);
-                        existingRealm.setRefreshTokenMaxReuse(0); // no reuse allowed
+                        existingRealm.setRefreshTokenMaxReuse(0);
 
                         keycloak.realm(realmName).update(existingRealm);
                         log.info("✅ SUCCESS: Dynamic SMTP, session, and token lifespan configurations synchronized for existing realm '{}'", realmName);
@@ -118,9 +123,11 @@ public class KeycloakService {
                         log.error("❌ Failed to sync SMTP configuration for existing realm '{}': {}", realmName, ex.getMessage());
                     }
 
-                    cloneIdentityProvider("ftth-realm", realmName, "google");
-                    cloneIdentityProvider("ftth-realm", realmName, "github");
+                    syncIdentityProvidersForPlan(realmName, hasSso);
                 }
+
+                // Sync with Kong
+                kongConfigSyncService.syncRealmToKong(realmName);
                 return;
             } catch (jakarta.ws.rs.WebApplicationException ex) {
                 if (ex.getResponse().getStatus() == 404) {
@@ -257,9 +264,6 @@ public class KeycloakService {
                 log.info("✅ SUCCESS: Created realm '{}'", realmName);
 
                 // CRITICAL FIX: Invalidate the cached access token after creating a new realm.
-                // The old token was issued BEFORE this realm existed, so it does NOT include
-                // permissions to manage resources within it. Fetching a fresh token resolves
-                // the HTTP 403 Forbidden error on subsequent API calls to the new realm.
                 log.info("🔄 Invalidating cached admin token to acquire permissions for new realm '{}'", realmName);
                 String currentToken = keycloak.tokenManager().getAccessTokenString();
                 keycloak.tokenManager().invalidate(currentToken);
@@ -271,16 +275,17 @@ public class KeycloakService {
                 throw ex; // Re-throw to allow transaction rollback or propagation
             }
 
-            // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend)
-            // This is the most important step for login success
+            // 2. ALWAYS Provision/Sync the Default Client (ftth-gis-frontend) as Public PKCE
             provisionDefaultClient(realmName);
             disableReviewProfileInFirstBrokerLogin(realmName);
 
-            // 3. Clone Google & GitHub Identity Providers from system realm if this is a tenant realm
+            // 3. Clone & Sync Google & GitHub Identity Providers with subscription plan gating
             if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
-                cloneIdentityProvider("ftth-realm", realmName, "google");
-                cloneIdentityProvider("ftth-realm", realmName, "github");
+                syncIdentityProvidersForPlan(realmName, hasSso);
             }
+
+            // 4. Synchronize declarative config to Kong Edge
+            kongConfigSyncService.syncRealmToKong(realmName);
 
         } catch (Exception e) {
             log.error("❌ CRITICAL: Unexpected error in ensureRealmExists for '{}': {}", realmName, e.getMessage());
@@ -289,7 +294,7 @@ public class KeycloakService {
     }
 
     /**
-     * Provisions the default OIDC client for the new realm.
+     * Provisions the default OIDC client for the new realm (Standard Public Client with PKCE).
      */
     private void provisionDefaultClient(String realmName) {
         try {
@@ -301,21 +306,19 @@ public class KeycloakService {
             // 1. Prepare Client Representation
             ClientRepresentation client = existing.isEmpty() ? new ClientRepresentation() : existing.get(0);
             
-            log.info("🔑 SYNCING Client ID: {} with Secret: {} in Realm: {}", provisionClientId, provisionClientSecret, realmName);
+            log.info("🔑 SYNCING OIDC PKCE Client ID: {} in Realm: {}", provisionClientId, realmName);
 
             client.setClientId(provisionClientId);
             client.setName("FTTH GIS Frontend");
             client.setEnabled(true);
-            client.setPublicClient(false); // Confidential client
-            client.setSecret(provisionClientSecret); // FORCE SYNC with config/env
-            client.setClientAuthenticatorType("client-secret");
-            client.setDirectAccessGrantsEnabled(true);
-            client.setStandardFlowEnabled(true);
+            client.setPublicClient(true); // Public client for SPA + PKCE
+            client.setSecret(null); // No secret for public client
+            client.setDirectAccessGrantsEnabled(false); // ROPC disabled (Anti-abuse)
+            client.setStandardFlowEnabled(true); // Authorization Code Flow + PKCE S256
             client.setServiceAccountsEnabled(false);
             
             // DYNAMIC REDIRECT URIS (Option B: Automated Provisioning)
             // Logic: http[s]://[realm]-[rootHost]/* (production) or http[s]://[realm].[rootHost]/* (local)
-            // We use http for localhost, and https for production (detection by protocol in frontendUrl)
             String protocol = "http://";
             String host = frontendUrl;
             if (frontendUrl.contains("://")) {
@@ -338,25 +341,22 @@ public class KeycloakService {
             redirects.add(protocol + host + "/*");
             
             if ("ftth-realm".equals(realmName) || "master".equals(realmName)) {
-                // For system realm, the url is system-gis.kdua.net or system.localhost:3000
                 tenantUrl = protocol + (isHyphen ? "system-" : "system.") + rootHost;
                 redirects.add(tenantUrl + "/*");
             } else {
-                // Construct tenant subdomain
                 tenantUrl = protocol + realmName + (isHyphen ? "-" : ".") + rootHost;
                 redirects.add(tenantUrl + "/*");
             }
 
             client.setRedirectUris(redirects);
-            
             client.setWebOrigins(List.of("*"));
 
             if (existing.isEmpty()) {
                 realmResource.clients().create(client);
-                log.info("✅ SUCCESS: Created '{}' client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
+                log.info("✅ SUCCESS: Created '{}' PKCE client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
             } else {
                 realmResource.clients().get(client.getId()).update(client);
-                log.info("🔄 SUCCESS: Updated '{}' client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
+                log.info("🔄 SUCCESS: Updated '{}' PKCE client in realm: {} with Redirect: {}", provisionClientId, realmName, tenantUrl);
             }
         } catch (Exception e) {
             log.error("❌ ERROR: Failed to sync client in realm '{}': {}", realmName, e.getMessage());
@@ -619,17 +619,43 @@ public class KeycloakService {
     }
 
     /**
-     * Clones an identity provider (e.g. Google) from a source realm to a target realm.
+     * Synchronizes identity providers for a realm based on tenant subscription plan (hasSso).
+     * Called during realm creation, startup reconciliation, and plan upgrade/downgrade.
      */
-    private void cloneIdentityProvider(String sourceRealm, String targetRealm, String providerAlias) {
+    public void syncIdentityProvidersForPlan(String realmName, boolean hasSso) {
+        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+            return;
+        }
+        log.info("🛡️ Synchronizing Identity Providers for realm '{}' (SSO Enabled: {})", realmName, hasSso);
+        syncIdentityProviderState("ftth-realm", realmName, "google", hasSso);
+        syncIdentityProviderState("ftth-realm", realmName, "github", hasSso);
+    }
+
+    /**
+     * Clones or updates an identity provider's enabled state to strictly enforce B2B subscription tiering.
+     */
+    private void syncIdentityProviderState(String sourceRealm, String targetRealm, String providerAlias, boolean hasSso) {
         try {
             var targetRealmResource = keycloak.realm(targetRealm);
             
             // Check if it already exists in target realm
             boolean exists = targetRealmResource.identityProviders().findAll().stream()
                     .anyMatch(idp -> providerAlias.equalsIgnoreCase(idp.getAlias()));
+
             if (exists) {
-                log.info("ℹ️ Identity Provider '{}' already exists in realm '{}'. Skipping clone.", providerAlias, targetRealm);
+                // Update existing IdP enabled status
+                try {
+                    IdentityProviderRepresentation existingIdp = targetRealmResource.identityProviders().get(providerAlias).toRepresentation();
+                    if (existingIdp.isEnabled() != hasSso) {
+                        existingIdp.setEnabled(hasSso);
+                        targetRealmResource.identityProviders().get(providerAlias).update(existingIdp);
+                        log.info("🔄 SUCCESS: Updated Identity Provider '{}' in realm '{}' enabled status to: {}", providerAlias, targetRealm, hasSso);
+                    } else {
+                        log.info("ℹ️ Identity Provider '{}' in realm '{}' already has enabled status: {}", providerAlias, targetRealm, hasSso);
+                    }
+                } catch (Exception ex) {
+                    log.warn("⚠️ Failed to update existing Identity Provider '{}' in realm '{}': {}", providerAlias, targetRealm, ex.getMessage());
+                }
                 return;
             }
 
@@ -641,6 +667,7 @@ public class KeycloakService {
             if (sourceIdp != null) {
                 // Clear internal ID so Keycloak generates a new one
                 sourceIdp.setInternalId(null);
+                sourceIdp.setEnabled(hasSso); // Tier gating: false for Free/Basic, true for Pro/Enterprise
                 
                 // Restore unmasked OAuth secrets since toRepresentation() returns masked secrets ("**********")
                 java.util.Map<String, String> config = sourceIdp.getConfig();
@@ -664,8 +691,8 @@ public class KeycloakService {
                 
                 try (Response response = targetRealmResource.identityProviders().create(sourceIdp)) {
                     if (response.getStatus() == 201 || response.getStatus() == 200 || response.getStatus() == 204) {
-                        log.info("✅ SUCCESS: Automatically cloned Identity Provider '{}' from '{}' to '{}'", 
-                                providerAlias, sourceRealm, targetRealm);
+                        log.info("✅ SUCCESS: Cloned Identity Provider '{}' in realm '{}' (Enabled: {})", 
+                                providerAlias, targetRealm, hasSso);
                     } else {
                         String errorInfo = response.readEntity(String.class);
                         log.warn("⚠️ Failed to clone Identity Provider with original flow alias. Status: {}, Error: {}. Retrying with 'first broker login' fallback.", 
@@ -674,8 +701,8 @@ public class KeycloakService {
                         sourceIdp.setFirstBrokerLoginFlowAlias("first broker login");
                         try (Response fallbackResponse = targetRealmResource.identityProviders().create(sourceIdp)) {
                             if (fallbackResponse.getStatus() == 201 || fallbackResponse.getStatus() == 200 || fallbackResponse.getStatus() == 204) {
-                                log.info("✅ SUCCESS: Cloned Identity Provider '{}' with fallback flow 'first broker login' in realm '{}'", 
-                                        providerAlias, targetRealm);
+                                log.info("✅ SUCCESS: Cloned Identity Provider '{}' with fallback flow in realm '{}' (Enabled: {})", 
+                                        providerAlias, targetRealm, hasSso);
                             } else {
                                 String fallbackErrorInfo = fallbackResponse.readEntity(String.class);
                                 log.error("❌ ERROR: Failed to clone Identity Provider with fallback. Status: {}, Error: {}", 
@@ -687,8 +714,8 @@ public class KeycloakService {
                 }
             }
         } catch (Exception e) {
-            log.error("❌ ERROR: Failed to clone Identity Provider '{}' from '{}' to '{}': {}", 
-                    providerAlias, sourceRealm, targetRealm, e.getMessage());
+            log.error("❌ ERROR: Failed to sync Identity Provider '{}' in realm '{}': {}", 
+                    providerAlias, targetRealm, e.getMessage());
         }
     }
 

@@ -29,6 +29,7 @@ public class OrganizationSubscriptionService {
     private final OrganizationConfigRepository organizationConfigRepository;
     private final ProjectRepository projectRepository;
     private final AuditLoggingService auditLoggingService;
+    private final com.company.ftthgis.config.tenant.KeycloakService keycloakService;
 
     /**
      * Mengambil ringkasan langganan dan status siklus hidup tenant secara lengkap & real-time
@@ -158,6 +159,13 @@ public class OrganizationSubscriptionService {
 
         organizationRepository.save(org);
 
+        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status with new plan tier
+        try {
+            keycloakService.syncIdentityProvidersForPlan(slug, targetPlan.isHasSso());
+        } catch (Exception ex) {
+            log.warn("⚠️ Failed to sync Keycloak IdP on upgrade for {}: {}", slug, ex.getMessage());
+        }
+
         auditLoggingService.logSuspiciousActivity(
                 org.getId(),
                 "super_admin",
@@ -209,6 +217,13 @@ public class OrganizationSubscriptionService {
         saveOrUpdateConfig(org, "api_rate_limit_max", "FREE".equalsIgnoreCase(targetPlan.getName()) ? "2000" : "5000");
 
         organizationRepository.save(org);
+
+        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status with new plan tier (Disable on downgrade to Free)
+        try {
+            keycloakService.syncIdentityProvidersForPlan(slug, targetPlan.isHasSso());
+        } catch (Exception ex) {
+            log.warn("⚠️ Failed to sync Keycloak IdP on downgrade for {}: {}", slug, ex.getMessage());
+        }
 
         auditLoggingService.logSuspiciousActivity(
                 org.getId(),

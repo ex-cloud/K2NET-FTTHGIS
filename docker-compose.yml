@@ -368,62 +368,6 @@ services:
           cpus: '1.5'
           memory: 1024M
 
-  # Frontend App (Next.js) — Portal Lama (apps/studio), dipertahankan sampai portal baru verified
-  frontend:
-    build:
-      context: .
-      dockerfile: apps/studio/Dockerfile
-      args:
-        - NEXT_PUBLIC_GIT_BRANCH=${NEXT_PUBLIC_GIT_BRANCH:-main}
-        - NEXT_PUBLIC_GIT_COMMIT=${NEXT_PUBLIC_GIT_COMMIT:-unknown}
-    container_name: ftth-frontend
-    restart: always
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:9090/api/v1
-      - BACKEND_API_URL=http://backend:9090
-      - AUTH_SECRET=${AUTH_SECRET}
-      - AUTH_TRUST_HOST=true
-      - AUTH_KEYCLOAK_INTERNAL_URL=http://keycloak:8081
-      - NEXT_PUBLIC_APP_URL=${FRONTEND_URL}
-      - AUTH_KEYCLOAK_ID=ftth-gis-frontend
-      - AUTH_KEYCLOAK_SECRET=${AUTH_KEYCLOAK_SECRET}
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL=https://auth-gis.kdua.net
-      - AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
-      - NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER=https://auth-gis.kdua.net/realms/ftth-realm
-      - NOTIFICATION_GATEWAY_URL=http://ftth-notification-gateway:5001
-      - PAYMENT_GATEWAY_URL=http://ftth-payment-gateway:5002
-      - MAP_GATEWAY_URL=http://ftth-map-gateway:5003
-      - STORAGE_GATEWAY_URL=http://ftth-storage-gateway:5004
-      - WHATSAPP_GATEWAY_URL=http://ftth-whatsapp-gateway:5005
-      - SCHEDULER_GATEWAY_URL=http://ftth-scheduler-gateway:5006
-      - EXPORT_GATEWAY_URL=http://ftth-export-gateway:5007
-      - OLT_GATEWAY_URL=http://ftth-olt-gateway:5008
-      - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
-      - POLLER_GATEWAY_URL=http://ftth-poller:5010
-      - GATEWAY_TOKEN=${GATEWAY_TOKEN}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.priority=1"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/login"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-
   # Frontend Portal Tenant ISP (Vite + React SPA — Nginx Alpine <20MB RAM)
   frontend-tenant:
     image: ghcr.io/ex-cloud/k2net-ftthgis/frontend-tenant:latest

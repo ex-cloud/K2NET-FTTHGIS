@@ -140,8 +140,8 @@ log "🧟 Zombie/Defunct processes di Host: $ZOMBIE_COUNT"
 if [ "$ZOMBIE_COUNT" -gt 3 ]; then
   log "   ⚠️  Terdeteksi $ZOMBIE_COUNT zombie processes. Membersihkan zombie via Next.js container restart..."
   if [ "$DRY_RUN" = false ]; then
-    docker restart ftth-frontend-admin ftth-frontend >> "$LOG_FILE" 2>&1 || true
-    log "   ✅ Next.js frontend containers restarted — zombie reaped."
+    docker restart ftth-frontend-admin ftth-frontend-tenant >> "$LOG_FILE" 2>&1 || true
+    log "   ✅ Frontend SPA containers restarted — zombie reaped."
   fi
 fi
 

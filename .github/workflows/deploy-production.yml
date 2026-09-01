@@ -527,6 +527,8 @@ jobs:
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
           port: ${{ secrets.PROD_SSH_PORT }}
+          command_timeout: 30m
+          timeout: 30m
           script: |
             set -e
             cd /opt/project5

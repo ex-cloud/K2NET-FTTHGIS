@@ -1,11 +1,24 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
 import { ProtectedRoute } from "@k2net/auth/client";
 import { TenantLayout } from "./layouts/TenantLayout";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { MapPage } from "./pages/map/MapPage";
 import { CustomersPage } from "./pages/customers/CustomersPage";
+import { LoginPage } from "./pages/auth/LoginPage";
 
 const rootRoute = createRootRoute({
+  component: () => <Outlet />,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const authenticatedLayoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "authenticated",
   component: () => (
     <ProtectedRoute>
       <TenantLayout />
@@ -14,42 +27,42 @@ const rootRoute = createRootRoute({
 });
 
 const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/",
   component: DashboardPage,
 });
 
 const mapRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/map",
   component: MapPage,
 });
 
 const customersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/customers",
   component: CustomersPage,
 });
 
 const inventoryRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/inventory",
   component: DashboardPage,
 });
 
 const issuesRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/issues",
   component: DashboardPage,
 });
 
 const settingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedLayoutRoute,
   path: "/settings",
   component: DashboardPage,
 });
 
-const routeTree = rootRoute.addChildren([
+const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
   mapRoute,
   customersRoute,
@@ -57,6 +70,8 @@ const routeTree = rootRoute.addChildren([
   issuesRoute,
   settingsRoute,
 ]);
+
+const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
 
 export const router = createRouter({ routeTree });
 
