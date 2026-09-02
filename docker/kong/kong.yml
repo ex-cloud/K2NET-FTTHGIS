@@ -53,6 +53,10 @@ services:
             config:
               claims_to_verify:
                 - exp
+              uri_param_names:
+                - jwt
+                - access_token
+                - token
               run_on_preflight: false
       - name: backend-actuator-route
         paths:
@@ -301,6 +305,7 @@ services:
         methods:
           - GET
           - POST
+          - PUT
           - DELETE
           - OPTIONS
         plugins:
@@ -308,8 +313,16 @@ services:
             config:
               claims_to_verify:
                 - exp
+              uri_param_names:
+                - jwt
+                - access_token
+                - token
+              run_on_preflight: false
           - name: request-transformer
             config:
+              replace:
+                headers:
+                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
               add:
                 headers:
                   - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
