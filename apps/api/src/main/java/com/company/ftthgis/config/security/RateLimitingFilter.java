@@ -65,25 +65,35 @@ public class RateLimitingFilter implements Filter {
         String uri = httpRequest.getRequestURI();
         String clientId = getClientIdentifier(httpRequest);
 
-        // Skip rate limiting for non-API, SSE, device trust verification, and health check endpoints
-        if (!uri.startsWith("/api/") || uri.endsWith("/map-updates") || uri.contains("/security/device/") || uri.contains("/actuator/")) {
+        // Skip rate limiting for non-API, SSE, telemetry polling, device trust verification, internal mesh, and health checks
+        String gatewayTokenHeader = httpRequest.getHeader("X-Gateway-Token");
+        if (!uri.startsWith("/api/") || 
+            gatewayTokenHeader != null ||
+            uri.endsWith("/map-updates") || 
+            uri.contains("/security/device/") || 
+            uri.contains("/actuator/") ||
+            uri.contains("/system/devops-stats") ||
+            uri.contains("/system/keycloak/") ||
+            uri.contains("/system/db-observability") ||
+            uri.contains("/system/health-metrics") ||
+            uri.contains("/system/gateway-status")) {
             chain.doFilter(request, response);
             return;
         }
 
         // Apply granular rate limiting based on endpoint type
         boolean allowed = true;
-        int limit = 100;
+        int limit = 300;
         
         if (isAuthEndpoint(uri)) {
             allowed = rateLimitingConfig.tryConsumeAuthToken(clientId);
-            limit = 5;
+            limit = 20;
         } else if (isAdminEndpoint(uri)) {
             allowed = rateLimitingConfig.tryConsumeAdminToken(clientId);
-            limit = 30;
+            limit = 300;
         } else if (isApiEndpoint(uri)) {
             allowed = rateLimitingConfig.tryConsumeApiToken(clientId);
-            limit = 100;
+            limit = 300;
         }
 
         if (allowed) {

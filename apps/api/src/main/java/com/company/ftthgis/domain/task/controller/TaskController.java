@@ -227,19 +227,19 @@ public class TaskController {
 
     // ─── Private helpers ────────────────────────────────────────────────────────
 
+    private static final String PLATFORM_ORG_SENTINEL_ID = "00000000-0000-0000-0000-000000000001";
+
     /**
-     * Enable or disable the Hibernate tenant filter based on the caller's JWT roles.
-     * Super Admin: filter disabled (sees all tenants).
-     * Everyone else: filter enabled with their organization ID.
+     * Enable the Hibernate tenant filter based on the caller's JWT organization.
+     * Non-super-admin: scoped to their organization ID claim.
+     * Super Admin platform actions: scoped to Main Platform Organization sentinel ID.
      */
     private void applyTenantFilter(Jwt jwt) {
-        if (isSuperAdmin(jwt)) {
-            taskService.disableOrgFilter();
-        } else {
-            String orgId = jwt.getClaim("organization_id");
-            if (orgId != null) {
-                taskService.enableOrgFilter(orgId);
-            }
+        String orgId = jwt.getClaim("organization_id");
+        if (orgId != null && !orgId.isBlank()) {
+            taskService.enableOrgFilter(orgId);
+        } else if (isSuperAdmin(jwt)) {
+            taskService.enableOrgFilter(PLATFORM_ORG_SENTINEL_ID);
         }
     }
 
@@ -249,10 +249,10 @@ public class TaskController {
      */
     private UUID extractOrgId(Jwt jwt) {
         String orgId = jwt.getClaim("organization_id");
-        if (orgId == null) {
+        if (orgId == null || orgId.isBlank()) {
             if (isSuperAdmin(jwt)) {
                 // Default fallback to Main Organization for Super Admin platform actions
-                return UUID.fromString("00000000-0000-0000-0000-000000000001");
+                return UUID.fromString(PLATFORM_ORG_SENTINEL_ID);
             }
             throw new IllegalStateException("organization_id tidak ditemukan di JWT");
         }

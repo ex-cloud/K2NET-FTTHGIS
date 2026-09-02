@@ -270,25 +270,7 @@ services:
               claims_to_verify:
                 - exp
 
-  # ─── Frontend Admin (Next.js Internal API routes) ───────────────────────────
-  # Routes Next.js internal API paths that are NOT backend API calls.
-  # These paths are handled by Next.js Route Handlers, NOT Spring Boot.
-  # Authentication is managed by next-auth inside Next.js — no Kong JWT needed.
-  - name: frontend-admin-service
-    url: http://ftth-frontend-admin:3001
-    routes:
-      - name: frontend-nextauth-route
-        paths:
-          - /api/auth
-        strip_path: false
-      - name: frontend-ai-api-route
-        paths:
-          - /api/ai
-        strip_path: false
-      - name: frontend-system-api-route
-        paths:
-          - /api/system
-        strip_path: false
+
 
   # ─── 11. AI Assistant Gateway (Python FastAPI - Port 5012) ────────────────
   - name: ai-gateway
@@ -380,36 +362,71 @@ plugins:
           kong.service.request.clear_header("X-User-Email")
           kong.service.request.clear_header("X-User-Username")
           kong.service.request.clear_header("X-Actor-ID")
+          kong.service.request.clear_header("X-Actor-Role")
           kong.service.request.clear_header("X-Gateway-Token")
 
-          -- 2. Extract verified claims from Keycloak JWT token
-          local claims = kong.ctx.shared.jwt_claims
-          if claims then
-              kong.service.request.set_header("X-User-Id", claims.sub or "")
-              kong.service.request.set_header("X-User-Email", claims.email or "")
-              kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
-              kong.service.request.set_header("X-Actor-ID", claims.sub or "")
+          -- 2. Inject internal Gateway Mesh Token for all upstream calls
+          local gwToken = os.getenv("GATEWAY_TOKEN")
+          if gwToken and gwToken ~= "" then
+              kong.service.request.set_header("X-Gateway-Token", gwToken)
+          end
 
-              local gwToken = os.getenv("GATEWAY_TOKEN")
-              if gwToken and gwToken ~= "" then
-                  kong.service.request.set_header("X-Gateway-Token", gwToken)
+          -- 3. Extract and decode Keycloak JWT Bearer Token claims
+          local auth_header = kong.request.get_header("Authorization") or ""
+          local token = string.match(auth_header, "Bearer%s+(.+)")
+          if not token then
+              local query_params = kong.request.get_query()
+              token = query_params["access_token"] or query_params["jwt"] or query_params["token"]
+          end
+
+          if token then
+              local parts = {}
+              for part in string.gmatch(token, "[^%.]+") do
+                  table.insert(parts, part)
               end
+              if #parts >= 2 then
+                  local cjson = require("cjson.safe")
+                  local payload_b64 = parts[2]
+                  local rem = #payload_b64 % 4
+                  if rem == 2 then payload_b64 = payload_b64 .. "=="
+                  elseif rem == 3 then payload_b64 = payload_b64 .. "=" end
+                  payload_b64 = string.gsub(string.gsub(payload_b64, "-", "+"), "_", "/")
 
-              local tenantId = claims.tenant_id or claims.organization_id or claims.tenant_slug
-              if tenantId and tenantId ~= "" then
-                  kong.service.request.set_header("X-Tenant-Id", tenantId)
-                  kong.service.request.set_header("X-Tenant-ID", tenantId)
-              else
-                  local iss = claims.iss
-                  if iss then
-                      local parts = {}
-                      for part in string.gmatch(iss, "[^/]+") do
-                          table.insert(parts, part)
-                      end
-                      local realm = parts[#parts]
-                      if realm ~= "ftth-realm" then
-                          kong.service.request.set_header("X-Tenant-Id", realm)
-                          kong.service.request.set_header("X-Tenant-ID", realm)
+                  local decoded = ngx.decode_base64(payload_b64)
+                  if decoded then
+                      local claims = cjson.decode(decoded)
+                      if claims then
+                          kong.service.request.set_header("X-User-Id", claims.sub or "")
+                          kong.service.request.set_header("X-User-Email", claims.email or "")
+                          kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
+                          kong.service.request.set_header("X-Actor-ID", claims.sub or "")
+
+                          if claims.realm_access and claims.realm_access.roles then
+                              kong.service.request.set_header("X-Actor-Role", table.concat(claims.realm_access.roles, ","))
+                          end
+
+                          local tenantId = claims.tenant_id or claims.organization_id or claims.tenant_slug
+                          if tenantId and tenantId ~= "" then
+                              kong.service.request.set_header("X-Tenant-Id", tenantId)
+                              kong.service.request.set_header("X-Tenant-ID", tenantId)
+                          else
+                              local iss = claims.iss
+                              local realm = nil
+                              if iss then
+                                  local iss_parts = {}
+                                  for p in string.gmatch(iss, "[^/]+") do
+                                      table.insert(iss_parts, p)
+                                  end
+                                  realm = iss_parts[#iss_parts]
+                              end
+                              if realm and realm ~= "ftth-realm" and realm ~= "master" then
+                                  kong.service.request.set_header("X-Tenant-Id", realm)
+                                  kong.service.request.set_header("X-Tenant-ID", realm)
+                              else
+                                  kong.service.request.set_header("X-Tenant-Id", "00000000-0000-0000-0000-000000000000")
+                                  kong.service.request.set_header("X-Tenant-ID", "00000000-0000-0000-0000-000000000000")
+                              end
+                          end
                       end
                   end
               end

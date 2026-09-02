@@ -259,10 +259,10 @@ export default function ComputeHostPage() {
   const loading = computeLoading || nodeLoading;
 
   // Extract typed data
-  const migration = devOpsStats.lastMigration;
-  const backup = devOpsStats.lastBackup;
-  const compute = devOpsStats.compute;
-  const cores = compute.cpuCores > 0 ? compute.cpuCores : undefined;
+  const migration = devOpsStats?.lastMigration;
+  const backup = devOpsStats?.lastBackup;
+  const compute = devOpsStats?.compute;
+  const cores = (compute?.cpuCores ?? 0) > 0 ? compute?.cpuCores : undefined;
 
   const onlineCount = services.filter(s => s.up).length;
   const offlineCount = services.filter(s => !s.up).length;

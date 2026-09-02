@@ -15,4 +15,7 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     @Query("SELECT p FROM PaymentTransaction p ORDER BY p.createdAt DESC")
     List<PaymentTransaction> findTop5RecentPayments();
+
+    @Query("SELECT p FROM PaymentTransaction p WHERE p.orgSlug = :orgSlug ORDER BY p.createdAt DESC")
+    List<PaymentTransaction> findTop5RecentPaymentsByOrgSlug(String orgSlug);
 }

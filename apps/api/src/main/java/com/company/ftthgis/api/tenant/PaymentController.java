@@ -242,14 +242,24 @@ public class PaymentController {
 
     @GetMapping("/api/v1/payments/recent")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getRecentPayments() {
-        return ResponseEntity.ok(paymentTransactionRepository.findTop5RecentPayments());
+    public ResponseEntity<?> getRecentPayments(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
+        if (jwt != null && isSuperAdmin(jwt)) {
+            return ResponseEntity.ok(paymentTransactionRepository.findTop5RecentPayments());
+        }
+
+        // Scope to caller's organization slug if not super admin
+        String orgSlug = jwt != null ? extractOrgSlug(jwt) : null;
+        if (orgSlug != null && !orgSlug.isBlank()) {
+            return ResponseEntity.ok(paymentTransactionRepository.findTop5RecentPaymentsByOrgSlug(orgSlug));
+        }
+
+        return ResponseEntity.ok(java.util.List.of());
     }
 
     @PostMapping("/api/v1/payments/reconcile")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.billing.reconcile')")
     public ResponseEntity<?> reconcilePayments() {
-        log.info("Triggering manual payment reconciliation...");
+        log.info("Triggering manual payment reconciliation by Super Admin...");
         var pendingTxs = paymentTransactionRepository.findAll().stream()
             .filter(tx -> "PENDING".equalsIgnoreCase(tx.getStatus()))
             .toList();
@@ -268,6 +278,31 @@ public class PaymentController {
             "success", true,
             "message", "Reconciliation completed. " + updatedCount + " transactions processed."
         ));
+    }
+
+    private boolean isSuperAdmin(Jwt jwt) {
+        java.util.List<String> roles = jwt.getClaimAsStringList("roles");
+        if (roles != null && (roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN"))) {
+            return true;
+        }
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess != null && realmAccess.containsKey("roles")) {
+            Object rolesObj = realmAccess.get("roles");
+            if (rolesObj instanceof java.util.List<?> list) {
+                return list.contains("super_admin") || list.contains("ROLE_SUPER_ADMIN");
+            }
+        }
+        return false;
+    }
+
+    private String extractOrgSlug(Jwt jwt) {
+        String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : "";
+        String[] parts = issuer.split("/");
+        String slug = parts[parts.length - 1];
+        if (!"ftth-realm".equals(slug) && !"master".equals(slug)) {
+            return slug;
+        }
+        return jwt.getClaimAsString("tenant_slug");
     }
 }
 
