@@ -107,7 +107,7 @@ services:
     environment:
       - PORT=5010
       - REDIS_ADDR=redis:6379
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
@@ -152,7 +152,7 @@ services:
     environment:
       - PORT=5006
       - REDIS_ADDR=redis:6379
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
@@ -176,7 +176,7 @@ services:
     environment:
       - PORT=5007
       - REDIS_ADDR=redis:6379
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
@@ -200,7 +200,7 @@ services:
     environment:
       - PORT=5008
       - REDIS_ADDR=redis:6379
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
@@ -223,12 +223,10 @@ services:
       - ./services/.env
     environment:
       - PORT=5009
-      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgres://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - ENV_FILE_PATH=/opt/project5/services/.env
     volumes:
       - /etc/ftth/gateways.env:/opt/project5/services/.env
-    ports:
-      - "127.0.0.1:5009:5009"
     deploy:
       resources:
         limits:
@@ -274,7 +272,7 @@ services:
       - ./services/.env
     environment:
       - PORT=5012
-      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@postgres:5432/ftth_gis
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@ftth-postgres:5432/ftth_gis
       - GATEWAY_INTERNAL_TOKEN=${GATEWAY_TOKEN}
       - AUDIT_GATEWAY_URL=http://ftth-audit-gateway:5009
       - OPENAI_API_KEY=${OPENAI_API_KEY}
