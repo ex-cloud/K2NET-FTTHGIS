@@ -1,6 +1,6 @@
 
 
-import React, { createContext, useContext, useState, useEffect, Suspense } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "@/lib/navigation-compat";
 import { AuditStreamEntry, LOG_GROUPS, LogGroupKey } from "@/hooks/use-audit-log-stream";
 
@@ -253,6 +253,11 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
   }, [searchParams]);
 
   // Sync state → URL
+  // Guard: only call router.replace() when the computed URL is actually different
+  // from what's already in the address bar. Without this guard, every router.replace()
+  // triggers a searchParams change → which re-runs the URL→state effect → which may
+  // set state → which re-triggers this effect → infinite loop.
+  const prevUrlRef = useRef<string | null>(null);
   useEffect(() => {
     if (pathname !== "/logs") return;
     const params = new URLSearchParams();
@@ -292,6 +297,10 @@ function LogsFilterProviderContent({ children }: { children: React.ReactNode }) 
     if (!isLivePaused) params.set("live", "true");
 
     const newUrl = params.size > 0 ? `/logs?${params.toString()}` : "/logs";
+
+    // Skip router.replace() if URL hasn't changed — prevents re-triggering searchParams effect
+    if (newUrl === prevUrlRef.current) return;
+    prevUrlRef.current = newUrl;
     router.replace(newUrl, { scroll: false });
   }, [searchQuery, timeRange, selectedTypes, selectedLevels, selectedGroups, tenantFilter, isLivePaused, router, pathname]);
 

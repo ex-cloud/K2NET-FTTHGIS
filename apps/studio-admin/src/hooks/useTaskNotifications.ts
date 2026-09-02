@@ -26,11 +26,16 @@ export function useTaskNotifications() {
   const router = useRouter();
   const incrementUnreadCount = useTaskStore((state) => state.incrementUnreadCount);
   
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeEventSourceRef = useRef<EventSource | null>(null);
   const reconnectCountRef = useRef<number>(0);
   const maxReconnects = 5;
-  const connectRef = useRef<() => void>(() => {});
+  const isConnectingRef = useRef<boolean>(false);
 
   const handleTaskCreated = useCallback((eventPayload: TaskEventPayload) => {
     // 1. Increment the unread B2B counter in store
@@ -45,19 +50,22 @@ export function useTaskNotifications() {
       action: {
         label: "Buka",
         onClick: () => {
-          router.push(`/tasks/${eventPayload.id}`);
+          routerRef.current?.push(`/tasks/${eventPayload.id}`);
         },
       },
     });
-  }, [incrementUnreadCount, router]);
+  }, [incrementUnreadCount]);
 
   const connect = useCallback(() => {
-    if (!session?.accessToken) {
+    if (!session?.accessToken || isConnectingRef.current) {
+      return;
+    }
+
+    if (activeEventSourceRef.current && activeEventSourceRef.current.readyState === EventSource.OPEN) {
       return;
     }
 
     const baseUrl = getBackendBaseUrl();
-    // Pass the bearer token as a query parameter (supported via BearerTokenResolver in SecurityConfig)
     const sseUrl = `${baseUrl}/tasks/stream?access_token=${session.accessToken}`;
 
     if (activeEventSourceRef.current) {
@@ -66,13 +74,13 @@ export function useTaskNotifications() {
     }
 
     try {
-      console.log("[SSE-Task] Connecting to task stream...");
+      isConnectingRef.current = true;
       const es = new EventSource(sseUrl);
       activeEventSourceRef.current = es;
 
       es.onopen = () => {
-        console.log("[SSE-Task] Connection successfully established.");
-        reconnectCountRef.current = 0; // Reset retry counter
+        isConnectingRef.current = false;
+        reconnectCountRef.current = 0;
       };
 
       es.addEventListener("TASK_CREATED", (e) => {
@@ -84,43 +92,42 @@ export function useTaskNotifications() {
         }
       });
 
-      es.onerror = (err) => {
-        console.error("[SSE-Task] Connection error encountered:", err);
+      es.onerror = () => {
+        isConnectingRef.current = false;
         es.close();
         activeEventSourceRef.current = null;
 
-        // Exponential backoff reconnection logic
+        // Exponential backoff reconnection logic (max 5 times)
         if (reconnectCountRef.current < maxReconnects) {
           const delay = Math.min(1000 * Math.pow(2, reconnectCountRef.current), 30000);
-          console.warn(`[SSE-Task] Retrying connection in ${delay}ms (Attempt ${reconnectCountRef.current + 1}/${maxReconnects})`);
           
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
+
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectCountRef.current += 1;
-            connectRef.current();
+            connect();
           }, delay);
-        } else {
-          console.error("[SSE-Task] Max reconnection attempts reached. SSE stream disconnected.");
         }
       };
     } catch (err) {
+      isConnectingRef.current = false;
       console.error("[SSE-Task] Failed to initialize EventSource:", err);
     }
   }, [session?.accessToken, handleTaskCreated]);
 
-  // Keep ref updated to latest connect function instance
   useEffect(() => {
-    connectRef.current = connect;
-  }, [connect]);
-
-  useEffect(() => {
-    connectRef.current();
+    connect();
 
     return () => {
       if (activeEventSourceRef.current) {
         activeEventSourceRef.current.close();
+        activeEventSourceRef.current = null;
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
   }, [connect]);

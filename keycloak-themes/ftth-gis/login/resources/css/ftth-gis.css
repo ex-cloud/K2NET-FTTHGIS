@@ -5,6 +5,16 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Prevent 404s from PatternFly parent theme looking for local OpenSans fonts */
+@font-face {
+  font-family: 'Open Sans';
+  src: local('Inter'), local('sans-serif');
+}
+@font-face {
+  font-family: 'OpenSans-Light';
+  src: local('Inter'), local('sans-serif');
+}
+
 /* ---------- CSS Reset & Base ---------- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -499,10 +509,16 @@ input[type="submit"]:active {
 }
 
 #ftth-quote-icon {
-  width: 32px;
-  height: 32px;
-  color: rgba(16, 185, 129, 0.8);
+  width: 32px !important;
+  height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  color: rgba(16, 185, 129, 0.8) !important;
   transform: rotate(180deg);
+  display: block;
+  flex-shrink: 0;
 }
 
 #ftth-blockquote {

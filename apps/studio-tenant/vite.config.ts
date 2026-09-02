@@ -14,6 +14,19 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "0.0.0.0",
+    watch: {
+      ignored: [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/apps/api/target/**",
+        "**/backups/**",
+        "**/.next/**",
+        "**/dist/**",
+        "**/docs/**",
+        "**/database/**",
+        "**/.turbo/**",
+      ],
+    },
     proxy: {
       "/api/v1": {
         target: process.env.VITE_KONG_URL || "http://127.0.0.1:8000",

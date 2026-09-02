@@ -154,6 +154,8 @@ export function SystemSecondarySidebar() {
     activeKey = "tasks";
   } else if (pathname?.includes("/organizations")) {
     activeKey = "organizations";
+  } else if (pathname?.startsWith("/system")) {
+    activeKey = "system";
   }
 
   if (!activeKey) return null;

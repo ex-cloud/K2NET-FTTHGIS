@@ -174,6 +174,12 @@ const SettingsGisSpatialPage = React.lazy(() =>
 const Assets3dPage = React.lazy(() =>
   import("./app/(dashboard)/assets-3d/page").then((m) => ({ default: m.default }))
 );
+const SystemTrashPage = React.lazy(() =>
+  import("./app/(dashboard)/system/trash/page").then((m) => ({ default: m.default }))
+);
+const ObservabilityOperationsPage = React.lazy(() =>
+  import("./app/(dashboard)/observability/operations/page").then((m) => ({ default: m.default }))
+);
 const LoginPage = React.lazy(() =>
   import("./app/login/page").then((m) => ({ default: m.default }))
 );
@@ -192,6 +198,28 @@ function PageFallback() {
   );
 }
 
+function NotFoundFallback() {
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-2xl backdrop-blur-sm max-w-md w-full space-y-4">
+        <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+          <span className="font-mono font-bold text-lg">404</span>
+        </div>
+        <h2 className="text-lg font-bold text-foreground">Halaman Tidak Ditemukan</h2>
+        <p className="text-xs text-muted-foreground">
+          Rute yang Anda tuju tidak tersedia atau telah dipindahkan.
+        </p>
+        <a
+          href="/overview"
+          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          Kembali ke Overview
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function Lazy({ children }: { children: React.ReactNode }) {
   return <React.Suspense fallback={<PageFallback />}>{children}</React.Suspense>;
 }
@@ -201,6 +229,7 @@ function Lazy({ children }: { children: React.ReactNode }) {
 // ----------------------------------------------------------------
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
+  notFoundComponent: () => <NotFoundFallback />,
 });
 
 const loginRoute = createRoute({
@@ -255,6 +284,7 @@ const obsOltPollerRoute = createRoute({ getParentRoute: () => authenticatedLayou
 const obsSchedulerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/scheduler", component: () => <Lazy><ObservabilitySchedulerPage /></Lazy> });
 const obsQueryPerfRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/query-performance", component: () => <Lazy><ObservabilityQueryPerfPage /></Lazy> });
 const obsSpatialMapRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/spatial-map", component: () => <Lazy><ObservabilitySpatialMapPage /></Lazy> });
+const obsOperationsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability/operations", component: () => <Lazy><ObservabilityOperationsPage /></Lazy> });
 const obsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/observability", component: () => <Navigate to="/observability/overview" /> });
 
 // Gateways
@@ -277,6 +307,7 @@ const securityRoute = createRoute({ getParentRoute: () => authenticatedLayoutRou
 const securityAlertsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/alerts", component: () => <Lazy><SecurityAlertsPage /></Lazy> });
 const securityAuditRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/audit", component: () => <Lazy><SecurityAuditPage /></Lazy> });
 const securityAuthRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/auth", component: () => <Lazy><SecurityAuthPage /></Lazy> });
+const securitySsoRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/sso", component: () => <Lazy><SecurityAuthPage /></Lazy> });
 const securityComplianceRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/compliance", component: () => <Lazy><SecurityCompliancePage /></Lazy> });
 const securityRolesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/roles", component: () => <Lazy><SecurityRolesPage /></Lazy> });
 const securityPermissionsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/permissions", component: () => <Lazy><SecurityPermissionsPage /></Lazy> });
@@ -308,6 +339,10 @@ const settingsBrandingRoute = createRoute({ getParentRoute: () => authenticatedL
 const settingsSmtpRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/smtp-mail", component: () => <Lazy><SettingsSmtpPage /></Lazy> });
 const settingsGisSpatialRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/settings/gis-spatial", component: () => <Lazy><SettingsGisSpatialPage /></Lazy> });
 
+// System (Recycle Bin / Trash Can)
+const systemTrashRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/system/trash", component: () => <Lazy><SystemTrashPage /></Lazy> });
+const trashRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/trash", component: () => <Navigate to="/system/trash" /> });
+
 // Assets 3D
 const assets3dRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/assets-3d", component: () => <Lazy><Assets3dPage /></Lazy> });
 
@@ -324,18 +359,21 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // Observability
   obsRedirectRoute, obsOverviewRoute, obsApiGatewayRoute, obsComputeRoute, obsDatabaseRoute,
   obsIdentityRoute, obsMessagingRoute, obsOltPollerRoute, obsSchedulerRoute, obsQueryPerfRoute, obsSpatialMapRoute,
+  obsOperationsRoute,
   // Gateways
   gatewaysRedirectRoute, gatewaysOverviewRoute, gatewaysNotifRoute, gatewaysPaymentRoute, gatewaysMapRoute,
   gatewaysStorageRoute, gatewaysWhatsappRoute, gatewaysSchedulerRoute, gatewaysExportRoute,
   gatewaysOltRoute, gatewaysAuditRoute, gatewaysPollerRoute,
   // Security
-  securityRoute, securityAlertsRoute, securityAuditRoute, securityAuthRoute,
+  securityRoute, securityAlertsRoute, securityAuditRoute, securityAuthRoute, securitySsoRoute,
   securityComplianceRoute, securityRolesRoute, securityPermissionsRoute, securityPasswordRoute,
   // Others
   logsRoute,
   tasksRoute, tasksNewRoute, tasksIdRoute, tasksProjectsRoute, tasksProjectIdRoute,
   aiRoute, aiAddRoute, aiConfigRoute, aiTemplatesRoute, aiPromptsRoute, aiSimulatorRoute, aiGraphRoute,
   settingsRedirectRoute, settingsGeneralRoute, settingsBrandingRoute, settingsSmtpRoute, settingsGisSpatialRoute,
+  // System
+  systemTrashRoute, trashRedirectRoute,
   assets3dRoute,
 ]);
 

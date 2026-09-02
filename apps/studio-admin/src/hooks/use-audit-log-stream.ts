@@ -121,12 +121,17 @@ export function useAuditLogStream(
   const [status, setStatus] = useState<"connecting" | "live" | "paused">("paused");
 
   const isPausedRef = useRef(options?.isPaused ?? true);
-  const [now, setNow] = useState(() => Date.now());
+  // Use a ref for `now` to avoid triggering re-renders on every log update.
+  // The time filter is only re-evaluated when filteredLogs is computed (inside useMemo),
+  // so we only need to capture a snapshot when timeRange or isPaused changes.
+  const nowRef = useRef(Date.now());
   const timeRange = options?.timeRange;
 
+  // Only update nowRef when timeRange changes (not when logs change) to avoid
+  // causing an infinite render loop (logs → setNow → re-render → logs → ...).
   useEffect(() => {
-    setNow(Date.now());
-  }, [logs, timeRange]);
+    nowRef.current = Date.now();
+  }, [timeRange]);
 
   // Sync ref + status inside an effect (never during render)
   useEffect(() => {
@@ -134,10 +139,17 @@ export function useAuditLogStream(
     setStatus(options?.isPaused ? "paused" : "live");
   }, [options?.isPaused]);
 
+  // Stable token ref — avoids recreating fetchRealLogs on every render
+  const tokenRef = useRef(session?.accessToken);
+  useEffect(() => {
+    tokenRef.current = session?.accessToken;
+  }, [session?.accessToken]);
+
   const fetchRealLogs = useCallback(async () => {
-    if (!session?.accessToken) return;
+    const token = tokenRef.current;
+    if (!token) return;
     try {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
+      const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch concurrently from all log sources
       const [auditEventsResult, alertsResult, keycloakResult, notifyResult] = await Promise.allSettled([
@@ -270,9 +282,14 @@ export function useAuditLogStream(
     } catch (err) {
       console.error("[useAuditLogStream] Failed to fetch real logs:", err);
     }
-  }, [session?.accessToken]);
+  // tokenRef is a stable ref — no external dependencies needed here.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Handle data fetch and polling
+  // Handle data fetch and polling — run once on mount.
+  // We intentionally do NOT include fetchRealLogs in the deps array because
+  // fetchRealLogs is now stable (refs only) and we never want to recreate
+  // the interval, which would cause duplicate polls.
   useEffect(() => {
     fetchRealLogs();
 
@@ -284,7 +301,8 @@ export function useAuditLogStream(
     return () => {
       clearInterval(interval);
     };
-  }, [fetchRealLogs]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Per-type + per-group filter logic ─────────────────────────────────────
   const clearLogs = useCallback(() => {
@@ -333,7 +351,7 @@ export function useAuditLogStream(
           else if (unit === "h") durationMs = val * 60 * 60 * 1000;
           else if (unit === "d") durationMs = val * 24 * 60 * 60 * 1000;
         }
-        if (durationMs > 0 && logTime < now - durationMs) {
+        if (durationMs > 0 && logTime < nowRef.current - durationMs) {
           return false;
         }
       }

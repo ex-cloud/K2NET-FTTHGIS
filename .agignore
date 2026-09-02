@@ -1,0 +1,11 @@
+# AGY/LSP ignore file — jangan diindex oleh language server
+backups/
+minio_data/
+*.mp4
+*.mp3
+*.zip
+*.tar.gz
+*.tar.bz2
+*.jar
+apps/api/target/
+docs/

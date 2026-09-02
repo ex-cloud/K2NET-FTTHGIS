@@ -59,6 +59,7 @@ services:
       KONG_PROXY_LISTEN: "0.0.0.0:8000"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
       KONG_LOG_LEVEL: "info"
+      KONG_NGINX_WORKER_PROCESSES: "2"
       KONG_TRUSTED_PROXIES: "0.0.0.0/0,::/0"
       KONG_REAL_IP_HEADER: "X-Forwarded-For"
     volumes:
@@ -78,7 +79,7 @@ services:
       resources:
         limits:
           cpus: '0.8'
-          memory: 1024M
+          memory: 512M
 
   # Database Spasial GIS
   postgres:
@@ -104,8 +105,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 2048M
+          cpus: '1.5'
+          memory: 1024M
 
   # Redis Cache
   redis:
@@ -138,6 +139,7 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: "${DB_PASSWORD}"
+      JAVA_OPTS_APPEND: "-Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
     command: start-dev --http-port=8081
     labels:
       - "traefik.enable=true"
@@ -154,8 +156,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.5'
-          memory: 1536M
+          cpus: '1.0'
+          memory: 768M
 
   # Martin Vector Tile Server (Rust PostGIS Map Tile Generator)
   martin:
@@ -178,8 +180,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
+          cpus: '0.5'
+          memory: 256M
 
   # SNMP Simulator (Python-based untuk mensimulasikan jaringan OLT/ODC)
   snmpsim:
@@ -251,7 +253,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
 
   # Centralized Log Store (Grafana Loki)
   loki:
@@ -267,7 +269,7 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
 
   # Log Shipper (Grafana Promtail)
   promtail:
@@ -319,6 +321,7 @@ services:
     restart: always
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_TOOL_OPTIONS=-Xms192m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ftth_gis
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
@@ -366,7 +369,7 @@ services:
       resources:
         limits:
           cpus: '1.5'
-          memory: 1024M
+          memory: 768M
 
   # Frontend Portal Tenant ISP (Vite + React SPA — Nginx Alpine <20MB RAM)
   frontend-tenant:
@@ -484,7 +487,7 @@ services:
       resources:
         limits:
           cpus: '0.8'
-          memory: 512M
+          memory: 256M
 
   # Auto-initialize MinIO buckets on first boot
   minio-init:

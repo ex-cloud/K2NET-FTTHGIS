@@ -75,6 +75,35 @@ interface KeycloakParsedClaims {
       ...initOptions,
     };
 
+    const updateWindowAuth = (instance: Keycloak | null, currentUser: KeycloakUser | null) => {
+      if (typeof window !== "undefined") {
+        if (instance && instance.token && currentUser) {
+          (window as any).__K2NET_AUTH__ = {
+            token: instance.token,
+            refreshToken: instance.refreshToken,
+            user: {
+              id: currentUser.id,
+              sub: currentUser.id,
+              name: currentUser.name,
+              email: currentUser.email,
+              roles: currentUser.roles,
+              username: currentUser.username,
+              tenantId: currentUser.tenantId,
+              organizationId: currentUser.organizationId || currentUser.tenantId,
+              tenantSlug: currentUser.tenantSlug,
+              organizationSlug: currentUser.organizationSlug || currentUser.tenantSlug,
+              avatar_url: currentUser.avatarUrl,
+              permissions: currentUser.permissions,
+            },
+            login: () => instance.login(),
+            logout: () => instance.logout(),
+          };
+        } else {
+          delete (window as any).__K2NET_AUTH__;
+        }
+      }
+    };
+
     kc.init(defaultInitOptions)
       .then((auth) => {
         setKeycloakInstance(kc);
@@ -85,6 +114,7 @@ interface KeycloakParsedClaims {
           setToken(kc.token);
           const currentUser = extractUser(kc);
           setUser(currentUser);
+          updateWindowAuth(kc, currentUser);
           if (currentUser && config.onAuthSuccess) {
             config.onAuthSuccess(currentUser);
           }
@@ -95,6 +125,8 @@ interface KeycloakParsedClaims {
               idToken: kc.idToken,
             });
           }
+        } else {
+          updateWindowAuth(null, null);
         }
       })
       .catch((err) => {
@@ -102,6 +134,7 @@ interface KeycloakParsedClaims {
         setKeycloakInstance(kc);
         setAuthenticated(false);
         setInitialized(true);
+        updateWindowAuth(null, null);
         if (config.onAuthError) {
           config.onAuthError(err);
         }
@@ -113,7 +146,9 @@ interface KeycloakParsedClaims {
         .then((refreshed) => {
           if (refreshed && kc.token) {
             setToken(kc.token);
-            setUser(extractUser(kc));
+            const currentUser = extractUser(kc);
+            setUser(currentUser);
+            updateWindowAuth(kc, currentUser);
             if (config.onTokens) {
               config.onTokens({
                 token: kc.token,
@@ -128,6 +163,7 @@ interface KeycloakParsedClaims {
           setAuthenticated(false);
           setToken(null);
           setUser(null);
+          updateWindowAuth(null, null);
         });
     };
   }, [config, initOptions]);
@@ -172,6 +208,9 @@ interface KeycloakParsedClaims {
   };
 
   const logout = async (options?: Keycloak.KeycloakLogoutOptions) => {
+    if (typeof window !== "undefined") {
+      delete (window as any).__K2NET_AUTH__;
+    }
     if (keycloakInstance) {
       await keycloakInstance.logout({
         redirectUri: window.location.origin,
@@ -189,7 +228,30 @@ interface KeycloakParsedClaims {
       const refreshed = await keycloakInstance.updateToken(minValidity);
       if (refreshed && keycloakInstance.token) {
         setToken(keycloakInstance.token);
-        setUser(extractUser(keycloakInstance));
+        const currentUser = extractUser(keycloakInstance);
+        setUser(currentUser);
+        if (typeof window !== "undefined") {
+          (window as any).__K2NET_AUTH__ = {
+            token: keycloakInstance.token,
+            refreshToken: keycloakInstance.refreshToken,
+            user: {
+              id: currentUser?.id,
+              sub: currentUser?.id,
+              name: currentUser?.name,
+              email: currentUser?.email,
+              roles: currentUser?.roles,
+              username: currentUser?.username,
+              tenantId: currentUser?.tenantId,
+              organizationId: currentUser?.organizationId || currentUser?.tenantId,
+              tenantSlug: currentUser?.tenantSlug,
+              organizationSlug: currentUser?.organizationSlug || currentUser?.tenantSlug,
+              avatar_url: currentUser?.avatarUrl,
+              permissions: currentUser?.permissions,
+            },
+            login: () => keycloakInstance.login(),
+            logout: () => keycloakInstance.logout(),
+          };
+        }
       }
       return Boolean(refreshed);
     } catch {

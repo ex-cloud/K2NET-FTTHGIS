@@ -38,11 +38,22 @@ const getBaseApiUrl = () => {
   );
 };
 
+const getAuthHeaders = (customHeaders?: Record<string, string>): Record<string, string> => {
+  const jwtToken =
+    typeof window !== "undefined" ? window.__K2NET_AUTH__?.token : undefined;
+  const headers: Record<string, string> = { ...customHeaders };
+  if (jwtToken) {
+    headers["Authorization"] = `Bearer ${jwtToken}`;
+  }
+  return headers;
+};
+
 export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
   const baseApi = getBaseApiUrl();
 
   try {
     const res = await fetch(`${baseApi}/system/health-metrics`, {
+      headers: getAuthHeaders(),
       cache: "no-store",
     });
 
@@ -71,8 +82,10 @@ export async function getSystemHealthMetrics(): Promise<SystemHealthData> {
         { name: "Observability Gateway", job: "observability-gateway", up: true },
       ];
 
-      const memTotalBytes = (sys.memoryTotalGb || 8) * 1024 * 1024 * 1024;
-      const memUsedBytes = (sys.memoryUsedGb || 2) * 1024 * 1024 * 1024;
+      const totalGb = sys.memoryTotalGb && sys.memoryTotalGb > 0 ? sys.memoryTotalGb : 8;
+      const usedGb = sys.memoryUsedGb && sys.memoryUsedGb > 0 ? sys.memoryUsedGb : Math.min(2, totalGb);
+      const memTotalBytes = totalGb * 1024 * 1024 * 1024;
+      const memUsedBytes = usedGb * 1024 * 1024 * 1024;
       const diskTotalBytes = 100 * 1024 * 1024 * 1024;
       const diskUsedBytes = ((sys.diskUsage || 20) / 100) * diskTotalBytes;
 
@@ -132,7 +145,10 @@ export async function getSystemThroughput(
     : { hour: "2-digit", minute: "2-digit" };
 
   try {
-    const res = await fetch(`${baseApi}/system/health-metrics`, { cache: "no-store" });
+    const res = await fetch(`${baseApi}/system/health-metrics`, {
+      headers: getAuthHeaders(),
+      cache: "no-store",
+    });
     if (res.ok) {
       const data = await res.json();
       const throughputList: Array<{ hour: string; hits: number }> = data.throughput || [];
