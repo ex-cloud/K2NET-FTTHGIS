@@ -12,13 +12,13 @@ consumers:
         algorithm: RS256
         rsa_public_key: |
           -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1UQGxFRrdQqlqCq2ylve
-          fxDYLwJSPfjS+wYUcMQ4ZX/MBgPwm+wW3+LokFsVExqT+9NhK5yVcwRQJ27JdTMv
-          n8hV10sVjpKzqjQGthOwQ193nNnUGw1UqgRw29yTenc5qMlTqcgs/0uXif4HCqfB
-          83sZR0IFrZ1Dcpwh0+1kRxIyyiKpPqSTT8JtJTa6590sAljxM/TF/Ow60asqxBo+
-          z5OyU01ocJH+tPKv9LpZS+TcIyLuZQh/ikQjsQd8yJwlEG0SiLSEjPCXcnYUWFI8
-          UH/lcJji2aFaGrIERnILEZrEkjQD12/R7CsU5ZNJaCadNWlCtE2fTjZAZCaW/1PM
-          IwIDAQAB
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1BDG7IW1rQ5nT15YWx0A
+          7ZYBjrhriHUqw3NvUKVzVAOYQUTdE1MeWTPUv/dhMySuFSCg5EmObgzvML5OaGy5
+          5UOVktaNUuXed/hXRD1JiS59xkcX625fIYPEqirx7j9dQMnmKqadZjvnPMj1nZgt
+          Va+kSaiDr+FLkFJ86jvsBc2RNXwEJECCqqA6n72mSdXTnyBoX+xuUHTifANMPKhE
+          wh8X5FyNPhN+xNPe1XVoHZWz0J15rmKOewQpvzXbS4+nOtjFAYt/3ovJl0/vEE7o
+          VCU5os2t27UgRpbX39JKtKb0lWswX7fyAyfPmcrsmJUXnXkgE+8kCaqQ7Gid6aVu
+          ZQIDAQAB
           -----END PUBLIC KEY-----
 
   # Anonymous consumer — allows requests without a valid JWT to pass through
@@ -74,6 +74,7 @@ services:
       - name: notify-route
         paths:
           - /api/v1/notify
+          - /api/v1/gateway-status
         strip_path: false
         plugins:
           - name: jwt

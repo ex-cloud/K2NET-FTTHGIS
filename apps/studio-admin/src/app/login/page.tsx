@@ -31,24 +31,14 @@ export default function AdminLoginPage() {
 
   return (
     <AuthLoginLayout
-      portalName="K2NET Master Console"
-      portalSubtitle="Master Management & DevOps Engine"
-      testimonialQuote="Unified multi-tenant observability and zero-trust mesh isolation give our operations team total visibility with zero downtime."
+      portalName="FTTH GIS PORTAL"
+      portalSubtitle="Sign in to your system administrator account."
+      docsUrl="https://system-gis.kdua.net/gateways/overview"
+      testimonialQuote="Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy."
       testimonialAuthor="Andiansyah"
       testimonialRole="Chief Technology Officer, K2NET"
     >
       <AuthLoginForm
-        title="Admin Sign In"
-        description="Sign in with your master administrator credentials to access the management portal."
-        allowedMethods={[
-          {
-            id: "google",
-            name: "Google Workspace SSO",
-            type: "social",
-            icon: "google",
-            enabled: true,
-          },
-        ]}
         onContinueWithEmail={handleContinueWithEmail}
         onContinueWithProvider={handleContinueWithProvider}
         isLoading={!initialized}

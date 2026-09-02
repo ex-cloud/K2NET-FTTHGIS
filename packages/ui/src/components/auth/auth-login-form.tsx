@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, ArrowRight, Loader2, KeyRound } from "lucide-react";
+import { KeyRound, ShieldAlert, ArrowRight, Loader2, Mail } from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
@@ -29,10 +29,6 @@ export interface AuthLoginFormProps {
 }
 
 export function AuthLoginForm({
-  title = "Welcome back",
-  description = "Sign in to access your geospatial workspace.",
-  logoUrl,
-  orgName,
   allowedMethods = [],
   onContinueWithEmail,
   onContinueWithProvider,
@@ -40,12 +36,12 @@ export function AuthLoginForm({
   defaultEmail = "",
   errorMessage = null,
 }: AuthLoginFormProps) {
-  const [email, setEmail] = useState(defaultEmail);
+  const [usernameOrEmail, setUsernameOrEmail] = useState(defaultEmail);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onContinueWithEmail) {
-      onContinueWithEmail(email.trim());
+      onContinueWithEmail(usernameOrEmail.trim());
     }
   };
 
@@ -54,106 +50,98 @@ export function AuthLoginForm({
   );
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
-      {/* Title & Description */}
-      <div className="space-y-2 text-center sm:text-left">
-        {orgName && (
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-1">
-            {logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={orgName} className="h-3.5 w-3.5 object-contain" />
-            )}
-            <span>{orgName}</span>
-          </div>
-        )}
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          {title}
-        </h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {description}
-        </p>
-      </div>
-
+    <div className="w-full space-y-4">
       {/* Error Message */}
       {errorMessage && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in">
+        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in">
+          <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Primary Form: Email / SSO Trigger */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Account Email or Username
-          </Label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              id="email"
-              type="text"
-              placeholder="user@kdua.net or admin.user"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-11 bg-background/50 text-sm focus-visible:ring-primary"
-              autoFocus
-              required
-              disabled={isLoading}
-            />
-          </div>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full h-11 text-sm font-semibold tracking-wide shadow-md shadow-primary/20 group"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <>
-              <span>Continue with Keycloak SSO</span>
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </>
-          )}
-        </Button>
-      </form>
-
-      {/* Social / External SSO Providers */}
-      {socialMethods.length > 0 && (
-        <div className="space-y-4 pt-2">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border/60" />
+      {/* Main Login Card (Matching Screenshot Form) */}
+      <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Account Email or Username Input */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="usernameOrEmail"
+              className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              Account Email or Username
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="usernameOrEmail"
+                type="text"
+                placeholder="user@kdua.net or admin.user"
+                value={usernameOrEmail}
+                onChange={(e) => setUsernameOrEmail(e.target.value)}
+                className="pl-10 h-11 bg-background/60 border-border/70 rounded-xl text-sm focus-visible:ring-primary"
+                disabled={isLoading}
+              />
             </div>
-            <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-              <span className="bg-card/90 px-3 text-muted-foreground font-medium backdrop-blur-sm">
-                Or continue with
+          </div>
+
+          {/* Primary Action Button: Continue with Keycloak SSO */}
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all duration-200 group"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <>
+                <span>Continue with Keycloak SSO</span>
+                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </Button>
+        </form>
+
+        {/* Social Logins (Google Workspace SSO, SAML, etc.) */}
+        {socialMethods.length > 0 && (
+          <div className="space-y-3 pt-1">
+            {/* Divider */}
+            <div className="relative flex items-center justify-center py-1">
+              <div className="w-full border-t border-border/60" />
+              <span className="absolute bg-card px-3 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                OR CONTINUE WITH
               </span>
             </div>
-          </div>
 
-          <div className="grid gap-2.5">
-            {socialMethods.map((method) => (
-              <Button
-                key={method.id}
-                type="button"
-                variant="outline"
-                className="w-full h-10 text-xs font-semibold justify-center gap-2.5 border-border/70 hover:bg-accent/80 hover:text-foreground transition-all"
-                onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                disabled={isLoading}
-              >
-                {method.icon === "google" && <GoogleIcon className="h-4 w-4" />}
-                {method.icon === "github" && <GithubIcon className="h-4 w-4" />}
-                {method.icon !== "google" && method.icon !== "github" && (
-                  <KeyRound className="h-4 w-4 text-primary" />
-                )}
-                <span>Continue with {method.name}</span>
-              </Button>
-            ))}
+            <div className="grid gap-2">
+              {socialMethods.map((method) => (
+                <Button
+                  key={method.id}
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11 text-xs font-semibold justify-center gap-2.5 border-border/70 bg-background/40 hover:bg-accent hover:text-foreground rounded-xl transition-all"
+                  onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
+                  disabled={isLoading}
+                >
+                  {method.icon === "google" && <GoogleIcon className="h-4 w-4" />}
+                  {method.icon === "github" && <GithubIcon className="h-4 w-4" />}
+                  {method.icon !== "google" && method.icon !== "github" && (
+                    <KeyRound className="h-4 w-4 text-primary" />
+                  )}
+                  <span>Continue with {method.name}</span>
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Compliance / Security Notice Banner */}
+      <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
+        <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          Authorized access only. All actions are logged and audited in accordance with global compliance standards.
+        </span>
+      </div>
     </div>
   );
 }
@@ -171,11 +159,11 @@ function GoogleIcon({ className }: { className?: string }) {
       />
       <path
         fill="#FBBC05"
-        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15Z"
+        d="M5.28 14.28c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28V6.57H1.25C.45 8.16 0 9.98 0 12s.45 3.84 1.25 5.43l4.03-3.15Z"
       />
       <path
         fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.57l4.03 3.15c.95-2.83 3.6-4.97 6.72-4.97Z"
       />
     </svg>
   );
@@ -183,7 +171,7 @@ function GoogleIcon({ className }: { className?: string }) {
 
 function GithubIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path
         fillRule="evenodd"
         clipRule="evenodd"

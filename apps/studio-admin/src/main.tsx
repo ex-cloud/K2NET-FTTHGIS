@@ -11,6 +11,17 @@ import { getAdminKeycloakConfig } from "./lib/keycloak-config";
 import { router } from "./router";
 import "./index.css";
 
+// Auto-reload on deployment chunk update (prevents "error loading dynamically imported module")
+if (typeof window !== "undefined") {
+  window.addEventListener("vite:preloadError", () => {
+    const reloadKey = "chunk_preload_reload";
+    if (!sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, "true");
+      window.location.reload();
+    }
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

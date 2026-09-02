@@ -1,5 +1,6 @@
 import React from "react";
-import { ShieldCheck, BookOpen, Quote } from "lucide-react";
+import { ShieldCheck, BookOpen, Quote, Sparkles } from "lucide-react";
+import { ModeToggle } from "../mode-toggle";
 import { LinearPurposeBuiltFigure } from "../linear-isometric/figures/fig-01-purpose-built";
 
 export interface AuthLoginLayoutProps {
@@ -15,8 +16,8 @@ export interface AuthLoginLayoutProps {
 
 export function AuthLoginLayout({
   children,
-  portalName = "FTTH GIS Platform",
-  portalSubtitle = "Enterprise Multi-Tenant SaaS",
+  portalName = "FTTH GIS Portal",
+  portalSubtitle = "Sign in to your system administrator account.",
   docsUrl = "https://system-gis.kdua.net/gateways/overview",
   testimonialQuote = "Managing enterprise fiber-to-the-home geodata networks has never been this seamless. Highly stable, fast geocoding, and fully isolated multi-tenancy.",
   testimonialAuthor = "Andiansyah",
@@ -24,98 +25,120 @@ export function AuthLoginLayout({
   figureComponent,
 }: AuthLoginLayoutProps) {
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground font-sans selection:bg-primary/20 selection:text-primary">
-      {/* ─── LEFT COLUMN: FORM & BRAND ─────────────────────────── */}
-      <div className="flex flex-1 flex-col justify-between p-6 sm:p-10 lg:max-w-[560px] xl:max-w-[620px] z-10 border-r border-border/40 bg-card/30 backdrop-blur-sm">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-white/20">
-              <ShieldCheck className="h-5 w-5" />
+    <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
+      
+      {/* ─── LEFT COLUMN: Login Form & Header ─────────────────────────── */}
+      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-10 md:p-14 relative bg-sidebar border-r border-border z-10">
+        
+        {/* Top Header Row (Logo + Docs + Theme Toggle) */}
+        <div className="flex items-center justify-between w-full z-20">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 border border-primary/25">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div>
-              <span className="text-base font-bold tracking-tight text-foreground block">
-                {portalName}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {portalSubtitle}
-              </span>
-            </div>
+            <span className="text-xs font-bold tracking-wider uppercase text-foreground font-mono">
+              {portalName}
+            </span>
           </div>
 
-          {docsUrl && (
-            <a
-              href={docsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>System Docs</span>
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            {docsUrl && (
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background/50 hover:bg-accent/80 hover:text-foreground transition-all text-[11px] font-medium text-muted-foreground shadow-xs"
+              >
+                <BookOpen className="h-3 w-3" />
+                <span>System Docs</span>
+              </a>
+            )}
+            <ModeToggle className="h-8 w-8 rounded-lg border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-accent/80" />
+          </div>
         </div>
 
-        {/* Center Content */}
-        <div className="my-auto py-8">
+        {/* Center Form Area */}
+        <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Welcome back
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {portalSubtitle}
+            </p>
+          </div>
+
+          {/* Form wrapper */}
           {children}
         </div>
 
-        {/* Footer */}
-        <div className="space-y-3 pt-6 border-t border-border/40 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-            <span>Zero-Trust Enterprise IAM &bull; TLS 1.3 Strict &bull; OIDC PKCE</span>
-          </div>
-          <div className="text-[11px] text-muted-foreground/80 flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1">
-            <span>&copy; {new Date().getFullYear()} K2NET Enterprise. All rights reserved.</span>
-            <div className="flex gap-3">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="#" className="hover:text-foreground transition-colors">Security</a>
-            </div>
-          </div>
+        {/* Bottom Footer Row */}
+        <div className="text-[11px] text-muted-foreground z-20 flex flex-col gap-1.5 border-t border-border/40 pt-5">
+          <p>
+            By continuing, you agree to FTTH GIS&apos;s{" "}
+            <a href="#" className="underline text-muted-foreground hover:text-foreground transition-colors">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="#" className="underline text-muted-foreground hover:text-foreground transition-colors">
+              Privacy Policy
+            </a>.
+          </p>
+          <p className="font-mono text-[10px] text-muted-foreground/70">
+            &copy; {new Date().getFullYear()} K2NET Enterprise SaaS Platform.
+          </p>
         </div>
       </div>
 
-      {/* ─── RIGHT COLUMN: 3D ISOMETRIC FIGURE & TESTIMONIAL ───── */}
-      <div className="relative hidden lg:flex flex-1 flex-col justify-between overflow-hidden bg-dot-grid p-12 xl:p-16 border-l border-border/20">
-        {/* Subtle Gradient Glows */}
-        <div className="absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -z-10 h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none" />
+      {/* ─── RIGHT COLUMN: 3D Isometric Figure & Testimonial ───────────── */}
+      <div className="hidden lg:flex flex-1 bg-background flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
+        
+        {/* Subtle Ambient Glowing Background Blobs */}
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Eyebrow */}
-        <div className="flex justify-between items-center text-xs font-mono text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            SYSTEM ONLINE &bull; K2NET KONG MESH
-          </span>
-          <span>ENTERPRISE GRADE GIS</span>
-        </div>
+        {/* Grid pattern background overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.12] pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
 
-        {/* 3D Isometric Figure Showcase */}
-        <div className="my-auto flex flex-col items-center justify-center py-6 scale-95 xl:scale-105 transition-transform duration-500">
-          <div className="w-full max-w-[480px]">
-            {figureComponent || <LinearPurposeBuiltFigure />}
+        {/* Top Right Figure Pill Badge */}
+        <div className="w-full flex justify-end z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-semibold tracking-wider text-muted-foreground uppercase shadow-xs">
+            <Sparkles className="h-3 w-3 text-primary" />
+            <span>FIG 0.1: PURPOSE-BUILT ARCHITECTURE</span>
           </div>
         </div>
 
-        {/* CTO Testimonial Card */}
-        <div className="relative rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-md shadow-xl shadow-black/5">
-          <Quote className="h-6 w-6 text-primary/40 mb-3" />
-          <blockquote className="text-sm font-medium text-foreground/90 leading-relaxed mb-4">
-            &ldquo;{testimonialQuote}&rdquo;
-          </blockquote>
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-sm ring-1 ring-primary/30">
-              {testimonialAuthor.charAt(0)}
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {testimonialAuthor}
+        {/* Center Isometric 3D Figure */}
+        <div className="my-auto flex flex-col items-center justify-center py-6 scale-100 xl:scale-110 transition-transform duration-500 z-10">
+          <div className="w-full max-w-[440px]">
+            {figureComponent || <LinearPurposeBuiltFigure size="card" interactive={true} />}
+          </div>
+        </div>
+
+        {/* Bottom Right Testimonial Card */}
+        <div className="w-full max-w-lg mx-auto z-10">
+          <div className="relative rounded-2xl border border-border/70 bg-card/75 p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+            <Quote className="h-6 w-6 text-primary/60 mb-3 transform rotate-180" />
+            <blockquote className="text-xs sm:text-sm font-normal text-foreground/90 leading-relaxed mb-4 font-sans">
+              &ldquo;{testimonialQuote}&rdquo;
+            </blockquote>
+            <div className="flex items-center gap-3 pt-1 border-t border-border/40">
+              <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-bold text-xs shadow-xs">
+                {testimonialAuthor.charAt(0)}
               </div>
-              <div className="text-xs text-muted-foreground">
-                {testimonialRole}
+              <div>
+                <div className="text-xs font-semibold text-foreground">
+                  {testimonialAuthor}
+                </div>
+                <div className="text-[10px] text-muted-foreground font-mono">
+                  {testimonialRole}
+                </div>
               </div>
             </div>
           </div>

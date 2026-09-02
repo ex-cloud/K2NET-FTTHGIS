@@ -12,7 +12,7 @@ export function getGatewayToken(): string {
   return getEnvVar("GATEWAY_TOKEN", "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN");
 }
 
-export const GATEWAY_BASE_URL = getEnvVar("NOTIFICATION_GATEWAY_URL", "http://127.0.0.1:5001");
+export const GATEWAY_BASE_URL = typeof window !== "undefined" ? "" : getEnvVar("NOTIFICATION_GATEWAY_URL", "http://127.0.0.1:5001");
 
 const RAW_GATEWAY_URL_MAP: Record<string, string> = {
   notification:  getEnvVar("NOTIFICATION_GATEWAY_URL",  "http://127.0.0.1:5001"),
@@ -35,22 +35,9 @@ const RAW_GATEWAY_URL_MAP: Record<string, string> = {
  */
 export function getGatewayUrl(key: string): string {
   if (typeof window !== "undefined") {
-    const browserRouteMap: Record<string, string> = {
-      notification:  "/api/v1/notify",
-      payment:       "/api/v1/invoice",
-      map:           "/api/v1/geocode",
-      storage:       "/api/v1/storage",
-      whatsapp:      "/api/v1/wa",
-      scheduler:     "/api/v1/scheduler",
-      export:        "/api/v1/export",
-      olt:           "/api/v1/olt",
-      audit:         "/api/v1/audit",
-      poller:        "/api/v1/poller",
-      task:          "/api/v1/task-gateway",
-      ai:            "/api/v1/ai",
-      observability: "/api/gateway/observability",
-    };
-    return browserRouteMap[key] || `/api/v1/${key}`;
+    // In the browser, all action endpoints already specify the relative /api/v1/... path.
+    // Returning empty string allows direct same-origin requests through Kong / Traefik proxy.
+    return "";
   }
   return RAW_GATEWAY_URL_MAP[key] || "http://127.0.0.1:5001";
 }

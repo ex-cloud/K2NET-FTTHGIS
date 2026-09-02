@@ -143,7 +143,15 @@ export function TenantLayout() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => logout()}
+              onClick={async () => {
+                if (typeof window !== "undefined") {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                }
+                await logout({
+                  redirectUri: `${window.location.origin}/login`,
+                });
+              }}
               className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-1 cursor-pointer"
               title="Keluar dari Sistem"
             >
