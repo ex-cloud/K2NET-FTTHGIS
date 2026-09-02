@@ -1,8 +1,7 @@
 import { httpClient } from "@/lib/httpClient";
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
-  GATEWAY_URL_MAP,
 } from "./common";
 
 const getBackendBaseUrl = () => {
@@ -13,7 +12,7 @@ const getBackendBaseUrl = () => {
 };
 
 // ─────────────────────────────────────────────
-// Storage Gateway: GET /api/v1/stats
+// Storage Gateway: GET /api/v1/storage/stats or /api/v1/stats
 // ─────────────────────────────────────────────
 
 export type StorageStats = {
@@ -29,13 +28,8 @@ export type StorageStats = {
 export async function getStorageStats(): Promise<StorageStats> {
   await verifySuperAdmin();
 
-  const token = getGatewayToken();
-  const storageGatewayUrl = process.env.STORAGE_GATEWAY_URL || "http://127.0.0.1:5004";
-
-  const res = await fetch(`${storageGatewayUrl}/api/v1/stats`, {
-    headers: {
-      "X-Gateway-Token": token,
-    },
+  const res = await fetch(`/api/v1/stats`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -65,10 +59,8 @@ export type SchedulerJob = {
 export async function getSchedulerJobs(): Promise<SchedulerJob[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["scheduler"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/scheduler/jobs`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/scheduler/jobs`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -101,10 +93,8 @@ export type AuditEvent = {
 export async function getAuditEvents(): Promise<AuditEvent[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["audit"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/audit/events`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/audit/events`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -135,10 +125,8 @@ export type OLTDevice = {
 export async function getOltDevices(): Promise<OLTDevice[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["olt"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/olt`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/olt`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -169,10 +157,8 @@ export type ExportJob = {
 export async function getExportJobs(): Promise<ExportJob[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["export"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/export/jobs`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/export/jobs`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -201,10 +187,8 @@ export type PollerDeviceStatus = {
 export async function getPollerDeviceStatus(): Promise<PollerDeviceStatus[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["poller"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/devices/status`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/devices/status`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -233,10 +217,8 @@ export type NotificationLog = {
 export async function getNotificationLogs(): Promise<NotificationLog[]> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP["notification"];
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/notification/logs`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/notification/logs`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 

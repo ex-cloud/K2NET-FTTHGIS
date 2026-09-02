@@ -1,58 +1,41 @@
-const getEnvVar = (key: string, fallback: string): string => {
-  if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[key]) {
-    return String(import.meta.env[key]);
-  }
-  if (typeof process !== "undefined" && process.env && process.env[key]) {
-    return String(process.env[key]);
-  }
-  return fallback;
-};
+/**
+ * Shared Utilities for Gateway Actions — studio-admin
+ *
+ * Security Architecture (frontend-architecture-summary.md §8):
+ *  - Browser SPA authenticates ONLY via Keycloak JWT (Authorization: Bearer).
+ *  - GATEWAY_TOKEN is strictly internal to the gateway mesh and NEVER touches the browser.
+ *  - All client requests use same-origin relative URLs (/api/v1/...) routed through Nginx -> Kong.
+ */
 
-export function getGatewayToken(): string {
-  return getEnvVar("GATEWAY_TOKEN", "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN");
+export function getAuthHeaders(customHeaders?: Record<string, string>): Record<string, string> {
+  const jwtToken =
+    typeof window !== "undefined" ? window.__K2NET_AUTH__?.token : undefined;
+  const headers: Record<string, string> = { ...customHeaders };
+  if (jwtToken) {
+    headers["Authorization"] = `Bearer ${jwtToken}`;
+  }
+  return headers;
 }
 
-export const GATEWAY_BASE_URL = typeof window !== "undefined" ? "" : getEnvVar("NOTIFICATION_GATEWAY_URL", "http://127.0.0.1:5001");
-
-const RAW_GATEWAY_URL_MAP: Record<string, string> = {
-  notification:  getEnvVar("NOTIFICATION_GATEWAY_URL",  "http://127.0.0.1:5001"),
-  payment:       getEnvVar("PAYMENT_GATEWAY_URL",       "http://127.0.0.1:5002"),
-  map:           getEnvVar("MAP_GATEWAY_URL",           "http://127.0.0.1:5003"),
-  storage:       getEnvVar("STORAGE_GATEWAY_URL",       "http://127.0.0.1:5004"),
-  whatsapp:      getEnvVar("WHATSAPP_GATEWAY_URL",      "http://127.0.0.1:5005"),
-  scheduler:     getEnvVar("SCHEDULER_GATEWAY_URL",     "http://127.0.0.1:5006"),
-  export:        getEnvVar("EXPORT_GATEWAY_URL",        "http://127.0.0.1:5007"),
-  olt:           getEnvVar("OLT_GATEWAY_URL",           "http://127.0.0.1:5008"),
-  audit:         getEnvVar("AUDIT_GATEWAY_URL",         "http://127.0.0.1:5009"),
-  poller:        getEnvVar("POLLER_GATEWAY_URL",        "http://ftth-poller:5010"),
-  task:          getEnvVar("TASK_GATEWAY_URL",          "http://ftth-task-gateway:5011"),
-  ai:            getEnvVar("AI_GATEWAY_URL",            "http://ftth-ai-gateway:5012"),
-  observability: getEnvVar("OBSERVABILITY_GATEWAY_URL", "http://ftth-observability-gateway:5013"),
-};
-
-/**
- * Returns the appropriate gateway URL or browser-proxied relative path.
- */
-export function getGatewayUrl(key: string): string {
-  if (typeof window !== "undefined") {
-    // In the browser, all action endpoints already specify the relative /api/v1/... path.
-    // Returning empty string allows direct same-origin requests through Kong / Traefik proxy.
-    return "";
-  }
-  return RAW_GATEWAY_URL_MAP[key] || "http://127.0.0.1:5001";
+export function getBearerHeaders(customHeaders?: Record<string, string>): Record<string, string> {
+  return getAuthHeaders(customHeaders);
 }
-
-/**
- * Proxy-backed map allowing GATEWAY_URL_MAP[key] to resolve to browser-safe relative routes
- * seamlessly on the client side while keeping server-side compatibility.
- */
-export const GATEWAY_URL_MAP: Record<string, string> = new Proxy(RAW_GATEWAY_URL_MAP, {
-  get(_target, prop: string) {
-    return getGatewayUrl(prop);
-  },
-});
 
 export async function verifySuperAdmin(): Promise<boolean> {
-  // In client-side SPA, route-level authorization is enforced by ProtectedRoute in router.tsx
+  // In client-side SPA, route-level authorization is enforced by ProtectedRoute
   return true;
 }
+
+/**
+ * Base URL for browser API requests — always empty string to use same-origin relative routing.
+ */
+export const GATEWAY_BASE_URL = "";
+
+/**
+ * Proxy-backed map resolving to browser-safe relative base paths.
+ */
+export const GATEWAY_URL_MAP: Record<string, string> = new Proxy({}, {
+  get() {
+    return "";
+  },
+});

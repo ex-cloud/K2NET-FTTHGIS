@@ -1,7 +1,6 @@
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
-  GATEWAY_URL_MAP,
 } from "../common";
 import type {
   VectorSearchResultItem,
@@ -15,16 +14,12 @@ export async function simulateVectorSearch(payload: {
   scope?: string;
 }): Promise<{ query: string; total_matches: number; results: VectorSearchResultItem[] }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/simulate-search`, {
+  const res = await fetch(`/api/v1/ai/documents/simulate-search`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -37,15 +32,10 @@ export async function simulateVectorSearch(payload: {
 
 export async function getKnowledgeGraphData(): Promise<KnowledgeGraphData> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/knowledge/graph`, {
+  const res = await fetch(`/api/v1/ai/knowledge/graph`, {
     method: "GET",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 

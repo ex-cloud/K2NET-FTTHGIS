@@ -1,9 +1,21 @@
-import {
-  getGatewayToken,
-  verifySuperAdmin,
-  GATEWAY_BASE_URL,
-  GATEWAY_URL_MAP,
-} from "./common";
+/**
+ * Gateway Action Client — studio-admin
+ *
+ * Security Architecture:
+ *  - Browser SPA authenticates ONLY via Keycloak JWT (Authorization: Bearer).
+ *  - GATEWAY_TOKEN is strictly internal to the gateway mesh (env var on each Go service).
+ *  - GATEWAY_TOKEN MUST NEVER be sent to or read by the browser.
+ *  - All gateway-to-gateway calls requiring X-Gateway-Token are proxied through
+ *    Spring Boot (/api/v1/system/gateway-*), which injects the token server-side.
+ *
+ * Data flow:
+ *  Browser (JWT) → Nginx → Kong (JWT verify) → Spring Boot (X-Gateway-Token injection) → Go Gateway
+ *
+ * Reference: /opt/project5/docs/.../frontend-architecture-summary(1).md §8
+ *   "GATEWAY_TOKEN hanya pernah hidup di dalam gateway mesh, tidak pernah menyentuh browser."
+ */
+
+import { verifySuperAdmin } from "./common";
 
 export type ConfigEntry = {
   key: string;
@@ -31,174 +43,82 @@ export type StatusResponse = {
   services: GatewayServiceStatus[];
 };
 
-const lastMetricsCache: Record<string, { count: number; time: number; throughput: number }> = {};
-
-export async function getGatewayConfig(): Promise<ConfigResponse> {
-  await verifySuperAdmin();
-
-  const token = getGatewayToken();
-  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/config`, {
-    headers: {
-      "X-Gateway-Token": token,
-    },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch config from gateway: ${res.statusText}`);
+// ─── Shared: resolve Keycloak JWT from in-memory store ───────────────────────
+function getBearerHeaders(): Record<string, string> {
+  const jwtToken =
+    typeof window !== "undefined" ? window.__K2NET_AUTH__?.token : undefined;
+  const headers: Record<string, string> = {};
+  if (jwtToken) {
+    headers["Authorization"] = `Bearer ${jwtToken}`;
   }
-
-  return res.json();
+  return headers;
 }
 
-export async function updateGatewayConfig(
-  updates: Record<string, string>
-): Promise<{ status: string; message: string; keys_updated: number }> {
-  await verifySuperAdmin();
+// ─── Gateway Status ───────────────────────────────────────────────────────────
 
-  const token = getGatewayToken();
-  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/config`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-    },
-    body: JSON.stringify({ updates }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `Failed to update gateway configuration: ${res.statusText}`);
-  }
-
-  return res.json();
-}
-
+/**
+ * Returns health status of all Go gateway services.
+ *
+ * Flow: Browser (JWT) → Kong → Spring Boot GatewayStatusController
+ *       → notification-gateway:5001 (X-Gateway-Token, internal TCP dial to all peers)
+ */
 export async function getGatewayStatus(): Promise<StatusResponse> {
   await verifySuperAdmin();
 
-  const token = getGatewayToken();
-  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/gateway-status`, {
-    headers: {
-      "X-Gateway-Token": token,
-    },
+  const res = await fetch(`/api/v1/system/gateway-status`, {
+    headers: getBearerHeaders(),
     cache: "no-store",
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch status from gateway: ${res.statusText}`);
+    throw new Error(`Failed to fetch gateway status: ${res.statusText}`);
   }
 
   const data = await res.json();
-
-  const updatedServices = await Promise.all(
-    (data.services || []).map(async (svc: GatewayServiceStatus) => {
-      if (!svc.active) {
-        return { ...svc, latency: 0, throughput: 0 };
-      }
-
-      // Determine host: if NOTIFICATION_GATEWAY_URL points to a container name (Docker environment),
-      // use svc.name to connect to that service container directly. Otherwise use localhost/127.0.0.1.
-      const isDocker =
-        process.env.NOTIFICATION_GATEWAY_URL &&
-        !process.env.NOTIFICATION_GATEWAY_URL.includes("localhost") &&
-        !process.env.NOTIFICATION_GATEWAY_URL.includes("127.0.0.1");
-      const host = isDocker ? svc.name : "127.0.0.1";
-      const url = `http://${host}:${svc.port}/metrics`;
-      const start = Date.now();
-      try {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), 800); // 800ms timeout
-
-        const pingRes = await fetch(url, {
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        clearTimeout(id);
-
-        const latency = Date.now() - start;
-
-        if (!pingRes.ok) {
-          return { ...svc, latency, throughput: 0 };
-        }
-
-        const text = await pingRes.text();
-        // Parse counter gateway_http_requests_total
-        let totalRequests = 0;
-        const lines = text.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("gateway_http_requests_total")) {
-            const parts = line.trim().split(" ");
-            const value = parseFloat(parts[parts.length - 1]);
-            if (!isNaN(value)) {
-              totalRequests += value;
-            }
-          }
-        }
-
-        // Calculate throughput (req/min) based on difference with lastMetricsCache
-        const now = Date.now();
-        const prev = lastMetricsCache[svc.name];
-        let throughput = 0;
-
-        if (prev && now > prev.time) {
-          const timeDiffMin = (now - prev.time) / 60000;
-          if (timeDiffMin > 0 && totalRequests >= prev.count) {
-            throughput = Math.round((totalRequests - prev.count) / timeDiffMin);
-          }
-        }
-
-        // Update cache
-        lastMetricsCache[svc.name] = {
-          count: totalRequests,
-          time: now,
-          throughput: throughput,
-        };
-
-        return { ...svc, latency, throughput };
-      } catch (err) {
-        console.warn(`[Gateway Latency Check] Failed for ${svc.name}:`, err);
-        return { ...svc, latency: 0, throughput: 0 };
-      }
-    })
-  );
-
   return {
-    status: "ok",
-    services: updatedServices,
+    status: data.status || "ok",
+    services: (data.services || []).map((svc: GatewayServiceStatus) => ({
+      ...svc,
+      latency: svc.latency ?? 0,
+      throughput: svc.throughput ?? 0,
+    })),
   };
 }
 
+// ─── Gateway Config (Read) ────────────────────────────────────────────────────
+
 /**
- * Universal: fetch config from any gateway by its identifier key.
- * Example: getGatewayConfigByKey("payment") → calls PAYMENT_GATEWAY_URL/api/v1/config
+ * Fetches the (censored) .env config from any gateway by key.
+ *
+ * Flow: Browser (JWT) → Kong → Spring Boot GatewayConfigController
+ *       → {gateway}:500x/api/v1/config (X-Gateway-Token, internal Docker)
+ *
+ * Valid keys: notification, payment, map, storage, whatsapp, scheduler, export, olt, audit
  */
-export async function getGatewayConfigByKey(gatewayKey: string): Promise<ConfigResponse> {
+export async function getGatewayConfigByKey(
+  gatewayKey: string
+): Promise<ConfigResponse> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP[gatewayKey];
-  if (!baseUrl) {
-    throw new Error(
-      `Unknown gateway key: "${gatewayKey}". Valid keys: ${Object.keys(GATEWAY_URL_MAP).join(", ")}`
-    );
-  }
-
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/config`, {
-    headers: { "X-Gateway-Token": token },
+  const res = await fetch(`/api/v1/system/gateway-config/${encodeURIComponent(gatewayKey)}`, {
+    headers: getBearerHeaders(),
     cache: "no-store",
   });
 
   if (!res.ok) {
-    throw new Error(`[${gatewayKey}] Failed to fetch config: ${res.status} ${res.statusText}`);
+    throw new Error(
+      `[${gatewayKey}] Failed to fetch config: ${res.status} ${res.statusText}`
+    );
   }
 
   return res.json();
 }
 
 /**
- * Universal: save config updates to any gateway by its identifier key.
- * Example: updateGatewayConfigByKey("payment", { XENDIT_API_KEY: "..." })
+ * Updates config keys in any gateway by key.
+ *
+ * Flow: Browser (JWT) → Kong → Spring Boot GatewayConfigController
+ *       → {gateway}:500x/api/v1/config (X-Gateway-Token, internal Docker)
  */
 export async function updateGatewayConfigByKey(
   gatewayKey: string,
@@ -206,27 +126,37 @@ export async function updateGatewayConfigByKey(
 ): Promise<{ status: string; message: string; keys_updated: number }> {
   await verifySuperAdmin();
 
-  const baseUrl = GATEWAY_URL_MAP[gatewayKey];
-  if (!baseUrl) {
-    throw new Error(
-      `Unknown gateway key: "${gatewayKey}". Valid keys: ${Object.keys(GATEWAY_URL_MAP).join(", ")}`
-    );
-  }
-
-  const token = getGatewayToken();
-  const res = await fetch(`${baseUrl}/api/v1/config`, {
+  const res = await fetch(`/api/v1/system/gateway-config/${encodeURIComponent(gatewayKey)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
+      ...getBearerHeaders(),
     },
     body: JSON.stringify({ updates }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(errText || `[${gatewayKey}] Failed to update config: ${res.status} ${res.statusText}`);
+    throw new Error(
+      errText ||
+        `[${gatewayKey}] Failed to update config: ${res.status} ${res.statusText}`
+    );
   }
 
   return res.json();
+}
+
+// ─── Legacy aliases (notification gateway only) ───────────────────────────────
+// Kept for backward compatibility. Prefer getGatewayConfigByKey("notification").
+
+/** @deprecated Use getGatewayConfigByKey("notification") instead */
+export async function getGatewayConfig(): Promise<ConfigResponse> {
+  return getGatewayConfigByKey("notification");
+}
+
+/** @deprecated Use updateGatewayConfigByKey("notification", updates) instead */
+export async function updateGatewayConfig(
+  updates: Record<string, string>
+): Promise<{ status: string; message: string; keys_updated: number }> {
+  return updateGatewayConfigByKey("notification", updates);
 }

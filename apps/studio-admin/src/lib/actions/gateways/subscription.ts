@@ -1,5 +1,5 @@
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
 } from "./common";
 
@@ -7,17 +7,6 @@ const BACKEND_BASE_URL =
   (typeof window !== "undefined" && window.__K2NET_API_URL__) ||
   "/api/v1";
 
-function getAuthHeaders(explicitToken?: string): Record<string, string> {
-  const token = explicitToken || (typeof window !== "undefined" ? window.__K2NET_AUTH__?.token : undefined);
-  const gatewayToken = getGatewayToken();
-  const headers: Record<string, string> = {
-    "X-Gateway-Token": gatewayToken,
-  };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
-}
 
 export interface SubscriptionSummary {
   orgId: string;

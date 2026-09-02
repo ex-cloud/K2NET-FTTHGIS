@@ -1,7 +1,6 @@
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
-  GATEWAY_URL_MAP,
 } from "../common";
 import type {
   AiKnowledgeStats,
@@ -12,14 +11,9 @@ import type {
 
 export async function getAiKnowledgeStats(): Promise<AiKnowledgeStats> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/stats`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/documents/stats`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -39,8 +33,6 @@ export async function getAiDocuments(params?: {
   offset?: number;
 }): Promise<AiDocumentListResponse> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
@@ -50,11 +42,8 @@ export async function getAiDocuments(params?: {
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.offset) query.set("offset", String(params.offset));
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents?${query.toString()}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/documents?${query.toString()}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -67,14 +56,9 @@ export async function getAiDocuments(params?: {
 
 export async function getAiDocumentDetail(docId: string): Promise<AiDocumentDetail> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/documents/${docId}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -95,16 +79,12 @@ export async function createManualAiDocument(payload: {
   auto_approve?: boolean;
 }): Promise<{ id: string; status: string; title: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/text`, {
+  const res = await fetch(`/api/v1/ai/documents/text`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -128,16 +108,12 @@ export async function updateAiDocument(
   }
 ): Promise<AiDocumentDetail> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+  const res = await fetch(`/api/v1/ai/documents/${docId}`, {
     method: "PUT",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -154,16 +130,12 @@ export async function approveAiDocument(
   payload?: { scope?: "PLATFORM_INTERNAL" | "TENANT_INTERNAL" | "GLOBAL" }
 ): Promise<{ id: string; status: string; title: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}/approve`, {
+  const res = await fetch(`/api/v1/ai/documents/${docId}/approve`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload || {}),
   });
 
@@ -180,16 +152,12 @@ export async function rejectAiDocument(
   payload?: { reason?: string }
 ): Promise<{ id: string; status: string; title: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}/reject`, {
+  const res = await fetch(`/api/v1/ai/documents/${docId}/reject`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload || {}),
   });
 
@@ -203,15 +171,10 @@ export async function rejectAiDocument(
 
 export async function deleteAiDocument(docId: string): Promise<{ status: string; message: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/${docId}`, {
+  const res = await fetch(`/api/v1/ai/documents/${docId}`, {
     method: "DELETE",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) {

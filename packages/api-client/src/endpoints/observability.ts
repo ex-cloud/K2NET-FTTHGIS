@@ -11,7 +11,7 @@ export interface ObservabilitySummary {
 
 export function createObservabilityEndpoints(client: HttpClient) {
   return {
-    getSummary: () => client.get<ObservabilitySummary>("/api/gateway/observability/summary"),
-    getLiveMetricsUrl: () => "/api/gateway/observability/live",
+    getSummary: () => client.get<ObservabilitySummary>("/api/v1/observability/summary"),
+    getLiveMetricsUrl: () => "/api/v1/observability/live",
   };
 }

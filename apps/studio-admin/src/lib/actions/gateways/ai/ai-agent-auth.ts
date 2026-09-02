@@ -1,6 +1,5 @@
 import {
-  getGatewayToken,
-  GATEWAY_URL_MAP,
+  getAuthHeaders,
 } from "../common";
 import type {
   AgentAuthorizationData,
@@ -11,16 +10,11 @@ import type {
 export async function fetchAgentAuthorization(
   scope: string = "PLATFORM_INTERNAL"
 ): Promise<AgentAuthorizationData> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
   try {
-    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/agent/authorization`, {
-      headers: {
-        "X-Gateway-Token": token,
-        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    const res = await fetch(`/api/v1/ai/agent/authorization`, {
+      headers: getAuthHeaders({
         "X-User-Scope": scope,
-      },
+      }),
       cache: "no-store",
     });
 
@@ -64,18 +58,13 @@ export async function saveAgentAuthorization(payload: {
   role_preset?: string;
   granted_permissions?: string[];
 }): Promise<AgentAuthorizationData> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/agent/authorization`, {
+  const res = await fetch(`/api/v1/ai/agent/authorization`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
       "X-User-Scope": payload.user_scope || "PLATFORM_INTERNAL",
       "X-User-Role": "SUPER_ADMIN",
-    },
+    }),
     body: JSON.stringify({
       agent_name: payload.agent_name || "K2 Agent",
       user_scope: payload.user_scope || "PLATFORM_INTERNAL",
@@ -94,16 +83,11 @@ export async function saveAgentAuthorization(payload: {
 }
 
 export async function revokeAgentAuthorization(): Promise<{ status: string; message: string }> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/agent/authorization`, {
+  const res = await fetch(`/api/v1/ai/agent/authorization`, {
     method: "DELETE",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
+    headers: getAuthHeaders({
       "X-User-Scope": "PLATFORM_INTERNAL",
-    },
+    }),
   });
 
   if (!res.ok) {
@@ -117,14 +101,8 @@ export async function revokeAgentAuthorization(): Promise<{ status: string; mess
 export async function fetchAgentPermissionsCatalog(
   scope: string = "PLATFORM_INTERNAL"
 ): Promise<PermissionCatalogData> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/agent/catalog?scope=${scope}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/agent/catalog?scope=${scope}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -138,14 +116,8 @@ export async function fetchAgentPermissionsCatalog(
 export async function fetchAgentRolePresets(
   scope: string = "PLATFORM_INTERNAL"
 ): Promise<{ scope: string; presets: RolePresetData[] }> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/agent/presets?scope=${scope}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/agent/presets?scope=${scope}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -165,17 +137,12 @@ export async function sendAiFeedback(payload: {
   reason?: string;
   modelUsed?: string;
 }): Promise<{ status: string; message: string }> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
   try {
-    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/feedback`, {
+    const res = await fetch(`/api/v1/ai/feedback`, {
       method: "POST",
-      headers: {
+      headers: getAuthHeaders({
         "Content-Type": "application/json",
-        "X-Gateway-Token": token,
-        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-      },
+      }),
       body: JSON.stringify(payload),
     });
     return res.json();

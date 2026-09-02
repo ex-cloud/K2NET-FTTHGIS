@@ -1,7 +1,6 @@
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
-  GATEWAY_URL_MAP,
 } from "../common";
 import type {
   SuggestedPromptItem,
@@ -10,17 +9,11 @@ import type {
 } from "./ai-types";
 
 export async function fetchAiPromptIdeas(category?: string): Promise<SuggestedPromptItem[]> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
   const query = new URLSearchParams();
   if (category && category !== "ALL") query.set("category", category);
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts/ideas?${query.toString()}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/prompts/ideas?${query.toString()}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -37,19 +30,14 @@ export async function fetchAdminAiPrompts(params?: {
   status?: string;
 }): Promise<SuggestedPromptListResponse> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const query = new URLSearchParams();
   if (params?.category) query.set("category", params.category);
   if (params?.search) query.set("search", params.search);
   if (params?.status) query.set("status", params.status);
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts?${query.toString()}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/prompts?${query.toString()}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 
@@ -71,16 +59,12 @@ export async function createAiPrompt(payload: {
   is_active?: boolean;
 }): Promise<SuggestedPromptItem> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts`, {
+  const res = await fetch(`/api/v1/ai/prompts`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -106,16 +90,12 @@ export async function updateAiPrompt(
   }>
 ): Promise<SuggestedPromptItem> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts/${promptId}`, {
+  const res = await fetch(`/api/v1/ai/prompts/${promptId}`, {
     method: "PUT",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -129,15 +109,10 @@ export async function updateAiPrompt(
 
 export async function deleteAiPrompt(promptId: string): Promise<void> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts/${promptId}`, {
+  const res = await fetch(`/api/v1/ai/prompts/${promptId}`, {
     method: "DELETE",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -148,15 +123,10 @@ export async function deleteAiPrompt(promptId: string): Promise<void> {
 
 export async function togglePinAiPrompt(promptId: string): Promise<SuggestedPromptItem> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts/${promptId}/toggle-pin`, {
+  const res = await fetch(`/api/v1/ai/prompts/${promptId}/toggle-pin`, {
     method: "POST",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
@@ -168,28 +138,17 @@ export async function togglePinAiPrompt(promptId: string): Promise<SuggestedProm
 }
 
 export async function incrementAiPromptUsage(promptId: string): Promise<void> {
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
-
-  fetch(`${aiGatewayUrl}/api/v1/ai/prompts/${promptId}/increment`, {
+  fetch(`/api/v1/ai/prompts/${promptId}/increment`, {
     method: "POST",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
   }).catch(() => {});
 }
 
 export async function fetchAiTrendingTopics(days: number = 7): Promise<TrendingTopicsResponse> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/prompts/trending?days=${days}`, {
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+  const res = await fetch(`/api/v1/ai/prompts/trending?days=${days}`, {
+    headers: getAuthHeaders(),
     cache: "no-store",
   });
 

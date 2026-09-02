@@ -1,7 +1,6 @@
 import {
-  getGatewayToken,
+  getAuthHeaders,
   verifySuperAdmin,
-  GATEWAY_URL_MAP,
 } from "../common";
 import type {
   ServerSyncStatus,
@@ -10,16 +9,12 @@ import type {
 
 export async function triggerServerDocsSync(): Promise<{ status: string; message: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-server-docs`, {
+  const res = await fetch(`/api/v1/ai/documents/sync-server-docs`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify({}),
   });
 
@@ -33,16 +28,11 @@ export async function triggerServerDocsSync(): Promise<{ status: string; message
 
 export async function getAiServerSyncStatus(): Promise<ServerSyncStatus> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   try {
-    const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/sync-status`, {
+    const res = await fetch(`/api/v1/ai/documents/sync-status`, {
       method: "GET",
-      headers: {
-        "X-Gateway-Token": token,
-        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-      },
+      headers: getAuthHeaders(),
       cache: "no-store",
     });
 
@@ -73,16 +63,11 @@ export async function getAiServerSyncStatus(): Promise<ServerSyncStatus> {
 
 export async function previewAiServerFile(filePath: string): Promise<ServerFilePreview> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
   const res = await fetch(
-    `${aiGatewayUrl}/api/v1/ai/documents/server-file/preview?path=${encodeURIComponent(filePath)}`,
+    `/api/v1/ai/documents/server-file/preview?path=${encodeURIComponent(filePath)}`,
     {
-      headers: {
-        "X-Gateway-Token": token,
-        "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-      },
+      headers: getAuthHeaders(),
       cache: "no-store",
     }
   );
@@ -102,16 +87,12 @@ export async function rejectAiServerFile(payload: {
   reason?: string;
 }): Promise<{ status: string; message: string; id: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/server-file/reject`, {
+  const res = await fetch(`/api/v1/ai/documents/server-file/reject`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -130,16 +111,12 @@ export async function indexSingleAiServerFile(payload: {
   scope?: string;
 }): Promise<{ id: string; status: string; title: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const aiGatewayUrl = GATEWAY_URL_MAP["ai"];
 
-  const res = await fetch(`${aiGatewayUrl}/api/v1/ai/documents/server-file/index-single`, {
+  const res = await fetch(`/api/v1/ai/documents/server-file/index-single`, {
     method: "POST",
-    headers: {
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    }),
     body: JSON.stringify(payload),
   });
 
@@ -153,8 +130,6 @@ export async function indexSingleAiServerFile(payload: {
 
 export async function uploadKnowledgeImage(formData: FormData): Promise<{ url: string; filename: string }> {
   await verifySuperAdmin();
-  const token = getGatewayToken();
-  const storageGatewayUrl = GATEWAY_URL_MAP["storage"];
 
   if (!formData.has("bucket")) {
     formData.append("bucket", "public-contents");
@@ -163,16 +138,9 @@ export async function uploadKnowledgeImage(formData: FormData): Promise<{ url: s
     formData.append("folder", "knowledge/images");
   }
 
-  const uploadEndpoint = storageGatewayUrl.endsWith("/api/v1/storage")
-    ? `${storageGatewayUrl}/upload`
-    : `${storageGatewayUrl}/api/v1/upload`;
-
-  const res = await fetch(uploadEndpoint, {
+  const res = await fetch(`/api/v1/upload`, {
     method: "POST",
-    headers: {
-      "X-Gateway-Token": token,
-      "X-Tenant-ID": "00000000-0000-0000-0000-000000000000",
-    },
+    headers: getAuthHeaders(),
     body: formData,
   });
 
