@@ -27,9 +27,6 @@ func LoadConfig() Config {
 	}
 
 	gatewayToken := os.Getenv("GATEWAY_TOKEN")
-	if gatewayToken == "" {
-		gatewayToken = "2dcac271c2b24a4de521951d1a413000"
-	}
 
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {

@@ -34,7 +34,7 @@ export function useKongRoutes() {
   const fetchRoutes = useCallback(async (isSilent = false) => {
     if (!isSilent && !memoryCache.get(CACHE_ROUTES_KEY)) setLoading(true);
     try {
-      const res = await fetch("/api/observability/kong-routes", { cache: "no-store" });
+      const res = await fetch("/api/v1/observability/kong-routes", { cache: "no-store" });
       const data = await res.json();
       if (mounted.current) {
         if (data.data?.length > 0) {
@@ -85,7 +85,7 @@ export function useKongTraffic() {
   const fetchTraffic = useCallback(async (isSilent = false) => {
     if (!isSilent && !memoryCache.get(CACHE_TRAFFIC_KEY)) setLoading(true);
     try {
-      const res = await fetch("/api/observability/kong-traffic", { cache: "no-store" });
+      const res = await fetch("/api/v1/observability/kong-traffic", { cache: "no-store" });
       const data: KongMetrics = await res.json();
       if (mounted.current) {
         memoryCache.set(CACHE_TRAFFIC_KEY, data);

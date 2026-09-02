@@ -101,7 +101,7 @@ export function useDbObservability(pollIntervalMs = 30_000) {
       setLoading(true);
     }
     try {
-      const res = await fetch("/api/observability/db-metrics", {
+      const res = await fetch("/api/v1/observability/db-metrics", {
         headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });

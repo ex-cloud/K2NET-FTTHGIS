@@ -76,7 +76,7 @@ export function TenantDomainModal({
 
     setVerifying(true);
     try {
-      const res = await fetch(`/api/observability/dns-check?domain=${encodeURIComponent(targetDomain)}`);
+      const res = await fetch(`/api/v1/observability/dns-check?domain=${encodeURIComponent(targetDomain)}`);
       const data: DnsDiagnosticResult = await res.json();
       setDnsResult(data);
 

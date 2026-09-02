@@ -277,10 +277,6 @@ services:
   - name: frontend-admin-service
     url: http://ftth-frontend-admin:3001
     routes:
-      - name: frontend-observability-api-route
-        paths:
-          - /api/observability
-        strip_path: false
       - name: frontend-nextauth-route
         paths:
           - /api/auth
@@ -318,57 +314,30 @@ services:
                 - access_token
                 - token
               run_on_preflight: false
-          - name: request-transformer
-            config:
-              replace:
-                headers:
-                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
-              add:
-                headers:
-                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
-                  - "X-Tenant-ID:00000000-0000-0000-0000-000000000000"
 
   # ─── 12. Observability Gateway (Go - Port 5013) ───────────────────────────
   - name: observability-gateway
     url: http://ftth-observability-gateway:5013
     routes:
-      # Standard versioned REST path — consistent with all other 11 gateways
+      # Standard versioned REST path — consistent with all 13 microservices
       - name: observability-v1-route
         paths:
           - /api/v1/observability
         strip_path: false
         methods:
           - GET
+          - POST
           - OPTIONS
         plugins:
           - name: jwt
             config:
               claims_to_verify:
                 - exp
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
-
-      # Compatibility route for /api/gateway/observability
-      - name: observability-gateway-route
-        paths:
-          - /api/gateway/observability
-        strip_path: true
-        methods:
-          - GET
-          - OPTIONS
-        plugins:
-          - name: jwt
-            config:
-              claims_to_verify:
-                - exp
-          - name: request-transformer
-            config:
-              add:
-                headers:
-                  - "X-Gateway-Token:2dcac271c2b24a4de521951d1a413000"
+              uri_param_names:
+                - jwt
+                - access_token
+                - token
+              run_on_preflight: false
 
 # ====================================================
 # Global Plugins
@@ -385,6 +354,7 @@ plugins:
         - PUT
         - DELETE
         - OPTIONS
+        - PATCH
       headers:
         - Accept
         - Accept-Version
@@ -419,7 +389,11 @@ plugins:
               kong.service.request.set_header("X-User-Email", claims.email or "")
               kong.service.request.set_header("X-User-Username", claims.preferred_username or "")
               kong.service.request.set_header("X-Actor-ID", claims.sub or "")
-              kong.service.request.set_header("X-Gateway-Token", "2dcac271c2b24a4de521951d1a413000")
+
+              local gwToken = os.getenv("GATEWAY_TOKEN")
+              if gwToken and gwToken ~= "" then
+                  kong.service.request.set_header("X-Gateway-Token", gwToken)
+              end
 
               local tenantId = claims.tenant_id or claims.organization_id or claims.tenant_slug
               if tenantId and tenantId ~= "" then

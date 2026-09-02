@@ -55,14 +55,15 @@ func main() {
 	{
 		v1.GET("/summary", handler.GetSummary)
 		v1.GET("/live", handler.StreamLiveMetrics)
-	}
-
-	// Kong proxy route compatibility (strip path: /api/gateway/observability)
-	kongGroup := router.Group("/observability")
-	kongGroup.Use(delivery.RequireRole("super-admin", "tenant-admin", "isp_admin"))
-	{
-		kongGroup.GET("/summary", handler.GetSummary)
-		kongGroup.GET("/live", handler.StreamLiveMetrics)
+		v1.GET("/kong-routes", handler.GetKongRoutes)
+		v1.GET("/kong-traffic", handler.GetKongTraffic)
+		v1.GET("/compute-metrics", handler.GetComputeMetrics)
+		v1.GET("/olt-poller", handler.GetOltPollerMetrics)
+		v1.GET("/db-metrics", handler.GetDbMetrics)
+		v1.GET("/notification-stats", handler.GetNotificationStats)
+		v1.GET("/map-stats", handler.GetMapStats)
+		v1.GET("/dns-check", handler.CheckDns)
+		v1.POST("/service-health-event", handler.LogServiceHealthEvent)
 	}
 
 	srv := &http.Server{

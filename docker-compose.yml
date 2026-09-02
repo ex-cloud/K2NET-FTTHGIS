@@ -62,6 +62,8 @@ services:
       KONG_NGINX_WORKER_PROCESSES: "2"
       KONG_TRUSTED_PROXIES: "0.0.0.0/0,::/0"
       KONG_REAL_IP_HEADER: "X-Forwarded-For"
+      KONG_NGINX_MAIN_ENV: "GATEWAY_TOKEN"
+      GATEWAY_TOKEN: "${GATEWAY_TOKEN}"
     volumes:
       - ./docker/kong/kong.yml:/usr/local/kong/declarative/kong.yml:ro
     extra_hosts:

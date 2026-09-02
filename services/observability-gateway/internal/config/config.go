@@ -5,11 +5,15 @@ import (
 )
 
 type Config struct {
-	Port          string
-	PrometheusUrl string
-	PollerUrl     string
-	BackendUrl    string
-	GatewayToken  string
+	Port            string
+	PrometheusUrl   string
+	PollerUrl       string
+	BackendUrl      string
+	KongAdminUrl    string
+	NotificationUrl string
+	MapGatewayUrl   string
+	StorageGatewayUrl string
+	GatewayToken    string
 }
 
 func LoadConfig() *Config {
@@ -33,16 +37,37 @@ func LoadConfig() *Config {
 		backendUrl = "http://backend:9090"
 	}
 
-	gatewayToken := os.Getenv("GATEWAY_TOKEN")
-	if gatewayToken == "" {
-		gatewayToken = "CHANGE_ME_TO_A_STRONG_RANDOM_TOKEN"
+	kongAdminUrl := os.Getenv("KONG_ADMIN_URL")
+	if kongAdminUrl == "" {
+		kongAdminUrl = "http://kong:8001"
 	}
 
+	notificationUrl := os.Getenv("NOTIFICATION_GATEWAY_URL")
+	if notificationUrl == "" {
+		notificationUrl = "http://ftth-notification-gateway:5001"
+	}
+
+	mapGatewayUrl := os.Getenv("MAP_GATEWAY_URL")
+	if mapGatewayUrl == "" {
+		mapGatewayUrl = "http://ftth-map-gateway:5003"
+	}
+
+	storageGatewayUrl := os.Getenv("STORAGE_GATEWAY_URL")
+	if storageGatewayUrl == "" {
+		storageGatewayUrl = "http://ftth-storage-gateway:5004"
+	}
+
+	gatewayToken := os.Getenv("GATEWAY_TOKEN")
+
 	return &Config{
-		Port:          port,
-		PrometheusUrl: prometheusUrl,
-		PollerUrl:     pollerUrl,
-		BackendUrl:    backendUrl,
-		GatewayToken:  gatewayToken,
+		Port:              port,
+		PrometheusUrl:     prometheusUrl,
+		PollerUrl:         pollerUrl,
+		BackendUrl:        backendUrl,
+		KongAdminUrl:      kongAdminUrl,
+		NotificationUrl:   notificationUrl,
+		MapGatewayUrl:     mapGatewayUrl,
+		StorageGatewayUrl: storageGatewayUrl,
+		GatewayToken:      gatewayToken,
 	}
 }

@@ -73,7 +73,7 @@ export function useOltPollerObservability() {
     if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
-      const res = await fetch("/api/observability/olt-poller", {
+      const res = await fetch("/api/v1/observability/olt-poller", {
         headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });

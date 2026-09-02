@@ -91,3 +91,86 @@ func (h *HTTPHandler) StreamLiveMetrics(c *gin.Context) {
 		}
 	}
 }
+
+func (h *HTTPHandler) GetKongRoutes(c *gin.Context) {
+	data, err := h.collector.FetchKongRoutes(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetKongTraffic(c *gin.Context) {
+	data, err := h.collector.FetchKongTraffic(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetComputeMetrics(c *gin.Context) {
+	data, err := h.collector.FetchComputeMetrics(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetOltPollerMetrics(c *gin.Context) {
+	data, err := h.collector.FetchOltPollerMetrics(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetDbMetrics(c *gin.Context) {
+	data, err := h.collector.FetchDbMetrics(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetNotificationStats(c *gin.Context) {
+	data, err := h.collector.FetchNotificationStats(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) GetMapStats(c *gin.Context) {
+	data, err := h.collector.FetchMapStats(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) CheckDns(c *gin.Context) {
+	domain := c.Query("domain")
+	data, err := h.collector.CheckDns(c.Request.Context(), domain)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *HTTPHandler) LogServiceHealthEvent(c *gin.Context) {
+	var payload map[string]interface{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+	logger.Info(c.Request.Context(), "Service health status transition recorded", zap.Any("event", payload))
+	c.JSON(http.StatusOK, gin.H{"status": "RECORDED", "timestamp": time.Now().UTC().Format(time.RFC3339)})
+}

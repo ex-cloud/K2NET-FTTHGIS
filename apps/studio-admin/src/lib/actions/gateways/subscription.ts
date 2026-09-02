@@ -5,7 +5,7 @@ import {
 
 const BACKEND_BASE_URL =
   (typeof window !== "undefined" && window.__K2NET_API_URL__) ||
-  "/api/v1";
+  "";
 
 
 export interface SubscriptionSummary {

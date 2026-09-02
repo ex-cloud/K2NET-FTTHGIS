@@ -98,7 +98,7 @@ export function useComputeObservability(pollIntervalMs = 30_000) {
       setLoading(true);
     }
     try {
-      const res = await fetch("/api/observability/compute-metrics", {
+      const res = await fetch("/api/v1/observability/compute-metrics", {
         headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });

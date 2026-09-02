@@ -156,7 +156,7 @@ export function useAuditLogStream(
         getAuditEvents(),
         fetch("/api/v1/system/security/alerts", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : []),
         fetch("/api/v1/system/keycloak/events", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : []),
-        fetch("/api/observability/notification-stats", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : ({} as any)),
+        fetch("/api/v1/observability/notification-stats", { headers, cache: "no-store" }).then(r => r.ok ? r.json() : ({} as any)),
       ]);
 
       const combinedLogs: AuditStreamEntry[] = [];

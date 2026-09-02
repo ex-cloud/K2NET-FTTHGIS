@@ -73,8 +73,8 @@ export function useMapGatewayStats() {
     if (!isSilent && !memoryCache.get(CACHE_KEY)) setLoading(true);
 
     try {
-      // map-gateway (Go, port 5003) exposes /stats proxied via Next.js API
-      const res = await fetch("/api/observability/map-stats", {
+      // map-gateway (Go, port 5003) exposes /stats proxied via Observability Gateway
+      const res = await fetch("/api/v1/observability/map-stats", {
         headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });

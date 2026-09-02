@@ -61,7 +61,7 @@ export function useMessagingStats() {
 
     try {
       // notification-gateway (Go, port 5001) exposes /stats + /queue
-      const res = await fetch("/api/observability/notification-stats", {
+      const res = await fetch("/api/v1/observability/notification-stats", {
         headers: { Authorization: `Bearer ${session.accessToken}` },
         cache: "no-store",
       });

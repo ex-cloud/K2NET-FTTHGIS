@@ -155,7 +155,7 @@ export function useServiceHealthSparkline(
 
           if (isRealTransition) {
             transitionEvents.push(
-              fetch("/api/observability/service-health-event", {
+              fetch("/api/v1/observability/service-health-event", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
