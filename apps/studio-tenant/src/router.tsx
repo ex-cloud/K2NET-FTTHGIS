@@ -62,8 +62,15 @@ const settingsRoute = createRoute({
   component: DashboardPage,
 });
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => authenticatedLayoutRoute,
+  path: "/dashboard",
+  component: DashboardPage,
+});
+
 const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
+  dashboardRoute,
   mapRoute,
   customersRoute,
   inventoryRoute,

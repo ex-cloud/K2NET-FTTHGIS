@@ -67,6 +67,7 @@ import { OrgDangerZoneTab } from "@/components/organizations/detail/OrgDangerZon
 import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import { TenantFeatureFlagsModal } from "@/components/organizations/TenantFeatureFlagsModal";
+import { ImpersonateTenantModal } from "@/components/organizations/ImpersonateTenantModal";
 
 type DetailTab =
   | "overview"
@@ -98,6 +99,7 @@ export default function OrganizationDetailPage() {
   const [domainModalOpen, setDomainModalOpen] = useState(false);
   const [quotaModalOpen, setQuotaModalOpen] = useState(false);
   const [flagsModalOpen, setFlagsModalOpen] = useState(false);
+  const [impersonateModalOpen, setImpersonateModalOpen] = useState(false);
 
   // Delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -232,9 +234,7 @@ export default function OrganizationDetailPage() {
   // Actions
   const handleImpersonate = () => {
     if (!org) return;
-    const url = getTenantUrl(org.slug);
-    toast.info(`Opening tenant workspace for ${org.name}...`);
-    window.open(url, "_blank");
+    setImpersonateModalOpen(true);
   };
 
   const handleUpdateStatus = async (status: OrganizationStatus) => {
@@ -511,6 +511,14 @@ export default function OrganizationDetailPage() {
             refresh();
           }}
         />
+
+        {org && (
+          <ImpersonateTenantModal
+            organization={org}
+            isOpen={impersonateModalOpen}
+            onClose={() => setImpersonateModalOpen(false)}
+          />
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

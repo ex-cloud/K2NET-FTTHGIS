@@ -69,10 +69,10 @@ export function parseDomain(hostname: string) {
 /**
  * Constructs a full URL for a specific tenant, handling both localhost and production domains.
  * @param slug The organization slug (subdomain)
- * @param path Optional path within the tenant dashboard (defaults to /dashboard)
+ * @param path Optional path within the tenant dashboard (defaults to empty string for root)
  * @returns Full URL string
  */
-export function getTenantUrl(slug: string, path: string = "/dashboard"): string {
+export function getTenantUrl(slug: string, path: string = ""): string {
   try {
     let protocol = "https:";
     
