@@ -44,6 +44,7 @@ services:
           - /api/v1/system/impersonate/exchange
           - /api/v1/system/impersonate/status
           - /api/v1/system/impersonate/refresh-token
+          - /api/v1/system/impersonate/exit
         strip_path: false
 
       # Protected API routes — strict RS256 JWT required (401 if invalid or missing)

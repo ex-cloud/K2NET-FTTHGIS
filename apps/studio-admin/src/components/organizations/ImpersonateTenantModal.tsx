@@ -54,12 +54,18 @@ export function ImpersonateTenantModal({
     if (pending) {
       try {
         const parsed = JSON.parse(pending);
-        if (parsed.orgId === organization.id) {
+        if (
+          parsed.orgId === organization.id ||
+          parsed.orgSlug === organization.slug ||
+          parsed.orgId === organization.slug
+        ) {
           sessionStorage.removeItem("pending_impersonate");
           setReason(parsed.reason || "");
           setTicketReference(parsed.ticketReference || "");
-          // Auto-trigger with fresh token
-          triggerStart(parsed.reason, parsed.ticketReference);
+          // Auto-trigger with fresh token after small timeout
+          setTimeout(() => {
+            triggerStart(parsed.reason, parsed.ticketReference);
+          }, 300);
         }
       } catch (e) {
         console.error("Failed to parse pending impersonate", e);
@@ -122,7 +128,16 @@ export function ImpersonateTenantModal({
       const data = await res.json().catch(() => ({}));
 
       // Step-Up Authentication Required (403)
-      if (res.status === 403 && (data.error === "STEP_UP_AUTH_REQUIRED" || data.error?.includes("Step-Up") || data.message?.includes("Step-Up"))) {
+      if (
+        res.status === 403 &&
+        (data.error === "STEP_UP_AUTH_REQUIRED" ||
+          data.message === "STEP_UP_AUTH_REQUIRED" ||
+          data.details?.includes("Step-Up") ||
+          data.message?.includes("Step-Up") ||
+          data.error?.includes("Step-Up") ||
+          data.details?.includes("120 detik") ||
+          data.message?.includes("120 detik"))
+      ) {
         toast.info("Verifikasi Kredensial Diperlukan", {
           description: "Mengalihkan ke Keycloak untuk verifikasi kata sandi ulang...",
         });
@@ -131,12 +146,17 @@ export function ImpersonateTenantModal({
           "pending_impersonate",
           JSON.stringify({
             orgId: organization.id,
+            orgSlug: organization.slug,
             reason: finalReason,
             ticketReference: finalTicket,
           })
         );
 
-        await signIn(undefined, { prompt: "login", maxAge: 0 });
+        await signIn(undefined, {
+          prompt: "login",
+          maxAge: 0,
+          redirectUri: window.location.href,
+        });
         return;
       }
 

@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/system/impersonate/exchange").permitAll() // Exchange code is public (single-use 60s)
                         .requestMatchers("/api/v1/system/impersonate/refresh-token").permitAll() // Refresh token relay guarded by session ID
                         .requestMatchers("/api/v1/system/impersonate/status").permitAll() // Session countdown status check
+                        .requestMatchers("/api/v1/system/impersonate/exit").permitAll() // Terminate session from tenant portal guarded by session ID
                         .requestMatchers("/api/github/webhook").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("admin")

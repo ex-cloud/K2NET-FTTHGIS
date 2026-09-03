@@ -197,6 +197,24 @@ export default function AdminOrganizationsPage() {
     });
   }, [rawOrgs]);
 
+  // Auto-resume pending impersonation after Keycloak step-up redirect
+  useEffect(() => {
+    const pendingStr = sessionStorage.getItem("pending_impersonate");
+    if (pendingStr && enrichedOrganizations && enrichedOrganizations.length > 0) {
+      try {
+        const pending = JSON.parse(pendingStr);
+        const org = enrichedOrganizations.find(
+          (o) => o.id === pending.orgId || o.slug === pending.orgSlug || o.slug === pending.orgId
+        );
+        if (org) {
+          setActiveImpersonateOrg(org);
+        }
+      } catch (e) {
+        console.error("Failed to parse pending impersonate", e);
+      }
+    }
+  }, [enrichedOrganizations]);
+
   // Filter organizations
   const filteredOrganizations = useMemo(() => {
     return enrichedOrganizations.filter((org) => {

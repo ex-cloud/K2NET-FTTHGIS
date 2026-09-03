@@ -40,10 +40,12 @@ export function useImpersonationSession() {
     setTenantName("");
     setTenantSlug("");
     setImpersonationSessionId(null);
+    setApiAuthToken(null);
     activeExchangingCode = null;
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(META_STORAGE_KEY);
       localStorage.removeItem(META_STORAGE_KEY);
+      sessionStorage.removeItem("k2net_impersonating_in_progress");
     }
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);

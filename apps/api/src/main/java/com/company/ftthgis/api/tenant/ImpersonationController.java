@@ -87,9 +87,9 @@ public class ImpersonationController {
     @PostMapping("/api/v1/system/impersonate/exit")
     public ResponseEntity<?> exit(
             @RequestHeader("X-Impersonation-Session-Id") UUID sessionId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal(errorOnInvalidType = false) Jwt jwt) {
 
-        UUID callerUserId = UUID.fromString(jwt.getSubject());
+        UUID callerUserId = (jwt != null && jwt.getSubject() != null) ? UUID.fromString(jwt.getSubject()) : null;
         log.info("🛡️ [ImpersonationController] Request exit session: sessionId={}, caller={}", sessionId, callerUserId);
 
         impersonationService.exitSession(sessionId, callerUserId);

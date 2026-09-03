@@ -358,7 +358,7 @@ public class ImpersonationService {
         ImpersonationSession session = impersonationSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NoSuchElementException("Sesi impersonasi tidak ditemukan"));
 
-        if (!session.getActorUser().getId().equals(callerUserId)) {
+        if (callerUserId != null && !session.getActorUser().getId().equals(callerUserId)) {
             throw new IllegalArgumentException("Hanya Super Admin pembuat sesi yang dapat mengakhiri sesi ini.");
         }
 
@@ -430,6 +430,23 @@ public class ImpersonationService {
         Object cached = redisTemplate.opsForValue().get(sessionKey);
 
         if (cached == null) {
+            Optional<ImpersonationSession> dbSessionOpt = impersonationSessionRepository.findById(sessionId);
+            if (dbSessionOpt.isPresent()) {
+                ImpersonationSession dbSession = dbSessionOpt.get();
+                if (dbSession.getStatus() == ImpersonationStatus.ACTIVE && dbSession.getExpiresAt().isAfter(Instant.now())) {
+                    long remaining = Math.max(Duration.between(Instant.now(), dbSession.getExpiresAt()).toSeconds(), 0);
+                    return ImpersonationStatusResponse.builder()
+                            .active(true)
+                            .sessionId(sessionId)
+                            .targetTenantId(dbSession.getTargetOrganization().getId())
+                            .targetTenantSlug(dbSession.getTargetOrganization().getSlug())
+                            .targetTenantName(dbSession.getTargetOrganization().getName())
+                            .remainingSeconds(remaining)
+                            .expiresAt(dbSession.getExpiresAt())
+                            .build();
+                }
+            }
+
             return ImpersonationStatusResponse.builder()
                     .active(false)
                     .sessionId(sessionId)

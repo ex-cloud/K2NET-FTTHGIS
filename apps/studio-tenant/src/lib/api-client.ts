@@ -65,8 +65,9 @@ export async function apiClient<T = any>(endpoint: string, options: FetchOptions
     ...(headers as Record<string, string>),
   };
 
-  if (activeToken) {
-    reqHeaders["Authorization"] = `Bearer ${activeToken}`;
+  const token = getApiAuthToken();
+  if (token) {
+    reqHeaders["Authorization"] = `Bearer ${token}`;
   }
 
   const impersonationSessionId = getImpersonationSessionId();
