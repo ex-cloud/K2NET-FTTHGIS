@@ -355,6 +355,7 @@ public class ImpersonationService {
     /**
      * Get active impersonation session info for the actor.
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getActiveSessionForActor(UUID actorUserId) {
         return impersonationSessionRepository.findActiveSessionByActorId(actorUserId)
                 .map(session -> {

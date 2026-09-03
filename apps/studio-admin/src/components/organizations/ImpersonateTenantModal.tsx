@@ -122,7 +122,7 @@ export function ImpersonateTenantModal({
       const data = await res.json().catch(() => ({}));
 
       // Step-Up Authentication Required (403)
-      if (res.status === 403 && data.error === "STEP_UP_AUTH_REQUIRED") {
+      if (res.status === 403 && (data.error === "STEP_UP_AUTH_REQUIRED" || data.error?.includes("Step-Up") || data.message?.includes("Step-Up"))) {
         toast.info("Verifikasi Kredensial Diperlukan", {
           description: "Mengalihkan ke Keycloak untuk verifikasi kata sandi ulang...",
         });

@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(StepUpAuthRequiredException.class)
     public ResponseEntity<ErrorResponse> handleStepUpAuthRequired(StepUpAuthRequiredException ex) {
         log.warn("Step-up auth required: {}", ex.getMessage());
-        return buildResponse(HttpStatus.FORBIDDEN, "Step-Up Authentication Required", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, "STEP_UP_AUTH_REQUIRED", ex.getMessage());
     }
 
     /**
