@@ -199,9 +199,10 @@ export function useImpersonationSession() {
           statusIntervalRef.current = setInterval(() => {
             pollStatus(newSessionId);
           }, 30000);
-        } catch (e: any) {
+        } catch (e: unknown) {
           sessionStorage.removeItem("k2net_impersonating_in_progress");
-          toast.error("Terjadi Kesalahan", { description: e.message });
+          const msg = e instanceof Error ? e.message : "Gagal menukarkan sesi impersonasi";
+          toast.error("Terjadi Kesalahan", { description: msg });
           activeExchangingCode = null;
         }
       })();

@@ -45,7 +45,7 @@ export interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
-export async function apiClient<T = any>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+export async function apiClient<T = unknown>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, headers = {}, ...customConfig } = options;
 
   let url = endpoint;
