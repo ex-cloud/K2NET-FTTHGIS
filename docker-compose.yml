@@ -63,6 +63,8 @@ services:
       KONG_TRUSTED_PROXIES: "0.0.0.0/0,::/0"
       KONG_REAL_IP_HEADER: "X-Forwarded-For"
       KONG_NGINX_MAIN_ENV: "GATEWAY_TOKEN"
+      KONG_UNTRUSTED_LUA_SANDBOX_REQUIRES: "cjson,cjson.safe"
+      KONG_UNTRUSTED_LUA_SANDBOX_ENVIRONMENT: "os,os.getenv"
       GATEWAY_TOKEN: "${GATEWAY_TOKEN}"
     volumes:
       - ./docker/kong/kong.yml:/usr/local/kong/declarative/kong.yml:ro

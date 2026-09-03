@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
         if (ex instanceof org.springframework.security.access.AccessDeniedException ade) {
             return handleAccessDenied(ade);
         }
-        log.warn("Business rule violation: {}", ex.getMessage());
+        log.warn("Business rule violation: {}", ex.getMessage(), ex);
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
