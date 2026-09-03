@@ -95,6 +95,21 @@ public class AuditAspect {
             metadata.put("status", status);
             metadata.put("method", sig.getDeclaringType().getSimpleName() + "." + method.getName());
 
+            // Dual-identity audit tracking during active impersonation session
+            if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+                com.company.ftthgis.config.tenant.AuditContext.ImpersonationInfo imp =
+                        com.company.ftthgis.config.tenant.AuditContext.getImpersonation();
+                if (imp != null) {
+                    metadata.put("impersonationSessionId", imp.getSessionId().toString());
+                    metadata.put("realActorId", imp.getRealActorId().toString());
+                    metadata.put("impersonatedTenantId", imp.getTargetTenantId().toString());
+                    metadata.put("isImpersonated", true);
+                    if (imp.getTargetTenantSlug() != null && !imp.getTargetTenantSlug().isBlank()) {
+                        tenantSlug = imp.getTargetTenantSlug();
+                    }
+                }
+            }
+
             // Fire-and-forget — AuditLoggingService#logEvent already has try/catch internally
             auditLoggingService.logEvent(
                     tenantSlug,

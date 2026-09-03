@@ -60,6 +60,7 @@ import { TenantDomainModal } from "@/components/organizations/TenantDomainModal"
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import { TenantFeatureFlagsModal } from "@/components/organizations/TenantFeatureFlagsModal";
 import { TenantImportModal } from "@/components/organizations/TenantImportModal";
+import { ImpersonateTenantModal } from "@/components/organizations/ImpersonateTenantModal";
 
 interface Project {
   id: string;
@@ -112,6 +113,7 @@ export default function AdminOrganizationsPage() {
   const [activeDomainOrg, setActiveDomainOrg] = useState<EnrichedOrganization | null>(null);
   const [activeQuotaOrg, setActiveQuotaOrg] = useState<EnrichedOrganization | null>(null);
   const [activeFlagsOrg, setActiveFlagsOrg] = useState<EnrichedOrganization | null>(null);
+  const [activeImpersonateOrg, setActiveImpersonateOrg] = useState<EnrichedOrganization | null>(null);
 
   // Delete Modal States
   const [orgToDelete, setOrgToDelete] = useState<EnrichedOrganization | null>(null);
@@ -261,10 +263,7 @@ export default function AdminOrganizationsPage() {
 
   // Actions
   const handleImpersonate = (org: EnrichedOrganization) => {
-    toast.success(`Switching to Tenant Admin: ${org.name}`, {
-      description: "Redirecting to tenant management portal...",
-    });
-    window.open(getTenantUrl(org.slug), "_blank");
+    setActiveImpersonateOrg(org);
   };
 
   const handleExtendTrial = (org: EnrichedOrganization) => {
@@ -701,6 +700,13 @@ export default function AdminOrganizationsPage() {
           onSaveFlags={async (_orgId, _flags) => {
             refetch();
           }}
+        />
+
+        {/* Impersonation God-Mode Modal */}
+        <ImpersonateTenantModal
+          organization={activeImpersonateOrg}
+          isOpen={!!activeImpersonateOrg}
+          onClose={() => setActiveImpersonateOrg(null)}
         />
 
         {/* Organization Creation Wizard */}

@@ -44,6 +44,7 @@ public class SecurityConfig {
             IpBlockingFilter ipBlockingFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
             com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
+            com.company.ftthgis.config.tenant.ImpersonationContextFilter impersonationContextFilter,
             com.company.ftthgis.config.logging.ApiRequestLoggingFilter apiRequestLoggingFilter,
             AuditingAccessDeniedHandler auditingAccessDeniedHandler) throws Exception {
         http
@@ -56,6 +57,7 @@ public class SecurityConfig {
                 .addFilterAfter(organizationStatusFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(tenantFilter, com.company.ftthgis.config.tenant.OrganizationStatusFilter.class)
+                .addFilterAfter(impersonationContextFilter, com.company.ftthgis.config.tenant.TenantFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/network/map/**").permitAll()
                         .requestMatchers("/api/v1/network/mvt/**").permitAll()
@@ -69,6 +71,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/organizations/**").authenticated() // Secured: Must be logged in
                         .requestMatchers("/api/v1/auth/discovery/**").permitAll() // Discovery stays public
                         .requestMatchers("/api/v1/auth/oauth-gate/**").permitAll() // Internal OAuth gate (protected by secret header)
+                        .requestMatchers("/api/v1/system/impersonate/exchange").permitAll() // Exchange code is public (single-use 60s)
+                        .requestMatchers("/api/v1/system/impersonate/refresh-token").permitAll() // Refresh token relay guarded by session ID
+                        .requestMatchers("/api/v1/system/impersonate/status").permitAll() // Session countdown status check
                         .requestMatchers("/api/github/webhook").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").hasRole("admin")

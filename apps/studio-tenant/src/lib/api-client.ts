@@ -1,4 +1,5 @@
 let activeToken: string | null = null;
+let activeImpersonationSessionId: string | null = null;
 
 export function setApiAuthToken(token: string | null) {
   activeToken = token;
@@ -6,6 +7,24 @@ export function setApiAuthToken(token: string | null) {
 
 export function getApiAuthToken(): string | null {
   return activeToken;
+}
+
+export function setImpersonationSessionId(sessionId: string | null) {
+  activeImpersonationSessionId = sessionId;
+  if (typeof window !== "undefined") {
+    if (sessionId) {
+      sessionStorage.setItem("k2net_impersonation_session_id", sessionId);
+    } else {
+      sessionStorage.removeItem("k2net_impersonation_session_id");
+    }
+  }
+}
+
+export function getImpersonationSessionId(): string | null {
+  if (!activeImpersonationSessionId && typeof window !== "undefined") {
+    activeImpersonationSessionId = sessionStorage.getItem("k2net_impersonation_session_id");
+  }
+  return activeImpersonationSessionId;
 }
 
 export interface FetchOptions extends RequestInit {
@@ -34,6 +53,11 @@ export async function apiClient<T = any>(endpoint: string, options: FetchOptions
 
   if (activeToken) {
     reqHeaders["Authorization"] = `Bearer ${activeToken}`;
+  }
+
+  const impersonationSessionId = getImpersonationSessionId();
+  if (impersonationSessionId) {
+    reqHeaders["X-Impersonation-Session-Id"] = impersonationSessionId;
   }
 
   const response = await fetch(url, {

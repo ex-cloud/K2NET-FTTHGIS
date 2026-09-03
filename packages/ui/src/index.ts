@@ -37,6 +37,7 @@ export * from "./components/glowing-effect";
 export * from "./components/tracing-beam";
 export * from "./components/skeletons";
 export * from "./components/floating-banner";
+export * from "./components/impersonation-banner";
 export * from "./components/command-palette";
 export * from "./components/theme-provider";
 export * from "./components/mode-toggle";

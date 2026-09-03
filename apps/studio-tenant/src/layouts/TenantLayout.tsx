@@ -15,10 +15,19 @@ import {
   Moon,
   Layers,
 } from "lucide-react";
-import { Button, Badge } from "@k2net/ui";
+import { Button, Badge, ImpersonationBanner } from "@k2net/ui";
+import { useImpersonationSession } from "../lib/useImpersonationSession";
 
 export function TenantLayout() {
   const { user, logout, isSuperAdmin } = useAuth();
+  const {
+    isImpersonating,
+    tenantName: impersonatedTenantName,
+    tenantSlug: impersonatedTenantSlug,
+    remainingSeconds,
+    isExiting,
+    exitSession,
+  } = useImpersonationSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDark, setIsDark] = useState(true);
   const navigate = useNavigate();
@@ -164,6 +173,16 @@ export function TenantLayout() {
 
       {/* ── Main Content Area ────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {isImpersonating && (
+          <ImpersonationBanner
+            tenantName={impersonatedTenantName || user?.tenantSlug || "Tenant"}
+            tenantSlug={impersonatedTenantSlug}
+            remainingSeconds={remainingSeconds}
+            onExit={exitSession}
+            isExiting={isExiting}
+          />
+        )}
+
         {/* Top Bar */}
         <header className="flex h-14 items-center justify-between border-b border-border/70 bg-card/60 px-6 backdrop-blur-md">
           <div className="flex items-center gap-3">

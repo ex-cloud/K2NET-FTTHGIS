@@ -32,6 +32,24 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex.getMessage());
     }
 
+    @ExceptionHandler(ActiveSessionConflictException.class)
+    public ResponseEntity<ErrorResponse> handleActiveSessionConflict(ActiveSessionConflictException ex) {
+        log.warn("Active impersonation session conflict: {}", ex.getMessage());
+        return buildResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidImpersonationSessionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidImpersonationSession(InvalidImpersonationSessionException ex) {
+        log.warn("Invalid impersonation session: {}", ex.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
+    }
+
+    @ExceptionHandler(StepUpAuthRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleStepUpAuthRequired(StepUpAuthRequiredException ex) {
+        log.warn("Step-up auth required: {}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, "Step-Up Authentication Required", ex.getMessage());
+    }
+
     /**
      * Handles business rule violations such as quota exceeded or geofencing violations.
      * Services throw RuntimeException directly for these cases.

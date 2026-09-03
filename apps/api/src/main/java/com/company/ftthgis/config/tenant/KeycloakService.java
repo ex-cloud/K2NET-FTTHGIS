@@ -313,7 +313,7 @@ public class KeycloakService {
             client.setEnabled(true);
             client.setPublicClient(true); // Public client for SPA + PKCE
             client.setSecret(null); // No secret for public client
-            client.setDirectAccessGrantsEnabled(false); // ROPC disabled (Anti-abuse)
+            client.setDirectAccessGrantsEnabled(true); // Enabled for CLI testing, automated testing & API tooling
             client.setStandardFlowEnabled(true); // Authorization Code Flow + PKCE S256
             client.setServiceAccountsEnabled(false);
             
