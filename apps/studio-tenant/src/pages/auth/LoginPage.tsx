@@ -29,6 +29,18 @@ export function LoginPage() {
   const tenantSlug = extractTenantSlug();
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("impersonate_code");
+      if (code) {
+        navigate({ to: "/", search: { impersonate_code: code } });
+        return;
+      }
+      if (sessionStorage.getItem("k2net_impersonation_meta")) {
+        navigate({ to: "/" });
+        return;
+      }
+    }
     if (initialized && authenticated) {
       navigate({ to: "/" });
     }

@@ -330,6 +330,36 @@ public class ImpersonationService {
     }
 
     /**
+     * Terminate currently active impersonation session for the actor if any.
+     */
+    @Transactional
+    public void exitActiveSessionForActor(UUID actorUserId) {
+        impersonationSessionRepository.findActiveSessionByActorId(actorUserId)
+                .ifPresent(session -> exitSession(session.getId(), actorUserId));
+    }
+
+    /**
+     * Get active impersonation session info for the actor.
+     */
+    public Map<String, Object> getActiveSessionForActor(UUID actorUserId) {
+        return impersonationSessionRepository.findActiveSessionByActorId(actorUserId)
+                .map(session -> {
+                    long remaining = Math.max(Duration.between(Instant.now(), session.getExpiresAt()).toSeconds(), 0);
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("hasActiveSession", true);
+                    map.put("sessionId", session.getId().toString());
+                    map.put("targetOrgId", session.getTargetOrganization().getId().toString());
+                    map.put("targetOrgSlug", session.getTargetOrganization().getSlug());
+                    map.put("targetOrgName", session.getTargetOrganization().getName());
+                    map.put("startedAt", session.getStartedAt().toString());
+                    map.put("expiresAt", session.getExpiresAt().toString());
+                    map.put("remainingSeconds", remaining);
+                    return map;
+                })
+                .orElseGet(() -> Map.of("hasActiveSession", false));
+    }
+
+    /**
      * Check status and remaining TTL for an impersonation session.
      */
     public ImpersonationStatusResponse getStatus(UUID sessionId) {

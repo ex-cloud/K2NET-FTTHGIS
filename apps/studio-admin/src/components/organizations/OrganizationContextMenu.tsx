@@ -24,6 +24,7 @@ import {
   Copy,
   Trash2,
   PauseCircle,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
@@ -31,8 +32,11 @@ import { getTenantUrl } from "@/lib/domain";
 
 interface OrganizationContextMenuProps {
   organization: EnrichedOrganization;
+  isActiveImpersonated?: boolean;
   onViewDetail?: (org: EnrichedOrganization) => void;
   onImpersonate?: (org: EnrichedOrganization) => void;
+  onStopImpersonation?: (org: EnrichedOrganization) => void;
+  onReopenPortal?: (org: EnrichedOrganization) => void;
   onOpenDomainModal?: (org: EnrichedOrganization) => void;
   onOpenQuotaModal?: (org: EnrichedOrganization) => void;
   onOpenFlagsModal?: (org: EnrichedOrganization) => void;
@@ -44,8 +48,11 @@ interface OrganizationContextMenuProps {
 
 export function OrganizationContextMenu({
   organization,
+  isActiveImpersonated,
   onViewDetail,
   onImpersonate,
+  onStopImpersonation,
+  onReopenPortal,
   onOpenDomainModal,
   onOpenQuotaModal,
   onOpenFlagsModal,
@@ -91,14 +98,34 @@ export function OrganizationContextMenu({
         </ContextMenuItem>
 
         {/* 2. Super Admin Impersonation */}
-        <ContextMenuItem
-          onClick={() => onImpersonate?.(organization)}
-          className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          <span>Login as Tenant Admin</span>
-          <ContextMenuShortcut>Ctrl ↵</ContextMenuShortcut>
-        </ContextMenuItem>
+        {isActiveImpersonated ? (
+          <>
+            <ContextMenuItem
+              onClick={() => onReopenPortal?.(organization)}
+              className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Buka Kembali Portal Tenant</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => onStopImpersonation?.(organization)}
+              className="cursor-pointer font-semibold text-destructive focus:bg-destructive/10 focus:text-destructive gap-2"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              <span>Akhiri Sesi Impersonasi</span>
+              <ContextMenuShortcut>Ctrl ⇧ ⌫</ContextMenuShortcut>
+            </ContextMenuItem>
+          </>
+        ) : (
+          <ContextMenuItem
+            onClick={() => onImpersonate?.(organization)}
+            className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Login as Tenant Admin</span>
+            <ContextMenuShortcut>Ctrl ↵</ContextMenuShortcut>
+          </ContextMenuItem>
+        )}
 
         <ContextMenuSeparator className="bg-border/40 my-1" />
 

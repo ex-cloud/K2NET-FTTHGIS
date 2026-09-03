@@ -37,6 +37,8 @@ import {
   KeyRound,
   AlertTriangle,
   CheckCircle2,
+  XCircle,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrganizationWizard } from "@/components/organizations/OrganizationWizard";
@@ -61,6 +63,7 @@ import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import { TenantFeatureFlagsModal } from "@/components/organizations/TenantFeatureFlagsModal";
 import { TenantImportModal } from "@/components/organizations/TenantImportModal";
 import { ImpersonateTenantModal } from "@/components/organizations/ImpersonateTenantModal";
+import { useActiveImpersonation } from "@/hooks/useActiveImpersonation";
 
 interface Project {
   id: string;
@@ -93,6 +96,13 @@ export default function AdminOrganizationsPage() {
     updateOrganization,
     deleteOrg,
   } = useOrganizations();
+
+  const {
+    activeSession,
+    terminating,
+    stopActiveSession,
+    reopenTenantPortal,
+  } = useActiveImpersonation();
 
   // URL query state
   const statusParam = searchParams.get("status") || "ALL";
@@ -589,6 +599,48 @@ export default function AdminOrganizationsPage() {
             />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {activeSession?.hasActiveSession && (
+                <div className="mx-4 md:mx-6 mt-4 mb-2 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                      <ShieldAlert className="h-4 w-4 animate-pulse" />
+                    </div>
+                    <div className="space-y-0.5 text-xs">
+                      <div className="font-bold flex items-center gap-1.5 text-foreground">
+                        <span>Sesi Impersonasi Sedang Aktif:</span>
+                        <span className="font-mono text-primary underline">{activeSession.targetOrgName}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">({activeSession.targetOrgSlug})</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Sesi operasional bantuan sedang berjalan. Anda dapat membuka portal kembali atau mengakhirinya kapan saja via klik kanan atau tombol di samping.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => reopenTenantPortal(activeSession.targetOrgSlug!)}
+                      className="h-8 text-xs font-semibold gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                    >
+                      <span>Buka Portal Tenant</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => stopActiveSession()}
+                      disabled={terminating}
+                      className="h-8 text-xs font-semibold gap-1.5"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      <span>{terminating ? "Mengakhiri..." : "Akhiri Sesi"}</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {isLoading ? (
                 <div className="p-6">
                   <TablePageSkeleton />
@@ -597,9 +649,13 @@ export default function AdminOrganizationsPage() {
                 <OrganizationTable
                   organizations={filteredOrganizations}
                   selectedIds={selectedIds}
+                  activeImpersonationSlug={activeSession?.hasActiveSession ? activeSession.targetOrgSlug : undefined}
+                  activeImpersonationRemainingSeconds={activeSession?.remainingSeconds}
                   onToggleSelect={handleToggleSelect}
                   onToggleSelectAll={handleToggleSelectAll}
                   onImpersonate={handleImpersonate}
+                  onStopImpersonation={() => stopActiveSession()}
+                  onReopenPortal={(org) => reopenTenantPortal(org.slug)}
                   onOpenDomainModal={(org) => setActiveDomainOrg(org)}
                   onOpenQuotaModal={(org) => setActiveQuotaOrg(org)}
                   onOpenFlagsModal={(org) => setActiveFlagsOrg(org)}

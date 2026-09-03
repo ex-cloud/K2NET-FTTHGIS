@@ -34,9 +34,13 @@ import { getTenantUrl } from "@/lib/domain";
 interface OrganizationTableProps {
   organizations: EnrichedOrganization[];
   selectedIds: string[];
+  activeImpersonationSlug?: string;
+  activeImpersonationRemainingSeconds?: number;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
   onImpersonate: (org: EnrichedOrganization) => void;
+  onStopImpersonation?: (org: EnrichedOrganization) => void;
+  onReopenPortal?: (org: EnrichedOrganization) => void;
   onOpenDomainModal: (org: EnrichedOrganization) => void;
   onOpenQuotaModal: (org: EnrichedOrganization) => void;
   onOpenFlagsModal: (org: EnrichedOrganization) => void;
@@ -45,12 +49,24 @@ interface OrganizationTableProps {
   onDelete: (org: EnrichedOrganization) => void;
 }
 
+function formatRemaining(totalSeconds?: number): string {
+  if (!totalSeconds || totalSeconds <= 0) return "0s";
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  if (mins > 0) return `${mins}m`;
+  return `${secs}s`;
+}
+
 export function OrganizationTable({
   organizations,
   selectedIds,
+  activeImpersonationSlug,
+  activeImpersonationRemainingSeconds,
   onToggleSelect,
   onToggleSelectAll,
   onImpersonate,
+  onStopImpersonation,
+  onReopenPortal,
   onOpenDomainModal,
   onOpenQuotaModal,
   onOpenFlagsModal,
@@ -126,8 +142,11 @@ export function OrganizationTable({
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">
               Organization
             </TableHead>
-            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-[140px]">
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-[120px]">
               Status
+            </TableHead>
+            <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[140px]">
+              Impersonation
             </TableHead>
             <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[180px]">
               Hardware Quota
@@ -147,21 +166,25 @@ export function OrganizationTable({
         <TableBody>
           {organizations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-48 text-center text-muted-foreground text-xs">
+              <TableCell colSpan={8} className="h-48 text-center text-muted-foreground text-xs">
                 No organizations found matching the selected filters.
               </TableCell>
             </TableRow>
           ) : (
             organizations.map((org) => {
               const isSelected = selectedIds.includes(org.id);
+              const isImpersonatingThisOrg = activeImpersonationSlug === org.slug;
               const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
 
               return (
                 <OrganizationContextMenu
                   key={org.id}
                   organization={org}
+                  isActiveImpersonated={isImpersonatingThisOrg}
                   onViewDetail={(o) => router.push(`/organizations/${o.slug}`)}
                   onImpersonate={onImpersonate}
+                  onStopImpersonation={onStopImpersonation}
+                  onReopenPortal={onReopenPortal}
                   onOpenDomainModal={onOpenDomainModal}
                   onOpenQuotaModal={onOpenQuotaModal}
                   onOpenFlagsModal={onOpenFlagsModal}
@@ -173,7 +196,8 @@ export function OrganizationTable({
                     onClick={() => router.push(`/organizations/${org.slug}`)}
                     className={cn(
                       "group border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer text-xs",
-                      isSelected && "bg-primary/5 hover:bg-primary/10"
+                      isSelected && "bg-primary/5 hover:bg-primary/10",
+                      isImpersonatingThisOrg && "border-amber-500/40 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]"
                     )}
                   >
                     <TableCell className="pl-6" onClick={(e) => e.stopPropagation()}>
@@ -218,6 +242,19 @@ export function OrganizationTable({
 
                     <TableCell className="py-3.5">
                       {getStatusBadge(org)}
+                    </TableCell>
+
+                    <TableCell className="py-3.5">
+                      {isImpersonatingThisOrg ? (
+                        <ActionTooltip label="Sesi Impersonasi Super Admin sedang aktif untuk tenant ini. Klik kanan untuk opsi akhiri.">
+                          <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-semibold">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
+                            <span>ACTIVE ({formatRemaining(activeImpersonationRemainingSeconds)})</span>
+                          </Badge>
+                        </ActionTooltip>
+                      ) : (
+                        <span className="text-[11px] font-mono text-muted-foreground/50">— Inactive</span>
+                      )}
                     </TableCell>
 
                     <TableCell className="py-3.5">

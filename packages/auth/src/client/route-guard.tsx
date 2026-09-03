@@ -18,7 +18,15 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { initialized, authenticated, hasAnyRole, login } = useAuth();
 
+  // Izinkan bypass jika sedang dalam flow impersonasi (ada query impersonate_code atau token di sessionStorage)
+  const isImpersonating = typeof window !== "undefined" && (
+    window.location.search.includes("impersonate_code=") ||
+    !!sessionStorage.getItem("k2net_impersonation_meta")
+  );
+
   React.useEffect(() => {
+    if (isImpersonating) return;
+
     if (initialized && !authenticated && autoRedirect) {
       if (typeof window !== "undefined" && window.location.pathname !== "/login") {
         const currentPath = window.location.pathname + window.location.search;
@@ -26,7 +34,11 @@ export function ProtectedRoute({
         window.location.replace(target);
       }
     }
-  }, [initialized, authenticated, autoRedirect]);
+  }, [initialized, authenticated, autoRedirect, isImpersonating]);
+
+  if (isImpersonating) {
+    return <>{children}</>;
+  }
 
   if (!initialized) {
     return (

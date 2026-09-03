@@ -88,6 +88,32 @@ public class ImpersonationController {
     }
 
     /**
+     * Mengakhiri sesi impersonasi aktif milik Super Admin yang sedang login (jika ada).
+     * Berguna jika tab sebelumnya tertutup atau terjadi konflik sesi 409.
+     */
+    @PostMapping("/api/v1/system/impersonate/exit-active")
+    public ResponseEntity<?> exitActive(@AuthenticationPrincipal Jwt jwt) {
+        UUID callerUserId = UUID.fromString(jwt.getSubject());
+        log.info("🛡️ [ImpersonationController] Request exit active session for caller: {}", callerUserId);
+
+        impersonationService.exitActiveSessionForActor(callerUserId);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Sesi impersonasi aktif sebelumnya berhasil diakhiri."
+        ));
+    }
+
+    /**
+     * Memeriksa apakah Super Admin yang sedang login memiliki sesi impersonasi aktif.
+     * Digunakan oleh halaman Organizations Command Center untuk menampilkan banner & badge status.
+     */
+    @GetMapping("/api/v1/system/impersonate/active-session")
+    public ResponseEntity<?> getActiveSession(@AuthenticationPrincipal Jwt jwt) {
+        UUID callerUserId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(impersonationService.getActiveSessionForActor(callerUserId));
+    }
+
+    /**
      * Memeriksa sisa TTL dan keaktifan sesi impersonasi untuk countdown banner sinkron.
      */
     @GetMapping("/api/v1/system/impersonate/status")

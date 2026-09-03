@@ -42,10 +42,13 @@ export function ImpersonateTenantModal({
   const [reason, setReason] = useState("");
   const [ticketReference, setTicketReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const [revokingActive, setRevokingActive] = useState(false);
 
   // Check for pending impersonation after Keycloak step-up redirect
   useEffect(() => {
     if (!isOpen || !organization) return;
+    setConflictError(null);
 
     const pending = sessionStorage.getItem("pending_impersonate");
     if (pending) {
@@ -58,50 +61,69 @@ export function ImpersonateTenantModal({
           // Auto-trigger with fresh token
           triggerStart(parsed.reason, parsed.ticketReference);
         }
-      } catch {
-        sessionStorage.removeItem("pending_impersonate");
+      } catch (e) {
+        console.error("Failed to parse pending impersonate", e);
       }
     }
   }, [isOpen, organization]);
 
-  if (!organization) return null;
-
   const isReasonValid = reason.trim().length >= 10;
 
-  const triggerStart = async (optReason?: string, optTicket?: string) => {
-    const finalReason = optReason || reason;
-    const finalTicket = optTicket || ticketReference;
-
-    if (!finalReason || finalReason.trim().length < 10) {
-      toast.error("Alasan wajib diisi minimal 10 karakter.");
-      return;
-    }
-
-    setSubmitting(true);
+  const handleRevokeActiveSession = async () => {
+    setRevokingActive(true);
     try {
-      const auth = typeof window !== "undefined" ? (window as any).__K2NET_AUTH__ : undefined;
-      const token = session?.accessToken || auth?.token;
-      const refreshToken = auth?.refreshToken;
+      const res = await fetch("/api/v1/system/impersonate/exit-active", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
 
-      const res = await fetch(`/api/v1/system/tenants/${organization.id}/impersonate/start`, {
+      if (res.ok) {
+        setConflictError(null);
+        toast.success("Sesi Sebelumnya Berhasil Diakhiri", {
+          description: "Sesi aktif telah ditutup. Silakan lanjutkan.",
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error("Gagal Mengakhiri Sesi", {
+          description: data.message || "Terjadi kesalahan saat menutup sesi.",
+        });
+      }
+    } catch (e: any) {
+      toast.error("Kesalahan Jaringan", { description: e.message });
+    } finally {
+      setRevokingActive(false);
+    }
+  };
+
+  const triggerStart = async (overrideReason?: string, overrideTicket?: string) => {
+    if (!organization) return;
+    setSubmitting(true);
+    setConflictError(null);
+
+    const finalReason = (overrideReason ?? reason).trim();
+    const finalTicket = (overrideTicket ?? ticketReference).trim();
+
+    try {
+      const res = await fetch(`/api/v1/system/tenants/${organization.slug}/impersonate/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session?.accessToken}`,
         },
         body: JSON.stringify({
-          reason: finalReason.trim(),
-          ticketReference: finalTicket ? finalTicket.trim() : undefined,
-          refreshToken: refreshToken,
+          reason: finalReason,
+          ticketReference: finalTicket || undefined,
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (res.status === 403 || res.status === 428) {
-        // Step-up re-authentication required
-        toast.info("Verifikasi Step-Up MFA diperlukan", {
-          description: "Mengarahkan ke halaman login Keycloak untuk re-autentikasi...",
+      // Step-Up Authentication Required (403)
+      if (res.status === 403 && data.error === "STEP_UP_AUTH_REQUIRED") {
+        toast.info("Verifikasi Kredensial Diperlukan", {
+          description: "Mengalihkan ke Keycloak untuk verifikasi kata sandi ulang...",
         });
 
         sessionStorage.setItem(
@@ -113,14 +135,14 @@ export function ImpersonateTenantModal({
           })
         );
 
-        // Trigger Keycloak re-auth with prompt=login and maxAge=0
         await signIn(undefined, { prompt: "login", maxAge: 0 });
         return;
       }
 
       if (res.status === 409) {
+        setConflictError(data.details || data.message || "Anda masih memiliki sesi impersonasi aktif untuk tenant lain.");
         toast.error("Gagal Memulai Sesi Impersonasi", {
-          description: data.details || "Anda masih memiliki sesi impersonasi aktif untuk tenant lain. Keluar terlebih dahulu.",
+          description: data.details || "Anda masih memiliki sesi impersonasi aktif. Keluar terlebih dahulu.",
         });
         setSubmitting(false);
         return;
@@ -156,6 +178,8 @@ export function ImpersonateTenantModal({
     }
   };
 
+  if (!organization) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !submitting && onClose()}>
       <DialogContent className="max-w-lg border-border bg-card text-foreground">
@@ -185,6 +209,30 @@ export function ImpersonateTenantModal({
               {organization.planTier || "PRO"}
             </Badge>
           </div>
+
+          {/* Active Session Conflict Box */}
+          {conflictError && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Sesi Impersonasi Masih Aktif</p>
+                  <p className="text-[11px] leading-relaxed opacity-90">{conflictError}</p>
+                </div>
+              </div>
+              <div className="pt-1 flex justify-end">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleRevokeActiveSession}
+                  disabled={revokingActive}
+                  className="h-7 text-xs font-semibold"
+                >
+                  {revokingActive ? "Mengakhiri Sesi..." : "Akhiri Sesi Aktif Sebelumnya"}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Form Reason */}
           <div className="space-y-1.5">
