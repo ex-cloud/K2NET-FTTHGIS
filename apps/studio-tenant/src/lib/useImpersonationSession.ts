@@ -96,9 +96,11 @@ export function useImpersonationSession() {
 
   const pollStatus = useCallback(async (activeSessionId: string) => {
     try {
+      const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/status", {
         headers: {
           "X-Impersonation-Session-Id": activeSessionId,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
@@ -110,8 +112,6 @@ export function useImpersonationSession() {
           toast.info("Sesi impersonasi telah berakhir.");
           clearSession();
         }
-      } else if (res.status === 401 || res.status === 403) {
-        clearSession();
       }
     } catch {
       // ignore network blips
@@ -131,9 +131,8 @@ export function useImpersonationSession() {
       }
       activeExchangingCode = impersonateCode;
 
-      // Bersihkan URL segera agar re-render atau redirect tidak membawa impersonate_code lagi
-      url.searchParams.delete("impersonate_code");
-      window.history.replaceState({}, "", url.pathname + url.search);
+      // Set flag penanda proses pertukaran sedang berlangsung agar ProtectedRoute tidak me-redirect
+      sessionStorage.setItem("k2net_impersonating_in_progress", "true");
 
       // 1. Tukar exchange code
       (async () => {
@@ -145,6 +144,7 @@ export function useImpersonationSession() {
           });
 
           if (!res.ok) {
+            sessionStorage.removeItem("k2net_impersonating_in_progress");
             const err = await res.json().catch(() => ({}));
             toast.error("Gagal Memulai Sesi Impersonasi", {
               description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
@@ -176,12 +176,17 @@ export function useImpersonationSession() {
           };
           sessionStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
           localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
+          sessionStorage.removeItem("k2net_impersonating_in_progress");
 
           setIsImpersonating(true);
           setSessionId(newSessionId);
           setTenantName(name);
           setTenantSlug(slug);
           setRemainingSeconds(expiresInSeconds);
+
+          // Bersihkan URL setelah metadata aman di storage
+          url.searchParams.delete("impersonate_code");
+          window.history.replaceState({}, "", url.pathname + url.search);
 
           toast.success(`Mode Bantuan: Terhubung ke ${name}`);
 
@@ -193,6 +198,7 @@ export function useImpersonationSession() {
             pollStatus(newSessionId);
           }, 30000);
         } catch (e: any) {
+          sessionStorage.removeItem("k2net_impersonating_in_progress");
           toast.error("Terjadi Kesalahan", { description: e.message });
           activeExchangingCode = null;
         }

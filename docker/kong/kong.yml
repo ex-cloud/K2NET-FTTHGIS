@@ -42,6 +42,8 @@ services:
           - /api/v1/network/mvt
           - /api/v1/network/notifications
           - /api/v1/system/impersonate/exchange
+          - /api/v1/system/impersonate/status
+          - /api/v1/system/impersonate/refresh-token
         strip_path: false
 
       # Protected API routes — strict RS256 JWT required (401 if invalid or missing)

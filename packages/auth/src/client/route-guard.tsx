@@ -22,7 +22,8 @@ export function ProtectedRoute({
   const isImpersonating = typeof window !== "undefined" && (
     window.location.search.includes("impersonate_code=") ||
     !!sessionStorage.getItem("k2net_impersonation_meta") ||
-    !!localStorage.getItem("k2net_impersonation_meta")
+    !!localStorage.getItem("k2net_impersonation_meta") ||
+    !!sessionStorage.getItem("k2net_impersonating_in_progress")
   );
 
   React.useEffect(() => {
