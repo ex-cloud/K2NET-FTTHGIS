@@ -14,7 +14,14 @@ interface ImpersonationMetadata {
   expiresAt: string;
 }
 
+interface ImpersonationStatusResponse {
+  active: boolean;
+  remainingSeconds: number;
+}
+
 const META_STORAGE_KEY = "k2net_impersonation_meta";
+
+let activeExchangingCode: string | null = null;
 
 export function useImpersonationSession() {
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -33,8 +40,10 @@ export function useImpersonationSession() {
     setTenantName("");
     setTenantSlug("");
     setImpersonationSessionId(null);
+    activeExchangingCode = null;
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(META_STORAGE_KEY);
+      localStorage.removeItem(META_STORAGE_KEY);
     }
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -73,27 +82,28 @@ export function useImpersonationSession() {
             scheduleRefresh(data.expiresInSeconds || 1800, activeSessionId);
           }
         } else {
-          toast.warning("Sesi impersonasi Keycloak telah kedaluwarsa.");
+          // Token refresh gagal atau dibatalkan
           clearSession();
         }
-      } catch (e) {
-        console.warn("[Impersonation] Refresh relay error:", e);
+      } catch {
+        // Retry dalam 10 detik jika network glitch
+        refreshTimeoutRef.current = setTimeout(() => {
+          scheduleRefresh(30, activeSessionId);
+        }, 10000);
       }
     }, delayMs);
   }, [clearSession]);
 
   const pollStatus = useCallback(async (activeSessionId: string) => {
     try {
-      const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/status", {
         headers: {
           "X-Impersonation-Session-Id": activeSessionId,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const data: ImpersonationStatusResponse = await res.json();
         if (data.active) {
           setRemainingSeconds(data.remainingSeconds);
         } else {
@@ -116,6 +126,15 @@ export function useImpersonationSession() {
     const impersonateCode = url.searchParams.get("impersonate_code");
 
     if (impersonateCode) {
+      if (activeExchangingCode === impersonateCode) {
+        return; // Guard against duplicate concurrent exchange requests in React StrictMode
+      }
+      activeExchangingCode = impersonateCode;
+
+      // Bersihkan URL segera agar re-render atau redirect tidak membawa impersonate_code lagi
+      url.searchParams.delete("impersonate_code");
+      window.history.replaceState({}, "", url.pathname + url.search);
+
       // 1. Tukar exchange code
       (async () => {
         try {
@@ -130,6 +149,7 @@ export function useImpersonationSession() {
             toast.error("Gagal Memulai Sesi Impersonasi", {
               description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
             });
+            activeExchangingCode = null;
             return;
           }
 
@@ -143,11 +163,11 @@ export function useImpersonationSession() {
             expiresAt,
           } = data;
 
-          // Set token & session id
+          // Set token & session id (tersimpan di memory, sessionStorage, dan localStorage)
           setApiAuthToken(token);
           setImpersonationSessionId(newSessionId);
 
-          // Simpan metadata di sessionStorage
+          // Simpan metadata di sessionStorage dan localStorage
           const meta: ImpersonationMetadata = {
             sessionId: newSessionId,
             targetTenantName: name,
@@ -155,16 +175,13 @@ export function useImpersonationSession() {
             expiresAt,
           };
           sessionStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
+          localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
 
           setIsImpersonating(true);
           setSessionId(newSessionId);
           setTenantName(name);
           setTenantSlug(slug);
           setRemainingSeconds(expiresInSeconds);
-
-          // Bersihkan URL tanpa trigger reload
-          url.searchParams.delete("impersonate_code");
-          window.history.replaceState({}, "", url.pathname + url.search);
 
           toast.success(`Mode Bantuan: Terhubung ke ${name}`);
 
@@ -177,12 +194,13 @@ export function useImpersonationSession() {
           }, 30000);
         } catch (e: any) {
           toast.error("Terjadi Kesalahan", { description: e.message });
+          activeExchangingCode = null;
         }
       })();
     } else {
-      // 2. Cek sesi impersonasi tersimpan di sessionStorage
+      // 2. Cek sesi impersonasi tersimpan di sessionStorage atau localStorage
       const savedSessionId = getImpersonationSessionId();
-      const savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
+      const savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY) || localStorage.getItem(META_STORAGE_KEY);
 
       if (savedSessionId && savedMetaStr) {
         try {

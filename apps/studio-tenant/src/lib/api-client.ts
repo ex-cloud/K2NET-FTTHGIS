@@ -3,9 +3,21 @@ let activeImpersonationSessionId: string | null = null;
 
 export function setApiAuthToken(token: string | null) {
   activeToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      sessionStorage.setItem("k2net_impersonation_token", token);
+      localStorage.setItem("k2net_impersonation_token", token);
+    } else {
+      sessionStorage.removeItem("k2net_impersonation_token");
+      localStorage.removeItem("k2net_impersonation_token");
+    }
+  }
 }
 
 export function getApiAuthToken(): string | null {
+  if (!activeToken && typeof window !== "undefined") {
+    activeToken = sessionStorage.getItem("k2net_impersonation_token") || localStorage.getItem("k2net_impersonation_token");
+  }
   return activeToken;
 }
 
@@ -14,15 +26,17 @@ export function setImpersonationSessionId(sessionId: string | null) {
   if (typeof window !== "undefined") {
     if (sessionId) {
       sessionStorage.setItem("k2net_impersonation_session_id", sessionId);
+      localStorage.setItem("k2net_impersonation_session_id", sessionId);
     } else {
       sessionStorage.removeItem("k2net_impersonation_session_id");
+      localStorage.removeItem("k2net_impersonation_session_id");
     }
   }
 }
 
 export function getImpersonationSessionId(): string | null {
   if (!activeImpersonationSessionId && typeof window !== "undefined") {
-    activeImpersonationSessionId = sessionStorage.getItem("k2net_impersonation_session_id");
+    activeImpersonationSessionId = sessionStorage.getItem("k2net_impersonation_session_id") || localStorage.getItem("k2net_impersonation_session_id");
   }
   return activeImpersonationSessionId;
 }

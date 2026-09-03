@@ -41,6 +41,18 @@ public class ImpersonationController {
     }
 
     /**
+     * Membuka kembali sesi impersonasi aktif dengan menghasilkan single-use exchange code baru.
+     * Digunakan ketika Super Admin mengklik 'Buka Portal Tenant' pada sesi yang sedang aktif.
+     */
+    @PostMapping("/api/v1/system/impersonate/reopen")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate')")
+    public ResponseEntity<ImpersonationSessionResponse> reopen(@AuthenticationPrincipal Jwt jwt) {
+        log.info("🛡️ [ImpersonationController] Request reopen active session for caller: {}", jwt.getSubject());
+        ImpersonationSessionResponse response = impersonationService.reopenActiveSession(jwt);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Menukar kode sekali pakai (exchange code) dari tab studio-tenant
      * untuk mendapatkan kredensial sesi dan metadata tenant.
      * Endpoint ini dapat diakses secara publik (dijaga oleh single-use exchange code TTL 60s).

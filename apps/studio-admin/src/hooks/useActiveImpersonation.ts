@@ -74,10 +74,35 @@ export function useActiveImpersonation() {
     }
   }, [session?.accessToken, fetchActiveSession]);
 
-  const reopenTenantPortal = useCallback((slug: string) => {
-    const url = getTenantUrl(slug);
-    window.open(url, "_blank");
-  }, []);
+  const reopenTenantPortal = useCallback(async (slug: string) => {
+    if (!session?.accessToken) {
+      const url = getTenantUrl(slug);
+      window.open(url, "_blank");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/v1/system/impersonate/reopen", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const tenantBaseUrl = getTenantUrl(data.targetTenantSlug || slug);
+        const targetUrl = `${tenantBaseUrl}/?impersonate_code=${data.exchangeCode}`;
+        window.open(targetUrl, "_blank");
+      } else {
+        const url = getTenantUrl(slug);
+        window.open(url, "_blank");
+      }
+    } catch {
+      const url = getTenantUrl(slug);
+      window.open(url, "_blank");
+    }
+  }, [session?.accessToken]);
 
   return {
     activeSession,

@@ -211,6 +211,54 @@ public class ImpersonationService {
     }
 
     /**
+     * Reopen an active impersonation session by issuing a new single-use exchange code.
+     * Allows Super Admin to reopen the tenant portal in a new tab/window without re-authenticating.
+     */
+    @Transactional
+    public ImpersonationSessionResponse reopenActiveSession(Jwt jwt) {
+        UUID actorUserId = UUID.fromString(jwt.getSubject());
+        ImpersonationSession session = impersonationSessionRepository.findActiveSessionByActorId(actorUserId)
+                .orElseThrow(() -> new NoSuchElementException("Tidak ada sesi impersonasi aktif yang ditemukan."));
+
+        if (session.getExpiresAt().isBefore(Instant.now())) {
+            session.setStatus(ImpersonationStatus.EXPIRED);
+            impersonationSessionRepository.save(session);
+            throw new NoSuchElementException("Sesi impersonasi telah kedaluwarsa.");
+        }
+
+        Organization targetOrg = session.getTargetOrganization();
+        String exchangeCode = generateSecureHex(32);
+        String exchangeKey = EXCHANGE_CACHE_PREFIX + exchangeCode;
+
+        long remainingSeconds = Math.max(Duration.between(Instant.now(), session.getExpiresAt()).toSeconds(), 0);
+
+        ImpersonationExchangeCache exchangeCache = ImpersonationExchangeCache.builder()
+                .sessionId(session.getId())
+                .actorId(actorUserId)
+                .accessToken(jwt.getTokenValue())
+                .targetTenantId(targetOrg.getId())
+                .targetTenantSlug(targetOrg.getSlug())
+                .targetTenantName(targetOrg.getName())
+                .expiresInSeconds((int) remainingSeconds)
+                .expiresAt(session.getExpiresAt().toString())
+                .build();
+
+        redisTemplate.opsForValue().set(exchangeKey, exchangeCache, EXCHANGE_CODE_TTL_SECONDS, TimeUnit.SECONDS);
+
+        log.info("🛡️ [Impersonation] Exchange code baru dibuat untuk membuka kembali sesi: actor={}, targetTenant={}, sessionId={}",
+                jwt.getSubject(), targetOrg.getSlug(), session.getId());
+
+        return ImpersonationSessionResponse.builder()
+                .sessionId(session.getId())
+                .exchangeCode(exchangeCode)
+                .targetTenantId(targetOrg.getId())
+                .targetTenantSlug(targetOrg.getSlug())
+                .targetTenantName(targetOrg.getName())
+                .expiresAt(session.getExpiresAt())
+                .build();
+    }
+
+    /**
      * Exchange a single-use exchange code for impersonation session details and active token.
      * Code is immediately deleted from Redis upon retrieval.
      */

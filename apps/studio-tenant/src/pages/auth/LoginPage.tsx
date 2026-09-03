@@ -36,7 +36,7 @@ export function LoginPage() {
         navigate({ to: "/", search: { impersonate_code: code } });
         return;
       }
-      if (sessionStorage.getItem("k2net_impersonation_meta")) {
+      if (sessionStorage.getItem("k2net_impersonation_meta") || localStorage.getItem("k2net_impersonation_meta")) {
         navigate({ to: "/" });
         return;
       }
