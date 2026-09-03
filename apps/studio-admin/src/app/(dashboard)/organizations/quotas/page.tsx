@@ -44,7 +44,6 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import {
   type EnrichedOrganization,
-  type PlanTier,
   type OrganizationStatus,
   normalizePlanTier,
   toBackendPlanName,

@@ -76,7 +76,7 @@ export function useSession(): UseSessionReturn {
 export function signIn(_provider?: string, options?: KeycloakLoginOptions) {
   const auth = typeof window !== "undefined" ? window.__K2NET_AUTH__ : undefined;
   if (auth?.login) {
-    auth.login();
+    auth.login(options);
   } else {
     window.location.href = "/";
   }
@@ -86,7 +86,7 @@ export function signIn(_provider?: string, options?: KeycloakLoginOptions) {
 export function signOut(options?: KeycloakLogoutOptions) {
   const auth = typeof window !== "undefined" ? window.__K2NET_AUTH__ : undefined;
   if (auth?.logout) {
-    auth.logout();
+    auth.logout(options);
   } else {
     window.location.href = "/";
   }

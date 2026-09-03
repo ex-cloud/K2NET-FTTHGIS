@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useSession } from "@/lib/auth-compat";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/ui";
-import { Archive, ShieldCheck, Info, Check, Copy, ExternalLink, Download, Trash2, Loader2 } from "lucide-react";
+import { Archive, ShieldCheck, Info, Check, Copy, Download, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
 
@@ -189,7 +189,7 @@ export function SchedulerArtifactsTable({
     try {
       await deleteArtifact(deleteDialog.artifactName);
       toast.success("Berkas cadangan berhasil dihapus!");
-    } catch (err) {
+    } catch (_err) {
       toast.error("Gagal menghapus berkas cadangan.");
     } finally {
       setDeleteDialog(null);

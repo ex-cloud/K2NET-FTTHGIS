@@ -1,7 +1,7 @@
 
 
 import { useRouter } from "@/lib/navigation-compat";
-import { Sparkles, Database, Plus, Bot } from "lucide-react";
+import { Sparkles, Database, Bot } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiPromptsTab } from "@/components/ai/ai-prompts-tab";

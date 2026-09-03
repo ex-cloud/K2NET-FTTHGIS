@@ -30,13 +30,13 @@ export function SchedulerKpiCards({
         {
           label: "Scheduled Jobs (Active)",
           icon: <CalendarClock className="w-4 h-4 text-primary" />,
-          value: String(activeJobs),
+          value: loading ? "…" : String(activeJobs),
           sub: `${activeJobs} registered · ${jobs.filter((j) => j.lastStatus === "FAILED").length} failed in 24h`,
         },
         {
           label: "Last Backup Status",
           icon: <HardDrive className="w-4 h-4 text-violet-400" />,
-          value: devopsBackupInfo?.status || lastBackup?.lastStatus || "SUCCESS",
+          value: loading ? "…" : (devopsBackupInfo?.status || lastBackup?.lastStatus || "SUCCESS"),
           sub: devopsBackupInfo?.lastBackupTime
             ? `backup.sh · ${devopsBackupInfo.lastBackupTime}`
             : lastBackup?.lastRunAt
@@ -46,7 +46,7 @@ export function SchedulerKpiCards({
         {
           label: "Offsite Sync (Nextcloud)",
           icon: <CloudUpload className="w-4 h-4 text-blue-400" />,
-          value: devopsBackupInfo?.nextcloudStatus || "SYNCED",
+          value: loading ? "…" : (devopsBackupInfo?.nextcloudStatus || "SYNCED"),
           sub: devopsBackupInfo?.nextcloudSyncTime
             ? `Last sync: ${devopsBackupInfo.nextcloudSyncTime}`
             : formatTimeSub(lastSync?.lastRunAt, "Last sync: "),
@@ -54,7 +54,7 @@ export function SchedulerKpiCards({
         {
           label: "Next Scheduled Run",
           icon: <Timer className="w-4 h-4 text-amber-400" />,
-          value: nextJob?.nextRunAt ?? "—",
+          value: loading ? "…" : (nextJob?.nextRunAt ?? "—"),
           sub: nextJob?.name ?? "—",
         },
       ].map((c) => (

@@ -43,13 +43,11 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import { TenantDomainModal } from "@/components/organizations/TenantDomainModal";
 import {
   type EnrichedOrganization,
-  type PlanTier,
   type OrganizationStatus,
   normalizePlanTier,
 } from "@/components/organizations/types";
 import { cn } from "@/lib/utils";
-import { getDefaultTenantHost } from "@/lib/domain";
-import { getTenantUrl } from "@/lib/domain";
+import { getDefaultTenantHost, getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationDomainsPage() {
   const router = useRouter();

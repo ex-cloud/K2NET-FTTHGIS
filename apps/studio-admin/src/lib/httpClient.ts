@@ -1,5 +1,4 @@
 import { signOut } from "@/lib/auth-compat";
-import { useUIStore } from "@/store/ui-store";
 
 export interface HttpClientOptions extends RequestInit {
   token?: string;
@@ -51,12 +50,7 @@ export async function httpClient(url: string, options: HttpClientOptions = {}) {
     
     // Automatic Impersonation Logic for Superadmin
     // We use the activeTenantId from the UI store which is synchronized by NavOrgSwitcher
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      const isSystemSubdomain = hostname.startsWith("system.") || hostname.startsWith("system-");
-      
       // Admin portal: never send X-Tenant-ID (system-level access)
-    }
   }
 
   if (projectId) {

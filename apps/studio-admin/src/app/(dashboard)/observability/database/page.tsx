@@ -12,7 +12,7 @@ import {
 } from "@k2net/ui";
 import {
   Database, RefreshCw, CheckCircle2, Archive,
-  Key, AlertCircle, Cpu, HardDrive, Wifi,
+  Key, AlertCircle, HardDrive,
   Activity, Circle
 } from "lucide-react";
 import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
@@ -239,8 +239,8 @@ export default function DatabaseCachePage() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 tracking-tight">
             <Database className="h-5 w-5 text-primary" />
             Database &amp; Cache
-            <Badge className="ml-2 text-[10px] border-primary/20 bg-primary/10 text-primary animate-pulse">
-              LIVE
+            <Badge className={`ml-2 text-[10px] ${source === "real" ? "border-primary/20 bg-primary/10 text-primary animate-pulse" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
+              {loading ? "LOADING…" : source === "real" ? "LIVE" : "PARTIAL"}
             </Badge>
           </h1>
           <p className="text-xs text-muted-foreground">

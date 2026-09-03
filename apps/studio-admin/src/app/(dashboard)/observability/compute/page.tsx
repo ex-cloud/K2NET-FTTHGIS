@@ -8,7 +8,7 @@ import {
   XCircle, Circle,
 } from "lucide-react";
 import { SystemHealthWrapper } from "@/components/page-guards/system-health-wrapper";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area,

@@ -23,8 +23,6 @@ export default function QueryPerformancePage() {
     setSearchQuery,
     sortBy,
     setSortBy,
-    roleFilter,
-    setRoleFilter,
     minTotalTime,
     setMinTotalTime,
     selectedRoles,

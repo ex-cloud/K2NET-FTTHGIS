@@ -40,7 +40,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
-import { getTenantUrl } from "@/lib/domain";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 import { cn } from "@/lib/utils";
 

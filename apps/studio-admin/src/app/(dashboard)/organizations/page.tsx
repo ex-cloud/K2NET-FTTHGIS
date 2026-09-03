@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "@/lib/navigation-compat";
 import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
-import { getTenantUrl } from "@/lib/domain";
 import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
 import {
@@ -21,22 +20,18 @@ import {
   Checkbox,
   Label,
   TablePageSkeleton,
-  ActionTooltip,
 } from "@k2net/ui";
 import {
   Building2,
   ShieldAlert,
   Loader2,
   Download,
-  Trash2,
   Flame,
   Archive,
   FolderGit2,
   Network,
   Users,
-  KeyRound,
   AlertTriangle,
-  CheckCircle2,
   XCircle,
   ExternalLink,
 } from "lucide-react";
@@ -48,7 +43,6 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import {
   type EnrichedOrganization,
   type OrganizationStatus,
-  type PlanTier,
   normalizePlanTier,
   toBackendPlanName,
   calculateTrialDaysLeft,
@@ -131,7 +125,7 @@ export default function AdminOrganizationsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [checkedProjects, setCheckedProjects] = useState<Record<string, boolean>>({});
   const [deleteReason, setDeleteReason] = useState("");
-  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [_loadingProjects, setLoadingProjects] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Sync with searchParams
@@ -423,7 +417,7 @@ export default function AdminOrganizationsPage() {
       toast.success(`Berhasil mengunduh paket cadangan JSON (${validBackups.length} tenant)`, {
         id: toastId,
       });
-    } catch (err: any) {
+    } catch (_err: unknown) {
       toast.error("Gagal mengunduh cadangan JSON", {
         id: toastId,
       });
@@ -502,7 +496,7 @@ export default function AdminOrganizationsPage() {
       } else {
         toast.error("Gagal mengekspor data cadangan tenant");
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error("Terjadi kesalahan saat mengunduh data cadangan");
     } finally {
       setExportingBackup(false);

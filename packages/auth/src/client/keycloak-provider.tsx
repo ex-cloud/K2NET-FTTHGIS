@@ -95,8 +95,8 @@ interface KeycloakParsedClaims {
               avatar_url: currentUser.avatarUrl,
               permissions: currentUser.permissions,
             },
-            login: () => instance.login(),
-            logout: () => instance.logout(),
+            login: (opts?: Keycloak.KeycloakLoginOptions) => instance.login(opts),
+            logout: (opts?: Keycloak.KeycloakLogoutOptions) => instance.logout(opts),
           };
         } else {
           delete (window as any).__K2NET_AUTH__;
@@ -248,8 +248,8 @@ interface KeycloakParsedClaims {
               avatar_url: currentUser?.avatarUrl,
               permissions: currentUser?.permissions,
             },
-            login: () => keycloakInstance.login(),
-            logout: () => keycloakInstance.logout(),
+            login: (opts?: Keycloak.KeycloakLoginOptions) => keycloakInstance.login(opts),
+            logout: (opts?: Keycloak.KeycloakLogoutOptions) => keycloakInstance.logout(opts),
           };
         }
       }

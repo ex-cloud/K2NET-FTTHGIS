@@ -16,7 +16,7 @@ import { getRouteHeaderTitle } from "@/lib/route-utils";
 
 function SystemLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { open, setOpen, sidebarMode } = useSidebarMode();
+  useSidebarMode(); // Initialize sidebar mode context
   const { settings = [] } = useSystemSettings();
 
   // Listen to real-time B2B task notifications via SSE

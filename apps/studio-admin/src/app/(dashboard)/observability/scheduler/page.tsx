@@ -3,7 +3,7 @@
 import React from "react";
 import { Link } from "@/lib/navigation-compat";
 import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
-import { CalendarClock, RefreshCw, XCircle, ExternalLink } from "lucide-react";
+import { CalendarClock, RefreshCw, XCircle, ExternalLink, AlertCircle } from "lucide-react";
 import { useSchedulerStatus } from "@/hooks/useSchedulerStatus";
 import { SchedulerKpiCards } from "./components/scheduler-kpi-cards";
 import { SchedulerJobsTable } from "./components/scheduler-jobs-table";
@@ -61,6 +61,13 @@ export default function SchedulerPage() {
           </ActionTooltip>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>Gagal memuat status telemetri scheduler: {error}. Menampilkan data status cache terakhir.</span>
+        </div>
+      )}
 
       {/* ── KPI Cards ── */}
       <SchedulerKpiCards

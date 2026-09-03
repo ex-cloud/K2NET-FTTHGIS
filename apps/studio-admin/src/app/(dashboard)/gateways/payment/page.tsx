@@ -12,8 +12,6 @@ import {
   Lock, 
   RefreshCw, 
   Clock, 
-  CheckCircle2, 
-  AlertTriangle,
   Sparkles,
   Copy
 } from "lucide-react";

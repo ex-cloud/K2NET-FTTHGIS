@@ -18,8 +18,8 @@ export interface K2NetWindowAuth {
     issuer?: string;
     permissions?: string[];
   };
-  login?: () => void;
-  logout?: () => void;
+  login?: (options?: any) => void;
+  logout?: (options?: any) => void;
 }
 
 declare global {

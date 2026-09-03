@@ -6,6 +6,7 @@
 # Pengecualian: template boleh masuk
 !.env.example
 docker/certs/
+/scripts/
 
 # Java/Spring Boot properties dengan secrets
 apps/api/src/main/resources/application-local.properties

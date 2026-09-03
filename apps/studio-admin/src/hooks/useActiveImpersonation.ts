@@ -22,6 +22,7 @@ export function useActiveImpersonation() {
 
   const fetchActiveSession = useCallback(async () => {
     if (!session?.accessToken) return;
+    setLoading(true);
     try {
       const res = await fetch("/api/v1/system/impersonate/active-session", {
         headers: {
@@ -34,6 +35,8 @@ export function useActiveImpersonation() {
       }
     } catch {
       // ignore network glitches
+    } finally {
+      setLoading(false);
     }
   }, [session?.accessToken]);
 

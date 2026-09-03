@@ -1,7 +1,7 @@
 
 
 import { useRouter } from "@/lib/navigation-compat";
-import { FileCode, ArrowLeft, Plus, Database } from "lucide-react";
+import { FileCode, Plus, Database } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiTemplatesTab } from "@/components/ai/ai-templates-tab";

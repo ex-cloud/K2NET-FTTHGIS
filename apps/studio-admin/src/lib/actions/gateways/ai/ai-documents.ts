@@ -4,7 +4,6 @@ import {
 } from "../common";
 import type {
   AiKnowledgeStats,
-  AiDocumentItem,
   AiDocumentDetail,
   AiDocumentListResponse,
 } from "./ai-types";

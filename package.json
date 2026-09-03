@@ -13,7 +13,7 @@
     "verify:backend": "bash scripts/verify-all.sh backend",
     "verify:gateways": "bash scripts/verify-all.sh gateways",
     "verify:infra": "bash scripts/verify-all.sh infra",
-    "audit:colors": "bash scripts/audit-colors.sh"
+    "audit:colors": "bash packages/ui/scripts/audit-colors.sh"
   },
   "devDependencies": {
     "turbo": "^2.0.0"

@@ -41,7 +41,6 @@ import {
   RefreshCw,
   ExternalLink,
   Copy,
-  CheckCircle2,
   FlaskConical,
   Network,
 } from "lucide-react";
@@ -50,7 +49,6 @@ import { useOrganizations, type Organization } from "@/hooks/useOrganizations";
 import { OrganizationPageWrapper } from "@/components/page-guards/organization-page-wrapper";
 import {
   type EnrichedOrganization,
-  type PlanTier,
   type OrganizationFeatureFlags,
   type OrganizationStatus,
   normalizePlanTier,

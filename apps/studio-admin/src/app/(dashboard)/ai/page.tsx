@@ -17,7 +17,6 @@ export default function AiKnowledgePage() {
   const router = useRouter();
   const {
     documents,
-    docsTotal,
     totalCount,
     totalChunks,
     totalBytes,
