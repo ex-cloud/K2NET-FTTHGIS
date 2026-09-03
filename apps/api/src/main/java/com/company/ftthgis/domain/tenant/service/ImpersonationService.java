@@ -59,10 +59,11 @@ public class ImpersonationService {
 
     /**
      * Start an impersonation session for the given target tenant.
+     * Accepts either UUID string or organization slug.
      * Enforces Step-Up MFA freshness (auth_time <= 120s) and single active session per actor.
      */
     @Transactional
-    public ImpersonationSessionResponse startSession(UUID targetTenantId, ImpersonationStartRequest request, Jwt jwt) {
+    public ImpersonationSessionResponse startSession(String tenantIdentifier, ImpersonationStartRequest request, Jwt jwt) {
         UUID actorUserId = UUID.fromString(jwt.getSubject());
 
         // 1. Validasi kesegaran re-autentikasi (Step-Up MFA)
@@ -83,12 +84,20 @@ public class ImpersonationService {
             throw new StepUpAuthRequiredException("Sesi otentikasi telah melebihi 120 detik. Lakukan re-autentikasi (Step-Up MFA) untuk melanjutkan.");
         }
 
-        // 2. Validasi aktor dan tenant target
+        // 2. Validasi aktor dan tenant target (fleksibel: bisa UUID atau slug)
         User actor = userRepository.findById(actorUserId)
                 .orElseThrow(() -> new NoSuchElementException("Pengguna Super Admin tidak ditemukan"));
 
-        Organization targetOrg = organizationRepository.findById(targetTenantId)
-                .orElseThrow(() -> new NoSuchElementException("Tenant target tidak ditemukan"));
+        Organization targetOrg;
+        try {
+            UUID id = UUID.fromString(tenantIdentifier);
+            targetOrg = organizationRepository.findById(id)
+                    .orElseGet(() -> organizationRepository.findBySlug(tenantIdentifier)
+                            .orElseThrow(() -> new NoSuchElementException("Tenant target tidak ditemukan: " + tenantIdentifier)));
+        } catch (IllegalArgumentException e) {
+            targetOrg = organizationRepository.findBySlug(tenantIdentifier)
+                    .orElseThrow(() -> new NoSuchElementException("Tenant target tidak ditemukan: " + tenantIdentifier));
+        }
 
         // 3. Pencegahan sesi ganda (TOLAK HTTP 409 Conflict, tidak auto-revoke)
         Optional<ImpersonationSession> activeSessionOpt = impersonationSessionRepository.findActiveSessionByActorId(actor.getId());
@@ -194,6 +203,11 @@ public class ImpersonationService {
                 .targetTenantName(targetOrg.getName())
                 .expiresAt(expiresAt)
                 .build();
+    }
+
+    @Transactional
+    public ImpersonationSessionResponse startSession(UUID targetTenantId, ImpersonationStartRequest request, Jwt jwt) {
+        return startSession(targetTenantId.toString(), request, jwt);
     }
 
     /**

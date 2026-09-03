@@ -106,7 +106,8 @@ export function ImpersonateTenantModal({
     const finalTicket = (overrideTicket ?? ticketReference).trim();
 
     try {
-      const res = await fetch(`/api/v1/system/tenants/${organization.slug}/impersonate/start`, {
+      const tenantIdentifier = organization.id || organization.slug;
+      const res = await fetch(`/api/v1/system/tenants/${tenantIdentifier}/impersonate/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

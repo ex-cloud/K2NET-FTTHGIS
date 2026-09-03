@@ -29,7 +29,7 @@ public class ImpersonationController {
     @PostMapping("/api/v1/system/tenants/{tenantId}/impersonate/start")
     @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate')")
     public ResponseEntity<ImpersonationSessionResponse> start(
-            @PathVariable("tenantId") UUID tenantId,
+            @PathVariable("tenantId") String tenantId,
             @Valid @RequestBody ImpersonationStartRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
