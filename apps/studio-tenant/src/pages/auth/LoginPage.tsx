@@ -36,10 +36,15 @@ export function LoginPage() {
         navigate({ to: "/", search: { impersonate_code: code } });
         return;
       }
-      if (sessionStorage.getItem("k2net_impersonation_meta") || localStorage.getItem("k2net_impersonation_meta")) {
+      if (sessionStorage.getItem("k2net_impersonation_meta")) {
         navigate({ to: "/" });
         return;
       }
+      // Bersihkan residual legacy localStorage jika ada
+      localStorage.removeItem("k2net_impersonation_meta");
+      localStorage.removeItem("k2net_impersonation_token");
+      localStorage.removeItem("k2net_impersonation_session_id");
+      localStorage.removeItem("k2net_impersonating_in_progress");
     }
     if (initialized && authenticated) {
       navigate({ to: "/" });

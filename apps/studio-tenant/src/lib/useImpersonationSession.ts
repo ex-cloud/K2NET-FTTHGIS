@@ -23,6 +23,12 @@ const META_STORAGE_KEY = "k2net_impersonation_meta";
 
 let activeExchangingCode: string | null = null;
 
+function computeRemainingSeconds(expiresAtStr?: string): number {
+  if (!expiresAtStr) return 0;
+  const diff = Math.floor((new Date(expiresAtStr).getTime() - Date.now()) / 1000);
+  return Math.max(0, diff);
+}
+
 export function useImpersonationSession() {
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -46,6 +52,11 @@ export function useImpersonationSession() {
       sessionStorage.removeItem(META_STORAGE_KEY);
       localStorage.removeItem(META_STORAGE_KEY);
       sessionStorage.removeItem("k2net_impersonating_in_progress");
+      localStorage.removeItem("k2net_impersonating_in_progress");
+      sessionStorage.removeItem("k2net_impersonation_token");
+      localStorage.removeItem("k2net_impersonation_token");
+      sessionStorage.removeItem("k2net_impersonation_session_id");
+      localStorage.removeItem("k2net_impersonation_session_id");
     }
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
@@ -106,14 +117,22 @@ export function useImpersonationSession() {
         },
       });
 
-      if (res.ok) {
-        const data: ImpersonationStatusResponse = await res.json();
-        if (data.active) {
-          setRemainingSeconds(data.remainingSeconds);
-        } else {
-          toast.info("Sesi impersonasi telah berakhir.");
+      if (!res.ok) {
+        // Defense-in-depth: jika server mengembalikan 401/403, sesi otentikasi sudah tidak sah
+        if (res.status === 401 || res.status === 403) {
+          toast.info("Sesi impersonasi telah berakhir atau dicabut.");
           clearSession();
         }
+        // Jika 500/502/503 atau transient network error, jangan matikan sesi prematur
+        return;
+      }
+
+      const data: ImpersonationStatusResponse = await res.json();
+      if (data.active) {
+        setRemainingSeconds(data.remainingSeconds);
+      } else {
+        toast.info("Sesi impersonasi telah berakhir.");
+        clearSession();
       }
     } catch {
       // ignore network blips
@@ -169,7 +188,7 @@ export function useImpersonationSession() {
           setApiAuthToken(token);
           setImpersonationSessionId(newSessionId);
 
-          // Simpan metadata di sessionStorage dan localStorage
+          // Simpan metadata hanya di sessionStorage (tab-scoped) & bersihkan localStorage
           const meta: ImpersonationMetadata = {
             sessionId: newSessionId,
             targetTenantName: name,
@@ -177,7 +196,7 @@ export function useImpersonationSession() {
             expiresAt,
           };
           sessionStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
-          localStorage.setItem(META_STORAGE_KEY, JSON.stringify(meta));
+          localStorage.removeItem(META_STORAGE_KEY);
           sessionStorage.removeItem("k2net_impersonating_in_progress");
 
           setIsImpersonating(true);
@@ -195,10 +214,10 @@ export function useImpersonationSession() {
           // Jadwalkan refresh deterministik
           scheduleRefresh(expiresInSeconds, newSessionId);
 
-          // Pasang polling status setiap 30 detik
+          // Pasang polling status setiap 15 detik untuk sinkronisasi responsif antar tab
           statusIntervalRef.current = setInterval(() => {
             pollStatus(newSessionId);
-          }, 30000);
+          }, 15000);
         } catch (e: unknown) {
           sessionStorage.removeItem("k2net_impersonating_in_progress");
           const msg = e instanceof Error ? e.message : "Gagal menukarkan sesi impersonasi";
@@ -207,28 +226,46 @@ export function useImpersonationSession() {
         }
       })();
     } else {
-      // 2. Cek sesi impersonasi tersimpan di sessionStorage atau localStorage
+      // 2. Cek sesi impersonasi tersimpan di sessionStorage (dengan migrasi legacy localStorage jika ada)
       const savedSessionId = getImpersonationSessionId();
-      const savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY) || localStorage.getItem(META_STORAGE_KEY);
+      let savedMetaStr = sessionStorage.getItem(META_STORAGE_KEY);
+      if (!savedMetaStr && typeof window !== "undefined") {
+        savedMetaStr = localStorage.getItem(META_STORAGE_KEY);
+        if (savedMetaStr) {
+          sessionStorage.setItem(META_STORAGE_KEY, savedMetaStr);
+          localStorage.removeItem(META_STORAGE_KEY);
+        }
+      }
 
       if (savedSessionId && savedMetaStr) {
         try {
           const meta: ImpersonationMetadata = JSON.parse(savedMetaStr);
+          const initialRemaining = computeRemainingSeconds(meta.expiresAt);
+
+          if (initialRemaining <= 0) {
+            toast.info("Sesi impersonasi telah kedaluwarsa.");
+            clearSession();
+            return;
+          }
+
           setIsImpersonating(true);
           setSessionId(meta.sessionId);
           setTenantName(meta.targetTenantName);
           setTenantSlug(meta.targetTenantSlug);
+          setRemainingSeconds(initialRemaining);
 
-          // Verifikasi ke server
+          // Verifikasi ke server seketika (akan langsung clearSession jika server mengembalikan 401/403/active=false)
           pollStatus(meta.sessionId);
-          scheduleRefresh(1800, meta.sessionId);
+          scheduleRefresh(initialRemaining, meta.sessionId);
 
           statusIntervalRef.current = setInterval(() => {
             pollStatus(meta.sessionId);
-          }, 30000);
+          }, 15000);
         } catch {
           clearSession();
         }
+      } else {
+        clearSession();
       }
     }
 
