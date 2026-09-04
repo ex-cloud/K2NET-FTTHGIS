@@ -256,8 +256,11 @@ public class SecurityConfig {
 
             // 3. Map to GrantedAuthorities (Roles + Fine-Grained Permissions)
             for (String roleName : roleNames) {
-                // Add the role itself as a standard Spring Security ROLE using exact lowercase
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toLowerCase()));
+                if (roleName == null || roleName.isBlank()) continue;
+                String cleanRole = roleName.toLowerCase().replaceFirst("^role_", "");
+
+                // Add the role itself as a standard Spring Security ROLE using canonical lowercase
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
 
                 // Fetch fine-grained permissions dynamically from DB
                 try {
@@ -265,12 +268,12 @@ public class SecurityConfig {
                     
                     if (orgId != null) {
                         // First try finding the tenant-specific role
-                        roleOpt = roleRepository.findByNameAndOrganizationId(roleName, orgId);
+                        roleOpt = roleRepository.findByNameAndOrganizationId(cleanRole, orgId);
                     }
                     
                     // Fallback to system role if not found
                     if (roleOpt.isEmpty()) {
-                        roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(roleName);
+                        roleOpt = roleRepository.findByNameAndIsSystemRoleTrue(cleanRole);
                     }
                     
                     // Final fallback to legacy behavior

@@ -245,7 +245,7 @@ const authenticatedLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: "admin-authenticated",
   component: () => (
-    <ProtectedRoute requiredRoles={["super_admin", "ROLE_SUPER_ADMIN"]}>
+    <ProtectedRoute requiredRoles={["super_admin"]}>
       <AdminLayout />
     </ProtectedRoute>
   ),

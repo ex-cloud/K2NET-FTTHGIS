@@ -234,8 +234,7 @@ public class TenantSecurity {
         if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
             boolean isAuthorizedImpersonator = auth.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equalsIgnoreCase("system.support.impersonate")
-                            || a.getAuthority().equalsIgnoreCase("ROLE_super_admin")
-                            || a.getAuthority().equalsIgnoreCase("super_admin"));
+                            || a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
             if (isAuthorizedImpersonator) {
                 log.debug("🛡️ TenantSecurity: Effective permission '{}' granted via active impersonation session.", permission);
                 return true;

@@ -308,8 +308,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
   const isSuperAdmin =
     issuer.includes("ftth-realm") ||
     issuer.includes("/system") ||
-    userRoles.includes("super_admin") ||
-    userRoles.includes("ROLE_SUPER_ADMIN");
+    userRoles.some((r) => r.toLowerCase().replace(/^role_/, "") === "super_admin");
 
   const hasFreePlan = organizations.some((org) => org.subscriptionPlan?.name?.toUpperCase() === "FREE");
   const isLimitReached = !isSuperAdmin && hasFreePlan;

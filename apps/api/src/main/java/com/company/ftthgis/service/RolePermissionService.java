@@ -175,7 +175,8 @@ public class RolePermissionService {
         if (realmAccess != null && realmAccess.containsKey("roles")) {
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) realmAccess.get("roles");
-            return roles.stream().anyMatch(r -> r.equalsIgnoreCase(roleName));
+            String target = roleName.toLowerCase().replaceFirst("^role_", "");
+            return roles.stream().anyMatch(r -> r.toLowerCase().replaceFirst("^role_", "").equals(target));
         }
         return false;
     }

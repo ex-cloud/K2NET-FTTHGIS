@@ -19,8 +19,10 @@ export function usePermissions() {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
 
-  const roles: string[] = session?.user?.roles ?? [];
-  const isSuperAdmin = roles.includes("super_admin") || roles.includes("ROLE_SUPER_ADMIN");
+  const roles: string[] = (session?.user?.roles ?? []).map((r) =>
+    r.toLowerCase().replace(/^role_/, "")
+  );
+  const isSuperAdmin = roles.includes("super_admin");
 
   const [fetchedPermissions, setFetchedPermissions] = useState<string[]>([]);
 
@@ -90,7 +92,7 @@ export function usePermissions() {
    */
   function hasRole(...roleNames: string[]): boolean {
     if (isSuperAdmin) return true;
-    return roleNames.some((r) => roles.includes(r));
+    return roleNames.some((r) => roles.includes(r.toLowerCase().replace(/^role_/, "")));
   }
 
   return {

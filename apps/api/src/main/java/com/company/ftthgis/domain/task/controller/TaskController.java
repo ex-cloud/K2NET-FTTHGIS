@@ -266,19 +266,15 @@ public class TaskController {
     private boolean isSuperAdmin(Jwt jwt) {
         // 1. Try root claim "roles"
         List<String> roles = jwt.getClaimAsStringList("roles");
-        if (roles != null && (roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN"))) {
+        if (roles != null && roles.stream().anyMatch(r -> r.toLowerCase().replaceFirst("^role_", "").equals("super_admin"))) {
             return true;
         }
 
         // 2. Try realm_access.roles
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-        if (realmAccess != null && realmAccess.containsKey("roles")) {
-            Object rolesObj = realmAccess.get("roles");
-            if (rolesObj instanceof List<?> list) {
-                if (list.contains("super_admin") || list.contains("ROLE_SUPER_ADMIN") ||
-                    list.contains("ROLE_super_admin")) {
-                    return true;
-                }
+        if (realmAccess != null && realmAccess.get("roles") instanceof List<?> list) {
+            if (list.stream().anyMatch(r -> String.valueOf(r).toLowerCase().replaceFirst("^role_", "").equals("super_admin"))) {
+                return true;
             }
         }
 
@@ -289,7 +285,7 @@ public class TaskController {
             if (auth != null) {
                 return auth.getAuthorities().stream()
                         .map(org.springframework.security.core.GrantedAuthority::getAuthority)
-                        .anyMatch(a -> "ROLE_super_admin".equalsIgnoreCase(a) || "ROLE_SUPER_ADMIN".equalsIgnoreCase(a));
+                        .anyMatch(a -> a.toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
             }
         } catch (Exception ignored) {}
 

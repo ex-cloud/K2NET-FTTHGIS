@@ -32,7 +32,7 @@ public class ImpersonationController {
      * Mewajibkan validasi kesegaran Step-Up MFA (auth_time <= 120s).
      */
     @PostMapping("/api/v1/system/tenants/{tenantId}/impersonate/start")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate')")
+    @PreAuthorize("hasAuthority('system.support.impersonate')")
     public ResponseEntity<ImpersonationSessionResponse> start(
             @PathVariable("tenantId") String tenantId,
             @Valid @RequestBody ImpersonationStartRequest request,
@@ -50,7 +50,7 @@ public class ImpersonationController {
      * Digunakan ketika Super Admin mengklik 'Buka Portal Tenant' pada sesi yang sedang aktif.
      */
     @PostMapping("/api/v1/system/impersonate/reopen")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate')")
+    @PreAuthorize("hasAuthority('system.support.impersonate')")
     public ResponseEntity<ImpersonationSessionResponse> reopen(@AuthenticationPrincipal Jwt jwt) {
         log.info("🛡️ [ImpersonationController] Request reopen active session for caller: {}", jwt.getSubject());
         ImpersonationSessionResponse response = impersonationService.reopenActiveSession(jwt);
@@ -153,7 +153,7 @@ public class ImpersonationController {
      * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk audit.
      */
     @GetMapping("/api/v1/system/impersonate/stats")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    @PreAuthorize("hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view')")
     public ResponseEntity<ImpersonationStatsDto> getStats() {
         return ResponseEntity.ok(impersonationService.getImpersonationStats());
     }
@@ -163,7 +163,7 @@ public class ImpersonationController {
      * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk monitoring.
      */
     @GetMapping("/api/v1/system/impersonate/active-sessions")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    @PreAuthorize("hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view')")
     public ResponseEntity<List<ImpersonationSessionDto>> getActiveSessions() {
         return ResponseEntity.ok(impersonationService.getActiveSessions());
     }
@@ -173,7 +173,7 @@ public class ImpersonationController {
      * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk kepatuhan & forensik.
      */
     @GetMapping("/api/v1/system/impersonate/sessions")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    @PreAuthorize("hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view')")
     public ResponseEntity<Page<ImpersonationSessionDto>> searchSessions(
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "search", required = false) String search,
@@ -189,7 +189,7 @@ public class ImpersonationController {
      * Dibatasi KHUSUS untuk Super Admin / Support Lead dengan hak force-revoke (Auditor dilarang mutasi).
      */
     @PostMapping("/api/v1/system/impersonate/sessions/{sessionId}/revoke")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate.force-revoke')")
+    @PreAuthorize("hasAuthority('system.support.impersonate.force-revoke')")
     public ResponseEntity<?> emergencyRevoke(
             @PathVariable("sessionId") UUID sessionId,
             @AuthenticationPrincipal Jwt jwt) {

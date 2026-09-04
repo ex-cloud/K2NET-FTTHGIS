@@ -42,7 +42,9 @@ interface KeycloakParsedClaims {
 
     const realmRoles: string[] = parsed.realm_access?.roles || [];
     const clientRoles: string[] = parsed.resource_access?.[config.clientId]?.roles || [];
-    const allRoles = Array.from(new Set([...realmRoles, ...clientRoles]));
+    const allRoles = Array.from(new Set([...realmRoles, ...clientRoles])).map((r) =>
+      r.toLowerCase().replace(/^role_/, "")
+    );
 
     return {
       id: parsed.sub || "",
@@ -171,22 +173,23 @@ interface KeycloakParsedClaims {
   const roles = useMemo(() => user?.roles || [], [user]);
 
   const hasRole = (role: string): boolean => {
+    const cleanRole = role.toLowerCase().replace(/^role_/, "");
     // God mode / Super Admin bypass
-    if (roles.includes("super_admin") || roles.includes("ROLE_SUPER_ADMIN")) {
+    if (roles.includes("super_admin")) {
       return true;
     }
-    return roles.includes(role);
+    return roles.includes(cleanRole);
   };
 
   const hasAnyRole = (roleList: string[]): boolean => {
-    if (roles.includes("super_admin") || roles.includes("ROLE_SUPER_ADMIN")) {
+    if (roles.includes("super_admin")) {
       return true;
     }
-    return roleList.some((r) => roles.includes(r));
+    return roleList.some((r) => roles.includes(r.toLowerCase().replace(/^role_/, "")));
   };
 
   const isSuperAdmin = (): boolean => {
-    return roles.includes("super_admin") || roles.includes("ROLE_SUPER_ADMIN");
+    return roles.includes("super_admin");
   };
 
   const isTenantAdmin = (): boolean => {

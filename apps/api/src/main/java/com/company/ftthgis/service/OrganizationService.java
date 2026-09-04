@@ -333,8 +333,7 @@ public class OrganizationService {
         boolean isSuperAdmin = false;
         if (auth != null && auth.getAuthorities() != null) {
             isSuperAdmin = auth.getAuthorities().stream().anyMatch(a ->
-                    a.getAuthority().equalsIgnoreCase("ROLE_super_admin") ||
-                    a.getAuthority().equalsIgnoreCase("super_admin")
+                    a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin")
             );
         }
         if (!isSuperAdmin && !tenantSecurity.isOwner(oldSlug)) {

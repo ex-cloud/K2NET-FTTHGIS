@@ -257,7 +257,7 @@ public class PaymentController {
     }
 
     @PostMapping("/api/v1/payments/reconcile")
-    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.billing.reconcile')")
+    @PreAuthorize("hasAuthority('system.gateway.manage') or hasAuthority('system.tenant.manage')")
     public ResponseEntity<?> reconcilePayments() {
         log.info("Triggering manual payment reconciliation by Super Admin...");
         var pendingTxs = paymentTransactionRepository.findAll().stream()
@@ -282,14 +282,14 @@ public class PaymentController {
 
     private boolean isSuperAdmin(Jwt jwt) {
         java.util.List<String> roles = jwt.getClaimAsStringList("roles");
-        if (roles != null && (roles.contains("super_admin") || roles.contains("ROLE_SUPER_ADMIN"))) {
+        if (roles != null && roles.stream().anyMatch(r -> r.toLowerCase().replaceFirst("^role_", "").equals("super_admin"))) {
             return true;
         }
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         if (realmAccess != null && realmAccess.containsKey("roles")) {
             Object rolesObj = realmAccess.get("roles");
             if (rolesObj instanceof java.util.List<?> list) {
-                return list.contains("super_admin") || list.contains("ROLE_SUPER_ADMIN");
+                return list.stream().anyMatch(r -> String.valueOf(r).toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
             }
         }
         return false;
