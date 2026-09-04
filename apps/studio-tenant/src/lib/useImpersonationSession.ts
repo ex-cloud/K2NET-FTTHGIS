@@ -115,7 +115,7 @@ export function useImpersonationSession() {
     }, delayMs);
   }, [clearSession]);
 
-  const pollStatus = useCallback(async (activeSessionId: string) => {
+  const pollStatus = useCallback(async (activeSessionId: string): Promise<boolean> => {
     try {
       const token = getApiAuthToken();
       const res = await fetch("/api/v1/system/impersonate/status", {
@@ -128,22 +128,23 @@ export function useImpersonationSession() {
       if (!res.ok) {
         // Defense-in-depth: jika server mengembalikan 401/403, sesi otentikasi sudah tidak sah
         if (res.status === 401 || res.status === 403) {
-          toast.info("Sesi impersonasi telah berakhir atau dicabut.");
           clearSession(true);
+          return false;
         }
-        // Jika 500/502/503 atau transient network error, jangan matikan sesi prematur
-        return;
+        return false;
       }
 
       const data: ImpersonationStatusResponse = await res.json();
-      if (data.active) {
+      if (data.active && data.remainingSeconds > 0) {
+        setIsImpersonating(true);
         setRemainingSeconds(data.remainingSeconds);
+        return true;
       } else {
-        toast.info("Sesi impersonasi telah berakhir.");
         clearSession(true);
+        return false;
       }
     } catch {
-      // ignore network blips
+      return false;
     }
   }, [clearSession]);
 
@@ -151,6 +152,7 @@ export function useImpersonationSession() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const abortController = new AbortController();
     const url = new URL(window.location.href);
     const impersonateCode = url.searchParams.get("impersonate_code");
 
@@ -170,6 +172,7 @@ export function useImpersonationSession() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code: impersonateCode }),
+            signal: abortController.signal,
           });
 
           if (!res.ok) {
@@ -192,7 +195,7 @@ export function useImpersonationSession() {
             expiresAt,
           } = data;
 
-          // Set token & session id (tersimpan di memory, sessionStorage, dan localStorage)
+          // Set token & session id (tersimpan di memory dan sessionStorage)
           setApiAuthToken(token);
           setImpersonationSessionId(newSessionId);
 
@@ -227,9 +230,16 @@ export function useImpersonationSession() {
             pollStatus(newSessionId);
           }, 15000);
         } catch (e: unknown) {
+          if (e instanceof Error && e.name === "AbortError") {
+            // Ignored intentional abort on unmount/remount
+            return;
+          }
           sessionStorage.removeItem("k2net_impersonating_in_progress");
           const msg = e instanceof Error ? e.message : "Gagal menukarkan sesi impersonasi";
-          toast.error("Terjadi Kesalahan", { description: msg });
+          // Cegah spurious NetworkError toast jika request dibatalkan oleh perpindahan route
+          if (!msg.includes("NetworkError") && !msg.includes("abort")) {
+            toast.error("Terjadi Kesalahan", { description: msg });
+          }
           activeExchangingCode = null;
         }
       })();
@@ -251,24 +261,24 @@ export function useImpersonationSession() {
           const initialRemaining = computeRemainingSeconds(meta.expiresAt);
 
           if (initialRemaining <= 0) {
-            toast.info("Sesi impersonasi telah kedaluwarsa.");
             clearSession(true, meta.targetTenantName);
             return;
           }
 
-          setIsImpersonating(true);
+          // Catat data identitas sesi, tetapi JANGAN aktifkan banner optimistik sebelum diverifikasi server
           setSessionId(meta.sessionId);
           setTenantName(meta.targetTenantName);
           setTenantSlug(meta.targetTenantSlug);
-          setRemainingSeconds(initialRemaining);
 
-          // Verifikasi ke server seketika (akan langsung clearSession jika server mengembalikan 401/403/active=false)
-          pollStatus(meta.sessionId);
-          scheduleRefresh(initialRemaining, meta.sessionId);
-
-          statusIntervalRef.current = setInterval(() => {
-            pollStatus(meta.sessionId);
-          }, 15000);
+          // Verifikasi ke server seketika: Hanya aktifkan banner jika server mengonfirmasi status ACTIVE
+          pollStatus(meta.sessionId).then((isActive) => {
+            if (isActive) {
+              scheduleRefresh(initialRemaining, meta.sessionId);
+              statusIntervalRef.current = setInterval(() => {
+                pollStatus(meta.sessionId);
+              }, 15000);
+            }
+          });
         } catch {
           clearSession();
         }
@@ -278,6 +288,7 @@ export function useImpersonationSession() {
     }
 
     return () => {
+      abortController.abort();
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
     };

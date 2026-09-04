@@ -11,7 +11,9 @@ import {
   ChevronDown,
   Layers,
   Upload,
+  ShieldAlert,
 } from "lucide-react";
+import { useRouter } from "@/lib/navigation-compat";
 import {
   Button,
   DropdownMenu,
@@ -55,6 +57,7 @@ export function OrganizationToolbar({
   onNewOrganization,
   onImportBackup,
 }: OrganizationToolbarProps) {
+  const router = useRouter();
   const hasActiveFilter = statusFilter !== "ALL" || planFilter !== "ALL" || searchQuery.trim() !== "";
 
   return (
@@ -238,6 +241,19 @@ export function OrganizationToolbar({
               className="h-8 px-2.5 border-border bg-card hover:bg-accent text-muted-foreground"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
+            </Button>
+          </ActionTooltip>
+
+          {/* Support Access & Impersonation Center Button */}
+          <ActionTooltip label="Buka Support Access & Impersonation Center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/organizations/impersonation")}
+              className="h-8 text-xs font-medium gap-1.5 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-xs"
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>Support Center</span>
             </Button>
           </ActionTooltip>
 

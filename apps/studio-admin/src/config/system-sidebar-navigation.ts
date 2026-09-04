@@ -24,10 +24,17 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         title: "Tenant Directory",
         items: [
           { title: "All Organizations", url: "/organizations", icon: "Building2" },
+          { title: "Impersonation Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
           { title: "Active Tenants", url: "/organizations?status=ACTIVE", icon: "CheckCircle" },
           { title: "Trial Accounts", url: "/organizations?status=TRIAL", icon: "Clock" },
           { title: "Provisioning Queue", url: "/organizations?status=PROVISIONING", icon: "UploadCloud" },
-          { title: "Suspended & Inactive", url: "/organizations?status=SUSPENDED", icon: "ShieldAlert" },
+          { title: "Suspended & Inactive", url: "/organizations?status=SUSPENDED", icon: "UserX" },
+        ],
+      },
+      {
+        title: "Support & Forensics",
+        items: [
+          { title: "Support Access Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
         ],
       },
       {
@@ -42,12 +49,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "Custom Domains", url: "/organizations/domains", icon: "Globe" },
           { title: "VPN & Tunneling", url: "/organizations/vpn", icon: "ShieldCheck" },
-        ],
-      },
-      {
-        title: "Support & Forensics",
-        items: [
-          { title: "Impersonation Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
         ],
       },
     ],

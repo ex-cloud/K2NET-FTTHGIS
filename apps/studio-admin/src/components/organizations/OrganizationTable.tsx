@@ -250,11 +250,20 @@ export function OrganizationTable({
 
                     <TableCell className="py-3.5">
                       {isImpersonatingThisOrg ? (
-                        <ActionTooltip label="Sesi Impersonasi Super Admin sedang aktif untuk tenant ini. Klik kanan untuk opsi akhiri.">
-                          <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-semibold">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
-                            <span>ACTIVE ({formatRemaining(activeImpersonationRemainingSeconds)})</span>
-                          </Badge>
+                        <ActionTooltip label="Sesi Impersonasi Super Admin sedang aktif. Klik untuk membuka Support Access Center.">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push("/organizations/impersonation");
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-semibold hover:bg-amber-500/25 transition-colors">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
+                              <span>ACTIVE ({formatRemaining(activeImpersonationRemainingSeconds)})</span>
+                            </Badge>
+                          </button>
                         </ActionTooltip>
                       ) : (
                         <span className="text-[11px] font-mono text-muted-foreground/50">— Inactive</span>
