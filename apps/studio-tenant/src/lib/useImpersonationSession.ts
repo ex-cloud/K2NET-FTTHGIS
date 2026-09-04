@@ -21,6 +21,7 @@ interface ImpersonationStatusResponse {
 
 const META_STORAGE_KEY = "k2net_impersonation_meta";
 
+// Module-level guard: prevents concurrent exchange from multiple component instances (e.g. during HMR)
 let activeExchangingCode: string | null = null;
 
 function computeRemainingSeconds(expiresAtStr?: string): number {
@@ -41,6 +42,8 @@ export function useImpersonationSession() {
 
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Per-component-instance guard: prevents double-exchange even if module-level guard is bypassed
+  const exchangeAttemptedRef = useRef(false);
 
   const clearSession = useCallback((showTerminationModal = false, fallbackName?: string) => {
     setIsImpersonating(false);
@@ -157,10 +160,17 @@ export function useImpersonationSession() {
     const impersonateCode = url.searchParams.get("impersonate_code");
 
     if (impersonateCode) {
+      // Guard Layer 1 (module-level): prevents duplicate from separate component instances
       if (activeExchangingCode === impersonateCode) {
-        return; // Guard against duplicate concurrent exchange requests in React StrictMode
+        return;
       }
+      // Guard Layer 2 (ref): prevents duplicate if effect re-runs within same component lifecycle
+      if (exchangeAttemptedRef.current) {
+        return;
+      }
+
       activeExchangingCode = impersonateCode;
+      exchangeAttemptedRef.current = true;
 
       // Set flag penanda proses pertukaran sedang berlangsung agar ProtectedRoute tidak me-redirect
       sessionStorage.setItem("k2net_impersonating_in_progress", "true");
@@ -181,6 +191,8 @@ export function useImpersonationSession() {
             toast.error("Gagal Memulai Sesi Impersonasi", {
               description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
             });
+            // Reset guard ONLY on definitive server rejection (4xx/5xx)
+            // so the user sees exactly ONE error, not a second retry
             activeExchangingCode = null;
             return;
           }
@@ -231,16 +243,23 @@ export function useImpersonationSession() {
           }, 15000);
         } catch (e: unknown) {
           if (e instanceof Error && e.name === "AbortError") {
-            // Ignored intentional abort on unmount/remount
+            // Intentional abort on component unmount — do NOT reset guards or show any toast
             return;
           }
           sessionStorage.removeItem("k2net_impersonating_in_progress");
-          const msg = e instanceof Error ? e.message : "Gagal menukarkan sesi impersonasi";
-          // Cegah spurious NetworkError toast jika request dibatalkan oleh perpindahan route
-          if (!msg.includes("NetworkError") && !msg.includes("abort")) {
+          const msg = e instanceof Error ? e.message : "";
+          // NetworkError = transient connectivity issue, NOT a permanent rejection.
+          // Do NOT reset activeExchangingCode here — this prevents a spurious retry
+          // that would hit the backend with an already-consumed code and trigger a
+          // second "Kode tidak valid" error toast.
+          // Also do NOT show a toast for NetworkError — the exchange may have succeeded
+          // server-side; the next poll will pick up the active session.
+          if (!msg.includes("NetworkError") && !msg.includes("Failed to fetch") && !msg.includes("abort")) {
             toast.error("Terjadi Kesalahan", { description: msg });
+            // Only reset guard on definitive JS/logic errors, not network issues
+            activeExchangingCode = null;
           }
-          activeExchangingCode = null;
+          // For NetworkError: silently leave guard intact — prevents retry loop
         }
       })();
     } else {

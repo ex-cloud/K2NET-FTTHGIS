@@ -24,7 +24,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         title: "Tenant Directory",
         items: [
           { title: "All Organizations", url: "/organizations", icon: "Building2" },
-          { title: "Impersonation Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
           { title: "Active Tenants", url: "/organizations?status=ACTIVE", icon: "CheckCircle" },
           { title: "Trial Accounts", url: "/organizations?status=TRIAL", icon: "Clock" },
           { title: "Provisioning Queue", url: "/organizations?status=PROVISIONING", icon: "UploadCloud" },
