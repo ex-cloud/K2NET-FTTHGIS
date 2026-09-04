@@ -11,7 +11,7 @@ interface UserSessionPageWrapperProps {
 export function UserSessionPageWrapper({ children }: UserSessionPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="users.view"
+      permission="system.security.manage"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

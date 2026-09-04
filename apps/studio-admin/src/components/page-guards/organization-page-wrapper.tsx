@@ -11,7 +11,7 @@ interface OrganizationPageWrapperProps {
 export function OrganizationPageWrapper({ children }: OrganizationPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.view"
+      permission="system.tenant.view"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

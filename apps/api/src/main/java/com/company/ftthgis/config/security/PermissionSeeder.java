@@ -30,11 +30,23 @@ public class PermissionSeeder implements CommandLineRunner {
 
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
+    private final jakarta.persistence.EntityManagerFactory entityManagerFactory;
 
     @Override
     @Transactional
     public void run(String... args) {
         log.info("🛡️ Starting dynamic permission synchronization...");
+
+        // Auto-evict Hibernate L2 Cache to guarantee fresh roles/permissions post-migration
+        try {
+            if (entityManagerFactory != null && entityManagerFactory.getCache() != null) {
+                entityManagerFactory.getCache().evict(Role.class);
+                entityManagerFactory.getCache().evict(Permission.class);
+                log.info("🧹 Hibernate L2 cache evicted for Role and Permission entities.");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not evict Hibernate L2 cache: {}", e.getMessage());
+        }
 
         // 1. Define all application permissions (Module-based CRUD + Extras)
         List<PermissionData> permissionsToSeed = Arrays.asList(

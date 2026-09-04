@@ -11,7 +11,7 @@ interface SystemRolesPageWrapperProps {
 export function SystemRolesPageWrapper({ children }: SystemRolesPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="roles.view"
+      permission="system.user.manage"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

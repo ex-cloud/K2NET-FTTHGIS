@@ -11,7 +11,7 @@ interface GatewayPageWrapperProps {
 export function GatewayPageWrapper({ children }: GatewayPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.manage"
+      permission="system.observability.view"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

@@ -27,29 +27,31 @@ import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { SidebarControl } from "@/components/sidebar-control";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/store/task-store";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export type NavItem = {
   title: string;
   icon: React.ElementType;
   href: string;
+  requiredPermission?: string | string[];
 };
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
-  { title: "Organizations", icon: Building2, href: "/organizations" },
-  { title: "Global Users", icon: Users, href: "/users" },
-  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks" },
-  { title: "Observability", icon: ScanLine, href: "/observability" },
-  { title: "Global Logs", icon: Terminal, href: "/logs" },
-  { title: "Security", icon: Lock, href: "/security" },
-  { title: "Gateways", icon: Cpu, href: "/gateways/overview" },
-  { title: "AI Assistant", icon: Sparkles, href: "/ai" },
-  { title: "3D Assets", icon: Box, href: "/assets-3d" },
+  { title: "Organizations", icon: Building2, href: "/organizations", requiredPermission: "system.tenant.view" },
+  { title: "Global Users", icon: Users, href: "/users", requiredPermission: "system.user.view" },
+  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: "system.task.manage" },
+  { title: "Observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
+  { title: "Global Logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
+  { title: "Security", icon: Lock, href: "/security", requiredPermission: "system.security.manage" },
+  { title: "Gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: "system.observability.view" },
+  { title: "AI Assistant", icon: Sparkles, href: "/ai", requiredPermission: "system.ai.manage" },
+  { title: "3D Assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
 ];
 
 export const ADMIN_BOTTOM_NAV_ITEMS: NavItem[] = [
-  { title: "Recycle Bin", icon: Trash2, href: "/system/trash" },
-  { title: "Settings", icon: Settings, href: "/settings" },
+  { title: "Recycle Bin", icon: Trash2, href: "/system/trash", requiredPermission: "system.trash.manage" },
+  { title: "Settings", icon: Settings, href: "/settings", requiredPermission: "system.settings.manage" },
 ];
 
 /** Items that get a divider rendered BELOW them to separate logical groups. */
@@ -70,6 +72,17 @@ export function AdminSidebar() {
   const { sidebarMode } = useSidebarMode();
   const [isHovering, setIsHovering] = React.useState(false);
   const unreadB2BCount = useTaskStore((state) => state.unreadB2BCount);
+  const { canAccess } = usePermissions();
+
+  const visibleNavItems = React.useMemo(
+    () => ADMIN_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
+    [canAccess]
+  );
+
+  const visibleBottomNavItems = React.useMemo(
+    () => ADMIN_BOTTOM_NAV_ITEMS.filter((item) => canAccess(item.requiredPermission)),
+    [canAccess]
+  );
 
   // Determine visual expansion
   const isExpanded =
@@ -171,7 +184,7 @@ export function AdminSidebar() {
           <TooltipProvider delayDuration={0}>
             {/* Top Primary Navigation Items */}
             <nav className="flex flex-col gap-1 px-2">
-              {ADMIN_NAV_ITEMS.map(renderNavButton)}
+              {visibleNavItems.map(renderNavButton)}
             </nav>
 
             {/* Dynamic Spacer pushing bottom items to the bottom */}
@@ -179,7 +192,7 @@ export function AdminSidebar() {
 
             {/* Bottom Utility Items (Recycle Bin & Settings right above SidebarControl) */}
             <nav className="flex flex-col gap-1 px-2 border-t border-border/30 pt-2 mb-2">
-              {ADMIN_BOTTOM_NAV_ITEMS.map(renderNavButton)}
+              {visibleBottomNavItems.map(renderNavButton)}
             </nav>
           </TooltipProvider>
 

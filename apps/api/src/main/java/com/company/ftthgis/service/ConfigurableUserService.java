@@ -25,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -472,10 +474,19 @@ public class ConfigurableUserService {
                 .collect(Collectors.toList());
         }
 
-        // Collect permission codes from the user's assigned role
-        List<String> permissionsList = new ArrayList<>();
+        // Collect permission codes from the user's base role + all project-specific roles (Union Set)
+        Set<String> permissionsSet = new LinkedHashSet<>();
+
         if (user.getRole() != null && user.getRole().getPermissions() != null) {
-            user.getRole().getPermissions().forEach(p -> permissionsList.add(p.getCode()));
+            user.getRole().getPermissions().forEach(p -> permissionsSet.add(p.getCode()));
+        }
+
+        if (user.getProjectMembers() != null) {
+            user.getProjectMembers().forEach(pm -> {
+                if (pm.getRole() != null && pm.getRole().getPermissions() != null) {
+                    pm.getRole().getPermissions().forEach(p -> permissionsSet.add(p.getCode()));
+                }
+            });
         }
 
         return UserDto.builder()
@@ -494,7 +505,7 @@ public class ConfigurableUserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .projectRoles(projectRoles)
-                .permissions(permissionsList)
+                .permissions(new ArrayList<>(permissionsSet))
                 .build();
     }
 

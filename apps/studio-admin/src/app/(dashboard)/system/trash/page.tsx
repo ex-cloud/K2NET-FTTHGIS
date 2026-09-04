@@ -37,6 +37,7 @@ import {
 } from "@k2net/ui";
 import { useTrashCan, TrashItem } from "@/hooks/useTrashCan";
 import { cn } from "@/lib/utils";
+import { PermissionGuard } from "@/hooks/use-permissions";
 
 export default function TrashCanPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -178,15 +179,17 @@ export default function TrashCanPage() {
           </Button>
 
           {stats.total > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowEmptyConfirm(true)}
-              className="h-9 gap-1.5"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Kosongkan Recycle Bin
-            </Button>
+            <PermissionGuard permission="system.trash.manage">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowEmptyConfirm(true)}
+                className="h-9 gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Kosongkan Recycle Bin
+              </Button>
+            </PermissionGuard>
           )}
         </div>
       </div>
@@ -355,26 +358,33 @@ export default function TrashCanPage() {
                       </td>
 
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setActiveItemToRestore(item)}
-                            className="h-7 px-2 text-xs gap-1 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            Pulihkan
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setActiveItemToDelete(item)}
-                            className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Hapus
-                          </Button>
-                        </div>
+                        <PermissionGuard
+                          permission="system.trash.manage"
+                          fallback={
+                            <span className="text-[10px] text-muted-foreground italic">Read-only</span>
+                          }
+                        >
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setActiveItemToRestore(item)}
+                              className="h-7 px-2 text-xs gap-1 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              Pulihkan
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setActiveItemToDelete(item)}
+                              className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Hapus
+                            </Button>
+                          </div>
+                        </PermissionGuard>
                       </td>
                     </tr>
                   ))}

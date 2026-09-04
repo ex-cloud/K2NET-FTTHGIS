@@ -11,7 +11,7 @@ interface SystemSecurityWrapperProps {
 export function SystemSecurityWrapper({ children }: SystemSecurityWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.manage"
+      permission="system.security.manage"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

@@ -11,7 +11,7 @@ interface SystemSettingsWrapperProps {
 export function SystemSettingsWrapper({ children }: SystemSettingsWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.manage"
+      permission="system.settings.manage"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

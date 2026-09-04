@@ -35,6 +35,7 @@ import {
   UniversalContextMenu,
   ContextMenuGroupConfig,
 } from "@k2net/ui";
+import { PermissionGuard } from "@/hooks/use-permissions";
 
 export default function SystemAuthPage() {
   const {
@@ -473,16 +474,18 @@ export default function SystemAuthPage() {
                               </div>
                             </td>
                             <td className="p-4 text-right">
-                              <ActionTooltip label="Putus Sesi Pengguna" shortcut="Del">
-                                <Button
-                                  variant="destructive"
-                                  onClick={() => handleRevokeSession(session.id)}
-                                  disabled={isRevokingSession}
-                                  className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" /> Revoke
-                                </Button>
-                              </ActionTooltip>
+                              <PermissionGuard permission="system.security.manage">
+                                <ActionTooltip label="Putus Sesi Pengguna" shortcut="Del">
+                                  <Button
+                                    variant="destructive"
+                                    onClick={() => handleRevokeSession(session.id)}
+                                    disabled={isRevokingSession}
+                                    className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
+                                  >
+                                    <Trash2 className="w-3 h-3 mr-1" /> Revoke
+                                  </Button>
+                                </ActionTooltip>
+                              </PermissionGuard>
                             </td>
                           </tr>
                         </UniversalContextMenu>

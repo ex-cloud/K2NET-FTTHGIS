@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@k2net/
 import { Archive, ShieldCheck, Info, Check, Copy, Download, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { type BackupArtifact } from "@/lib/mock-data/observability-mock";
+import { PermissionGuard } from "@/hooks/use-permissions";
 
 function StorageBadge({ target, label }: { target: BackupArtifact["storageTarget"]; label: string }) {
   const isNextcloud = target === "nextcloud-dr" || label.toLowerCase().includes("nextcloud");
@@ -342,15 +343,17 @@ export function SchedulerArtifactsTable({
                         <Download className="w-3.5 h-3.5" />
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-[10px] px-2 font-mono hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
-                      title="Delete backup file"
-                      onClick={() => setDeleteDialog(artifact)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    <PermissionGuard permission="system.trash.manage">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] px-2 font-mono hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30"
+                        title="Delete backup file"
+                        onClick={() => setDeleteDialog(artifact)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </PermissionGuard>
                   </div>
                 </div>
               ))

@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, Progress, ActionTooltip } from "@k2net/ui";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
+import { PermissionGuard } from "@/hooks/use-permissions";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -316,16 +317,18 @@ export default function StorageGatewayPage() {
                     Reset Form
                   </Button>
                 </ActionTooltip>
-                <ActionTooltip label="Simpan Konfigurasi Storage Gateway" shortcut="Ctrl+S">
-                  <Button 
-                    type="submit" 
-                    disabled={saving}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                  >
-                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    Save Configuration
-                  </Button>
-                </ActionTooltip>
+                <PermissionGuard permission="system.gateway.manage">
+                  <ActionTooltip label="Simpan Konfigurasi Storage Gateway" shortcut="Ctrl+S">
+                    <Button 
+                      type="submit" 
+                      disabled={saving}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+                    >
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      Save Configuration
+                    </Button>
+                  </ActionTooltip>
+                </PermissionGuard>
               </div>
 
             </form>

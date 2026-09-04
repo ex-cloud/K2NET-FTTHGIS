@@ -11,7 +11,7 @@ interface AiPageWrapperProps {
 export function AiPageWrapper({ children }: AiPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.manage"
+      permission="system.ai.manage"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center p-8">
           <div className="text-center max-w-md">

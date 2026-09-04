@@ -63,6 +63,7 @@ import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { useTaskStore } from "@/store/task-store";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Users,
@@ -171,6 +172,8 @@ export function SystemSecondarySidebar() {
     ? () => ctxSetCollapsed((prev) => !prev)
     : () => setIsCollapsed(!isCollapsed);
 
+  const { canAccess } = usePermissions();
+
   return (
     <div className="relative h-full flex shrink-0">
       <aside
@@ -194,14 +197,20 @@ export function SystemSecondarySidebar() {
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6 min-w-[240px]">
-              {currentConfig?.sections.map((section, sIdx) => (
-                <Collapsible key={sIdx} defaultOpen className="w-full">
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
-                    <span>{section.title}</span>
-                    <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-0.5 mt-2">
-                    {section.items.map((item, idx) => {
+              {currentConfig?.sections.map((section, sIdx) => {
+                const visibleItems = section.items.filter((item) =>
+                  canAccess(item.requiredPermission)
+                );
+                if (visibleItems.length === 0) return null;
+
+                return (
+                  <Collapsible key={sIdx} defaultOpen className="w-full">
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1 text-[10px] font-bold text-foreground/70 dark:text-muted-foreground/60 uppercase tracking-widest hover:text-foreground group">
+                      <span>{section.title}</span>
+                      <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-0.5 mt-2">
+                      {visibleItems.map((item, idx) => {
                       // Support query-param-based active detection (e.g. /tasks?quick=active or /organizations?status=ACTIVE)
                       let isActive: boolean;
                       if (item.url.includes("?")) {
@@ -301,9 +310,10 @@ export function SystemSecondarySidebar() {
                         </Link>
                       );
                     })}
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
             </div>
           </>
         )}

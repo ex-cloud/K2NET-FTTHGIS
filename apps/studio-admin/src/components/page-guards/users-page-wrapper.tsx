@@ -11,7 +11,7 @@ interface UsersPageWrapperProps {
 export function UsersPageWrapper({ children }: UsersPageWrapperProps) {
   return (
     <PermissionGuard
-      permission="users.view"
+      permission="system.user.view"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">

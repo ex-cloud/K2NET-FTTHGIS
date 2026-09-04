@@ -11,7 +11,7 @@ interface SystemHealthWrapperProps {
 export function SystemHealthWrapper({ children }: SystemHealthWrapperProps) {
   return (
     <PermissionGuard
-      permission="orgs.view"
+      permission="system.observability.view"
       fallback={
         <div className="flex-1 w-full bg-transparent overflow-auto custom-scrollbar flex items-center justify-center">
           <div className="text-center">
