@@ -4,10 +4,18 @@ Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan Spring Boot 
 
 ---
 
-## 🔒 1. Autorisasi & Keamanan (Spring Security)
+## 🔒 1. Autorisasi & Keamanan (Spring Security & PBAC Standard)
 
-* **Granular RBAC & PreAuthorize**: Seluruh endpoint wajib dilindungi anotasi `@PreAuthorize` berbasis Role eksplisit atau Authority granular (`<module>.<action>`), contoh: `@PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.quotas.manage')")` atau `@PreAuthorize("hasAuthority('network.view')")`. DILARANG menggunakan `hasRole('authenticated')` (karena bukan role resmi). Endpoint internal platform (scope `SYSTEM`) wajib membatasi akses hanya untuk peran administratif sistem, tidak boleh hanya menggunakan `isAuthenticated()` generik.
-* Selalu validasi data yang dikirim dengan scope tenant ID yang diperoleh dari header `X-Tenant-ID` yang diteruskan oleh Kong.
+* **Granular PBAC & PreAuthorize**: Seluruh endpoint wajib dilindungi anotasi `@PreAuthorize` berbasis **Permission granular** (`<scope>.<module>.<action>`), contoh:
+  * Scope System: `@PreAuthorize("hasAuthority('system.gateway.manage')")` atau `@PreAuthorize("hasAuthority('system.users.view')")`.
+  * Scope Tenant: `@PreAuthorize("@tenantSecurity.hasEffectivePermission('network.manage')")` (mendukung delegasi aktif impersonation).
+  * God-Mode Bypass (Super Admin Platform): `@PreAuthorize("hasRole('super_admin') or hasAuthority('system.config.manage')")`.
+* **Larangan Role Semu & Duplikasi Prefix**:
+  * DILARANG menggunakan `@PreAuthorize("hasRole('authenticated')")` atau `isAuthenticated()` generik pada endpoint sensitif.
+  * DILARANG menulis varian ganda `@PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN')")`. Ingress `SecurityConfig.java` telah otomatis menormalkan token Keycloak menjadi kanonikal `ROLE_<clean_role>` dan meng-inject permissions dari DB.
+* **Flyway Permission Migration**: Setiap penambahan controller/fitur baru wajib menyertakan migrasi Flyway SQL di `apps/api/src/main/resources/db/migration/V{N}__add_{module}_permissions.sql` yang mendaftarkan permission ke tabel `permissions` dan mengaitkannya ke role default di `role_permissions`.
+* **Multi-Tenant Isolation**: Selalu validasi data yang dikirim dengan scope tenant ID yang diperoleh dari header `X-Tenant-ID` yang diteruskan oleh Kong.
+* **Panduan Lengkap Modul Baru**: Ikuti SOP di [module-creation-standard.md](file:///opt/project5/.agents/rules/module-creation-standard.md).
 
 ---
 

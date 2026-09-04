@@ -6,20 +6,23 @@ Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan frontend Nex
 
 ---
 
-## 🛡️ 1. Page Guards & Permission Checks
+## 🛡️ 1. Page Guards & Permission Checks (PBAC UI Standard)
 
-Setiap halaman baru di `apps/studio-admin` maupun `apps/studio-tenant` **wajib** dilindungi oleh Page Guard pembungkus yang sesuai dari `src/components/page-guards/` sebelum merender komponen apa pun untuk menegakkan RBAC (Role-Based Access Control).
+Setiap halaman baru di `apps/studio-admin` maupun `apps/studio-tenant` **wajib** dilindungi oleh Page Guard pembungkus atau `<PermissionGuard>` dari `src/hooks/use-permissions.tsx` sebelum merender komponen apa pun untuk menegakkan PBAC (Permission-Based Access Control).
 
 ### A. Rute System Admin (`apps/studio-admin`)
 Rute pada admin portal dikonfigurasi secara langsung (tanpa prefix `/system` karena dipetakan langsung oleh subdomain):
 * **`/overview` dan `/health`**:
-  Gunakan `SystemOverviewWrapper` atau `SystemHealthWrapper` (`permission="orgs.view"`).
-* **`/gateways/...` dan `/settings`**:
-  Gunakan `GatewayPageWrapper` or `SystemSettingsWrapper` (`permission="orgs.manage"`).
-* **`/users`**:
-  Gunakan `UsersPageWrapper` (`permission="users.view"`).
+  Gunakan `SystemOverviewWrapper` (`permission="system.observability.view"`).
+* **`/gateways/...`**:
+  Gunakan `GatewayPageWrapper` (`permission="system.gateway.view"`).
+* **`/users` & `/users/roles`**:
+  Gunakan `UsersPageWrapper` (`permission="system.users.view"` atau `"system.roles.view"`).
 * **`/security/...`**:
-  Gunakan `SystemSecurityWrapper` (`permission="orgs.manage"`).
+  Gunakan `SystemSecurityWrapper` (`permission="system.security.view"`).
+* **Navigasi Dinamis Sidebar**: Seluruh item navigasi di `src/config/system-sidebar-navigation.ts` wajib menyertakan properti `permission: "system.<module>.view"`.
+* **Proteksi Tombol Aksi**: Seluruh tombol mutasi data (Create/Edit/Delete/Sync/Revoke) wajib dibungkus `<PermissionGuard permission="system.<module>.manage">`.
+* **Standardisasi Super Admin**: Pengecekan God-Mode hanya menggunakan `isSuperAdmin` tunggal (bukan varian string `ROLE_SUPER_ADMIN`).
 
 ### B. Rute Tenant (`apps/studio-tenant`)
 Rute pada tenant portal dipetakan di bawah scope organisasi dan proyek:
@@ -83,15 +86,16 @@ Aplikasi studio FTTH GIS menggunakan tema **dynamic brand-aware** bernuansa prem
 ---
 
 ## 🔒 6. Isolasi Level Akses: System Plane vs Tenant Plane
-
+ 
 * **System/Admin Portal (`apps/studio-admin`)**:
   * Hanya boleh berinteraksi dengan API global (misal: `/api/v1/system/...`).
-  * Wajib memverifikasi role global `"super_admin"` menggunakan page-guards di frontend dan `@PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")` di backend.
+  * Wajib memverifikasi izin sistem menggunakan `<PermissionGuard>` atau `canAccess("system.*")` di frontend dan `@PreAuthorize("hasAuthority('system.*')")` di backend.
   * Melewatkan header `X-Tenant-ID` kosong atau bernilai `system` ke API Gateway Kong.
   
 * **Tenant Portal (`apps/studio-tenant`)**:
   * Setiap request API **wajib** menyertakan parameter `orgId` / `projectId` yang valid pada rute.
   * Frontend wajib menyematkan header `X-Tenant-ID: <orgId>` pada setiap API call untuk diverifikasi oleh Kong.
+  * Backend memproteksi data dengan `@PreAuthorize("@tenantSecurity.hasEffectivePermission('network.*')")`.
   * Segala transaksi database, cache Redis, dan bucket MinIO di microservices Go wajib di-scope menggunakan ID Tenant yang aktif.
 
 ---

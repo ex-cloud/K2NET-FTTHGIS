@@ -12,15 +12,12 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 - **Edge Reverse Proxy & SSL**: Traefik (Port 80/443)
 - **Identity IAM**: Keycloak 26 (Port 8081)
 
----
-
-## 🔒 Otentikasi & Batasan Super Admin (God Mode)
-- Super Admin ditandai oleh role `"super_admin"` atau `"ROLE_SUPER_ADMIN"`.
+## 🔒 Otentikasi, Granular PBAC & Batasan Super Admin (God Mode)
+- **Role Kanonikal Tunggal**: Super Admin ditandai secara kanonikal oleh role `"super_admin"`. Ingress layer (`SecurityConfig.java` di backend & `@k2net/auth` di frontend) otomatis menormalkan seluruh format token Keycloak menjadi lowercase tanpa prefix `role_`.
+- **Standar Anotasi Backend (Modern PBAC)**: Seluruh controller wajib menggunakan Granular PBAC (`@PreAuthorize("hasAuthority('system.<modul>.<aksi>')")` untuk scope SYSTEM dan `@PreAuthorize("@tenantSecurity.hasEffectivePermission('<modul>.<aksi>')")` untuk scope TENANT). Dilarang keras menggunakan role semu `hasRole('authenticated')` atau duplikasi string `hasRole('ROLE_SUPER_ADMIN')`.
 - **Scope SYSTEM (Metadata Platform)**: Super Admin memiliki kewenangan penuh untuk mengelola konfigurasi platform, direktori organisasi, status langganan, dan template peran.
 - **Scope TENANT (Data Operasional Tenant ISP)**: Sesuai Master Blueprint (02 Sep 2026), Super Admin **DILARANG** membypass langsung data operasional tenant (`network_elements`, `customers`, `invoices`, dll.). Akses ke data tenant **WAJIB** melalui **Impersonation Engine** resmi (Step-Up MFA, time-box 30 menit, dan dual-identity audit trail).
-- **Standar Anotasi Backend**: Seluruh controller wajib menggunakan Granular RBAC (`@PreAuthorize("hasRole('super_admin') or hasAuthority('...')")`). Dilarang menggunakan role semu `hasRole('authenticated')`. Endpoint internal platform (scope SYSTEM) wajib dilindungi role SYSTEM/Super Admin, bukan hanya `isAuthenticated()` generik.
-
----
+- **Auto-Eviction Cache L2**: Penambahan/perubahan role & permission wajib didukung migrasi Flyway SQL, dan cache Hibernate L2 (`Role` & `Permission`) di-refresh secara otomatis pada startup oleh `PermissionSeeder.java`.
 
 ## 🧪 Aturan Baku Verifikasi Kode Sebelum Deploy (Pre-Deployment Checklist)
 
@@ -127,6 +124,9 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 
 7. **Standar Audit & Quality Gate per Service (PENTING)**: [rules/service-audit-standards.md](file:///opt/project5/.agents/rules/service-audit-standards.md)
    *Membahas: Matriks prasyarat wajib 5 pilar (Frontend, Spring Boot, 12 Go Gateways, Python AI, Docker Infra) serta perintah verifikasi cepat `pnpm verify`.*
+
+8. **Standar Baku Pembuatan Modul Baru (SOP Wajib)**: [rules/module-creation-standard.md](file:///opt/project5/.agents/rules/module-creation-standard.md)
+   *Membahas: Alur 5-langkah registrasi modul baru, Flyway SQL permissions, @PreAuthorize hasAuthority, dynamic sidebar filtering, UI PermissionGuards, dan daftar anti-patterns.*
 
 ---
 
@@ -334,10 +334,14 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Sentinel IntersectionObserver**: Gunakan elemen `<div ref={sentinelRef} />` di bawah baris tabel dengan `rootMargin: "200px"`.
 - **Visual Feedback**: Wajib menampilkan skeleton loader atau spinner halus di bagian bawah tabel saat `loadingMore === true` agar pengguna mengetahui proses fetching sedang berjalan.
 
-### 🛡️ Standardisasi Otorisasi Granular RBAC & Impersonation Engine (September 2026)
-- **Granular RBAC di Backend**: Seluruh controller wajib dilindungi anotasi `@PreAuthorize` eksplisit berbasis permission (`<module>.<action>`) atau role sistem (`super_admin`, `system_support`, `system_auditor`). Dilarang menggunakan role semu `hasRole('authenticated')` atau `isAuthenticated()` generik pada endpoint scope `SYSTEM`.
+### 🛡️ Standardisasi Otorisasi Granular PBAC, Ingress Keycloak & Cache L2 (September 2026)
+- **Granular PBAC di Backend**: Seluruh controller wajib dilindungi anotasi `@PreAuthorize` eksplisit berbasis permission (`hasAuthority('system.<modul>.<aksi>')` untuk system scope dan `@PreAuthorize("@tenantSecurity.hasEffectivePermission('<modul>.<aksi>')")` untuk tenant scope). Dilarang menggunakan role semu `hasRole('authenticated')` atau varian ganda `hasRole('ROLE_SUPER_ADMIN')`.
+- **Ingress Role Normalization**: `SecurityConfig.java` (backend) dan `extractUser` di `@k2net/auth` (frontend) otomatis menormalkan seluruh format token Keycloak menjadi lowercase tanpa prefix `role_`.
+- **Flyway Permissions & L2 Cache Eviction**: Setiap permission baru wajib didaftarkan lewat migrasi Flyway SQL, dan cache L2 Hibernate (`Role` & `Permission`) di-evict secara otomatis saat startup aplikasi oleh `PermissionSeeder.java`.
+- **Frontend Granular Guards**: Navigasi sidebar (`system-sidebar-navigation.ts`) terfilter dinamis per item berdasarkan permission user, dan tombol aksi mutasi sensitif wajib dilindungi `<PermissionGuard permission="...">`.
 - **Hibernate 6 Epoch Query Fix**: Di Hibernate 6 HQL, fungsi `EXTRACT(EPOCH FROM ...)` ditolak validator saat startup Spring Boot jika ditulis dalam query JPQL. Wajib menggunakan `nativeQuery = true` pada query kalkulasi durasi SQL PostgreSQL di repository.
 - **Dual-Identity Audit Trail**: Setiap aksi selama sesi impersonasi wajib mencatat `actor_id` (identitas Super Admin asli) + `impersonated_tenant_id` + `impersonation_session_id`.
 - **Theme & Session Persistence**: Portal tenant (`apps/studio-tenant`) wajib mempertahankan tema UI (`k2net-theme`) di `localStorage` saat logout / tenant switching, dan guard pertukaran kode impersonasi (`exchangeCode`) menggunakan double-lock (`activeExchangingCode` + `exchangeAttemptedRef`) untuk mencegah double toast error.
+
 
 
