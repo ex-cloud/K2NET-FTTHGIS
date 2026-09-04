@@ -36,14 +36,22 @@ export function useImpersonationSession() {
   const [tenantSlug, setTenantSlug] = useState("");
   const [remainingSeconds, setRemainingSeconds] = useState(1800);
   const [isExiting, setIsExiting] = useState(false);
+  const [isSessionEnded, setIsSessionEnded] = useState(false);
+  const [endedTenantName, setEndedTenantName] = useState("");
 
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const clearSession = useCallback(() => {
+  const clearSession = useCallback((showTerminationModal = false, fallbackName?: string) => {
     setIsImpersonating(false);
     setSessionId(null);
-    setTenantName("");
+    setTenantName((prevName) => {
+      if (showTerminationModal) {
+        setEndedTenantName(fallbackName || prevName || "Tenant");
+        setIsSessionEnded(true);
+      }
+      return "";
+    });
     setTenantSlug("");
     setImpersonationSessionId(null);
     setApiAuthToken(null);
@@ -121,7 +129,7 @@ export function useImpersonationSession() {
         // Defense-in-depth: jika server mengembalikan 401/403, sesi otentikasi sudah tidak sah
         if (res.status === 401 || res.status === 403) {
           toast.info("Sesi impersonasi telah berakhir atau dicabut.");
-          clearSession();
+          clearSession(true);
         }
         // Jika 500/502/503 atau transient network error, jangan matikan sesi prematur
         return;
@@ -132,7 +140,7 @@ export function useImpersonationSession() {
         setRemainingSeconds(data.remainingSeconds);
       } else {
         toast.info("Sesi impersonasi telah berakhir.");
-        clearSession();
+        clearSession(true);
       }
     } catch {
       // ignore network blips
@@ -244,7 +252,7 @@ export function useImpersonationSession() {
 
           if (initialRemaining <= 0) {
             toast.info("Sesi impersonasi telah kedaluwarsa.");
-            clearSession();
+            clearSession(true, meta.targetTenantName);
             return;
           }
 
@@ -296,7 +304,7 @@ export function useImpersonationSession() {
     } catch {
       // ignore
     } finally {
-      clearSession();
+      clearSession(false);
       setIsExiting(false);
 
       // Coba tutup tab jika dibuka dari window.open
@@ -318,5 +326,7 @@ export function useImpersonationSession() {
     remainingSeconds,
     isExiting,
     exitSession,
+    isSessionEnded,
+    endedTenantName,
   };
 }

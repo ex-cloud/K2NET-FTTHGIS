@@ -14,8 +14,19 @@ import {
   Sun,
   Moon,
   Layers,
+  ShieldAlert,
 } from "lucide-react";
-import { Button, Badge, ImpersonationBanner } from "@k2net/ui";
+import {
+  Button,
+  Badge,
+  ImpersonationBanner,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@k2net/ui";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 
 export function TenantLayout() {
@@ -27,6 +38,8 @@ export function TenantLayout() {
     remainingSeconds,
     isExiting,
     exitSession,
+    isSessionEnded,
+    endedTenantName,
   } = useImpersonationSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDark, setIsDark] = useState(true);
@@ -173,6 +186,52 @@ export function TenantLayout() {
 
       {/* ── Main Content Area ────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Modal Dialog: Sesi Bantuan Berakhir */}
+        <Dialog open={isSessionEnded}>
+          <DialogContent className="sm:max-w-md [&>button]:hidden">
+            <DialogHeader className="flex flex-col items-center gap-2 text-center pt-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                <ShieldAlert className="h-6 w-6" />
+              </div>
+              <DialogTitle className="text-base font-bold text-foreground">
+                Sesi Bantuan Telah Berakhir
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+                Sesi impersonasi untuk tenant{" "}
+                <strong className="text-foreground">{endedTenantName || "ISP Tenant"}</strong>{" "}
+                telah ditutup oleh administrator dari portal utama atau batas waktu operasional telah habis.
+                Seluruh hak akses operasional sementara telah dicabut demi keamanan.
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  window.close();
+                  setTimeout(() => {
+                    window.location.href = "/login";
+                  }, 300);
+                }}
+                className="w-full text-xs"
+              >
+                Tutup Tab Ini
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  window.location.href = "https://system-gis.kdua.net/organizations";
+                }}
+                className="w-full text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Kembali ke Portal Admin
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {isImpersonating && (
           <ImpersonationBanner
             tenantName={impersonatedTenantName || user?.tenantSlug || "Tenant"}
