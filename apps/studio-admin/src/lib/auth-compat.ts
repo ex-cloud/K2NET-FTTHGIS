@@ -29,46 +29,58 @@ export interface UseSessionReturn {
   update: () => Promise<void>;
 }
 
+import { useMemo, useCallback } from "react";
+
 export function useSession(): UseSessionReturn {
   const { user, authenticated, initialized, login, logout, token } = useAuth();
 
-  const adminUser: AdminUser | undefined = user
-    ? {
-        id: user.id || "",
-        name: user.name || user.username || "Admin",
-        email: user.email || "",
-        roles: user.roles || [],
-        tenantId: user.tenantId || "",
-        organizationId: user.organizationId || user.tenantId || "",
-        username: user.username || user.email || "",
-        avatar_url: user.avatarUrl,
-        organizationSlug: user.organizationSlug || user.tenantSlug || user.tenantId,
-        issuer: user.issuer,
-        permissions: user.permissions || [],
-      }
-    : undefined;
+  const adminUser: AdminUser | undefined = useMemo(() => {
+    if (!user) return undefined;
+    return {
+      id: user.id || "",
+      name: user.name || user.username || "Admin",
+      email: user.email || "",
+      roles: user.roles || [],
+      tenantId: user.tenantId || "",
+      organizationId: user.organizationId || user.tenantId || "",
+      username: user.username || user.email || "",
+      avatar_url: user.avatarUrl,
+      organizationSlug: user.organizationSlug || user.tenantSlug || user.tenantId,
+      issuer: user.issuer,
+      permissions: user.permissions || [],
+    };
+  }, [user]);
+
+  const sessionData = useMemo(() => {
+    if (!authenticated || !adminUser) return null;
+    return {
+      user: adminUser,
+      accessToken: token ?? null,
+    };
+  }, [authenticated, adminUser, token]);
+
+  const signIn = useCallback(async (_provider?: string, options?: KeycloakLoginOptions) => {
+    await login(options);
+  }, [login]);
+
+  const signOut = useCallback(async (options?: KeycloakLogoutOptions) => {
+    await logout(options);
+  }, [logout]);
+
+  const update = useCallback(async () => {
+    // no-op: token refresh is handled automatically by Keycloak adapter
+  }, []);
 
   return {
-    data: authenticated && adminUser
-      ? {
-          user: adminUser,
-          accessToken: token ?? null,
-        }
-      : null,
+    data: sessionData,
     status: !initialized
       ? "loading"
       : authenticated
       ? "authenticated"
       : "unauthenticated",
-    signIn: async (_provider?: string, options?: KeycloakLoginOptions) => {
-      await login(options);
-    },
-    signOut: async (options?: KeycloakLogoutOptions) => {
-      await logout(options);
-    },
-    update: async () => {
-      // no-op: token refresh is handled automatically by Keycloak adapter
-    },
+    signIn,
+    signOut,
+    update,
   };
 }
 

@@ -109,8 +109,10 @@ export function useSearchParams(): URLSearchParams {
   try {
     const location = useLocation();
     const searchObj = location.search;
-    const searchStr = (location as any)?.searchStr;
-    
+    const searchKey = typeof searchObj === "object" && searchObj !== null
+      ? JSON.stringify(searchObj)
+      : String((location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : ""));
+
     return React.useMemo(() => {
       if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
         const sp = new URLSearchParams();
@@ -121,14 +123,9 @@ export function useSearchParams(): URLSearchParams {
         }
         return sp;
       }
-      if (searchStr) {
-        return new URLSearchParams(searchStr);
-      }
-      if (typeof window !== "undefined") {
-        return new URLSearchParams(window.location.search);
-      }
-      return new URLSearchParams();
-    }, [searchObj, searchStr]);
+      const rawSearch = (location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : "");
+      return new URLSearchParams(rawSearch);
+    }, [searchKey]);
   } catch {
     return new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   }

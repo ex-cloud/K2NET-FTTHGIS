@@ -175,7 +175,7 @@ export default function TasksPage() {
       session?.user?.username,
       session?.user?.name,
     ].filter(Boolean) as string[];
-  }, [session?.user]);
+  }, [session?.user?.id, session?.user?.email, session?.user?.username, session?.user?.name]);
 
   const filteredTasks = useMemo(() => {
     // Exclude master PROJECT containers from /tasks (All Issues / Active Tasks) unless typeParam specifically requests PROJECT
