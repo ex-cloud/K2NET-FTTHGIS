@@ -533,6 +533,9 @@ jobs:
             set -e
             cd /opt/project5
 
+            echo "=== [0/3] Login ke GHCR untuk pull images ==="
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ex-cloud --password-stdin
+
             echo "=== [1/3] Sync kode dari main branch ==="
             git fetch origin
             git checkout main
