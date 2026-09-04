@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/system/settings")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.settings.manage')")
 public class SystemSettingController {
 
     private final SystemSettingService settingService;

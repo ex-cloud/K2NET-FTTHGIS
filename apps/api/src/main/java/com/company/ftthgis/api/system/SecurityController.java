@@ -27,7 +27,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/system/security")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.security.manage')")
 public class SecurityController {
 
     private final KeycloakAdminService keycloakAdminService;
@@ -135,6 +135,7 @@ public class SecurityController {
     // --- Security Event / Anomaly Alerts Endpoints ---
 
     @GetMapping("/alerts")
+    @PreAuthorize("hasAuthority('system.audit.view') or hasAuthority('system.security.manage')")
     public ResponseEntity<List<SecurityEvent>> getSecurityAlerts() {
         try {
             return ResponseEntity.ok(securityEventRepository.findTop100ByOrderByCreatedAtDesc());

@@ -25,7 +25,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/keycloak")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class KeycloakObservabilityController {
 
     private final ObjectMapper objectMapper;

@@ -14,9 +14,11 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 
 ---
 
-## 🔒 Otentikasi & Super Admin (God Mode)
+## 🔒 Otentikasi & Batasan Super Admin (God Mode)
 - Super Admin ditandai oleh role `"super_admin"` atau `"ROLE_SUPER_ADMIN"`.
-- Logika otentikasi di client (`usePermissions`) dan backend **wajib** membypass semua pengecekan hak akses (return `true`) untuk Super Admin.
+- **Scope SYSTEM (Metadata Platform)**: Super Admin memiliki kewenangan penuh untuk mengelola konfigurasi platform, direktori organisasi, status langganan, dan template peran.
+- **Scope TENANT (Data Operasional Tenant ISP)**: Sesuai Master Blueprint (02 Sep 2026), Super Admin **DILARANG** membypass langsung data operasional tenant (`network_elements`, `customers`, `invoices`, dll.). Akses ke data tenant **WAJIB** melalui **Impersonation Engine** resmi (Step-Up MFA, time-box 30 menit, dan dual-identity audit trail).
+- **Standar Anotasi Backend**: Seluruh controller wajib menggunakan Granular RBAC (`@PreAuthorize("hasRole('super_admin') or hasAuthority('...')")`). Dilarang menggunakan role semu `hasRole('authenticated')`. Endpoint internal platform (scope SYSTEM) wajib dilindungi role SYSTEM/Super Admin, bukan hanya `isAuthenticated()` generik.
 
 ---
 
@@ -331,4 +333,11 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Hook Standar**: Pengambilan data tabel dengan infinite scroll wajib menggunakan pola hook (seperti `useAiKnowledge.ts` dan `useDbPerformance.ts`) dengan proteksi `offsetRef`, `isFetchingRef`, dan de-duplikasi ID menggunakan `Set(prev.map(d => d.id))`.
 - **Sentinel IntersectionObserver**: Gunakan elemen `<div ref={sentinelRef} />` di bawah baris tabel dengan `rootMargin: "200px"`.
 - **Visual Feedback**: Wajib menampilkan skeleton loader atau spinner halus di bagian bawah tabel saat `loadingMore === true` agar pengguna mengetahui proses fetching sedang berjalan.
+
+### 🛡️ Standardisasi Otorisasi Granular RBAC & Impersonation Engine (September 2026)
+- **Granular RBAC di Backend**: Seluruh controller wajib dilindungi anotasi `@PreAuthorize` eksplisit berbasis permission (`<module>.<action>`) atau role sistem (`super_admin`, `system_support`, `system_auditor`). Dilarang menggunakan role semu `hasRole('authenticated')` atau `isAuthenticated()` generik pada endpoint scope `SYSTEM`.
+- **Hibernate 6 Epoch Query Fix**: Di Hibernate 6 HQL, fungsi `EXTRACT(EPOCH FROM ...)` ditolak validator saat startup Spring Boot jika ditulis dalam query JPQL. Wajib menggunakan `nativeQuery = true` pada query kalkulasi durasi SQL PostgreSQL di repository.
+- **Dual-Identity Audit Trail**: Setiap aksi selama sesi impersonasi wajib mencatat `actor_id` (identitas Super Admin asli) + `impersonated_tenant_id` + `impersonation_session_id`.
+- **Theme & Session Persistence**: Portal tenant (`apps/studio-tenant`) wajib mempertahankan tema UI (`k2net-theme`) di `localStorage` saat logout / tenant switching, dan guard pertukaran kode impersonasi (`exchangeCode`) menggunakan double-lock (`activeExchangingCode` + `exchangeAttemptedRef`) untuk mencegah double toast error.
+
 

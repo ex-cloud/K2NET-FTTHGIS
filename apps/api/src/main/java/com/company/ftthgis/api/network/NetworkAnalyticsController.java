@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/network/analytics")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasAuthority('network.view')")
 public class NetworkAnalyticsController {
 
         private final ODCRepository odcRepository;

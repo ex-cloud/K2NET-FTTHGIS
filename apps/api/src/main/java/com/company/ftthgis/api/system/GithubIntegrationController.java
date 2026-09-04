@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/system/github-integration")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.integration.manage')")
 public class GithubIntegrationController {
 
     private final GithubIntegrationService githubIntegrationService;

@@ -30,7 +30,7 @@ import java.util.Properties;
 @RequestMapping("/api/v1/system/devops-stats")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class DevOpsStatsController {
 
     private final JdbcTemplate jdbcTemplate;

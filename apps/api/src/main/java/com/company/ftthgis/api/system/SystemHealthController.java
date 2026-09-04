@@ -31,7 +31,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/health-metrics")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class SystemHealthController {
 
     private final JdbcTemplate jdbcTemplate;

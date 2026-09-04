@@ -21,7 +21,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/db-observability")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class DatabaseObservabilityController {
 
     private final JdbcTemplate jdbcTemplate;

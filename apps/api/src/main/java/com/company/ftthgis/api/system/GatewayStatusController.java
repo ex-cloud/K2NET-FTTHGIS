@@ -24,7 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/system/gateway-status")
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class GatewayStatusController {
 
     @Value("${app.gateway.token:}")

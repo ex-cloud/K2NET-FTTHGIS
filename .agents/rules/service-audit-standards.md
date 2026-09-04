@@ -48,7 +48,7 @@ Dokumen ini adalah acuan resmi bagi AI Agent dan Developer untuk memastikan kesi
 | Area | Aturan Baku Wajib | Perintah Verifikasi |
 |---|---|---|
 | **Multi-Tenancy** | • **Isolasi Tenant**: Setiap query repository atau service yang mengambil data operasional wajib menyertakan filter `tenant_id` dari header `X-Tenant-ID`. | Code Review |
-| **Security Annotation** | • Gunakan `@PreAuthorize("isAuthenticated()")` alih-alih `hasRole('authenticated')` untuk memastikan kompatibilitas Keycloak JWT. | `grep -rn "hasRole('authenticated')" apps/api` (Target: **0**) |
+| **Security Annotation** | • Gunakan `@PreAuthorize` dengan Granular RBAC / Authority eksplisit (`hasAuthority(...)` atau `hasRole('super_admin')`) alih-alih `hasRole('authenticated')`. | `grep -rn "hasRole('authenticated')" apps/api` (Target: **0**) |
 | **Audit Logging** | • Setiap mutasi data (`POST`, `PUT`, `DELETE`) pada service layer wajib ditandai `@AuditRequired(action=..., resourceType=...)`.<br>• Penanganan error audit tidak boleh memutus atau me-rollback transaksi database utama jika gateway audit sedang tidak dapat dijangkau. | Code Review |
 | **PostGIS Spatial**| • Seluruh data spasial (koordinat OLT/ODP, kabel) wajib menggunakan proyeksi **SRID 4326 (WGS 84)**.<br>• Output API spasial dikembalikan dalam format standar GeoJSON.<br>• Kolom geometri wajib memiliki spatial index `GIST`. | Code Review |
 | **Flyway Migrations**| • Penamaan berkas migrasi SQL wajib mengikuti urutan `V<Nomor>__<Deskripsi>.sql`.<br>• Dilarang mengubah berkas SQL migrasi yang sudah dieksekusi di database produksi. | `ls apps/api/src/main/resources/db/migration/` |

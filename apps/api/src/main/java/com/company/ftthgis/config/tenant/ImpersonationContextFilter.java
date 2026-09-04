@@ -81,7 +81,8 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
             }
         }
 
-        // Terapkan override konteks tenant & audit dual-identity
+        // Terapkan override konteks tenant & audit dual-identity serta enrichment permissions
+        Authentication originalAuth = SecurityContextHolder.getContext().getAuthentication();
         try {
             OrganizationContext.setOrganizationId(sessionCache.getTargetTenantId());
             AuditContext.setImpersonation(
@@ -91,6 +92,28 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
                     sessionCache.getTargetTenantSlug()
             );
 
+            // Authority Enrichment: Memberikan permission operasional tenant ke sesi impersonator yang sah
+            if (originalAuth instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken jwtAuth) {
+                java.util.Set<org.springframework.security.core.GrantedAuthority> enrichedAuthorities = new java.util.HashSet<>(jwtAuth.getAuthorities());
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.view"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.manage"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("network.audit"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.view"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.create"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ticket.update"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("customer.view"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("inventory.view"));
+                enrichedAuthorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("inventory.manage"));
+
+                org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken enrichedAuth = 
+                        new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
+                                jwtAuth.getToken(),
+                                enrichedAuthorities,
+                                jwtAuth.getName()
+                        );
+                SecurityContextHolder.getContext().setAuthentication(enrichedAuth);
+            }
+
             log.debug("🛡️ [ImpersonationFilter] Konteks impersonasi diterapkan: actor={}, targetTenant={}",
                     sessionCache.getActorId(), sessionCache.getTargetTenantSlug());
 
@@ -98,6 +121,7 @@ public class ImpersonationContextFilter extends OncePerRequestFilter {
         } finally {
             OrganizationContext.clear();
             AuditContext.clear();
+            SecurityContextHolder.getContext().setAuthentication(originalAuth);
         }
     }
 

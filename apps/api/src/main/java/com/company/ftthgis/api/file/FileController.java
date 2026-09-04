@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/files")
 @Slf4j
 @CrossOrigin(origins = "*")
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('network.manage')")
 public class FileController {
 
     @Value("${app.gateway.storage-url}")
@@ -32,7 +32,7 @@ public class FileController {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostMapping("/upload")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('network.manage')")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "tenant", required = false) String tenant,

@@ -18,7 +18,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/system/trash")
 @RequiredArgsConstructor
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.trash.manage')")
 public class TrashController {
 
     private final JdbcTemplate jdbcTemplate;

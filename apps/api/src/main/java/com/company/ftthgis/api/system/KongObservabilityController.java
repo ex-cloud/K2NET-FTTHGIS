@@ -26,7 +26,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/kong")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class KongObservabilityController {
 
     private final JdbcTemplate jdbcTemplate;

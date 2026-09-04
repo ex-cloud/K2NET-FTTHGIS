@@ -204,4 +204,44 @@ public class TenantSecurity {
 
         return false;
     }
+
+    /**
+     * Checks if the current authenticated caller has an effective permission.
+     * Evaluates direct authorities/permissions first, then checks if caller is in an
+     * active, authorized impersonation session.
+     *
+     * @param permission The required permission code (e.g., 'network.manage', 'network.view')
+     * @return true if authorized, false otherwise
+     */
+    public boolean hasEffectivePermission(String permission) {
+        if (permission == null || permission.isBlank()) {
+            return false;
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return false;
+        }
+
+        // 1. Direct GrantedAuthority check
+        boolean hasDirect = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equalsIgnoreCase(permission));
+        if (hasDirect) {
+            return true;
+        }
+
+        // 2. Active Impersonation check: Valid session with authorized actor
+        if (com.company.ftthgis.config.tenant.AuditContext.isImpersonating()) {
+            boolean isAuthorizedImpersonator = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equalsIgnoreCase("system.support.impersonate")
+                            || a.getAuthority().equalsIgnoreCase("ROLE_super_admin")
+                            || a.getAuthority().equalsIgnoreCase("super_admin"));
+            if (isAuthorizedImpersonator) {
+                log.debug("🛡️ TenantSecurity: Effective permission '{}' granted via active impersonation session.", permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

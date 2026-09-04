@@ -6,7 +6,7 @@ Halaman ini mendefinisikan aturan dan pola wajib untuk pengembangan Spring Boot 
 
 ## 🔒 1. Autorisasi & Keamanan (Spring Security)
 
-* Gunakan `@PreAuthorize("isAuthenticated()")` daripada `hasRole('authenticated')` untuk menegakkan status otentikasi Keycloak secara konsisten tanpa tergantung pemetaan role kustom.
+* **Granular RBAC & PreAuthorize**: Seluruh endpoint wajib dilindungi anotasi `@PreAuthorize` berbasis Role eksplisit atau Authority granular (`<module>.<action>`), contoh: `@PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.quotas.manage')")` atau `@PreAuthorize("hasAuthority('network.view')")`. DILARANG menggunakan `hasRole('authenticated')` (karena bukan role resmi). Endpoint internal platform (scope `SYSTEM`) wajib membatasi akses hanya untuk peran administratif sistem, tidak boleh hanya menggunakan `isAuthenticated()` generik.
 * Selalu validasi data yang dikirim dengan scope tenant ID yang diperoleh dari header `X-Tenant-ID` yang diteruskan oleh Kong.
 
 ---

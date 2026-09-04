@@ -33,6 +33,7 @@ import java.io.FileInputStream;
 @RequestMapping("/api/v1/system/backup-status")
 @RequiredArgsConstructor
 @Slf4j
+@PreAuthorize("hasAuthority('system.backup.manage')")
 public class BackupStatusController {
 
     private static final String PRIMARY_LOG_DIR = "/opt/project5/backups";
@@ -58,7 +59,6 @@ public class BackupStatusController {
         SCRIPT_META_MAP.put("cleanup",        new JobMeta("cleanup",        "cleanup.sh",               List.of("cleanup.log")));
     }
 
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/jobs")
     public ResponseEntity<List<Map<String, Object>>> getJobStatus() {
         List<Map<String, Object>> jobs = new ArrayList<>();
@@ -72,7 +72,6 @@ public class BackupStatusController {
         return ResponseEntity.ok(jobs);
     }
 
-    @PreAuthorize("isAuthenticated()")
     @PostMapping("/trigger/{scriptKey}")
     @AuditRequired(action = "SCHEDULER_JOB_TRIGGERED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#scriptKey")
     public ResponseEntity<Map<String, Object>> triggerJob(@PathVariable String scriptKey) {
@@ -83,7 +82,6 @@ public class BackupStatusController {
         ));
     }
 
-    @PreAuthorize("isAuthenticated()")
     @GetMapping("/artifacts")
     public ResponseEntity<List<Map<String, Object>>> getBackupArtifacts() {
         List<Map<String, Object>> artifacts = new ArrayList<>();
@@ -139,7 +137,6 @@ public class BackupStatusController {
     }
 
     @GetMapping("/logs/{scriptKey}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> getJobLogs(@PathVariable String scriptKey) {
         JobMeta meta = SCRIPT_META_MAP.get(scriptKey);
         if (meta == null) {
@@ -177,7 +174,6 @@ public class BackupStatusController {
     }
 
     @GetMapping("/download")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> downloadArtifact(@RequestParam("file") String filename) {
         if (!isValidFilename(filename)) {
             return ResponseEntity.badRequest().build();
@@ -207,7 +203,6 @@ public class BackupStatusController {
         }
     }
 
-    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/delete")
     @AuditRequired(action = "BACKUP_ARTIFACT_DELETED", resourceType = "SCHEDULER", logGroup = "OPERATIONS", resourceIdExpression = "#filename")
     public ResponseEntity<Map<String, Object>> deleteArtifact(@RequestParam("file") String filename) {

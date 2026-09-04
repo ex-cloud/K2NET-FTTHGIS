@@ -14,6 +14,11 @@ class FileControllerSecurityTest {
     void uploadEndpointRequiresAuthentication() throws NoSuchMethodException {
         Method method = FileController.class.getDeclaredMethod("uploadFile", org.springframework.web.multipart.MultipartFile.class, String.class, String.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
-        assertNotNull(annotation, "Upload endpoint should be protected with @PreAuthorize");
+        if (annotation == null) {
+            annotation = AnnotationUtils.findAnnotation(FileController.class, PreAuthorize.class);
+        }
+        assertNotNull(annotation, "Upload endpoint or class should be protected with @PreAuthorize");
+        org.junit.jupiter.api.Assertions.assertTrue(annotation.value().contains("network.manage"), 
+                "Should require network.manage authority");
     }
 }

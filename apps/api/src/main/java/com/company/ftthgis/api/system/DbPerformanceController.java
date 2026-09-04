@@ -15,7 +15,7 @@ import java.util.*;
 @RequestMapping("/api/v1/system/db-performance")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("isAuthenticated()")
+@PreAuthorize("hasAuthority('system.observability.view')")
 public class DbPerformanceController {
 
     private final JdbcTemplate jdbcTemplate;
