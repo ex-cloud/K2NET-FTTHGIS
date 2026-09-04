@@ -150,30 +150,30 @@ public class ImpersonationController {
 
     /**
      * KPI ringkasan statistik sesi impersonasi untuk Support Center.
-     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor untuk audit.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk audit.
      */
     @GetMapping("/api/v1/system/impersonate/stats")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
     public ResponseEntity<ImpersonationStatsDto> getStats() {
         return ResponseEntity.ok(impersonationService.getImpersonationStats());
     }
 
     /**
      * Daftar seluruh sesi impersonasi yang sedang aktif di sistem secara real-time.
-     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor untuk monitoring.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk monitoring.
      */
     @GetMapping("/api/v1/system/impersonate/active-sessions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
     public ResponseEntity<List<ImpersonationSessionDto>> getActiveSessions() {
         return ResponseEntity.ok(impersonationService.getActiveSessions());
     }
 
     /**
      * Pencarian dan riwayat audit lengkap seluruh sesi impersonasi dengan paginasi.
-     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor untuk kepatuhan & forensik.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk kepatuhan & forensik.
      */
     @GetMapping("/api/v1/system/impersonate/sessions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
     public ResponseEntity<Page<ImpersonationSessionDto>> searchSessions(
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "search", required = false) String search,
