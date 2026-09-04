@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { KeycloakProvider } from "@k2net/auth/client";
 import { Toaster } from "sonner";
 import { getTenantKeycloakConfig } from "./lib/keycloak-config";
+import { ThemeProvider } from "@k2net/ui";
 import { setApiAuthToken } from "./lib/api-client";
 import { App } from "./App";
 import "./index.css";
@@ -39,11 +40,13 @@ keycloakConfig.onTokens = (tokens) => {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <KeycloakProvider config={keycloakConfig}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-        <Toaster position="top-right" richColors />
-      </QueryClientProvider>
-    </KeycloakProvider>
+    <ThemeProvider defaultTheme="system" storageKey="k2net-theme" enableSystem>
+      <KeycloakProvider config={keycloakConfig}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+          <Toaster position="top-right" richColors />
+        </QueryClientProvider>
+      </KeycloakProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

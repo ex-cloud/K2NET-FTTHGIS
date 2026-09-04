@@ -114,6 +114,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "Audit Logs", url: "/security/audit", icon: "History" },
           { title: "Security Alerts", url: "/security/alerts", icon: "ShieldAlert" },
+          { title: "Support Access Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
         ],
       },
       {
@@ -158,6 +159,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         title: "General",
         items: [
           { title: "Overview", url: "/observability/overview", icon: "LayoutDashboard" },
+          { title: "Support Access Forensics", url: "/organizations/impersonation", icon: "ShieldAlert" },
           { title: "Query Performance", url: "/observability/query-performance", icon: "DatabaseZap" },
           { title: "API Gateway", url: "/observability/api-gateway", icon: "Globe" },
         ],

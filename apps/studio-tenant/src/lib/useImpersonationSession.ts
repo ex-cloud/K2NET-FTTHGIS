@@ -250,24 +250,20 @@ export function useImpersonationSession() {
             pollStatus(newSessionId);
           }, 15000);
         } catch (e: unknown) {
-          if (e instanceof Error && e.name === "AbortError") {
-            // Intentional abort on component unmount — do NOT reset guards or show any toast
+          sessionStorage.removeItem("k2net_impersonating_in_progress");
+          if (e instanceof Error && (e.name === "AbortError" || e.message.includes("abort"))) {
+            // Intentional abort on component unmount — ignore silently
             return;
           }
-          sessionStorage.removeItem("k2net_impersonating_in_progress");
           const msg = e instanceof Error ? e.message : "";
-          // NetworkError = transient connectivity issue, NOT a permanent rejection.
-          // Do NOT reset activeExchangingCode here — this prevents a spurious retry
-          // that would hit the backend with an already-consumed code and trigger a
-          // second "Kode tidak valid" error toast.
-          // Also do NOT show a toast for NetworkError — the exchange may have succeeded
-          // server-side; the next poll will pick up the active session.
-          if (!msg.includes("NetworkError") && !msg.includes("Failed to fetch") && !msg.includes("abort")) {
-            toast.error("Terjadi Kesalahan", { description: msg });
-            // Only reset guard on definitive JS/logic errors, not network issues
-            activeExchangingCode = null;
+          if (
+            msg &&
+            !msg.includes("NetworkError") &&
+            !msg.includes("Failed to fetch") &&
+            !msg.includes("Load failed")
+          ) {
+            toast.error("Gagal Memulai Sesi Impersonasi", { description: msg });
           }
-          // For NetworkError: silently leave guard intact — prevents retry loop
         }
       })();
     } else {

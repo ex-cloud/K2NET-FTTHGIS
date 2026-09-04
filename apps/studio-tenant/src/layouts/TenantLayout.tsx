@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  useTheme,
 } from "@k2net/ui";
 import { useImpersonationSession } from "../lib/useImpersonationSession";
 
@@ -42,22 +43,14 @@ export function TenantLayout() {
     endedTenantName,
   } = useImpersonationSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDark, setIsDark] = useState(true);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
 
   const toggleTheme = () => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.remove("dark");
-      root.classList.add("light");
-      setIsDark(false);
-    } else {
-      root.classList.remove("light");
-      root.classList.add("dark");
-      setIsDark(true);
-    }
+    setTheme(isDark ? "light" : "dark");
   };
 
   const navItems = [
@@ -167,8 +160,12 @@ export function TenantLayout() {
               variant="ghost"
               onClick={async () => {
                 if (typeof window !== "undefined") {
+                  const savedTheme = localStorage.getItem("k2net-theme");
                   localStorage.clear();
                   sessionStorage.clear();
+                  if (savedTheme) {
+                    localStorage.setItem("k2net-theme", savedTheme);
+                  }
                 }
                 await logout({
                   redirectUri: `${window.location.origin}/login`,
