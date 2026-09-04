@@ -19,16 +19,16 @@ import java.util.UUID;
 @Repository
 public interface ImpersonationSessionRepository extends JpaRepository<ImpersonationSession, UUID>, JpaSpecificationExecutor<ImpersonationSession> {
 
-    @Query("SELECT s FROM ImpersonationSession s WHERE s.actorUser.id = :actorUserId AND s.status = 'ACTIVE'")
+    @Query("SELECT s FROM ImpersonationSession s WHERE s.actorUser.id = :actorUserId AND s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.ACTIVE")
     Optional<ImpersonationSession> findActiveSessionByActorId(@Param("actorUserId") UUID actorUserId);
 
-    @Query("SELECT s FROM ImpersonationSession s WHERE s.actorUser.id = :actorUserId AND s.status = 'ACTIVE' AND s.expiresAt > :now")
+    @Query("SELECT s FROM ImpersonationSession s WHERE s.actorUser.id = :actorUserId AND s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.ACTIVE AND s.expiresAt > :now")
     Optional<ImpersonationSession> findActiveNotExpiredSessionByActorId(@Param("actorUserId") UUID actorUserId, @Param("now") Instant now);
 
-    @Query("SELECT s FROM ImpersonationSession s WHERE s.status = 'ACTIVE' AND s.expiresAt > :now ORDER BY s.startedAt DESC")
+    @Query("SELECT s FROM ImpersonationSession s WHERE s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.ACTIVE AND s.expiresAt > :now ORDER BY s.startedAt DESC")
     List<ImpersonationSession> findAllActiveSessions(@Param("now") Instant now);
 
-    @Query("SELECT COUNT(s) FROM ImpersonationSession s WHERE s.status = 'ACTIVE' AND s.expiresAt > :now")
+    @Query("SELECT COUNT(s) FROM ImpersonationSession s WHERE s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.ACTIVE AND s.expiresAt > :now")
     long countActiveSessions(@Param("now") Instant now);
 
     @Query("SELECT COUNT(s) FROM ImpersonationSession s WHERE s.startedAt >= :since")
@@ -39,11 +39,11 @@ public interface ImpersonationSessionRepository extends JpaRepository<Impersonat
 
     long countByStatus(ImpersonationStatus status);
 
-    @Query("SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(s.revokedAt, s.expiresAt) - s.startedAt))) FROM ImpersonationSession s WHERE s.status IN ('REVOKED', 'EXPIRED')")
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (COALESCE(s.revoked_at, s.expires_at) - s.started_at))) FROM impersonation_sessions s WHERE s.status IN ('REVOKED', 'EXPIRED')", nativeQuery = true)
     Double calculateAvgDurationSeconds();
 
     @Modifying
-    @Query("UPDATE ImpersonationSession s SET s.status = 'EXPIRED' WHERE s.status = 'ACTIVE' AND s.expiresAt <= :now")
+    @Query("UPDATE ImpersonationSession s SET s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.EXPIRED WHERE s.status = com.company.ftthgis.domain.tenant.entity.ImpersonationStatus.ACTIVE AND s.expiresAt <= :now")
     int markExpiredSessions(@Param("now") Instant now);
 
     Optional<ImpersonationSession> findByIdAndStatus(UUID id, ImpersonationStatus status);
