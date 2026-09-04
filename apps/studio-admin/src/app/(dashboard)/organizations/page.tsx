@@ -110,6 +110,9 @@ export default function AdminOrganizationsPage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  // Synchronous active status derived directly from URL query param or local filter
+  const activeStatusFilter = statusParam !== "ALL" ? statusParam : statusFilter;
+
   // Table multi-selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -130,9 +133,7 @@ export default function AdminOrganizationsPage() {
 
   // Sync with searchParams
   useEffect(() => {
-    if (statusParam) {
-      setStatusFilter(statusParam);
-    }
+    setStatusFilter(statusParam);
   }, [statusParam]);
 
   // Transform raw organizations to enriched type
@@ -222,8 +223,14 @@ export default function AdminOrganizationsPage() {
       }
 
       // 2. Status Filter
-      if (statusFilter !== "ALL" && org.status !== statusFilter) {
-        return false;
+      if (activeStatusFilter !== "ALL") {
+        if (activeStatusFilter === "SUSPENDED") {
+          if (org.status !== "SUSPENDED" && org.status !== "OVERDUE" && org.status !== "TRIAL_EXPIRED") {
+            return false;
+          }
+        } else if (org.status !== activeStatusFilter) {
+          return false;
+        }
       }
 
       // 3. Plan Filter
@@ -233,7 +240,7 @@ export default function AdminOrganizationsPage() {
 
       return true;
     });
-  }, [enrichedOrganizations, searchQuery, statusFilter, planFilter]);
+  }, [enrichedOrganizations, searchQuery, activeStatusFilter, planFilter]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -596,7 +603,7 @@ export default function AdminOrganizationsPage() {
             <OrganizationToolbar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
-              statusFilter={statusFilter}
+              statusFilter={activeStatusFilter}
               setStatusFilter={setStatusFilter}
               planFilter={planFilter}
               setPlanFilter={setPlanFilter}

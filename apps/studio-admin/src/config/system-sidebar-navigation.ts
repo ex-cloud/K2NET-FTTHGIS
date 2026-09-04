@@ -127,7 +127,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "Audit Logs", url: "/security/audit", icon: "History", requiredPermission: "system.audit.view" },
           { title: "Security Alerts", url: "/security/alerts", icon: "ShieldAlert", requiredPermission: "system.security.manage" },
-          { title: "Support Access Center", url: "/organizations/impersonation", icon: "ShieldAlert", requiredPermission: "system.support.impersonate" },
         ],
       },
       {
@@ -176,7 +175,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         requiredPermission: "system.observability.view",
         items: [
           { title: "Overview", url: "/observability/overview", icon: "LayoutDashboard", requiredPermission: "system.observability.view" },
-          { title: "Support Access Forensics", url: "/organizations/impersonation", icon: "ShieldAlert", requiredPermission: "system.support.impersonate" },
           { title: "Query Performance", url: "/observability/query-performance", icon: "DatabaseZap", requiredPermission: "system.observability.view" },
           { title: "API Gateway", url: "/observability/api-gateway", icon: "Globe", requiredPermission: "system.observability.view" },
         ],

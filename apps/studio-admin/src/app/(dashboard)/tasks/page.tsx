@@ -168,12 +168,19 @@ export default function TasksPage() {
   }, [tasks]);
 
   // ── Filtered tasks ──────────────────────────────────────────────────────────
-  const userId = session?.user?.id ?? session?.user?.email ?? "";
+  const userIdentifiers = useMemo(() => {
+    return [
+      session?.user?.id,
+      session?.user?.email,
+      session?.user?.username,
+      session?.user?.name,
+    ].filter(Boolean) as string[];
+  }, [session?.user]);
 
   const filteredTasks = useMemo(() => {
     // Exclude master PROJECT containers from /tasks (All Issues / Active Tasks) unless typeParam specifically requests PROJECT
     const baseTasks = typeParam ? tasks.filter((t) => t.type === typeParam) : tasks.filter((t) => t.type !== "PROJECT");
-    let result = applyViewFilter(baseTasks, quickParam, userId);
+    let result = applyViewFilter(baseTasks, quickParam, userIdentifiers);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -218,7 +225,7 @@ export default function TasksPage() {
     }
 
     return result;
-  }, [tasks, quickParam, filters, searchQuery, userId, projectParam, selectedProject, typeParam, ordering, showClosed]);
+  }, [tasks, quickParam, filters, searchQuery, userIdentifiers, projectParam, selectedProject, typeParam, ordering, showClosed]);
 
   // Local optimistic state for Kanban
   const [localTasks, setLocalTasks] = useState<Task[]>([]);

@@ -21,11 +21,20 @@ export const VIEW_LABELS: Record<QuickView, string> = {
   "created-by-me": "Created by Me",
 };
 
-export function applyViewFilter(tasks: Task[], view: QuickView, userId: string, excludeProjects: boolean = false): Task[] {
+export function applyViewFilter(
+  tasks: Task[],
+  view: QuickView,
+  userId: string | string[],
+  excludeProjects: boolean = false
+): Task[] {
   const targetTasks = excludeProjects ? tasks.filter((t) => t.type !== "PROJECT") : tasks;
   const now = new Date();
   const in7d = new Date();
   in7d.setDate(now.getDate() + 7);
+
+  const userIdentifiers = Array.isArray(userId)
+    ? userId.filter(Boolean).map((u) => u.toLowerCase())
+    : [userId].filter(Boolean).map((u) => u.toLowerCase());
 
   switch (view) {
     case "active":
@@ -35,7 +44,7 @@ export function applyViewFilter(tasks: Task[], view: QuickView, userId: string, 
         (t) => t.dueDate && new Date(t.dueDate) < now && !["RESOLVED", "CLOSED"].includes(t.status)
       );
     case "no-assignee":
-      return targetTasks.filter((t) => !t.assigneeId);
+      return targetTasks.filter((t) => !t.assigneeId || t.assigneeId === "__unassigned__");
     case "upcoming":
       return targetTasks.filter(
         (t) =>
@@ -48,10 +57,17 @@ export function applyViewFilter(tasks: Task[], view: QuickView, userId: string, 
       return targetTasks.filter((t) => ["RESOLVED", "CLOSED"].includes(t.status));
     case "my-issues":
       return targetTasks.filter(
-        (t) => t.assigneeId === userId && !["RESOLVED", "CLOSED"].includes(t.status)
+        (t) =>
+          t.assigneeId &&
+          userIdentifiers.includes(t.assigneeId.toLowerCase()) &&
+          !["RESOLVED", "CLOSED"].includes(t.status)
       );
     case "created-by-me":
-      return targetTasks.filter((t) => t.reporterId === userId);
+      return targetTasks.filter(
+        (t) =>
+          (t.reporterId && userIdentifiers.includes(t.reporterId.toLowerCase())) ||
+          (t.createdBy && userIdentifiers.includes(t.createdBy.toLowerCase()))
+      );
     default:
       return targetTasks;
   }

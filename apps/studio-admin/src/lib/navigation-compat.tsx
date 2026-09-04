@@ -13,14 +13,20 @@ export interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
   children?: React.ReactNode;
   className?: string;
   prefetch?: boolean;
+  search?: Record<string, any> | ((prev: any) => any);
 }
 
 export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
-  ({ href, to, children, className, ...props }, ref) => {
+  ({ href, to, children, className, search: explicitSearch, ...props }, ref) => {
     const target = to || href || "/";
     
     // External link
-    if (target.startsWith("http://") || target.startsWith("https://") || target.startsWith("mailto:")) {
+    if (
+      target.startsWith("http://") ||
+      target.startsWith("https://") ||
+      target.startsWith("mailto:") ||
+      target.startsWith("tel:")
+    ) {
       return (
         <a ref={ref} href={target} className={className} {...props}>
           {children}
@@ -28,10 +34,25 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
       );
     }
 
+    let targetPath = target;
+    let targetSearch: Record<string, any> | undefined = explicitSearch as any;
+
+    if (target.includes("?")) {
+      const [path, queryString] = target.split("?");
+      targetPath = path || "/";
+      const sp = new URLSearchParams(queryString);
+      const parsedSearch: Record<string, string> = {};
+      sp.forEach((value, key) => {
+        parsedSearch[key] = value;
+      });
+      targetSearch = { ...parsedSearch, ...(typeof explicitSearch === "object" ? explicitSearch : {}) };
+    }
+
     return (
       <TanStackLink
         ref={ref}
-        to={target}
+        to={targetPath}
+        search={targetSearch}
         className={className}
         {...props}
       >
@@ -45,8 +66,30 @@ Link.displayName = "Link";
 export function useRouter() {
   const navigate = useNavigate();
   return {
-    push: (url: string, _options?: Record<string, unknown>) => navigate({ to: url }),
-    replace: (url: string, _options?: Record<string, unknown>) => navigate({ to: url, replace: true }),
+    push: (url: string, _options?: Record<string, unknown>) => {
+      if (url.includes("?")) {
+        const [path, queryString] = url.split("?");
+        const sp = new URLSearchParams(queryString);
+        const search: Record<string, string> = {};
+        sp.forEach((value, key) => {
+          search[key] = value;
+        });
+        return navigate({ to: path, search });
+      }
+      return navigate({ to: url });
+    },
+    replace: (url: string, _options?: Record<string, unknown>) => {
+      if (url.includes("?")) {
+        const [path, queryString] = url.split("?");
+        const sp = new URLSearchParams(queryString);
+        const search: Record<string, string> = {};
+        sp.forEach((value, key) => {
+          search[key] = value;
+        });
+        return navigate({ to: path, search, replace: true });
+      }
+      return navigate({ to: url, replace: true });
+    },
     back: () => window.history.back(),
     refresh: () => window.location.reload(),
     prefetch: () => {},
@@ -58,12 +101,37 @@ export function usePathname(): string {
     const location = useLocation();
     return location.pathname;
   } catch {
-    return window.location.pathname;
+    return typeof window !== "undefined" ? window.location.pathname : "/";
   }
 }
 
 export function useSearchParams(): URLSearchParams {
-  return new URLSearchParams(window.location.search);
+  try {
+    const location = useLocation();
+    const searchObj = location.search;
+    const searchStr = (location as any)?.searchStr;
+    
+    return React.useMemo(() => {
+      if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
+        const sp = new URLSearchParams();
+        for (const [k, v] of Object.entries(searchObj)) {
+          if (v !== undefined && v !== null) {
+            sp.set(k, String(v));
+          }
+        }
+        return sp;
+      }
+      if (searchStr) {
+        return new URLSearchParams(searchStr);
+      }
+      if (typeof window !== "undefined") {
+        return new URLSearchParams(window.location.search);
+      }
+      return new URLSearchParams();
+    }, [searchObj, searchStr]);
+  } catch {
+    return new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  }
 }
 
 export function useParams<T = Record<string, string>>(): T {

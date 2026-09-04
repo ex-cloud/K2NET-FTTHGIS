@@ -12,8 +12,8 @@ INSERT INTO permissions (code, name, module, scope, description, created_at, upd
 ON CONFLICT (code) DO NOTHING;
 
 -- 1. super_admin: Memperoleh seluruh 7 permission baru + system.audit.view
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
+INSERT INTO role_permissions (permission_id, role_id)
+SELECT p.id, r.id FROM roles r, permissions p
 WHERE r.name = 'super_admin' AND p.code IN (
   'system.gateway.manage',
   'system.security.manage',
@@ -27,8 +27,8 @@ WHERE r.name = 'super_admin' AND p.code IN (
 ON CONFLICT DO NOTHING;
 
 -- 2. platform_engineer: gateway.manage, backup.manage, observability.view, integration.manage
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
+INSERT INTO role_permissions (permission_id, role_id)
+SELECT p.id, r.id FROM roles r, permissions p
 WHERE r.name = 'platform_engineer' AND p.code IN (
   'system.gateway.manage',
   'system.backup.manage',
@@ -38,8 +38,8 @@ WHERE r.name = 'platform_engineer' AND p.code IN (
 ON CONFLICT DO NOTHING;
 
 -- 3. system_auditor: observability.view, system.audit.view
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
+INSERT INTO role_permissions (permission_id, role_id)
+SELECT p.id, r.id FROM roles r, permissions p
 WHERE r.name = 'system_auditor' AND p.code IN (
   'system.observability.view',
   'system.audit.view'
@@ -47,8 +47,8 @@ WHERE r.name = 'system_auditor' AND p.code IN (
 ON CONFLICT DO NOTHING;
 
 -- 4. system_support: security.manage (revoke sessions), observability.view
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p
+INSERT INTO role_permissions (permission_id, role_id)
+SELECT p.id, r.id FROM roles r, permissions p
 WHERE r.name = 'system_support' AND p.code IN (
   'system.security.manage',
   'system.observability.view'

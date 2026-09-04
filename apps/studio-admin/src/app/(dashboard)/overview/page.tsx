@@ -91,6 +91,7 @@ export default function SystemOverviewPage() {
               globalHealthState={globalHealthState}
               activeGatewaysCount={data.activeGatewaysCount}
               totalGatewaysCount={data.totalGatewaysCount}
+              gateways={data.gateways}
             />
           )}
 
