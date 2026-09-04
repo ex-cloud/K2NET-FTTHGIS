@@ -56,7 +56,7 @@ export function OrgBillingTab({
   const [dunningNotes, setDunningNotes] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const currentTier = summary?.planTier || org.planTier || "Professional";
+  const currentTier = summary?.planTier || org.planTier || "Starter";
   const usedOlts = summary?.usedOlts ?? org.usedOlts;
   const usedOdps = summary?.usedOdps ?? org.usedOdps;
   const effectiveMaxOlts = summary?.effectiveMaxOlts ?? org.maxOlts;

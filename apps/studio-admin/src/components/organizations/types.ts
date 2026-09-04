@@ -12,14 +12,14 @@ export type SlaTier = "Platinum (99.9%)" | "Gold (99.5%)" | "Standard (99.0%)";
 
 export type PlanTier = "Starter" | "Professional" | "Enterprise" | "Custom";
 
-export function normalizePlanTier(name?: string): PlanTier {
-  if (!name) return "Professional";
+export function normalizePlanTier(name?: string | null): PlanTier {
+  if (!name) return "Starter";
   const upper = name.toUpperCase();
-  if (upper === "FREE" || upper === "STARTER" || upper.includes("TRIAL")) return "Starter";
-  if (upper === "PRO" || upper === "PROFESSIONAL") return "Professional";
+  if (upper === "FREE" || upper === "STARTER" || upper.includes("FREE") || upper.includes("STARTER") || upper.includes("TRIAL")) return "Starter";
+  if (upper === "PRO" || upper === "PROFESSIONAL" || upper.includes("PRO")) return "Professional";
   if (upper === "ENTERPRISE") return "Enterprise";
   if (upper === "CUSTOM") return "Custom";
-  return "Professional";
+  return "Starter";
 }
 
 export function toBackendPlanName(tier: PlanTier | string): string {

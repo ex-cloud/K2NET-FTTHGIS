@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Building2, ArrowRight } from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";
 import type { Organization } from "@/hooks/useOrganizations";
+import { normalizePlanTier } from "@/components/organizations/types";
 
 interface OverviewActivityFeedProps {
   loading: boolean;
@@ -27,7 +28,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
           [1, 2, 3].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl border border-border bg-card/20" />)
         ) : recentOrgs.length > 0 ? (
           recentOrgs.map((org) => {
-            const planName = org.subscriptionPlan?.name || "Free Plan";
+            const planTier = normalizePlanTier(org.subscriptionPlan?.name);
 
             return (
               <div key={org.slug} className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card/60 p-4 transition-all hover:border-border/10 sm:flex-row sm:items-center">
@@ -44,7 +45,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                 <div className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap sm:justify-end">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="border-border bg-card/40 px-2 py-0.5 text-[9px] uppercase font-mono text-muted-foreground">
-                      {planName}
+                      {planTier}
                     </Badge>
                     <Badge className={cn(
                       "border border-border px-2 py-0.5 text-[9px] font-bold",
