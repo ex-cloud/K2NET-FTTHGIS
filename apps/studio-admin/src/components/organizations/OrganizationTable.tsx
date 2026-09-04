@@ -173,7 +173,11 @@ export function OrganizationTable({
           ) : (
             organizations.map((org) => {
               const isSelected = selectedIds.includes(org.id);
-              const isImpersonatingThisOrg = activeImpersonationSlug === org.slug;
+              const isImpersonatingThisOrg = Boolean(
+                activeImpersonationSlug &&
+                activeImpersonationSlug === org.slug &&
+                (activeImpersonationRemainingSeconds ?? 0) > 0
+              );
               const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
 
               return (

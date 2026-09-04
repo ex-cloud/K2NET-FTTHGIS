@@ -5,12 +5,17 @@ import com.company.ftthgis.domain.tenant.service.ImpersonationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,8 +38,8 @@ public class ImpersonationController {
             @Valid @RequestBody ImpersonationStartRequest request,
             @AuthenticationPrincipal Jwt jwt) {
 
-        log.info("🛡️ [ImpersonationController] Request start impersonation: targetTenant={}, caller={}",
-                tenantId, jwt.getSubject());
+        log.info("🛡️ [ImpersonationController] Request start impersonation: targetTenant={}, caller={}, autoSwitch={}",
+                tenantId, jwt.getSubject(), request.getAutoSwitch());
 
         ImpersonationSessionResponse response = impersonationService.startSession(tenantId, request, jwt);
         return ResponseEntity.ok(response);
@@ -141,5 +146,61 @@ public class ImpersonationController {
 
         ImpersonationStatusResponse response = impersonationService.getStatus(sessionId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * KPI ringkasan statistik sesi impersonasi untuk Support Center.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk audit.
+     */
+    @GetMapping("/api/v1/system/impersonate/stats")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    public ResponseEntity<ImpersonationStatsDto> getStats() {
+        return ResponseEntity.ok(impersonationService.getImpersonationStats());
+    }
+
+    /**
+     * Daftar seluruh sesi impersonasi yang sedang aktif di sistem secara real-time.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk monitoring.
+     */
+    @GetMapping("/api/v1/system/impersonate/active-sessions")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    public ResponseEntity<List<ImpersonationSessionDto>> getActiveSessions() {
+        return ResponseEntity.ok(impersonationService.getActiveSessions());
+    }
+
+    /**
+     * Pencarian dan riwayat audit lengkap seluruh sesi impersonasi dengan paginasi.
+     * Dapat diakses oleh Super Admin, Support Lead, serta System Auditor (SYS-05) untuk kepatuhan & forensik.
+     */
+    @GetMapping("/api/v1/system/impersonate/sessions")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasRole('system_auditor') or hasRole('ROLE_SYSTEM_AUDITOR') or hasAuthority('system.support.impersonate') or hasAuthority('system.audit.view') or hasAuthority('system.audit.read')")
+    public ResponseEntity<Page<ImpersonationSessionDto>> searchSessions(
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startedAt"));
+        return ResponseEntity.ok(impersonationService.searchSessions(status, search, pageable));
+    }
+
+    /**
+     * Emergency Kill / Putus Akses darurat sesi impersonasi oleh Super Admin.
+     * Dibatasi KHUSUS untuk Super Admin / Support Lead dengan hak force-revoke (Auditor dilarang mutasi).
+     */
+    @PostMapping("/api/v1/system/impersonate/sessions/{sessionId}/revoke")
+    @PreAuthorize("hasRole('super_admin') or hasRole('ROLE_SUPER_ADMIN') or hasAuthority('system.support.impersonate.force-revoke')")
+    public ResponseEntity<?> emergencyRevoke(
+            @PathVariable("sessionId") UUID sessionId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        UUID superAdminId = UUID.fromString(jwt.getSubject());
+        log.warn("🚨 [ImpersonationController] Emergency revoke requested for session {} by {}", sessionId, superAdminId);
+
+        impersonationService.emergencyRevokeSession(sessionId, superAdminId);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Sesi impersonasi telah dicabut secara darurat."
+        ));
     }
 }

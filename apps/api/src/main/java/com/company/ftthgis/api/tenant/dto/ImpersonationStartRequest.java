@@ -20,4 +20,6 @@ public class ImpersonationStartRequest {
     private String ticketReference;
 
     private String refreshToken;
+
+    private Boolean autoSwitch;
 }

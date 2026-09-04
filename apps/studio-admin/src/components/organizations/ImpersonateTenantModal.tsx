@@ -21,10 +21,12 @@ import {
   AlertTriangle,
   FileText,
   Clock,
+  ArrowRightLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-compat";
 import { getTenantUrl } from "@/lib/domain";
+import { useActiveImpersonation } from "@/hooks/useActiveImpersonation";
 import type { EnrichedOrganization } from "./types";
 
 interface ImpersonateTenantModalProps {
@@ -39,11 +41,18 @@ export function ImpersonateTenantModal({
   onClose,
 }: ImpersonateTenantModalProps) {
   const { data: session, signIn } = useSession();
+  const { activeSession, refetch: refetchActiveSession } = useActiveImpersonation();
   const [reason, setReason] = useState("");
   const [ticketReference, setTicketReference] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
-  const [revokingActive, setRevokingActive] = useState(false);
+
+  const hasDifferentActiveSession = Boolean(
+    activeSession?.hasActiveSession &&
+    (activeSession.remainingSeconds ?? 0) > 0 &&
+    organization &&
+    activeSession.targetOrgSlug !== organization.slug
+  );
 
   // Check for pending impersonation after Keycloak step-up redirect
   useEffect(() => {
@@ -64,7 +73,7 @@ export function ImpersonateTenantModal({
           setTicketReference(parsed.ticketReference || "");
           // Auto-trigger with fresh token after small timeout
           setTimeout(() => {
-            triggerStart(parsed.reason, parsed.ticketReference);
+            triggerStart(parsed.reason, parsed.ticketReference, parsed.autoSwitch ?? false);
           }, 300);
         }
       } catch (e) {
@@ -75,35 +84,7 @@ export function ImpersonateTenantModal({
 
   const isReasonValid = reason.trim().length >= 10;
 
-  const handleRevokeActiveSession = async () => {
-    setRevokingActive(true);
-    try {
-      const res = await fetch("/api/v1/system/impersonate/exit-active", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-      });
-
-      if (res.ok) {
-        setConflictError(null);
-        toast.success("Sesi Sebelumnya Berhasil Diakhiri", {
-          description: "Sesi aktif telah ditutup. Silakan lanjutkan.",
-        });
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error("Gagal Mengakhiri Sesi", {
-          description: data.message || "Terjadi kesalahan saat menutup sesi.",
-        });
-      }
-    } catch (e: any) {
-      toast.error("Kesalahan Jaringan", { description: e.message });
-    } finally {
-      setRevokingActive(false);
-    }
-  };
-
-  const triggerStart = async (overrideReason?: string, overrideTicket?: string) => {
+  const triggerStart = async (overrideReason?: string, overrideTicket?: string, autoSwitch: boolean = false) => {
     if (!organization) return;
     setSubmitting(true);
     setConflictError(null);
@@ -122,6 +103,7 @@ export function ImpersonateTenantModal({
         body: JSON.stringify({
           reason: finalReason,
           ticketReference: finalTicket || undefined,
+          autoSwitch: autoSwitch || hasDifferentActiveSession,
         }),
       });
 
@@ -149,6 +131,7 @@ export function ImpersonateTenantModal({
             orgSlug: organization.slug,
             reason: finalReason,
             ticketReference: finalTicket,
+            autoSwitch: autoSwitch || hasDifferentActiveSession,
           })
         );
 
@@ -162,9 +145,6 @@ export function ImpersonateTenantModal({
 
       if (res.status === 409) {
         setConflictError(data.details || data.message || "Anda masih memiliki sesi impersonasi aktif untuk tenant lain.");
-        toast.error("Gagal Memulai Sesi Impersonasi", {
-          description: data.details || "Anda masih memiliki sesi impersonasi aktif. Keluar terlebih dahulu.",
-        });
         setSubmitting(false);
         return;
       }
@@ -187,6 +167,7 @@ export function ImpersonateTenantModal({
       });
 
       window.open(targetUrl, "_blank");
+      await refetchActiveSession();
       onClose();
       setReason("");
       setTicketReference("");
@@ -231,13 +212,31 @@ export function ImpersonateTenantModal({
             </Badge>
           </div>
 
-          {/* Active Session Conflict Box */}
-          {conflictError && (
+          {/* Seamless Auto-Switch Notification Box */}
+          {hasDifferentActiveSession && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground space-y-2">
+              <div className="flex items-start gap-2.5">
+                <ArrowRightLeft className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-foreground flex items-center gap-1.5">
+                    <span>Sesi Aktif di Tenant Lain:</span>
+                    <span className="font-mono text-primary underline">{activeSession?.targetOrgName}</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Sistem akan secara otomatis mengakhiri sesi aktif di <strong className="text-foreground">{activeSession?.targetOrgName}</strong> dan langsung beralih ke portal <strong className="text-foreground">{organization.name}</strong> secara mulus.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Conflict Error Fallback Box */}
+          {conflictError && !hasDifferentActiveSession && (
             <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="font-semibold">Sesi Impersonasi Masih Aktif</p>
+                  <p className="font-semibold">Sesi Impersonasi Lain Masih Terdeteksi</p>
                   <p className="text-[11px] leading-relaxed opacity-90">{conflictError}</p>
                 </div>
               </div>
@@ -245,11 +244,12 @@ export function ImpersonateTenantModal({
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={handleRevokeActiveSession}
-                  disabled={revokingActive}
-                  className="h-7 text-xs font-semibold"
+                  onClick={() => triggerStart(reason, ticketReference, true)}
+                  disabled={submitting}
+                  className="h-7 text-xs font-semibold gap-1.5"
                 >
-                  {revokingActive ? "Mengakhiri Sesi..." : "Akhiri Sesi Aktif Sebelumnya"}
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  <span>Akhiri Sesi Lama & Beralih Sekarang</span>
                 </Button>
               </div>
             </div>
@@ -325,7 +325,7 @@ export function ImpersonateTenantModal({
             Batal
           </Button>
           <Button
-            onClick={() => triggerStart()}
+            onClick={() => triggerStart(reason, ticketReference, hasDifferentActiveSession)}
             disabled={!isReasonValid || submitting}
             className="text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-primary-foreground font-semibold"
           >
@@ -333,6 +333,11 @@ export function ImpersonateTenantModal({
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>Memproses Sesi...</span>
+              </>
+            ) : hasDifferentActiveSession ? (
+              <>
+                <ArrowRightLeft className="h-3.5 w-3.5" />
+                <span>Beralih ke {organization.name}</span>
               </>
             ) : (
               <>

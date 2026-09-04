@@ -611,7 +611,7 @@ export default function AdminOrganizationsPage() {
             />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {activeSession?.hasActiveSession && (
+              {activeSession?.hasActiveSession && (activeSession?.remainingSeconds ?? 0) > 0 && (
                 <div className="mx-4 md:mx-6 mt-4 mb-2 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">

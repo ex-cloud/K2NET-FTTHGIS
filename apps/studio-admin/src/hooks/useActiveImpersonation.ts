@@ -31,7 +31,17 @@ export function useActiveImpersonation() {
       });
       if (res.ok) {
         const data = await res.json();
-        setActiveSession(data);
+        // Strict anti-zombie validation: must have positive remainingSeconds and future expiresAt
+        const isActuallyActive =
+          Boolean(data?.hasActiveSession) &&
+          (data.remainingSeconds ?? 0) > 0 &&
+          (!data.expiresAt || new Date(data.expiresAt).getTime() > Date.now());
+
+        if (isActuallyActive) {
+          setActiveSession(data);
+        } else {
+          setActiveSession({ hasActiveSession: false });
+        }
       }
     } catch {
       // ignore network glitches

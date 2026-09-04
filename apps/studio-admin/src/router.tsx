@@ -27,6 +27,9 @@ const OrganizationDomainsPage = React.lazy(() =>
 const OrganizationVpnPage = React.lazy(() =>
   import("./app/(dashboard)/organizations/vpn/page").then((m) => ({ default: m.default }))
 );
+const OrganizationImpersonationPage = React.lazy(() =>
+  import("./app/(dashboard)/organizations/impersonation/page").then((m) => ({ default: m.default }))
+);
 const UsersPage = React.lazy(() =>
   import("./app/(dashboard)/users/page").then((m) => ({ default: m.default }))
 );
@@ -267,6 +270,7 @@ const orgQuotasRoute = createRoute({ getParentRoute: () => authenticatedLayoutRo
 const orgFeaturesRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/features", component: () => <Lazy><OrganizationFeaturesPage /></Lazy> });
 const orgDomainsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/domains", component: () => <Lazy><OrganizationDomainsPage /></Lazy> });
 const orgVpnRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/vpn", component: () => <Lazy><OrganizationVpnPage /></Lazy> });
+const orgImpersonationRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/organizations/impersonation", component: () => <Lazy><OrganizationImpersonationPage /></Lazy> });
 
 // Users
 const usersRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/users", component: () => <Lazy><UsersPage /></Lazy> });
@@ -353,7 +357,7 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   indexRoute,
   overviewRoute,
   // Orgs
-  orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute,
+  orgsRoute, orgSlugRoute, orgQuotasRoute, orgFeaturesRoute, orgDomainsRoute, orgVpnRoute, orgImpersonationRoute,
   // Users
   usersRoute, usersRolesRoute, usersSessionsRoute,
   // Observability

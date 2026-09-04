@@ -44,6 +44,12 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
           { title: "VPN & Tunneling", url: "/organizations/vpn", icon: "ShieldCheck" },
         ],
       },
+      {
+        title: "Support & Forensics",
+        items: [
+          { title: "Impersonation Center", url: "/organizations/impersonation", icon: "ShieldAlert" },
+        ],
+      },
     ],
   },
   logs: {

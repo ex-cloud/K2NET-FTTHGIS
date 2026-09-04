@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -60,7 +62,7 @@ public class ImpersonationService {
     /**
      * Start an impersonation session for the given target tenant.
      * Accepts either UUID string or organization slug.
-     * Enforces Step-Up MFA freshness (auth_time <= 120s) and single active session per actor.
+     * Enforces Step-Up MFA freshness (auth_time <= 120s) and single active session per actor (with auto-switch support).
      */
     @Transactional
     public ImpersonationSessionResponse startSession(String tenantIdentifier, ImpersonationStartRequest request, Jwt jwt) {
@@ -99,16 +101,23 @@ public class ImpersonationService {
                     .orElseThrow(() -> new NoSuchElementException("Tenant target tidak ditemukan: " + tenantIdentifier));
         }
 
-        // 3. Pencegahan sesi ganda (TOLAK HTTP 409 Conflict, tidak auto-revoke)
+        // 3. Pencegahan sesi ganda atau alur Auto-Switch (Opsi A)
         Optional<ImpersonationSession> activeSessionOpt = impersonationSessionRepository.findActiveSessionByActorId(actor.getId());
         if (activeSessionOpt.isPresent()) {
             ImpersonationSession existing = activeSessionOpt.get();
             if (existing.getExpiresAt().isBefore(Instant.now())) {
                 existing.setStatus(ImpersonationStatus.EXPIRED);
                 impersonationSessionRepository.save(existing);
+                redisTemplate.delete(SESSION_CACHE_PREFIX + existing.getId());
+            } else if (Boolean.TRUE.equals(request.getAutoSwitch())) {
+                log.info("🛡️ [Impersonation] Auto-switching from tenant {} to {}",
+                        existing.getTargetOrganization() != null ? existing.getTargetOrganization().getSlug() : "unknown",
+                        targetOrg.getSlug());
+                exitSession(existing.getId(), actor.getId());
             } else {
                 String existingOrgName = existing.getTargetOrganization() != null ? existing.getTargetOrganization().getName() : "tenant lain";
-                throw new ActiveSessionConflictException("Anda masih memiliki sesi impersonasi aktif untuk tenant '" + existingOrgName + "'. Silakan keluar terlebih dahulu sebelum memulai sesi baru.");
+                String existingOrgSlug = existing.getTargetOrganization() != null ? existing.getTargetOrganization().getSlug() : "";
+                throw new ActiveSessionConflictException("Anda masih memiliki sesi impersonasi aktif untuk tenant '" + existingOrgName + "' (" + existingOrgSlug + "). Silakan konfirmasi untuk beralih atau keluar terlebih dahulu.");
             }
         }
 
@@ -223,6 +232,7 @@ public class ImpersonationService {
         if (session.getExpiresAt().isBefore(Instant.now())) {
             session.setStatus(ImpersonationStatus.EXPIRED);
             impersonationSessionRepository.save(session);
+            redisTemplate.delete(SESSION_CACHE_PREFIX + session.getId());
             throw new NoSuchElementException("Sesi impersonasi telah kedaluwarsa.");
         }
 
@@ -402,24 +412,41 @@ public class ImpersonationService {
 
     /**
      * Get active impersonation session info for the actor.
+     * Auto-cleans expired sessions and strictly prevents returning 0M zombie states.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> getActiveSessionForActor(UUID actorUserId) {
-        return impersonationSessionRepository.findActiveSessionByActorId(actorUserId)
-                .map(session -> {
-                    long remaining = Math.max(Duration.between(Instant.now(), session.getExpiresAt()).toSeconds(), 0);
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("hasActiveSession", true);
-                    map.put("sessionId", session.getId().toString());
-                    map.put("targetOrgId", session.getTargetOrganization().getId().toString());
-                    map.put("targetOrgSlug", session.getTargetOrganization().getSlug());
-                    map.put("targetOrgName", session.getTargetOrganization().getName());
-                    map.put("startedAt", session.getStartedAt().toString());
-                    map.put("expiresAt", session.getExpiresAt().toString());
-                    map.put("remainingSeconds", remaining);
-                    return map;
-                })
-                .orElseGet(() -> Map.of("hasActiveSession", false));
+        Optional<ImpersonationSession> sessionOpt = impersonationSessionRepository.findActiveSessionByActorId(actorUserId);
+        if (sessionOpt.isEmpty()) {
+            return Map.of("hasActiveSession", false);
+        }
+
+        ImpersonationSession session = sessionOpt.get();
+        if (session.getExpiresAt().isBefore(Instant.now())) {
+            session.setStatus(ImpersonationStatus.EXPIRED);
+            impersonationSessionRepository.save(session);
+            redisTemplate.delete(SESSION_CACHE_PREFIX + session.getId());
+            return Map.of("hasActiveSession", false);
+        }
+
+        long remaining = Math.max(Duration.between(Instant.now(), session.getExpiresAt()).toSeconds(), 0);
+        if (remaining <= 0) {
+            session.setStatus(ImpersonationStatus.EXPIRED);
+            impersonationSessionRepository.save(session);
+            redisTemplate.delete(SESSION_CACHE_PREFIX + session.getId());
+            return Map.of("hasActiveSession", false);
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("hasActiveSession", true);
+        map.put("sessionId", session.getId().toString());
+        map.put("targetOrgId", session.getTargetOrganization().getId().toString());
+        map.put("targetOrgSlug", session.getTargetOrganization().getSlug());
+        map.put("targetOrgName", session.getTargetOrganization().getName());
+        map.put("startedAt", session.getStartedAt().toString());
+        map.put("expiresAt", session.getExpiresAt().toString());
+        map.put("remainingSeconds", remaining);
+        return map;
     }
 
     /**
@@ -465,6 +492,144 @@ public class ImpersonationService {
                 .targetTenantName(cache.getTargetTenantName())
                 .remainingSeconds(ttl != null && ttl > 0 ? ttl : 0)
                 .expiresAt(cache.getExpiresAt() != null ? Instant.parse(cache.getExpiresAt()) : null)
+                .build();
+    }
+
+    /**
+     * KPI Summary Statistics for Support & Impersonation Command Center.
+     */
+    @Transactional(readOnly = true)
+    public ImpersonationStatsDto getImpersonationStats() {
+        Instant now = Instant.now();
+        Instant todayStart = now.minus(Duration.ofHours(24));
+        Instant sevenDaysAgo = now.minus(Duration.ofDays(7));
+
+        long activeCount = impersonationSessionRepository.countActiveSessions(now);
+        long todayCount = impersonationSessionRepository.countSessionsSince(todayStart);
+        long total7dCount = impersonationSessionRepository.countSessionsSince(sevenDaysAgo);
+        long uniqueTenants7d = impersonationSessionRepository.countDistinctTenantsSince(sevenDaysAgo);
+        long forceRevokedCount = impersonationSessionRepository.countByStatus(ImpersonationStatus.REVOKED);
+        Double avgDuration = impersonationSessionRepository.calculateAvgDurationSeconds();
+        long avgSec = avgDuration != null ? avgDuration.longValue() : 0L;
+
+        return ImpersonationStatsDto.builder()
+                .activeCount(activeCount)
+                .todayCount(todayCount)
+                .total7dCount(total7dCount)
+                .avgDurationSeconds(avgSec)
+                .uniqueTenants7dCount(uniqueTenants7d)
+                .forceRevokedCount(forceRevokedCount)
+                .build();
+    }
+
+    /**
+     * List all currently active impersonation sessions across all actors.
+     */
+    @Transactional(readOnly = true)
+    public List<ImpersonationSessionDto> getActiveSessions() {
+        Instant now = Instant.now();
+        return impersonationSessionRepository.findAllActiveSessions(now).stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    /**
+     * Search and paginate all historical and active impersonation sessions.
+     */
+    @Transactional(readOnly = true)
+    public Page<ImpersonationSessionDto> searchSessions(String statusStr, String search, Pageable pageable) {
+        ImpersonationStatus status = null;
+        if (statusStr != null && !statusStr.isBlank() && !"ALL".equalsIgnoreCase(statusStr)) {
+            try {
+                status = ImpersonationStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        return impersonationSessionRepository.searchSessions(status, search != null ? search.trim() : null, pageable)
+                .map(this::mapToDto);
+    }
+
+    /**
+     * Emergency Kill / Force Revoke an impersonation session by Super Admin.
+     * Records explicit dual-identity audit trail (IMPERSONATION_FORCE_REVOKED) with separate revoker and actor IDs.
+     */
+    @Transactional
+    public void emergencyRevokeSession(UUID sessionId, UUID superAdminId) {
+        ImpersonationSession session = impersonationSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new NoSuchElementException("Sesi impersonasi tidak ditemukan: " + sessionId));
+
+        session.setStatus(ImpersonationStatus.REVOKED);
+        session.setRevokedAt(Instant.now());
+        impersonationSessionRepository.save(session);
+        redisTemplate.delete(SESSION_CACHE_PREFIX + sessionId);
+
+        User revoker = superAdminId != null ? userRepository.findById(superAdminId).orElse(null) : null;
+        String revokerEmail = revoker != null ? revoker.getEmail() : (superAdminId != null ? superAdminId.toString() : "SUPER_ADMIN");
+
+        long durationSeconds = Duration.between(session.getStartedAt(), Instant.now()).toSeconds();
+        Map<String, Object> auditMetadata = new HashMap<>();
+        auditMetadata.put("durationSeconds", durationSeconds);
+        auditMetadata.put("forceRevokedByUserId", superAdminId != null ? superAdminId.toString() : "");
+        auditMetadata.put("forceRevokedByEmail", revokerEmail);
+        auditMetadata.put("targetActorUserId", session.getActorUser() != null ? session.getActorUser().getId().toString() : "");
+        auditMetadata.put("targetActorEmail", session.getActorUser() != null ? session.getActorUser().getEmail() : "");
+        auditMetadata.put("targetOrgId", session.getTargetOrganization() != null ? session.getTargetOrganization().getId().toString() : "");
+        auditMetadata.put("targetOrgSlug", session.getTargetOrganization() != null ? session.getTargetOrganization().getSlug() : "");
+        auditMetadata.put("ticketReference", session.getTicketReference() != null ? session.getTicketReference() : "");
+        auditMetadata.put("reason", session.getReason());
+        auditMetadata.put("revokedAt", session.getRevokedAt().toString());
+
+        auditLoggingService.logEvent(
+                session.getTargetOrganization().getSlug(),
+                "IMPERSONATION_FORCE_REVOKED",
+                "IMPERSONATION_SESSION",
+                sessionId.toString(),
+                null,
+                auditMetadata,
+                auditMetadata
+        );
+
+        log.warn("🚨 [Impersonation] Sesi impersonasi dicabut secara paksa: sessionId={}, targetOrg={}, actor={}, forceRevokedBy={}",
+                sessionId, session.getTargetOrganization().getSlug(), session.getActorUser().getEmail(), revokerEmail);
+    }
+
+    private ImpersonationSessionDto mapToDto(ImpersonationSession session) {
+        long duration = 0;
+        if (session.getRevokedAt() != null) {
+            duration = Duration.between(session.getStartedAt(), session.getRevokedAt()).toSeconds();
+        } else if (session.getExpiresAt() != null) {
+            Instant end = session.getExpiresAt().isBefore(Instant.now()) ? session.getExpiresAt() : Instant.now();
+            duration = Duration.between(session.getStartedAt(), end).toSeconds();
+        }
+
+        long remaining = 0;
+        if (session.getStatus() == ImpersonationStatus.ACTIVE && session.getExpiresAt().isAfter(Instant.now())) {
+            remaining = Duration.between(Instant.now(), session.getExpiresAt()).toSeconds();
+        }
+
+        String planName = "PRO";
+        if (session.getTargetOrganization() != null && session.getTargetOrganization().getSubscriptionPlan() != null) {
+            planName = session.getTargetOrganization().getSubscriptionPlan().getName();
+        }
+
+        return ImpersonationSessionDto.builder()
+                .id(session.getId())
+                .actorId(session.getActorUser() != null ? session.getActorUser().getId() : null)
+                .actorEmail(session.getActorUser() != null ? session.getActorUser().getEmail() : "")
+                .actorName(session.getActorUser() != null ? session.getActorUser().getFullName() : "")
+                .targetOrgId(session.getTargetOrganization() != null ? session.getTargetOrganization().getId() : null)
+                .targetOrgSlug(session.getTargetOrganization() != null ? session.getTargetOrganization().getSlug() : "")
+                .targetOrgName(session.getTargetOrganization() != null ? session.getTargetOrganization().getName() : "")
+                .targetOrgPlan(planName)
+                .reason(session.getReason())
+                .ticketReference(session.getTicketReference())
+                .stepUpVerifiedAt(session.getStepUpVerifiedAt())
+                .startedAt(session.getStartedAt())
+                .expiresAt(session.getExpiresAt())
+                .revokedAt(session.getRevokedAt())
+                .status(session.getStatus())
+                .durationSeconds(duration)
+                .remainingSeconds(remaining)
                 .build();
     }
 
