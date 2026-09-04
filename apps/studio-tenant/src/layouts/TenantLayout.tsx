@@ -209,6 +209,7 @@ export function TenantLayout() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  sessionStorage.removeItem("k2net_session_ended");
                   window.close();
                   setTimeout(() => {
                     window.location.href = "/login";
@@ -222,6 +223,7 @@ export function TenantLayout() {
                 variant="default"
                 size="sm"
                 onClick={() => {
+                  sessionStorage.removeItem("k2net_session_ended");
                   window.location.href = "https://system-gis.kdua.net/organizations";
                 }}
                 className="w-full text-xs bg-primary text-primary-foreground hover:bg-primary/90"

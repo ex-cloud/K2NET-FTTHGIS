@@ -58,8 +58,15 @@ export function useImpersonationSession() {
     setTenantSlug("");
     setImpersonationSessionId(null);
     setApiAuthToken(null);
-    activeExchangingCode = null;
+    // Note: activeExchangingCode is intentionally NOT reset here — it stays locked
+    // to prevent spurious retry attempts on the consumed exchange code.
     if (typeof window !== "undefined") {
+      if (showTerminationModal) {
+        // Session ended by server (revoked/expired): set a marker so ProtectedRoute
+        // keeps rendering children while the "Sesi Berakhir" modal is visible.
+        // The modal's own buttons handle final navigation (close tab / go to admin).
+        sessionStorage.setItem("k2net_session_ended", "true");
+      }
       sessionStorage.removeItem(META_STORAGE_KEY);
       localStorage.removeItem(META_STORAGE_KEY);
       sessionStorage.removeItem("k2net_impersonating_in_progress");
@@ -191,9 +198,10 @@ export function useImpersonationSession() {
             toast.error("Gagal Memulai Sesi Impersonasi", {
               description: err.message || "Kode penukaran tidak valid atau sudah kedaluwarsa.",
             });
-            // Reset guard ONLY on definitive server rejection (4xx/5xx)
-            // so the user sees exactly ONE error, not a second retry
-            activeExchangingCode = null;
+            // IMPORTANT: Do NOT reset activeExchangingCode or exchangeAttemptedRef here.
+            // The code was definitively rejected by the server — resetting guards would allow
+            // a retry that hits the same 400 and triggers a SECOND error toast.
+            // The user needs a fresh impersonate_code from the admin portal.
             return;
           }
 
