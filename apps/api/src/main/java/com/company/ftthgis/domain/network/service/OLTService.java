@@ -163,6 +163,9 @@ public class OLTService {
         if (org.springframework.util.StringUtils.hasText(dto.getLastNote())) {
             olt.setLastNote(dto.getLastNote());
         }
+        if (dto.getProjectId() != null) {
+            projectRepository.findById(dto.getProjectId()).ifPresent(olt::setProject);
+        }
         if (org.springframework.util.StringUtils.hasText(dto.getAddress())) {
             olt.setAddress(dto.getAddress());
         }

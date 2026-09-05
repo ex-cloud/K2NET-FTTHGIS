@@ -25,20 +25,24 @@ public interface NetworkMapper {
     @Mapping(target = "oltId", source = "olt.id")
     @Mapping(target = "oltName", source = "olt.name")
     @Mapping(target = "oltCode", source = "olt.code")
+    @Mapping(target = "projectId", source = "project.id")
     ODCDto toODCDto(ODC odc);
 
     @Mapping(target = "nodeType", constant = "ODP")
     @Mapping(target = "odcId", source = "odc.id")
     @Mapping(target = "odcName", source = "odc.name")
     @Mapping(target = "odcCode", source = "odc.code")
+    @Mapping(target = "projectId", source = "project.id")
     ODPDto toODPDto(ODP odp);
 
     @Mapping(target = "nodeType", constant = "OLT")
     @Mapping(target = "lng", expression = "java(olt.getGeom() != null ? olt.getGeom().getX() : null)")
     @Mapping(target = "lat", expression = "java(olt.getGeom() != null ? olt.getGeom().getY() : null)")
+    @Mapping(target = "projectId", source = "project.id")
     OLTDto toOLTDto(OLT olt);
 
     @Mapping(target = "geom", source = "geometry")
+    @Mapping(target = "projectId", source = "project.id")
     FiberCableDto toFiberCableDto(FiberCable cable);
 
     @Mapping(target = "geometry", source = "geom")

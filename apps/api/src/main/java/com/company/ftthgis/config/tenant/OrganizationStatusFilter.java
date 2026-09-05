@@ -43,8 +43,12 @@ public class OrganizationStatusFilter extends OncePerRequestFilter {
                 String[] parts = issuer.split("/");
                 String slug = parts[parts.length - 1];
 
-                // Skip check for the master system realm
-                if (!"ftth-realm".equals(slug) && !"master".equals(slug)) {
+                // Set organization context for default system realm or tenant realm
+                if ("ftth-realm".equals(slug) || "master".equals(slug) || "default".equals(slug)) {
+                    organizationRepository.findBySlug("default")
+                            .or(() -> organizationRepository.findBySlug("system"))
+                            .ifPresent(org -> OrganizationContext.setOrganizationId(org.getId()));
+                } else {
                     Optional<Organization> orgOpt = organizationRepository.findBySlug(slug);
                     
                     if (orgOpt.isPresent()) {

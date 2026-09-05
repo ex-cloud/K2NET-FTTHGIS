@@ -49,6 +49,49 @@ public class NetworkAssetController {
     private final StatusPropagationService statusPropagationService;
     private final NetworkNodeRepository networkNodeRepository;
     private final AuditHistoryService auditHistoryService;
+    private final com.company.ftthgis.domain.tenant.repository.ProjectMemberRepository projectMemberRepository;
+
+    private void validateBatchAccess(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) return;
+
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthenticated access");
+        }
+
+        boolean isAllProjects = auth.getAuthorities().stream().anyMatch(a ->
+                a.getAuthority().equalsIgnoreCase("network.manage.all-projects") ||
+                a.getAuthority().toLowerCase().replaceFirst("^role_", "").equals("super_admin"));
+        if (isAllProjects) {
+            return;
+        }
+
+        UUID userId = null;
+        try {
+            if (auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+                userId = UUID.fromString(jwt.getSubject());
+            } else if (auth.getName() != null) {
+                userId = UUID.fromString(auth.getName());
+            }
+        } catch (Exception ignored) {}
+
+        if (userId == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot resolve user identity");
+        }
+
+        java.util.Set<UUID> targetProjectIds = new java.util.HashSet<>(networkNodeRepository.findDistinctProjectIdsByIdIn(ids));
+        targetProjectIds.addAll(fiberCableRepository.findDistinctProjectIdsByIdIn(ids));
+
+        java.util.Set<UUID> accessibleProjectIds = projectMemberRepository.findProjectIdsByUserId(userId);
+
+        java.util.Set<UUID> unauthorized = new java.util.HashSet<>(targetProjectIds);
+        unauthorized.removeAll(accessibleProjectIds);
+
+        if (!unauthorized.isEmpty()) {
+            log.warn("🛡️ Batch access DENIED: user {} attempted to modify assets in unauthorized projects: {}", userId, unauthorized);
+            throw new org.springframework.security.access.AccessDeniedException("Batch berisi aset di luar project yang Anda ikuti: " + unauthorized);
+        }
+    }
 
     @PostMapping("/simulate-failure")
     @PreAuthorize("hasAuthority('network.manage')")
@@ -97,7 +140,10 @@ public class NetworkAssetController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "No IDs provided"));
         }
 
+        validateBatchAccess(request.getIds());
+
         String fullReason = request.getReason();
+
         if (request.getNotes() != null && !request.getNotes().isEmpty()) {
             fullReason += " | Note: " + request.getNotes();
         }
@@ -206,8 +252,13 @@ public class NetworkAssetController {
             @RequestBody List<UUID> ids) {
         log.info("🗑️ Batch delete triggered for {} {} assets. Reason: {}", ids.size(), type, reason);
         
+        if (ids != null && !ids.isEmpty()) {
+            validateBatchAccess(ids);
+        }
+
         int successCount = 0;
         List<String> failedIds = new ArrayList<>();
+
 
         for (UUID id : ids) {
             try {

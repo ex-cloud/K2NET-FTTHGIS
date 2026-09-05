@@ -188,6 +188,9 @@ public class CustomerService {
             dto.setLng(customer.getGeom().getX());
             dto.setLat(customer.getGeom().getY());
         }
+        if (customer.getProject() != null) {
+            dto.setProjectId(customer.getProject().getId());
+        }
         return dto;
     }
 
@@ -238,6 +241,9 @@ public class CustomerService {
             customer.setOdp(null);
         }
 
+        if (dto.getProjectId() != null) {
+            projectRepository.findById(dto.getProjectId()).ifPresent(customer::setProject);
+        }
         if (StringUtils.hasText(dto.getLastNote())) {
             customer.setLastNote(dto.getLastNote());
         }

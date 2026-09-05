@@ -30,7 +30,7 @@ public class SplitterPortController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#nodeId, 'network.manage')")
     public ResponseEntity<SplitterPortDto> createPort(
             @PathVariable UUID nodeId,
             @RequestBody SplitterPortDto dto) {
@@ -38,7 +38,7 @@ public class SplitterPortController {
     }
 
     @PutMapping("/{portId}")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#nodeId, 'network.manage')")
     public ResponseEntity<SplitterPortDto> updatePort(
             @PathVariable UUID nodeId,
             @PathVariable UUID portId,
@@ -47,7 +47,7 @@ public class SplitterPortController {
     }
 
     @DeleteMapping("/{portId}")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#nodeId, 'network.manage')")
     public ResponseEntity<Void> deletePort(
             @PathVariable UUID nodeId,
             @PathVariable UUID portId) {
@@ -56,7 +56,7 @@ public class SplitterPortController {
     }
 
     @PostMapping("/generate")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#nodeId, 'network.manage')")
     public ResponseEntity<List<SplitterPortDto>> generatePorts(
             @PathVariable UUID nodeId,
             @RequestParam(defaultValue = "ODP") String nodeType,

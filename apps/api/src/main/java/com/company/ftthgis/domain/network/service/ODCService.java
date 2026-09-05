@@ -233,6 +233,9 @@ public class ODCService {
         if (StringUtils.hasText(dto.getLastNote())) {
             odc.setLastNote(dto.getLastNote());
         }
+        if (dto.getProjectId() != null) {
+            projectRepository.findById(dto.getProjectId()).ifPresent(odc::setProject);
+        }
         if (StringUtils.hasText(dto.getAddress())) {
             odc.setAddress(dto.getAddress());
         }

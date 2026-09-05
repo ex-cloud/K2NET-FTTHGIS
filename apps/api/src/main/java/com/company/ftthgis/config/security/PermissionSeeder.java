@@ -40,9 +40,8 @@ public class PermissionSeeder implements CommandLineRunner {
         // Auto-evict Hibernate L2 Cache to guarantee fresh roles/permissions post-migration
         try {
             if (entityManagerFactory != null && entityManagerFactory.getCache() != null) {
-                entityManagerFactory.getCache().evict(Role.class);
-                entityManagerFactory.getCache().evict(Permission.class);
-                log.info("🧹 Hibernate L2 cache evicted for Role and Permission entities.");
+                entityManagerFactory.getCache().evictAll();
+                log.info("🧹 Hibernate L2 cache completely evicted for all entities.");
             }
         } catch (Exception e) {
             log.warn("⚠️ Could not evict Hibernate L2 cache: {}", e.getMessage());

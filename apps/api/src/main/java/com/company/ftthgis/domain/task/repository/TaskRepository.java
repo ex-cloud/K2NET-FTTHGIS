@@ -59,5 +59,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     /** Find all sub-tasks belonging to a parent task. */
     List<Task> findByParentTaskId(UUID parentTaskId);
+
+    /** JIT emergency access check for spatial asset modifications. */
+    @Query("SELECT COUNT(t) > 0 FROM Task t WHERE t.assigneeId = :assigneeId AND t.referenceId = :referenceId AND t.status NOT IN ('RESOLVED', 'CLOSED')")
+    boolean existsActiveAssignment(@Param("assigneeId") String assigneeId, @Param("referenceId") String referenceId);
 }
+
 

@@ -22,4 +22,7 @@ public class FiberCableDto {
     private String status;
     private Double lengthMeters;
     private String lastNote;
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    @com.fasterxml.jackson.annotation.JsonAlias({"project_id", "projectId"})
+    private UUID projectId;
 }

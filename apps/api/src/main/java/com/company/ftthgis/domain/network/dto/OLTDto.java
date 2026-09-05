@@ -29,4 +29,7 @@ public class OLTDto {
     private Double lat;
     private Double lng;
     private String address;
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    @com.fasterxml.jackson.annotation.JsonAlias({"project_id", "projectId"})
+    private UUID projectId;
 }

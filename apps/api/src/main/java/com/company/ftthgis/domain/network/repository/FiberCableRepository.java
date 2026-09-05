@@ -41,4 +41,8 @@ public interface FiberCableRepository extends JpaRepository<FiberCable, UUID> {
 
         void deleteByOrganizationId(UUID organizationId);
         long countByOrganizationId(UUID organizationId);
+
+        @Query("SELECT DISTINCT c.project.id FROM FiberCable c WHERE c.id IN :ids AND c.project IS NOT NULL")
+        java.util.Set<UUID> findDistinctProjectIdsByIdIn(@Param("ids") java.util.List<UUID> ids);
 }
+

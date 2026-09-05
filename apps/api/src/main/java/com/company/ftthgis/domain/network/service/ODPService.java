@@ -225,6 +225,9 @@ public class ODPService {
         if (StringUtils.hasText(dto.getLastNote())) {
             odp.setLastNote(dto.getLastNote());
         }
+        if (dto.getProjectId() != null) {
+            projectRepository.findById(dto.getProjectId()).ifPresent(odp::setProject);
+        }
         if (StringUtils.hasText(dto.getAddress())) {
             odp.setAddress(dto.getAddress());
         }

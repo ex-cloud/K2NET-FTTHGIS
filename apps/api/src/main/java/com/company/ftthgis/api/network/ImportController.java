@@ -20,7 +20,7 @@ public class ImportController {
     private final ImportService importService;
 
     @PostMapping("/{projectId}")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.manage')")
     public ResponseEntity<?> importGeoJson(
             @PathVariable UUID projectId,
             @RequestParam("file") MultipartFile file,
@@ -43,7 +43,7 @@ public class ImportController {
     }
 
     @PostMapping("/{projectId}/analyze")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.manage')")
     public ResponseEntity<?> analyzeImport(
             @PathVariable UUID projectId,
             @RequestParam("file") MultipartFile file) {
@@ -63,7 +63,7 @@ public class ImportController {
     }
 
     @PostMapping("/{projectId}/direct")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.manage')")
     public ResponseEntity<?> importGeoJsonDirect(
             @PathVariable UUID projectId,
             @RequestBody String geoJsonContent,
@@ -84,3 +84,4 @@ public class ImportController {
         }
     }
 }
+

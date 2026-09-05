@@ -103,10 +103,9 @@ public class UserSyncService {
         
         final String finalRealm = realmName;
         Organization org = organizationRepository.findBySlug(realmName)
-                .orElseGet(() -> {
-                    log.warn("Organization with slug '{}' not found for issuer '{}'. Using system organization if available.", finalRealm, issuer);
-                    return organizationRepository.findBySlug("system").orElse(null);
-                });
+                .or(() -> organizationRepository.findBySlug("default"))
+                .or(() -> organizationRepository.findBySlug("system"))
+                .orElse(null);
 
         // Extract roles from JWT and map to dynamic platform roles
         java.util.Set<String> roleNames = new java.util.HashSet<>();
@@ -161,12 +160,20 @@ public class UserSyncService {
             Organization userOrg = targetUser.getOrganization();
             String userOrgSlug = (userOrg != null) ? userOrg.getSlug() : "system";
 
-            boolean isSystemRealm = "ftth-realm".equals(realmName) || "master".equals(realmName);
-            String targetRealmSlug = isSystemRealm ? "system" : realmName;
+            boolean isSystemRealm = "ftth-realm".equals(realmName) || "master".equals(realmName) || "default".equals(realmName);
+            boolean isSystemOrg = "system".equalsIgnoreCase(userOrgSlug) || "default".equalsIgnoreCase(userOrgSlug);
 
-            if (!userOrgSlug.equalsIgnoreCase(targetRealmSlug)) {
+            if (isSystemRealm) {
+                if (!isSystemOrg) {
+                    log.warn("❌ Realm mismatch block for user {}: Registered organization is '{}', but logging in via system realm", 
+                        email, userOrgSlug);
+                    throw new org.springframework.security.authentication.BadCredentialsException(
+                        "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
+                    );
+                }
+            } else if (!userOrgSlug.equalsIgnoreCase(realmName)) {
                 log.warn("❌ Realm mismatch block for user {}: Registered organization is '{}', but logging in via realm '{}'", 
-                    email, userOrgSlug, targetRealmSlug);
+                    email, userOrgSlug, realmName);
                 throw new org.springframework.security.authentication.BadCredentialsException(
                     "Anda tidak memiliki hak akses untuk masuk ke domain/tenant ini."
                 );

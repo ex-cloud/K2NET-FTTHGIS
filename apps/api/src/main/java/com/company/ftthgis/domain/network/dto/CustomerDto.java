@@ -31,4 +31,7 @@ public class CustomerDto {
     private String lastNote;
     private Double lat;
     private Double lng;
+    @com.fasterxml.jackson.annotation.JsonProperty("projectId")
+    @com.fasterxml.jackson.annotation.JsonAlias({"project_id", "projectId"})
+    private UUID projectId;
 }

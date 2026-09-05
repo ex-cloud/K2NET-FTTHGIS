@@ -19,6 +19,7 @@ public class FiberCableService {
 
     private final FiberCableRepository fiberCableRepository;
     private final NetworkMapper networkMapper;
+    private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;
 
     @Transactional(readOnly = true)
     public Page<FiberCableDto> getCables(Pageable pageable) {
@@ -68,6 +69,10 @@ public class FiberCableService {
         
         if (dto.getGeom() != null) {
             cable.setGeometry(dto.getGeom());
+        }
+
+        if (dto.getProjectId() != null) {
+            projectRepository.findById(dto.getProjectId()).ifPresent(cable::setProject);
         }
 
         if (dto.getLastNote() != null && !dto.getLastNote().isBlank()) {

@@ -30,7 +30,7 @@ public class FiberCoreController {
     }
 
     @PutMapping("/{coreId}")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessCable(#cableId, 'network.manage')")
     public ResponseEntity<FiberCoreDto> updateCore(
             @PathVariable UUID cableId,
             @PathVariable UUID coreId,
@@ -39,7 +39,7 @@ public class FiberCoreController {
     }
 
     @PostMapping("/generate")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("@spatialSecurityEvaluator.canAccessCable(#cableId, 'network.manage')")
     public ResponseEntity<List<FiberCoreDto>> generateCores(@PathVariable UUID cableId) {
         return ResponseEntity.ok(coreService.generateCores(cableId));
     }
