@@ -31,7 +31,7 @@ public class TaskNotificationController {
      * Subscribe to real-time task notifications.
      */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public SseEmitter subscribe() {
         log.info("🔌 New SSE subscription request to Task stream");
         

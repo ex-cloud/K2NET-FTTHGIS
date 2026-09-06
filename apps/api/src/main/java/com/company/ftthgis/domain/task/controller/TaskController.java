@@ -45,7 +45,7 @@ public class TaskController {
     // ─── List tasks (paginated) ─────────────────────────────────────────────────
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public ResponseEntity<Page<Task>> list(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int page,
@@ -75,7 +75,7 @@ public class TaskController {
     }
 
     @GetMapping("/geojson")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public ResponseEntity<Map<String, Object>> getGeoJson(@AuthenticationPrincipal Jwt jwt) {
         applyTenantFilter(jwt);
         java.util.List<Task> tasks = taskService.findAllWithLocation();
@@ -113,7 +113,7 @@ public class TaskController {
     // ─── Get single task ────────────────────────────────────────────────────────
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public ResponseEntity<Task> getById(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
@@ -125,7 +125,7 @@ public class TaskController {
     // ─── Get sub-tasks of a task ────────────────────────────────────────────────
 
     @GetMapping("/{id}/subtasks")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public ResponseEntity<List<Task>> getSubTasks(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
@@ -137,7 +137,7 @@ public class TaskController {
     // ─── Overview KPI summary ───────────────────────────────────────────────────
 
     @GetMapping("/summary")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')")
     public ResponseEntity<TaskSummaryDTO> summary(@AuthenticationPrincipal Jwt jwt) {
         applyTenantFilter(jwt);
         return ResponseEntity.ok(taskService.getSummary());
@@ -146,7 +146,7 @@ public class TaskController {
     // ─── Create task ────────────────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.create') or @tenantSecurity.hasEffectivePermission('ticket.create')")
     public ResponseEntity<Task> create(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateTaskRequest request
@@ -162,7 +162,7 @@ public class TaskController {
     // ─── Update task ────────────────────────────────────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.update') or hasAuthority('task.update') or @tenantSecurity.hasEffectivePermission('ticket.update')")
     public ResponseEntity<Task> update(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id,
@@ -175,7 +175,7 @@ public class TaskController {
     // ─── Assign task ────────────────────────────────────────────────────────────
 
     @PutMapping("/{id}/assign")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.assign') or @tenantSecurity.hasEffectivePermission('ticket.assign')")
     public ResponseEntity<Task> assign(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id,
@@ -188,7 +188,7 @@ public class TaskController {
     // ─── Resolve task ───────────────────────────────────────────────────────────
 
     @PutMapping("/{id}/resolve")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.update') or hasAuthority('task.update') or @tenantSecurity.hasEffectivePermission('ticket.update')")
     public ResponseEntity<Task> resolve(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
@@ -200,7 +200,7 @@ public class TaskController {
     // ─── Delete task ────────────────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.trash.manage')")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id
@@ -213,7 +213,7 @@ public class TaskController {
     // ─── Add comment ────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/comments")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('ticket.update') or hasAuthority('ticket.create') or @tenantSecurity.hasEffectivePermission('ticket.update')")
     public ResponseEntity<TaskComment> addComment(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID id,

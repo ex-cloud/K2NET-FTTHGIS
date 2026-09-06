@@ -25,6 +25,7 @@ public class MapNotificationController {
      * Subscribe to real-time map updates via SSE, scoped by Project
      */
     @GetMapping(value = "/map-updates/{projectId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @org.springframework.security.access.prepost.PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.view')")
     public SseEmitter subscribeToMapUpdates(@PathVariable UUID projectId) {
         log.info("🔌 New SSE subscription request for Project: {}", projectId);
         

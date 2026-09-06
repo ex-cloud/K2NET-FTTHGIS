@@ -343,5 +343,11 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Dual-Identity Audit Trail**: Setiap aksi selama sesi impersonasi wajib mencatat `actor_id` (identitas Super Admin asli) + `impersonated_tenant_id` + `impersonation_session_id`.
 - **Theme & Session Persistence**: Portal tenant (`apps/studio-tenant`) wajib mempertahankan tema UI (`k2net-theme`) di `localStorage` saat logout / tenant switching, dan guard pertukaran kode impersonasi (`exchangeCode`) menggunakan double-lock (`activeExchangingCode` + `exchangeAttemptedRef`) untuk mencegah double toast error.
 
+### 🛡️ Tata Kelola Keamanan Mutlak: CI Gate Otorisasi Otomatis & Live DB Audit Matrix (September 2026)
+- **CI Gate Reflection Check (`ComprehensiveControllerSecurityCoverageTest`)**: Seluruh `@RestController` dipindai secara otomatis. Build Maven / CI akan GAGAL seketika jika ada endpoint publik tanpa `@PreAuthorize` atau menggunakan anti-pattern `isAuthenticated()` / role semu.
+- **Definition of Done 6-Langkah Wajib**: Setiap pembuatan atau modifikasi controller/service wajib mematuhi 6 langkah: (1) Flyway SQL permission + mapping di migration yang sama, (2) Backend `@PreAuthorize` / Spatial ABAC guard, (3) Frontend sidebar navigation filter, (4) Granular UI `PermissionGuard`, (5) Lolos CI security test, (6) Live DB query & runtime HTTP test.
+- **Single Source of Truth Database**: Dilarang mengandalkan ingatan atau katalog dokumen manual yang rawan usang. Data role & permission wajib diverifikasi langsung via live DB query (`scripts/audit-security-matrix.sh` / `pnpm audit:security`).
+- **Pola Mutasi Terikat Project (Spatial ABAC)**: Dilarang menggunakan `hasAuthority('network.manage')` polos untuk endpoint yang mengubah aset fisik. Wajib menggunakan pola `@PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#dto.projectId, 'network.manage')")` atau `@PreAuthorize("@spatialSecurityEvaluator.canAccessNode(#id, 'network.manage')")`.
+
 
 

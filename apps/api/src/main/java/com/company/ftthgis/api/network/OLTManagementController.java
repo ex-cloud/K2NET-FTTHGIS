@@ -44,6 +44,7 @@ public class OLTManagementController {
     }
 
     @PostMapping
+    @PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#dto.projectId, 'network.manage')")
     public ResponseEntity<OLTDto> create(@RequestBody OLTDto dto) {
         if (dto == null || dto.getProjectId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Project ID wajib diisi");

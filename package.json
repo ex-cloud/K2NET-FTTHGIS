@@ -13,6 +13,8 @@
     "verify:backend": "bash scripts/verify-all.sh backend",
     "verify:gateways": "bash scripts/verify-all.sh gateways",
     "verify:infra": "bash scripts/verify-all.sh infra",
+    "verify:security": "bash scripts/audit-security-matrix.sh",
+    "audit:security": "bash scripts/audit-security-matrix.sh",
     "audit:colors": "bash packages/ui/scripts/audit-colors.sh"
   },
   "devDependencies": {

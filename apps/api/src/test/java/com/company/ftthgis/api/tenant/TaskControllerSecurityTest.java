@@ -33,7 +33,7 @@ class TaskControllerSecurityTest {
         );
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "List endpoint should require authorization");
-        assertEquals("isAuthenticated()", annotation.value());
+        assertEquals("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')", annotation.value());
     }
 
     @Test
@@ -41,7 +41,7 @@ class TaskControllerSecurityTest {
         Method method = TaskController.class.getDeclaredMethod("create", Jwt.class, CreateTaskRequest.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "Create endpoint should require authorization");
-        assertEquals("isAuthenticated()", annotation.value());
+        assertEquals("hasAuthority('ticket.create') or @tenantSecurity.hasEffectivePermission('ticket.create')", annotation.value());
     }
 
     @Test
@@ -49,7 +49,7 @@ class TaskControllerSecurityTest {
         Method method = TaskController.class.getDeclaredMethod("delete", Jwt.class, UUID.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "Delete endpoint should require authorization");
-        assertEquals("isAuthenticated()", annotation.value());
+        assertEquals("hasRole('super_admin') or hasAuthority('system.trash.manage')", annotation.value());
     }
 
     @Test
@@ -57,7 +57,7 @@ class TaskControllerSecurityTest {
         Method method = TaskController.class.getDeclaredMethod("addComment", Jwt.class, UUID.class, CreateCommentRequest.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "Add comment endpoint should require authorization");
-        assertEquals("isAuthenticated()", annotation.value());
+        assertEquals("hasAuthority('ticket.update') or hasAuthority('ticket.create') or @tenantSecurity.hasEffectivePermission('ticket.update')", annotation.value());
     }
 
     @Test
@@ -65,6 +65,6 @@ class TaskControllerSecurityTest {
         Method method = TaskController.class.getDeclaredMethod("getGeoJson", Jwt.class);
         PreAuthorize annotation = AnnotationUtils.findAnnotation(method, PreAuthorize.class);
         assertNotNull(annotation, "GeoJSON endpoint should require authorization");
-        assertEquals("isAuthenticated()", annotation.value());
+        assertEquals("hasAuthority('ticket.view') or @tenantSecurity.hasEffectivePermission('ticket.view')", annotation.value());
     }
 }

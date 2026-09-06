@@ -53,20 +53,19 @@ public class SpatialSecurityEvaluator {
             return false;
         }
 
-        // Lapis 1: VIP Bypass / All-Projects Tier (super_admin, tenant admin/supervisor)
+        // Lapis 1: VIP Bypass / All-Projects Tier (super_admin, tenant admin with network.manage.all-projects)
         if (isAllProjectsTier(auth, projectId)) {
             return true;
         }
 
-        // Lapis 2: Base Role Evaluation (staf internal dengan permission global)
+        // Lapis 2: Base Role Evaluation (staf internal dengan permission global dan akses ke tenant org)
         boolean hasBaseAuthority = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equalsIgnoreCase(permissionCode));
         if (hasBaseAuthority) {
-            // Verifikasi bahwa user minimal memiliki akses ke organisasi pemilik project
             return tenantSecurity.canAccessProject(projectId);
         }
 
-        // Lapis 3: Project-Scoped Role (kasus vendor/kontraktor luar — TENT-10)
+        // Lapis 3: Project-Scoped Role (kasus vendor/kontraktor luar — TENT-10 atau teknisi dengan project role)
         UUID userId = extractUserId(auth);
         if (userId != null) {
             Optional<ProjectMember> pmOpt = projectMemberRepository.findByUserIdAndProjectId(userId, projectId);

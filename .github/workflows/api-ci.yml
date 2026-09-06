@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - develop
+      - main
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/api-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
     paths:
       - 'apps/api/**'
       - '.github/workflows/api-ci.yml'
@@ -20,7 +28,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test Java (Maven)
+    name: 🛡️ Security Gate & Build Java (Maven)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -33,10 +41,16 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven
+      - name: Run CI Security Gate & Unit Tests
         run: |
           cd apps/api
-          mvn clean package -DskipTests
+          mvn test -Dtest=ComprehensiveControllerSecurityCoverageTest -B
+          mvn clean test -B
+
+      - name: Package JAR with Maven
+        run: |
+          cd apps/api
+          mvn package -DskipTests -B
 
   deploy:
     name: Deploy to Server

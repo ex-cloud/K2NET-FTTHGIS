@@ -109,6 +109,7 @@ public class ImpersonationController {
      * Berguna jika tab sebelumnya tertutup atau terjadi konflik sesi 409.
      */
     @PostMapping("/api/v1/system/impersonate/exit-active")
+    @PreAuthorize("hasAuthority('system.support.impersonate')")
     public ResponseEntity<?> exitActive(@AuthenticationPrincipal Jwt jwt) {
         UUID callerUserId = UUID.fromString(jwt.getSubject());
         log.info("🛡️ [ImpersonationController] Request exit active session for caller: {}", callerUserId);
@@ -125,6 +126,7 @@ public class ImpersonationController {
      * Digunakan oleh halaman Organizations Command Center untuk menampilkan banner & badge status.
      */
     @GetMapping("/api/v1/system/impersonate/active-session")
+    @PreAuthorize("hasAuthority('system.support.impersonate')")
     public ResponseEntity<?> getActiveSession(@AuthenticationPrincipal Jwt jwt) {
         UUID callerUserId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(impersonationService.getActiveSessionForActor(callerUserId));

@@ -264,9 +264,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run Maven Compile & Tests
+      - name: Run CI Security Gate & Unit Tests
         working-directory: apps/api
-        run: mvn clean test -B -Dspring.profiles.active=test
+        run: |
+          mvn test -Dtest=ComprehensiveControllerSecurityCoverageTest -B
+          mvn clean test -B -Dspring.profiles.active=test
 
   validate-gateways:
     name: ✅ Validate Go Gateways & Python AI

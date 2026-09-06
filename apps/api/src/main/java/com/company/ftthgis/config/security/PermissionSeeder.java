@@ -59,6 +59,7 @@ public class PermissionSeeder implements CommandLineRunner {
             // Network/GIS
             new PermissionData("network.view", "View Network Map", "Network"),
             new PermissionData("network.manage", "Manage Network Assets", "Network"),
+            new PermissionData("network.manage.all-projects", "Manage All Network Projects", "Network", "TENANT"),
             new PermissionData("network.nodes", "Manage Nodes (ODC/ODP)", "Network"),
             new PermissionData("network.audit", "Audit Network Changes", "Network"),
             
@@ -95,8 +96,8 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("users.invite", "Invite Users", "Security")
         );
 
-        // 2. Ensure all permissions exist in DB
-        Set<Permission> allPermissionsInDb = new HashSet<>();
+        // 2. Ensure all permissions exist in DB and load full catalog
+        Set<Permission> allPermissionsInDb = new HashSet<>(permissionRepository.findAll());
         for (PermissionData data : permissionsToSeed) {
             Permission p = permissionRepository.findByCode(data.code)
                     .map(existing -> {
@@ -122,8 +123,9 @@ public class PermissionSeeder implements CommandLineRunner {
 
         // 3. Sync System Roles
         syncSystemRole("super_admin", allPermissionsInDb, ""); // Super Admin gets everything
-        syncSystemRole("admin", allPermissionsInDb, "projects.", "team.", "network.", "inventory.", "billing.", "Security.", "roles.", "users.", "organizations.");
-        syncSystemRole("technician", allPermissionsInDb, "projects.view", "network.", "inventory.view");
+        syncSystemRole("admin", allPermissionsInDb, "TENANT_ALL"); // Tenant Admin gets all TENANT-scoped permissions
+        syncSystemRole("supervisor", allPermissionsInDb, "projects.", "network.", "ticket.", "task.", "approval.", "inventory.view", "inventory.report", "map.", "coverage.", "customer.", "report.", "team.view");
+        syncSystemRole("technician", allPermissionsInDb, "projects.view", "network.view", "inventory.view", "ticket.", "task.", "map.");
         syncSystemRole("viewer", allPermissionsInDb, ".view");
 
         log.info("✅ System Roles synchronized.");
@@ -175,7 +177,13 @@ public class PermissionSeeder implements CommandLineRunner {
         Set<Permission> targetPermissions = new HashSet<>();
         for (Permission p : allPermissions) {
             for (String prefix : prefixes) {
-                if (prefix.isEmpty() || p.getCode().startsWith(prefix) || p.getCode().endsWith(prefix)) {
+                if (prefix.isEmpty()) {
+                    targetPermissions.add(p);
+                } else if ("TENANT_ALL".equalsIgnoreCase(prefix)) {
+                    if ("TENANT".equalsIgnoreCase(p.getScope())) {
+                        targetPermissions.add(p);
+                    }
+                } else if (p.getCode().startsWith(prefix) || p.getCode().endsWith(prefix)) {
                     targetPermissions.add(p);
                 }
             }

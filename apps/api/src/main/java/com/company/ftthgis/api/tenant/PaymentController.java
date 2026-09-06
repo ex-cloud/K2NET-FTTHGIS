@@ -125,7 +125,7 @@ public class PaymentController {
      * Generates a Xendit invoice url via Go Payment Gateway.
      */
     @PostMapping("/api/v1/payments/subscribe")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('billing.manage') or @tenantSecurity.hasEffectivePermission('billing.manage')")
     public ResponseEntity<?> subscribeToPlan(@RequestBody Map<String, String> request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Jwt)) {
@@ -241,7 +241,7 @@ public class PaymentController {
     }
 
     @GetMapping("/api/v1/payments/recent")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('billing.view') or @tenantSecurity.hasEffectivePermission('billing.view')")
     public ResponseEntity<?> getRecentPayments(@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt jwt) {
         if (jwt != null && isSuperAdmin(jwt)) {
             return ResponseEntity.ok(paymentTransactionRepository.findTop5RecentPayments());
