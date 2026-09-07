@@ -4,11 +4,26 @@ import type { KeycloakAuthConfig, KeycloakAuthContextValue, KeycloakUser } from 
 
 const KeycloakAuthContext = createContext<KeycloakAuthContextValue | null>(null);
 
+const TOKEN_STORAGE_KEY = "k2net_kc_token";
+const REFRESH_TOKEN_STORAGE_KEY = "k2net_kc_refresh_token";
+const ID_TOKEN_STORAGE_KEY = "k2net_kc_id_token";
+
 export interface KeycloakProviderProps {
   config: KeycloakAuthConfig;
   children: React.ReactNode;
   initOptions?: Keycloak.KeycloakInitOptions;
   loadingFallback?: React.ReactNode;
+}
+
+interface KeycloakParsedClaims {
+  sub?: string;
+  email?: string;
+  preferred_username?: string;
+  name?: string;
+  tenant_id?: string;
+  tenant_slug?: string;
+  realm_access?: { roles?: string[] };
+  resource_access?: Record<string, { roles?: string[] }>;
 }
 
 export function KeycloakProvider({
@@ -23,17 +38,6 @@ export function KeycloakProvider({
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<KeycloakUser | null>(null);
   const isInitializing = useRef(false);
-
-interface KeycloakParsedClaims {
-  sub?: string;
-  email?: string;
-  preferred_username?: string;
-  name?: string;
-  tenant_id?: string;
-  tenant_slug?: string;
-  realm_access?: { roles?: string[] };
-  resource_access?: Record<string, { roles?: string[] }>;
-}
 
   // Extract roles and user info from Keycloak token parsed claims
   const extractUser = (kc: Keycloak): KeycloakUser | null => {
@@ -55,6 +59,33 @@ interface KeycloakParsedClaims {
       tenantId: parsed.tenant_id,
       tenantSlug: parsed.tenant_slug,
     };
+  };
+
+  const saveTokens = (t?: string, rt?: string, idt?: string) => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      if (t) localStorage.setItem(TOKEN_STORAGE_KEY, t);
+      else localStorage.removeItem(TOKEN_STORAGE_KEY);
+
+      if (rt) localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, rt);
+      else localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+
+      if (idt) localStorage.setItem(ID_TOKEN_STORAGE_KEY, idt);
+      else localStorage.removeItem(ID_TOKEN_STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const clearTokens = () => {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+      localStorage.removeItem(ID_TOKEN_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   useEffect(() => {
@@ -87,20 +118,45 @@ interface KeycloakParsedClaims {
 
     setKeycloakInstance(kc);
 
-    const silentCheckSsoRedirectUri =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/silent-check-sso.html`
-        : undefined;
+    const isLoginPage = typeof window !== "undefined" && window.location.pathname === "/login";
+    const hasAuthCallback = typeof window !== "undefined" && (
+      window.location.search.includes("code=") ||
+      window.location.search.includes("state=") ||
+      window.location.hash.includes("code=") ||
+      window.location.hash.includes("state=")
+    );
 
+    const storedToken = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) || undefined : undefined;
+    const storedRefreshToken = typeof window !== "undefined" ? localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || undefined : undefined;
+    const storedIdToken = typeof window !== "undefined" ? localStorage.getItem(ID_TOKEN_STORAGE_KEY) || undefined : undefined;
+
+    // Fast-path initialization options:
+    // If we're on /login without an auth callback and without stored tokens, initialize immediately
+    // without running check-sso to avoid 3rd-party cookie iframe timeouts.
     const defaultInitOptions: Keycloak.KeycloakInitOptions = {
-      onLoad: "check-sso",
-      silentCheckSsoRedirectUri,
-      silentCheckSsoFallback: false,
       pkceMethod: "S256",
       checkLoginIframe: false,
       enableLogging: false,
+      token: storedToken,
+      refreshToken: storedRefreshToken,
+      idToken: storedIdToken,
       ...initOptions,
     };
+
+    if (hasAuthCallback) {
+      // User is returning from Keycloak login redirect: let Keycloak process the code
+      defaultInitOptions.onLoad = undefined;
+    } else if (storedToken) {
+      // User has cached tokens: validate and hydrate directly
+      defaultInitOptions.onLoad = "check-sso";
+      defaultInitOptions.silentCheckSsoFallback = false;
+    } else if (isLoginPage) {
+      // On login page without tokens: initialize instantly in 0ms without blocking iframe
+      defaultInitOptions.onLoad = undefined;
+    } else {
+      // On protected route without tokens: check SSO or let route guard handle redirect
+      defaultInitOptions.onLoad = undefined;
+    }
 
     const updateWindowAuth = (instance: Keycloak | null, currentUser: KeycloakUser | null) => {
       if (typeof window !== "undefined") {
@@ -138,6 +194,7 @@ interface KeycloakParsedClaims {
         setInitialized(true);
 
         if (auth && kc.token) {
+          saveTokens(kc.token, kc.refreshToken, kc.idToken);
           setToken(kc.token);
           const currentUser = extractUser(kc);
           setUser(currentUser);
@@ -153,6 +210,7 @@ interface KeycloakParsedClaims {
             });
           }
         } else {
+          clearTokens();
           updateWindowAuth(null, null);
         }
       })
@@ -161,6 +219,7 @@ interface KeycloakParsedClaims {
         setKeycloakInstance(kc);
         setAuthenticated(false);
         setInitialized(true);
+        clearTokens();
         updateWindowAuth(null, null);
         if (config.onAuthError) {
           config.onAuthError(err);
@@ -172,6 +231,7 @@ interface KeycloakParsedClaims {
       kc.updateToken(30)
         .then((refreshed) => {
           if (refreshed && kc.token) {
+            saveTokens(kc.token, kc.refreshToken, kc.idToken);
             setToken(kc.token);
             const currentUser = extractUser(kc);
             setUser(currentUser);
@@ -187,6 +247,7 @@ interface KeycloakParsedClaims {
         })
         .catch(() => {
           console.warn("[KeycloakProvider] Failed to refresh token, logging out");
+          clearTokens();
           setAuthenticated(false);
           setToken(null);
           setUser(null);
@@ -236,6 +297,7 @@ interface KeycloakParsedClaims {
   };
 
   const logout = async (options?: Keycloak.KeycloakLogoutOptions) => {
+    clearTokens();
     if (typeof window !== "undefined") {
       delete (window as any).__K2NET_AUTH__;
     }
@@ -255,6 +317,7 @@ interface KeycloakParsedClaims {
     try {
       const refreshed = await keycloakInstance.updateToken(minValidity);
       if (refreshed && keycloakInstance.token) {
+        saveTokens(keycloakInstance.token, keycloakInstance.refreshToken, keycloakInstance.idToken);
         setToken(keycloakInstance.token);
         const currentUser = extractUser(keycloakInstance);
         setUser(currentUser);
@@ -283,6 +346,7 @@ interface KeycloakParsedClaims {
       }
       return Boolean(refreshed);
     } catch {
+      clearTokens();
       return false;
     }
   };
