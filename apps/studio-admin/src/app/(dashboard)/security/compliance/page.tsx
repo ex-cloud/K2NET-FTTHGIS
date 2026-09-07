@@ -42,10 +42,10 @@ interface SpatialGovernanceReport {
   legacyNullProjectNodes: number;
   legacyNullProjectEdges: number;
   legacyDataClean: boolean;
-  projectSummaries: {
+  organizationSummaries: {
     organization: string;
-    project: string;
-    memberCount: number;
+    totalProjects: number;
+    totalMembers: number;
   }[];
   checkedAt: string;
 }
@@ -373,27 +373,27 @@ export default function SecurityCompliancePage() {
                 </div>
 
                 {/* Breakdown List */}
-                {spatialReport && spatialReport.projectSummaries.length > 0 && (
+                {spatialReport && spatialReport.organizationSummaries && spatialReport.organizationSummaries.length > 0 && (
                   <div className="space-y-2 pt-2">
                     <span className="text-xs font-semibold text-foreground block">
-                      Distribusi Anggota per Project (Agregat Metadata):
+                      Distribusi ABAC per Organisasi Tenant (Agregat Metadata):
                     </span>
                     <div className="border border-border rounded-xl overflow-hidden max-h-[200px] overflow-y-auto custom-scrollbar">
                       <table className="w-full text-xs text-left">
                         <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
                           <tr>
-                            <th className="p-2.5">Organisasi</th>
-                            <th className="p-2.5">Project</th>
-                            <th className="p-2.5 text-right">Member Ditugaskan</th>
+                            <th className="p-2.5">Organisasi Tenant</th>
+                            <th className="p-2.5">Total Project Terdaftar</th>
+                            <th className="p-2.5 text-right">Total Anggota Ditugaskan</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                          {spatialReport.projectSummaries.map((ps, idx) => (
+                          {spatialReport.organizationSummaries.map((os, idx) => (
                             <tr key={idx} className="hover:bg-muted/30">
-                              <td className="p-2.5 font-medium text-foreground">{ps.organization}</td>
-                              <td className="p-2.5 font-mono text-sky-400">{ps.project}</td>
+                              <td className="p-2.5 font-medium text-foreground">{os.organization}</td>
+                              <td className="p-2.5 font-mono text-sky-400">{os.totalProjects} project</td>
                               <td className="p-2.5 text-right font-mono font-bold text-foreground">
-                                {ps.memberCount} member
+                                {os.totalMembers} member
                               </td>
                             </tr>
                           ))}

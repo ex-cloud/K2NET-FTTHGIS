@@ -40,20 +40,23 @@ public class SpatialGovernanceController {
                 "SELECT COUNT(*) FROM network_edges WHERE project_id IS NULL", Long.class
             );
 
-            String sqlProjects = """
-                SELECT o.name AS organization, pr.name AS project, COUNT(pm.id) AS member_count
-                FROM projects pr
-                JOIN organizations o ON o.id = pr.organization_id
+            // Platform-level aggregate metadata per tenant organization (No specific internal project names exposed)
+            String sqlOrganizations = """
+                SELECT o.name AS organization, 
+                       COUNT(DISTINCT pr.id) AS total_projects, 
+                       COUNT(pm.id) AS total_members
+                FROM organizations o
+                LEFT JOIN projects pr ON pr.organization_id = o.id
                 LEFT JOIN project_members pm ON pm.project_id = pr.id
-                GROUP BY o.name, pr.name
-                ORDER BY o.name, pr.name
+                GROUP BY o.name
+                ORDER BY o.name
             """;
 
-            List<ProjectMemberSummaryDto> projectSummaries = jdbcTemplate.query(sqlProjects, (rs, rowNum) ->
-                new ProjectMemberSummaryDto(
+            List<OrganizationSummaryDto> organizationSummaries = jdbcTemplate.query(sqlOrganizations, (rs, rowNum) ->
+                new OrganizationSummaryDto(
                     rs.getString("organization"),
-                    rs.getString("project"),
-                    rs.getLong("member_count")
+                    rs.getLong("total_projects"),
+                    rs.getLong("total_members")
                 )
             );
 
@@ -63,7 +66,7 @@ public class SpatialGovernanceController {
                 nullNodes != null ? nullNodes : 0L,
                 nullEdges != null ? nullEdges : 0L,
                 (nullNodes != null && nullNodes == 0) && (nullEdges != null && nullEdges == 0),
-                projectSummaries,
+                organizationSummaries,
                 Instant.now().toString()
             );
 
@@ -80,13 +83,13 @@ public class SpatialGovernanceController {
         long legacyNullProjectNodes,
         long legacyNullProjectEdges,
         boolean legacyDataClean,
-        List<ProjectMemberSummaryDto> projectSummaries,
+        List<OrganizationSummaryDto> organizationSummaries,
         String checkedAt
     ) {}
 
-    public record ProjectMemberSummaryDto(
+    public record OrganizationSummaryDto(
         String organization,
-        String project,
-        long memberCount
+        long totalProjects,
+        long totalMembers
     ) {}
 }
