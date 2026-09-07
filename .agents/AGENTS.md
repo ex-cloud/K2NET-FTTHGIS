@@ -5,7 +5,12 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 ---
 
 ## 🏗️ Gambaran Arsitektur Utama
-- **Frontend Next.js**: [apps/studio](file:///opt/project5/apps/studio)
+
+> ⚠️ **CATATAN MIGRASI (September 2026)**: `studio-admin` dan `studio-tenant` telah **sepenuhnya migrasi dari Next.js 16 ke React 19 + Vite 6 + TanStack Router (CSR SPA murni)**. Dilarang keras menggunakan pola Next.js (SSR, `next/link`, `next/navigation`, `useLayoutEffect` untuk hydration, API routes, `loading.tsx`, `layout.tsx` App Router) di kedua app ini. Satu-satunya Next.js yang masih ada adalah `apps/www` (landing page, SSG).
+
+- **Frontend Admin**: React 19 + Vite 6 + TanStack Router — **CSR SPA** — [apps/studio-admin](file:///opt/project5/apps/studio-admin) (port 3001)
+- **Frontend Tenant**: React 19 + Vite 6 + TanStack Router — **CSR SPA** — [apps/studio-tenant](file:///opt/project5/apps/studio-tenant) (port 3000)
+- **Landing Page**: Next.js (SSG) — [apps/www](file:///opt/project5/apps/www) ← satu-satunya Next.js yang masih valid
 - **Backend Spring Boot**: [apps/api](file:///opt/project5/apps/api)
 - **Go Microservices & Gateways**: [services/](file:///opt/project5/services/)
 - **API Gateway**: Kong (Port 8000 / DB-less declarative)
@@ -23,13 +28,13 @@ Dokumen ini adalah repositori memori persisten dan aturan pengkodean untuk AI Ag
 
 Sebelum mengirimkan perubahan (*commit/push/deploy*) ke server, seluruh kode **WAJIB** melewati pengujian sintaks, linter, unit test, dan kompilasi per modul sebagai berikut:
 
-### 1. Frontend Next.js (`apps/studio-admin` & `apps/studio-tenant`)
+### 1. Frontend Vite CSR SPA (`apps/studio-admin` & `apps/studio-tenant`)
 ```bash
-pnpm verify:admin                      # [REKOMENDASI CEPAT] Cek 0 pelanggaran warna + UI build + TypeScript typecheck (<20s, aman untuk RAM server)
-pnpm audit:colors                      # Khusus audit 0 pelanggaran warna hardcode (zinc, white, emerald)
-pnpm --filter @k2net/studio-admin typecheck # Pemeriksaan tipe data TypeScript tanpa memicu Webpack bundling
+npx tsc --noEmit                       # [REKOMENDASI] TypeScript type-check tanpa build
+pnpm verify:admin                      # Cek 0 pelanggaran warna + TypeScript typecheck
+pnpm audit:colors                      # Khusus audit 0 pelanggaran warna hardcode
 ```
-*Catatan: Dilarang menjalankan `next build` langsung di server pengembangan jika resource CPU/RAM sedang tinggi karena proses bundling 67 rute halaman Next.js dijalankan secara otomatis oleh GitHub Actions Runner di cloud.*
+*Catatan: Vite build (`vite build`) ringan dan boleh dijalankan lokal. Tidak ada `next build`. Bundle dibangun di GitHub Actions Runner, bukan di server produksi.*
 
 ### 2. Backend Spring Boot (`apps/api`)
 ```bash
@@ -147,7 +152,7 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 ### UI Compliance — Skeleton Loading Architecture (Juli 2026)
 - **Pattern**: Seluruh komponen skeleton dibuat sebagai shared di `packages/ui/src/components/skeletons.tsx` — bukan hardcoded per-halaman. Setiap `loading.tsx` di route hanya menjadi thin wrapper 3 baris mengimpor dari `@k2net/ui`.
 - **Komponen tersedia**: `PageHeaderSkeleton`, `DashboardPageSkeleton`, `TablePageSkeleton`, `FormPageSkeleton`, `CardGridSkeleton` — semua diekspor dari `@k2net/ui`.
-- **Verifikasi coverage**: `find apps/studio-admin/src/app -name "loading.tsx" | wc -l` → harus ≥ 25.
+- **Verifikasi coverage**: `find apps/studio-admin/src/layouts -name "*.tsx" | wc -l` → layout Vite ada di `src/layouts/AdminLayout.tsx`, bukan `loading.tsx` (loading.tsx sudah dihapus semua — itu pola Next.js).
 - **Reuse**: `studio-tenant` dapat mengimpor skeleton yang sama dari `@k2net/ui` di fase berikutnya tanpa duplikasi.
 
 ### UI Compliance — TracingBeam (Juli 2026)
@@ -179,11 +184,11 @@ Untuk menjaga kualitas dan standardisasi sistem, ikuti petunjuk teknis pada taut
 - **Hook**: `useKongRoutes`, `useKongTraffic` dari `apps/studio-admin/src/hooks/useKongObservability.ts`
 - **Root Cause OFFLINE Bug**: Kong tidak memiliki route `/api/observability/*` — request dari browser melewati Kong dan mendapat 404. Fix: tambah service `frontend-admin-api-service` di `docker/kong/kong.yml`.
 - **Kong Admin API**: tersedia di `http://kong:8001` (internal Docker)
-- **Kong Next.js API Routes**: Wajib ditambahkan ke `kong.yml` agar browser bisa reach `/api/observability/*`, `/api/auth/*`, `/_next/*`.
+- **Kong Route**: Wajib ditambahkan ke `kong.yml` agar browser Vite SPA bisa reach `/api/observability/*`, `/api/auth/*` via Kong. Tidak ada `/_next/*` lagi (Vite, bukan Next.js).
 
 ### 📊 Pola Observability Time-Series Charts (Agustus 2026)
-- **Sumber data**: Semua chart observabilitas wajib menggunakan Prometheus `query_range` (24 jam, step `15m`) dari `http://ftth-prometheus:9090` via Next.js API route (bukan langsung dari client browser).
-- **API Route Pattern**: Buat file di `apps/studio-admin/src/app/api/observability/<nama>/route.ts` — gunakan `Promise.all` untuk parallel fetch semua metric sekaligus.
+- **Sumber data**: Semua chart observabilitas wajib menggunakan Prometheus `query_range` (24 jam, step `15m`) dari `http://ftth-prometheus:9090` via **Go observability-gateway** (:5013) yang diakses browser melalui Kong. Bukan via Next.js API route (tidak ada lagi).
+- **Hook Pattern (Vite CSR)**: Buat `use<Nama>Observability.ts` di `src/hooks/` — fetch langsung ke `GET /api/gateway/observability/<path>` via Kong — polling 30 detik, return `charts`, `loading`, `error`, `lastUpdated`, `refresh`.
 - **Hook Pattern**: Buat `use<Nama>Observability.ts` di `src/hooks/` — polling 30 detik, return `charts`, `loading`, `error`, `lastUpdated`, `refresh`.
 - **Fallback**: Jika Prometheus kosong, generate fallback data 24 jam agar UI tidak blank.
 - **CSS Variables untuk chart**: Gunakan `var(--chart-1)` hingga `var(--chart-5)` — jangan hardcode warna hex.

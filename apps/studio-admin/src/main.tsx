@@ -11,12 +11,30 @@ import { getAdminKeycloakConfig } from "./lib/keycloak-config";
 import { router } from "./router";
 import "./index.css";
 
-// Auto-reload on deployment chunk update (prevents "error loading dynamically imported module")
+// Auto-reload on deployment chunk update (prevents "error loading dynamically imported module").
+// Pattern: after each deployment, React.lazy() chunks get new hashes. If user navigates before
+// refreshing, browser tries to load old chunk URLs → 404 → vite:preloadError fires.
+//
+// Guard logic:
+//   - Set the guard KEY right before reloading to prevent infinite reload loops.
+//   - CLEAR the guard on every successful startup (this module runs = app loaded fine).
+//     This ensures that each new deployment's first chunk error will always trigger a reload.
 if (typeof window !== "undefined") {
+  const CHUNK_RELOAD_KEY = "vite_chunk_reload_guard";
+
+  // ✅ Clear the guard on every successful app startup
+  try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* private mode */ }
+
   window.addEventListener("vite:preloadError", () => {
-    const reloadKey = "chunk_preload_reload";
-    if (!sessionStorage.getItem(reloadKey)) {
-      sessionStorage.setItem(reloadKey, "true");
+    try {
+      if (!sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+        // Set guard BEFORE reload to prevent infinite loop if reload itself fails
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+        window.location.reload();
+      }
+      // else: guard is set = we already reloaded once, don't loop
+    } catch {
+      // sessionStorage unavailable (private mode) — just reload once
       window.location.reload();
     }
   });
