@@ -67,12 +67,12 @@ public class GovernanceHealthController {
                 )
             );
 
-            // 3. Similar Role Names (Potential concept duplication, score > 0.4)
+            // 3. Similar Role Names within the same scope (Potential concept duplication, score > 0.4)
             String sqlSimilar = """
                 SELECT a.id AS role_a_id, a.name AS role_a, b.id AS role_b_id, b.name AS role_b,
                        ROUND(similarity(a.name, b.name)::numeric, 2) AS score
                 FROM roles a, roles b
-                WHERE a.id < b.id AND similarity(a.name, b.name) > 0.4
+                WHERE a.id < b.id AND a.scope = b.scope AND similarity(a.name, b.name) > 0.4
                 ORDER BY score DESC
             """;
             List<SimilarRolePairDto> similarRoleNamePairs = jdbcTemplate.query(sqlSimilar, (rs, rowNum) ->

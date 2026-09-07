@@ -252,7 +252,7 @@ export default function PermissionsPage() {
   // Render
   // ──────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 w-full min-w-0 p-4 md:p-8">
+    <div className="flex-1 w-full min-w-0 p-4 md:p-8 overflow-y-auto custom-scrollbar">
       <div className="max-w-[1400px] mx-auto w-full pb-12">
         {/* GOVERNANCE HEALTH BANNER */}
         <GovernanceHealthBanner onSelectPermission={(code) => setSearch(code)} />
