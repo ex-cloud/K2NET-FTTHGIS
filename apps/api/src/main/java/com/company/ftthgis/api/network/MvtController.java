@@ -5,6 +5,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,7 @@ public class MvtController {
     private EntityManager entityManager;
 
     @GetMapping(value = "/{z}/{x}/{y}", produces = "application/x-protobuf")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('map.view') or hasAuthority('network.view')")
+    @PreAuthorize("hasAuthority('map.view') or hasAuthority('network.view')")
     public ResponseEntity<byte[]> getMvt(@PathVariable int z, @PathVariable int x, @PathVariable int y) {
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("WITH bounds AS (\n");

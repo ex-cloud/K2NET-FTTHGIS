@@ -15,6 +15,7 @@
     "verify:infra": "bash scripts/verify-all.sh infra",
     "verify:security": "bash scripts/audit-security-matrix.sh",
     "audit:security": "bash scripts/audit-security-matrix.sh",
+    "audit:rbac": "bash scripts/audit-rbac-state.sh",
     "audit:colors": "bash packages/ui/scripts/audit-colors.sh"
   },
   "devDependencies": {

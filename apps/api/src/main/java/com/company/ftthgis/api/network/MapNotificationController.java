@@ -4,6 +4,7 @@ import com.company.ftthgis.domain.network.event.MapEventPublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -25,7 +26,7 @@ public class MapNotificationController {
      * Subscribe to real-time map updates via SSE, scoped by Project
      */
     @GetMapping(value = "/map-updates/{projectId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @org.springframework.security.access.prepost.PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.view')")
+    @PreAuthorize("@spatialSecurityEvaluator.hasProjectPermission(#projectId, 'network.view')")
     public SseEmitter subscribeToMapUpdates(@PathVariable UUID projectId) {
         log.info("🔌 New SSE subscription request for Project: {}", projectId);
         
