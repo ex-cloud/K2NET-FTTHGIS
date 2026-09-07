@@ -87,8 +87,15 @@ interface KeycloakParsedClaims {
 
     setKeycloakInstance(kc);
 
+    const silentCheckSsoRedirectUri =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/silent-check-sso.html`
+        : undefined;
+
     const defaultInitOptions: Keycloak.KeycloakInitOptions = {
       onLoad: "check-sso",
+      silentCheckSsoRedirectUri,
+      silentCheckSsoFallback: false,
       pkceMethod: "S256",
       checkLoginIframe: false,
       enableLogging: false,
