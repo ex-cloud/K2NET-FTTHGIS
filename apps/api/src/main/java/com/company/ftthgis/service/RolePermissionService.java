@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.company.ftthgis.config.logging.AuditRequired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +26,7 @@ public class RolePermissionService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final UserRepository userRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional(readOnly = true)
     public List<Role> getRoles(String scopeFilter) {
@@ -206,4 +208,37 @@ public class RolePermissionService {
         log.info("🗑️ Deleting permission: id={}, code={}", id, permission.getCode());
         permissionRepository.delete(permission);
     }
+
+    @Transactional(readOnly = true)
+    public List<RoleSimilarityDto> checkNameSimilarity(String draftName) {
+        if (draftName == null || draftName.trim().length() < 2) {
+            return List.of();
+        }
+        String cleanDraft = draftName.trim().toLowerCase();
+        try {
+            String sql = "SELECT name, ROUND(similarity(LOWER(name), LOWER(?))::numeric, 2) AS score " +
+                         "FROM roles " +
+                         "WHERE similarity(LOWER(name), LOWER(?)) > 0.4 " +
+                         "ORDER BY score DESC";
+            return jdbcTemplate.query(sql, (rs, rowNum) -> new RoleSimilarityDto(
+                    rs.getString("name"),
+                    rs.getDouble("score")
+            ), cleanDraft, cleanDraft);
+        } catch (Exception e) {
+            log.warn("pg_trgm similarity query error: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public RoleUserCountDto getRoleUserCount(Long roleId) {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new RuntimeException("Role with ID " + roleId + " not found"));
+        long activeCount = userRepository.countByRoleIdAndStatus(roleId, "ACTIVE");
+        long totalCount = userRepository.countByRoleId(roleId);
+        return new RoleUserCountDto(roleId, role.getName(), activeCount, totalCount);
+    }
+
+    public record RoleSimilarityDto(String name, double score) {}
+    public record RoleUserCountDto(Long roleId, String roleName, long activeUserCount, long totalUserCount) {}
 }

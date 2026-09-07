@@ -51,4 +51,16 @@ public class RolePermissionController {
         rolePermissionService.deletePermission(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/check-name-similarity")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.update')")
+    public ResponseEntity<List<RolePermissionService.RoleSimilarityDto>> checkNameSimilarity(@RequestParam(required = false, defaultValue = "") String name) {
+        return ResponseEntity.ok(rolePermissionService.checkNameSimilarity(name));
+    }
+
+    @GetMapping("/{roleId}/user-count")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('roles.view')")
+    public ResponseEntity<RolePermissionService.RoleUserCountDto> getRoleUserCount(@PathVariable Long roleId) {
+        return ResponseEntity.ok(rolePermissionService.getRoleUserCount(roleId));
+    }
 }

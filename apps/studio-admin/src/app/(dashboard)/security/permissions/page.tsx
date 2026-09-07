@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-compat";
 import { toast } from "sonner";
@@ -17,6 +15,9 @@ import {
   ChevronDown,
   Sparkles,
   Copy,
+  ExternalLink,
+  Loader2,
+  Info,
 } from "lucide-react";
 import {
   Card,
@@ -24,7 +25,14 @@ import {
   ActionTooltip,
   UniversalContextMenu,
   ContextMenuGroupConfig,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@k2net/ui";
+import { GovernanceHealthBanner } from "@/components/governance-health-banner";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -44,6 +52,20 @@ interface NewPermissionForm {
   description: string;
   module: string;
   scope: string;
+}
+
+interface EndpointUsage {
+  controller: string;
+  method: string;
+  httpMethod: string;
+  path: string;
+  authorizationExpression: string;
+}
+
+interface PermissionUsageResponse {
+  code: string;
+  usages: EndpointUsage[];
+  totalUsages: number;
 }
 
 const SCOPE_OPTIONS = ["SYSTEM", "TENANT"] as const;
@@ -95,6 +117,11 @@ export default function PermissionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Permission | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Traceability Modal state
+  const [selectedUsageCode, setSelectedUsageCode] = useState<string | null>(null);
+  const [usageData, setUsageData] = useState<PermissionUsageResponse | null>(null);
+  const [loadingUsage, setLoadingUsage] = useState(false);
+
   // Form state
   const [form, setForm] = useState<NewPermissionForm>({
     code: "",
@@ -126,12 +153,29 @@ export default function PermissionsPage() {
         setIsRefreshing(false);
       }
     },
-    [session?.accessToken],
+    [session?.accessToken]
   );
 
   useEffect(() => {
     fetchPermissions();
   }, [fetchPermissions]);
+
+  const fetchUsages = async (code: string) => {
+    setSelectedUsageCode(code);
+    setLoadingUsage(true);
+    try {
+      const res = await fetch(`/api/v1/security/permissions/${encodeURIComponent(code)}/usages`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+      });
+      if (!res.ok) throw new Error("Gagal memuat jejak endpoint");
+      const data: PermissionUsageResponse = await res.json();
+      setUsageData(data);
+    } catch (err) {
+      toast.error("Gagal memuat traceability endpoint");
+    } finally {
+      setLoadingUsage(false);
+    }
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // Create permission
@@ -189,14 +233,14 @@ export default function PermissionsPage() {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Filter & group
+  // Filter
   // ──────────────────────────────────────────────────────────────────────────
   const filtered = permissions.filter((p) => {
+    const q = search.toLowerCase();
     const matchSearch =
-      !search ||
-      p.code.toLowerCase().includes(search.toLowerCase()) ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.module.toLowerCase().includes(search.toLowerCase());
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      p.module.toLowerCase().includes(q);
     const matchScope = scopeFilter === "ALL" || p.scope === scopeFilter;
     return matchSearch && matchScope;
   });
@@ -210,6 +254,8 @@ export default function PermissionsPage() {
   return (
     <div className="flex-1 w-full min-w-0 p-4 md:p-8">
       <div className="max-w-[1400px] mx-auto w-full pb-12">
+        {/* GOVERNANCE HEALTH BANNER */}
+        <GovernanceHealthBanner onSelectPermission={(code) => setSearch(code)} />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
@@ -218,9 +264,7 @@ export default function PermissionsPage() {
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">
-                Manajemen Permission
-              </h1>
+              <h1 className="text-xl font-semibold text-foreground">Manajemen Permission</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Kelola seluruh kode hak akses yang tersedia di platform
               </p>
@@ -255,8 +299,16 @@ export default function PermissionsPage() {
           {[
             { label: "Total Permission", value: permissions.length, color: "text-foreground" },
             { label: "Module Aktif", value: Object.keys(groupByModule(permissions)).length, color: "text-sky-400" },
-            { label: "Scope SYSTEM", value: permissions.filter(p => p.scope === "SYSTEM").length, color: "text-primary" },
-            { label: "Scope TENANT", value: permissions.filter(p => p.scope === "TENANT").length, color: "text-primary" },
+            {
+              label: "Scope SYSTEM",
+              value: permissions.filter((p) => p.scope === "SYSTEM").length,
+              color: "text-primary",
+            },
+            {
+              label: "Scope TENANT",
+              value: permissions.filter((p) => p.scope === "TENANT").length,
+              color: "text-primary",
+            },
           ].map((stat) => (
             <Card
               key={stat.label}
@@ -301,40 +353,42 @@ export default function PermissionsPage() {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Module Groups */}
         {isLoading ? (
-          <LoadingSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState onAdd={() => setShowDialog(true)} />
+          <div className="flex items-center justify-center h-48 bg-card/20 rounded-xl border border-border">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : moduleKeys.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground border border-border rounded-xl bg-card/20">
+            Tidak ada permission yang cocok dengan pencarian.
+          </div>
         ) : (
           <div className="space-y-4">
-            {moduleKeys.map((module) => (
+            {moduleKeys.map((mod) => (
               <ModuleGroup
-                key={module}
-                module={module}
-                permissions={grouped[module]}
+                key={mod}
+                module={mod}
+                permissions={grouped[mod]}
                 onDelete={(p) => setDeleteTarget(p)}
+                onViewUsages={fetchUsages}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Create Dialog */}
+      {/* CREATE DIALOG */}
       {showDialog && (
         <CreatePermissionDialog
           form={form}
           setForm={setForm}
-          onClose={() => {
-            setShowDialog(false);
-            setForm({ code: "", name: "", description: "", module: "", scope: "TENANT" });
-          }}
+          onClose={() => setShowDialog(false)}
           onSubmit={handleCreate}
           isSubmitting={isSubmitting}
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* DELETE CONFIRMATION DIALOG */}
       {deleteTarget && (
         <DeleteConfirmDialog
           permission={deleteTarget}
@@ -343,6 +397,14 @@ export default function PermissionsPage() {
           isSubmitting={isSubmitting}
         />
       )}
+
+      {/* TRACEABILITY MODAL */}
+      <TraceabilityModal
+        code={selectedUsageCode}
+        data={usageData}
+        loading={loadingUsage}
+        onClose={() => setSelectedUsageCode(null)}
+      />
     </div>
   );
 }
@@ -355,16 +417,23 @@ function ModuleGroup({
   module,
   permissions,
   onDelete,
+  onViewUsages,
 }: {
   module: string;
   permissions: Permission[];
   onDelete: (p: Permission) => void;
+  onViewUsages: (code: string) => void;
 }) {
   const [open, setOpen] = useState(true);
 
   const getPermissionContextMenuGroups = (p: Permission): ContextMenuGroupConfig[] => [
     {
       items: [
+        {
+          label: "Lihat Traceability Endpoint",
+          icon: Code2,
+          onClick: () => onViewUsages(p.code),
+        },
         {
           label: "Tanya AI tentang Permission Ini",
           icon: Sparkles,
@@ -424,9 +493,7 @@ function ModuleGroup({
         className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40 transition-colors text-left"
       >
         <Layers className="w-4 h-4 text-muted-foreground shrink-0" />
-        <span className="text-sm font-semibold text-foreground capitalize flex-1">
-          {module}
-        </span>
+        <span className="text-sm font-semibold text-foreground capitalize flex-1">{module}</span>
         <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted border border-border">
           {permissions.length}
         </span>
@@ -440,26 +507,26 @@ function ModuleGroup({
         <div className="border-t border-border divide-y divide-border/40">
           {permissions.map((p) => (
             <UniversalContextMenu key={p.id} groups={getPermissionContextMenuGroups(p)}>
-              <div
-                className="flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors group"
-              >
+              <div className="flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors group">
                 <Code2 className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <code className="text-xs font-mono text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
-                      {p.code}
-                    </code>
-                    <span
-                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${scopeBadge(p.scope)}`}
+                    <button
+                      type="button"
+                      onClick={() => onViewUsages(p.code)}
+                      className="inline-flex items-center gap-1.5 text-xs font-mono text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 px-1.5 py-0.5 rounded border border-sky-500/20 transition-all text-left group/btn"
+                      title="Klik untuk melihat endpoint yang menggunakan permission ini"
                     >
+                      <span>{p.code}</span>
+                      <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover/btn:opacity-100" />
+                    </button>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${scopeBadge(p.scope)}`}>
                       {p.scope}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">{p.name}</p>
                   {p.description && (
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
-                      {p.description}
-                    </p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{p.description}</p>
                   )}
                 </div>
                 <ActionTooltip label="Hapus Permission" shortcut="Del">
@@ -480,6 +547,97 @@ function ModuleGroup({
   );
 }
 
+function TraceabilityModal({
+  code,
+  data,
+  loading,
+  onClose,
+}: {
+  code: string | null;
+  data: PermissionUsageResponse | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  if (!code) return null;
+
+  return (
+    <Dialog open={!!code} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl bg-card border-border">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-full bg-sky-500/10 text-sky-400">
+              <Code2 className="w-5 h-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                Traceability Endpoint
+                <code className="text-xs font-mono text-sky-400 bg-sky-500/15 px-2 py-0.5 rounded border border-sky-500/30">
+                  {code}
+                </code>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Daftar endpoint controller backend yang diproteksi oleh kode hak akses ini.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="my-2 max-h-[350px] overflow-y-auto custom-scrollbar space-y-3">
+          {loading ? (
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+              Memindai metadata otorisasi endpoint...
+            </div>
+          ) : !data || data.usages.length === 0 ? (
+            <div className="p-4 rounded-xl border border-dashed border-amber-500/40 bg-amber-500/10 space-y-1 text-center">
+              <span className="text-sm font-semibold text-amber-400 block">⚪ Belum Digunakan (Dead Entry)</span>
+              <p className="text-xs text-muted-foreground">
+                Permission ini belum diterapkan pada anotasi <code>@PreAuthorize</code> di controller backend manapun.
+              </p>
+            </div>
+          ) : (
+            <div className="border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
+                  <tr>
+                    <th className="p-2.5">HTTP &amp; Path</th>
+                    <th className="p-2.5">Controller &amp; Method</th>
+                    <th className="p-2.5">Otorisasi (SpEL)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {data.usages.map((u, i) => (
+                    <tr key={i} className="hover:bg-muted/30">
+                      <td className="p-2.5">
+                        <span className="font-bold text-sky-400 font-mono text-[10px] mr-1.5 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
+                          {u.httpMethod}
+                        </span>
+                        <span className="font-mono text-foreground">{u.path}</span>
+                      </td>
+                      <td className="p-2.5 font-mono text-muted-foreground">
+                        <span className="text-foreground font-medium">{u.controller}</span>.{u.method}()
+                      </td>
+                      <td className="p-2.5 font-mono text-[10px] text-muted-foreground break-all">
+                        {u.authorizationExpression}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose} className="border-border">
+            Tutup
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CreatePermissionDialog({
   form,
   setForm,
@@ -496,20 +654,9 @@ function CreatePermissionDialog({
   const handleField = (field: keyof NewPermissionForm, value: string) =>
     setForm({ ...form, [field]: value });
 
-  // Auto-generate code from module + name if code is empty
-  const autoCode = () => {
-    if (!form.code && form.module && form.name) {
-      const action = form.name.toLowerCase().replace(/\s+/g, "_");
-      handleField("code", `${form.module.toLowerCase()}.${action}`);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-primary/15 border border-primary/25">
@@ -548,15 +695,14 @@ function CreatePermissionDialog({
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Nama Permission <span className="text-rose-400">*</span>
+              Name <span className="text-rose-400">*</span>
             </label>
             <input
               id="input-perm-name"
               type="text"
               value={form.name}
               onChange={(e) => handleField("name", e.target.value)}
-              onBlur={autoCode}
-              placeholder="contoh: Lihat Daftar Node"
+              placeholder="contoh: View Network Nodes"
               className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
             />
           </div>
@@ -564,37 +710,31 @@ function CreatePermissionDialog({
           {/* Code */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Code (Unik) <span className="text-rose-400">*</span>
+              Code <span className="text-rose-400">*</span>
             </label>
             <input
               id="input-perm-code"
               type="text"
               value={form.code}
-              onChange={(e) => handleField("code", e.target.value.toLowerCase())}
-              placeholder="contoh: nodes.view"
-              className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/40 text-sm font-mono text-sky-400 placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
+              onChange={(e) => handleField("code", e.target.value)}
+              placeholder="contoh: nodes.view atau system.nodes.manage"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary font-mono transition-all"
             />
-            <p className="text-[10px] text-muted-foreground/60 mt-1">
-              Format: <code>module.aksi</code> — lowercase, tanpa spasi
-            </p>
           </div>
 
           {/* Scope */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Scope</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {SCOPE_OPTIONS.map((s) => (
                 <button
                   key={s}
-                  id={`scope-btn-${s.toLowerCase()}`}
                   type="button"
                   onClick={() => handleField("scope", s)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                  className={`py-2 rounded-lg text-xs font-medium border transition-all ${
                     form.scope === s
-                      ? s === "SYSTEM"
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-sky-600 text-foreground border-sky-500"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                      ? "bg-primary/15 border-primary text-primary font-semibold"
+                      : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {s}
@@ -606,35 +746,36 @@ function CreatePermissionDialog({
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Deskripsi <span className="text-muted-foreground/60">(opsional)</span>
+              Deskripsi (Opsional)
             </label>
             <textarea
-              id="input-perm-description"
-              rows={2}
+              id="input-perm-desc"
               value={form.description}
               onChange={(e) => handleField("description", e.target.value)}
-              placeholder="Jelaskan kegunaan permission ini…"
-              className="w-full px-3 py-2.5 rounded-lg border border-border bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all resize-none"
+              rows={2}
+              placeholder="Deskripsi singkat fungsi permission ini..."
+              className="w-full px-3 py-2 rounded-lg border border-border bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all resize-none"
             />
           </div>
         </div>
 
-        <div className="flex gap-2 mt-6">
-          <button
+        <div className="flex gap-3 mt-6">
+          <Button
+            variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-40"
+            className="flex-1 border-border text-muted-foreground hover:text-foreground"
           >
             Batal
-          </button>
-          <button
-            id="btn-submit-permission"
+          </Button>
+          <Button
+            id="btn-submit-create-perm"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
-            {isSubmitting ? "Menyimpan…" : "Simpan Permission"}
-          </button>
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Tambah Permission"}
+          </Button>
         </div>
       </div>
     </div>
@@ -654,94 +795,38 @@ function DeleteConfirmDialog({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6">
-        <div className="flex flex-col items-center text-center gap-3 mb-5">
-          <div className="p-3 rounded-full bg-rose-500/15 border border-rose-500/25">
-            <AlertTriangle className="w-5 h-5 text-rose-400" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Hapus Permission?</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Tindakan ini tidak dapat dibatalkan. Permission akan dihapus dari semua role yang terkait.
-            </p>
-          </div>
-          <div className="w-full rounded-lg border border-border bg-muted/40 p-3 text-left">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <code className="text-xs font-mono text-sky-400">{permission.code}</code>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{permission.name}</p>
-          </div>
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 text-center">
+        <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-6 h-6" />
         </div>
-        <div className="flex gap-2">
-          <button
+        <h3 className="text-base font-semibold text-foreground mb-1">Hapus Permission?</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Apakah Anda yakin ingin menghapus kode permission{" "}
+          <code className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">
+            {permission.code}
+          </code>
+          ? Tindakan ini akan mencabut permission ini dari seluruh role.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm border border-border text-muted-foreground hover:text-foreground transition-all disabled:opacity-40"
+            className="flex-1 border-border text-muted-foreground hover:text-foreground"
           >
             Batal
-          </button>
-          <button
-            id="btn-confirm-delete-permission"
+          </Button>
+          <Button
+            id="btn-confirm-delete-perm"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-500 text-foreground transition-all disabled:opacity-50"
+            className="flex-1 bg-rose-600 hover:bg-rose-500 text-foreground font-semibold shadow-lg shadow-rose-600/20"
           >
-            {isSubmitting ? "Menghapus…" : "Ya, Hapus"}
-          </button>
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hapus"}
+          </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="rounded-xl border border-border bg-card/40 p-4 animate-pulse"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-4 w-4 bg-muted rounded" />
-            <div className="h-4 w-24 bg-muted rounded" />
-          </div>
-          <div className="space-y-2.5 pl-7">
-            {[1, 2, 3].map((j) => (
-              <div key={j} className="flex items-center gap-3">
-                <div className="h-3 w-28 bg-muted rounded" />
-                <div className="h-3 w-40 bg-muted/60 rounded" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="p-4 rounded-2xl bg-card border border-border mb-4">
-        <Shield className="w-8 h-8 text-muted-foreground" />
-      </div>
-      <p className="text-muted-foreground font-medium mb-1">Belum ada permission</p>
-      <p className="text-sm text-muted-foreground/60 mb-6">
-        Mulai dengan menambahkan permission pertama untuk platform ini.
-      </p>
-      <button
-        onClick={onAdd}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
-      >
-        <Plus className="w-4 h-4" />
-        Tambah Permission Pertama
-      </button>
     </div>
   );
 }
