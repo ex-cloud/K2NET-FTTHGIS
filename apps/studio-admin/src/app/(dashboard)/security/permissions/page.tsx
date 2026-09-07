@@ -93,7 +93,9 @@ function scopeBadge(scope: string) {
 
 function groupByModule(permissions: Permission[]) {
   return permissions.reduce<Record<string, Permission[]>>((acc, p) => {
-    (acc[p.module] = acc[p.module] || []).push(p);
+    // Normalize to lowercase to prevent duplicate groups (e.g. "System" vs "system")
+    const key = (p.module || "other").toLowerCase();
+    (acc[key] = acc[key] || []).push(p);
     return acc;
   }, {});
 }

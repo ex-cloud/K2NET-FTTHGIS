@@ -48,64 +48,84 @@ public class PermissionSeeder implements CommandLineRunner {
         }
 
         // 1. Define all application permissions (Module-based CRUD + Extras)
+        //    RULES: module = lowercase, name = Title Case professional, scope = explicit
         List<PermissionData> permissionsToSeed = Arrays.asList(
-            // Projects
-            new PermissionData("projects.view", "View Projects", "Projects"),
-            new PermissionData("projects.create", "Create Projects", "Projects"),
-            new PermissionData("projects.edit", "Edit Projects", "Projects"),
-            new PermissionData("projects.delete", "Delete Projects", "Projects"),
-            new PermissionData("projects.export", "Export Projects", "Projects"),
-            
-            // Network/GIS
-            new PermissionData("network.view", "View Network Map", "Network"),
-            new PermissionData("network.manage", "Manage Network Assets", "Network"),
-            new PermissionData("network.manage.all-projects", "Manage All Network Projects", "Network", "TENANT"),
-            new PermissionData("network.nodes", "Manage Nodes (ODC/ODP)", "Network"),
-            new PermissionData("network.audit", "Audit Network Changes", "Network"),
-            
-            // Team/Users
-            new PermissionData("team.view", "View Team Members", "Team"),
-            new PermissionData("team.invite", "Invite New Members", "Team"),
-            new PermissionData("team.manage", "Manage Member Roles", "Team"),
-            
-            // Inventory
-            new PermissionData("inventory.view", "View Inventory", "Inventory"),
-            new PermissionData("inventory.manage", "Manage Inventory Stocks", "Inventory"),
-            new PermissionData("inventory.report", "View Inventory Reports", "Inventory"),
-            
-            // Billing & System
-            new PermissionData("billing.view", "View Billing Info", "Billing"),
-            new PermissionData("billing.manage", "Manage Subscriptions", "Billing"),
-            
-            // Roles & Users Management
-            new PermissionData("roles.view", "View Roles & Permissions", "Security"),
-            new PermissionData("roles.update", "Manage Roles", "Security"),
-            new PermissionData("users.view", "View Team Users", "Security"),
-            new PermissionData("users.manage", "Manage User Status", "Security"),
+            // projects — FTTH infrastructure project management
+            new PermissionData("projects.view",   "View Projects",    "projects"),
+            new PermissionData("projects.create", "Create Projects",  "projects"),
+            new PermissionData("projects.edit",   "Edit Projects",    "projects"),
+            new PermissionData("projects.delete", "Delete Projects",  "projects"),
+            new PermissionData("projects.export", "Export Projects",  "projects"),
 
-            new PermissionData("orgs.view", "View Organizations", "System", "SYSTEM"),
-            new PermissionData("orgs.manage", "Manage Organizations", "System", "SYSTEM"),
-            
-            // Tenant Organization Settings
-            new PermissionData("organizations.view", "View Organization Details", "Organization"),
-            new PermissionData("organizations.update", "Update Organization Settings", "Organization"),
-            new PermissionData("organizations.create", "Create Organizations", "Organization"),
-            new PermissionData("organizations.delete", "Delete Organizations", "Organization"),
+            // network — GIS network asset management
+            new PermissionData("network.view",                "View Network Topology",              "network"),
+            new PermissionData("network.manage",              "Manage Network Assets",              "network"),
+            new PermissionData("network.manage.all-projects", "Manage Cross-Project Network Assets","network", "TENANT"),
+            new PermissionData("network.nodes",               "Manage Network Nodes (ODC/ODP)",     "network"),
+            new PermissionData("network.audit",               "Audit Network Changes",              "network"),
 
-            // Users (invite)
-            new PermissionData("users.invite", "Invite Users", "Security")
+            // team — member management
+            new PermissionData("team.view",   "View Team Members",  "team"),
+            new PermissionData("team.invite", "Invite New Members", "team"),
+            new PermissionData("team.manage", "Manage Member Roles","team"),
+
+            // inventory — stock & asset tracking
+            new PermissionData("inventory.view",   "View Inventory",          "inventory"),
+            new PermissionData("inventory.manage", "Manage Inventory Stocks", "inventory"),
+            new PermissionData("inventory.report", "View Inventory Reports",  "inventory"),
+
+            // billing — subscription management
+            new PermissionData("billing.view",   "View Billing Info",              "billing"),
+            new PermissionData("billing.manage", "Manage Billing & Subscriptions", "billing"),
+
+            // security — roles & user account management
+            new PermissionData("roles.view",   "View Roles & Permissions", "security"),
+            new PermissionData("roles.update", "Manage Roles",             "security"),
+            new PermissionData("users.view",   "View Team Users",          "security"),
+            new PermissionData("users.manage", "Manage User Accounts",     "security"),
+            new PermissionData("users.invite", "Invite Users",             "security"),
+
+            // system — platform-level administration (SYSTEM scope only)
+            new PermissionData("orgs.view",   "View Organizations",   "system", "SYSTEM"),
+            new PermissionData("orgs.manage", "Manage Organizations", "system", "SYSTEM"),
+
+            // organizations — tenant-scoped organization settings
+            new PermissionData("organizations.view",   "View Organization Details",  "organizations"),
+            new PermissionData("organizations.update", "Update Organization Settings","organizations"),
+            new PermissionData("organizations.create", "Create Organizations",        "organizations"),
+            new PermissionData("organizations.delete", "Delete Organizations",        "organizations")
         );
 
         // 2. Ensure all permissions exist in DB and load full catalog
+        //    Also normalizes module, name, and description for existing permissions
+        //    to keep them in sync with the canonical seeder definition.
         Set<Permission> allPermissionsInDb = new HashSet<>(permissionRepository.findAll());
         for (PermissionData data : permissionsToSeed) {
             Permission p = permissionRepository.findByCode(data.code)
                     .map(existing -> {
+                        boolean changed = false;
+                        // Normalize scope
                         if (!data.scope.equals(existing.getScope())) {
                             existing.setScope(data.scope);
-                            return permissionRepository.save(existing);
+                            changed = true;
                         }
-                        return existing;
+                        // Normalize module to canonical lowercase value
+                        if (!data.module.equals(existing.getModule())) {
+                            log.info("🔧 Normalizing module for {}: '{}' -> '{}'", data.code, existing.getModule(), data.module);
+                            existing.setModule(data.module);
+                            changed = true;
+                        }
+                        // Normalize name to canonical Title Case value
+                        if (!data.name.equals(existing.getName())) {
+                            existing.setName(data.name);
+                            changed = true;
+                        }
+                        // Replace generic fallback descriptions
+                        if (existing.getDescription() == null || existing.getDescription().startsWith("Automatically seeded")) {
+                            existing.setDescription(data.description);
+                            changed = true;
+                        }
+                        return changed ? permissionRepository.save(existing) : existing;
                     })
                     .orElseGet(() -> {
                         log.info("🆕 Adding missing permission: {}", data.code);
@@ -114,7 +134,7 @@ public class PermissionSeeder implements CommandLineRunner {
                                 .name(data.name)
                                 .module(data.module)
                                 .scope(data.scope)
-                                .description("Automatically seeded permission for " + data.module)
+                                .description(data.description)
                                 .build();
                         return permissionRepository.save(newP);
                     });
@@ -197,18 +217,29 @@ public class PermissionSeeder implements CommandLineRunner {
         }
     }
 
-    @AllArgsConstructor
     private static class PermissionData {
         String code;
         String name;
         String module;
         String scope;
+        String description;
 
+        /** TENANT-scoped permission with auto-derived description */
         PermissionData(String code, String name, String module) {
             this.code = code;
             this.name = name;
             this.module = module;
             this.scope = "TENANT";
+            this.description = "Grants access to " + name.toLowerCase() + " within the tenant";
+        }
+
+        /** Custom-scoped permission with auto-derived description */
+        PermissionData(String code, String name, String module, String scope) {
+            this.code = code;
+            this.name = name;
+            this.module = module;
+            this.scope = scope;
+            this.description = "Grants " + scope.toLowerCase() + "-level access to " + name.toLowerCase();
         }
     }
 }
