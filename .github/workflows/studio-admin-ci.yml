@@ -53,15 +53,14 @@ jobs:
       - name: Lint
         run: pnpm --filter @k2net/studio-admin lint
 
-      - name: Build (Next.js type-check + compile)
+      - name: Build (Vite type-check + compile)
         run: pnpm --filter @k2net/studio-admin build
         env:
-          NEXTAUTH_URL: https://system-gis.k2net.id
-          NEXTAUTH_SECRET: build-time-placeholder
-          NEXT_PUBLIC_APP_URL: https://system-gis.k2net.id
-          NEXT_PUBLIC_AUTH_KEYCLOAK_ISSUER: https://auth-gis.k2net.id/realms/ftth-realm
-          NEXT_PUBLIC_API_URL: https://gis.k2net.id/api/v1
-          NEXT_PUBLIC_AUTH_KEYCLOAK_SERVER_URL: https://auth-gis.k2net.id
+          VITE_APP_URL: https://system-gis.k2net.id
+          VITE_KEYCLOAK_URL: https://auth-gis.k2net.id
+          VITE_KEYCLOAK_REALM: ftth-realm
+          VITE_KEYCLOAK_CLIENT_ID: studio-admin
+          VITE_API_BASE_URL: https://gis.k2net.id/api/v1
 
       - name: Audit hardcoded colors (anti-regression)
         run: |
