@@ -22,8 +22,12 @@ import "./index.css";
 if (typeof window !== "undefined") {
   const CHUNK_RELOAD_KEY = "vite_chunk_reload_guard";
 
-  // ✅ Clear the guard on every successful app startup
-  try { sessionStorage.removeItem(CHUNK_RELOAD_KEY); } catch { /* private mode */ }
+  // ✅ Clear all guards on every successful app startup
+  try {
+    sessionStorage.removeItem("vite_chunk_reload_guard");
+    sessionStorage.removeItem("chunk_load_error_reload");
+    sessionStorage.removeItem("k2net_chunk_force_refreshed");
+  } catch { /* private mode */ }
 
   window.addEventListener("vite:preloadError", () => {
     try {

@@ -1,198 +1,239 @@
 import { createRootRoute, createRoute, createRouter, Navigate, Outlet } from "@tanstack/react-router";
 import { ProtectedRoute } from "@k2net/auth/client";
 import { AdminLayout } from "./layouts/AdminLayout";
+import { Button } from "@k2net/ui";
+import { AlertTriangle, RefreshCcw } from "lucide-react";
 import * as React from "react";
 
 // ----------------------------------------------------------------
-// Lazy-loaded page imports (code splitting per route)
+// Resilient dynamic import wrapper (handles post-deployment chunk 404s)
 // ----------------------------------------------------------------
-const SystemOverviewPage = React.lazy(() =>
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T }>
+) {
+  return React.lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem("k2net_chunk_force_refreshed") === "true"
+        : false;
+
+    try {
+      const component = await componentImport();
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("k2net_chunk_force_refreshed", "false");
+      }
+      return component;
+    } catch (error: any) {
+      const message = error?.message || "";
+      const isChunkError =
+        message.includes("dynamically imported module") ||
+        message.includes("Loading chunk") ||
+        message.includes("Failed to fetch dynamically imported module") ||
+        message.includes("error loading dynamically imported module") ||
+        error?.name === "ChunkLoadError" ||
+        error?.name === "TypeError";
+
+      if (isChunkError && !pageHasAlreadyBeenForceRefreshed && typeof window !== "undefined") {
+        window.sessionStorage.setItem("k2net_chunk_force_refreshed", "true");
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+
+      throw error;
+    }
+  });
+}
+
+// ----------------------------------------------------------------
+// Lazy-loaded page imports (code splitting per route with auto-retry)
+// ----------------------------------------------------------------
+const SystemOverviewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/overview/page").then((m) => ({ default: m.default }))
 );
-const OrganizationsPage = React.lazy(() =>
+const OrganizationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/page").then((m) => ({ default: m.default }))
 );
-const OrganizationSlugPage = React.lazy(() =>
+const OrganizationSlugPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/[slug]/page").then((m) => ({ default: m.default }))
 );
-const OrganizationQuotasPage = React.lazy(() =>
+const OrganizationQuotasPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/quotas/page").then((m) => ({ default: m.default }))
 );
-const OrganizationFeaturesPage = React.lazy(() =>
+const OrganizationFeaturesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/features/page").then((m) => ({ default: m.default }))
 );
-const OrganizationDomainsPage = React.lazy(() =>
+const OrganizationDomainsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/domains/page").then((m) => ({ default: m.default }))
 );
-const OrganizationVpnPage = React.lazy(() =>
+const OrganizationVpnPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/vpn/page").then((m) => ({ default: m.default }))
 );
-const OrganizationImpersonationPage = React.lazy(() =>
+const OrganizationImpersonationPage = lazyWithRetry(() =>
   import("./app/(dashboard)/organizations/impersonation/page").then((m) => ({ default: m.default }))
 );
-const UsersPage = React.lazy(() =>
+const UsersPage = lazyWithRetry(() =>
   import("./app/(dashboard)/users/page").then((m) => ({ default: m.default }))
 );
-const UsersRolesPage = React.lazy(() =>
+const UsersRolesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/users/roles/page").then((m) => ({ default: m.default }))
 );
-const UsersSessionsPage = React.lazy(() =>
+const UsersSessionsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/users/sessions/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityOverviewPage = React.lazy(() =>
+const ObservabilityOverviewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/overview/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityApiGatewayPage = React.lazy(() =>
+const ObservabilityApiGatewayPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/api-gateway/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityComputePage = React.lazy(() =>
+const ObservabilityComputePage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/compute/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityDatabasePage = React.lazy(() =>
+const ObservabilityDatabasePage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/database/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityIdentityPage = React.lazy(() =>
+const ObservabilityIdentityPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/identity/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityMessagingPage = React.lazy(() =>
+const ObservabilityMessagingPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/messaging/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityOltPollerPage = React.lazy(() =>
+const ObservabilityOltPollerPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/olt-poller/page").then((m) => ({ default: m.default }))
 );
-const ObservabilitySchedulerPage = React.lazy(() =>
+const ObservabilitySchedulerPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/scheduler/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityQueryPerfPage = React.lazy(() =>
+const ObservabilityQueryPerfPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/query-performance/page").then((m) => ({ default: m.default }))
 );
-const ObservabilitySpatialMapPage = React.lazy(() =>
+const ObservabilitySpatialMapPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/spatial-map/page").then((m) => ({ default: m.default }))
 );
-const GatewaysOverviewPage = React.lazy(() =>
+const GatewaysOverviewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/overview/page").then((m) => ({ default: m.default }))
 );
-const GatewaysNotificationPage = React.lazy(() =>
+const GatewaysNotificationPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/notification/page").then((m) => ({ default: m.default }))
 );
-const GatewaysPaymentPage = React.lazy(() =>
+const GatewaysPaymentPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/payment/page").then((m) => ({ default: m.default }))
 );
-const GatewaysMapPage = React.lazy(() =>
+const GatewaysMapPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/map/page").then((m) => ({ default: m.default }))
 );
-const GatewaysStoragePage = React.lazy(() =>
+const GatewaysStoragePage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/storage/page").then((m) => ({ default: m.default }))
 );
-const GatewaysWhatsappPage = React.lazy(() =>
+const GatewaysWhatsappPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/whatsapp/page").then((m) => ({ default: m.default }))
 );
-const GatewaysSchedulerPage = React.lazy(() =>
+const GatewaysSchedulerPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/scheduler/page").then((m) => ({ default: m.default }))
 );
-const GatewaysExportPage = React.lazy(() =>
+const GatewaysExportPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/export/page").then((m) => ({ default: m.default }))
 );
-const GatewaysOltPage = React.lazy(() =>
+const GatewaysOltPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/olt/page").then((m) => ({ default: m.default }))
 );
-const GatewaysAuditPage = React.lazy(() =>
+const GatewaysAuditPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/audit/page").then((m) => ({ default: m.default }))
 );
-const GatewaysPollerPage = React.lazy(() =>
+const GatewaysPollerPage = lazyWithRetry(() =>
   import("./app/(dashboard)/gateways/poller/page").then((m) => ({ default: m.default }))
 );
-const SecurityAlertsPage = React.lazy(() =>
+const SecurityAlertsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/alerts/page").then((m) => ({ default: m.default }))
 );
-const SecurityAuditPage = React.lazy(() =>
+const SecurityAuditPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/audit/page").then((m) => ({ default: m.default }))
 );
-const SecurityAuthPage = React.lazy(() =>
+const SecurityAuthPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/auth/page").then((m) => ({ default: m.default }))
 );
-const SecurityCompliancePage = React.lazy(() =>
+const SecurityCompliancePage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/compliance/page").then((m) => ({ default: m.default }))
 );
-const SecurityRolesPage = React.lazy(() =>
+const SecurityRolesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/roles/page").then((m) => ({ default: m.default }))
 );
-const SecurityPermissionsPage = React.lazy(() =>
+const SecurityPermissionsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/permissions/page").then((m) => ({ default: m.default }))
 );
-const SecurityPasswordPolicyPage = React.lazy(() =>
+const SecurityPasswordPolicyPage = lazyWithRetry(() =>
   import("./app/(dashboard)/security/password-policy/page").then((m) => ({ default: m.default }))
 );
-const LogsPage = React.lazy(() =>
+const LogsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/logs/page").then((m) => ({ default: m.default }))
 );
-const TasksPage = React.lazy(() =>
+const TasksPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/page").then((m) => ({ default: m.default }))
 );
-const TasksNewPage = React.lazy(() =>
+const TasksNewPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/new/page").then((m) => ({ default: m.default }))
 );
-const TasksIdPage = React.lazy(() =>
+const TasksIdPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/[id]/page").then((m) => ({ default: m.default }))
 );
-const TasksProjectsPage = React.lazy(() =>
+const TasksProjectsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/projects/page").then((m) => ({ default: m.default }))
 );
-const TasksProjectIdPage = React.lazy(() =>
+const TasksProjectIdPage = lazyWithRetry(() =>
   import("./app/(dashboard)/tasks/projects/[id]/page").then((m) => ({ default: m.default }))
 );
-const AiPage = React.lazy(() =>
+const AiPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/page").then((m) => ({ default: m.default }))
 );
-const AiAddPage = React.lazy(() =>
+const AiAddPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/add/page").then((m) => ({ default: m.default }))
 );
-const AiConfigPage = React.lazy(() =>
+const AiConfigPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/config/page").then((m) => ({ default: m.default }))
 );
-const AiTemplatesPage = React.lazy(() =>
+const AiTemplatesPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/templates/page").then((m) => ({ default: m.default }))
 );
-const AiPromptsPage = React.lazy(() =>
+const AiPromptsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/prompts/page").then((m) => ({ default: m.default }))
 );
-const AiSimulatorPage = React.lazy(() =>
+const AiSimulatorPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/simulator/page").then((m) => ({ default: m.default }))
 );
-const AiGraphPage = React.lazy(() =>
+const AiGraphPage = lazyWithRetry(() =>
   import("./app/(dashboard)/ai/graph/page").then((m) => ({ default: m.default }))
 );
-const SettingsGeneralPage = React.lazy(() =>
+const SettingsGeneralPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/general/page").then((m) => ({ default: m.default }))
 );
-const SettingsBrandingPage = React.lazy(() =>
+const SettingsBrandingPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/branding/page").then((m) => ({ default: m.default }))
 );
-const SettingsSmtpPage = React.lazy(() =>
+const SettingsSmtpPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/smtp-mail/page").then((m) => ({ default: m.default }))
 );
-const SettingsGisSpatialPage = React.lazy(() =>
+const SettingsGisSpatialPage = lazyWithRetry(() =>
   import("./app/(dashboard)/settings/gis-spatial/page").then((m) => ({ default: m.default }))
 );
-const Assets3dPage = React.lazy(() =>
+const Assets3dPage = lazyWithRetry(() =>
   import("./app/(dashboard)/assets-3d/page").then((m) => ({ default: m.default }))
 );
-const SystemTrashPage = React.lazy(() =>
+const SystemTrashPage = lazyWithRetry(() =>
   import("./app/(dashboard)/system/trash/page").then((m) => ({ default: m.default }))
 );
-const ObservabilityOperationsPage = React.lazy(() =>
+const ObservabilityOperationsPage = lazyWithRetry(() =>
   import("./app/(dashboard)/observability/operations/page").then((m) => ({ default: m.default }))
 );
-const LoginPage = React.lazy(() =>
+const LoginPage = lazyWithRetry(() =>
   import("./app/login/page").then((m) => ({ default: m.default }))
 );
 
 // ----------------------------------------------------------------
-// Suspense fallback
+// Suspense fallback & Error Handlers
 // ----------------------------------------------------------------
 function PageFallback() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-background">
+    <div className="flex h-full w-full items-center justify-center bg-background min-h-[300px]">
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span className="text-xs font-mono text-muted-foreground">Memuat halaman...</span>
@@ -223,6 +264,63 @@ function NotFoundFallback() {
   );
 }
 
+function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => void }) {
+  const message = error instanceof Error ? error.message : String(error);
+  const isChunkError =
+    message.includes("dynamically imported module") ||
+    message.includes("Loading chunk") ||
+    message.includes("Failed to fetch dynamically imported module") ||
+    message.includes("error loading dynamically imported module");
+
+  if (isChunkError && typeof window !== "undefined") {
+    const reloaded = sessionStorage.getItem("k2net_chunk_force_refreshed");
+    if (reloaded !== "true") {
+      sessionStorage.setItem("k2net_chunk_force_refreshed", "true");
+      window.location.reload();
+      return null;
+    }
+  }
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-2xl backdrop-blur-sm max-w-md w-full space-y-4 animate-in zoom-in duration-300">
+        <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-foreground">
+          {isChunkError ? "Pembaruan Aplikasi Tersedia" : "Terjadi Kendala Sistem"}
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          {isChunkError
+            ? "Versi terbaru FTTH GIS telah diperbarui di server. Muat ulang halaman untuk memuat versi baru."
+            : "Halaman tidak dapat memuat konten karena kendala jaringan atau pembaruan modul."}
+        </p>
+        <div className="flex flex-col gap-2 pt-2">
+          <Button
+            onClick={() => {
+              sessionStorage.removeItem("k2net_chunk_force_refreshed");
+              window.location.reload();
+            }}
+            className="w-full text-xs font-semibold gap-2"
+          >
+            <RefreshCcw className="w-3.5 h-3.5" />
+            Muat Ulang Halaman
+          </Button>
+          {reset && (
+            <Button
+              variant="ghost"
+              onClick={reset}
+              className="w-full text-xs text-muted-foreground"
+            >
+              Coba Lagi
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Lazy({ children }: { children: React.ReactNode }) {
   return <React.Suspense fallback={<PageFallback />}>{children}</React.Suspense>;
 }
@@ -233,12 +331,14 @@ function Lazy({ children }: { children: React.ReactNode }) {
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
   notFoundComponent: () => <NotFoundFallback />,
+  errorComponent: RouterErrorComponent,
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: () => <Lazy><LoginPage /></Lazy>,
+  errorComponent: RouterErrorComponent,
 });
 
 const authenticatedLayoutRoute = createRoute({
@@ -249,6 +349,7 @@ const authenticatedLayoutRoute = createRoute({
       <AdminLayout />
     </ProtectedRoute>
   ),
+  errorComponent: RouterErrorComponent,
 });
 
 const indexRoute = createRoute({
@@ -383,7 +484,11 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
 
 const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  defaultErrorComponent: RouterErrorComponent,
+  defaultNotFoundComponent: NotFoundFallback,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

@@ -61,6 +61,24 @@ interface KeycloakParsedClaims {
     if (isInitializing.current || keycloakInstance) return;
     isInitializing.current = true;
 
+    // Clean up accumulated kc-callback-* keys to prevent localStorage bloat
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("kc-callback-")) {
+            keysToRemove.push(key);
+          }
+        }
+        if (keysToRemove.length > 2) {
+          keysToRemove.slice(0, keysToRemove.length - 1).forEach((k) => localStorage.removeItem(k));
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const kc = new Keycloak({
       url: config.url,
       realm: config.realm,
