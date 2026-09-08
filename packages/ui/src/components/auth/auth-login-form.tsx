@@ -1,10 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { KeyRound, ShieldAlert, ArrowRight, Loader2, Mail } from "lucide-react";
+import { 
+  KeyRound, 
+  ShieldAlert, 
+  ArrowRight, 
+  Loader2, 
+  Mail, 
+  Building2, 
+  ShieldCheck, 
+  Lock, 
+  AlertTriangle,
+  Sparkles
+} from "lucide-react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { Label } from "../label";
+import { Badge } from "../badge";
 
 export interface AuthMethod {
   id: string;
@@ -19,6 +31,10 @@ export interface AuthLoginFormProps {
   description?: string;
   logoUrl?: string;
   orgName?: string;
+  plan?: string;
+  planDisplayName?: string;
+  authMode?: string;
+  status?: string;
   allowedMethods?: AuthMethod[];
   primaryAuthMethod?: string;
   submitLabel?: string;
@@ -32,7 +48,12 @@ export interface AuthLoginFormProps {
 export function AuthLoginForm({
   allowedMethods = [],
   primaryAuthMethod,
-  submitLabel = "Continue with Password",
+  orgName,
+  plan = "FREE",
+  planDisplayName = "Starter Trial",
+  authMode,
+  status = "ACTIVE",
+  submitLabel,
   onContinueWithEmail,
   onContinueWithProvider,
   isLoading = false,
@@ -48,6 +69,17 @@ export function AuthLoginForm({
     }
   };
 
+  const isSuspended = status === "SUSPENDED" || status === "TRIAL_EXPIRED";
+  const isFreePlan = !plan || plan.toUpperCase() === "FREE" || plan.toUpperCase() === "BASIC";
+  const isProPlan = plan?.toUpperCase() === "PRO" || plan?.toUpperCase() === "PROFESSIONAL";
+  const isEnterprisePlan = plan?.toUpperCase() === "ENTERPRISE";
+
+  const resolvedSubmitLabel = submitLabel || (
+    isEnterprisePlan 
+      ? "Continue with Enterprise SSO" 
+      : "Sign In with Password"
+  );
+
   const socialMethods = allowedMethods.filter(
     (m) => m.enabled && (m.type === "social" || m.type === "saml" || m.type === "enterprise")
   );
@@ -62,27 +94,79 @@ export function AuthLoginForm({
         </div>
       )}
 
-      {/* Main Login Card (Matching Screenshot Form) */}
+      {/* Subscription Inactive / Suspended Warning */}
+      {isSuspended && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <strong className="block font-semibold">Masa Berlaku Langganan Berakhir</strong>
+            <span className="text-[11px] leading-relaxed text-destructive/90">
+              Workspace organisasi ini saat ini sedang ditangguhkan. Silakan hubungi tim administrator K2NET untuk mengaktifkan kembali langganan.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Main Login Card */}
       <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+        {/* Tenant Identity & Subscription Tier Header */}
+        {orgName && (
+          <div className="flex items-center justify-between pb-3 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              <div className="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Building2 className="size-3.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-foreground truncate max-w-[180px]">
+                  {orgName}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  ISP Workspace
+                </span>
+              </div>
+            </div>
+
+            {/* Plan Badge */}
+            {isFreePlan && (
+              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-bold tracking-wider">
+                FREE • 7 DAYS
+              </Badge>
+            )}
+            {isProPlan && (
+              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-bold tracking-wider">
+                PROFESSIONAL
+              </Badge>
+            )}
+            {isEnterprisePlan && (
+              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-bold tracking-wider">
+                ENTERPRISE
+              </Badge>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Account Email or Username Input */}
           <div className="space-y-2">
-            <Label
-              htmlFor="usernameOrEmail"
-              className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-            >
-              Account Email or Username
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="usernameOrEmail"
+                className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Account Email or Username
+              </Label>
+              <span className="text-[10px] text-primary/80 font-mono">Required</span>
+            </div>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 id="usernameOrEmail"
                 type="text"
-                placeholder="user@kdua.net or admin.user"
+                placeholder="e.g. admin@isp.net or admin.username"
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 className="pl-10 h-11 bg-background/60 border-border/70 rounded-xl text-sm focus-visible:ring-primary"
-                disabled={isLoading}
+                disabled={isLoading || isSuspended}
               />
             </div>
           </div>
@@ -90,19 +174,34 @@ export function AuthLoginForm({
           {/* Primary Action Button */}
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isSuspended}
             className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all duration-200 group"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <>
-                <span>{submitLabel}</span>
+                <span>{resolvedSubmitLabel}</span>
                 <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
               </>
             )}
           </Button>
         </form>
+
+        {/* Tier UX Guidance Box */}
+        {isFreePlan && (
+          <div className="rounded-xl border border-border/70 bg-background/40 p-3 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 font-mono text-muted-foreground text-[10px] font-semibold">
+                <KeyRound className="size-3 text-primary" /> LOGIN METHOD
+              </span>
+              <span className="font-mono text-[10px] font-bold text-primary">EMAIL + PASSWORD</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Otentikasi mandiri berbasis password. Opsi Google Workspace SSO & SAML IdP aktif pada paket Pro & Enterprise.
+            </p>
+          </div>
+        )}
 
         {/* Social Logins (Google Workspace SSO, SAML, etc.) */}
         {socialMethods.length > 0 && (
@@ -123,7 +222,7 @@ export function AuthLoginForm({
                   variant="outline"
                   className="w-full h-11 text-xs font-semibold justify-center gap-2.5 border-border/70 bg-background/40 hover:bg-accent hover:text-foreground rounded-xl transition-all"
                   onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
-                  disabled={isLoading}
+                  disabled={isLoading || isSuspended}
                 >
                   {method.icon === "google" && <GoogleIcon className="h-4 w-4" />}
                   {method.icon === "github" && <GithubIcon className="h-4 w-4" />}
@@ -140,9 +239,9 @@ export function AuthLoginForm({
 
       {/* Compliance / Security Notice Banner */}
       <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
-        <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+        <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <span>
-          Authorized access only. All actions are logged and audited in accordance with global compliance standards.
+          Akses terisolasi multi-tenant. Seluruh aktivitas login dipantau dan diaudit secara kriptografis sesuai standar kepatuhan ISP K2NET.
         </span>
       </div>
     </div>

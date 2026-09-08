@@ -42,10 +42,14 @@ public class OrganizationAuthController {
         private String slug;
         private String name;
         private String logoUrl;
+        private String plan;
+        private String planDisplayName;
+        private String authMode; // "EMAIL_PASSWORD" | "EMAIL_PASSWORD_WITH_SSO" | "ENTERPRISE_SAML_MFA" | "KEYCLOAK_SSO_MFA"
         private String primaryAuthMethod;
         private List<AuthMethodDto> allowedMethods;
         private boolean mfaRequired;
         private boolean restrictToSingleMethod;
+        private String status;
         private String theme;
     }
 
@@ -63,12 +67,16 @@ public class OrganizationAuthController {
                     .slug("system")
                     .name("K2NET Master Management Portal")
                     .logoUrl("/k2net-logo.png")
+                    .plan("INTERNAL")
+                    .planDisplayName("Internal Core")
+                    .authMode("KEYCLOAK_SSO_MFA")
                     .primaryAuthMethod("keycloak-direct")
                     .allowedMethods(List.of(
                             AuthMethodDto.builder().id("google").name("Google Workspace SSO").type("social").icon("google").enabled(true).build()
                     ))
                     .mfaRequired(true)
                     .restrictToSingleMethod(false)
+                    .status("ACTIVE")
                     .theme("ftth-gis")
                     .build());
         }
@@ -81,7 +89,21 @@ public class OrganizationAuthController {
             return ResponseEntity.notFound().build();
         }
 
-        boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
+        com.company.ftthgis.domain.tenant.entity.SubscriptionPlan plan = org.getSubscriptionPlan();
+        String planName = plan != null ? plan.getName().toUpperCase() : "FREE";
+        String planDisplayName = switch (planName) {
+            case "FREE" -> "Starter Trial";
+            case "PRO" -> "Professional";
+            case "ENTERPRISE" -> "Enterprise Core";
+            default -> planName;
+        };
+
+        boolean hasSso = plan != null && plan.isHasSso();
+        String authMode = hasSso ? "EMAIL_PASSWORD_WITH_SSO" : "EMAIL_PASSWORD";
+        if ("ENTERPRISE".equals(planName)) {
+            authMode = "ENTERPRISE_SAML_MFA";
+        }
+
         List<AuthMethodDto> methods = new ArrayList<>();
 
         if (hasSso) {
@@ -106,10 +128,14 @@ public class OrganizationAuthController {
                 .slug(org.getSlug())
                 .name(org.getName())
                 .logoUrl(org.getLogoUrl())
-                .primaryAuthMethod("keycloak-direct")
+                .plan(planName)
+                .planDisplayName(planDisplayName)
+                .authMode(authMode)
+                .primaryAuthMethod(hasSso ? "keycloak-direct" : "email-password")
                 .allowedMethods(methods)
-                .mfaRequired(false)
+                .mfaRequired("ENTERPRISE".equals(planName))
                 .restrictToSingleMethod(false)
+                .status(org.getStatus() != null ? org.getStatus().name() : "ACTIVE")
                 .theme("ftth-gis")
                 .build());
     }

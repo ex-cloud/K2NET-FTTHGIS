@@ -17,9 +17,13 @@ interface OrganizationAuthMethodsResponse {
   slug: string;
   name: string;
   logoUrl?: string;
+  plan?: string;
+  planDisplayName?: string;
+  authMode?: string;
   primaryAuthMethod: string;
   allowedMethods: AuthMethod[];
   mfaRequired: boolean;
+  status?: string;
   theme: string;
 }
 
@@ -60,9 +64,13 @@ export function LoginPage() {
           return {
             slug: tenantSlug,
             name: "ISP Tenant Workspace",
-            primaryAuthMethod: "keycloak-direct",
+            plan: "FREE",
+            planDisplayName: "Starter Trial",
+            authMode: "EMAIL_PASSWORD",
+            primaryAuthMethod: "email-password",
             allowedMethods: [],
             mfaRequired: false,
+            status: "ACTIVE",
             theme: "ftth-gis",
           };
         }
@@ -71,9 +79,13 @@ export function LoginPage() {
         return {
           slug: tenantSlug,
           name: "ISP Tenant Workspace",
-          primaryAuthMethod: "keycloak-direct",
+          plan: "FREE",
+          planDisplayName: "Starter Trial",
+          authMode: "EMAIL_PASSWORD",
+          primaryAuthMethod: "email-password",
           allowedMethods: [],
           mfaRequired: false,
+          status: "ACTIVE",
           theme: "ftth-gis",
         };
       }
@@ -97,7 +109,12 @@ export function LoginPage() {
   return (
     <AuthLoginLayout
       portalName={authConfig?.name || "FTTH GIS Tenant Portal"}
-      portalSubtitle={`Tenant Organization: ${tenantSlug}`}
+      portalSubtitle={
+        authConfig?.planDisplayName
+          ? `Workspace ${authConfig.name || "Tenant"} • ${authConfig.planDisplayName}`
+          : "ISP FTTH Geospatial Network Management Workspace"
+      }
+      docsUrl="https://system-gis.kdua.net/gateways/overview"
       testimonialQuote="From fiber distribution to optical power level diagnostics, managing our ISP footprint has never been easier."
       testimonialAuthor="ISP Operations Lead"
       testimonialRole="Network Infrastructure Team"
@@ -106,6 +123,10 @@ export function LoginPage() {
         title="Sign in to your ISP Workspace"
         description="Access fiber routes, optical distribution points, and subscriber telemetry."
         orgName={authConfig?.name}
+        plan={authConfig?.plan}
+        planDisplayName={authConfig?.planDisplayName}
+        authMode={authConfig?.authMode}
+        status={authConfig?.status}
         logoUrl={authConfig?.logoUrl}
         allowedMethods={authConfig?.allowedMethods || []}
         onContinueWithEmail={handleContinueWithEmail}
