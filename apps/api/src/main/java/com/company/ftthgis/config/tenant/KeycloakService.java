@@ -103,6 +103,7 @@ public class KeycloakService {
                     attributes.put("planDisplayName", "System Admin");
                     attributes.put("orgName", "K2NET Platform Admin");
                 } else {
+                    attributes.put("isSystem", "false");
                     if (displayName != null && !displayName.trim().isEmpty()) {
                         existingRealm.setDisplayName(displayName);
                         existingRealm.setDisplayNameHtml(displayName);
@@ -206,6 +207,7 @@ public class KeycloakService {
                 if (attributes == null) {
                     attributes = new java.util.HashMap<>();
                 }
+                attributes.put("isSystem", "false");
                 attributes.put("orgName", effectiveDisplayName);
                 attributes.put("plan", plan != null ? plan.toUpperCase() : "FREE");
                 attributes.put("planDisplayName", planDisplayName != null ? planDisplayName : "Starter Trial");
