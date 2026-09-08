@@ -790,7 +790,6 @@ export default function AdminOrganizationsPage() {
           onOpenChange={setWizardOpen}
           onSuccess={() => {
             refetch();
-            setWizardOpen(false);
           }}
         />
 
