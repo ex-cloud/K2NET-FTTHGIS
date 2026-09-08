@@ -39,6 +39,12 @@ export default function AdminLoginPage() {
       testimonialRole="Chief Technology Officer, K2NET"
     >
       <AuthLoginForm
+        orgName="K2NET Platform Admin"
+        title="System Administration"
+        description="Master IAM & Platform Operations"
+        plan="INTERNAL"
+        planDisplayName="System Admin"
+        authMode="KEYCLOAK_SSO_MFA"
         submitLabel="Continue with Keycloak SSO"
         onContinueWithEmail={handleContinueWithEmail}
         onContinueWithProvider={handleContinueWithProvider}

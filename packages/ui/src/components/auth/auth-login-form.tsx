@@ -48,9 +48,12 @@ export interface AuthLoginFormProps {
 export function AuthLoginForm({
   allowedMethods = [],
   primaryAuthMethod,
+  title,
+  description,
+  logoUrl,
   orgName,
   plan = "FREE",
-  planDisplayName = "Starter Trial",
+  planDisplayName,
   authMode,
   status = "ACTIVE",
   submitLabel,
@@ -70,12 +73,15 @@ export function AuthLoginForm({
   };
 
   const isSuspended = status === "SUSPENDED" || status === "TRIAL_EXPIRED";
-  const isFreePlan = !plan || plan.toUpperCase() === "FREE" || plan.toUpperCase() === "BASIC";
-  const isProPlan = plan?.toUpperCase() === "PRO" || plan?.toUpperCase() === "PROFESSIONAL";
-  const isEnterprisePlan = plan?.toUpperCase() === "ENTERPRISE";
+  const isInternal = plan?.toUpperCase() === "INTERNAL";
+  const isFreePlan = !isInternal && (!plan || plan.toUpperCase() === "FREE" || plan.toUpperCase() === "BASIC");
+  const isProPlan = !isInternal && (plan?.toUpperCase() === "PRO" || plan?.toUpperCase() === "PROFESSIONAL");
+  const isEnterprisePlan = !isInternal && plan?.toUpperCase() === "ENTERPRISE";
 
   const resolvedSubmitLabel = submitLabel || (
-    isEnterprisePlan 
+    isInternal
+      ? "Continue with Keycloak SSO"
+      : isEnterprisePlan || authMode === "ENTERPRISE_SAML_MFA"
       ? "Continue with Enterprise SSO" 
       : "Sign In with Password"
   );
@@ -110,36 +116,49 @@ export function AuthLoginForm({
       {/* Main Login Card */}
       <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
         {/* Tenant Identity & Subscription Tier Header */}
-        {orgName && (
+        {(orgName || title) && (
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
-            <div className="flex items-center gap-2">
-              <div className="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                <Building2 className="size-3.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-foreground truncate max-w-[180px]">
-                  {orgName}
+            <div className="flex items-center gap-2.5 min-w-0">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={orgName || "Logo"}
+                  className="size-7 rounded-lg object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
+                />
+              ) : (
+                <div className="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Building2 className="size-3.5" />
+                </div>
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground truncate max-w-[190px]">
+                  {orgName || title}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  ISP Workspace
+                <span className="text-[10px] text-muted-foreground font-mono truncate">
+                  {description || (isInternal ? "System Management Core" : "ISP Workspace")}
                 </span>
               </div>
             </div>
 
-            {/* Plan Badge */}
+            {/* Tier Badge */}
+            {isInternal && (
+              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+                {planDisplayName ? planDisplayName.toUpperCase() : "SYSTEM ADMIN"}
+              </Badge>
+            )}
             {isFreePlan && (
-              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-bold tracking-wider">
-                FREE • 7 DAYS
+              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-bold tracking-wider shrink-0">
+                {planDisplayName ? planDisplayName.toUpperCase() : "FREE • 7 DAYS"}
               </Badge>
             )}
             {isProPlan && (
-              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-bold tracking-wider">
-                PROFESSIONAL
+              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+                {planDisplayName ? planDisplayName.toUpperCase() : "PROFESSIONAL"}
               </Badge>
             )}
             {isEnterprisePlan && (
-              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-bold tracking-wider">
-                ENTERPRISE
+              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+                {planDisplayName ? planDisplayName.toUpperCase() : "ENTERPRISE"}
               </Badge>
             )}
           </div>
@@ -189,6 +208,20 @@ export function AuthLoginForm({
         </form>
 
         {/* Tier UX Guidance Box */}
+        {isInternal && (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 font-mono text-amber-500 text-[10px] font-semibold">
+                <Lock className="size-3" /> ACCESS MODE
+              </span>
+              <span className="font-mono text-[10px] font-bold text-amber-500">MASTER IAM & MFA</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Autentikasi tingkat sistem dengan proteksi Keycloak IAM Master Realm dan penegakan MFA wajib.
+            </p>
+          </div>
+        )}
+
         {isFreePlan && (
           <div className="rounded-xl border border-border/70 bg-background/40 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
@@ -199,6 +232,34 @@ export function AuthLoginForm({
             </div>
             <p className="text-[10px] text-muted-foreground leading-relaxed">
               Otentikasi mandiri berbasis password. Opsi Google Workspace SSO & SAML IdP aktif pada paket Pro & Enterprise.
+            </p>
+          </div>
+        )}
+
+        {isProPlan && (
+          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 font-mono text-cyan-500 text-[10px] font-semibold">
+                <Sparkles className="size-3" /> LOGIN METHODS
+              </span>
+              <span className="font-mono text-[10px] font-bold text-cyan-500">PASSWORD + GOOGLE SSO</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Tersedia login menggunakan kredensial password langsung atau Single Sign-On Google Workspace.
+            </p>
+          </div>
+        )}
+
+        {isEnterprisePlan && (
+          <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 font-mono text-purple-500 text-[10px] font-semibold">
+                <Lock className="size-3" /> ENTERPRISE IAM
+              </span>
+              <span className="font-mono text-[10px] font-bold text-purple-500">SAML IdP & MFA</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Integrasi langsung Identity Provider perusahaan (Okta, Azure AD, SAML 2.0) dengan penegakan MFA wajib.
             </p>
           </div>
         )}
