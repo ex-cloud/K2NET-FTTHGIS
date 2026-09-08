@@ -39,6 +39,7 @@ export default function AdminLoginPage() {
       testimonialRole="Chief Technology Officer, K2NET"
     >
       <AuthLoginForm
+        submitLabel="Continue with Keycloak SSO"
         onContinueWithEmail={handleContinueWithEmail}
         onContinueWithProvider={handleContinueWithProvider}
         isLoading={!initialized}

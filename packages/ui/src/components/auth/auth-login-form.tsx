@@ -21,6 +21,7 @@ export interface AuthLoginFormProps {
   orgName?: string;
   allowedMethods?: AuthMethod[];
   primaryAuthMethod?: string;
+  submitLabel?: string;
   onContinueWithEmail?: (email: string) => void;
   onContinueWithProvider?: (providerId: string) => void;
   isLoading?: boolean;
@@ -30,6 +31,8 @@ export interface AuthLoginFormProps {
 
 export function AuthLoginForm({
   allowedMethods = [],
+  primaryAuthMethod,
+  submitLabel = "Continue with Password",
   onContinueWithEmail,
   onContinueWithProvider,
   isLoading = false,
@@ -84,7 +87,7 @@ export function AuthLoginForm({
             </div>
           </div>
 
-          {/* Primary Action Button: Continue with Keycloak SSO */}
+          {/* Primary Action Button */}
           <Button
             type="submit"
             disabled={isLoading}
@@ -94,7 +97,7 @@ export function AuthLoginForm({
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <>
-                <span>Continue with Keycloak SSO</span>
+                <span>{submitLabel}</span>
                 <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
               </>
             )}
