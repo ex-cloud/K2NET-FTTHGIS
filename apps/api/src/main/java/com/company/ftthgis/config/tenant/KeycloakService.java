@@ -57,29 +57,75 @@ public class KeycloakService {
      * Ensures a realm exists for a tenant.
      * Uses the singleton Keycloak admin client.
      */
+    /**
+     * Ensures a realm exists for a tenant.
+     * Uses the singleton Keycloak admin client.
+     */
     public void ensureRealmExists(String realmName) {
-        ensureRealmExists(realmName, false);
+        ensureRealmExists(realmName, false, null, null, null, null);
     }
 
     /**
      * Ensures a realm exists for a tenant with specific SSO plan gating.
      */
     public void ensureRealmExists(String realmName, boolean hasSso) {
-        log.info("🛡️ Ensuring Keycloak Realm exists: {} (hasSso: {})", realmName, hasSso);
+        ensureRealmExists(realmName, hasSso, null, null, null, null);
+    }
+
+    /**
+     * Ensures a realm exists for a tenant with specific SSO plan gating and dynamic metadata.
+     */
+    public void ensureRealmExists(String realmName, boolean hasSso, String displayName, String plan, String planDisplayName, String logoUrl) {
+        log.info("🛡️ Ensuring Keycloak Realm exists: {} (hasSso: {}, displayName: {}, plan: {})", realmName, hasSso, displayName, plan);
         try {
             // 0. Check if the realm already exists to avoid creation conflicts
             try {
-                keycloak.realm(realmName).toRepresentation();
-                log.info("✅ INFO: Realm '{}' already exists. Synchronizing config...", realmName);
+                org.keycloak.representations.idm.RealmRepresentation existingRealm = keycloak.realm(realmName).toRepresentation();
+                log.info("✅ INFO: Realm '{}' already exists. Synchronizing config & metadata...", realmName);
                 
                 // Always sync default client and IDP even if the realm already exists
                 provisionDefaultClient(realmName);
                 disableReviewProfileInFirstBrokerLogin(realmName);
-                if (!"ftth-realm".equalsIgnoreCase(realmName) && !"master".equalsIgnoreCase(realmName)) {
+                
+                // Sync theme and metadata attributes
+                existingRealm.setLoginTheme("ftth-gis");
+                java.util.Map<String, String> attributes = existingRealm.getAttributes();
+                if (attributes == null) {
+                    attributes = new java.util.HashMap<>();
+                }
+
+                boolean isSystem = "ftth-realm".equalsIgnoreCase(realmName) || "master".equalsIgnoreCase(realmName);
+                if (isSystem) {
+                    existingRealm.setDisplayName("FTTH GIS Platform");
+                    existingRealm.setDisplayNameHtml("FTTH GIS Platform");
+                    attributes.put("isSystem", "true");
+                    attributes.put("plan", "INTERNAL");
+                    attributes.put("planDisplayName", "System Admin");
+                    attributes.put("orgName", "K2NET Platform Admin");
+                } else {
+                    if (displayName != null && !displayName.trim().isEmpty()) {
+                        existingRealm.setDisplayName(displayName);
+                        existingRealm.setDisplayNameHtml(displayName);
+                        attributes.put("orgName", displayName);
+                    }
+                    if (plan != null && !plan.trim().isEmpty()) {
+                        attributes.put("plan", plan.toUpperCase());
+                    }
+                    if (planDisplayName != null && !planDisplayName.trim().isEmpty()) {
+                        attributes.put("planDisplayName", planDisplayName);
+                    }
+                    if (logoUrl != null && !logoUrl.trim().isEmpty()) {
+                        attributes.put("logoUrl", logoUrl);
+                    }
+                }
+                existingRealm.setAttributes(attributes);
+
+                // Apply comprehensive security policies: i18n, Brute Force Lockout, Password Policy, OTP, WebAuthn
+                applySecurityAndTierPolicies(existingRealm, plan, isSystem);
+
+                if (!isSystem) {
                     // Sync SMTP configuration for the existing realm
                     try {
-                        org.keycloak.representations.idm.RealmRepresentation existingRealm = keycloak.realm(realmName).toRepresentation();
-                        existingRealm.setLoginTheme("ftth-gis");
                         java.util.Map<String, String> smtpServer = existingRealm.getSmtpServer();
                         if (smtpServer == null) {
                             smtpServer = new java.util.HashMap<>();
@@ -118,12 +164,14 @@ public class KeycloakService {
                         existingRealm.setRefreshTokenMaxReuse(0);
 
                         keycloak.realm(realmName).update(existingRealm);
-                        log.info("✅ SUCCESS: Dynamic SMTP, session, and token lifespan configurations synchronized for existing realm '{}'", realmName);
+                        log.info("✅ SUCCESS: Dynamic SMTP, metadata, security policies, and token lifespans synchronized for existing realm '{}'", realmName);
                     } catch (Exception ex) {
                         log.error("❌ Failed to sync SMTP configuration for existing realm '{}': {}", realmName, ex.getMessage());
                     }
 
                     syncIdentityProvidersForPlan(realmName, hasSso);
+                } else {
+                    keycloak.realm(realmName).update(existingRealm);
                 }
 
                 // Sync with Kong
@@ -147,7 +195,25 @@ public class KeycloakService {
                 // Overwrite identifiers for the new realm
                 realm.setId(realmName);
                 realm.setRealm(realmName);
-                realm.setDisplayName("Organization: " + realmName);
+                String effectiveDisplayName = (displayName != null && !displayName.trim().isEmpty()) ? displayName : "Organization: " + realmName;
+                realm.setDisplayName(effectiveDisplayName);
+                realm.setDisplayNameHtml(effectiveDisplayName);
+                realm.setLoginTheme("ftth-gis");
+
+                java.util.Map<String, String> attributes = realm.getAttributes();
+                if (attributes == null) {
+                    attributes = new java.util.HashMap<>();
+                }
+                attributes.put("orgName", effectiveDisplayName);
+                attributes.put("plan", plan != null ? plan.toUpperCase() : "FREE");
+                attributes.put("planDisplayName", planDisplayName != null ? planDisplayName : "Starter Trial");
+                if (logoUrl != null && !logoUrl.trim().isEmpty()) {
+                    attributes.put("logoUrl", logoUrl);
+                }
+                realm.setAttributes(attributes);
+                
+                // Apply comprehensive security policies: i18n, Brute Force Lockout, Password Policy, OTP, WebAuthn
+                applySecurityAndTierPolicies(realm, plan, false);
                 
                 // Clear stateful data
                 realm.setUsers(null);
@@ -760,5 +826,52 @@ public class KeycloakService {
         } catch (Exception e) {
             log.warn("⚠️ Non-critical failure logging out sessions in realm '{}': {}", realmName, e.getMessage());
         }
+    }
+
+    /**
+     * Configures multi-tier security features: i18n, Brute Force Lockout, Passwords, OTP & WebAuthn.
+     */
+    private void applySecurityAndTierPolicies(org.keycloak.representations.idm.RealmRepresentation realm, String plan, boolean isSystem) {
+        realm.setInternationalizationEnabled(true);
+        realm.setSupportedLocales(java.util.Set.of("en", "id"));
+        realm.setDefaultLocale("id");
+        realm.setRememberMe(true);
+        realm.setResetPasswordAllowed(true);
+        realm.setLoginWithEmailAllowed(true);
+        realm.setDuplicateEmailsAllowed(false);
+        realm.setEditUsernameAllowed(false);
+
+        // Cyber Protection & Brute Force Lockout
+        realm.setBruteForceProtected(true);
+        realm.setPermanentLockout(false);
+        realm.setMaxDeltaTimeSeconds(900);      // 15 min detection window
+        realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
+        realm.setWaitIncrementSeconds(60);      // increments by 1 min
+        realm.setQuickLoginCheckMilliSeconds(1000L);
+        realm.setMinimumQuickLoginWaitSeconds(60);
+
+        if (isSystem) {
+            realm.setFailureFactor(3);
+            realm.setPasswordPolicy("length(14) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and notUsername and notEmail");
+        } else if ("ENTERPRISE".equalsIgnoreCase(plan)) {
+            realm.setFailureFactor(3);
+            realm.setPasswordPolicy("length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and expirePassword(90) and notUsername and notEmail");
+        } else if ("PRO".equalsIgnoreCase(plan) || "PROFESSIONAL".equalsIgnoreCase(plan)) {
+            realm.setFailureFactor(5);
+            realm.setPasswordPolicy("length(10) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(3) and notUsername and notEmail");
+        } else {
+            realm.setFailureFactor(5);
+            realm.setPasswordPolicy("length(8) and notUsername and notEmail");
+        }
+
+        // OTP (TOTP) Standard Configuration
+        realm.setOtpPolicyType("totp");
+        realm.setOtpPolicyAlgorithm("HmacSHA256");
+        realm.setOtpPolicyDigits(6);
+        realm.setOtpPolicyPeriod(30);
+
+        // WebAuthn / Passkeys Configuration
+        realm.setWebAuthnPolicyRpEntityName("FTTH GIS Platform");
+        realm.setWebAuthnPolicySignatureAlgorithms(java.util.List.of("ES256", "RS256"));
     }
 }

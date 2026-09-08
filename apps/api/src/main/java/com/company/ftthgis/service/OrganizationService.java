@@ -230,7 +230,13 @@ public class OrganizationService {
             log.info("🔑 Provisioning Keycloak for organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
 
             // Step 1: Ensure Realm & Default Client
-            keycloakService.ensureRealmExists(effectiveRealmKey);
+            String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
+                    ? saved.getSubscriptionPlan().getName() : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
+
+            keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
 
             // Step 2: Create Owner Account
             String adminUsername = request.getAdminUsername() != null ? request.getAdminUsername()
@@ -702,7 +708,13 @@ public class OrganizationService {
         // Ensure Keycloak Realm is created & enabled
         try {
             String realmToEnsure = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
-            keycloakService.ensureRealmExists(realmToEnsure);
+            String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
+                    ? org.getSubscriptionPlan().getName() : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
+
+            keycloakService.ensureRealmExists(realmToEnsure, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
             keycloakService.setRealmEnabled(realmToEnsure, true);
         } catch (Exception e) {
             log.warn("⚠️ Non-critical failure provisioning Keycloak realm for imported tenant {}: {}", slug, e.getMessage());
@@ -905,7 +917,13 @@ public class OrganizationService {
         try {
             String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
             log.info("🔑 Provisioning Keycloak for approved organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
-            keycloakService.ensureRealmExists(effectiveRealmKey);
+            String planCode = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().getName() != null
+                    ? saved.getSubscriptionPlan().getName() : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            boolean hasSso = saved.getSubscriptionPlan() != null && saved.getSubscriptionPlan().isHasSso();
+
+            keycloakService.ensureRealmExists(effectiveRealmKey, hasSso, saved.getName(), planCode, planDisplayName, saved.getLogoUrl());
 
             String ownerRoleName = "admin";
             String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName);

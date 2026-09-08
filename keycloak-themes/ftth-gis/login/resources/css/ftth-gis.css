@@ -1,9 +1,9 @@
 /* ============================================================
    FTTH GIS — Keycloak Custom Login Theme
-   Matches system-gis.kdua.net/system/login branding
+   Matches system-gis.kdua.net and tenant workspaces branding
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* Prevent 404s from PatternFly parent theme looking for local OpenSans fonts */
 @font-face {
@@ -84,7 +84,7 @@ body .container,
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 64px;
+  padding: 40px 56px;
   position: relative;
   z-index: 1;
 }
@@ -105,57 +105,165 @@ body .container,
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 12px;
 }
 
 #ftth-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 #ftth-logo-icon {
   display: flex;
-  height: 24px;
-  width: 24px;
+  height: 28px;
+  width: 28px;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+#ftth-logo-icon.is-system {
   background: var(--emerald-dim);
   border: 1px solid var(--emerald-border);
+  color: var(--emerald);
+}
+
+#ftth-logo-icon.is-tenant {
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  color: #38bdf8;
 }
 
 #ftth-logo-icon svg {
-  width: 14px;
-  height: 14px;
-  color: var(--emerald);
+  width: 16px;
+  height: 16px;
 }
 
 #ftth-logo-text {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--zinc-100);
+  line-height: 1.2;
+}
+
+/* ---------- Tier Badges ---------- */
+.ftth-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ftth-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ftth-badge-system {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+.ftth-badge-system .ftth-badge-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.ftth-badge-free {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+.ftth-badge-free .ftth-badge-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.ftth-badge-pro {
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: #38bdf8;
+}
+.ftth-badge-pro .ftth-badge-dot {
+  background: #0ea5e9;
+  box-shadow: 0 0 6px rgba(14, 165, 233, 0.6);
+}
+
+.ftth-badge-enterprise {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+.ftth-badge-enterprise .ftth-badge-dot {
+  background: #a855f7;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
+}
+
+/* ---------- Language Selector (i18n) ---------- */
+.ftth-locale-selector {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(24, 24, 27, 0.6);
+  border: 1px solid rgba(39, 39, 42, 0.8);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.ftth-locale-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: var(--zinc-400);
+  text-decoration: none;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.ftth-locale-btn:hover {
+  color: white;
+  text-decoration: none;
+}
+
+.ftth-locale-btn.active {
+  background: var(--emerald-dim);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
 }
 
 #ftth-docs-link {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
   border: 1px solid rgba(39, 39, 42, 0.8);
-  background: rgba(24, 24, 27, 0.4);
+  background: rgba(24, 24, 27, 0.5);
   color: var(--zinc-400);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s;
 }
 
 #ftth-docs-link:hover {
-  background: rgba(39, 39, 42, 0.6);
+  background: rgba(39, 39, 42, 0.8);
   color: white;
   text-decoration: none;
 }
@@ -163,67 +271,73 @@ body .container,
 /* ---------- Form Area ---------- */
 #ftth-form-area {
   width: 100%;
-  max-width: 384px;
+  max-width: 400px;
   margin: auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 #ftth-welcome h1 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   letter-spacing: -0.025em;
   color: white;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 #ftth-welcome p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--zinc-400);
+  line-height: 1.5;
 }
 
 /* ---------- Card Wrapper ---------- */
 #ftth-card {
-  background: rgba(9, 9, 11, 0.4);
-  border: 1px solid rgba(39, 39, 42, 0.3);
+  background: rgba(18, 18, 22, 0.7);
+  border: 1px solid rgba(39, 39, 42, 0.6);
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
 }
 
-/* ---------- SSO Button ---------- */
-#ftth-sso-btn {
+/* ---------- Social SSO Providers ---------- */
+.ftth-social-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.ftth-sso-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  height: 44px;
-  background: var(--zinc-900);
-  border: 1px solid var(--zinc-800);
+  height: 42px;
+  background: rgba(24, 24, 27, 0.8);
+  border: 1px solid rgba(39, 39, 42, 0.9);
   border-radius: 8px;
-  color: var(--zinc-100);
-  font-size: 14px;
+  color: var(--zinc-200);
+  font-size: 13px;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.2s;
-  margin-bottom: 20px;
+  transition: all 0.2s ease-in-out;
 }
 
-#ftth-sso-btn:hover {
-  background: var(--zinc-800);
+.ftth-sso-btn:hover {
+  background: rgba(39, 39, 42, 0.9);
+  border-color: rgba(63, 63, 70, 1);
   color: white;
   text-decoration: none;
+  transform: translateY(-1px);
 }
 
-#ftth-sso-btn svg {
-  width: 16px;
-  height: 16px;
-  color: var(--emerald);
+.ftth-sso-btn svg {
   flex-shrink: 0;
 }
 
@@ -231,22 +345,22 @@ body .container,
 .ftth-divider {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
 .ftth-divider::before,
 .ftth-divider::after {
   content: '';
   flex: 1;
-  border-top: 1px solid rgba(39, 39, 42, 0.8);
+  border-top: 1px solid rgba(39, 39, 42, 0.7);
 }
 
 .ftth-divider span {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--zinc-500);
   flex-shrink: 0;
 }
@@ -260,10 +374,11 @@ body .container,
 #ftth-card label,
 #kc-form-login label {
   display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(244, 244, 245, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--zinc-300);
   margin-bottom: 6px;
+  letter-spacing: 0.01em;
 }
 
 #ftth-card input[type="text"],
@@ -273,22 +388,23 @@ body .container,
 #kc-form-login input[type="password"],
 #kc-form-login input[type="email"] {
   width: 100%;
-  height: 44px;
-  background: rgba(9, 9, 11, 0.5);
-  border: 1px solid rgba(63, 63, 70, 0.5);
+  height: 42px;
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid rgba(63, 63, 70, 0.6);
   border-radius: 8px;
-  padding: 0 12px;
-  font-size: 14px;
+  padding: 0 14px;
+  font-size: 13px;
   font-family: 'Inter', sans-serif;
   color: var(--zinc-100);
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 #ftth-card input:focus,
 #kc-form-login input:focus {
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  background: rgba(9, 9, 11, 0.85);
 }
 
 #ftth-card input::placeholder,
@@ -305,7 +421,7 @@ body .container,
 }
 
 .ftth-pw-header a {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--emerald);
   text-decoration: none;
@@ -313,8 +429,8 @@ body .container,
 }
 
 .ftth-pw-header a:hover {
-  color: rgba(16, 185, 129, 0.8);
-  text-decoration: none;
+  color: rgba(52, 211, 153, 1);
+  text-decoration: underline;
 }
 
 /* ---------- Remember Me Checkbox ---------- */
@@ -322,38 +438,40 @@ body .container,
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 16px 0;
+  margin: 14px 0 18px 0;
 }
 
 .ftth-remember input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   accent-color: var(--emerald);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .ftth-remember label {
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: var(--zinc-400) !important;
   cursor: pointer;
   margin: 0 !important;
+  font-weight: 400 !important;
 }
 
 /* ---------- Submit Button ---------- */
 #kc-login,
+button[type="submit"],
 input[type="submit"] {
   width: 100%;
-  height: 44px;
-  background: linear-gradient(135deg, var(--emerald), rgba(16, 185, 129, 0.8));
-  border: none;
+  height: 42px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
   border-radius: 8px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease-in-out;
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
   display: flex;
   align-items: center;
@@ -362,39 +480,56 @@ input[type="submit"] {
 }
 
 #kc-login:hover,
+button[type="submit"]:hover,
 input[type="submit"]:hover {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(16, 185, 129, 0.7));
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
   transform: translateY(-1px);
 }
 
 #kc-login:active,
+button[type="submit"]:active,
 input[type="submit"]:active {
   transform: translateY(0);
 }
 
-/* ---------- Error Alert ---------- */
-#kc-form-options,
-.alert,
-.pf-c-alert {
-  border-radius: 8px !important;
-  margin-bottom: 16px !important;
-  font-size: 12px !important;
+/* ---------- Alert Boxes ---------- */
+.ftth-alert-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #f87171;
+  margin-bottom: 16px;
+  line-height: 1.4;
 }
 
-.alert-danger,
-.pf-m-danger {
-  background: var(--red-dim) !important;
-  border: 1px solid var(--red-border) !important;
-  color: var(--red-text) !important;
-  padding: 12px !important;
+.ftth-alert-error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.alert-info {
-  background: var(--emerald-dim) !important;
-  border: 1px solid var(--emerald-border) !important;
-  color: var(--emerald) !important;
-  padding: 12px !important;
+.ftth-alert-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #34d399;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.ftth-alert-info svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* ---------- Security Notice ---------- */
@@ -403,48 +538,57 @@ input[type="submit"]:active {
   align-items: flex-start;
   gap: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  padding: 12px 14px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#ftth-security-notice.notice-system {
+  border: 1px solid rgba(16, 185, 129, 0.15);
   background: rgba(16, 185, 129, 0.05);
-  padding: 12px;
-  font-size: 10px;
   color: rgba(52, 211, 153, 0.9);
-  line-height: 1.6;
+}
+
+#ftth-security-notice.notice-tenant {
+  border: 1px solid rgba(14, 165, 233, 0.15);
+  background: rgba(14, 165, 233, 0.05);
+  color: rgba(56, 189, 248, 0.9);
 }
 
 #ftth-security-notice svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 /* ---------- Footer ---------- */
 #ftth-footer {
   border-top: 1px solid var(--zinc-900);
-  padding-top: 24px;
+  padding-top: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 #ftth-footer p {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--zinc-500);
 }
 
 #ftth-footer a {
-  color: var(--zinc-500);
+  color: var(--zinc-400);
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 #ftth-footer a:hover {
-  color: var(--zinc-300);
+  color: var(--zinc-200);
 }
 
 #ftth-footer .copyright {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--zinc-600);
 }
 
@@ -537,8 +681,8 @@ input[type="submit"]:active {
 }
 
 #ftth-avatar {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--zinc-800);
   border: 1px solid var(--zinc-700);
@@ -546,21 +690,21 @@ input[type="submit"]:active {
   align-items: center;
   justify-content: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--zinc-300);
   flex-shrink: 0;
 }
 
 #ftth-author-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--zinc-200);
 }
 
 #ftth-author-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--zinc-500);
   margin-top: 2px;
 }

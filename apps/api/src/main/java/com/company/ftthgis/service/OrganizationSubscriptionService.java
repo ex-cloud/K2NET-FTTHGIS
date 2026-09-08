@@ -159,11 +159,15 @@ public class OrganizationSubscriptionService {
 
         organizationRepository.save(org);
 
-        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status with new plan tier
+        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status & Realm metadata with new plan tier
         try {
-            keycloakService.syncIdentityProvidersForPlan(slug, targetPlan.isHasSso());
+            String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
+            String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
         } catch (Exception ex) {
-            log.warn("⚠️ Failed to sync Keycloak IdP on upgrade for {}: {}", slug, ex.getMessage());
+            log.warn("⚠️ Failed to sync Keycloak realm on upgrade for {}: {}", slug, ex.getMessage());
         }
 
         auditLoggingService.logSuspiciousActivity(
@@ -218,11 +222,15 @@ public class OrganizationSubscriptionService {
 
         organizationRepository.save(org);
 
-        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status with new plan tier (Disable on downgrade to Free)
+        // 🛡️ Synchronize Keycloak Identity Provider (SSO) status & Realm metadata with new plan tier (Disable on downgrade to Free)
         try {
-            keycloakService.syncIdentityProvidersForPlan(slug, targetPlan.isHasSso());
+            String realmKey = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
+            String planCode = targetPlan.getName() != null ? targetPlan.getName() : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+            keycloakService.ensureRealmExists(realmKey, targetPlan.isHasSso(), org.getName(), planCode, planDisplayName, org.getLogoUrl());
         } catch (Exception ex) {
-            log.warn("⚠️ Failed to sync Keycloak IdP on downgrade for {}: {}", slug, ex.getMessage());
+            log.warn("⚠️ Failed to sync Keycloak realm on downgrade for {}: {}", slug, ex.getMessage());
         }
 
         auditLoggingService.logSuspiciousActivity(

@@ -39,14 +39,19 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
 
                 String realmName = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
                 boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
+                String planCode = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().getName() != null
+                        ? org.getSubscriptionPlan().getName()
+                        : "FREE";
+                String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                        : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
 
                 log.info("🔍 Reconciling organization '{}' (Realm: {}, Slug: {}, Plan: {}, hasSso: {})",
                         org.getName(), realmName, org.getSlug(),
-                        org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "NONE",
+                        planDisplayName,
                         hasSso);
 
                 try {
-                    keycloakService.ensureRealmExists(realmName, hasSso);
+                    keycloakService.ensureRealmExists(realmName, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
                     kongConfigSyncService.syncRealmToKong(realmName);
                 } catch (Exception ex) {
                     log.warn("⚠️ Failed to reconcile realm '{}' during startup: {}", realmName, ex.getMessage());

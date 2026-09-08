@@ -2,8 +2,9 @@ import React, { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@k2net/auth/client";
-import { AuthLoginLayout, AuthLoginForm } from "@k2net/ui";
+import { AuthLoginLayout, AuthLoginForm, Button } from "@k2net/ui";
 import { extractTenantSlug } from "../../lib/keycloak-config";
+import { Shield, ArrowRight } from "lucide-react";
 
 interface AuthMethod {
   id: string;
@@ -31,6 +32,7 @@ export function LoginPage() {
   const { authenticated, login, initialized } = useAuth();
   const navigate = useNavigate();
   const tenantSlug = extractTenantSlug();
+  const [redirectTriggered, setRedirectTriggered] = React.useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,16 +46,24 @@ export function LoginPage() {
         navigate({ to: "/" });
         return;
       }
-      // Bersihkan residual legacy localStorage jika ada
+      // Clean residual legacy storage
       localStorage.removeItem("k2net_impersonation_meta");
       localStorage.removeItem("k2net_impersonation_token");
       localStorage.removeItem("k2net_impersonation_session_id");
       localStorage.removeItem("k2net_impersonating_in_progress");
     }
-    if (initialized && authenticated) {
-      navigate({ to: "/" });
+
+    if (initialized) {
+      if (authenticated) {
+        navigate({ to: "/" });
+      } else if (!redirectTriggered) {
+        setRedirectTriggered(true);
+        login({
+          redirectUri: window.location.origin,
+        });
+      }
     }
-  }, [initialized, authenticated, navigate]);
+  }, [initialized, authenticated, navigate, login, redirectTriggered]);
 
   const { data: authConfig, isLoading: isFetchingMethods } = useQuery<OrganizationAuthMethodsResponse>({
     queryKey: ["auth-methods", tenantSlug],
@@ -92,6 +102,12 @@ export function LoginPage() {
     },
   });
 
+  const handleManualLogin = () => {
+    login({
+      redirectUri: window.location.origin,
+    });
+  };
+
   const handleContinueWithEmail = (email: string) => {
     login({
       loginHint: email,
@@ -119,20 +135,56 @@ export function LoginPage() {
       testimonialAuthor="ISP Operations Lead"
       testimonialRole="Network Infrastructure Team"
     >
-      <AuthLoginForm
-        title="Sign in to your ISP Workspace"
-        description="Access fiber routes, optical distribution points, and subscriber telemetry."
-        orgName={authConfig?.name}
-        plan={authConfig?.plan}
-        planDisplayName={authConfig?.planDisplayName}
-        authMode={authConfig?.authMode}
-        status={authConfig?.status}
-        logoUrl={authConfig?.logoUrl}
-        allowedMethods={authConfig?.allowedMethods || []}
-        onContinueWithEmail={handleContinueWithEmail}
-        onContinueWithProvider={handleContinueWithProvider}
-        isLoading={!initialized || isFetchingMethods}
-      />
+      <div className="flex flex-col gap-6">
+        <div className="rounded-xl border border-border/70 bg-card/60 p-6 shadow-xl backdrop-blur-sm">
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">
+                {authConfig?.name || "ISP Workspace"} Authentication
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mengalihkan ke Portal Keamanan IAM 1-Langkah Keycloak...
+              </p>
+            </div>
+
+            <div className="my-2 flex items-center justify-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <span className="text-xs font-mono text-muted-foreground">
+                Memverifikasi gateway sesi...
+              </span>
+            </div>
+
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleManualLogin}
+              className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer text-xs"
+            >
+              <span>Buka Form Login Langsung</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Fallback form */}
+        <AuthLoginForm
+          title="Sign in to your ISP Workspace"
+          description="Access fiber routes, optical distribution points, and subscriber telemetry."
+          orgName={authConfig?.name}
+          plan={authConfig?.plan}
+          planDisplayName={authConfig?.planDisplayName}
+          authMode={authConfig?.authMode}
+          status={authConfig?.status}
+          logoUrl={authConfig?.logoUrl}
+          allowedMethods={authConfig?.allowedMethods || []}
+          onContinueWithEmail={handleContinueWithEmail}
+          onContinueWithProvider={handleContinueWithProvider}
+          isLoading={!initialized || isFetchingMethods}
+        />
+      </div>
     </AuthLoginLayout>
   );
 }
