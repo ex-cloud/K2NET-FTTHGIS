@@ -444,7 +444,24 @@ public class OrganizationService {
         }
 
         log.info("🔄 Updating organization profile: {} (Current Slug: {})", org.getName(), org.getSlug());
-        return organizationRepository.save(org);
+        Organization savedOrg = organizationRepository.save(org);
+
+        // 🛡️ Synchronize Keycloak Realm metadata (Display Name, Subscription Tier Badge & Logo)
+        try {
+            String realmKey = savedOrg.getRealmKey() != null ? savedOrg.getRealmKey() : savedOrg.getSlug();
+            boolean hasSso = savedOrg.getSubscriptionPlan() != null && savedOrg.getSubscriptionPlan().isHasSso();
+            String planCode = savedOrg.getSubscriptionPlan() != null && savedOrg.getSubscriptionPlan().getName() != null
+                    ? savedOrg.getSubscriptionPlan().getName()
+                    : "FREE";
+            String planDisplayName = "FREE".equalsIgnoreCase(planCode) ? "Starter Trial"
+                    : ("PRO".equalsIgnoreCase(planCode) ? "Professional" : ("ENTERPRISE".equalsIgnoreCase(planCode) ? "Enterprise Core" : planCode));
+
+            keycloakService.ensureRealmExists(realmKey, hasSso, savedOrg.getName(), planCode, planDisplayName, savedOrg.getLogoUrl());
+        } catch (Exception ex) {
+            log.warn("⚠️ Failed to sync Keycloak realm on org update for '{}': {}", savedOrg.getSlug(), ex.getMessage());
+        }
+
+        return savedOrg;
     }
 
     private final com.company.ftthgis.domain.tenant.repository.ProjectRepository projectRepository;

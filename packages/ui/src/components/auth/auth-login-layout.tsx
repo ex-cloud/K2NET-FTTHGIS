@@ -1,5 +1,5 @@
-import React from "react";
-import { ShieldCheck, BookOpen, Quote, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { ShieldCheck, BookOpen, Quote, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
 import { LinearPurposeBuiltFigure } from "../linear-isometric/figures/fig-01-purpose-built";
 
@@ -24,6 +24,8 @@ export function AuthLoginLayout({
   testimonialRole = "Chief Technology Officer, K2NET",
   figureComponent,
 }: AuthLoginLayoutProps) {
+  const [activePolicyModal, setActivePolicyModal] = useState<"terms" | "privacy" | null>(null);
+
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
       
@@ -76,16 +78,24 @@ export function AuthLoginLayout({
         <div className="text-[11px] text-muted-foreground z-20 flex flex-col gap-1.5 border-t border-border/40 pt-5">
           <p>
             By continuing, you agree to FTTH GIS&apos;s{" "}
-            <a href="#" className="underline text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={() => setActivePolicyModal("terms")}
+              className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
+            >
               Terms of Service
-            </a>{" "}
+            </button>{" "}
             and{" "}
-            <a href="#" className="underline text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={() => setActivePolicyModal("privacy")}
+              className="underline text-primary hover:text-primary/80 transition-colors font-medium cursor-pointer"
+            >
               Privacy Policy
-            </a>.
+            </button>.
           </p>
           <p className="font-mono text-[10px] text-muted-foreground/70">
-            &copy; {new Date().getFullYear()} K2NET Enterprise SaaS Platform.
+            &copy; {new Date().getFullYear()} K2NET Enterprise SaaS Platform. All rights reserved.
           </p>
         </div>
       </div>
@@ -144,6 +154,170 @@ export function AuthLoginLayout({
           </div>
         </div>
       </div>
+
+      {/* ─── INTERACTIVE POLICY MODAL DIALOG ──────────────────────────── */}
+      {activePolicyModal && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setActivePolicyModal(null)}
+        >
+          <div 
+            className="bg-card border border-border/80 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-border/60 bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-foreground">
+                      {activePolicyModal === "terms" ? "Terms of Service" : "Privacy Policy"}
+                    </h2>
+                    <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
+                      v2026.3
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    K2NET Enterprise SaaS Platform Governance
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="inline-flex bg-background border border-border rounded-lg p-0.5 text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setActivePolicyModal("terms")}
+                    className={`px-3 py-1 rounded-md transition-all ${
+                      activePolicyModal === "terms" 
+                        ? "bg-primary text-primary-foreground font-semibold shadow-xs" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Terms
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivePolicyModal("privacy")}
+                    className={`px-3 py-1 rounded-md transition-all ${
+                      activePolicyModal === "privacy" 
+                        ? "bg-cyan-500 text-white font-semibold shadow-xs" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Privacy
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePolicyModal(null)}
+                  className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-foreground/80 leading-relaxed">
+              {activePolicyModal === "terms" ? (
+                <>
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1">
+                    <div className="flex items-center gap-2 text-primary font-semibold text-xs font-mono">
+                      <Lock className="h-3.5 w-3.5" />
+                      <span>ENTERPRISE SAAS MASTER AGREEMENT</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      These Terms of Service govern your organization&apos;s access to the K2NET FTTH GIS Enterprise SaaS Platform, microservices, telemetry engines, and GIS mapping interfaces.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">1. SaaS License & Spatial Sovereignty (You Own Your Data)</h3>
+                    <p className="text-xs text-muted-foreground">
+                      You retain 100% full intellectual property rights, title, and ownership of all customer records, geospatial vector geometries (ODP, ODC, closures, poles, fiber cables), and operational telemetry. K2NET does not claim ownership or sell your proprietary spatial GIS data.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">2. IAM & Policy-Based Access Control (PBAC)</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Authentication is enforced via Keycloak IAM with mandatory MFA and granular PBAC permissions. You are responsible for safeguarding admin credentials and API tokens.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">3. High Availability SLA (99.9% Uptime)</h3>
+                    <p className="text-xs text-muted-foreground">
+                      We provide a 99.9% operational availability SLA for Enterprise tiers backed by 3-tier disaster recovery replication (Local SSD, MinIO S3, Offsite Cloud WebDAV).
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">4. Data Portability & Termination</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Export your entire dataset anytime in open GIS formats (GeoJSON, ESRI Shapefile, PostGIS SQL dumps, CSV). A 30-day export grace period is provided upon subscription termination.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 space-y-1">
+                    <div className="flex items-center gap-2 text-cyan-500 font-semibold text-xs font-mono">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>PRIVACY & DATA PROTECTION STANDARDS</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      How K2NET collects, processes, encrypts, and isolates organizational telemetry and spatial data in strict compliance with UU PDP No. 27/2022 and GDPR frameworks.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">1. Zero-Trust Storage & Encryption</h3>
+                    <p className="text-xs text-muted-foreground">
+                      All data in transit is encrypted using mandatory TLS 1.3. All data at rest is encrypted with AES-256-GCM. Strict PostgreSQL row-level and schema tenant isolation is enforced at the gateway layer.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">2. Telemetry & Audit Trails</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Audit logs, OLT SNMP metrics, and API gateway access records are streamed asynchronously to dedicated audit storage with immutable cryptographic verification.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">3. No Third-Party Trackers</h3>
+                    <p className="text-xs text-muted-foreground">
+                      We only use strictly necessary authentication session tokens. We never deploy advertising cookies or marketing tracking pixels.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-border/60 bg-muted/30">
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span>TLS 1.3 &bull; AES-256 GCM &bull; UU PDP & ISO/IEC 27001</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePolicyModal(null)}
+                className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-colors cursor-pointer"
+              >
+                I Understand & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

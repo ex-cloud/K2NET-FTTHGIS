@@ -341,7 +341,13 @@ public class KeycloakService {
                 log.info("✅ Fresh admin token acquired with permissions for realm '{}'", realmName);
 
             } catch (jakarta.ws.rs.WebApplicationException ex) {
-                log.error("❌ ERROR: Failed to create realm '{}': {}", realmName, ex.getMessage());
+                String errorBody = "";
+                try {
+                    if (ex.getResponse() != null) {
+                        errorBody = ex.getResponse().readEntity(String.class);
+                    }
+                } catch (Exception ignored) {}
+                log.error("❌ ERROR: Failed to create realm '{}': {} - Detail: {}", realmName, ex.getMessage(), errorBody);
                 throw ex; // Re-throw to allow transaction rollback or propagation
             }
 
@@ -864,15 +870,15 @@ public class KeycloakService {
         if (isSystem) {
             realm.setFailureFactor(3);
             realm.setMaxFailureWaitSeconds(1800);   // 30 min lockout max
-            realm.setPasswordPolicy("length(14) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and notUsername and notEmail");
+            realm.setPasswordPolicy("length(14) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and passwordHistory(5) and notUsername and notEmail");
         } else if ("ENTERPRISE".equalsIgnoreCase(plan)) {
             realm.setFailureFactor(3);
             realm.setMaxFailureWaitSeconds(1800);   // 30 min lockout max
-            realm.setPasswordPolicy("length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and expirePassword(90) and notUsername and notEmail");
+            realm.setPasswordPolicy("length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and passwordHistory(5) and forceExpiredPasswordChange(90) and notUsername and notEmail");
         } else if ("PRO".equalsIgnoreCase(plan) || "PROFESSIONAL".equalsIgnoreCase(plan)) {
             realm.setFailureFactor(5);
             realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
-            realm.setPasswordPolicy("length(10) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(3) and notUsername and notEmail");
+            realm.setPasswordPolicy("length(10) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and passwordHistory(3) and notUsername and notEmail");
         } else {
             realm.setFailureFactor(5);
             realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
