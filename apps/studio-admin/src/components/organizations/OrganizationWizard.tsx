@@ -20,6 +20,9 @@ import {
   CheckCircle2, 
   Sparkles, 
   ExternalLink, 
+  RefreshCw,
+  Lock,
+  Shuffle,
 } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { Input } from "@k2net/ui";
@@ -37,6 +40,10 @@ import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-compat";
+
+export const generateRandom20Alpha = () =>
+  Array.from({ length: 20 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
+
 
 interface WizardProps {
   open: boolean;
@@ -104,6 +111,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     // Step 1: Identity & Domains
     name: "",
     slug: "",
+    slugMode: "custom" as "random" | "custom",
     customDomain: "",
     description: "",
     website: "",
@@ -127,15 +135,26 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     adminUsername: "",
   });
 
-  // Auto-generate slug from name if not edited manual
+  // Auto-generate slug from name if not in random mode and not edited manual
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
+    if (formData.slugMode === "random") {
+      setFormData((prev) => ({ ...prev, name }));
+      return;
+    }
     const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
     setFormData((prev) => ({
       ...prev,
       name,
       slug: prev.slug === "" || prev.slug === slug.slice(0, -1) ? slug : prev.slug,
     }));
+  };
+
+  const handleRegenerateRandomSlug = () => {
+    const randomSlug = generateRandom20Alpha();
+    setFormData((prev) => ({ ...prev, slug: randomSlug, slugMode: "random" }));
+    setSlugError(null);
+    toast.info("Generated 20-char random subdomain: " + randomSlug);
   };
 
   // Track which LDAP fields the user has interacted with
@@ -250,6 +269,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
       setFormData({
         name: "",
         slug: "",
+        slugMode: "custom",
         customDomain: "",
         description: "",
         website: "",
@@ -413,32 +433,97 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground flex items-center gap-2">
-                  <Globe className="size-3.5 text-primary" />
-                  <span>Slug Tenant & Subdomain Portal <span className="text-destructive">*</span></span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <Globe className="size-3.5 text-primary" />
+                    <span>Slug Subdomain Portal <span className="text-destructive">*</span></span>
+                  </label>
+                  {formData.plan !== "FREE" && (
+                    <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-lg border border-border text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, slugMode: "custom" }));
+                          setSlugError(null);
+                        }}
+                        className={cn(
+                          "px-2 py-0.5 rounded font-medium transition-all",
+                          formData.slugMode === "custom"
+                            ? "bg-card text-foreground shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        Custom
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRegenerateRandomSlug}
+                        className={cn(
+                          "px-2 py-0.5 rounded font-medium transition-all flex items-center gap-1",
+                          formData.slugMode === "random"
+                            ? "bg-card text-foreground shadow-xs font-semibold"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Shuffle className="size-2.5 text-primary" />
+                        Random (20 Alpha)
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center rounded-lg border border-border bg-card px-3 h-9 text-xs">
                   <span className="text-muted-foreground font-mono">https://</span>
                   <input
                     value={formData.slug}
+                    disabled={formData.plan === "FREE" || formData.slugMode === "random"}
                     onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value.toLowerCase() }))}
-                    placeholder="nusantara-fiber"
-                    className="flex-1 bg-transparent border-none outline-none px-1 text-primary font-mono font-bold"
+                    placeholder={formData.slugMode === "random" ? "mengenerate 20 huruf..." : "nusantara-fiber"}
+                    className="flex-1 bg-transparent border-none outline-none px-1 text-primary font-mono font-bold disabled:opacity-85"
                   />
                   <span className="text-muted-foreground font-mono">
                     {typeof window !== "undefined" && window.location.hostname.includes("gis.kdua.net")
                       ? "-gis.kdua.net"
                       : ".gis.kdua.net"}
                   </span>
+                  {(formData.slugMode === "random" || formData.plan === "FREE") && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRegenerateRandomSlug}
+                      className="h-6 w-6 p-0 ml-1 text-muted-foreground hover:text-primary"
+                      title="Acak ulang 20 huruf"
+                    >
+                      <RefreshCw className="size-3" />
+                    </Button>
+                  )}
                 </div>
+
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>
+                    {formData.plan === "FREE" ? (
+                      <span className="text-amber-500 font-medium flex items-center gap-1">
+                        <Lock className="size-2.5" /> Free Tier terkunci ke Random 20-Huruf
+                      </span>
+                    ) : formData.slugMode === "random" ? (
+                      "20 Karakter Alfabet Murni Kriptografis (Zero Friction)"
+                    ) : (
+                      "Subdomain kustom untuk identitas brand ISP mitra"
+                    )}
+                  </span>
+                  {formData.slug && (
+                    <span className="font-mono text-[10px] text-primary/80">
+                      {formData.slug.length} chars
+                    </span>
+                  )}
+                </div>
+
                 {slugError && (
                   <p className="text-[11px] text-destructive flex items-center gap-1 mt-1 font-mono">
                     <AlertCircle className="size-3" /> {slugError}
                   </p>
                 )}
-                <p className="text-[10px] text-muted-foreground">
-                  Slug ini digunakan sebagai identitas realm Keycloak dan endpoint API routing Kong.
-                </p>
               </div>
 
               <div className="space-y-1.5">

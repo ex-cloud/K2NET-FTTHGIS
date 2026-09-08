@@ -37,11 +37,11 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
                     continue;
                 }
 
-                String realmName = org.getSlug();
+                String realmName = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
                 boolean hasSso = org.getSubscriptionPlan() != null && org.getSubscriptionPlan().isHasSso();
 
-                log.info("🔍 Reconciling organization '{}' (Realm: {}, Plan: {}, hasSso: {})",
-                        org.getName(), realmName,
+                log.info("🔍 Reconciling organization '{}' (Realm: {}, Slug: {}, Plan: {}, hasSso: {})",
+                        org.getName(), realmName, org.getSlug(),
                         org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "NONE",
                         hasSso);
 

@@ -19,6 +19,7 @@ public class OrganizationController {
     private final OrganizationService organizationService;
     private final com.company.ftthgis.service.ConfigurableUserService userService;
     private final KeycloakService keycloakService;
+    private final com.company.ftthgis.service.OrganizationSlugMigrationService organizationSlugMigrationService;
 
     @GetMapping
     @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('organizations.view')")
@@ -157,5 +158,21 @@ public class OrganizationController {
     public ResponseEntity<Void> syncKeycloak(@PathVariable String slug) {
         keycloakService.ensureRealmExists(slug);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{orgId}/migrate-slug")
+    @PreAuthorize("hasAuthority('system.tenants.migrate_slug') or (@tenantSecurity.isOwnerById(#orgId) and @tenantSecurity.hasEffectivePermission('organizations.update'))")
+    public ResponseEntity<?> migrateSlug(
+            @PathVariable java.util.UUID orgId,
+            @jakarta.validation.Valid @RequestBody com.company.ftthgis.api.tenant.dto.OrganizationSlugMigrationRequest request,
+            org.springframework.security.core.Authentication auth
+    ) {
+        try {
+            String actor = auth != null ? auth.getName() : "system";
+            java.util.Map<String, Object> result = organizationSlugMigrationService.migrateSlug(orgId, request.getTargetSlug(), actor);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "MIGRATION_FAILED", "message", e.getMessage()));
+        }
     }
 }

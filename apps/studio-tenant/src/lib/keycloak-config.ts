@@ -25,7 +25,51 @@ export function extractTenantSlug(): string {
   return import.meta.env.VITE_KEYCLOAK_REALM || "ftth-realm";
 }
 
-export function getTenantKeycloakConfig(): KeycloakAuthConfig {
+export interface ResolvedTenant {
+  realmKey: string;
+  organizationName: string;
+  slug: string;
+  targetSlug?: string | null;
+  isAlias: boolean;
+  planTier: string;
+  status: string;
+  logoUrl?: string | null;
+}
+
+export async function resolveTenantRealm(): Promise<{ realm: string; resolvedTenant?: ResolvedTenant }> {
+  const currentSlug = extractTenantSlug();
+
+  // If running in development on localhost or default system realm
+  if (currentSlug === "ftth-realm" || currentSlug === "system" || !currentSlug) {
+    return { realm: import.meta.env.VITE_KEYCLOAK_REALM || "ftth-realm" };
+  }
+
+  try {
+    const res = await fetch(`/api/v1/public/organizations/resolve?slug=${encodeURIComponent(currentSlug)}`);
+    if (res.ok) {
+      const data: ResolvedTenant = await res.json();
+      
+      // If the slug is an alias of a migrated workspace, smoothly redirect to new domain
+      if (data.isAlias && data.targetSlug && data.targetSlug !== currentSlug) {
+        if (typeof window !== "undefined") {
+          const newHost = window.location.host.replace(`${currentSlug}-gis`, `${data.targetSlug}-gis`);
+          window.location.href = `${window.location.protocol}//${newHost}${window.location.pathname}${window.location.search}`;
+        }
+      }
+
+      return {
+        realm: data.realmKey || currentSlug,
+        resolvedTenant: data,
+      };
+    }
+  } catch (err) {
+    console.warn("⚠️ Failed to resolve organization realm, falling back to slug:", err);
+  }
+
+  return { realm: currentSlug };
+}
+
+export function getTenantKeycloakConfig(realmOverride?: string): KeycloakAuthConfig {
   const isDev = import.meta.env.DEV;
   const currentHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 
@@ -35,11 +79,11 @@ export function getTenantKeycloakConfig(): KeycloakAuthConfig {
     authServerUrl = import.meta.env.VITE_KEYCLOAK_URL || "https://auth-gis.kdua.net";
   }
 
-  const dynamicRealm = extractTenantSlug();
+  const effectiveRealm = realmOverride || extractTenantSlug();
 
   return {
     url: authServerUrl,
-    realm: dynamicRealm,
+    realm: effectiveRealm,
     clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "ftth-gis-frontend",
   };
 }

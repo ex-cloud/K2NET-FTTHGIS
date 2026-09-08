@@ -44,6 +44,8 @@ public class OrganizationService {
     private final com.company.ftthgis.domain.network.repository.FiberCableRepository fiberCableRepository;
     private final EntityManager entityManager;
     private final AuditLoggingService auditLoggingService;
+    private final com.company.ftthgis.domain.tenant.repository.OrganizationSlugAliasRepository organizationSlugAliasRepository;
+    private final com.company.ftthgis.util.RandomSlugGenerator randomSlugGenerator;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -151,12 +153,6 @@ public class OrganizationService {
 
     @Transactional
     public java.util.Map<String, Object> createOrganization(OrganizationCreateRequest request) {
-        if (organizationRepository.existsBySlug(request.getSlug())) {
-            throw new RuntimeException("Organization with slug '" + request.getSlug() + "' already exists!");
-        }
-
-        log.info("🚀 Creating new organization: {} with slug: {}", request.getName(), request.getSlug());
-
         // Lookup Subscription Plan
         String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
         String normalizedPlan = "FREE";
@@ -173,10 +169,37 @@ public class OrganizationService {
                 .findByName(targetPlanName)
                 .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
 
+        String finalSlug;
+        String slugType;
+        if ("FREE".equalsIgnoreCase(targetPlanName) || request.getSlug() == null || request.getSlug().trim().isBlank()) {
+            finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
+            slugType = "RANDOM";
+            log.info("🎲 Auto-assigned 20-char random slug '{}' for organization '{}'", finalSlug, request.getName());
+        } else {
+            finalSlug = request.getSlug().trim().toLowerCase();
+            if (randomSlugGenerator.isReserved(finalSlug)) {
+                throw new IllegalArgumentException("Subdomain slug '" + finalSlug + "' is a reserved platform keyword.");
+            }
+            if (!randomSlugGenerator.isValidCustomSlug(finalSlug)) {
+                throw new IllegalArgumentException("Invalid subdomain slug format: '" + finalSlug + "'");
+            }
+            if (organizationRepository.existsBySlug(finalSlug)) {
+                throw new RuntimeException("Organization with slug '" + finalSlug + "' already exists!");
+            }
+            if (organizationSlugAliasRepository.existsByOldSlug(finalSlug)) {
+                throw new RuntimeException("Subdomain slug '" + finalSlug + "' is reserved as a historical alias!");
+            }
+            slugType = "CUSTOM";
+        }
+
+        log.info("🚀 Creating new organization: {} with slug: {} (type: {})", request.getName(), finalSlug, slugType);
+
         // 1. Save Organization Profile
         Organization.OrganizationBuilder<?, ?> orgBuilder = Organization.builder()
                 .name(request.getName())
-                .slug(request.getSlug())
+                .slug(finalSlug)
+                .realmKey(finalSlug) // Initial realm_key is permanently bound to the initial slug
+                .slugType(slugType)
                 .description(request.getDescription())
                 .address(request.getAddress())
                 .website(request.getWebsite())
@@ -185,7 +208,7 @@ public class OrganizationService {
 
         // Handle Trial Expiry for FREE plan (7 Days Trial)
         if ("FREE".equalsIgnoreCase(targetPlanName)) {
-            log.info("🎁 FREE Plan detected for {}. Setting 7-day trial expiry.", request.getSlug());
+            log.info("🎁 FREE Plan detected for {}. Setting 7-day trial expiry.", finalSlug);
             orgBuilder.trialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
         }
 
@@ -203,10 +226,11 @@ public class OrganizationService {
 
         // 3. Provision Keycloak (Realm + Client + Owner + LDAP)
         try {
-            log.info("🔑 Provisioning Keycloak for organization: {}", saved.getSlug());
+            String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
+            log.info("🔑 Provisioning Keycloak for organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
 
             // Step 1: Ensure Realm & Default Client
-            keycloakService.ensureRealmExists(saved.getSlug());
+            keycloakService.ensureRealmExists(effectiveRealmKey);
 
             // Step 2: Create Owner Account
             String adminUsername = request.getAdminUsername() != null ? request.getAdminUsername()
@@ -217,7 +241,7 @@ public class OrganizationService {
             // Use standard 'admin' role name for Keycloak (Hybrid RBAC fallback will handle permissions)
             String ownerRoleName = "admin";
 
-            String keycloakId = keycloakService.createOwnerUser(saved.getSlug(), adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
+            String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, request.getAdminEmail(), tempPassword, ownerRoleName);
 
             // Step 3: Create Local User Record for Internal Mapping
             log.info("💾 Saving local user mapping for Keycloak ID: {}", keycloakId);
@@ -323,7 +347,15 @@ public class OrganizationService {
     }
 
     public boolean isSlugAvailable(String slug) {
-        return !organizationRepository.existsBySlug(slug);
+        if (slug == null || slug.isBlank()) {
+            return false;
+        }
+        String normalized = slug.trim().toLowerCase();
+        if (randomSlugGenerator.isReserved(normalized)) {
+            return false;
+        }
+        return !organizationRepository.existsBySlug(normalized) &&
+               !organizationSlugAliasRepository.existsByOldSlug(normalized);
     }
 
     @Transactional
@@ -654,6 +686,7 @@ public class OrganizationService {
             org = Organization.builder()
                     .name(name)
                     .slug(slug)
+                    .realmKey(slug)
                     .website(website)
                     .address(address)
                     .subscriptionPlan(plan)
@@ -668,8 +701,9 @@ public class OrganizationService {
 
         // Ensure Keycloak Realm is created & enabled
         try {
-            keycloakService.ensureRealmExists(slug);
-            keycloakService.setRealmEnabled(slug, true);
+            String realmToEnsure = org.getRealmKey() != null ? org.getRealmKey() : org.getSlug();
+            keycloakService.ensureRealmExists(realmToEnsure);
+            keycloakService.setRealmEnabled(realmToEnsure, true);
         } catch (Exception e) {
             log.warn("⚠️ Non-critical failure provisioning Keycloak realm for imported tenant {}: {}", slug, e.getMessage());
         }
@@ -762,19 +796,41 @@ public class OrganizationService {
 
     @Transactional
     public Organization registerSelfService(OrganizationCreateRequest request) {
-        if (organizationRepository.existsBySlug(request.getSlug())) {
-            throw new RuntimeException("Organization with slug '" + request.getSlug() + "' already exists!");
+        String rawPlan = request.getPlan() != null ? request.getPlan().trim() : "FREE";
+        SubscriptionPlan plan = subscriptionPlanRepository
+                .findByName(rawPlan)
+                .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
+
+        String targetPlanName = plan != null ? plan.getName() : "FREE";
+        String finalSlug;
+        String slugType;
+        if ("FREE".equalsIgnoreCase(targetPlanName) || request.getSlug() == null || request.getSlug().trim().isBlank()) {
+            finalSlug = randomSlugGenerator.generateUniqueSlug(organizationRepository, organizationSlugAliasRepository);
+            slugType = "RANDOM";
+            log.info("🎲 Auto-assigned 20-char random slug '{}' for self-registered organization '{}'", finalSlug, request.getName());
+        } else {
+            finalSlug = request.getSlug().trim().toLowerCase();
+            if (randomSlugGenerator.isReserved(finalSlug)) {
+                throw new IllegalArgumentException("Subdomain slug '" + finalSlug + "' is a reserved platform keyword.");
+            }
+            if (!randomSlugGenerator.isValidCustomSlug(finalSlug)) {
+                throw new IllegalArgumentException("Invalid subdomain slug format: '" + finalSlug + "'");
+            }
+            if (organizationRepository.existsBySlug(finalSlug)) {
+                throw new RuntimeException("Organization with slug '" + finalSlug + "' already exists!");
+            }
+            if (organizationSlugAliasRepository.existsByOldSlug(finalSlug)) {
+                throw new RuntimeException("Subdomain slug '" + finalSlug + "' is reserved as a historical alias!");
+            }
+            slugType = "CUSTOM";
         }
 
-        log.info("📝 Self-service registration for tenant: {} with slug: {}", request.getName(), request.getSlug());
-
-        SubscriptionPlan plan = subscriptionPlanRepository
-                .findByName(request.getPlan() != null ? request.getPlan() : "FREE")
-                .orElseGet(() -> subscriptionPlanRepository.findByName("FREE").orElse(null));
+        log.info("📝 Self-service registration for tenant: {} with slug: {} (type: {})", request.getName(), finalSlug, slugType);
 
         Organization org = Organization.builder()
                 .name(request.getName())
-                .slug(request.getSlug())
+                .slug(finalSlug)
+                .slugType(slugType)
                 .description(request.getDescription())
                 .address(request.getAddress())
                 .website(request.getWebsite())
@@ -839,16 +895,20 @@ public class OrganizationService {
             org.setTrialExpiresAt(java.time.LocalDateTime.now().plusDays(7));
         }
 
+        if (org.getRealmKey() == null) {
+            org.setRealmKey(org.getSlug());
+        }
         Organization saved = organizationRepository.saveAndFlush(org);
 
         // Provision Keycloak
         String tempPassword = "Temp@" + java.util.UUID.randomUUID().toString().substring(0, 8);
         try {
-            log.info("🔑 Provisioning Keycloak for approved organization: {}", saved.getSlug());
-            keycloakService.ensureRealmExists(saved.getSlug());
+            String effectiveRealmKey = saved.getRealmKey() != null ? saved.getRealmKey() : saved.getSlug();
+            log.info("🔑 Provisioning Keycloak for approved organization: {} (Realm: {})", saved.getSlug(), effectiveRealmKey);
+            keycloakService.ensureRealmExists(effectiveRealmKey);
 
             String ownerRoleName = "admin";
-            String keycloakId = keycloakService.createOwnerUser(saved.getSlug(), adminUsername, adminEmail, tempPassword, ownerRoleName);
+            String keycloakId = keycloakService.createOwnerUser(effectiveRealmKey, adminUsername, adminEmail, tempPassword, ownerRoleName);
 
             log.info("💾 Saving local user mapping for approved tenant owner: {}", keycloakId);
             com.company.ftthgis.domain.user.entity.User localUser = new com.company.ftthgis.domain.user.entity.User();

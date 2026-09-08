@@ -738,4 +738,27 @@ public class KeycloakService {
             log.error("❌ ERROR: Failed to disable 'Review Profile' execution in realm '{}': {}", realmName, e.getMessage());
         }
     }
+
+    /**
+     * Revokes all active user sessions in a given realm and pushes token revocation.
+     * Prevents zombie sessions on clients during realm/slug migration.
+     */
+    public void logoutAllSessions(String realmName) {
+        if ("master".equalsIgnoreCase(realmName) || "ftth-realm".equalsIgnoreCase(realmName)) {
+            log.warn("🛡️ Security Alert: Attempted to logoutAll on protected realm: {}", realmName);
+            return;
+        }
+        try {
+            var realmResource = keycloak.realm(realmName);
+            try {
+                realmResource.pushRevocation();
+            } catch (Exception ex) {
+                log.warn("⚠️ Push revocation not supported or failed on realm '{}': {}", realmName, ex.getMessage());
+            }
+            realmResource.logoutAll();
+            log.info("🚪 SUCCESS: Logged out all active sessions and pushed revocation for realm '{}'", realmName);
+        } catch (Exception e) {
+            log.warn("⚠️ Non-critical failure logging out sessions in realm '{}': {}", realmName, e.getMessage());
+        }
+    }
 }

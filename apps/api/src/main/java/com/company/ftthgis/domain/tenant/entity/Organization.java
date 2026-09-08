@@ -54,6 +54,9 @@ public class Organization {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "realm_key", nullable = false, unique = true)
+    private String realmKey;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -113,6 +116,17 @@ public class Organization {
     @Column(name = "over_quota_mode")
     @lombok.Builder.Default
     private Boolean overQuotaMode = false;
+
+    @Column(name = "slug_type", length = 16)
+    @lombok.Builder.Default
+    private String slugType = "CUSTOM";
+
+    @Column(name = "custom_domain")
+    private String customDomain;
+
+    @Column(name = "custom_domain_verified")
+    @lombok.Builder.Default
+    private Boolean customDomainVerified = false;
 
     public enum OrganizationStatus {
         ACTIVE,

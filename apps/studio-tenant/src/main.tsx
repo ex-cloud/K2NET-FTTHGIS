@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { KeycloakProvider } from "@k2net/auth/client";
 import { Toaster } from "sonner";
-import { getTenantKeycloakConfig } from "./lib/keycloak-config";
+import { getTenantKeycloakConfig, resolveTenantRealm } from "./lib/keycloak-config";
 import { ThemeProvider } from "@k2net/ui";
 import { setApiAuthToken } from "./lib/api-client";
 import { App } from "./App";
@@ -30,23 +30,28 @@ const queryClient = new QueryClient({
   },
 });
 
-const keycloakConfig = getTenantKeycloakConfig();
+async function bootstrap() {
+  const { realm } = await resolveTenantRealm();
+  const keycloakConfig = getTenantKeycloakConfig(realm);
 
-keycloakConfig.onTokens = (tokens) => {
-  if (tokens.token) {
-    setApiAuthToken(tokens.token);
-  }
-};
+  keycloakConfig.onTokens = (tokens) => {
+    if (tokens.token) {
+      setApiAuthToken(tokens.token);
+    }
+  };
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="k2net-theme" enableSystem>
-      <KeycloakProvider config={keycloakConfig}>
-        <QueryClientProvider client={queryClient}>
-          <App />
-          <Toaster position="top-right" richColors />
-        </QueryClientProvider>
-      </KeycloakProvider>
-    </ThemeProvider>
-  </React.StrictMode>
-);
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <ThemeProvider defaultTheme="system" storageKey="k2net-theme" enableSystem>
+        <KeycloakProvider config={keycloakConfig}>
+          <QueryClientProvider client={queryClient}>
+            <App />
+            <Toaster position="top-right" richColors />
+          </QueryClientProvider>
+        </KeycloakProvider>
+      </ThemeProvider>
+    </React.StrictMode>
+  );
+}
+
+bootstrap();

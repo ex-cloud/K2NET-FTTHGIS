@@ -5,6 +5,7 @@ import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { MapPage } from "./pages/map/MapPage";
 import { CustomersPage } from "./pages/customers/CustomersPage";
 import { LoginPage } from "./pages/auth/LoginPage";
+import { WorkspaceDomainSettings } from "./pages/settings/WorkspaceDomainSettings";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -59,7 +60,7 @@ const issuesRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => authenticatedLayoutRoute,
   path: "/settings",
-  component: DashboardPage,
+  component: WorkspaceDomainSettings,
 });
 
 const dashboardRoute = createRoute({
