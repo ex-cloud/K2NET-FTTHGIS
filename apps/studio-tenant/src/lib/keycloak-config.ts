@@ -2,6 +2,14 @@ import type { KeycloakAuthConfig } from "@k2net/auth/client";
 
 export function extractTenantSlug(): string {
   if (typeof window === "undefined") return "ftth-realm";
+  
+  // 1. Support URL Search Params for local development / testing / preview (?tenant=slug or ?slug=slug)
+  const searchParams = new URLSearchParams(window.location.search);
+  const paramSlug = searchParams.get("tenant") || searchParams.get("slug");
+  if (paramSlug && paramSlug !== "system" && paramSlug !== "api") {
+    return paramSlug.trim().toLowerCase();
+  }
+
   const hostname = window.location.hostname;
 
   if (hostname.includes(".gis.kdua.net")) {

@@ -23,11 +23,19 @@
         <!-- Top Header Row (Logo + Docs + Theme Toggle) -->
         <div id="ftth-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:20;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="display:flex;height:24px;width:24px;align-items:center;justify-content:center;border-radius:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="m9 12 2 2 4-4"/>
-              </svg>
+            <div style="display:flex;height:24px;width:24px;align-items:center;justify-content:center;border-radius:6px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);overflow:hidden;">
+              <#if logoUrl?has_content>
+                <img src="${logoUrl}" alt="${orgName}" style="width:100%;height:100%;object-fit:cover;border-radius:5px;" />
+              <#elseif isSystem>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              <#else>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
+                </svg>
+              </#if>
             </div>
             <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#fafafa;">
               ${isSystem?then('FTTH GIS PORTAL', orgName)}
@@ -74,8 +82,10 @@
             <!-- Tenant / Platform Identity Header Row -->
             <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid rgba(63,63,70,0.5);margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;color:#22c55e;">
-                  <#if isSystem>
+                <div style="width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;color:#22c55e;overflow:hidden;">
+                  <#if logoUrl?has_content>
+                    <img src="${logoUrl}" alt="${orgName}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;" />
+                  <#elseif isSystem>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
                     </svg>
@@ -100,17 +110,17 @@
                 <span class="ftth-tier-badge" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;">
                   SYSTEM ADMIN
                 </span>
-              <#elseif plan == "ENTERPRISE">
+              <#elseif plan == "ENTERPRISE" || plan == "ENTERPRISE CORE">
                 <span class="ftth-tier-badge ftth-badge-enterprise">
-                  ENTERPRISE
+                  ${(planDisplayName?has_content)?then(planDisplayName?upper_case, 'ENTERPRISE')}
                 </span>
-              <#elseif plan == "PRO">
+              <#elseif plan == "PRO" || plan == "PROFESSIONAL">
                 <span class="ftth-tier-badge ftth-badge-pro">
-                  PROFESSIONAL
+                  ${(planDisplayName?has_content)?then(planDisplayName?upper_case, 'PROFESSIONAL')}
                 </span>
               <#else>
                 <span class="ftth-tier-badge ftth-badge-free">
-                  STARTER TRIAL
+                  ${(planDisplayName?has_content)?then(planDisplayName?upper_case, 'STARTER TRIAL')}
                 </span>
               </#if>
             </div>
@@ -240,23 +250,68 @@
 
             </form>
 
-            <!-- Access Mode Box (Matching AuthLoginForm.tsx) -->
-            <div style="margin-top:14px;border-radius:10px;border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.06);padding:10px 12px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#fbbf24;display:flex;align-items:center;gap:4px;">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                  ACCESS MODE
-                </span>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#fbbf24;">
-                  ${isSystem?then('MASTER IAM & MFA', 'ISOLATED TENANT IAM')}
-                </span>
+            <!-- Tier UX Guidance Box (Exact Match with AuthLoginForm.tsx) -->
+            <#if isSystem>
+              <div style="margin-top:14px;border-radius:10px;border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.06);padding:10px 12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#fbbf24;display:flex;align-items:center;gap:4px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    ACCESS MODE
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#fbbf24;">MASTER IAM & MFA</span>
+                </div>
+                <p style="font-size:10px;color:#a1a1aa;margin:0;line-height:1.4;">
+                  Autentikasi tingkat sistem dengan proteksi Keycloak IAM Master Realm dan penegakan MFA wajib.
+                </p>
               </div>
-              <p style="font-size:10px;color:#a1a1aa;margin:0;line-height:1.4;">
-                ${isSystem?then('Autentikasi tingkat sistem dengan protokol Keycloak IAM Master Realm dan penegakan MFA wajib.', 'Autentikasi terisolasi workspace ISP dengan proteksi kredensial Zero-Trust.')}
-              </p>
-            </div>
+            <#elseif plan == "ENTERPRISE">
+              <div style="margin-top:14px;border-radius:10px;border:1px solid rgba(168,85,247,0.25);background:rgba(168,85,247,0.06);padding:10px 12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#c084fc;display:flex;align-items:center;gap:4px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    ENTERPRISE IAM
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#c084fc;">SAML IdP & MFA</span>
+                </div>
+                <p style="font-size:10px;color:#a1a1aa;margin:0;line-height:1.4;">
+                  Integrasi langsung Identity Provider perusahaan (Okta, Azure AD, SAML 2.0) dengan penegakan MFA wajib.
+                </p>
+              </div>
+            <#elseif plan == "PRO">
+              <div style="margin-top:14px;border-radius:10px;border:1px solid rgba(14,165,233,0.25);background:rgba(14,165,233,0.06);padding:10px 12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#38bdf8;display:flex;align-items:center;gap:4px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                    </svg>
+                    LOGIN METHODS
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#38bdf8;">PASSWORD + GOOGLE SSO</span>
+                </div>
+                <p style="font-size:10px;color:#a1a1aa;margin:0;line-height:1.4;">
+                  Tersedia login menggunakan kredensial password langsung atau Single Sign-On Google Workspace.
+                </p>
+              </div>
+            <#else>
+              <div style="margin-top:14px;border-radius:10px;border:1px solid rgba(63,63,70,0.7);background:rgba(24,24,27,0.4);padding:10px 12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#a1a1aa;display:flex;align-items:center;gap:4px;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                      <circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>
+                    </svg>
+                    LOGIN METHOD
+                  </span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#22c55e;">EMAIL + PASSWORD</span>
+                </div>
+                <p style="font-size:10px;color:#a1a1aa;margin:0;line-height:1.4;">
+                  Otentikasi mandiri berbasis password. Opsi Google Workspace SSO & SAML IdP aktif pada paket Pro & Enterprise.
+                </p>
+              </div>
+            </#if>
 
           </div><!-- /#ftth-card -->
 
