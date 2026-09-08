@@ -542,6 +542,12 @@ public class OrganizationService {
 
         String slug = org.getSlug();
 
+        // ROOT PLATFORM DEFENSE: Prevent deletion of Main / System Organization
+        if ("default".equalsIgnoreCase(slug) || "00000000-0000-0000-0000-000000000001".equals(org.getId().toString())) {
+            log.warn("🛡️ PREVENTED: Attempt to delete root platform organization '{}' (ID: {})", slug, org.getId());
+            throw new IllegalArgumentException("Root Platform Organization (default) is immutable and protected from deletion.");
+        }
+
         // SECONDARY DEFENSE: Prevent unauthorized deletion
         if (!tenantSecurity.isOwner(slug)) {
             log.error("🛡️ CRITICAL SECURITY INCIDENT: Unauthorized deletion attempt for organization '{}'", slug);

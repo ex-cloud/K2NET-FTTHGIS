@@ -23,6 +23,7 @@ import {
   Clock,
   Copy,
   Trash2,
+  Lock,
   PauseCircle,
   XCircle,
 } from "lucide-react";
@@ -264,14 +265,24 @@ export function OrganizationContextMenu({
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 9. Delete Organization */}
-        <ContextMenuItem
-          onClick={() => onDelete?.(organization)}
-          className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Delete Organization</span>
-          <ContextMenuShortcut>Del</ContextMenuShortcut>
-        </ContextMenuItem>
+        {organization.slug === "default" || organization.id === "00000000-0000-0000-0000-000000000001" ? (
+          <ContextMenuItem
+            disabled
+            className="opacity-50 cursor-not-allowed gap-2 text-muted-foreground select-none"
+          >
+            <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Delete (System Protected)</span>
+          </ContextMenuItem>
+        ) : (
+          <ContextMenuItem
+            onClick={() => onDelete?.(organization)}
+            className="cursor-pointer gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Organization</span>
+            <ContextMenuShortcut>Del</ContextMenuShortcut>
+          </ContextMenuItem>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   );

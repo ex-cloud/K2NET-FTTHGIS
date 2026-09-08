@@ -7,6 +7,7 @@ import {
   PlayCircle,
   ExternalLink,
   Trash2,
+  Lock,
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
@@ -132,27 +133,52 @@ export function OrgDangerZoneTab({
         </Card>
 
         {/* 4. Delete Organization Permanently */}
-        <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-3.5">
-          <div className="space-y-0.5 max-w-xl">
-            <span className="text-xs font-semibold text-destructive block">
-              Delete Organization Permanently
-            </span>
-            <p className="text-[11px] text-muted-foreground">
-              Menghapus permanen skema database tenant, akun Keycloak, dan seluruh topologi peta GIS yang terafiliasi.
-            </p>
-          </div>
-          <ActionTooltip label="Danger: Open permanent deletion confirmation dialog">
+        {org.slug === "default" || org.id === "00000000-0000-0000-0000-000000000001" ? (
+          <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-3.5">
+            <div className="space-y-0.5 max-w-xl">
+              <div className="flex items-center gap-2">
+                <Lock className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-foreground block">
+                  Root Platform Tenant (Immutable)
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Organisasi utama sistem (default) diproteksi secara permanen dari penghapusan demi integritas foreign key dan background automation.
+              </p>
+            </div>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={onDelete}
-              className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs"
+              disabled
+              className="h-7 px-2.5 text-xs font-semibold opacity-60 cursor-not-allowed gap-1.5 shrink-0"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Delete Tenant</span>
+              <Lock className="h-3.5 w-3.5" />
+              <span>Protected from Deletion</span>
             </Button>
-          </ActionTooltip>
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/5 p-3.5">
+            <div className="space-y-0.5 max-w-xl">
+              <span className="text-xs font-semibold text-destructive block">
+                Delete Organization Permanently
+              </span>
+              <p className="text-[11px] text-muted-foreground">
+                Menghapus permanen skema database tenant, akun Keycloak, dan seluruh topologi peta GIS yang terafiliasi.
+              </p>
+            </div>
+            <ActionTooltip label="Danger: Open permanent deletion confirmation dialog">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onDelete}
+                className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Tenant</span>
+              </Button>
+            </ActionTooltip>
+          </div>
+        )}
       </div>
     </div>
   );
