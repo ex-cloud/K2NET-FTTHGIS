@@ -151,6 +151,8 @@ public class KeycloakService {
                         // === Session & Token Lifespan Configuration ===
                         existingRealm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
                         existingRealm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
+                        existingRealm.setSsoSessionIdleTimeoutRememberMe(2592000); // 30 days idle timeout when Remember Me is checked
+                        existingRealm.setSsoSessionMaxLifespanRememberMe(2592000); // 30 days max lifespan when Remember Me is checked
                         existingRealm.setAccessTokenLifespan(300);       // 5 minutes access token lifespan
 
                         existingRealm.setOfflineSessionMaxLifespanEnabled(true);
@@ -300,6 +302,8 @@ public class KeycloakService {
                 // SSO Session: controls browser SSO cookie lifetime
                 realm.setSsoSessionIdleTimeout(28800);   // 8 hours idle timeout
                 realm.setSsoSessionMaxLifespan(86400);   // 24 hours absolute SSO lifespan
+                realm.setSsoSessionIdleTimeoutRememberMe(2592000); // 30 days idle timeout when Remember Me is checked
+                realm.setSsoSessionMaxLifespanRememberMe(2592000); // 30 days max lifespan when Remember Me is checked
                 realm.setAccessTokenLifespan(300);       // 5 minutes access token lifespan
 
                 // Offline Session: controls refresh token absolute lifetime
@@ -687,6 +691,7 @@ public class KeycloakService {
         log.info("🛡️ Synchronizing Identity Providers for realm '{}' (SSO Enabled: {})", realmName, hasSso);
         syncIdentityProviderState("ftth-realm", realmName, "google", hasSso);
         syncIdentityProviderState("ftth-realm", realmName, "github", hasSso);
+        syncIdentityProviderState("ftth-realm", realmName, "microsoft", hasSso);
     }
 
     /**
@@ -719,8 +724,13 @@ public class KeycloakService {
 
             // Fetch from source realm
             var sourceRealmResource = keycloak.realm(sourceRealm);
-            IdentityProviderRepresentation sourceIdp = 
-                    sourceRealmResource.identityProviders().get(providerAlias).toRepresentation();
+            IdentityProviderRepresentation sourceIdp = null;
+            try {
+                sourceIdp = sourceRealmResource.identityProviders().get(providerAlias).toRepresentation();
+            } catch (Exception notFoundEx) {
+                log.debug("ℹ️ Source IdP '{}' not configured in master realm '{}', skipping clone.", providerAlias, sourceRealm);
+                return;
+            }
             
             if (sourceIdp != null) {
                 // Clear internal ID so Keycloak generates a new one
@@ -836,6 +846,8 @@ public class KeycloakService {
         realm.setSupportedLocales(java.util.Set.of("en", "id"));
         realm.setDefaultLocale("id");
         realm.setRememberMe(true);
+        realm.setSsoSessionIdleTimeoutRememberMe(2592000); // 30 Days persistent cookie timeout
+        realm.setSsoSessionMaxLifespanRememberMe(2592000);  // 30 Days max lifespan for Remember Me
         realm.setResetPasswordAllowed(true);
         realm.setLoginWithEmailAllowed(true);
         realm.setDuplicateEmailsAllowed(false);
@@ -845,22 +857,25 @@ public class KeycloakService {
         realm.setBruteForceProtected(true);
         realm.setPermanentLockout(false);
         realm.setMaxDeltaTimeSeconds(900);      // 15 min detection window
-        realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
         realm.setWaitIncrementSeconds(60);      // increments by 1 min
         realm.setQuickLoginCheckMilliSeconds(1000L);
         realm.setMinimumQuickLoginWaitSeconds(60);
 
         if (isSystem) {
             realm.setFailureFactor(3);
+            realm.setMaxFailureWaitSeconds(1800);   // 30 min lockout max
             realm.setPasswordPolicy("length(14) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and notUsername and notEmail");
         } else if ("ENTERPRISE".equalsIgnoreCase(plan)) {
             realm.setFailureFactor(3);
+            realm.setMaxFailureWaitSeconds(1800);   // 30 min lockout max
             realm.setPasswordPolicy("length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(5) and expirePassword(90) and notUsername and notEmail");
         } else if ("PRO".equalsIgnoreCase(plan) || "PROFESSIONAL".equalsIgnoreCase(plan)) {
             realm.setFailureFactor(5);
+            realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
             realm.setPasswordPolicy("length(10) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and history(3) and notUsername and notEmail");
         } else {
             realm.setFailureFactor(5);
+            realm.setMaxFailureWaitSeconds(900);    // 15 min lockout max
             realm.setPasswordPolicy("length(8) and notUsername and notEmail");
         }
 
@@ -870,8 +885,26 @@ public class KeycloakService {
         realm.setOtpPolicyDigits(6);
         realm.setOtpPolicyPeriod(30);
 
-        // WebAuthn / Passkeys Configuration
+        // WebAuthn / Passkeys Configuration (2FA & Passwordless FIDO2)
         realm.setWebAuthnPolicyRpEntityName("FTTH GIS Platform");
         realm.setWebAuthnPolicySignatureAlgorithms(java.util.List.of("ES256", "RS256"));
+        realm.setWebAuthnPolicyPasswordlessRpEntityName("FTTH GIS Platform");
+        realm.setWebAuthnPolicyPasswordlessSignatureAlgorithms(java.util.List.of("ES256", "RS256"));
+
+        // User Session Concurrency Limits per Subscription Tier
+        java.util.Map<String, String> attr = realm.getAttributes();
+        if (attr == null) {
+            attr = new java.util.HashMap<>();
+        }
+        if (isSystem) {
+            attr.put("maxConcurrentSessions", "2");
+        } else if ("ENTERPRISE".equalsIgnoreCase(plan)) {
+            attr.put("maxConcurrentSessions", "10");
+        } else if ("PRO".equalsIgnoreCase(plan) || "PROFESSIONAL".equalsIgnoreCase(plan)) {
+            attr.put("maxConcurrentSessions", "3");
+        } else {
+            attr.put("maxConcurrentSessions", "1");
+        }
+        realm.setAttributes(attr);
     }
 }

@@ -136,8 +136,8 @@ export function LoginPage() {
       testimonialRole="Network Infrastructure Team"
     >
       <div className="flex flex-col gap-6">
-        <div className="rounded-xl border border-border/70 bg-card/60 p-6 shadow-xl backdrop-blur-sm">
-          <div className="flex flex-col items-center text-center gap-3">
+        <div className="rounded-xl border border-border/70 bg-card/60 p-8 shadow-xl backdrop-blur-sm">
+          <div className="flex flex-col items-center text-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
               <Shield className="h-6 w-6" />
             </div>
@@ -146,14 +146,14 @@ export function LoginPage() {
                 {authConfig?.name || "ISP Workspace"} Authentication
               </h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Mengalihkan ke Portal Keamanan IAM 1-Langkah Keycloak...
+                Mengalihkan ke Keycloak 1-Step Authentication...
               </p>
             </div>
 
             <div className="my-2 flex items-center justify-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <span className="text-xs font-mono text-muted-foreground">
-                Memverifikasi gateway sesi...
+                Memverifikasi sesi keamanan...
               </span>
             </div>
 
@@ -163,27 +163,11 @@ export function LoginPage() {
               onClick={handleManualLogin}
               className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer text-xs"
             >
-              <span>Buka Form Login Langsung</span>
+              <span>Lanjutkan ke Form Login Keycloak</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
-
-        {/* Fallback form */}
-        <AuthLoginForm
-          title="Sign in to your ISP Workspace"
-          description="Access fiber routes, optical distribution points, and subscriber telemetry."
-          orgName={authConfig?.name}
-          plan={authConfig?.plan}
-          planDisplayName={authConfig?.planDisplayName}
-          authMode={authConfig?.authMode}
-          status={authConfig?.status}
-          logoUrl={authConfig?.logoUrl}
-          allowedMethods={authConfig?.allowedMethods || []}
-          onContinueWithEmail={handleContinueWithEmail}
-          onContinueWithProvider={handleContinueWithProvider}
-          isLoading={!initialized || isFetchingMethods}
-        />
       </div>
     </AuthLoginLayout>
   );

@@ -31,13 +31,11 @@ export function ProtectedRoute({
     if (isImpersonating) return;
 
     if (initialized && !authenticated && autoRedirect) {
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        const currentPath = window.location.pathname + window.location.search;
-        const target = currentPath === "/" ? "/login" : `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
-        window.location.replace(target);
-      }
+      login({
+        redirectUri: window.location.href,
+      });
     }
-  }, [initialized, authenticated, autoRedirect, isImpersonating]);
+  }, [initialized, authenticated, autoRedirect, isImpersonating, login]);
 
   if (isImpersonating) {
     return <>{children}</>;
