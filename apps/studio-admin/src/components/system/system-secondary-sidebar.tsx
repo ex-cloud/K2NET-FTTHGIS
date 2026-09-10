@@ -125,6 +125,8 @@ export function SystemSecondarySidebar() {
     useLogsFilter();
 
   const { organizations } = useOrganizations();
+  const { canAccess } = usePermissions();
+
   const orgCounts = React.useMemo(() => {
     if (!organizations) return { active: 0, trial: 0, provisioning: 0, suspended: 0 };
     return {
@@ -171,8 +173,6 @@ export function SystemSecondarySidebar() {
   const handleCollapse = isLogsPage
     ? () => ctxSetCollapsed((prev) => !prev)
     : () => setIsCollapsed(!isCollapsed);
-
-  const { canAccess } = usePermissions();
 
   return (
     <div className="relative h-full flex shrink-0">
