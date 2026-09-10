@@ -85,6 +85,7 @@ export default function AdminOrganizationsPage() {
 
   const {
     organizations: rawOrgs,
+    allStats = {},
     loading: isLoading,
     refresh: refetch,
     updateOrganization,
@@ -141,6 +142,19 @@ export default function AdminOrganizationsPage() {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
       const planTier = normalizePlanTier(org.subscriptionPlan?.name);
       const status = (org.status || "ACTIVE") as OrganizationStatus;
+      const stats = allStats[org.slug] || {
+        projectCount: 0,
+        usedOlts: 0,
+        odcCount: 0,
+        usedOdps: 0,
+        customerCount: 0,
+      };
+
+      const resolvedPicName = org.adminUsername && org.adminUsername.trim() !== "" ? org.adminUsername : "—";
+      const resolvedPicEmail = org.adminEmail && org.adminEmail.trim() !== "" ? org.adminEmail : `admin@${org.slug}.kdua.net`;
+
+      const hasCustomDomain = Boolean(org.website?.includes(".") && !org.website.includes("kdua.net"));
+      const customDomain = hasCustomDomain ? org.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
 
       return {
         id: org.id || `org-${org.slug || idx}`,
@@ -154,24 +168,24 @@ export default function AdminOrganizationsPage() {
         planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
 
-        // Default Contact PIC
-        picName: org.adminUsername ? `${org.adminUsername}` : "Andiansyah",
-        picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
-        picPhone: "+62 812-8899-0011",
+        // Real Contact PIC
+        picName: resolvedPicName,
+        picEmail: resolvedPicEmail,
+        picPhone: undefined,
         slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
-        // Hardware quotas
+        // Real Hardware quotas from database
         maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: Math.max(1, (idx + 1) * 2 % 5),
+        usedOlts: stats.usedOlts || stats.projectCount || 0,
         maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: Math.max(40, (idx + 1) * 320 % 2400),
+        usedOdps: stats.usedOdps || 0,
         maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: Number((((idx + 1) * 1.8) % 8.5).toFixed(1)),
+        usedStorageGb: 0,
 
         // Custom Domain
-        customDomain: org.website?.includes(".") && !org.website.includes("kdua.net") ? org.website.replace(/^https?:\/\//, "") : undefined,
-        domainVerified: true,
-        domainSslActive: true,
+        customDomain: customDomain,
+        domainVerified: hasCustomDomain,
+        domainSslActive: hasCustomDomain,
 
         // Feature flags
         featureFlags: {
@@ -183,14 +197,14 @@ export default function AdminOrganizationsPage() {
         },
 
         // Rate limits
-        apiRateLimitUsed: Math.max(120, (idx + 1) * 850 % 4800),
+        apiRateLimitUsed: 0,
         apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: 38 + (idx * 4),
+        apiLatencyMs: 0,
 
         trialDaysLeft: calculateTrialDaysLeft(org.trialExpiresAt, status),
       };
     });
-  }, [rawOrgs]);
+  }, [rawOrgs, allStats]);
 
   // Auto-resume pending impersonation after Keycloak step-up redirect
   useEffect(() => {

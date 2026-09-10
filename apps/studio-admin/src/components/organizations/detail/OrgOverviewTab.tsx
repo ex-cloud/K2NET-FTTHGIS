@@ -190,7 +190,7 @@ export function OrgOverviewTab({
           <div>
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-xl font-bold tracking-tight text-foreground font-mono">
-                {org.usedOlts} <span className="text-xs font-normal text-muted-foreground">/ {org.maxOlts}</span>
+                {usedOlts} <span className="text-xs font-normal text-muted-foreground">/ {effectiveMaxOlts}</span>
               </p>
               <span className="text-xs font-mono font-semibold text-primary">{oltPct}%</span>
             </div>
@@ -203,8 +203,8 @@ export function OrgOverviewTab({
           </div>
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-            <span>{org.maxOlts - org.usedOlts} slot tersedia</span>
-            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxOlts}</span>
+            <span>{Math.max(0, effectiveMaxOlts - usedOlts)} slot tersedia</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {effectiveMaxOlts}</span>
           </div>
         </Card>
 
@@ -222,7 +222,7 @@ export function OrgOverviewTab({
           <div>
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-xl font-bold tracking-tight text-foreground font-mono">
-                {org.usedOdps} <span className="text-xs font-normal text-muted-foreground">/ {org.maxOdps}</span>
+                {usedOdps} <span className="text-xs font-normal text-muted-foreground">/ {effectiveMaxOdps}</span>
               </p>
               <span className="text-xs font-mono font-semibold text-blue-500">{odpPct}%</span>
             </div>
@@ -236,7 +236,7 @@ export function OrgOverviewTab({
 
           <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono text-muted-foreground">
             <span>Distribution splitters</span>
-            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {org.maxOdps}</span>
+            <span className="text-[10px] text-muted-foreground/80 font-normal">Cap: {effectiveMaxOdps}</span>
           </div>
         </Card>
 
@@ -314,14 +314,20 @@ export function OrgOverviewTab({
               Subscription Tier
             </h4>
             <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-xs font-semibold">
-              {org.planTier}
+              {summary?.planTier ?? org.planTier}
             </Badge>
           </div>
 
           <div className="space-y-2 pt-1">
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-foreground">
-                {org.planTier === "Enterprise" ? "Rp 12.500.000" : org.planTier === "Professional" ? "Rp 4.500.000" : "Rp 1.500.000"}
+                {summary?.planPrice
+                  ? `Rp ${Number(summary.planPrice).toLocaleString("id-ID")}`
+                  : org.planTier === "Enterprise"
+                  ? "Rp 12.500.000"
+                  : org.planTier === "Professional"
+                  ? "Rp 4.500.000"
+                  : "Rp 1.500.000"}
               </span>
               <span className="text-xs text-muted-foreground">/ bulan</span>
             </div>
@@ -333,15 +339,21 @@ export function OrgOverviewTab({
           <div className="border-t border-border/50 pt-3 space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Billing Cycle:</span>
-              <span className="font-semibold text-foreground">Tahunan (Diskon 15%)</span>
+              <span className="font-semibold text-foreground">
+                {summary?.planCycle === "ANNUAL" ? "Tahunan (Diskon 15%)" : "Bulanan"}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Next Renewal:</span>
-              <span className="font-mono text-foreground">01 September 2026</span>
+              <span className="text-muted-foreground">Account Status:</span>
+              <span className="font-mono text-foreground">
+                {summary?.trialDaysRemaining
+                  ? `Trial (${summary.trialDaysRemaining} hari sisa)`
+                  : "Aktif (Auto-renew)"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Payment Gateway:</span>
-              <span className="text-foreground">Xendit Virtual Account</span>
+              <span className="text-foreground">Xendit Virtual Account & Invoicing</span>
             </div>
           </div>
 

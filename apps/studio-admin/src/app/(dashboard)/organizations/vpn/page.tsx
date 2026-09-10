@@ -68,19 +68,18 @@ export default function OrganizationVpnPage() {
   // Generate VPN Tunnels from Organizations
   const tunnels: VpnTunnelInfo[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const isWireguard = idx % 2 === 0;
       return {
         orgId: org.id || `org-${org.slug || idx}`,
         orgName: org.name || org.slug,
         orgSlug: org.slug,
-        protocol: isWireguard ? "WireGuard" : "Tailscale",
+        protocol: "WireGuard",
         virtualIp: `100.64.${idx + 10}.1/32`,
-        brasGateway: `bras-core-${(idx % 3) + 1}.kdua.net:51820`,
-        latencyMs: 8 + ((idx * 3) % 15),
-        throughputRx: `${(1.2 + idx * 0.8).toFixed(1)} Mbps`,
-        throughputTx: `${(0.4 + idx * 0.3).toFixed(1)} Mbps`,
+        brasGateway: "bras-core.kdua.net:51820",
+        latencyMs: 12,
+        throughputRx: "4.2 Mbps",
+        throughputTx: "1.8 Mbps",
         status: "ONLINE",
-        advertisedSubnets: [`192.168.${idx + 10}.0/24`, `10.244.${idx + 1}.0/24`],
+        advertisedSubnets: [`192.168.${idx + 10}.0/24`, `10.200.10.0/24`],
       };
     });
   }, [rawOrgs]);

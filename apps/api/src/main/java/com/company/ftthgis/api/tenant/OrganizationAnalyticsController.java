@@ -9,18 +9,51 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/organizations/{slug}/analytics")
+@RequestMapping("/api/v1/organizations")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class OrganizationAnalyticsController {
 
     private final OrganizationAnalyticsService analyticsService;
 
-    @GetMapping("/summary")
-    @PreAuthorize("@tenantSecurity.isOwner(#slug) and (hasAuthority('organizations.view') or hasAuthority('organizations.update'))")
+    @GetMapping("/analytics/all-stats")
+    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('organizations.view') or hasAuthority('orgs.view')")
+    public ResponseEntity<Map<String, Map<String, Object>>> getAllStats() {
+        try {
+            return ResponseEntity.ok(analyticsService.getAllOrganizationsStats());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{slug}/analytics/summary")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Map<String, Object>> getSummary(@PathVariable String slug) {
         try {
             return ResponseEntity.ok(analyticsService.getOrganizationStats(slug));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{slug}/devices")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#slug) or @tenantSecurity.hasEffectivePermission('network.view')")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getDevices(@PathVariable String slug) {
+        try {
+            return ResponseEntity.ok(analyticsService.getOrganizationDevices(slug));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{slug}/audit-events")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.audit.view') or @tenantSecurity.isOwner(#slug)")
+    public ResponseEntity<java.util.List<Map<String, Object>>> getAuditEvents(
+            @PathVariable String slug,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        try {
+            return ResponseEntity.ok(analyticsService.getOrganizationAuditEvents(slug, limit));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }

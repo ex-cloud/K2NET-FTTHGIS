@@ -1,6 +1,10 @@
 
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "@/lib/auth-compat";
 import {
   Badge,
   Button,
@@ -27,6 +31,7 @@ import {
   RefreshCw,
   Eye,
   Activity,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -56,102 +61,85 @@ export interface TenantAuditEvent {
 }
 
 export function OrgAuditLogsTab({ organization: org }: OrgAuditLogsTabProps) {
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedEvent, setSelectedEvent] = useState<TenantAuditEvent | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Initial Audit Events Data
-  const [events] = useState<TenantAuditEvent[]>([
-    {
-      id: "evt-101",
-      timestamp: "2026-08-29 05:42 WIB",
-      actorUsername: "system-poller",
-      actorEmail: "poller@internal.kdua.net",
-      ipAddress: "172.18.0.10 (Poller Gateway)",
-      action: "SNMP_POLL_CYCLE_EXECUTED",
-      category: "GIS_TOPOLOGY",
-      targetEntity: "OLT_DEVICES",
-      targetId: "olt-kircon-01",
-      severity: "INFO",
-      status: "SUCCESS",
-      details: "Berhasil mengambil status 2 OLT node. 14 PON ports aktif dengan power margin rata-rata -18.4 dBm.",
-      beforeState: { oltCount: 2, ponPortsActive: 14, avgPowerDbm: -18.6 },
-      afterState: { oltCount: 2, ponPortsActive: 14, avgPowerDbm: -18.4 },
+  // Fetch real audit events from backend
+  const { data: rawEvents = [], isLoading, refetch, isRefetching } = useQuery<any[]>({
+    queryKey: ["tenant-audit-events", org.slug, session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return [];
+      const baseUrl = getBackendBaseUrl();
+      try {
+        const res = await httpClient(`${baseUrl}/organizations/${org.slug}/audit-events?limit=50`, {
+          token: session.accessToken,
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        console.warn("Could not fetch tenant audit events:", e);
+      }
+      return [];
     },
-    {
-      id: "evt-102",
-      timestamp: "2026-08-29 02:15 WIB",
-      actorUsername: "traefik-acme",
-      actorEmail: "traefik@kdua.net",
-      ipAddress: "172.18.0.5 (Edge Proxy)",
-      action: "SSL_CERTIFICATE_VERIFIED",
-      category: "CONFIG",
-      targetEntity: "DOMAIN_SSL",
-      targetId: `portal.${org.slug}.kdua.net`,
-      severity: "INFO",
-      status: "SUCCESS",
-      details: "Sertifikat wildcard HTTPS Traefik valid dan diperpanjang hingga 25 November 2026.",
-      beforeState: { certStatus: "VALID", validDaysRemaining: 92 },
-      afterState: { certStatus: "RENEWED", validDaysRemaining: 90 },
-    },
-    {
-      id: "evt-103",
-      timestamp: "2026-08-28 21:04 WIB",
-      actorUsername: org.picName || "admin",
-      actorEmail: org.picEmail || `admin@${org.slug}.kdua.net`,
-      ipAddress: "180.252.110.12 (Jakarta, ID)",
-      action: "KEYCLOAK_LOGIN_SUCCESS",
-      category: "AUTH",
-      targetEntity: "IAM_REALM",
-      targetId: `realm-${org.slug}`,
-      severity: "INFO",
-      status: "SUCCESS",
-      details: `User ${org.picName || "admin"} berhasil login ke portal tenant via Keycloak OAuth2.`,
-      beforeState: { activeSession: false },
-      afterState: { activeSession: true, ip: "180.252.110.12" },
-    },
-    {
-      id: "evt-104",
-      timestamp: "2026-08-28 17:30 WIB",
-      actorUsername: "sre-andiansyah",
-      actorEmail: "andiansyah@k2.co.id",
-      ipAddress: "100.110.205.10 (Tailscale VPN)",
-      action: "HARDWARE_QUOTA_UPDATED",
-      category: "CONFIG",
-      targetEntity: "ORGANIZATION_QUOTA",
-      targetId: org.id,
-      severity: "WARN",
-      status: "SUCCESS",
-      details: `Super Admin memperbarui kapasitas kuota OLT dari 2 menjadi ${org.maxOlts} dan ODP menjadi ${org.maxOdps}.`,
-      beforeState: { maxOlts: 2, maxOdps: 500, planTier: "Starter" },
-      afterState: { maxOlts: org.maxOlts, maxOdps: org.maxOdps, planTier: org.planTier },
-    },
-    {
-      id: "evt-105",
-      timestamp: "2026-08-28 14:10 WIB",
-      actorUsername: org.picName || "admin",
-      actorEmail: org.picEmail || `admin@${org.slug}.kdua.net`,
-      ipAddress: "180.252.110.12",
-      action: "ODP_SPLITTER_PROVISIONED",
-      category: "GIS_TOPOLOGY",
-      targetEntity: "POSTGIS_ODP",
-      targetId: "ODP-KRC-042",
-      severity: "INFO",
-      status: "SUCCESS",
-      details: "Menambahkan 1 ODP baru berkapasitas 8 port pada feeder cluster Kircon Barat.",
-      beforeState: { odpCode: null },
-      afterState: { odpCode: "ODP-KRC-042", capacity: 8, lat: -6.9174, lng: 107.6191 },
-    },
-  ]);
+    enabled: !!session?.accessToken,
+  });
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      toast.success("Log audit organisasi berhasil disinkronkan dari gateway-audit.");
-    }, 600);
+  const parseJsonSafe = (str?: string) => {
+    if (!str) return {};
+    try {
+      return JSON.parse(str);
+    } catch {
+      return {};
+    }
+  };
+
+  const getCategory = (action: string, resType: string): TenantAuditEvent["category"] => {
+    const act = (action + " " + resType).toUpperCase();
+    if (act.includes("AUTH") || act.includes("LOGIN") || act.includes("IAM") || act.includes("KEYCLOAK")) return "AUTH";
+    if (act.includes("GIS") || act.includes("NODE") || act.includes("ODP") || act.includes("OLT") || act.includes("TOPOLOGY")) return "GIS_TOPOLOGY";
+    if (act.includes("SECURITY") || act.includes("NUCLEAR") || act.includes("PERMISSION")) return "SECURITY";
+    return "CONFIG";
+  };
+
+  const events: TenantAuditEvent[] = rawEvents.map((r: any, idx: number) => {
+    const beforeState = parseJsonSafe(r.oldValueJson);
+    const afterState = parseJsonSafe(r.newValueJson);
+    const meta = parseJsonSafe(r.metadataJson);
+    const act = r.action || "SYSTEM_EVENT";
+    const res = r.resourceType || "ORGANIZATION";
+
+    let severity: AuditSeverity = "INFO";
+    if (act.includes("NUCLEAR") || act.includes("DELETE") || act.includes("FAILED") || act.includes("DENIED")) {
+      severity = "CRITICAL";
+    } else if (act.includes("UPDATE") || act.includes("SOFT_DELETE") || act.includes("WARN")) {
+      severity = "WARN";
+    }
+
+    return {
+      id: r.id || `evt-${idx + 1}`,
+      timestamp: r.occurredAt ? new Date(r.occurredAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" }) : "Recently",
+      actorUsername: r.actorId ? r.actorId.split("@")[0] : "system",
+      actorEmail: r.actorId || "system@kdua.net",
+      ipAddress: r.actorIp || "127.0.0.1",
+      action: act,
+      category: getCategory(act, res),
+      targetEntity: res,
+      targetId: r.resourceId || org.slug,
+      severity,
+      status: "SUCCESS",
+      details: meta?.description || `Audit event ${act} on ${res} (${r.resourceId || org.slug})`,
+      beforeState,
+      afterState,
+    };
+  });
+
+  const handleRefresh = async () => {
+    await refetch();
+    toast.success("Log audit organisasi berhasil disinkronkan.");
   };
 
   const filteredEvents = events.filter((evt) => {
@@ -283,10 +271,10 @@ export function OrgAuditLogsTab({ organization: org }: OrgAuditLogsTabProps) {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isRefetching}
               className="h-7 px-2 text-xs border-border gap-1 text-muted-foreground hover:text-foreground"
             >
-              <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn("h-3 w-3", isRefetching && "animate-spin")} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>

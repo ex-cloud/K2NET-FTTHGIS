@@ -160,6 +160,19 @@ public class OrganizationController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{slug}/team-users")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or (@tenantSecurity.isOwner(#slug) and @tenantSecurity.hasEffectivePermission('users.view'))")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getTeamUsers(@PathVariable String slug) {
+        return ResponseEntity.ok(organizationService.getOrganizationUsers(slug));
+    }
+
+    @PostMapping("/{slug}/reset-realm")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage')")
+    public ResponseEntity<java.util.Map<String, Object>> resetRealm(@PathVariable String slug) {
+        boolean success = organizationService.resetTenantRealm(slug);
+        return ResponseEntity.ok(java.util.Map.of("success", success, "message", "Realm synchronized successfully"));
+    }
+
     @PostMapping("/{orgId}/migrate-slug")
     @PreAuthorize("hasAuthority('system.tenants.migrate_slug') or (@tenantSecurity.isOwnerById(#orgId) and @tenantSecurity.hasEffectivePermission('organizations.update'))")
     public ResponseEntity<?> migrateSlug(

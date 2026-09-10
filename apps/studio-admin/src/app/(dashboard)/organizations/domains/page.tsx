@@ -51,7 +51,7 @@ import { getDefaultTenantHost, getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationDomainsPage() {
   const router = useRouter();
-  const { organizations: rawOrgs, loading, refresh } = useOrganizations();
+  const { organizations: rawOrgs, allStats, loading, refresh } = useOrganizations();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrgForDomain, setSelectedOrgForDomain] = useState<EnrichedOrganization | null>(null);
@@ -66,10 +66,9 @@ export default function OrganizationDomainsPage() {
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
       const planTier = normalizePlanTier(org.subscriptionPlan?.name);
-      const customDomain = org.website?.includes(".") && !org.website.includes("kdua.net")
+      const stats = allStats[org.slug] || allStats[org.id || ""] || {};
+      const customDomain = org.website && org.website.includes(".") && !org.website.includes("kdua.net")
         ? org.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
-        : idx % 3 === 0
-        ? `portal.${org.slug}.net`
         : undefined;
 
       return {
@@ -80,17 +79,17 @@ export default function OrganizationDomainsPage() {
         status: (org.status || "ACTIVE") as OrganizationStatus,
         planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
-        picName: org.adminUsername || "Andiansyah",
-        picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
+        picName: org.adminUsername || "—",
+        picEmail: org.adminEmail || `${org.slug}@kdua.net`,
         slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
-        maxOlts: 5,
-        usedOlts: 2,
-        maxOdps: 2500,
-        usedOdps: 640,
-        maxStorageGb: 10,
-        usedStorageGb: 3.6,
+        maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
+        usedOlts: stats.usedOlts ?? 0,
+        maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
+        usedOdps: stats.usedOdps ?? 0,
+        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
+        usedStorageGb: stats.usedStorageGb ?? 0,
         customDomain: customDomain,
-        domainVerified: true,
+        domainVerified: !!customDomain,
         domainSslActive: true,
         featureFlags: {
           gisCore: true,
@@ -99,12 +98,12 @@ export default function OrganizationDomainsPage() {
           aiCopilot: planTier === "Enterprise",
           sandboxMode: false,
         },
-        apiRateLimitUsed: 850,
-        apiRateLimitMax: 5000,
-        apiLatencyMs: 38,
+        apiRateLimitUsed: stats.apiRateLimitUsed ?? 0,
+        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
+        apiLatencyMs: stats.apiLatencyMs ?? 0,
       };
     });
-  }, [rawOrgs]);
+  }, [rawOrgs, allStats]);
 
   // Filtered organizations
   const filteredOrgs = useMemo(() => {

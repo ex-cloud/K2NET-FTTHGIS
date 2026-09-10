@@ -90,7 +90,7 @@ export default function OrganizationDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const { data: session } = useSession();
-  const { organizations: rawOrgs, loading, refresh, updateOrganization, deleteOrg } = useOrganizations();
+  const { organizations: rawOrgs, allStats = {}, loading, refresh, updateOrganization, deleteOrg } = useOrganizations();
 
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
@@ -121,6 +121,19 @@ export default function OrganizationDetailPage() {
     if (!rawOrg) return null;
     const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
     const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
+    const stats = allStats[rawOrg.slug] || {
+      projectCount: 0,
+      usedOlts: 0,
+      odcCount: 0,
+      usedOdps: 0,
+      customerCount: 0,
+    };
+
+    const resolvedPicName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
+    const resolvedPicEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `admin@${rawOrg.slug}.kdua.net`;
+
+    const hasCustomDomain = Boolean(rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net"));
+    const customDomain = hasCustomDomain ? rawOrg.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
 
     return {
       id: rawOrg.id || `org-${rawOrg.slug}`,
@@ -134,21 +147,21 @@ export default function OrganizationDetailPage() {
       planTier: planTier,
       createdAt: rawOrg.createdAt || "2026-08-20",
 
-      picName: rawOrg.adminUsername ? `${rawOrg.adminUsername}` : "Andiansyah",
-      picEmail: rawOrg.adminEmail || `admin@${rawOrg.slug}.kdua.net`,
-      picPhone: "+62 812-8899-0011",
+      picName: resolvedPicName,
+      picEmail: resolvedPicEmail,
+      picPhone: undefined,
       slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
       maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-      usedOlts: 2,
+      usedOlts: stats.usedOlts || stats.projectCount || 0,
       maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-      usedOdps: 640,
+      usedOdps: stats.usedOdps || 0,
       maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-      usedStorageGb: 3.6,
+      usedStorageGb: 0,
 
-      customDomain: rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net") ? rawOrg.website.replace(/^https?:\/\//, "") : undefined,
-      domainVerified: true,
-      domainSslActive: true,
+      customDomain: customDomain,
+      domainVerified: hasCustomDomain,
+      domainSslActive: hasCustomDomain,
 
       featureFlags: {
         gisCore: true,
@@ -158,12 +171,12 @@ export default function OrganizationDetailPage() {
         sandboxMode: false,
       },
 
-      apiRateLimitUsed: 850,
+      apiRateLimitUsed: 0,
       apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-      apiLatencyMs: 38,
+      apiLatencyMs: 0,
       trialDaysLeft: calculateTrialDaysLeft(rawOrg.trialExpiresAt, status),
     };
-  }, [rawOrg]);
+  }, [rawOrg, allStats]);
 
   // Set document title
   useEffect(() => {

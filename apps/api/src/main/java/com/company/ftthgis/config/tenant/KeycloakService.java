@@ -915,4 +915,30 @@ public class KeycloakService {
         }
         realm.setAttributes(attr);
     }
+
+    /**
+     * Mengambil daftar pengguna riil dari Keycloak Realm.
+     */
+    public List<org.keycloak.representations.idm.UserRepresentation> getRealmUsers(String realmName) {
+        try {
+            return keycloak.realm(realmName).users().list(0, 50);
+        } catch (Exception e) {
+            log.warn("Could not fetch Keycloak users for realm {}: {}", realmName, e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Melakukan sinkronisasi ulang realm dan default client.
+     */
+    public boolean syncRealm(String realmName) {
+        try {
+            ensureRealmExists(realmName);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to re-sync Keycloak realm {}: {}", realmName, e.getMessage());
+            return false;
+        }
+    }
 }
+

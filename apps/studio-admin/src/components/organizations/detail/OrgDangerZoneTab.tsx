@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Button, Card, ActionTooltip } from "@k2net/ui";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "@/lib/auth-compat";
 import {
   PauseCircle,
   PlayCircle,
@@ -27,16 +30,31 @@ export function OrgDangerZoneTab({
   onUpdateStatus,
   onDelete,
 }: OrgDangerZoneTabProps) {
+  const { data: session } = useSession();
   const [resettingRealm, setResettingRealm] = useState(false);
 
-  const handleResetRealm = () => {
+  const handleResetRealm = async () => {
+    if (!session?.accessToken) return;
     setResettingRealm(true);
-    setTimeout(() => {
-      setResettingRealm(false);
-      toast.success(`Keycloak IAM Realm for ${org.name} successfully re-synchronized`, {
-        description: "Client secrets and roles have been updated.",
+    try {
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/organizations/${org.slug}/reset-realm`, {
+        method: "POST",
+        token: session.accessToken,
       });
-    }, 1000);
+      if (res.ok) {
+        toast.success(`Keycloak IAM Realm untuk ${org.name} berhasil disinkronkan ulang`, {
+          description: "Konfigurasi client secret dan metadata realm telah diperbarui.",
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(`Gagal reset realm: ${data.message || "Terjadi kesalahan pada server"}`);
+      }
+    } catch (e: any) {
+      toast.error(`Gagal sinkronisasi realm: ${e.message || "Koneksi terputus"}`);
+    } finally {
+      setResettingRealm(false);
+    }
   };
 
   const isSuspended = org.status === "SUSPENDED";

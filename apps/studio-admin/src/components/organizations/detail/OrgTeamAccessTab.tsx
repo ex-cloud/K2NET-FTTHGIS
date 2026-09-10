@@ -1,6 +1,10 @@
 
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { httpClient } from "@/lib/httpClient";
+import { getBackendBaseUrl } from "@/lib/api-config";
+import { useSession } from "@/lib/auth-compat";
 import {
   Badge,
   Button,
@@ -41,6 +45,7 @@ import {
   Copy,
   Trash2,
   UserCheck,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "../types";
@@ -58,47 +63,54 @@ interface TenantUser {
   mfaEnabled: boolean;
   status: "ACTIVE" | "PENDING";
   lastLogin: string;
+  source?: string;
 }
 
 export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
+  const { data: session } = useSession();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("NOC_OPERATOR");
+  const [localUsers, setLocalUsers] = useState<TenantUser[]>([]);
 
-  // Mock list of tenant users in isolated Keycloak Realm
-  const [users, setUsers] = useState<TenantUser[]>([
-    {
-      id: "u-1",
-      name: org.picName || "Andiansyah",
-      username: "admin_" + org.slug,
-      email: org.picEmail || `admin@${org.slug}.kdua.net`,
-      role: "TENANT_ADMIN",
-      mfaEnabled: true,
-      status: "ACTIVE",
-      lastLogin: "Today at 11:42 WIB",
+  // Fetch real tenant users from backend
+  const { data: serverUsers = [], isLoading, refetch } = useQuery<TenantUser[]>({
+    queryKey: ["tenant-team-users", org.slug, session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return [];
+      const baseUrl = getBackendBaseUrl();
+      try {
+        const res = await httpClient(`${baseUrl}/organizations/${org.slug}/team-users`, {
+          token: session.accessToken,
+        });
+        if (res.ok) {
+          const raw = await res.json();
+          return raw.map((u: any, idx: number) => ({
+            id: u.id || `u-${idx}`,
+            name: u.name || u.username || org.picName || "Tenant Admin",
+            username: u.username || `admin_${org.slug}`,
+            email: u.email || `${u.username || "admin"}@${org.slug}.kdua.net`,
+            role: (u.role === "admin" || u.role === "TENANT_ADMIN" ? "TENANT_ADMIN" : u.role || "NOC_OPERATOR") as TenantUser["role"],
+            mfaEnabled: true,
+            status: (u.status === "ACTIVE" ? "ACTIVE" : "PENDING") as TenantUser["status"],
+            lastLogin: u.lastLogin || "Active recently",
+            source: u.source || "DATABASE",
+          }));
+        }
+      } catch (e) {
+        console.warn("Could not fetch tenant users:", e);
+      }
+      return [];
     },
-    {
-      id: "u-2",
-      name: "Budi Santoso",
-      username: "noc_budi",
-      email: `noc@${org.slug}.kdua.net`,
-      role: "NOC_OPERATOR",
-      mfaEnabled: true,
-      status: "ACTIVE",
-      lastLogin: "Yesterday at 17:15 WIB",
-    },
-    {
-      id: "u-3",
-      name: "Rian Hidayat",
-      username: "tech_rian",
-      email: `rian@${org.slug}.kdua.net`,
-      role: "FIELD_TECH",
-      mfaEnabled: false,
-      status: "ACTIVE",
-      lastLogin: "24 Aug 2026",
-    },
-  ]);
+    enabled: !!session?.accessToken,
+  });
+
+  // Combine server users and newly invited local users
+  const effectiveUsers: TenantUser[] = [
+    ...serverUsers,
+    ...localUsers.filter(lu => !serverUsers.some(su => su.email.toLowerCase() === lu.email.toLowerCase()))
+  ];
 
   const handleSendInvite = () => {
     if (!inviteName || !inviteEmail) {
@@ -114,8 +126,9 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
       mfaEnabled: false,
       status: "PENDING",
       lastLogin: "Never (Invitation sent)",
+      source: "INVITATION",
     };
-    setUsers((prev) => [...prev, newUser]);
+    setLocalUsers((prev) => [...prev, newUser]);
     setInviteOpen(false);
     setInviteName("");
     setInviteEmail("");
@@ -140,14 +153,14 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
   };
 
   const handleChangeRole = (userId: string, newRole: TenantUser["role"]) => {
-    setUsers((prev) =>
+    setLocalUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
     );
     toast.success(`User role updated to ${newRole}`);
   };
 
   const handleRemoveUser = (userId: string, userName: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setLocalUsers((prev) => prev.filter((u) => u.id !== userId));
     toast.success(`User ${userName} removed from ${org.name}`);
   };
 
@@ -197,7 +210,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
       <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
         <div className="py-3 px-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
           <span className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
-            Active Accounts ({users.length})
+            Active Accounts ({effectiveUsers.length})
           </span>
           <span className="text-[11px] font-mono text-muted-foreground">
             MFA Enforced: Yes
@@ -230,7 +243,26 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
             </TableHeader>
 
             <TableBody>
-              {users.map((u) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span>Memuat daftar pengguna Keycloak & Database...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : effectiveUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Users className="h-6 w-6 text-muted-foreground/40" />
+                      <span>Belum ada akun pengguna tambahan di realm ini.</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                effectiveUsers.map((u) => (
                 <ContextMenu key={u.id}>
                   <ContextMenuTrigger asChild>
                     <TableRow className="border-b border-border/50 text-xs hover:bg-muted/30 cursor-pointer">
@@ -333,7 +365,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
-              ))}
+              )))}
             </TableBody>
           </Table>
         </div>

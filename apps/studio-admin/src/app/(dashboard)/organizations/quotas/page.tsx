@@ -53,7 +53,7 @@ import { getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationQuotasPage() {
   const router = useRouter();
-  const { organizations: rawOrgs, loading, refresh, updateOrganization } = useOrganizations();
+  const { organizations: rawOrgs, allStats, loading, refresh, updateOrganization } = useOrganizations();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [planFilter, setPlanFilter] = useState("ALL");
@@ -63,6 +63,11 @@ export default function OrganizationQuotasPage() {
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((org: Organization, idx: number) => {
       const planTier = normalizePlanTier(org.subscriptionPlan?.name);
+      const stats = allStats[org.slug] || allStats[org.id || ""] || {};
+      const customDomain = org.website && org.website.includes(".") && !org.website.includes("kdua.net")
+        ? org.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
+        : undefined;
+
       return {
         id: org.id || `org-${org.slug || idx}`,
         name: org.name || org.slug,
@@ -71,16 +76,17 @@ export default function OrganizationQuotasPage() {
         status: (org.status || "ACTIVE") as OrganizationStatus,
         planTier: planTier,
         createdAt: org.createdAt || "2026-08-20",
-        picName: org.adminUsername || "Andiansyah",
-        picEmail: org.adminEmail || `admin@${org.slug}.kdua.net`,
+        picName: org.adminUsername || "—",
+        picEmail: org.adminEmail || `${org.slug}@kdua.net`,
         slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
         maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: 2,
+        usedOlts: stats.usedOlts ?? 0,
         maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: 640,
+        usedOdps: stats.usedOdps ?? 0,
         maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: 3.6,
-        domainVerified: true,
+        usedStorageGb: stats.usedStorageGb ?? 0,
+        customDomain: customDomain,
+        domainVerified: !!customDomain,
         domainSslActive: true,
         featureFlags: {
           gisCore: true,
@@ -89,12 +95,12 @@ export default function OrganizationQuotasPage() {
           aiCopilot: planTier === "Enterprise",
           sandboxMode: false,
         },
-        apiRateLimitUsed: 850,
+        apiRateLimitUsed: stats.apiRateLimitUsed ?? 0,
         apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: 38,
+        apiLatencyMs: stats.apiLatencyMs ?? 0,
       };
     });
-  }, [rawOrgs]);
+  }, [rawOrgs, allStats]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {

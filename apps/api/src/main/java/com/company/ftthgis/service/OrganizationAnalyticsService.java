@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -66,4 +67,130 @@ public class OrganizationAnalyticsService {
 
         return stats;
     }
+
+    /**
+     * Mengambil statistik ringkasan riil untuk seluruh organisasi dalam 1 kali agregasi efisien.
+     */
+    public Map<String, Map<String, Object>> getAllOrganizationsStats() {
+        java.util.List<Organization> orgs = organizationRepository.findAll();
+        Map<String, Map<String, Object>> result = new HashMap<>();
+
+        for (Organization org : orgs) {
+            UUID orgId = org.getId();
+            Map<String, Object> stats = new HashMap<>();
+
+            try {
+                Integer projectCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM projects WHERE organization_id = ? AND deleted_at IS NULL", Integer.class, orgId);
+                Integer oltCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "JOIN projects p ON n.project_id = p.id " +
+                        "WHERE p.organization_id = ? AND (n.type = 'OLT' OR n.type = 'CENTRAL_OFFICE')", Integer.class, orgId);
+                Integer odcCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "JOIN projects p ON n.project_id = p.id " +
+                        "WHERE p.organization_id = ? AND n.type = 'ODC'", Integer.class, orgId);
+                Integer odpCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "JOIN projects p ON n.project_id = p.id " +
+                        "WHERE p.organization_id = ? AND n.type = 'ODP'", Integer.class, orgId);
+                Integer customerCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(n.*) FROM network_nodes n " +
+                        "JOIN projects p ON n.project_id = p.id " +
+                        "WHERE p.organization_id = ? AND n.type = 'CUSTOMER'", Integer.class, orgId);
+
+                int resolvedOltCount = (oltCount != null && oltCount > 0) ? oltCount : (projectCount != null ? projectCount : 0);
+
+                stats.put("projectCount", projectCount != null ? projectCount : 0);
+                stats.put("usedOlts", resolvedOltCount);
+                stats.put("odcCount", odcCount != null ? odcCount : 0);
+                stats.put("usedOdps", odpCount != null ? odpCount : 0);
+                stats.put("customerCount", customerCount != null ? customerCount : 0);
+                stats.put("organizationSlug", org.getSlug());
+                stats.put("organizationName", org.getName());
+            } catch (Exception e) {
+                log.warn("Error calculating stats for {}: {}", org.getSlug(), e.getMessage());
+                stats.put("projectCount", 0);
+                stats.put("usedOlts", 0);
+                stats.put("odcCount", 0);
+                stats.put("usedOdps", 0);
+                stats.put("customerCount", 0);
+                stats.put("organizationSlug", org.getSlug());
+                stats.put("organizationName", org.getName());
+            }
+
+            result.put(org.getSlug(), stats);
+        }
+
+        return result;
+    }
+
+    /**
+     * Mengambil daftar perangkat OLT dan ODC riil yang terdaftar untuk tenant.
+     */
+    public java.util.List<Map<String, Object>> getOrganizationDevices(String slug) {
+        Organization org = organizationRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Organization not found"));
+        UUID orgId = org.getId();
+
+        String sql = "SELECT n.id, n.name, n.code, n.type, n.status, n.created_at, p.name as project_name " +
+                     "FROM network_nodes n " +
+                     "JOIN projects p ON n.project_id = p.id " +
+                     "WHERE p.organization_id = ? AND (n.type = 'OLT' OR n.type = 'CENTRAL_OFFICE' OR n.type = 'ODC') " +
+                     "ORDER BY n.created_at DESC";
+
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", rs.getString("id"));
+                map.put("name", rs.getString("name") != null ? rs.getString("name") : "Node " + rs.getString("id"));
+                map.put("code", rs.getString("code") != null ? rs.getString("code") : rs.getString("name"));
+                map.put("type", rs.getString("type"));
+                map.put("status", rs.getString("status") != null ? rs.getString("status") : "UP");
+                map.put("projectName", rs.getString("project_name"));
+                map.put("createdAt", rs.getString("created_at"));
+                return map;
+            }, orgId);
+        } catch (Exception e) {
+            log.warn("Could not query devices for org {}: {}", slug, e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    /**
+     * Mengambil log audit riil tenant dari tabel audit_events.
+     */
+    public List<Map<String, Object>> getOrganizationAuditEvents(String slug, int limit) {
+        String sql = "SELECT id, tenant_slug, actor_id, actor_role, actor_ip, action, resource_type, resource_id, " +
+                     "       old_value::text as old_value_json, new_value::text as new_value_json, metadata::text as metadata_json, occurred_at " +
+                     "FROM audit_events " +
+                     "WHERE tenant_slug = ? OR (tenant_slug = 'system' AND (resource_id LIKE ? OR metadata::text LIKE ?)) " +
+                     "ORDER BY occurred_at DESC " +
+                     "LIMIT ?";
+
+        try {
+            String slugPattern = "%" + slug + "%";
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", rs.getString("id"));
+                map.put("tenantSlug", rs.getString("tenant_slug"));
+                map.put("actorId", rs.getString("actor_id"));
+                map.put("actorRole", rs.getString("actor_role") != null ? rs.getString("actor_role") : "SYSTEM");
+                map.put("actorIp", rs.getString("actor_ip") != null ? rs.getString("actor_ip") : "127.0.0.1");
+                map.put("action", rs.getString("action"));
+                map.put("resourceType", rs.getString("resource_type"));
+                map.put("resourceId", rs.getString("resource_id"));
+                map.put("oldValueJson", rs.getString("old_value_json"));
+                map.put("newValueJson", rs.getString("new_value_json"));
+                map.put("metadataJson", rs.getString("metadata_json"));
+                map.put("occurredAt", rs.getString("occurred_at"));
+                return map;
+            }, slug, slugPattern, slugPattern, limit <= 0 ? 50 : limit);
+        } catch (Exception e) {
+            log.warn("Could not query audit events for org {}: {}", slug, e.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
 }
+
+

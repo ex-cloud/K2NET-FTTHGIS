@@ -57,7 +57,7 @@ import { getTenantUrl } from "@/lib/domain";
 
 export default function OrganizationFeaturesPage() {
   const router = useRouter();
-  const { organizations: rawOrgs, loading, refresh } = useOrganizations();
+  const { organizations: rawOrgs, allStats, loading, refresh } = useOrganizations();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [planFilter, setPlanFilter] = useState("ALL");
@@ -68,6 +68,7 @@ export default function OrganizationFeaturesPage() {
     return (rawOrgs || []).map((o: Organization) => {
       const planTier = normalizePlanTier(o.subscriptionPlan?.name);
       const status = (o.status || "ACTIVE") as OrganizationStatus;
+      const stats = allStats[o.slug] || allStats[o.id || ""] || {};
 
       // Default feature flags based on plan tier
       const defaultFlags: OrganizationFeatureFlags = {
@@ -92,17 +93,17 @@ export default function OrganizationFeaturesPage() {
         planTier: planTier,
         createdAt: o.createdAt || "2026-08-20",
 
-        picName: o.adminUsername ? `${o.adminUsername}` : "Andiansyah",
-        picEmail: o.adminEmail || `admin@${o.slug}.kdua.net`,
+        picName: o.adminUsername ? `${o.adminUsername}` : "—",
+        picEmail: o.adminEmail || `${o.slug}@kdua.net`,
         picPhone: "+62 812-8899-0011",
         slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
 
         maxOlts: o.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: 2,
+        usedOlts: stats.usedOlts ?? 0,
         maxOdps: o.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: 640,
+        usedOdps: stats.usedOdps ?? 0,
         maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: 3.6,
+        usedStorageGb: stats.usedStorageGb ?? 0,
 
         customDomain: o.website?.includes(".") && !o.website.includes("kdua.net") ? o.website.replace(/^https?:\/\//, "") : undefined,
         domainVerified: true,
@@ -110,13 +111,13 @@ export default function OrganizationFeaturesPage() {
 
         featureFlags: customFlags,
 
-        apiRateLimitUsed: 850,
+        apiRateLimitUsed: stats.apiRateLimitUsed ?? 0,
         apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: 38,
+        apiLatencyMs: stats.apiLatencyMs ?? 0,
         trialDaysLeft: status === "TRIAL" ? 12 : undefined,
       };
     });
-  }, [rawOrgs, flagsState]);
+  }, [rawOrgs, flagsState, allStats]);
 
   // Filtered organizations
   const filteredOrgs = useMemo(() => {

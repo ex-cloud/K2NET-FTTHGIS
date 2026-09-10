@@ -33,6 +33,19 @@ export interface Organization {
   createdAt?: string;
 }
 
+export interface OrganizationStats {
+  projectCount: number;
+  usedOlts: number;
+  odcCount: number;
+  usedOdps: number;
+  customerCount: number;
+  usedStorageGb?: number;
+  apiRateLimitUsed?: number;
+  apiLatencyMs?: number;
+  organizationSlug: string;
+  organizationName?: string;
+}
+
 export function useOrganizations() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
@@ -68,6 +81,32 @@ export function useOrganizations() {
     retry: 1, // Only retry once
   });
 
+  // Fetch real aggregated usage statistics for all organizations
+  const { 
+    data: allStats = {}, 
+    refetch: refetchStats 
+  } = useQuery<Record<string, OrganizationStats>>({
+    queryKey: ['organizations-all-stats', session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return {};
+      const baseUrl = getBackendBaseUrl();
+      try {
+        const res = await httpClient(`${baseUrl}/organizations/analytics/all-stats`, {
+          token: session.accessToken,
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        console.warn('Failed to fetch org all-stats:', e);
+      }
+      return {};
+    },
+    enabled: status === 'authenticated' && !!session?.accessToken,
+    staleTime: 30 * 1000,
+    retry: 1,
+  });
+
   // Auto-detect suspension from org data (catches cases where API returns 200 but org is suspended)
   useEffect(() => {
     // Keep this effect but remove the log
@@ -101,19 +140,22 @@ export function useOrganizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['organizations-all-stats'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (args: string | { idOrSlug: string; mode?: 'soft' | 'nuclear'; reason?: string }) => {
+    mutationFn: async (args: string | { idOrSlug?: string; slug?: string; mode?: string; reason?: string }) => {
       if (!session?.accessToken) throw new Error("Not authenticated");
-      const targetId = typeof args === 'string' ? args : args.idOrSlug;
-      const targetMode = typeof args === 'string' ? 'soft' : (args.mode || 'soft');
-      const targetReason = typeof args === 'string' ? '' : (args.reason || '');
+      const targetSlug = typeof args === 'string' ? args : (args.idOrSlug || args.slug || '');
+      const mode = typeof args === 'string' ? 'soft' : (args.mode || 'soft');
+      const reason = typeof args === 'string' ? '' : (args.reason || '');
 
       const baseUrl = getBackendBaseUrl();
-      const params = new URLSearchParams({ mode: targetMode, reason: targetReason });
-      const res = await httpClient(`${baseUrl}/organizations/${targetId}?${params.toString()}`, {
+      const params = new URLSearchParams({ mode });
+      if (reason) params.set("reason", reason);
+
+      const res = await httpClient(`${baseUrl}/organizations/${targetSlug}?${params.toString()}`, {
         method: 'DELETE',
         token: session.accessToken,
       });
@@ -126,6 +168,7 @@ export function useOrganizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['organizations-all-stats'] });
       queryClient.invalidateQueries({ queryKey: ['trash-items'] });
     },
   });
@@ -148,6 +191,7 @@ export function useOrganizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      queryClient.invalidateQueries({ queryKey: ['organizations-all-stats'] });
     },
   });
 
@@ -170,11 +214,17 @@ export function useOrganizations() {
     return organizations.find(org => org.slug === slug);
   };
 
+  const refreshAll = async () => {
+    return await Promise.all([refetch(), refetchStats()]);
+  };
+
   return {
     organizations,
+    allStats,
+    orgStats: allStats,
     loading: isLoading,
     error: error instanceof Error ? error.message : null,
-    refresh: refetch,
+    refresh: refreshAll,
     createOrganization: createMutation.mutateAsync,
     updateOrganization: updateMutation.mutateAsync,
     deleteOrganization: deleteMutation.mutateAsync,
