@@ -46,6 +46,7 @@ public class OrganizationService {
     private final AuditLoggingService auditLoggingService;
     private final com.company.ftthgis.domain.tenant.repository.OrganizationSlugAliasRepository organizationSlugAliasRepository;
     private final com.company.ftthgis.util.RandomSlugGenerator randomSlugGenerator;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
@@ -558,41 +559,185 @@ public class OrganizationService {
         if ("nuclear".equalsIgnoreCase(mode)) {
             log.warn("⚠️ NUCLEAR DELETE INITIATED: {} (Slug: {})", org.getName(), slug);
             try {
+                UUID orgId = org.getId();
+                String orgIdStr = orgId.toString();
+                String effectiveRealmKey = org.getRealmKey() != null && !org.getRealmKey().trim().isEmpty() ? org.getRealmKey() : slug;
+
                 // 1. Delete Keycloak Realm (Infrastructure Cleanup)
-                log.info("🛡️ Deleting Keycloak Realm: {}", slug);
+                log.info("🛡️ Deleting Keycloak Realm: {} (effective realmKey: {})", slug, effectiveRealmKey);
                 try {
-                    keycloakService.deleteRealm(slug);
+                    keycloakService.deleteRealm(effectiveRealmKey);
                 } catch (Exception e) {
                     log.warn("⚠️ Non-critical failure deleting Keycloak realm: {}. Manual cleanup may be required.", e.getMessage());
                 }
+                if (!effectiveRealmKey.equalsIgnoreCase(slug)) {
+                    try {
+                        keycloakService.deleteRealm(slug);
+                    } catch (Exception ignored) {}
+                }
 
-                // 2. Delete All Network Assets (Data Cleanup)
-                log.info("📡 Cleaning up network assets for organization: {}", slug);
-                customerRepository.deleteByOrganizationId(org.getId());
-                fiberCableRepository.deleteByOrganizationId(org.getId());
-                assetRepository.deleteByOrganizationId(org.getId());
-                networkNodeRepository.deleteByOrganizationId(org.getId());
-
-                // 3. Cleanup Users (Permanently Delete Tenant Users)
-                List<com.company.ftthgis.domain.user.entity.User> users = userRepository.findByOrganizationId(org.getId());
-                log.info("👤 Deleting {} users associated with organization: {}", users.size(), slug);
-                userRepository.deleteAll(users);
-
-                // 4. Delete Organization Profile & Configs
+                // 2. Delete Logo File in Storage if exists
                 if (org.getLogoUrl() != null && !org.getLogoUrl().isEmpty()) {
                     log.info("🗑️ Deleting logo file for deleted organization: {}", org.getLogoUrl());
                     try {
                         fileStorageService.deleteFile(org.getLogoUrl());
                     } catch (Exception ignored) {}
                 }
-                organizationRepository.delete(org);
+
+                // 3. Native Cascaded Nuclear Database Wipe in strict topological dependency order
+                log.info("💥 Executing atomic SQL cascade wipe for organization: {} (ID: {})", slug, orgId);
+
+                // A. Fiber & Splice level
+                try {
+                    jdbcTemplate.update("DELETE FROM fiber_splices WHERE node_id IN (SELECT id FROM network_nodes WHERE organization_id = ?) OR in_cable_id IN (SELECT id FROM fiber_cables WHERE organization_id = ?) OR out_cable_id IN (SELECT id FROM fiber_cables WHERE organization_id = ?)", orgId, orgId, orgId);
+                } catch (Exception e) {
+                    log.debug("fiber_splices wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM fiber_cores WHERE cable_id IN (SELECT id FROM fiber_cables WHERE organization_id = ?)", orgId);
+                } catch (Exception e) {
+                    log.debug("fiber_cores wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM fiber_cables WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("fiber_cables wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM network_edges WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("network_edges wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM customers WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("customers wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM assets WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("assets wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM network_nodes WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("network_nodes wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM asset_categories WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("asset_categories wipe: {}", e.getMessage());
+                }
+
+                // B. AI & Knowledge level
+                try {
+                    jdbcTemplate.update("DELETE FROM ai_document_chunks WHERE document_id IN (SELECT id FROM ai_documents WHERE tenant_id = ? OR tenant_id = ?)", orgIdStr, slug);
+                    jdbcTemplate.update("DELETE FROM ai_documents WHERE tenant_id = ? OR tenant_id = ?", orgIdStr, slug);
+                    jdbcTemplate.update("DELETE FROM ai_feedbacks WHERE tenant_id = ? OR tenant_id = ?", orgIdStr, slug);
+                    jdbcTemplate.update("DELETE FROM ai_prompts WHERE tenant_id = ? OR tenant_id = ?", orgIdStr, slug);
+                    jdbcTemplate.update("DELETE FROM ai_agent_authorizations WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("AI tables wipe: {}", e.getMessage());
+                }
+
+                // C. Tasks level
+                try {
+                    jdbcTemplate.update("DELETE FROM task_comments WHERE task_id IN (SELECT id FROM tasks WHERE organization_id = ?)", orgId);
+                    jdbcTemplate.update("DELETE FROM tasks WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("Tasks tables wipe: {}", e.getMessage());
+                }
+
+                // D. Impersonation sessions, User Devices & Audit Logs
+                try {
+                    jdbcTemplate.update("DELETE FROM impersonation_sessions WHERE target_organization_id = ? OR actor_user_id IN (SELECT id FROM users WHERE organization_id = ?)", orgId, orgId);
+                } catch (Exception e) {
+                    log.debug("impersonation_sessions wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM user_devices WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)", orgId);
+                } catch (Exception e) {
+                    log.debug("user_devices wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM user_audit_logs WHERE organization_id = ? OR user_id IN (SELECT id FROM users WHERE organization_id = ?)", orgId, orgId);
+                } catch (Exception e) {
+                    log.debug("user_audit_logs wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM audit_logs WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)", orgId);
+                } catch (Exception e) {
+                    log.debug("audit_logs wipe: {}", e.getMessage());
+                }
+
+                // E. Project Members
+                try {
+                    jdbcTemplate.update("DELETE FROM project_members WHERE organization_id = ? OR project_id IN (SELECT id FROM projects WHERE organization_id = ?) OR user_id IN (SELECT id FROM users WHERE organization_id = ?)", orgId, orgId, orgId);
+                } catch (Exception e) {
+                    log.debug("project_members wipe: {}", e.getMessage());
+                }
+
+                // F. Users
+                try {
+                    jdbcTemplate.update("DELETE FROM users WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("users wipe: {}", e.getMessage());
+                }
+
+                // G. Projects
+                try {
+                    jdbcTemplate.update("DELETE FROM projects WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("projects wipe: {}", e.getMessage());
+                }
+
+                // H. Roles & Permissions (tenant-specific roles)
+                try {
+                    jdbcTemplate.update("DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE organization_id = ? AND is_system_role = false)", orgId);
+                    jdbcTemplate.update("DELETE FROM roles WHERE organization_id = ? AND is_system_role = false", orgId);
+                } catch (Exception e) {
+                    log.debug("roles wipe: {}", e.getMessage());
+                }
+
+                // I. Configs, Aliases, Payments
+                try {
+                    jdbcTemplate.update("DELETE FROM organization_configs WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("organization_configs wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM organization_slug_aliases WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("organization_slug_aliases wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM payments WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("payments wipe: {}", e.getMessage());
+                }
+                try {
+                    jdbcTemplate.update("DELETE FROM payment_transactions WHERE organization_id = ?", orgId);
+                } catch (Exception e) {
+                    log.debug("payment_transactions wipe: {}", e.getMessage());
+                }
+
+                // J. Organization Entity
+                jdbcTemplate.update("DELETE FROM organizations WHERE id = ?", orgId);
+
+                // Flush and clear EntityManager to avoid stale entities in Hibernate Session
+                entityManager.clear();
+
+                // L2 Cache Eviction for Roles & Organizations
+                try {
+                    entityManager.getEntityManagerFactory().getCache().evict(Organization.class, orgId);
+                } catch (Exception ignored) {}
 
                 try {
                     auditLoggingService.logEvent(
                         "system",
                         "TENANT_NUCLEAR_DELETED",
                         "ORGANIZATION",
-                        org.getId().toString(),
+                        orgIdStr,
                         java.util.Map.of("name", org.getName(), "slug", org.getSlug(), "status", "NUCLEAR_DELETED"),
                         new java.util.HashMap<>(),
                         new java.util.HashMap<>()
