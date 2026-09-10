@@ -2,6 +2,8 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.repository.OrganizationRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,6 +21,7 @@ public class OrganizationAnalyticsService {
 
     private final JdbcTemplate jdbcTemplate;
     private final OrganizationRepository organizationRepository;
+    private final ObjectMapper objectMapper;
 
     public Map<String, Object> getOrganizationStats(String slug) {
         Organization org = organizationRepository.findBySlug(slug)
@@ -64,6 +67,7 @@ public class OrganizationAnalyticsService {
         stats.put("totalCableLength", Math.round(totalCableLength != null ? totalCableLength : 0));
         stats.put("organizationName", org.getName());
         stats.put("organizationSlug", org.getSlug());
+        stats.put("featureFlags", resolveFeatureFlags(org));
 
         return stats;
     }
@@ -108,6 +112,7 @@ public class OrganizationAnalyticsService {
                 stats.put("customerCount", customerCount != null ? customerCount : 0);
                 stats.put("organizationSlug", org.getSlug());
                 stats.put("organizationName", org.getName());
+                stats.put("featureFlags", resolveFeatureFlags(org));
             } catch (Exception e) {
                 log.warn("Error calculating stats for {}: {}", org.getSlug(), e.getMessage());
                 stats.put("projectCount", 0);
@@ -117,12 +122,91 @@ public class OrganizationAnalyticsService {
                 stats.put("customerCount", 0);
                 stats.put("organizationSlug", org.getSlug());
                 stats.put("organizationName", org.getName());
+                stats.put("featureFlags", resolveFeatureFlags(org));
             }
 
             result.put(org.getSlug(), stats);
         }
 
         return result;
+    }
+
+    /**
+     * Resolves feature flags for an organization by reading custom overrides from organization_configs,
+     * or falling back to defaults based on the organization's subscription plan.
+     */
+    public Map<String, Boolean> resolveFeatureFlags(Organization org) {
+        Map<String, Boolean> flags = new HashMap<>();
+        String planName = org.getSubscriptionPlan() != null ? org.getSubscriptionPlan().getName() : "Professional";
+        boolean isEnterprise = "Enterprise".equalsIgnoreCase(planName);
+        boolean isStarter = "Starter".equalsIgnoreCase(planName);
+
+        // Plan defaults
+        flags.put("gisCore", true);
+        flags.put("oltPoller", !isStarter);
+        flags.put("whatsappEngine", true);
+        flags.put("aiCopilot", isEnterprise);
+        flags.put("sandboxMode", false);
+
+        try {
+            List<String> rawConfigs = jdbcTemplate.query(
+                    "SELECT config_value FROM organization_configs WHERE organization_id = ? AND config_key = 'feature_flags'",
+                    (rs, rowNum) -> rs.getString("config_value"),
+                    org.getId()
+            );
+            if (!rawConfigs.isEmpty() && rawConfigs.get(0) != null && !rawConfigs.get(0).isBlank()) {
+                Map<String, Object> custom = objectMapper.readValue(rawConfigs.get(0), new TypeReference<Map<String, Object>>() {});
+                for (Map.Entry<String, Object> entry : custom.entrySet()) {
+                    if (entry.getValue() instanceof Boolean b) {
+                        flags.put(entry.getKey(), b);
+                    } else if (entry.getValue() instanceof String s) {
+                        flags.put(entry.getKey(), Boolean.parseBoolean(s));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("No custom feature flags override found for {}: {}", org.getSlug(), e.getMessage());
+        }
+
+        return flags;
+    }
+
+    /**
+     * Saves custom feature flags for an organization in organization_configs.
+     */
+    public Map<String, Boolean> saveFeatureFlags(String slug, Map<String, Boolean> newFlags) {
+        Organization org = organizationRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Organization not found: " + slug));
+
+        Map<String, Boolean> currentFlags = resolveFeatureFlags(org);
+        currentFlags.putAll(newFlags);
+
+        try {
+            String jsonVal = objectMapper.writeValueAsString(currentFlags);
+            Integer exists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM organization_configs WHERE organization_id = ? AND config_key = 'feature_flags'",
+                    Integer.class,
+                    org.getId()
+            );
+            if (exists != null && exists > 0) {
+                jdbcTemplate.update(
+                        "UPDATE organization_configs SET config_value = ?, updated_at = NOW() WHERE organization_id = ? AND config_key = 'feature_flags'",
+                        jsonVal, org.getId()
+                );
+            } else {
+                jdbcTemplate.update(
+                        "INSERT INTO organization_configs (id, organization_id, config_key, config_value, description, is_active, created_at, updated_at) " +
+                        "VALUES (?, ?, 'feature_flags', ?, 'Tenant B2B Feature Flags & Module Entitlements', true, NOW(), NOW())",
+                        UUID.randomUUID(), org.getId(), jsonVal
+                );
+            }
+            log.info("✅ Saved feature flags for organization {}: {}", slug, jsonVal);
+        } catch (Exception e) {
+            log.error("Failed to persist feature flags for {}: {}", slug, e.getMessage(), e);
+            throw new RuntimeException("Failed to save feature flags: " + e.getMessage());
+        }
+
+        return currentFlags;
     }
 
     /**

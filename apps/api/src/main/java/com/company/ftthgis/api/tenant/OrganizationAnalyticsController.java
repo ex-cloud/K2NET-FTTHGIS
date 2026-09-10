@@ -58,4 +58,30 @@ public class OrganizationAnalyticsController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/{slug}/features")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
+    public ResponseEntity<Map<String, Boolean>> getFeatures(@PathVariable String slug) {
+        try {
+            Map<String, Object> stats = analyticsService.getOrganizationStats(slug);
+            @SuppressWarnings("unchecked")
+            Map<String, Boolean> flags = (Map<String, Boolean>) stats.get("featureFlags");
+            return ResponseEntity.ok(flags);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{slug}/features")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.settings.manage') or hasAuthority('orgs.manage')")
+    public ResponseEntity<Map<String, Boolean>> updateFeatures(
+            @PathVariable String slug,
+            @RequestBody Map<String, Boolean> flags
+    ) {
+        try {
+            return ResponseEntity.ok(analyticsService.saveFeatureFlags(slug, flags));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

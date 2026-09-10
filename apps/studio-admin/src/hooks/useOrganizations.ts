@@ -44,6 +44,7 @@ export interface OrganizationStats {
   apiLatencyMs?: number;
   organizationSlug: string;
   organizationName?: string;
+  featureFlags?: Record<string, boolean>;
 }
 
 export function useOrganizations() {
@@ -195,6 +196,25 @@ export function useOrganizations() {
     },
   });
 
+  const updateFeatureFlagsMutation = useMutation({
+    mutationFn: async ({ slug, flags }: { slug: string; flags: Record<string, boolean> }) => {
+      if (!session?.accessToken) throw new Error("Not authenticated");
+      const baseUrl = getBackendBaseUrl();
+      const res = await httpClient(`${baseUrl}/organizations/${slug}/features`, {
+        method: 'PUT',
+        token: session.accessToken,
+        body: JSON.stringify(flags),
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to update feature flags: ${res.statusText}`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations-all-stats'] });
+    },
+  });
+
   const checkSlugAvailable = async (slug: string) => {
     if (!session?.accessToken) return false;
     try {
@@ -229,6 +249,7 @@ export function useOrganizations() {
     updateOrganization: updateMutation.mutateAsync,
     deleteOrganization: deleteMutation.mutateAsync,
     deleteOrg: deleteMutation.mutateAsync,
+    updateFeatureFlags: updateFeatureFlagsMutation.mutateAsync,
     checkSlugAvailable,
     useOrganizationBySlug
   };
