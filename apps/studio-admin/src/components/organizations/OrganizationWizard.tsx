@@ -35,7 +35,7 @@ import {
   DialogTitle, 
   DialogDescription, 
 } from "@k2net/ui";
-import { getTenantUrl, getDefaultTenantHost } from "@/lib/domain";
+import { getTenantUrl } from "@/lib/domain";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -157,12 +157,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     toast.info("Generated 20-char random subdomain: " + randomSlug);
   };
 
-  // Track which LDAP fields the user has interacted with
-  const [touchedFields, setTouchedFields] = React.useState<Record<string, boolean>>({});
 
-  const markTouched = (field: string) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }));
-  };
 
   // Format validators
   const isValidLdapUrl = (url: string) => !url.trim() || /^ldaps?:\/\/.+/i.test(url.trim());
@@ -736,7 +731,6 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                     <Input
                       value={formData.ldapUrl}
                       onChange={(e) => updateLdapField("ldapUrl", e.target.value)}
-                      onBlur={() => markTouched("ldapUrl")}
                       placeholder="ldap://ldap.nusantara.net:389"
                       className="bg-background text-xs h-8 font-mono"
                     />
@@ -748,7 +742,6 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       <Input
                         value={formData.ldapBaseDn}
                         onChange={(e) => updateLdapField("ldapBaseDn", e.target.value)}
-                        onBlur={() => markTouched("ldapBaseDn")}
                         placeholder="dc=nusantara,dc=net"
                         className="bg-background text-xs h-8 font-mono"
                       />
@@ -758,7 +751,6 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       <Input
                         value={formData.ldapBindDn}
                         onChange={(e) => updateLdapField("ldapBindDn", e.target.value)}
-                        onBlur={() => markTouched("ldapBindDn")}
                         placeholder="cn=admin,dc=nusantara,dc=net"
                         className="bg-background text-xs h-8 font-mono"
                       />
@@ -771,7 +763,6 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
                       type="password"
                       value={formData.ldapBindPassword}
                       onChange={(e) => updateLdapField("ldapBindPassword", e.target.value)}
-                      onBlur={() => markTouched("ldapBindPassword")}
                       placeholder="••••••••"
                       className="bg-background text-xs h-8"
                     />

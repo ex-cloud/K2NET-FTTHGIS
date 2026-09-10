@@ -16,7 +16,7 @@ import {
   DialogFooter, 
   Badge 
 } from "@k2net/ui";
-import { ServerFilePreview } from "@/lib/actions/gateways";
+import { type ServerFilePreview } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
 interface AiServerFilePreviewModalProps {

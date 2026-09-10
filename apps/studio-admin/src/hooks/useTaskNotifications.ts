@@ -138,6 +138,6 @@ export function useTaskNotifications() {
       reconnectCountRef.current = 0;
     };
     // Only re-establish SSE when the actual token changes (not on every render)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [session?.accessToken]);
 }

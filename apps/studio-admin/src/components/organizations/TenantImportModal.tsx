@@ -22,12 +22,10 @@ import {
   Building2,
   FolderGit2,
   ShieldCheck,
-  Loader2,
   X,
   Code2,
   Copy,
   Terminal,
-  Server,
   Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

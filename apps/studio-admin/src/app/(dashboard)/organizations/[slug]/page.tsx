@@ -47,9 +47,8 @@ import { cn } from "@/lib/utils";
 import {
   type EnrichedOrganization,
   type OrganizationStatus,
-  normalizePlanTier,
+  enrichOrganization,
   toBackendPlanName,
-  calculateTrialDaysLeft,
 } from "@/components/organizations/types";
 import { OrgOverviewTab } from "@/components/organizations/detail/OrgOverviewTab";
 import { OrgHardwareTab } from "@/components/organizations/detail/OrgHardwareTab";
@@ -116,66 +115,11 @@ export default function OrganizationDetailPage() {
     );
   }, [rawOrgs, slug]);
 
-  // Transform to Enriched Organization
+  // Transform to Enriched Organization using single source of truth
   const org: EnrichedOrganization | null = useMemo(() => {
     if (!rawOrg) return null;
-    const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
-    const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
-    const stats = allStats[rawOrg.slug] || {
-      projectCount: 0,
-      usedOlts: 0,
-      odcCount: 0,
-      usedOdps: 0,
-      customerCount: 0,
-    };
-
-    const resolvedPicName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
-    const resolvedPicEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `admin@${rawOrg.slug}.kdua.net`;
-
-    const hasCustomDomain = Boolean(rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net"));
-    const customDomain = hasCustomDomain ? rawOrg.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
-
-    return {
-      id: rawOrg.id || `org-${rawOrg.slug}`,
-      name: rawOrg.name || rawOrg.slug,
-      slug: rawOrg.slug,
-      description: rawOrg.description,
-      address: rawOrg.address,
-      website: rawOrg.website,
-      logoUrl: rawOrg.logoUrl,
-      status: status,
-      planTier: planTier,
-      createdAt: rawOrg.createdAt || "2026-08-20",
-
-      picName: resolvedPicName,
-      picEmail: resolvedPicEmail,
-      picPhone: undefined,
-      slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
-
-      maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-      usedOlts: stats.usedOlts || stats.projectCount || 0,
-      maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-      usedOdps: stats.usedOdps || 0,
-      maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-      usedStorageGb: 0,
-
-      customDomain: customDomain,
-      domainVerified: hasCustomDomain,
-      domainSslActive: hasCustomDomain,
-
-      featureFlags: {
-        gisCore: true,
-        oltPoller: planTier !== "Starter",
-        whatsappEngine: true,
-        aiCopilot: planTier === "Enterprise",
-        sandboxMode: false,
-      },
-
-      apiRateLimitUsed: 0,
-      apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-      apiLatencyMs: 0,
-      trialDaysLeft: calculateTrialDaysLeft(rawOrg.trialExpiresAt, status),
-    };
+    const stats = allStats[rawOrg.slug] || allStats[rawOrg.id || ""] || {};
+    return enrichOrganization(rawOrg, stats);
   }, [rawOrg, allStats]);
 
   // Set document title

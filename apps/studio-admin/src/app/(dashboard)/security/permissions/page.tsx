@@ -24,7 +24,7 @@ import {
   Button,
   ActionTooltip,
   UniversalContextMenu,
-  ContextMenuGroupConfig,
+  type ContextMenuGroupConfig,
   Dialog,
   DialogContent,
   DialogDescription,

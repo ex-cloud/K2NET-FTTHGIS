@@ -23,7 +23,7 @@ import {
   getSortedRowModel,
   createColumnHelper,
   flexRender,
-  SortingState,
+  type SortingState,
 } from "@tanstack/react-table";
 import { 
   Button, 
@@ -34,9 +34,9 @@ import {
 } from "@k2net/ui";
 import { toast } from "sonner";
 import { 
-  AiDocumentItem, 
-  ServerSyncStatus,
-  ServerFilePreview,
+  type AiDocumentItem, 
+  type ServerSyncStatus,
+  type ServerFilePreview,
   previewAiServerFile,
   rejectAiServerFile,
   indexSingleAiServerFile,
@@ -45,8 +45,8 @@ import {
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
   STATUS_ITEMS, 
-  KnowledgeScope, 
-  KnowledgeStatus, 
+  type KnowledgeScope, 
+  type KnowledgeStatus, 
   formatBytes 
 } from "./types";
 import { AiDocumentContextMenu } from "./ai-document-context-menu";

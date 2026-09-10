@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button, Checkbox, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@k2net/ui";
 import { Search, ChevronDown, RefreshCw, RotateCcw } from "lucide-react";
-import { SlowQuery } from "@/hooks/useDbPerformance";
+import { type SlowQuery } from "@/hooks/useDbPerformance";
 
 interface QueryPerformanceToolbarProps {
   searchQuery: string;

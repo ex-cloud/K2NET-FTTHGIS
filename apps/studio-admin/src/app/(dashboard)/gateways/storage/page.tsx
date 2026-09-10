@@ -1,7 +1,7 @@
 
 
 import { useEffect, useState } from "react";
-import { getGatewayConfigByKey, updateGatewayConfigByKey, getStorageStats, StorageStats } from "@/lib/actions/gateways";
+import { getGatewayConfigByKey, updateGatewayConfigByKey, getStorageStats, type StorageStats } from "@/lib/actions/gateways";
 import { 
   Database, 
   Save, 

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "@/lib/navigation-compat";
-import { AuditStreamEntry, LOG_GROUPS, LogGroupKey } from "@/hooks/use-audit-log-stream";
+import { type AuditStreamEntry, LOG_GROUPS, type LogGroupKey } from "@/hooks/use-audit-log-stream";
 
 // Re-export so consumers can import from one place
 export { LOG_GROUPS };

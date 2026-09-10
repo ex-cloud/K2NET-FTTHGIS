@@ -1,4 +1,4 @@
-import { PaginatedResponse, User } from "@/types/user";
+import { type PaginatedResponse, type User } from "@/types/user";
 import { getBackendBaseUrl } from "../api-config";
 import { httpClient } from "../httpClient";
 

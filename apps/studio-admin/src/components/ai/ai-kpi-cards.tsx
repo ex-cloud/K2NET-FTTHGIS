@@ -3,7 +3,7 @@
 import React from "react";
 import { Cpu, BookOpen, BrainCircuit, Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { Card } from "@k2net/ui";
-import { AiKnowledgeStats } from "@/lib/actions/gateways";
+import { type AiKnowledgeStats } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
 interface AiKpiCardsProps {

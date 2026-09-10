@@ -16,7 +16,7 @@ import {
   Badge, 
   Progress 
 } from "@k2net/ui";
-import { AiKnowledgeStats, AiDocumentItem } from "@/lib/actions/gateways";
+import { type AiKnowledgeStats, type AiDocumentItem } from "@/lib/actions/gateways";
 
 interface AiVectorExplorerModalProps {
   isOpen: boolean;

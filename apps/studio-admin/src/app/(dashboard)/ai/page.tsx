@@ -6,7 +6,7 @@ import { Badge } from "@k2net/ui";
 import { useRouter } from "@/lib/navigation-compat";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { useAiKnowledge } from "@/hooks/useAiKnowledge";
-import { AiDocumentItem } from "@/lib/actions/gateways";
+import { type AiDocumentItem } from "@/lib/actions/gateways";
 
 import { AiKpiCards } from "@/components/ai/ai-kpi-cards";
 import { AiKnowledgeTable } from "@/components/ai/ai-knowledge-table";

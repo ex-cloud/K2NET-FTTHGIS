@@ -92,7 +92,7 @@ export function TaskTimelineView({
   const totalGridWidth = timelineMonths.length * monthColWidth;
 
   // ── Today Marker Position ──────────────────────────────────────────────────
-  // eslint-disable-next-line react-hooks/purity
+   
   const [nowMs] = useState(() => Date.now());
   const todayLeftPx = useMemo(() => {
     if (nowMs < startTimelineMs || nowMs > endTimelineMs) return -1;

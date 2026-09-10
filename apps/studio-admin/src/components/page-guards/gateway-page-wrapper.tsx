@@ -1,6 +1,6 @@
 
 
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { PermissionGuard } from "@/hooks/use-permissions";
 import { Shield } from "lucide-react";
 

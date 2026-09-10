@@ -44,9 +44,8 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import { TenantQuotaModal } from "@/components/organizations/TenantQuotaModal";
 import {
   type EnrichedOrganization,
-  type OrganizationStatus,
-  normalizePlanTier,
   toBackendPlanName,
+  enrichOrganization,
 } from "@/components/organizations/types";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
@@ -59,46 +58,11 @@ export default function OrganizationQuotasPage() {
   const [planFilter, setPlanFilter] = useState("ALL");
   const [selectedOrgForQuota, setSelectedOrgForQuota] = useState<EnrichedOrganization | null>(null);
 
-  // Enriched organizations
+  // Enriched organizations using single source of truth
   const organizations: EnrichedOrganization[] = useMemo(() => {
-    return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const planTier = normalizePlanTier(org.subscriptionPlan?.name);
+    return (rawOrgs || []).map((org: Organization) => {
       const stats = allStats[org.slug] || allStats[org.id || ""] || {};
-      const customDomain = org.website && org.website.includes(".") && !org.website.includes("kdua.net")
-        ? org.website.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
-        : undefined;
-
-      return {
-        id: org.id || `org-${org.slug || idx}`,
-        name: org.name || org.slug,
-        slug: org.slug,
-        description: org.description,
-        status: (org.status || "ACTIVE") as OrganizationStatus,
-        planTier: planTier,
-        createdAt: org.createdAt || "2026-08-20",
-        picName: org.adminUsername || "—",
-        picEmail: org.adminEmail || `${org.slug}@kdua.net`,
-        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
-        maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: stats.usedOlts ?? 0,
-        maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: stats.usedOdps ?? 0,
-        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: stats.usedStorageGb ?? 0,
-        customDomain: customDomain,
-        domainVerified: !!customDomain,
-        domainSslActive: true,
-        featureFlags: {
-          gisCore: true,
-          oltPoller: planTier !== "Starter",
-          whatsappEngine: true,
-          aiCopilot: planTier === "Enterprise",
-          sandboxMode: false,
-        },
-        apiRateLimitUsed: stats.apiRateLimitUsed ?? 0,
-        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: stats.apiLatencyMs ?? 0,
-      };
+      return enrichOrganization(org, stats);
     });
   }, [rawOrgs, allStats]);
 

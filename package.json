@@ -19,6 +19,9 @@
     "audit:colors": "bash packages/ui/scripts/audit-colors.sh"
   },
   "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.102.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "turbo": "^2.0.0"
   },
   "packageManager": "pnpm@9.15.9"

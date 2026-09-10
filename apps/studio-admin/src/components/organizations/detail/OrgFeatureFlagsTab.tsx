@@ -1,6 +1,6 @@
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge, Button, Switch, ActionTooltip } from "@k2net/ui";
 import {
   Sliders,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization, OrganizationFeatureFlags } from "../types";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 interface OrgFeatureFlagsTabProps {
   organization: EnrichedOrganization;
@@ -23,22 +24,32 @@ export function OrgFeatureFlagsTab({
   organization: org,
   onSaveFlags,
 }: OrgFeatureFlagsTabProps) {
+  const { updateFeatureFlags, refresh } = useOrganizations();
   const [flags, setFlags] = useState<OrganizationFeatureFlags>(org.featureFlags);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setFlags(org.featureFlags);
+  }, [org.featureFlags]);
 
   const handleToggle = (key: keyof OrganizationFeatureFlags) => {
     setFlags((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await updateFeatureFlags({ slug: org.slug, flags: flags as Record<string, boolean> });
       onSaveFlags?.(flags);
       toast.success(`Feature flags and entitlements updated for ${org.name}`, {
-        description: "Add-on permissions are now active across tenant sessions.",
+        description: "Add-on permissions are now active across tenant sessions and saved in database.",
       });
-    }, 600);
+      refresh();
+    } catch (err) {
+      toast.error(`Failed to update feature flags: ${err instanceof Error ? err.message : "Server error"}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

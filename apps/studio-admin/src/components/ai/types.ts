@@ -3,7 +3,7 @@ import {
   Layers, 
   Database, 
   ShieldCheck, 
-  LucideIcon,
+  type LucideIcon,
   Lock,
   Building2,
   Globe2,

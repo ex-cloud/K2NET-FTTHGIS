@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipProvider,
   UniversalContextMenu,
-  ContextMenuGroupConfig,
+  type ContextMenuGroupConfig,
   ActionTooltip,
 } from "@k2net/ui";
 import {
@@ -35,7 +35,7 @@ import {
   type ColumnDef,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { useAuditLogStream, AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
+import { useAuditLogStream, type AuditStreamEntry, LOG_GROUPS } from "@/hooks/use-audit-log-stream";
 import { useLogsFilter } from "@/components/logs/logs-filter-context";
 import { LogsTopHeader } from "@/components/logs/logs-top-header";
 import { LogsHistogram, buildHistogramData } from "@/components/logs/logs-histogram";

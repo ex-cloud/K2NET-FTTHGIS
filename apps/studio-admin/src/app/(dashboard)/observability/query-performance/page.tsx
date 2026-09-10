@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AlertCircle, RefreshCw, HelpCircle, FileText } from "lucide-react";
-import { useDbPerformance, SlowQuery } from "@/hooks/useDbPerformance";
+import { useDbPerformance, type SlowQuery } from "@/hooks/useDbPerformance";
 import { QueryPerformanceTable } from "@/components/observability/query-performance-table";
 import { SpatialIndexTable } from "@/components/observability/spatial-index-table";
 import { QueryDetailPanel } from "@/components/observability/query-detail-panel";

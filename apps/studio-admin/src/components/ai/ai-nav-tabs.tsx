@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
-import { AiTabType } from "./types";
+import { type AiTabType } from "./types";
 
 interface AiNavTabsProps {
   activeTab: AiTabType;

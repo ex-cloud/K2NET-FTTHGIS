@@ -14,12 +14,12 @@ import { MessageBubble } from "@/components/ai/ai-message-bubble";
 import { exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import type { ChatMessage, StoredChatSession } from "@/hooks/useAiChatStream";
 import {
-  SuggestedPromptItem,
-  AgentAuthorizationData,
+  type SuggestedPromptItem,
+  type AgentAuthorizationData,
   fetchAgentPermissionsCatalog,
   saveAgentAuthorization,
   revokeAgentAuthorization,
-  PermissionCatalogData,
+  type PermissionCatalogData,
 } from "@/lib/actions/gateways";
 import { Zap } from "lucide-react";
 import { AiSpatialNetworkGraphic } from "@/components/ai/AiSpatialNetworkGraphic";

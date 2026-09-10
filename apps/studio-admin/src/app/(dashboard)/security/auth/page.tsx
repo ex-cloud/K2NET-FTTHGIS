@@ -33,7 +33,7 @@ import {
   Separator,
   ActionTooltip,
   UniversalContextMenu,
-  ContextMenuGroupConfig,
+  type ContextMenuGroupConfig,
 } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
 

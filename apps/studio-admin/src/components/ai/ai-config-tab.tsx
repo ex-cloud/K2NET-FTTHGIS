@@ -27,7 +27,7 @@ import {
   Badge 
 } from "@k2net/ui";
 import { toast } from "sonner";
-import { testAiProviderConnection, fetchAiProviderModels, ModelCatalogItem } from "@/lib/actions/gateways";
+import { testAiProviderConnection, fetchAiProviderModels, type ModelCatalogItem } from "@/lib/actions/gateways";
 
 interface AiConfigTabProps {
   config: Record<string, string>;

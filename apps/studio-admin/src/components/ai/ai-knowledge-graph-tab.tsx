@@ -18,7 +18,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Card, CardContent, Button, Badge, Input } from "@k2net/ui";
-import { getKnowledgeGraphData, KnowledgeGraphData } from "@/lib/actions/gateways";
+import { getKnowledgeGraphData, type KnowledgeGraphData } from "@/lib/actions/gateways";
 import { CATEGORIES } from "./types";
 import { toast } from "sonner";
 

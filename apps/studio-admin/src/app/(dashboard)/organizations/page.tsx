@@ -43,9 +43,8 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import {
   type EnrichedOrganization,
   type OrganizationStatus,
-  normalizePlanTier,
   toBackendPlanName,
-  calculateTrialDaysLeft,
+  enrichOrganization,
 } from "@/components/organizations/types";
 import { OrganizationKpiStrip } from "@/components/organizations/OrganizationKpiStrip";
 import { OrganizationToolbar } from "@/components/organizations/OrganizationToolbar";
@@ -137,72 +136,11 @@ export default function AdminOrganizationsPage() {
     setStatusFilter(statusParam);
   }, [statusParam]);
 
-  // Transform raw organizations to enriched type
+  // Transform raw organizations to enriched type using single source of truth
   const enrichedOrganizations: EnrichedOrganization[] = useMemo(() => {
-    return (rawOrgs || []).map((org: Organization, idx: number) => {
-      const planTier = normalizePlanTier(org.subscriptionPlan?.name);
-      const status = (org.status || "ACTIVE") as OrganizationStatus;
-      const stats = allStats[org.slug] || {
-        projectCount: 0,
-        usedOlts: 0,
-        odcCount: 0,
-        usedOdps: 0,
-        customerCount: 0,
-      };
-
-      const resolvedPicName = org.adminUsername && org.adminUsername.trim() !== "" ? org.adminUsername : "—";
-      const resolvedPicEmail = org.adminEmail && org.adminEmail.trim() !== "" ? org.adminEmail : `admin@${org.slug}.kdua.net`;
-
-      const hasCustomDomain = Boolean(org.website?.includes(".") && !org.website.includes("kdua.net"));
-      const customDomain = hasCustomDomain ? org.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
-
-      return {
-        id: org.id || `org-${org.slug || idx}`,
-        name: org.name || org.slug,
-        slug: org.slug,
-        description: org.description,
-        address: org.address,
-        website: org.website,
-        logoUrl: org.logoUrl,
-        status: status,
-        planTier: planTier,
-        createdAt: org.createdAt || "2026-08-20",
-
-        // Real Contact PIC
-        picName: resolvedPicName,
-        picEmail: resolvedPicEmail,
-        picPhone: undefined,
-        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
-
-        // Real Hardware quotas from database
-        maxOlts: org.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: stats.usedOlts || stats.projectCount || 0,
-        maxOdps: org.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: stats.usedOdps || 0,
-        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: 0,
-
-        // Custom Domain
-        customDomain: customDomain,
-        domainVerified: hasCustomDomain,
-        domainSslActive: hasCustomDomain,
-
-        // Feature flags
-        featureFlags: {
-          gisCore: true,
-          oltPoller: planTier !== "Starter",
-          whatsappEngine: true,
-          aiCopilot: planTier === "Enterprise",
-          sandboxMode: false,
-        },
-
-        // Rate limits
-        apiRateLimitUsed: 0,
-        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: 0,
-
-        trialDaysLeft: calculateTrialDaysLeft(org.trialExpiresAt, status),
-      };
+    return (rawOrgs || []).map((org: Organization) => {
+      const stats = allStats[org.slug] || allStats[org.id || ""] || {};
+      return enrichOrganization(org, stats);
     });
   }, [rawOrgs, allStats]);
 

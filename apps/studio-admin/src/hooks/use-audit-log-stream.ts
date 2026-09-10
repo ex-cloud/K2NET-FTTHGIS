@@ -283,7 +283,7 @@ export function useAuditLogStream(
       console.error("[useAuditLogStream] Failed to fetch real logs:", err);
     }
   // tokenRef is a stable ref — no external dependencies needed here.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   // Handle data fetch and polling — run once on mount.

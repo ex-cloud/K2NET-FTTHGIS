@@ -5,7 +5,7 @@ import {
   KeyRound, Users, ShieldAlert, CheckCircle2, XCircle,
   Info, RefreshCw, AlertCircle, Unplug,
 } from "lucide-react";
-import { useKeycloakObservability, ServiceConnection } from "@/hooks/useKeycloakObservability";
+import { useKeycloakObservability, type ServiceConnection } from "@/hooks/useKeycloakObservability";
 
 // ─── Event severity icon ────────────────────────────────────────────────────────
 function EventIcon({ severity }: { severity: "success" | "error" | "warning" | "info" }) {

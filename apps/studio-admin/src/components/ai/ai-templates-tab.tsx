@@ -17,7 +17,7 @@ import {
   Badge 
 } from "@k2net/ui";
 import { toast } from "sonner";
-import { KNOWLEDGE_TEMPLATES, KnowledgeTemplateItem } from "./types";
+import { KNOWLEDGE_TEMPLATES, type KnowledgeTemplateItem } from "./types";
 
 interface AiTemplatesTabProps {
   onUseTemplate: (template: KnowledgeTemplateItem) => void;

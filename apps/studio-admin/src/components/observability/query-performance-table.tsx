@@ -8,9 +8,9 @@ import {
   getSortedRowModel,
   createColumnHelper,
   flexRender,
-  SortingState,
+  type SortingState,
 } from "@tanstack/react-table";
-import { SlowQuery } from "@/hooks/useDbPerformance";
+import { type SlowQuery } from "@/hooks/useDbPerformance";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

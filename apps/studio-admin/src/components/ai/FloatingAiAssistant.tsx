@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 import {
   fetchActiveChatModels,
   incrementAiPromptUsage,
-  SuggestedPromptItem,
+  type SuggestedPromptItem,
   fetchAgentAuthorization,
-  AgentAuthorizationData,
-  PermissionCatalogData,
+  type AgentAuthorizationData,
+  type PermissionCatalogData,
 } from "@/lib/actions/gateways";
 import { useAiChatStream, exportChatToMarkdown } from "@/hooks/useAiChatStream";
 import { AiDrawerOnboarding } from "./ai-drawer-onboarding";

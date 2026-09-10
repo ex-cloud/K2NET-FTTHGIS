@@ -35,7 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@k2net/ui";
-import { useTrashCan, TrashItem } from "@/hooks/useTrashCan";
+import { useTrashCan, type TrashItem } from "@/hooks/useTrashCan";
 import { cn } from "@/lib/utils";
 import { PermissionGuard } from "@/hooks/use-permissions";
 

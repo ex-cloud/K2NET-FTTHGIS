@@ -106,30 +106,31 @@ export function usePathname(): string {
 }
 
 export function useSearchParams(): URLSearchParams {
-  try {
-    const location = useLocation();
-    const searchObj = location.search;
-    const searchKey = typeof searchObj === "object" && searchObj !== null
-      ? JSON.stringify(searchObj)
-      : String((location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : ""));
+  // Hooks HARUS dipanggil tanpa kondisi — di luar try/catch
+  const location = useLocation();
+  const searchObj = location.search;
+  const searchKey = typeof searchObj === "object" && searchObj !== null
+    ? JSON.stringify(searchObj)
+    : String((location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : ""));
 
-    return React.useMemo(() => {
-      if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
-        const sp = new URLSearchParams();
-        for (const [k, v] of Object.entries(searchObj)) {
-          if (v !== undefined && v !== null) {
-            sp.set(k, String(v));
-          }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const result = React.useMemo(() => {
+    if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
+      const sp = new URLSearchParams();
+      for (const [k, v] of Object.entries(searchObj)) {
+        if (v !== undefined && v !== null) {
+          sp.set(k, String(v));
         }
-        return sp;
       }
-      const rawSearch = (location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : "");
-      return new URLSearchParams(rawSearch);
-    }, [searchKey]);
-  } catch {
-    return new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-  }
+      return sp;
+    }
+    const rawSearch = (location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : "");
+    return new URLSearchParams(rawSearch);
+  }, [searchKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return result;
 }
+
 
 export function useParams<T = Record<string, string>>(): T {
   // TanStack Router: params are accessed per-route; fallback reads from URL

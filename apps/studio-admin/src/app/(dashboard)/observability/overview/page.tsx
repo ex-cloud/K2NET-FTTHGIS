@@ -19,8 +19,8 @@ import {
   ExternalLink,
   CalendarDays,
 } from "lucide-react";
-import { getSystemHealthMetrics, getSystemThroughput, ThroughputPoint } from "@/lib/actions/health";
-import { useServiceHealthSparkline, ServiceHealthRow } from "@/hooks/useServiceHealthSparkline";
+import { getSystemHealthMetrics, getSystemThroughput, type ThroughputPoint } from "@/lib/actions/health";
+import { useServiceHealthSparkline, type ServiceHealthRow } from "@/hooks/useServiceHealthSparkline";
 import { LogsDateRangePicker } from "@/components/logs/logs-date-range-picker";
 import {
   AreaChart,
@@ -392,7 +392,7 @@ export default function ObservabilityOverviewPage() {
                     <th className="px-5 py-3">Category</th>
                     <th className="px-5 py-3 text-center w-36">Throughput Trend</th>
                     <th className="px-5 py-3 text-right w-32">RPS Value</th>
-                    <th className="px-5 py-3 w-16"></th>
+                    <th className="px-5 py-3 w-16" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">

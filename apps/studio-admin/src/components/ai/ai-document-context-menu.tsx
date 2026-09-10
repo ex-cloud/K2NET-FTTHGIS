@@ -22,7 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AiDocumentItem } from "@/lib/actions/gateways";
+import { type AiDocumentItem } from "@/lib/actions/gateways";
 
 interface AiDocumentContextMenuProps {
   document: AiDocumentItem;

@@ -1,6 +1,6 @@
 
 
-import React from "react";
+
 import { Badge, Button } from "@k2net/ui";
 import { CreditCard } from "lucide-react";
 import type { SubscriptionSummary } from "./billing-types";

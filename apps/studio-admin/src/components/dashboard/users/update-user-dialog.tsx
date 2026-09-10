@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@k2net/ui";
 import { Textarea } from "@k2net/ui";
-import { User } from "@/types/user";
+import { type User } from "@/types/user";
 import { useSession } from "@/lib/auth-compat";
 import { updateUser } from "@/lib/api/users";
 import { useRouter } from "@/lib/navigation-compat";

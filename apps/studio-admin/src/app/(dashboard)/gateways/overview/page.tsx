@@ -1,7 +1,7 @@
 
 
 import { useEffect, useState } from "react";
-import { getGatewayStatus, GatewayServiceStatus } from "@/lib/actions/gateways";
+import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
 import { Link } from "@/lib/navigation-compat";
 import { 
   Cpu, 
@@ -15,7 +15,7 @@ import {
   Copy,
   ExternalLink
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageLayout, Button, Badge, ActionTooltip, UniversalContextMenu, ContextMenuGroupConfig } from "@k2net/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, PageLayout, Button, Badge, ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
 

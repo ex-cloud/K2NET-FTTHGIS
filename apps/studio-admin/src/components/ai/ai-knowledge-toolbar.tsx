@@ -26,7 +26,7 @@ import {
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
   STATUS_ITEMS, 
-  KnowledgeStatus 
+  type KnowledgeStatus 
 } from "./types";
 
 interface AiKnowledgeToolbarProps {

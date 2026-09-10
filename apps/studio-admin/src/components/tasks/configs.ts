@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { Circle, Timer, Clock, CheckCircle2 } from "lucide-react";
 
 export const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; className: string }> = {

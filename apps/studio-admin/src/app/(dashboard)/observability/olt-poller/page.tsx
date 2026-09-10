@@ -6,7 +6,7 @@ import {
   Radio, Network, AlertTriangle, RefreshCw, AlertCircle,
   CheckCircle2, XCircle, Clock, Cpu, Database,
 } from "lucide-react";
-import { useOltPollerObservability, OltDeviceLive } from "@/hooks/useOltPollerObservability";
+import { useOltPollerObservability, type OltDeviceLive } from "@/hooks/useOltPollerObservability";
 
 // ─── Status badge config ─────────────────────────────────────────────────────
 function SnmpBadge({ status }: { status: OltDeviceLive["snmpStatus"] }) {

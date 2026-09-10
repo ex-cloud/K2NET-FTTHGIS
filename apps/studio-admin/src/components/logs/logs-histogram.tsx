@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
+import { type AuditStreamEntry } from "@/hooks/use-audit-log-stream";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -28,9 +28,9 @@ import {
   Badge,
   ActionTooltip,
   UniversalContextMenu,
-  ContextMenuGroupConfig,
+  type ContextMenuGroupConfig,
 } from "@k2net/ui";
-import { PaginatedResponse, User } from "@/types/user";
+import { type PaginatedResponse, type User } from "@/types/user";
 import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -288,7 +288,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
                         <div className="flex items-center gap-2">
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${user.status === "ACTIVE" ? "bg-primary" : "bg-red-500"}`}
-                          ></span>
+                           />
                           <span className="text-[12px] text-muted-foreground capitalize">
                             {user.status.toLowerCase()}
                           </span>

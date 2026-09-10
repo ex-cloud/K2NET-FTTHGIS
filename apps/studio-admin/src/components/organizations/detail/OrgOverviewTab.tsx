@@ -13,7 +13,6 @@ import {
   ExternalLink,
   Zap,
   AlertTriangle,
-  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
@@ -475,7 +474,7 @@ export function OrgOverviewTab({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground">AI Fiber Copilot & Diagnostics</span>
-                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">ENTERPRISE</Badge>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">AI ADD-ON</Badge>
                   </div>
                   <p className="text-[10px] text-muted-foreground">
                     Analisis kerusakan kabel fiber optik otomatis dan asisten troubleshooting NOC cerdas.
@@ -492,6 +491,35 @@ export function OrgOverviewTab({
                 )}
               >
                 {org.featureFlags?.aiCopilot ? "ENABLED" : "TIER LOCKED"}
+              </Badge>
+            </div>
+
+            {/* Sandbox Mode */}
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-background/60 border border-border/50 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                  <Zap className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">Sandbox & Simulation Mode</span>
+                    <Badge variant="outline" className="border-border text-[9px] font-mono px-1 py-0">TESTING</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Lingkungan uji isolasi untuk pelatihan teknisi, simulasi OLT dan topologi.
+                  </p>
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "font-mono text-[10px]",
+                  org.featureFlags?.sandboxMode
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-muted text-muted-foreground"
+                )}
+              >
+                {org.featureFlags?.sandboxMode ? "ENABLED" : "DISABLED"}
               </Badge>
             </div>
           </div>

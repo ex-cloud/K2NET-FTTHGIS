@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { SlowQuery } from "@/hooks/useDbPerformance";
+import { type SlowQuery } from "@/hooks/useDbPerformance";
 import { cn } from "@k2net/ui";
 
 interface QueryDetailPanelProps {

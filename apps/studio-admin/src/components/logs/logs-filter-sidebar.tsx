@@ -31,7 +31,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@k2net/ui";
-import { useLogsFilter, DEFAULT_SELECTED_TYPES, LOG_GROUPS, LogGroupKey } from "./logs-filter-context";
+import { useLogsFilter, DEFAULT_SELECTED_TYPES, LOG_GROUPS, type LogGroupKey } from "./logs-filter-context";
 import { LogsDateRangePicker } from "./logs-date-range-picker";
 
 // ─── Log type definitions per group ──────────────────────────────────────────

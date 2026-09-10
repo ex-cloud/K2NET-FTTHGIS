@@ -1,6 +1,6 @@
 
 
-import { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { PermissionGuard } from "@/hooks/use-permissions";
 import { Sparkles, ShieldAlert } from "lucide-react";
 

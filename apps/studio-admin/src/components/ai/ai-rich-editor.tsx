@@ -1,7 +1,7 @@
 
 
 import React, { useCallback } from "react";
-import { RichTextEditor, RichTextEditorProps } from "@k2net/ui";
+import { RichTextEditor, type RichTextEditorProps } from "@k2net/ui";
 import { uploadKnowledgeImage } from "@/lib/actions/gateways";
 import { toast } from "sonner";
 

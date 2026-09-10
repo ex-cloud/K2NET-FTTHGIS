@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { createManualAiDocument } from "@/lib/actions/gateways";
 import { AiAddKnowledgeTab } from "@/components/ai/ai-add-knowledge-tab";
-import { KnowledgeScope, KNOWLEDGE_TEMPLATES } from "@/components/ai/types";
+import { type KnowledgeScope, KNOWLEDGE_TEMPLATES } from "@/components/ai/types";
 
 function AiAddContent() {
   const router = useRouter();

@@ -17,7 +17,7 @@ import {
 // ─── getSystemHealthMetrics: masih dipakai untuk KPI CPU/RAM/Disk ─────────────
 import {
   getSystemHealthMetrics,
-  SystemHealthData,
+  type SystemHealthData,
 } from "@/lib/actions/health";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

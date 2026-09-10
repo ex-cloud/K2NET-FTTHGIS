@@ -29,7 +29,7 @@ import {
   Label 
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, KNOWLEDGE_SCOPES, KnowledgeScope } from "./types";
+import { CATEGORIES, KNOWLEDGE_SCOPES, type KnowledgeScope } from "./types";
 import { AiRichEditor } from "./ai-rich-editor";
 
 interface AiAddKnowledgeTabProps {
@@ -372,7 +372,7 @@ export function AiAddKnowledgeTab({
                         onChange={(e) => setUploadAutoApprove?.(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
 
@@ -561,7 +561,7 @@ export function AiAddKnowledgeTab({
                         onChange={(e) => setManualAutoApprove?.(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
                     </label>
                   </div>
 

@@ -10,9 +10,9 @@ import {
   rejectAiDocument,
   triggerServerDocsSync,
   getAiServerSyncStatus,
-  AiKnowledgeStats, 
-  AiDocumentItem,
-  ServerSyncStatus,
+  type AiKnowledgeStats, 
+  type AiDocumentItem,
+  type ServerSyncStatus,
 } from "@/lib/actions/gateways";
 
 export function useAiKnowledge() {

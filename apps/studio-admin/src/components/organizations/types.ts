@@ -56,6 +56,7 @@ export interface OrganizationFeatureFlags {
   whatsappEngine: boolean;
   aiCopilot: boolean;
   sandboxMode: boolean;
+  [key: string]: boolean;
 }
 
 export interface EnrichedOrganization {
@@ -117,4 +118,63 @@ export interface EnrichedOrganization {
   boosterDaysRemaining?: number;
   effectiveMaxOlts?: number;
   effectiveMaxOdps?: number;
+}
+
+export function enrichOrganization(
+  rawOrg: any,
+  stats: any = {}
+): EnrichedOrganization {
+  const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
+  const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
+
+  const persistedFlags = stats?.featureFlags as OrganizationFeatureFlags | undefined;
+  const resolvedFlags: OrganizationFeatureFlags = {
+    gisCore: persistedFlags?.gisCore ?? true,
+    oltPoller: persistedFlags?.oltPoller ?? (planTier !== "Starter"),
+    whatsappEngine: persistedFlags?.whatsappEngine ?? true,
+    aiCopilot: persistedFlags?.aiCopilot ?? (planTier === "Enterprise"),
+    sandboxMode: persistedFlags?.sandboxMode ?? false,
+  };
+
+  const resolvedPicName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
+  const resolvedPicEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `${rawOrg.slug}@kdua.net`;
+
+  const hasCustomDomain = Boolean(rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net"));
+  const customDomain = hasCustomDomain ? rawOrg.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
+
+  return {
+    id: rawOrg.id || `org-${rawOrg.slug}`,
+    name: rawOrg.name || rawOrg.slug,
+    slug: rawOrg.slug,
+    description: rawOrg.description,
+    address: rawOrg.address,
+    website: rawOrg.website,
+    logoUrl: rawOrg.logoUrl,
+    status: status,
+    planTier: planTier,
+    createdAt: rawOrg.createdAt || "2026-08-20",
+
+    picName: resolvedPicName,
+    picEmail: resolvedPicEmail,
+    picPhone: undefined,
+    slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+
+    maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
+    usedOlts: stats?.usedOlts ?? stats?.projectCount ?? 0,
+    maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
+    usedOdps: stats?.usedOdps ?? 0,
+    maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
+    usedStorageGb: stats?.usedStorageGb ?? 0,
+
+    customDomain: customDomain,
+    domainVerified: hasCustomDomain,
+    domainSslActive: hasCustomDomain,
+
+    featureFlags: resolvedFlags,
+
+    apiRateLimitUsed: stats?.apiRateLimitUsed ?? 0,
+    apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
+    apiLatencyMs: stats?.apiLatencyMs ?? 0,
+    trialDaysLeft: calculateTrialDaysLeft(rawOrg.trialExpiresAt, status),
+  };
 }

@@ -1,5 +1,5 @@
 import { 
-  OLT, ODC, ODP, Customer, PageResponse 
+  type OLT, type ODC, type ODP, type Customer, type PageResponse 
 } from "@/types/network";
 import { getBackendBaseUrl } from "../api-config";
 import { httpClient } from "../httpClient";

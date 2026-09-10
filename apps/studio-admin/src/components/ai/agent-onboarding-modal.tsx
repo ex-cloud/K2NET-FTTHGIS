@@ -30,10 +30,10 @@ import {
   fetchAgentPermissionsCatalog, 
   fetchAgentRolePresets, 
   saveAgentAuthorization,
-  PermissionCatalogData,
+  type PermissionCatalogData,
   PermissionDomainData,
-  RolePresetData,
-  AgentAuthorizationData
+  type RolePresetData,
+  type AgentAuthorizationData
 } from "@/lib/actions/gateways";
 import { cn } from "@/lib/utils";
 

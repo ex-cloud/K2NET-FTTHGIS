@@ -11,7 +11,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Button, Badge } from "@k2net/ui";
-import { ServerSyncStatus } from "@/lib/actions/gateways";
+import { type ServerSyncStatus } from "@/lib/actions/gateways";
 import { formatBytes } from "./types";
 
 interface AiKnowledgeSummaryBarProps {

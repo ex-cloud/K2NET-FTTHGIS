@@ -5,7 +5,7 @@ import { FileCode, Plus, Database } from "lucide-react";
 import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { AiPageWrapper } from "@/components/page-guards/ai-page-wrapper";
 import { AiTemplatesTab } from "@/components/ai/ai-templates-tab";
-import { KnowledgeTemplateItem } from "@/components/ai/types";
+import { type KnowledgeTemplateItem } from "@/components/ai/types";
 
 export default function AiTemplatesPage() {
   const router = useRouter();

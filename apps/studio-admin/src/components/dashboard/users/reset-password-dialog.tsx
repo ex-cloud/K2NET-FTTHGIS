@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react";
-import { User } from "@/types/user";
+import { type User } from "@/types/user";
 import {
   Dialog,
   DialogContent,

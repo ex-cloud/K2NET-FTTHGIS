@@ -15,11 +15,11 @@ import { Label } from "@k2net/ui";
 import {
   CATEGORIES,
   KNOWLEDGE_SCOPES,
-  KnowledgeScope,
-  KnowledgeStatus,
+  type KnowledgeScope,
+  type KnowledgeStatus,
 } from "./types";
 import {
-  AiDocumentItem,
+  type AiDocumentItem,
   getAiDocumentDetail,
   updateAiDocument,
 } from "@/lib/actions/gateways";

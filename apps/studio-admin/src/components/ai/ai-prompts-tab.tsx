@@ -43,8 +43,8 @@ import {
   deleteAiPrompt, 
   togglePinAiPrompt, 
   fetchAiTrendingTopics,
-  SuggestedPromptItem,
-  TrendingTopicItem
+  type SuggestedPromptItem,
+  type TrendingTopicItem
 } from "@/lib/actions/gateways";
 import { cn } from "@/lib/utils";
 

@@ -49,8 +49,7 @@ import { OrganizationPageWrapper } from "@/components/page-guards/organization-p
 import {
   type EnrichedOrganization,
   type OrganizationFeatureFlags,
-  type OrganizationStatus,
-  normalizePlanTier,
+  enrichOrganization,
 } from "@/components/organizations/types";
 import { getTenantUrl } from "@/lib/domain";
 import { cn } from "@/lib/utils";
@@ -66,56 +65,12 @@ export default function OrganizationFeaturesPage() {
   // Transform raw organizations to enriched type with persisted feature flags from backend
   const organizations: EnrichedOrganization[] = useMemo(() => {
     return (rawOrgs || []).map((o: Organization) => {
-      const planTier = normalizePlanTier(o.subscriptionPlan?.name);
-      const status = (o.status || "ACTIVE") as OrganizationStatus;
       const stats = allStats[o.slug] || allStats[o.id || ""] || {};
-
-      // Default feature flags based on persisted backend flags or plan tier defaults
-      const persistedFlags = stats.featureFlags as OrganizationFeatureFlags | undefined;
-      const defaultFlags: OrganizationFeatureFlags = {
-        gisCore: persistedFlags?.gisCore ?? true,
-        oltPoller: persistedFlags?.oltPoller ?? (planTier !== "Starter"),
-        whatsappEngine: persistedFlags?.whatsappEngine ?? true,
-        aiCopilot: persistedFlags?.aiCopilot ?? (planTier === "Enterprise"),
-        sandboxMode: persistedFlags?.sandboxMode ?? false,
-      };
-
-      const customFlags = flagsState[o.slug] || flagsState[o.id || ""] || defaultFlags;
-
+      const base = enrichOrganization(o, stats);
+      const customFlags = flagsState[o.slug] || flagsState[o.id || ""] || base.featureFlags;
       return {
-        id: o.id || `org-${o.slug}`,
-        name: o.name || o.slug,
-        slug: o.slug,
-        description: o.description,
-        address: o.address,
-        website: o.website,
-        logoUrl: o.logoUrl,
-        status: status,
-        planTier: planTier,
-        createdAt: o.createdAt || "2026-08-20",
-
-        picName: o.adminUsername ? `${o.adminUsername}` : "—",
-        picEmail: o.adminEmail || `${o.slug}@kdua.net`,
-        picPhone: "+62 812-8899-0011",
-        slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
-
-        maxOlts: o.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-        usedOlts: stats.usedOlts ?? 0,
-        maxOdps: o.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-        usedOdps: stats.usedOdps ?? 0,
-        maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-        usedStorageGb: stats.usedStorageGb ?? 0,
-
-        customDomain: o.website?.includes(".") && !o.website.includes("kdua.net") ? o.website.replace(/^https?:\/\//, "") : undefined,
-        domainVerified: true,
-        domainSslActive: true,
-
+        ...base,
         featureFlags: customFlags,
-
-        apiRateLimitUsed: stats.apiRateLimitUsed ?? 0,
-        apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-        apiLatencyMs: stats.apiLatencyMs ?? 0,
-        trialDaysLeft: status === "TRIAL" ? 12 : undefined,
       };
     });
   }, [rawOrgs, flagsState, allStats]);

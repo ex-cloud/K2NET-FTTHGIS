@@ -20,8 +20,8 @@ import {
   getSortedRowModel,
   createColumnHelper,
   flexRender,
-  SortingState,
-  VisibilityState,
+  type SortingState,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { type Task } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";

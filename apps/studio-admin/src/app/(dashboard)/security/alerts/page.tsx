@@ -1,6 +1,6 @@
 
 
-import { useSecuritySettings, SecurityEvent } from "@/hooks/useSecuritySettings";
+import { useSecuritySettings, type SecurityEvent } from "@/hooks/useSecuritySettings";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import {
@@ -30,7 +30,7 @@ import {
   Skeleton,
   ActionTooltip,
   UniversalContextMenu,
-  ContextMenuGroupConfig,
+  type ContextMenuGroupConfig,
 } from "@k2net/ui";
 import Map, { Marker } from "@k2net/map";
 

@@ -1,6 +1,6 @@
 
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Badge, Button } from "@k2net/ui";
 import { CreditCard, AlertTriangle, Clock, Zap, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";

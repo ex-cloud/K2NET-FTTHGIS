@@ -75,7 +75,7 @@ export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
   const [localUsers, setLocalUsers] = useState<TenantUser[]>([]);
 
   // Fetch real tenant users from backend
-  const { data: serverUsers = [], isLoading, refetch } = useQuery<TenantUser[]>({
+  const { data: serverUsers = [], isLoading } = useQuery<TenantUser[]>({
     queryKey: ["tenant-team-users", org.slug, session?.accessToken],
     queryFn: async () => {
       if (!session?.accessToken) return [];

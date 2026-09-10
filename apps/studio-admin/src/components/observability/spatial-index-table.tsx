@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Badge } from "@k2net/ui";
-import { SpatialIndex } from "@/hooks/useDbPerformance";
+import { type SpatialIndex } from "@/hooks/useDbPerformance";
 
 interface SpatialIndexTableProps {
   spatialIndexes: SpatialIndex[];

@@ -1,6 +1,6 @@
 
 
-import React from "react";
+
 import {
   Badge,
   Button,
@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@k2net/ui";
-import { Check, Loader2, AlertTriangle, RotateCcw } from "lucide-react";
+import { Check, AlertTriangle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { SubscriptionPlanInfo } from "./billing-types";
 

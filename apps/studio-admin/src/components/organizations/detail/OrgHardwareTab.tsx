@@ -32,15 +32,11 @@ import {
 } from "@k2net/ui";
 import {
   Network,
-  Plus,
   Sliders,
   Copy,
   Terminal,
   Zap,
-  Clock,
-  Sparkles,
   Loader2,
-  HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "../types";
