@@ -16,10 +16,14 @@ apps/api/src/main/resources/application-prod.properties
 # 🔴 DATA PERSISTEN (BESAR & BERISI DATA USER)
 # =============================================
 minio_data/
+# Ignore top-level backup/log data dirs but NOT source code folders inside apps/
 backups/
 docker/traefik/logs/
 logs/
 *.log
+# Exception: source code components named logs/ or backups/ inside apps/ MUST be tracked
+!apps/*/src/**/logs/
+!apps/*/src/**/backups/
 
 # =============================================
 # 🔴 DOKUMEN INTERNAL & CATATAN PRIBADI
