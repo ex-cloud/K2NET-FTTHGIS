@@ -2,7 +2,7 @@
 
 import { type ReactNode } from "react";
 import { PermissionGuard } from "@/hooks/use-permissions";
-import { Sparkles, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 interface AiPageWrapperProps {
   children: ReactNode;

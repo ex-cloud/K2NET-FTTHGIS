@@ -1,44 +1,18 @@
-
-
 import { useEffect, useState } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getRecentPayments, triggerPaymentReconciliation, type PaymentTransaction } from "@/lib/actions/gateways";
-import { 
-  CreditCard, 
-  Save, 
-  Loader2, 
-  Eye, 
-  EyeOff, 
-  Server, 
-  Lock, 
-  RefreshCw, 
-  Clock, 
-  Sparkles,
-  Copy
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
+import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
-import { PermissionGuard } from "@/hooks/use-permissions";
+import { PaymentConfigForm } from "@/components/gateways/payment/PaymentConfigForm";
+import { PaymentReconciliationCard } from "@/components/gateways/payment/PaymentReconciliationCard";
+import { PaymentTransactionsCard } from "@/components/gateways/payment/PaymentTransactionsCard";
 import { z } from "zod";
 
 const paymentSchema = z.object({
   XENDIT_API_KEY: z.string().startsWith("xnd_", "API Key Xendit harus diawali dengan 'xnd_'").min(16, "Xendit API Key minimal 16 karakter"),
   XENDIT_WEBHOOK_KEY: z.string().min(16, "Xendit Webhook Key minimal 16 karakter"),
-  CORE_API_URL: z.string().url("Format URL Core API tidak valid")
+  CORE_API_URL: z.string().url("Format URL Core API tidak valid"),
 });
-
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "Baru saja";
-  if (diffMins < 60) return `${diffMins} mnt lalu`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} jam lalu`;
-  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
 
 export default function PaymentGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
@@ -46,8 +20,6 @@ export default function PaymentGatewayPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showWebhookKey, setShowWebhookKey] = useState(false);
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
@@ -105,14 +77,14 @@ export default function PaymentGatewayPage() {
     e.preventDefault();
 
     const updates: Record<string, string> = {};
-    const validationData: Record<string, any> = {};
+    const validationData: Record<string, unknown> = {};
     const keysToUpdate = [
       "XENDIT_API_KEY",
       "XENDIT_WEBHOOK_KEY",
-      "CORE_API_URL"
+      "CORE_API_URL",
     ];
 
-    keysToUpdate.forEach(k => {
+    keysToUpdate.forEach((k) => {
       const currentValue = config[k] || "";
       const censoredValue = censored[k] || "";
       
@@ -127,7 +99,6 @@ export default function PaymentGatewayPage() {
       return;
     }
 
-    // Run partial validation using Zod
     try {
       const partialSchema = paymentSchema.partial();
       partialSchema.parse(validationData);
@@ -144,11 +115,7 @@ export default function PaymentGatewayPage() {
     try {
       const res = await updateGatewayConfigByKey("payment", updates);
       toast.success(res.message || "Konfigurasi payment berhasil disimpan!");
-      
-      setTimeout(() => {
-        fetchConfig();
-      }, 3000);
-
+      setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
       toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
@@ -175,280 +142,52 @@ export default function PaymentGatewayPage() {
     }
   };
 
-  const getPaymentContextMenuGroups = (tx: PaymentTransaction): ContextMenuGroupConfig[] => [
-    {
-      items: [
-        {
-          label: "Tanya AI Status Transaksi",
-          icon: Sparkles,
-          shortcut: "Ctrl+J",
-          onClick: () => {
-            window.dispatchEvent(
-              new CustomEvent("k2net-ai-prompt-input", {
-                detail: {
-                  prompt: `Analisa status transaksi pembayaran tagihan invoice ID ${tx.externalId}. Status: ${tx.status}, Tenant: ${tx.orgSlug}, Nominal: Rp ${tx.amount.toLocaleString("id-ID")}, Paket: ${tx.planName}. Berikan ringkasan audit rekonsiliasi.`,
-                },
-              })
-            );
-            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
-          },
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: "Salin External ID",
-          icon: Copy,
-          shortcut: "Ctrl+C",
-          onClick: () => {
-            navigator.clipboard.writeText(tx.externalId);
-            toast.success(`External ID ${tx.externalId} disalin!`);
-          },
-        },
-        {
-          label: "Salin Nominal Pembayaran",
-          icon: CreditCard,
-          shortcut: "Alt+C",
-          onClick: () => {
-            navigator.clipboard.writeText(String(tx.amount));
-            toast.success(`Nominal Rp ${tx.amount.toLocaleString("id-ID")} disalin!`);
-          },
-        },
-      ],
-    },
-  ];
-
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
-      <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
-        
-        {/* Header */}
-        <div className="flex items-center gap-4 border-b border-border pb-6">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-            <CreditCard className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Payment Gateway
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Urus integrasi pembayaran, kunci API Xendit, token webhook, serta sinkronisasi penagihan invoice.
-            </p>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-muted-foreground">Memuat konfigurasi payment gateway...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Form Column */}
-            <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
-              
-              {/* Xendit Keys */}
-              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-primary" /> Kredensial Provider Xendit
-                  </CardTitle>
-                  <CardDescription className="text-[10px] text-muted-foreground">
-                    Kredensial API Key dan Token Webhook dari Dashboard Xendit untuk memvalidasi callback pembayaran.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="XENDIT_API_KEY" className="text-xs text-muted-foreground">Xendit Secret API Key</Label>
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
-                      >
-                        {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        {showApiKey ? "Sembunyikan" : "Tampilkan"}
-                      </button>
-                    </div>
-                    <Input
-                      id="XENDIT_API_KEY"
-                      type={showApiKey ? "text" : "password"}
-                      value={config.XENDIT_API_KEY || ""}
-                      onChange={(e) => handleInputChange("XENDIT_API_KEY", e.target.value)}
-                      placeholder="xnd_development_xxxxxxxxxxxxxxxxxxxxxx"
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="XENDIT_WEBHOOK_KEY" className="text-xs text-muted-foreground">Xendit Webhook Verification Key</Label>
-                      <button
-                        type="button"
-                        onClick={() => setShowWebhookKey(!showWebhookKey)}
-                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
-                      >
-                        {showWebhookKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        {showWebhookKey ? "Sembunyikan" : "Tampilkan"}
-                      </button>
-                    </div>
-                    <Input
-                      id="XENDIT_WEBHOOK_KEY"
-                      type={showWebhookKey ? "text" : "password"}
-                      value={config.XENDIT_WEBHOOK_KEY || ""}
-                      onChange={(e) => handleInputChange("XENDIT_WEBHOOK_KEY", e.target.value)}
-                      placeholder="Webhook Verification Token..."
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Core System Integration */}
-              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Server className="w-4 h-4 text-primary" /> Integrasi Core System
-                  </CardTitle>
-                  <CardDescription className="text-[10px] text-muted-foreground">
-                    Endpoint API Core System (Spring Boot) yang digunakan untuk sinkronisasi status tagihan setelah pembayaran sukses.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="CORE_API_URL" className="text-xs text-muted-foreground">Core System Base URL</Label>
-                    <Input
-                      id="CORE_API_URL"
-                      type="text"
-                      value={config.CORE_API_URL || ""}
-                      onChange={(e) => handleInputChange("CORE_API_URL", e.target.value)}
-                      placeholder="http://127.0.0.1:9090"
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3">
-                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
-                  <Button 
-                    type="button" 
-                    onClick={fetchConfig} 
-                    variant="outline"
-                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                  >
-                    Reset Form
-                  </Button>
-                </ActionTooltip>
-                <PermissionGuard permission="system.gateway.manage">
-                  <ActionTooltip label="Simpan Konfigurasi Payment Gateway" shortcut="Ctrl+S">
-                    <Button 
-                      type="submit" 
-                      disabled={saving}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                    >
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      Save Configuration
-                    </Button>
-                  </ActionTooltip>
-                </PermissionGuard>
-              </div>
-
-            </form>
-
-            {/* Reconciliation panel / Live stats Column */}
-            <div className="space-y-6">
-              
-              {/* Reconciliation Panel */}
-              <Card glowingEffect className="bg-card border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rekonsiliasi Manual</CardTitle>
-                  <CardDescription className="text-[10px] text-muted-foreground">
-                    Picunya peninjauan status manual ke API Xendit jika webhook tertunda atau terlewat.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ActionTooltip label="Picukan Sinkronisasi Rekonsiliasi Xendit" shortcut="R">
-                    <Button 
-                      type="button"
-                      onClick={handleReconciliation}
-                      disabled={reconciling}
-                      variant="outline"
-                      className="w-full border-border/10 hover:border-primary/30 bg-background text-muted-foreground hover:text-foreground text-xs gap-2 transition-all py-5"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${reconciling ? "animate-spin text-primary" : ""}`} />
-                      Trigger Reconciliation
-                    </Button>
-                  </ActionTooltip>
-                  <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Terakhir berjalan otomatis: 15 menit yang lalu</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Transactions list */}
-              <Card glowingEffect className="bg-card border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                    Transaksi Terkini
-                    {txLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {txLoading ? (
-                    <div className="space-y-3">
-                      {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
-                      ))}
-                    </div>
-                  ) : transactions.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada riwayat transaksi.</p>
-                  ) : (
-                    transactions.map((tx) => (
-                      <UniversalContextMenu key={tx.id} groups={getPaymentContextMenuGroups(tx)}>
-                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-medium text-foreground truncate max-w-[140px] font-mono">
-                              {tx.externalId.split(":").pop()?.slice(0, 12)}
-                            </span>
-                            <span className="text-xs text-muted-foreground font-mono">
-                              Rp {tx.amount.toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center text-[9px] text-muted-foreground">
-                            <span>Org: {tx.orgSlug} ({tx.planName})</span>
-                            <div className="flex items-center gap-1.5">
-                              <Badge className={`text-[8px] px-1 py-0 border ${
-                                tx.status === "PAID" || tx.status === "SUCCESS"
-                                  ? "bg-primary/10 text-primary border-primary/20"
-                                  : tx.status === "PENDING"
-                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                  : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                              }`}>
-                                {tx.status}
-                              </Badge>
-                              <span>{formatRelativeTime(tx.createdAt)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </UniversalContextMenu>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+      <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
+        <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
+          <div className="flex items-center gap-4 border-b border-border pb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <CreditCard className="w-6 h-6" />
             </div>
-
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                Payment Gateway
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Urus integrasi pembayaran, kunci API Xendit, token webhook, serta sinkronisasi penagihan invoice.
+              </p>
+            </div>
           </div>
-        )}
 
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-xs text-muted-foreground">Memuat konfigurasi payment gateway...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <PaymentConfigForm
+                config={config}
+                saving={saving}
+                onInputChange={handleInputChange}
+                onSave={handleSave}
+                onReset={fetchConfig}
+              />
+              <div className="space-y-6">
+                <PaymentReconciliationCard
+                  reconciling={reconciling}
+                  onReconciliation={handleReconciliation}
+                />
+                <PaymentTransactionsCard
+                  transactions={transactions}
+                  loading={txLoading}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </GatewayPageWrapper>
   );
 }

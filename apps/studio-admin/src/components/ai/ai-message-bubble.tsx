@@ -12,6 +12,147 @@ interface MessageBubbleProps {
   message: ChatMessage;
 }
 
+interface ReasoningProps {
+  message: ChatMessage;
+  showThinking: boolean;
+  setShowThinking: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+function MessageReasoningAccordion({ message, showThinking, setShowThinking }: ReasoningProps) {
+  const hasReasoning = message.isThinking || message.thought || message.isStreaming || (message.sources && message.sources.length > 0);
+  if (!hasReasoning) return null;
+
+  return (
+    <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden w-full min-w-0 shadow-xs">
+      <button
+        type="button"
+        onClick={() => setShowThinking((prev) => !prev)}
+        className={cn(
+          "w-full px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold text-foreground/90 hover:text-foreground bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer",
+          showThinking && "border-b border-border/40"
+        )}
+      >
+        <span className="flex items-center gap-2">
+          <BrainCircuit className={cn("w-3.5 h-3.5 text-primary", message.isStreaming && "animate-pulse")} />
+          <span className="font-semibold text-foreground">
+            {message.isStreaming && !message.content ? "Menganalisis & Menalar..." : "Reasoned & Knowledge Grounding"}
+          </span>
+          {message.isStreaming && !message.content && (
+            <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />
+          )}
+        </span>
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground", showThinking ? "rotate-180" : "")} />
+      </button>
+
+      {showThinking && (
+        <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px] animate-in fade-in duration-150">
+          <div className="flex items-center gap-2 text-foreground/85">
+            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Searched FTTH technical knowledge base &amp; standards</span>
+          </div>
+          <div className="flex items-center gap-2 text-foreground/85">
+            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Cross-referenced GPON, OLT telemetries &amp; PostGIS GIS data</span>
+          </div>
+          <div className="flex items-center gap-2 text-foreground/85">
+            <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+            <span>Verified Zero-Trust security policies &amp; access scopes</span>
+          </div>
+
+          {message.isStreaming && !message.content && (
+            <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse pt-0.5">
+              <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
+              <span>{message.thinkingStage || "Mengevaluasi parameter teknis..."}</span>
+            </div>
+          )}
+
+          {message.thought && (
+            <div className="mt-2 pt-2 border-t border-border/50 text-[11px] font-sans text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto bg-muted/30 p-2.5 rounded-lg leading-relaxed">
+              {message.thought}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ActionToolbarProps {
+  message: ChatMessage;
+  feedback: "like" | "dislike" | null;
+  copied: boolean;
+  onFeedback: (type: "like" | "dislike") => void;
+  onCopy: () => void;
+}
+
+function MessageActionToolbar({ message, feedback, copied, onFeedback, onCopy }: ActionToolbarProps) {
+  if (message.role === "user" || message.isStreaming || !message.content) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-1 mt-1.5 text-muted-foreground">
+      <button
+        type="button"
+        onClick={() => onFeedback("like")}
+        className={cn(
+          "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+          feedback === "like" && "text-primary bg-primary/10"
+        )}
+        title="Good response (RLHF)"
+      >
+        <ThumbsUp className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onFeedback("dislike")}
+        className={cn(
+          "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+          feedback === "dislike" && "text-destructive bg-destructive/10"
+        )}
+        title="Bad response (RLHF)"
+      >
+        <ThumbsDown className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer"
+        title="Copy message"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+      {message.latencyMs && (
+        <span className="text-[10px] text-muted-foreground/60 font-mono ml-2">
+          {message.latencyMs}ms
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MessageBubbleContent({ message, isUser }: { message: ChatMessage; isUser: boolean }) {
+  if (isUser) {
+    return <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>;
+  }
+
+  return (
+    <>
+      {message.isStreaming && !message.content && !message.thought && (
+        <div className="flex gap-1.5 items-center h-5">
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0ms]" />
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:150ms]" />
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:300ms]" />
+        </div>
+      )}
+      {message.content && <AiMarkdownRenderer content={message.content} />}
+      {message.isStreaming && message.content && (
+        <span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse align-middle" />
+      )}
+    </>
+  );
+}
+
 export function MessageBubble({ message }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [showThinking, setShowThinking] = useState(false);
@@ -45,7 +186,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <div className={cn("flex gap-3 group w-full min-w-0", isUser && "flex-row-reverse")}>
-      {/* Avatar */}
       <div
         className={cn(
           "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-xs",
@@ -57,66 +197,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {isUser ? "U" : <Sparkles className="w-4 h-4" />}
       </div>
 
-      {/* Content */}
       <div className={cn("flex-1 min-w-0", isUser && "flex flex-col items-end")}>
-        {/* Reasoning accordion */}
-        {!isUser &&
-          (message.isThinking || message.thought || message.isStreaming ||
-            (message.sources && message.sources.length > 0)) && (
-            <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden w-full min-w-0 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setShowThinking(!showThinking)}
-                className={cn(
-                  "w-full px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold text-foreground/90 hover:text-foreground bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer",
-                  showThinking && "border-b border-border/40"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  <BrainCircuit className={cn("w-3.5 h-3.5 text-primary", message.isStreaming && "animate-pulse")} />
-                  <span className="font-semibold text-foreground">
-                    {message.isStreaming && !message.content ? "Menganalisis & Menalar..." : "Reasoned & Knowledge Grounding"}
-                  </span>
-                  {message.isStreaming && !message.content && (
-                    <Loader2 className="w-3 h-3 animate-spin text-primary ml-1" />
-                  )}
-                </span>
-                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground", showThinking ? "rotate-180" : "")} />
-              </button>
+        {!isUser && (
+          <MessageReasoningAccordion
+            message={message}
+            showThinking={showThinking}
+            setShowThinking={setShowThinking}
+          />
+        )}
 
-              {showThinking && (
-                <div className="px-3.5 py-2.5 bg-background/60 space-y-1.5 font-mono text-[11px] animate-in fade-in duration-150">
-                  <div className="flex items-center gap-2 text-foreground/85">
-                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Searched FTTH technical knowledge base &amp; standards</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-foreground/85">
-                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Cross-referenced GPON, OLT telemetries &amp; PostGIS GIS data</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-foreground/85">
-                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Verified Zero-Trust security policies &amp; access scopes</span>
-                  </div>
-
-                  {message.isStreaming && !message.content && (
-                    <div className="flex items-center gap-2 text-muted-foreground italic animate-pulse pt-0.5">
-                      <Loader2 className="w-3 h-3 animate-spin shrink-0 text-primary" />
-                      <span>{message.thinkingStage || "Mengevaluasi parameter teknis..."}</span>
-                    </div>
-                  )}
-
-                  {message.thought && (
-                    <div className="mt-2 pt-2 border-t border-border/50 text-[11px] font-sans text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto bg-muted/30 p-2.5 rounded-lg leading-relaxed">
-                      {message.thought}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-        {/* Message bubble */}
         <div
           className={cn(
             "rounded-2xl px-4 py-3 text-sm shadow-xs break-words",
@@ -125,65 +214,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               : "bg-card text-foreground border border-border rounded-tl-sm w-full min-w-0"
           )}
         >
-          {isUser ? (
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-          ) : (
-            <>
-              {message.isStreaming && !message.content && !message.thought && (
-                <div className="flex gap-1.5 items-center h-5">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:300ms]" />
-                </div>
-              )}
-              {message.content && <AiMarkdownRenderer content={message.content} />}
-              {message.isStreaming && message.content && (
-                <span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse align-middle" />
-              )}
-            </>
-          )}
+          <MessageBubbleContent message={message} isUser={isUser} />
         </div>
 
-        {/* Cloudflare-style action toolbar (Thumbs Up, Thumbs Down, Copy) */}
-        {!isUser && !message.isStreaming && message.content && (
-          <div className="flex items-center gap-1 mt-1.5 text-muted-foreground">
-            <button
-              type="button"
-              onClick={() => handleFeedback("like")}
-              className={cn(
-                "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
-                feedback === "like" && "text-primary bg-primary/10"
-              )}
-              title="Good response (RLHF)"
-            >
-              <ThumbsUp className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFeedback("dislike")}
-              className={cn(
-                "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
-                feedback === "dislike" && "text-destructive bg-destructive/10"
-              )}
-              title="Bad response (RLHF)"
-            >
-              <ThumbsDown className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer"
-              title="Copy message"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
-            </button>
-            {message.latencyMs && (
-              <span className="text-[10px] text-muted-foreground/60 font-mono ml-2">
-                {message.latencyMs}ms
-              </span>
-            )}
-          </div>
-        )}
+        <MessageActionToolbar
+          message={message}
+          feedback={feedback}
+          copied={copied}
+          onFeedback={handleFeedback}
+          onCopy={handleCopy}
+        />
       </div>
     </div>
   );

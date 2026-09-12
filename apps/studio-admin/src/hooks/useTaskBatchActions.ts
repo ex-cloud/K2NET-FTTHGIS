@@ -81,8 +81,9 @@ export function useTaskBatchActions({
         toast.success(`Updated ${count} tasks to ${status}`);
         setSelectedTaskIds(new Set());
         refresh();
-      } catch (err: any) {
-        toast.error("Batch status update failed: " + err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("Batch status update failed: " + msg);
         refresh();
       }
     },
@@ -105,8 +106,9 @@ export function useTaskBatchActions({
         toast.success(`Updated ${count} tasks to ${priority}`);
         setSelectedTaskIds(new Set());
         refresh();
-      } catch (err: any) {
-        toast.error("Batch priority update failed: " + err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("Batch priority update failed: " + msg);
         refresh();
       }
     },
@@ -129,8 +131,9 @@ export function useTaskBatchActions({
         toast.success(`Reassigned ${count} tasks`);
         setSelectedTaskIds(new Set());
         refresh();
-      } catch (err: any) {
-        toast.error("Batch assign failed: " + err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("Batch assign failed: " + msg);
         refresh();
       }
     },
@@ -153,8 +156,9 @@ export function useTaskBatchActions({
         toast.success(`Updated scope for ${count} tasks`);
         setSelectedTaskIds(new Set());
         refresh();
-      } catch (err: any) {
-        toast.error("Batch scope update failed: " + err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("Batch scope update failed: " + msg);
         refresh();
       }
     },
@@ -196,8 +200,9 @@ export function useTaskBatchActions({
       setSelectedTaskIds(new Set());
       setDeleteConfirmOpen(false);
       refresh();
-    } catch (err: any) {
-      toast.error("Gagal menghapus tugas: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Gagal menghapus tugas: " + msg);
       refresh();
     } finally {
       setDeleteLoading(false);

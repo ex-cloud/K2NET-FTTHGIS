@@ -1,8 +1,7 @@
 
 
 import * as React from "react";
-import { usePathname, useSearchParams } from "@/lib/navigation-compat";
-import { Link } from "@/lib/navigation-compat";
+import { usePathname, useSearchParams, Link } from "@/lib/navigation-compat";
 import {
   Users,
   ShieldCheck,
@@ -113,21 +112,140 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Trash2,
 };
 
+interface OrgCounts {
+  active: number;
+  trial: number;
+  provisioning: number;
+  suspended: number;
+}
+
+function getActiveSidebarKey(pathname: string | null): string | null {
+  if (!pathname) return null;
+  if (pathname.startsWith("/ai")) return "ai";
+  if (pathname.startsWith("/tasks")) return "tasks";
+  if (pathname.startsWith("/system")) return "system";
+
+  const includes = ["users", "security", "gateways", "observability", "settings", "logs", "organizations"];
+  for (const key of includes) {
+    if (pathname.includes(`/${key}`)) return key;
+  }
+  return null;
+}
+
+function isSidebarItemActive(
+  itemUrl: string,
+  pathname: string | null,
+  searchParams: { get: (key: string) => string | null; has: (key: string) => boolean }
+): boolean {
+  if (!pathname) return false;
+  if (itemUrl.includes("?")) {
+    const [itemPath, itemSearch] = itemUrl.split("?");
+    const itemParams = new URLSearchParams(itemSearch);
+    const pathMatch = pathname === itemPath || pathname === `/system${itemPath}`;
+    return pathMatch && Array.from(itemParams.keys()).every((k) => searchParams.get(k) === itemParams.get(k));
+  }
+
+  const isProjectsRoute =
+    itemUrl === "/tasks/projects" &&
+    (pathname.startsWith("/tasks/projects") || pathname.startsWith("/system/tasks/projects"));
+  const pathMatch = pathname === itemUrl || pathname === `/system${itemUrl}` || isProjectsRoute;
+
+  const hasTaskFilter =
+    searchParams.has("quick") ||
+    searchParams.has("scope") ||
+    searchParams.has("type") ||
+    searchParams.has("project");
+
+  const hasOrgFilter = searchParams.has("status") || searchParams.has("view");
+
+  if (itemUrl === "/organizations") {
+    return (pathname === "/organizations" || pathname === "/system/organizations") && !hasOrgFilter;
+  }
+  if (itemUrl === "/tasks") {
+    return (pathname === "/tasks" || pathname === "/system/tasks") && !hasTaskFilter;
+  }
+  return pathMatch;
+}
+
+function getOrgBadgeCount(url: string, orgCounts: OrgCounts): number | null {
+  if (url === "/organizations?status=ACTIVE") return orgCounts.active;
+  if (url === "/organizations?status=TRIAL" && orgCounts.trial > 0) return orgCounts.trial;
+  if (url === "/organizations?status=PROVISIONING" && orgCounts.provisioning > 0) return orgCounts.provisioning;
+  if (url === "/organizations?status=SUSPENDED" && orgCounts.suspended > 0) return orgCounts.suspended;
+  return null;
+}
+
+interface SidebarNavItemProps {
+  item: {
+    title: string;
+    url: string;
+    icon: string;
+    requiredPermission?: string | string[];
+  };
+  pathname: string | null;
+  searchParams: { get: (key: string) => string | null; has: (key: string) => boolean };
+  unreadB2BCount: number;
+  orgCounts: OrgCounts;
+}
+
+function SidebarNavItem({
+  item,
+  pathname,
+  searchParams,
+  unreadB2BCount,
+  orgCounts,
+}: SidebarNavItemProps) {
+  const isActive = isSidebarItemActive(item.url, pathname, searchParams);
+  const Icon = ICON_MAP[item.icon] || FileText;
+  const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
+  const orgBadgeCount = getOrgBadgeCount(item.url, orgCounts);
+
+  const orgBadgeStyle = item.url.includes("status=ACTIVE")
+    ? "bg-primary/10 text-primary border border-primary/20"
+    : item.url.includes("status=SUSPENDED")
+    ? "bg-destructive/10 text-destructive border border-destructive/20"
+    : "bg-muted text-muted-foreground border border-border";
+
+  return (
+    <Link
+      href={item.url}
+      className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
+        isActive
+          ? "bg-sidebar-accent text-foreground font-semibold border border-border/40"
+          : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
+      }`}
+    >
+      <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
+      <span className="truncate flex-1">{item.title}</span>
+
+      {isB2BLink && unreadB2BCount > 0 && (
+        <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
+          {unreadB2BCount}
+        </span>
+      )}
+
+      {orgBadgeCount !== null && (
+        <span className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${orgBadgeStyle}`}>
+          {orgBadgeCount}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export function SystemSecondarySidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const unreadB2BCount = useTaskStore((s) => s.unreadB2BCount);
 
-  // For the logs page, sync collapse state with the shared LogsFilter context
-  // so the PanelLeft button in LogsTopHeader can also toggle the sidebar.
   const { isSidebarCollapsed: ctxCollapsed, setIsSidebarCollapsed: ctxSetCollapsed } =
     useLogsFilter();
 
   const { organizations } = useOrganizations();
   const { canAccess } = usePermissions();
 
-  const orgCounts = React.useMemo(() => {
+  const orgCounts = React.useMemo<OrgCounts>(() => {
     if (!organizations) return { active: 0, trial: 0, provisioning: 0, suspended: 0 };
     return {
       active: organizations.filter((o) => o.status === "ACTIVE").length,
@@ -137,38 +255,13 @@ export function SystemSecondarySidebar() {
     };
   }, [organizations]);
 
-  // Determine active config key based on URL pathname
-  let activeKey: string | null = null;
-  if (pathname?.startsWith("/ai")) {
-    activeKey = "ai";
-  } else if (pathname?.includes("/users")) {
-    activeKey = "users";
-  } else if (pathname?.includes("/security")) {
-    activeKey = "security";
-  } else if (pathname?.includes("/gateways")) {
-    activeKey = "gateways";
-  } else if (pathname?.includes("/observability")) {
-    activeKey = "observability";
-  } else if (pathname?.includes("/settings")) {
-    activeKey = "settings";
-  } else if (pathname?.includes("/logs")) {
-    activeKey = "logs";
-  } else if (pathname?.startsWith("/tasks")) {
-    activeKey = "tasks";
-  } else if (pathname?.includes("/organizations")) {
-    activeKey = "organizations";
-  } else if (pathname?.startsWith("/system")) {
-    activeKey = "system";
-  }
-
+  const activeKey = getActiveSidebarKey(pathname);
   if (!activeKey) return null;
 
   const isLogsPage = activeKey === "logs";
   const currentConfig = SYSTEM_SIDEBAR_NAVIGATION[activeKey];
   if (!currentConfig && !isLogsPage) return null;
 
-  // When on logs page: use shared context state so PanelLeft in the top header
-  // (which calls setIsSidebarCollapsed from context) is in sync with this sidebar.
   const effectiveCollapsed = isLogsPage ? ctxCollapsed : isCollapsed;
   const handleCollapse = isLogsPage
     ? () => ctxSetCollapsed((prev) => !prev)
@@ -183,7 +276,6 @@ export function SystemSecondarySidebar() {
           <LogsFilterSidebar onCollapse={handleCollapse} />
         ) : (
           <>
-            {/* Title with Toggle */}
             <div className="py-5 border-b border-border/40 shrink-0 flex items-center justify-between px-5 min-w-[240px]">
               <h3 className="text-sm font-semibold text-foreground tracking-tight">
                 {currentConfig?.title}
@@ -210,106 +302,16 @@ export function SystemSecondarySidebar() {
                       <ChevronDown className="w-3 h-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-0.5 mt-2">
-                      {visibleItems.map((item, idx) => {
-                      // Support query-param-based active detection (e.g. /tasks?quick=active or /organizations?status=ACTIVE)
-                      let isActive: boolean;
-                      if (item.url.includes("?")) {
-                        const [itemPath, itemSearch] = item.url.split("?");
-                        const itemParams = new URLSearchParams(itemSearch);
-                        const pathMatch =
-                          pathname === itemPath ||
-                          pathname === `/system${itemPath}`;
-                        const itemKeys = Array.from(itemParams.keys());
-                        isActive =
-                          pathMatch &&
-                          itemKeys.every((k) => searchParams.get(k) === itemParams.get(k));
-                      } else {
-                        // No query params: active if on exact path or child route (e.g. /tasks/projects)
-                        const isProjectsRoute =
-                          item.url === "/tasks/projects" &&
-                          (pathname.startsWith("/tasks/projects") ||
-                            pathname.startsWith("/system/tasks/projects"));
-                        const pathMatch =
-                          pathname === item.url ||
-                          pathname === `/system${item.url}` ||
-                          isProjectsRoute;
-
-                        const hasTaskFilter =
-                          searchParams.has("quick") ||
-                          searchParams.has("scope") ||
-                          searchParams.has("type") ||
-                          searchParams.has("project");
-
-                        const hasOrgFilter =
-                          searchParams.has("status") ||
-                          searchParams.has("view");
-
-                        // For base pages (/organizations or /tasks), only active when no query filter
-                        if (item.url === "/organizations") {
-                          isActive =
-                            (pathname === "/organizations" || pathname === "/system/organizations") &&
-                            !hasOrgFilter;
-                        } else if (item.url === "/tasks") {
-                          isActive =
-                            (pathname === "/tasks" || pathname === "/system/tasks") &&
-                            !hasTaskFilter;
-                        } else {
-                          isActive = pathMatch;
-                        }
-                      }
-
-                      const Icon = ICON_MAP[item.icon] || FileText;
-                      const isB2BLink = item.url.includes("scope=TENANT_TO_PLATFORM");
-
-                      // Specific badges for organization sub-menu
-                      let orgBadgeCount: number | null = null;
-                      if (item.url === "/organizations?status=ACTIVE") {
-                        orgBadgeCount = orgCounts.active;
-                      } else if (item.url === "/organizations?status=TRIAL" && orgCounts.trial > 0) {
-                        orgBadgeCount = orgCounts.trial;
-                      } else if (item.url === "/organizations?status=PROVISIONING" && orgCounts.provisioning > 0) {
-                        orgBadgeCount = orgCounts.provisioning;
-                      } else if (item.url === "/organizations?status=SUSPENDED" && orgCounts.suspended > 0) {
-                        orgBadgeCount = orgCounts.suspended;
-                      }
-
-                      return (
-                        <Link
+                      {visibleItems.map((item, idx) => (
+                        <SidebarNavItem
                           key={idx}
-                          href={item.url}
-                          className={`px-2.5 py-1.5 text-xs rounded-md transition-all flex items-center gap-2.5 ${
-                            isActive
-                              ? "bg-sidebar-accent text-foreground font-semibold border border-border/40"
-                              : "text-foreground/85 dark:text-muted-foreground hover:bg-muted/50 hover:text-foreground font-medium"
-                          }`}
-                        >
-                          <Icon className={`w-3.5 h-3.5 ${isActive ? "text-foreground" : "text-foreground/70 dark:text-muted-foreground"}`} />
-                          <span className="truncate flex-1">{item.title}</span>
-
-                          {/* Task B2B Escalations Badge */}
-                          {isB2BLink && unreadB2BCount > 0 && (
-                            <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] h-4 flex items-center justify-center animate-pulse shrink-0">
-                              {unreadB2BCount}
-                            </span>
-                          )}
-
-                          {/* Organization Status Badge Counter */}
-                          {orgBadgeCount !== null && (
-                            <span
-                              className={`ml-auto text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
-                                item.url.includes("status=ACTIVE")
-                                  ? "bg-primary/10 text-primary border border-primary/20"
-                                  : item.url.includes("status=SUSPENDED")
-                                  ? "bg-destructive/10 text-destructive border border-destructive/20"
-                                  : "bg-muted text-muted-foreground border border-border"
-                              }`}
-                            >
-                              {orgBadgeCount}
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
+                          item={item}
+                          pathname={pathname}
+                          searchParams={searchParams}
+                          unreadB2BCount={unreadB2BCount}
+                          orgCounts={orgCounts}
+                        />
+                      ))}
                     </CollapsibleContent>
                   </Collapsible>
                 );
@@ -319,7 +321,6 @@ export function SystemSecondarySidebar() {
         )}
       </aside>
 
-      {/* Floating Expand button when sidebar is collapsed */}
       {isCollapsed && (
         <button
           onClick={() => setIsCollapsed(false)}

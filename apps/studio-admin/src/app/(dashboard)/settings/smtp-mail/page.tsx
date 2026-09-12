@@ -1,18 +1,15 @@
-
-
 import { useState } from "react";
-import { Badge, Button, Input, PageLayout, ActionTooltip } from "@k2net/ui";
-import { Mail, Save, RefreshCw, Eye, EyeOff, Play, CheckCircle2, XCircle } from "lucide-react";
+import { Badge, Button, PageLayout, ActionTooltip } from "@k2net/ui";
+import { Mail, Save, RefreshCw } from "lucide-react";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { SystemSettingsWrapper } from "@/components/page-guards/system-settings-wrapper";
-import { SettingsSection } from "../components/settings-section";
-import { SettingsFormRow } from "../components/settings-form-row";
 import { toast } from "sonner";
+import { SmtpCredentialsSection } from "../components/smtp-credentials-section";
+import { SmtpTestCard } from "../components/smtp-test-card";
 
 export default function SettingsSmtpMailPage() {
   const { settings, loading, updateSettings, isUpdating, testEmail, isTestingEmail, refresh } = useSystemSettings();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
   const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const getValue = (key: string, defaultValue: string = ""): string => {
@@ -69,7 +66,6 @@ export default function SettingsSmtpMailPage() {
   return (
     <SystemSettingsWrapper>
       <PageLayout variant="workspace" spaceY="space-y-6">
-        
         {/* Header Section */}
         <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
@@ -113,131 +109,24 @@ export default function SettingsSmtpMailPage() {
 
         {/* Form Content */}
         <div className="space-y-8 pb-16">
-          
-          {/* Top Main Form Container Card */}
-          <SettingsSection
-            title="SMTP Relay Credentials & Host"
-            description="Kredensial otentikasi server mail relay (Brevo / SendGrid / Custom SMTP Server)."
-          >
-            <SettingsFormRow
-              label="SMTP Hostname"
-              description="Alamat host server SMTP (misal: smtp-relay.brevo.com atau smtp.gmail.com)."
-            >
-              <Input
-                type="text"
-                value={getValue("smtp_host", "smtp-relay.brevo.com")}
-                onChange={(e) => handleInputChange("smtp_host", e.target.value)}
-                placeholder="smtp-relay.brevo.com"
-                className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm font-mono focus:border-primary"
-              />
-            </SettingsFormRow>
+          <SmtpCredentialsSection
+            smtpHost={getValue("smtp_host", "smtp-relay.brevo.com")}
+            onSmtpHostChange={(val) => handleInputChange("smtp_host", val)}
+            smtpPort={getValue("smtp_port", "587")}
+            onSmtpPortChange={(val) => handleInputChange("smtp_port", val)}
+            smtpUsername={getValue("smtp_username", "")}
+            onSmtpUsernameChange={(val) => handleInputChange("smtp_username", val)}
+            smtpPassword={getValue("smtp_password", "")}
+            onSmtpPasswordChange={(val) => handleInputChange("smtp_password", val)}
+            smtpFrom={getValue("smtp_from", "noreply@kdua.net")}
+            onSmtpFromChange={(val) => handleInputChange("smtp_from", val)}
+          />
 
-            <SettingsFormRow
-              label="SMTP Server Port"
-              description="Port TLS/STARTTLS (587 atau 2525) atau SSL (465)."
-            >
-              <Input
-                type="number"
-                value={getValue("smtp_port", "587")}
-                onChange={(e) => handleInputChange("smtp_port", e.target.value)}
-                placeholder="587"
-                className="bg-background/80 border-border text-foreground text-xs w-28 text-right font-mono focus:border-primary"
-              />
-            </SettingsFormRow>
-
-            <SettingsFormRow
-              label="SMTP Username"
-              description="Username atau ID akun otentikasi relay email."
-            >
-              <Input
-                type="text"
-                value={getValue("smtp_username", "")}
-                onChange={(e) => handleInputChange("smtp_username", e.target.value)}
-                placeholder="username@smtp-provider.com"
-                className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm font-mono focus:border-primary"
-              />
-            </SettingsFormRow>
-
-            <SettingsFormRow
-              label="SMTP Password / API Key"
-              description="Kata sandi otentikasi atau kunci API relay email."
-            >
-              <div className="relative w-full max-w-sm">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={getValue("smtp_password", "")}
-                  onChange={(e) => handleInputChange("smtp_password", e.target.value)}
-                  placeholder="••••••••••••••••"
-                  className="bg-background/80 border-border text-foreground text-xs pr-10 font-mono focus:border-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </SettingsFormRow>
-
-            <SettingsFormRow
-              label="Default Sender Email ('From' Address)"
-              description="Alamat email pengirim default yang tercantum pada penerima email."
-              divider={false}
-            >
-              <Input
-                type="email"
-                value={getValue("smtp_from", "noreply@kdua.net")}
-                onChange={(e) => handleInputChange("smtp_from", e.target.value)}
-                placeholder="noreply@kdua.net"
-                className="bg-background/80 border-border text-foreground text-xs w-full max-w-sm font-mono focus:border-primary"
-              />
-            </SettingsFormRow>
-          </SettingsSection>
-
-          {/* Bottom Separate Interactive Connection Test Card */}
-          <div className="bg-muted/10 border border-dashed border-border/80 p-6 rounded-xl space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <Play className="w-4 h-4 text-primary" /> Interactive Connection Test
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Uji konektivitas pengaturan SMTP secara langsung dengan menghubungkan socket ke host server SMTP.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestSmtp}
-                disabled={isTestingEmail}
-                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-4 gap-2 shrink-0"
-              >
-                {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                Run Connection Test
-              </Button>
-            </div>
-
-            {/* Diagnostic Output Console */}
-            {smtpTestResult && (
-              <div className={`p-4 rounded-lg border text-xs font-mono flex items-start gap-3 transition-all ${
-                smtpTestResult.success
-                  ? "bg-primary/10 text-primary/80 border-primary/20"
-                  : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-              }`}>
-                {smtpTestResult.success ? (
-                  <CheckCircle2 className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                )}
-                <div className="space-y-1">
-                  <p className="font-semibold">{smtpTestResult.success ? "CONNECTION SUCCESSFUL" : "CONNECTION FAILED"}</p>
-                  <p className="opacity-90">{smtpTestResult.message}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
+          <SmtpTestCard
+            onTest={handleTestSmtp}
+            isTestingEmail={isTestingEmail}
+            smtpTestResult={smtpTestResult}
+          />
         </div>
       </PageLayout>
     </SystemSettingsWrapper>

@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@k2net/ui";
-import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 
 interface TaskBatchDeleteDialogProps {
   open: boolean;

@@ -1,12 +1,15 @@
 
 
 import * as React from "react";
-import { Link } from "@/lib/navigation-compat";
-import { usePathname } from "@/lib/navigation-compat";
+import { Link, usePathname, Image } from "@/lib/navigation-compat";
 import { HelpCircle, MessageSquare, ShieldCheck, Menu, Search, Sparkles } from "lucide-react";
-import { Button } from "@k2net/ui";
-import { Separator } from "@k2net/ui";
-import { Sheet, SheetContent, SheetTrigger } from "@k2net/ui";
+import {
+  Button,
+  Separator,
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@k2net/ui";
 import { UserNav } from "../user-nav";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEMS, checkIsActive } from "./admin-sidebar";
@@ -14,7 +17,6 @@ import { useCommandPalette } from "../command-palette/command-palette-provider";
 
 import { getLogoUrl } from "@/lib/domain";
 
-import { Image } from "@/lib/navigation-compat";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getRouteHeaderTitle } from "@/lib/route-utils";
 

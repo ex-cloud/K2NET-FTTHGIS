@@ -1,3 +1,5 @@
+import type { Organization, OrganizationStats } from "@/hooks/useOrganizations";
+
 export type OrganizationStatus =
   | "ACTIVE"
   | "TRIAL"
@@ -115,66 +117,150 @@ export interface EnrichedOrganization {
   boosterOdps?: number;
   boosterOlts?: number;
   boosterExpiresAt?: string;
-  boosterDaysRemaining?: number;
   effectiveMaxOlts?: number;
   effectiveMaxOdps?: number;
 }
 
+export interface RawOrganizationInput {
+  id?: string;
+  name?: string;
+  slug?: string;
+  description?: string;
+  address?: string;
+  website?: string;
+  logoUrl?: string;
+  status?: string;
+  createdAt?: string;
+  adminUsername?: string;
+  adminEmail?: string;
+  trialExpiresAt?: string;
+  subscriptionPlan?: {
+    name?: string;
+    maxProjects?: number;
+    maxOdps?: number;
+    maxCustomers?: number;
+    maxOdcs?: number;
+  };
+}
+
+export interface OrganizationStatsInput {
+  usedOlts?: number;
+  projectCount?: number;
+  usedOdps?: number;
+  usedStorageGb?: number;
+  apiRateLimitUsed?: number;
+  apiLatencyMs?: number;
+  featureFlags?: OrganizationFeatureFlags | Record<string, boolean>;
+}
+
+function resolveSlaTier(tier: PlanTier): SlaTier {
+  if (tier === "Enterprise") return "Platinum (99.9%)";
+  if (tier === "Professional") return "Gold (99.5%)";
+  return "Standard (99.0%)";
+}
+
+function resolveFeatureFlags(
+  persisted?: Partial<OrganizationFeatureFlags>,
+  tier?: PlanTier
+): OrganizationFeatureFlags {
+  return {
+    gisCore: persisted?.gisCore ?? true,
+    oltPoller: persisted?.oltPoller ?? (tier !== "Starter"),
+    whatsappEngine: persisted?.whatsappEngine ?? true,
+    aiCopilot: persisted?.aiCopilot ?? (tier === "Enterprise"),
+    sandboxMode: persisted?.sandboxMode ?? false,
+  };
+}
+
+function resolveMaxQuotas(
+  tier: PlanTier,
+  plan?: RawOrganizationInput["subscriptionPlan"]
+) {
+  const isEnterprise = tier === "Enterprise";
+  const isStarter = tier === "Starter";
+
+  const defaultOlts = isEnterprise ? 20 : isStarter ? 2 : 5;
+  const defaultOdps = isEnterprise ? 10000 : isStarter ? 500 : 2500;
+  const maxStorageGb = isEnterprise ? 100 : isStarter ? 10 : 25;
+  const apiRateLimitMax = isEnterprise ? 20000 : isStarter ? 2000 : 5000;
+
+  return {
+    maxOlts: plan?.maxProjects || defaultOlts,
+    maxOdps: plan?.maxOdps || defaultOdps,
+    maxStorageGb,
+    apiRateLimitMax,
+  };
+}
+
+function resolveCustomDomain(website?: string): { customDomain?: string; hasCustomDomain: boolean } {
+  if (!website || !website.includes(".") || website.includes("kdua.net")) {
+    return { hasCustomDomain: false };
+  }
+  const cleanDomain = website.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  return { customDomain: cleanDomain, hasCustomDomain: true };
+}
+
+function resolvePicInfo(rawOrg: Organization | RawOrganizationInput): { picName: string; picEmail: string } {
+  const picName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
+  const picEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `${rawOrg.slug || "tenant"}@kdua.net`;
+  return { picName, picEmail };
+}
+
+function resolveUsedQuotas(stats: Partial<OrganizationStats> | OrganizationStatsInput) {
+  return {
+    usedOlts: stats?.usedOlts ?? stats?.projectCount ?? 0,
+    usedOdps: stats?.usedOdps ?? 0,
+    usedStorageGb: stats?.usedStorageGb ?? 0,
+    apiRateLimitUsed: stats?.apiRateLimitUsed ?? 0,
+    apiLatencyMs: stats?.apiLatencyMs ?? 0,
+  };
+}
+
 export function enrichOrganization(
-  rawOrg: any,
-  stats: any = {}
+  rawOrg: Organization | RawOrganizationInput,
+  stats: Partial<OrganizationStats> | OrganizationStatsInput = {}
 ): EnrichedOrganization {
   const planTier = normalizePlanTier(rawOrg.subscriptionPlan?.name);
   const status = (rawOrg.status || "ACTIVE") as OrganizationStatus;
-
-  const persistedFlags = stats?.featureFlags as OrganizationFeatureFlags | undefined;
-  const resolvedFlags: OrganizationFeatureFlags = {
-    gisCore: persistedFlags?.gisCore ?? true,
-    oltPoller: persistedFlags?.oltPoller ?? (planTier !== "Starter"),
-    whatsappEngine: persistedFlags?.whatsappEngine ?? true,
-    aiCopilot: persistedFlags?.aiCopilot ?? (planTier === "Enterprise"),
-    sandboxMode: persistedFlags?.sandboxMode ?? false,
-  };
-
-  const resolvedPicName = rawOrg.adminUsername && rawOrg.adminUsername.trim() !== "" ? rawOrg.adminUsername : "—";
-  const resolvedPicEmail = rawOrg.adminEmail && rawOrg.adminEmail.trim() !== "" ? rawOrg.adminEmail : `${rawOrg.slug}@kdua.net`;
-
-  const hasCustomDomain = Boolean(rawOrg.website?.includes(".") && !rawOrg.website.includes("kdua.net"));
-  const customDomain = hasCustomDomain ? rawOrg.website!.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : undefined;
+  const featureFlags = resolveFeatureFlags(stats?.featureFlags as Partial<OrganizationFeatureFlags> | undefined, planTier);
+  const quotas = resolveMaxQuotas(planTier, rawOrg.subscriptionPlan);
+  const { customDomain, hasCustomDomain } = resolveCustomDomain(rawOrg.website);
+  const { picName, picEmail } = resolvePicInfo(rawOrg);
+  const used = resolveUsedQuotas(stats);
 
   return {
-    id: rawOrg.id || `org-${rawOrg.slug}`,
-    name: rawOrg.name || rawOrg.slug,
-    slug: rawOrg.slug,
+    id: rawOrg.id || `org-${rawOrg.slug || "tenant"}`,
+    name: rawOrg.name || rawOrg.slug || "Organization",
+    slug: rawOrg.slug || "tenant",
     description: rawOrg.description,
     address: rawOrg.address,
     website: rawOrg.website,
     logoUrl: rawOrg.logoUrl,
-    status: status,
-    planTier: planTier,
+    status,
+    planTier,
     createdAt: rawOrg.createdAt || "2026-08-20",
 
-    picName: resolvedPicName,
-    picEmail: resolvedPicEmail,
+    picName,
+    picEmail,
     picPhone: undefined,
-    slaTier: planTier === "Enterprise" ? "Platinum (99.9%)" : planTier === "Professional" ? "Gold (99.5%)" : "Standard (99.0%)",
+    slaTier: resolveSlaTier(planTier),
 
-    maxOlts: rawOrg.subscriptionPlan?.maxProjects || (planTier === "Enterprise" ? 20 : planTier === "Starter" ? 2 : 5),
-    usedOlts: stats?.usedOlts ?? stats?.projectCount ?? 0,
-    maxOdps: rawOrg.subscriptionPlan?.maxOdps || (planTier === "Enterprise" ? 10000 : planTier === "Starter" ? 500 : 2500),
-    usedOdps: stats?.usedOdps ?? 0,
-    maxStorageGb: planTier === "Enterprise" ? 100 : planTier === "Starter" ? 10 : 25,
-    usedStorageGb: stats?.usedStorageGb ?? 0,
+    maxOlts: quotas.maxOlts,
+    usedOlts: used.usedOlts,
+    maxOdps: quotas.maxOdps,
+    usedOdps: used.usedOdps,
+    maxStorageGb: quotas.maxStorageGb,
+    usedStorageGb: used.usedStorageGb,
 
-    customDomain: customDomain,
+    customDomain,
     domainVerified: hasCustomDomain,
     domainSslActive: hasCustomDomain,
 
-    featureFlags: resolvedFlags,
+    featureFlags,
 
-    apiRateLimitUsed: stats?.apiRateLimitUsed ?? 0,
-    apiRateLimitMax: planTier === "Enterprise" ? 20000 : planTier === "Starter" ? 2000 : 5000,
-    apiLatencyMs: stats?.apiLatencyMs ?? 0,
+    apiRateLimitUsed: used.apiRateLimitUsed,
+    apiRateLimitMax: quotas.apiRateLimitMax,
+    apiLatencyMs: used.apiLatencyMs,
     trialDaysLeft: calculateTrialDaysLeft(rawOrg.trialExpiresAt, status),
   };
 }

@@ -140,8 +140,9 @@ export function useImpersonationCenter() {
           description: err.message || "Terjadi kesalahan sistem.",
         });
       }
-    } catch (e: any) {
-      toast.error("Kesalahan Jaringan", { description: e.message });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Terjadi kesalahan jaringan";
+      toast.error("Kesalahan Jaringan", { description: msg });
     } finally {
       setActionLoadingId(null);
     }

@@ -13,7 +13,7 @@ export interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>
   children?: React.ReactNode;
   className?: string;
   prefetch?: boolean;
-  search?: Record<string, any> | ((prev: any) => any);
+  search?: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>);
 }
 
 export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
@@ -35,7 +35,7 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
     }
 
     let targetPath = target;
-    let targetSearch: Record<string, any> | undefined = explicitSearch as any;
+    let targetSearch: Record<string, unknown> | undefined = explicitSearch as Record<string, unknown> | undefined;
 
     if (target.includes("?")) {
       const [path, queryString] = target.split("?");
@@ -109,11 +109,11 @@ export function useSearchParams(): URLSearchParams {
   // Hooks HARUS dipanggil tanpa kondisi — di luar try/catch
   const location = useLocation();
   const searchObj = location.search;
+  const locWithSearchStr = location as { searchStr?: string };
   const searchKey = typeof searchObj === "object" && searchObj !== null
     ? JSON.stringify(searchObj)
-    : String((location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : ""));
+    : String(locWithSearchStr?.searchStr || (typeof window !== "undefined" ? window.location.search : ""));
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const result = React.useMemo(() => {
     if (searchObj && typeof searchObj === "object" && Object.keys(searchObj).length > 0) {
       const sp = new URLSearchParams();
@@ -124,7 +124,7 @@ export function useSearchParams(): URLSearchParams {
       }
       return sp;
     }
-    const rawSearch = (location as any)?.searchStr || (typeof window !== "undefined" ? window.location.search : "");
+    const rawSearch = locWithSearchStr?.searchStr || (typeof window !== "undefined" ? window.location.search : "");
     return new URLSearchParams(rawSearch);
   }, [searchKey]); // eslint-disable-line react-hooks/exhaustive-deps
 

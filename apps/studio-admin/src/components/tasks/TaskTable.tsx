@@ -1,49 +1,39 @@
-
-
 import React, { useRef, useEffect } from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import {
   ClipboardList,
-  Calendar as CalendarIcon,
-  User,
   ChevronDown,
   ArrowUp,
   ArrowDown,
-  MoreHorizontal,
-  Edit,
-  Trash2,
   Loader2,
 } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
-  createColumnHelper,
   flexRender,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
 import { type Task } from "@/hooks/useTasksQuery";
 import { cn } from "@/lib/utils";
-import { ScopeBadge } from "./ScopeBadge";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  Calendar,
 } from "@k2net/ui";
 import { TaskContextMenu } from "./TaskContextMenu";
 import { type DisplayPropertiesState } from "./LinearDisplayOptionsPopover";
+import { getTaskTableColumns } from "./task-table-columns";
 
 interface TaskTableProps {
   tasks: Task[];
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
-  onRowClick: (task: Task) => void;     // now passes full Task object
-  onUpdateTask: (id: string, fields: any) => void;
+  onRowClick: (task: Task) => void;
+  onUpdateTask: (id: string, fields: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onFetchMore: () => void;
   assigneesList: string[];
@@ -54,7 +44,40 @@ interface TaskTableProps {
   displayProperties?: DisplayPropertiesState;
 }
 
-const columnHelper = createColumnHelper<Task>();
+const COLUMN_CLASSES: Record<string, string> = {
+  select: "w-9 shrink-0 justify-center",
+  title: "flex-1 min-w-[200px] justify-start",
+  scope: "w-28 shrink-0 justify-start",
+  type: "w-20 shrink-0 justify-start",
+  priority: "w-28 shrink-0 justify-start",
+  status: "w-32 shrink-0 justify-start",
+  assigneeId: "w-36 shrink-0 justify-start",
+  dueDate: "w-28 shrink-0 justify-start",
+  createdAt: "w-28 shrink-0 justify-start",
+};
+
+const TaskTableSkeletons: React.FC<{ displayProperties?: DisplayPropertiesState }> = ({
+  displayProperties,
+}) => (
+  <>
+    {Array.from({ length: 8 }).map((_, i) => (
+      <div
+        key={`skeleton-${i}`}
+        className="flex items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
+      >
+        <div className="w-9 shrink-0 px-2 py-4 flex items-center justify-center"><div className="h-3.5 w-3.5 bg-muted/60 rounded" /></div>
+        <div className="flex-1 min-w-[200px] px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
+        {displayProperties?.scope !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
+        {displayProperties?.type !== false && <div className="w-20 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>}
+        {displayProperties?.priority !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
+        {displayProperties?.status !== false && <div className="w-32 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+        {displayProperties?.assignee !== false && <div className="w-36 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+        {displayProperties?.dueDate !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+        {displayProperties?.created !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
+      </div>
+    ))}
+  </>
+);
 
 export function TaskTable({
   tasks,
@@ -75,7 +98,6 @@ export function TaskTable({
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  // ── IntersectionObserver for infinite scroll ────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -100,280 +122,18 @@ export function TaskTable({
     };
   }, [onFetchMore, hasMore, loadingMore, loading]);
 
-  // ── Columns ────────────────────────────────────────────────────────────────
-
   const columns = React.useMemo(
-    () => [
-      columnHelper.display({
-        id: "select",
-        header: () => {
-          const isAllSelected = tasks.length > 0 && selectedTaskIds && selectedTaskIds.size === tasks.length;
-          const isSomeSelected = selectedTaskIds && selectedTaskIds.size > 0 && selectedTaskIds.size < tasks.length;
-          return (
-            <div className="flex items-center justify-center w-full" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                checked={Boolean(isAllSelected)}
-                ref={(el) => {
-                  if (el) el.indeterminate = Boolean(isSomeSelected);
-                }}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onSelectAllTasks?.();
-                }}
-                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary"
-              />
-            </div>
-          );
-        },
-        cell: (info) => {
-          const taskId = info.row.original.id;
-          const isSelected = selectedTaskIds?.has(taskId);
-          return (
-            <div
-              className="flex items-center justify-center w-full h-full cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSelectTask?.(taskId, (e as any).shiftKey);
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={Boolean(isSelected)}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onToggleSelectTask?.(taskId, (e.nativeEvent as any).shiftKey);
-                }}
-                className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/40 cursor-pointer accent-primary pointer-events-auto"
-              />
-            </div>
-          );
-        },
+    () =>
+      getTaskTableColumns({
+        tasks,
+        selectedTaskIds,
+        onSelectAllTasks,
+        onToggleSelectTask,
+        onUpdateTask,
+        assigneesList,
+        onNavigate: (path) => router.push(path),
       }),
-      columnHelper.accessor("title", {
-        header: "Title",
-        cell: (info) => {
-          const task = info.row.original;
-          const isProjectRef = task.obsidianRef?.startsWith("PRJ-") || Boolean(task.parentTaskId);
-          return (
-            <div className="min-w-0 flex items-center gap-2">
-              <span className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
-                {task.title}
-              </span>
-              {task.obsidianRef && (
-                <span
-                  onClick={(e) => {
-                    if (isProjectRef) {
-                      e.stopPropagation();
-                      const target = task.parentTaskId ? `/tasks/projects/${task.parentTaskId}` : `/tasks/projects`;
-                      router.push(target);
-                    }
-                  }}
-                  className={cn(
-                    "text-[10px] font-mono px-1.5 py-0.5 rounded-md shrink-0 transition-colors",
-                    isProjectRef
-                      ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30 cursor-pointer"
-                      : "text-muted-foreground bg-muted/50 border border-border/40"
-                  )}
-                  title={isProjectRef ? "Buka detail project terkait" : undefined}
-                >
-                  {task.obsidianRef}
-                </span>
-              )}
-            </div>
-          );
-        },
-      }),
-      columnHelper.accessor("scope", {
-        header: "Scope",
-        cell: (info) => <ScopeBadge scope={info.getValue()} />,
-      }),
-      columnHelper.accessor("type", {
-        header: "Type",
-        cell: (info) => {
-          const rawType = info.getValue();
-          const label = rawType === "TICKET" ? "ISSUE" : rawType;
-          return (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold uppercase tracking-wider whitespace-nowrap">
-              {label}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor("priority", {
-        header: "Priority",
-        cell: (info) => {
-          const task = info.row.original;
-          const priority = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
-          return (
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "text-xs px-2 py-1 rounded-md font-semibold flex items-center gap-1 border border-transparent hover:border-border transition-all",
-                      priority.className
-                    )}
-                  >
-                    <span>{priority.label}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[120px]">
-                  {Object.keys(PRIORITY_CONFIG).map((pKey) => (
-                    <DropdownMenuItem
-                      key={pKey}
-                      onClick={() => onUpdateTask(task.id, { priority: pKey })}
-                      className="text-xs font-semibold cursor-pointer"
-                    >
-                      {PRIORITY_CONFIG[pKey].label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      }),
-      columnHelper.accessor("status", {
-        header: "Status",
-        cell: (info) => {
-          const task = info.row.original;
-          const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
-          const StatusIcon = status.icon;
-          return (
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-transparent hover:border-border transition-all",
-                      status.className
-                    )}
-                  >
-                    <StatusIcon className="h-3.5 w-3.5" />
-                    <span>{status.label}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[150px]">
-                  {Object.keys(STATUS_CONFIG).map((sKey) => {
-                    const val = STATUS_CONFIG[sKey];
-                    const Icon = val.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={sKey}
-                        onClick={() => onUpdateTask(task.id, { status: sKey })}
-                        className="text-xs flex items-center gap-2 cursor-pointer"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{val.label}</span>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      }),
-      columnHelper.accessor("assigneeId", {
-        header: "Assignee",
-        cell: (info) => {
-          const task = info.row.original;
-          return (
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground transition-all font-mono">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>
-                      {task.assigneeId ? `…${task.assigneeId.slice(-8)}` : "Assignee"}
-                    </span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[160px] max-h-[220px] overflow-y-auto">
-                  <DropdownMenuItem
-                    onClick={() => onUpdateTask(task.id, { assigneeId: null })}
-                    className="text-xs text-muted-foreground italic cursor-pointer"
-                  >
-                    Unassigned
-                  </DropdownMenuItem>
-                  {assigneesList.map((id) => (
-                    <DropdownMenuItem
-                      key={id}
-                      onClick={() => onUpdateTask(task.id, { assigneeId: id })}
-                      className="text-xs font-mono cursor-pointer"
-                    >
-                      {`…${id.slice(-8)}`}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      }),
-      columnHelper.accessor("dueDate", {
-        header: "Due Date",
-        cell: (info) => {
-          const task = info.row.original;
-          const formattedDate = task.dueDate
-            ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })
-            : "Set Date";
-          return (
-            <div onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-all whitespace-nowrap",
-                      task.dueDate
-                        ? "border-border bg-card text-foreground"
-                        : "border-dashed border-border text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>{formattedDate}</span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="p-0 border border-border shadow-xl">
-                  <Calendar
-                    mode="single"
-                    selected={task.dueDate ? new Date(task.dueDate) : undefined}
-                    onSelect={(date) => {
-                      onUpdateTask(task.id, {
-                        dueDate: date ? date.toISOString() : null,
-                      });
-                    }}
-                    className="bg-card rounded-xl"
-                  />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        },
-      }),
-      columnHelper.accessor("createdAt", {
-        header: "Created",
-        cell: (info) => {
-          const val = info.getValue();
-          if (!val) return <span className="text-muted-foreground text-xs">—</span>;
-          return (
-            <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-              {new Date(val).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
-          );
-        },
-      }),
-    ],
-    [assigneesList, onUpdateTask, selectedTaskIds, onToggleSelectTask, onSelectAllTasks, tasks]
+    [assigneesList, onUpdateTask, selectedTaskIds, onToggleSelectTask, onSelectAllTasks, tasks, router]
   );
 
   const columnVisibility = React.useMemo<VisibilityState>(() => {
@@ -400,23 +160,9 @@ export function TaskTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const COLUMN_CLASSES: Record<string, string> = {
-    select: "w-9 shrink-0 justify-center",
-    title: "flex-1 min-w-[200px] justify-start",
-    scope: "w-28 shrink-0 justify-start",
-    type: "w-20 shrink-0 justify-start",
-    priority: "w-28 shrink-0 justify-start",
-    status: "w-32 shrink-0 justify-start",
-    assigneeId: "w-36 shrink-0 justify-start",
-    dueDate: "w-28 shrink-0 justify-start",
-    createdAt: "w-28 shrink-0 justify-start",
-  };
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="min-w-[1000px] flex flex-col">
-      {/* ── Sticky Column Headers (Pinned to top on scroll) ────────────── */}
+      {/* ── Sticky Column Headers ──────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md flex border-b border-border items-stretch divide-x divide-border/45 text-[11px] font-semibold tracking-wider text-muted-foreground/80 shadow-xs">
         {table.getFlatHeaders().map((header) => {
           if (header.isPlaceholder) return null;
@@ -479,23 +225,7 @@ export function TaskTable({
       {/* ── Table Body ─────────────────────────────────────────────────── */}
       <div className="divide-y divide-border/40">
         {loading && tasks.length === 0 ? (
-          // Skeleton rows
-          Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="flex items-stretch divide-x divide-border/30 animate-pulse bg-background/30"
-            >
-              <div className="w-9 shrink-0 px-2 py-4 flex items-center justify-center"><div className="h-3.5 w-3.5 bg-muted/60 rounded" /></div>
-              <div className="flex-1 min-w-[200px] px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-[60%]" /></div>
-              {displayProperties?.scope !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
-              {displayProperties?.type !== false && <div className="w-20 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-12" /></div>}
-              {displayProperties?.priority !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-16" /></div>}
-              {displayProperties?.status !== false && <div className="w-32 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
-              {displayProperties?.assignee !== false && <div className="w-36 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
-              {displayProperties?.dueDate !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
-              {displayProperties?.created !== false && <div className="w-28 shrink-0 px-4 py-4 flex items-center"><div className="h-3.5 bg-muted/60 rounded w-20" /></div>}
-            </div>
-          ))
+          <TaskTableSkeletons displayProperties={displayProperties} />
         ) : tasks.length === 0 ? (
           <div className="px-4 py-16 text-center flex flex-col items-center gap-3 text-muted-foreground">
             <ClipboardList className="h-10 w-10 opacity-30" />
@@ -544,10 +274,8 @@ export function TaskTable({
         )}
       </div>
 
-      {/* ── Infinite Scroll Sentinel ────────────────────────────────────── */}
       <div ref={sentinelRef} className="h-1" />
 
-      {/* ── Loading more indicator ─────────────────────────────────────── */}
       {loadingMore && (
         <div className="flex items-center justify-center py-4 gap-2 text-xs text-muted-foreground border-t border-border/30">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -555,7 +283,6 @@ export function TaskTable({
         </div>
       )}
 
-      {/* ── End of list indicator ──────────────────────────────────────── */}
       {!hasMore && tasks.length > 0 && !loading && (
         <div className="flex items-center justify-center py-3 text-[11px] text-muted-foreground/60 border-t border-border/30">
           <span>All {tasks.length} tasks loaded</span>

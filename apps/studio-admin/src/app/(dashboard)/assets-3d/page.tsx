@@ -54,12 +54,16 @@ export default function Assets3DPage() {
       const obj = stored ? JSON.parse(stored) : { state: {} };
       obj.state = { ...obj.state, activeLoginHeroId: heroId };
       localStorage.setItem("ftth-ui-settings", JSON.stringify(obj));
-    } catch (_) {}
+    } catch {
+      // Ignored: LocalStorage might be disabled or full
+    }
 
     // 2. Set domain cookie for all browsers
     try {
       document.cookie = `k2net_global_login_hero=${heroId}; path=/; max-age=31536000; SameSite=Lax`;
-    } catch (_) {}
+    } catch {
+      // Ignored: Cookies might be restricted in some environments
+    }
 
     // 3. Persist to server API for all other browsers and guests
     try {
@@ -68,7 +72,9 @@ export default function Assets3DPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: heroId }),
       });
-    } catch (_) {}
+    } catch {
+      // Ignored: Server sync is best-effort fallback
+    }
 
     window.dispatchEvent(new Event("storage"));
 

@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw, ShieldAlert, CheckCircle2, Lock, Tag, Users } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Lock, Tag, Users } from "lucide-react";
 import { useSession } from "@/lib/auth-compat";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
-import { toast } from "sonner";
 import { Button, ActionTooltip } from "@k2net/ui";
 
 interface OrphanedPermission {
@@ -38,6 +37,197 @@ interface GovernanceHealthReport {
   checkedAt: string;
 }
 
+function OrphansTabContent({
+  permissions,
+  onSelect,
+}: {
+  permissions: OrphanedPermission[];
+  onSelect?: (code: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Permission berikut terdaftar dalam katalog database tetapi belum pernah dipetakan ke role manapun:
+      </p>
+      {permissions.length === 0 ? (
+        <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-primary" />
+          Semua permission telah dipetakan ke minimal satu role.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {permissions.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => onSelect && onSelect(p.code)}
+              className={`p-2.5 rounded-lg bg-card/60 border border-border flex flex-col justify-between ${
+                onSelect ? "cursor-pointer hover:border-amber-500/50 transition-colors" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-xs font-mono font-bold text-amber-400 break-all">{p.code}</span>
+                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {p.scope}
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground">{p.name || p.module}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyRolesTabContent({
+  roles,
+  onSelect,
+}: {
+  roles: EmptyRole[];
+  onSelect?: (roleName: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Role berikut ada di database tetapi memiliki 0 permission (tidak memiliki hak akses sama sekali):
+      </p>
+      {roles.length === 0 ? (
+        <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-primary" />
+          Semua role memiliki setidaknya satu hak akses aktif.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {roles.map((r) => (
+            <div
+              key={r.id}
+              onClick={() => onSelect && onSelect(r.name)}
+              className={`p-2.5 rounded-lg bg-card/60 border border-border flex flex-col justify-between ${
+                onSelect ? "cursor-pointer hover:border-amber-500/50 transition-colors" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-xs font-semibold text-foreground">{r.displayName || r.name}</span>
+                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">
+                  {r.scope}
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-muted-foreground">role_name: {r.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SimilarRolesTabContent({ pairs }: { pairs: SimilarRolePair[] }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Pasangan role dengan kemiripan nama &gt; 40% (potensi duplikasi atau kerancuan konsep):
+      </p>
+      {pairs.length === 0 ? (
+        <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-primary" />
+          Tidak ditemukan role dengan penamaan yang mirip.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {pairs.map((pair, idx) => (
+            <div
+              key={idx}
+              className="p-2.5 rounded-lg bg-card/60 border border-border flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-semibold text-foreground px-2 py-1 rounded bg-muted">
+                  {pair.roleA}
+                </span>
+                <span className="text-xs text-muted-foreground font-bold">vs</span>
+                <span className="text-xs font-mono font-semibold text-foreground px-2 py-1 rounded bg-muted">
+                  {pair.roleB}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-400 font-mono">
+                  {(pair.score * 100).toFixed(0)}% Mirip
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GovernanceHealthDetailsDrawer({
+  report,
+  activeTab,
+  setActiveTab,
+  onSelectPermission,
+  onSelectRole,
+}: {
+  report: GovernanceHealthReport;
+  activeTab: "orphans" | "empty_roles" | "similar";
+  setActiveTab: (tab: "orphans" | "empty_roles" | "similar") => void;
+  onSelectPermission?: (code: string) => void;
+  onSelectRole?: (roleName: string) => void;
+}) {
+  return (
+    <div className="mt-4 pt-4 border-t border-amber-500/20 space-y-4">
+      <div className="flex gap-2 border-b border-border/50 pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab("orphans")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            activeTab === "orphans"
+              ? "bg-amber-500/25 text-amber-300 font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Tag className="w-3.5 h-3.5" />
+          Orphaned Permissions ({report.orphanedPermissions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("empty_roles")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            activeTab === "empty_roles"
+              ? "bg-amber-500/25 text-amber-300 font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Lock className="w-3.5 h-3.5" />
+          Role Tanpa Permission ({report.rolesWithoutPermissions.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("similar")}
+          className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+            activeTab === "similar"
+              ? "bg-amber-500/25 text-amber-300 font-semibold"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Kemiripan Nama ({report.similarRoleNamePairs.length})
+        </button>
+      </div>
+
+      {activeTab === "orphans" && (
+        <OrphansTabContent permissions={report.orphanedPermissions} onSelect={onSelectPermission} />
+      )}
+      {activeTab === "empty_roles" && (
+        <EmptyRolesTabContent roles={report.rolesWithoutPermissions} onSelect={onSelectRole} />
+      )}
+      {activeTab === "similar" && (
+        <SimilarRolesTabContent pairs={report.similarRoleNamePairs} />
+      )}
+    </div>
+  );
+}
+
 export function GovernanceHealthBanner({
   onSelectPermission,
   onSelectRole,
@@ -60,9 +250,7 @@ export function GovernanceHealthBanner({
         token: session.accessToken,
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch governance health");
-      }
+      if (!res.ok) throw new Error("Failed to fetch governance health");
 
       const data: GovernanceHealthReport = await res.json();
       setReport(data);
@@ -148,155 +336,14 @@ export function GovernanceHealthBanner({
         </div>
       </div>
 
-      {/* EXPANDABLE DETAILS DRAWER */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-amber-500/20 space-y-4">
-          {/* TAB SWITCHER */}
-          <div className="flex gap-2 border-b border-border/50 pb-2 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab("orphans")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                activeTab === "orphans"
-                  ? "bg-amber-500/25 text-amber-300 font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Tag className="w-3.5 h-3.5" />
-              Orphaned Permissions ({report.orphanedPermissions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("empty_roles")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                activeTab === "empty_roles"
-                  ? "bg-amber-500/25 text-amber-300 font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Lock className="w-3.5 h-3.5" />
-              Role Tanpa Permission ({report.rolesWithoutPermissions.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("similar")}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-                activeTab === "similar"
-                  ? "bg-amber-500/25 text-amber-300 font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Kemiripan Nama ({report.similarRoleNamePairs.length})
-            </button>
-          </div>
-
-          {/* TAB CONTENT: ORPHANED PERMISSIONS */}
-          {activeTab === "orphans" && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Permission berikut terdaftar dalam katalog database tetapi belum pernah dipetakan ke role manapun:
-              </p>
-              {report.orphanedPermissions.length === 0 ? (
-                <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Semua permission telah dipetakan ke minimal satu role.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {report.orphanedPermissions.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => onSelectPermission && onSelectPermission(p.code)}
-                      className={`p-2.5 rounded-lg bg-card/60 border border-border flex flex-col justify-between ${
-                        onSelectPermission ? "cursor-pointer hover:border-amber-500/50 transition-colors" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-mono font-bold text-amber-400 break-all">{p.code}</span>
-                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {p.scope}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">{p.name || p.module}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB CONTENT: EMPTY ROLES */}
-          {activeTab === "empty_roles" && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Role berikut ada di database tetapi memiliki 0 permission (tidak memiliki hak akses sama sekali):
-              </p>
-              {report.rolesWithoutPermissions.length === 0 ? (
-                <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Semua role memiliki setidaknya satu hak akses aktif.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {report.rolesWithoutPermissions.map((r) => (
-                    <div
-                      key={r.id}
-                      onClick={() => onSelectRole && onSelectRole(r.name)}
-                      className={`p-2.5 rounded-lg bg-card/60 border border-border flex flex-col justify-between ${
-                        onSelectRole ? "cursor-pointer hover:border-amber-500/50 transition-colors" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-foreground">{r.displayName || r.name}</span>
-                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">
-                          {r.scope}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-mono text-muted-foreground">role_name: {r.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB CONTENT: SIMILAR ROLE NAMES */}
-          {activeTab === "similar" && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Pasangan role dengan kemiripan nama &gt; 40% (potensi duplikasi atau kerancuan konsep):
-              </p>
-              {report.similarRoleNamePairs.length === 0 ? (
-                <div className="p-3 bg-card/40 rounded-lg text-xs text-muted-foreground flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                  Tidak ditemukan role dengan penamaan yang mirip.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {report.similarRoleNamePairs.map((pair, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-lg bg-card/60 border border-border flex items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono font-semibold text-foreground px-2 py-1 rounded bg-muted">
-                          {pair.roleA}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-bold">vs</span>
-                        <span className="text-xs font-mono font-semibold text-foreground px-2 py-1 rounded bg-muted">
-                          {pair.roleB}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-amber-400 font-mono">
-                          {(pair.score * 100).toFixed(0)}% Mirip
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <GovernanceHealthDetailsDrawer
+          report={report}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onSelectPermission={onSelectPermission}
+          onSelectRole={onSelectRole}
+        />
       )}
     </div>
   );

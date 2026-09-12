@@ -1,8 +1,6 @@
 
 
-import { Badge } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Card } from "@k2net/ui";
+import { Badge, Button, Card } from "@k2net/ui";
 import { ExternalLink, Server } from "lucide-react";
 import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";

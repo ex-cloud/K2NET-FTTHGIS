@@ -36,53 +36,50 @@ const DEFAULT_STATS: DbPerfStats = {
   avgRowsPerCall: 0.0,
 };
 
+const NON_DASHBOARD_PATTERNS = [
+  "pg_stat_statements",
+  "pg_timezone_names",
+  "pg_is_in_recovery",
+  "pg_indexes",
+  "pg_roles",
+  "pg_catalog",
+  "information_schema",
+  "show transaction_read_only",
+  "alter role",
+  "pgbouncer",
+  "discard all",
+  "deallocate",
+];
+
+const NON_DASHBOARD_PREFIXES = ["begin", "commit", "rollback", "set "];
+
+const DASHBOARD_TABLE_PATTERNS = [
+  "projects",
+  "nodes",
+  "edges",
+  "customers",
+  "audit",
+  "organization",
+  "users",
+  "roles",
+  "permission",
+  "settings",
+  "members",
+  "olt",
+  "splice",
+  "payment",
+  "notification",
+  "get_mvt_data",
+  "fn_truncate_cache",
+];
+
 // Helper to classify dashboard vs non-dashboard queries
 const isDashboardQuery = (queryText: string): boolean => {
-  const q = queryText.toLowerCase();
-
-  // Non-dashboard patterns first (system/connection utilities)
-  if (
-    q.includes("pg_stat_statements") ||
-    q.includes("pg_timezone_names") ||
-    q.includes("pg_is_in_recovery") ||
-    q.includes("pg_indexes") ||
-    q.includes("pg_roles") ||
-    q.includes("pg_catalog") ||
-    q.includes("information_schema") ||
-    q.includes("show transaction_read_only") ||
-    q.includes("alter role") ||
-    q.includes("pgbouncer") ||
-    q.includes("discard all") ||
-    q.includes("deallocate") ||
-    q.startsWith("begin") ||
-    q.startsWith("commit") ||
-    q.startsWith("rollback") ||
-    q.startsWith("set ") ||
-    q.trim() === "select 1"
-  ) {
-    return false;
-  }
-
-  // Dashboard app tables/functions
-  return (
-    q.includes("projects") ||
-    q.includes("nodes") ||
-    q.includes("edges") ||
-    q.includes("customers") ||
-    q.includes("audit") ||
-    q.includes("organization") ||
-    q.includes("users") ||
-    q.includes("roles") ||
-    q.includes("permission") ||
-    q.includes("settings") ||
-    q.includes("members") ||
-    q.includes("olt") ||
-    q.includes("splice") ||
-    q.includes("payment") ||
-    q.includes("notification") ||
-    q.includes("get_mvt_data") ||
-    q.includes("fn_truncate_cache")
-  );
+  const q = queryText.toLowerCase().trim();
+  if (q === "select 1") return false;
+  if (NON_DASHBOARD_PREFIXES.some((prefix) => q.startsWith(prefix))) return false;
+  if (NON_DASHBOARD_PATTERNS.some((pattern) => q.includes(pattern))) return false;
+  return DASHBOARD_TABLE_PATTERNS.some((pattern) => q.includes(pattern));
 };
 
 export function useDbPerformance() {

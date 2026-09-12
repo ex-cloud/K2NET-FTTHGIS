@@ -8,16 +8,16 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-const memoryStore = new Map<string, CacheEntry<any>>();
+const memoryStore = new Map<string, CacheEntry<unknown>>();
 
 export const memoryCache = {
   get<T>(key: string, maxAgeMs = 60_000): T | null {
     const entry = memoryStore.get(key);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > maxAgeMs) {
-      return entry.data; // Stale data available for background revalidation
+      return entry.data as T; // Stale data available for background revalidation
     }
-    return entry.data;
+    return entry.data as T;
   },
 
   isFresh(key: string, maxAgeMs = 30_000): boolean {

@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
-import { Badge } from "@k2net/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@k2net/ui";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import { ArrowRight, ExternalLink, type LucideIcon } from "lucide-react";
 import { Link } from "@/lib/navigation-compat";
@@ -32,7 +38,7 @@ export function OverviewDevOpsCard({
   actionClassName,
   isExternal = false,
 }: OverviewDevOpsCardProps) {
-  const beamColor = accentClassName?.includes("text-sky") 
+  const _beamColor = accentClassName?.includes("text-sky") 
     ? "#0ea5e9" 
     : accentClassName?.includes("text-violet") 
     ? "#8b5cf6" 

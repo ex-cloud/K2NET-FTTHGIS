@@ -88,6 +88,9 @@ export function useServiceHealthSparkline(
   /** Tracks previous status per service key across polls to detect transitions */
   const prevStatusMapRef = useRef<Record<string, string>>({});
 
+  const startMs = timeRange?.startMs;
+  const endMs = timeRange?.endMs;
+
   const fetch_data = useCallback(async () => {
     if (!session?.accessToken) {
       setLoading(false);
@@ -98,7 +101,7 @@ export function useServiceHealthSparkline(
       // Run the dynamic checks and fetch Prometheus throughput concurrently
       const [serviceMap, throughput] = await Promise.all([
         getDetailedServicesHealth(session.accessToken),
-        getSystemThroughput(timeRange ? { startMs: timeRange.startMs, endMs: timeRange.endMs } : undefined),
+        getSystemThroughput(startMs !== undefined && endMs !== undefined ? { startMs, endMs } : undefined),
       ]);
 
       // Calculate latest total throughput
@@ -192,7 +195,7 @@ export function useServiceHealthSparkline(
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [session?.accessToken, timeRange?.startMs, timeRange?.endMs]);
+  }, [session?.accessToken, startMs, endMs]);
 
   useEffect(() => {
     mountedRef.current = true;

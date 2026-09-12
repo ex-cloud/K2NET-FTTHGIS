@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   X,
@@ -20,8 +18,6 @@ import { TaskEmojiPicker } from "./TaskEmojiPicker";
 import { TaskCommentsSection } from "./TaskCommentsSection";
 import { TaskPropertiesPanel } from "./TaskPropertiesPanel";
 
-// ─── Component Props ──────────────────────────────────────────────────────────
-
 interface TaskDetailSheetProps {
   task: Task | null;
   open: boolean;
@@ -31,6 +27,145 @@ interface TaskDetailSheetProps {
   assigneesList?: string[];
 }
 
+interface SheetHeaderBarProps {
+  task: Task;
+  saving: boolean;
+  isDirty: boolean;
+}
+
+const SheetHeaderBar: React.FC<SheetHeaderBarProps> = ({ task, saving, isDirty }) => (
+  <SheetHeader className="px-6 py-3.5 border-b border-border/60 bg-background/60 flex flex-row items-center justify-between space-y-0 shrink-0">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] font-semibold">{task.type}</span>
+      {task.obsidianRef && (
+        <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded text-[11px] font-semibold">{task.obsidianRef}</span>
+      )}
+      <ScopeBadge scope={task.scope} />
+      {saving && (
+        <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
+          <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+        </span>
+      )}
+      {isDirty && !saving && (
+        <span className="text-amber-500 text-[10px]">● Unsaved</span>
+      )}
+    </div>
+
+    <div className="flex items-center gap-2">
+      {task.obsidianRef && (
+        <a
+          href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${task.obsidianRef}`}
+          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
+          title="Buka di Obsidian Vault"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Obsidian
+        </a>
+      )}
+      <a
+        href={`/tasks/${task.id}`}
+        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
+        title="Buka Halaman Penuh"
+      >
+        <ArrowUpRight className="h-3.5 w-3.5" />
+        Full Page
+      </a>
+      <SheetClose asChild>
+        <button
+          type="button"
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          title="Tutup Sheet"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </SheetClose>
+    </div>
+  </SheetHeader>
+);
+
+interface LeftEditorProps {
+  title: string;
+  setTitle: (t: string) => void;
+  description: string;
+  setDescription: (d: string) => void;
+  markDirty: () => void;
+  titleEmoji: string;
+  setTitleEmoji: (e: string) => void;
+  showEmojiPicker: boolean;
+  setShowEmojiPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  task: Task;
+  comments: TaskComment[];
+  setComments: React.Dispatch<React.SetStateAction<TaskComment[]>>;
+}
+
+const LeftEditor: React.FC<LeftEditorProps> = ({
+  title,
+  setTitle,
+  description,
+  setDescription,
+  markDirty,
+  titleEmoji,
+  setTitleEmoji,
+  showEmojiPicker,
+  setShowEmojiPicker,
+  task,
+  comments,
+  setComments,
+}) => (
+  <div className="flex-1 min-w-0 space-y-6">
+    <div className="relative">
+      <div className="flex items-start gap-2">
+        <div className="relative shrink-0 mt-0.5">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker((v) => !v)}
+            className="text-xl hover:bg-muted/50 rounded-lg p-0.5 transition-colors"
+            title="Emoji"
+          >
+            {titleEmoji || "📋"}
+          </button>
+          {showEmojiPicker && (
+            <TaskEmojiPicker
+              onSelect={(e) => setTitleEmoji(e)}
+              onClose={() => setShowEmojiPicker(false)}
+            />
+          )}
+        </div>
+
+        <textarea
+          value={title}
+          onChange={(e) => { setTitle(e.target.value); markDirty(); }}
+          rows={1}
+          style={{ height: "auto" }}
+          onInput={(e) => {
+            const el = e.currentTarget;
+            el.style.height = "auto";
+            el.style.height = el.scrollHeight + "px";
+          }}
+          className="flex-1 text-lg font-bold text-foreground bg-transparent border-none outline-none resize-none leading-snug placeholder:text-muted-foreground/40 focus:ring-0"
+          placeholder="Issue title..."
+        />
+      </div>
+    </div>
+
+    <div>
+      <textarea
+        value={description}
+        onChange={(e) => { setDescription(e.target.value); markDirty(); }}
+        placeholder="Add description... (supports markdown)"
+        rows={4}
+        className="w-full text-xs text-foreground/85 bg-transparent border border-border/30 hover:border-border focus:border-primary/50 outline-none resize-none rounded-xl p-3.5 placeholder:text-muted-foreground/40 focus:ring-0 transition-colors leading-relaxed"
+      />
+    </div>
+
+    <TaskCommentsSection
+      taskId={task.id}
+      comments={comments}
+      onCommentAdded={(c) => setComments((prev) => [...prev, c])}
+    />
+  </div>
+);
+
 export function TaskDetailSheet({
   task,
   open,
@@ -39,7 +174,6 @@ export function TaskDetailSheet({
   onDelete: _onDelete,
   assigneesList = [],
 }: TaskDetailSheetProps) {
-  // Local edit states
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("");
@@ -54,7 +188,6 @@ export function TaskDetailSheet({
 
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync state when task changes
   useEffect(() => {
     if (task) {
       setTitle(task.title);
@@ -70,7 +203,6 @@ export function TaskDetailSheet({
 
   const markDirty = () => setIsDirty(true);
 
-  // Auto-save on title/description change
   useEffect(() => {
     if (!isDirty || !task) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -129,117 +261,25 @@ export function TaskDetailSheet({
         showCloseButton={false}
         className="w-full sm:max-w-2xl lg:max-w-3xl p-0 bg-background/95 backdrop-blur-xl border-l border-border/80 flex flex-col h-full overflow-hidden shadow-2xl"
       >
-        {/* ── Header ─────────────────────────────────────────────────── */}
-        <SheetHeader className="px-6 py-3.5 border-b border-border/60 bg-background/60 flex flex-row items-center justify-between space-y-0 shrink-0">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] font-semibold">{task.type}</span>
-            {task.obsidianRef && (
-              <span className="font-mono bg-primary/10 text-primary px-2 py-0.5 rounded text-[11px] font-semibold">{task.obsidianRef}</span>
-            )}
-            <ScopeBadge scope={task.scope} />
-            {saving && (
-              <span className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
-                <Loader2 className="h-3 w-3 animate-spin" /> Saving...
-              </span>
-            )}
-            {isDirty && !saving && (
-              <span className="text-amber-500 text-[10px]">● Unsaved</span>
-            )}
-          </div>
+        <SheetHeaderBar task={task} saving={saving} isDirty={isDirty} />
 
-          <div className="flex items-center gap-2">
-            {task.obsidianRef && (
-              <a
-                href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${task.obsidianRef}`}
-                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
-                title="Buka di Obsidian Vault"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Obsidian
-              </a>
-            )}
-            <a
-              href={`/tasks/${task.id}`}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted px-2 py-1 rounded-md transition-colors"
-              title="Buka Halaman Penuh"
-            >
-              <ArrowUpRight className="h-3.5 w-3.5" />
-              Full Page
-            </a>
-            <SheetClose asChild>
-              <button
-                type="button"
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                title="Tutup Sheet"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </SheetClose>
-          </div>
-        </SheetHeader>
-
-        {/* ── Content Body ───────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="p-6 flex flex-col md:flex-row gap-6">
+            <LeftEditor
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              markDirty={markDirty}
+              titleEmoji={titleEmoji}
+              setTitleEmoji={setTitleEmoji}
+              showEmojiPicker={showEmojiPicker}
+              setShowEmojiPicker={setShowEmojiPicker}
+              task={task}
+              comments={comments}
+              setComments={setComments}
+            />
 
-            {/* ── Left Column: Title, Description, Comments ────────── */}
-            <div className="flex-1 min-w-0 space-y-6">
-              {/* Title inline editable */}
-              <div className="relative">
-                <div className="flex items-start gap-2">
-                  <div className="relative shrink-0 mt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker((v) => !v)}
-                      className="text-xl hover:bg-muted/50 rounded-lg p-0.5 transition-colors"
-                      title="Emoji"
-                    >
-                      {titleEmoji || "📋"}
-                    </button>
-                    {showEmojiPicker && (
-                      <TaskEmojiPicker
-                        onSelect={(e) => setTitleEmoji(e)}
-                        onClose={() => setShowEmojiPicker(false)}
-                      />
-                    )}
-                  </div>
-
-                  <textarea
-                    value={title}
-                    onChange={(e) => { setTitle(e.target.value); markDirty(); }}
-                    rows={1}
-                    style={{ height: "auto" }}
-                    onInput={(e) => {
-                      const el = e.currentTarget;
-                      el.style.height = "auto";
-                      el.style.height = el.scrollHeight + "px";
-                    }}
-                    className="flex-1 text-lg font-bold text-foreground bg-transparent border-none outline-none resize-none leading-snug placeholder:text-muted-foreground/40 focus:ring-0"
-                    placeholder="Issue title..."
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <textarea
-                  value={description}
-                  onChange={(e) => { setDescription(e.target.value); markDirty(); }}
-                  placeholder="Add description... (supports markdown)"
-                  rows={4}
-                  className="w-full text-xs text-foreground/85 bg-transparent border border-border/30 hover:border-border focus:border-primary/50 outline-none resize-none rounded-xl p-3.5 placeholder:text-muted-foreground/40 focus:ring-0 transition-colors leading-relaxed"
-                />
-              </div>
-
-              {/* Comments & Activity (Modular Component) */}
-              <TaskCommentsSection
-                taskId={task.id}
-                comments={comments}
-                onCommentAdded={(c) => setComments((prev) => [...prev, c])}
-              />
-            </div>
-
-            {/* ── Right Column: Properties (Modular Component) ──────── */}
             <div className="w-full md:w-64 shrink-0">
               <TaskPropertiesPanel
                 task={task}
@@ -251,7 +291,6 @@ export function TaskDetailSheet({
                 onPropertyChange={handlePropertyChange}
               />
             </div>
-
           </div>
         </div>
       </SheetContent>

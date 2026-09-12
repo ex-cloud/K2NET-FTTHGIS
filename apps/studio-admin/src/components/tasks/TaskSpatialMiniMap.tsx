@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import Map, { Marker, NavigationControl } from "@k2net/map";
 import { useTheme } from "@/lib/navigation-compat";
-import { MapPin, ExternalLink, Copy, Navigation, Radio } from "lucide-react";
+import { MapPin, ExternalLink, Copy, Radio } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,7 @@ export function TaskSpatialMiniMap({
   longitude,
   assetCode,
   textContext,
-  title,
+  title: _title,
   className,
 }: TaskSpatialMiniMapProps) {
   const { resolvedTheme } = useTheme();

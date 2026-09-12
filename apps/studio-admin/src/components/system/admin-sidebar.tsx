@@ -21,8 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@k2net/ui";
-import { Link } from "@/lib/navigation-compat";
-import { usePathname } from "@/lib/navigation-compat";
+import { Link, usePathname } from "@/lib/navigation-compat";
 import { useSidebarMode } from "@/components/sidebar-mode-context";
 import { SidebarControl } from "@/components/sidebar-control";
 import { cn } from "@/lib/utils";

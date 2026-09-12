@@ -1,8 +1,7 @@
 
 
 import { useState } from "react";
-import { Badge } from "@k2net/ui";
-import { Card } from "@k2net/ui";
+import { Badge, Card } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 
 interface ThroughputDataPoint {

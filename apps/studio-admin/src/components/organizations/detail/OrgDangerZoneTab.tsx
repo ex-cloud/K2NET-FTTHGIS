@@ -50,8 +50,9 @@ export function OrgDangerZoneTab({
         const data = await res.json().catch(() => ({}));
         toast.error(`Gagal reset realm: ${data.message || "Terjadi kesalahan pada server"}`);
       }
-    } catch (e: any) {
-      toast.error(`Gagal sinkronisasi realm: ${e.message || "Koneksi terputus"}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Koneksi terputus";
+      toast.error(`Gagal sinkronisasi realm: ${msg}`);
     } finally {
       setResettingRealm(false);
     }

@@ -32,11 +32,207 @@ const MONTH_NAMES_SHORT = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
+function parseQuickDateInput(text: string): string | null {
+  const val = text.trim().toLowerCase();
+  if (!val) return null;
+
+  const now = new Date();
+  if (val === "today") {
+    return now.toISOString().split("T")[0];
+  }
+  if (val === "tomorrow") {
+    now.setDate(now.getDate() + 1);
+    return now.toISOString().split("T")[0];
+  }
+  if (val === "next week") {
+    now.setDate(now.getDate() + 7);
+    return now.toISOString().split("T")[0];
+  }
+  if (val === "next month") {
+    now.setMonth(now.getMonth() + 1);
+    return now.toISOString().split("T")[0];
+  }
+  if (val.startsWith("q1")) return `${now.getFullYear()}-03-31`;
+  if (val.startsWith("q2")) return `${now.getFullYear()}-06-30`;
+  if (val.startsWith("q3")) return `${now.getFullYear()}-09-30`;
+  if (val.startsWith("q4")) return `${now.getFullYear()}-12-31`;
+
+  const parsed = new Date(val);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split("T")[0];
+  }
+  return null;
+}
+
+function MonthPickerView({
+  viewYear,
+  setViewYear,
+  parsedSelectedDate,
+  onSelectDate,
+}: {
+  viewYear: number;
+  setViewYear: React.Dispatch<React.SetStateAction<number>>;
+  parsedSelectedDate: Date | null;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2 px-1">
+        <span className="font-semibold text-foreground text-xs">{viewYear}</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewYear((y) => y - 1)}
+            className="p-1 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewYear((y) => y + 1)}
+            className="p-1 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 text-center">
+        {MONTH_NAMES_SHORT.map((mShort, idx) => {
+          const dStr = `${viewYear}-${String(idx + 1).padStart(2, "0")}-01`;
+          const isCurrentMonthSelected =
+            parsedSelectedDate &&
+            parsedSelectedDate.getFullYear() === viewYear &&
+            parsedSelectedDate.getMonth() === idx;
+
+          return (
+            <button
+              key={mShort}
+              type="button"
+              onClick={() => onSelectDate(dStr)}
+              className={cn(
+                "py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                isCurrentMonthSelected
+                  ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                  : "text-foreground hover:bg-muted/60"
+              )}
+            >
+              {mShort}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function QuarterPickerView({
+  viewYear,
+  onSelectDate,
+}: {
+  viewYear: number;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  const quarters = [
+    { label: "Q1 (Jan - Mar)", endMonth: "03-31" },
+    { label: "Q2 (Apr - Jun)", endMonth: "06-30" },
+    { label: "Q3 (Jul - Sep)", endMonth: "09-30" },
+    { label: "Q4 (Oct - Dec)", endMonth: "12-31" },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2 px-1">
+        <span className="font-semibold text-foreground text-xs">{viewYear} Quarters</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {quarters.map((q, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => onSelectDate(`${viewYear}-${q.endMonth}`)}
+            className="p-2 rounded-xl border border-border/50 hover:border-primary/50 bg-card hover:bg-muted/40 text-left transition-all cursor-pointer"
+          >
+            <span className="font-semibold text-foreground block text-xs">Q{idx + 1}</span>
+            <span className="text-[10px] text-muted-foreground">{q.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HalfYearPickerView({
+  viewYear,
+  onSelectDate,
+}: {
+  viewYear: number;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  const halfYears = [
+    { label: "H1 (Jan - Jun)", endMonth: "06-30" },
+    { label: "H2 (Jul - Dec)", endMonth: "12-31" },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2 px-1">
+        <span className="font-semibold text-foreground text-xs">{viewYear} Half-years</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {halfYears.map((h, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => onSelectDate(`${viewYear}-${h.endMonth}`)}
+            className="p-2 rounded-xl border border-border/50 hover:border-primary/50 bg-card hover:bg-muted/40 text-left transition-all cursor-pointer"
+          >
+            <span className="font-semibold text-foreground block text-xs">H{idx + 1}</span>
+            <span className="text-[10px] text-muted-foreground">{h.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function YearPickerView({
+  viewYear,
+  onSelectDate,
+}: {
+  viewYear: number;
+  onSelectDate: (dateStr: string) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2 px-1">
+        <span className="font-semibold text-foreground text-xs">Select Year</span>
+      </div>
+      <div className="grid grid-cols-3 gap-1.5 text-center">
+        {[2025, 2026, 2027, 2028, 2029, 2030].map((yr) => (
+          <button
+            key={yr}
+            type="button"
+            onClick={() => onSelectDate(`${yr}-12-31`)}
+            className={cn(
+              "py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              viewYear === yr
+                ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                : "text-foreground hover:bg-muted/60"
+            )}
+          >
+            {yr}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LinearDatePicker({
   type,
   value,
   onChange,
-  referenceDate,
+  referenceDate: _referenceDate,
   className,
   buttonClassName,
 }: LinearDatePickerProps) {
@@ -44,74 +240,39 @@ export function LinearDatePicker({
   const [granularity, setGranularity] = useState<DateGranularity>("Day");
   const [textInput, setTextInput] = useState("");
 
-  // Parse initial selected date
   const parsedSelectedDate = useMemo(() => {
     if (!value) return null;
     const d = new Date(value);
     return isNaN(d.getTime()) ? null : d;
   }, [value]);
 
-  // Current viewing year for Month/Quarter/Year tabs
   const [viewYear, setViewYear] = useState(() => {
     if (parsedSelectedDate) return parsedSelectedDate.getFullYear();
     return new Date().getFullYear();
   });
 
-  // When open changes, sync viewYear to selected date or today
   React.useEffect(() => {
     if (open) {
-      if (parsedSelectedDate) {
-        setViewYear(parsedSelectedDate.getFullYear());
-      } else {
-        setViewYear(new Date().getFullYear());
-      }
+      setViewYear(parsedSelectedDate ? parsedSelectedDate.getFullYear() : new Date().getFullYear());
       setTextInput("");
     }
   }, [open, parsedSelectedDate]);
 
-  // Date selection handler
   const handleSelectDate = (dateStr: string) => {
     onChange(dateStr);
     setOpen(false);
   };
 
-  // Text input submit handler
   const handleTextInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      const val = textInput.trim().toLowerCase();
-      if (!val) return;
-
-      const now = new Date();
-      if (val === "today") {
-        handleSelectDate(now.toISOString().split("T")[0]);
-      } else if (val === "tomorrow") {
-        now.setDate(now.getDate() + 1);
-        handleSelectDate(now.toISOString().split("T")[0]);
-      } else if (val === "next week") {
-        now.setDate(now.getDate() + 7);
-        handleSelectDate(now.toISOString().split("T")[0]);
-      } else if (val === "next month") {
-        now.setMonth(now.getMonth() + 1);
-        handleSelectDate(now.toISOString().split("T")[0]);
-      } else if (val.startsWith("q1")) {
-        handleSelectDate(`${now.getFullYear()}-03-31`);
-      } else if (val.startsWith("q2")) {
-        handleSelectDate(`${now.getFullYear()}-06-30`);
-      } else if (val.startsWith("q3")) {
-        handleSelectDate(`${now.getFullYear()}-09-30`);
-      } else if (val.startsWith("q4")) {
-        handleSelectDate(`${now.getFullYear()}-12-31`);
-      } else {
-        const parsed = new Date(val);
-        if (!isNaN(parsed.getTime())) {
-          handleSelectDate(parsed.toISOString().split("T")[0]);
-        }
+      const parsedStr = parseQuickDateInput(textInput);
+      if (parsedStr) {
+        handleSelectDate(parsedStr);
       }
     }
   };
 
-  // Label display
   const displayLabel = useMemo(() => {
     if (!value) {
       if (type === "start") return "Start";
@@ -163,7 +324,6 @@ export function LinearDatePicker({
           sideOffset={6}
           className="w-[280px] p-3 bg-popover/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl z-[1000] text-xs animate-in fade-in-0 zoom-in-95"
         >
-          {/* Header Title */}
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/40">
             <span className="font-semibold text-foreground text-xs capitalize">
               {type === "start" ? "Start date" : type === "target" ? "Target date" : "Due date"}
@@ -179,7 +339,6 @@ export function LinearDatePicker({
             )}
           </div>
 
-          {/* Quick Input Box */}
           <div className="mb-2.5">
             <input
               type="text"
@@ -191,7 +350,6 @@ export function LinearDatePicker({
             />
           </div>
 
-          {/* Granularity Tabs (Linear Standard) */}
           <div className="flex items-center justify-between p-0.5 bg-muted/40 rounded-lg mb-2.5 border border-border/30">
             {(["Day", "Month", "Quarter", "Half-year", "Year"] as DateGranularity[]).map((tab) => (
               <button
@@ -210,7 +368,6 @@ export function LinearDatePicker({
             ))}
           </div>
 
-          {/* ── View 1: Day Calendar (Using Shared @k2net/ui Calendar Component) ──────── */}
           {granularity === "Day" && (
             <div className="relative flex justify-center w-full">
               <Calendar
@@ -227,132 +384,25 @@ export function LinearDatePicker({
             </div>
           )}
 
-          {/* ── View 2: Month Picker ────────────────────────────────────────── */}
           {granularity === "Month" && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="font-semibold text-foreground text-xs">{viewYear}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setViewYear((y) => y - 1)}
-                    className="p-1 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewYear((y) => y + 1)}
-                    className="p-1 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 text-center">
-                {MONTH_NAMES_SHORT.map((mShort, idx) => {
-                  const dStr = `${viewYear}-${String(idx + 1).padStart(2, "0")}-01`;
-                  const isCurrentMonthSelected =
-                    parsedSelectedDate &&
-                    parsedSelectedDate.getFullYear() === viewYear &&
-                    parsedSelectedDate.getMonth() === idx;
-
-                  return (
-                    <button
-                      key={mShort}
-                      type="button"
-                      onClick={() => handleSelectDate(dStr)}
-                      className={cn(
-                        "py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                        isCurrentMonthSelected
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                          : "text-foreground hover:bg-muted/60"
-                      )}
-                    >
-                      {mShort}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <MonthPickerView
+              viewYear={viewYear}
+              setViewYear={setViewYear}
+              parsedSelectedDate={parsedSelectedDate}
+              onSelectDate={handleSelectDate}
+            />
           )}
 
-          {/* ── View 3: Quarter Picker ──────────────────────────────────────── */}
           {granularity === "Quarter" && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="font-semibold text-foreground text-xs">{viewYear} Quarters</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Q1 (Jan - Mar)", endMonth: "03-31" },
-                  { label: "Q2 (Apr - Jun)", endMonth: "06-30" },
-                  { label: "Q3 (Jul - Sep)", endMonth: "09-30" },
-                  { label: "Q4 (Oct - Dec)", endMonth: "12-31" },
-                ].map((q, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectDate(`${viewYear}-${q.endMonth}`)}
-                    className="p-2 rounded-xl border border-border/50 hover:border-primary/50 bg-card hover:bg-muted/40 text-left transition-all cursor-pointer"
-                  >
-                    <span className="font-semibold text-foreground block text-xs">Q{idx + 1}</span>
-                    <span className="text-[10px] text-muted-foreground">{q.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <QuarterPickerView viewYear={viewYear} onSelectDate={handleSelectDate} />
           )}
 
-          {/* ── View 4: Half-year Picker ─────────────────────────────────────── */}
           {granularity === "Half-year" && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="font-semibold text-foreground text-xs">{viewYear} Half-years</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "H1 (Jan - Jun)", endMonth: "06-30" },
-                  { label: "H2 (Jul - Dec)", endMonth: "12-31" },
-                ].map((h, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectDate(`${viewYear}-${h.endMonth}`)}
-                    className="p-2 rounded-xl border border-border/50 hover:border-primary/50 bg-card hover:bg-muted/40 text-left transition-all cursor-pointer"
-                  >
-                    <span className="font-semibold text-foreground block text-xs">H{idx + 1}</span>
-                    <span className="text-[10px] text-muted-foreground">{h.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <HalfYearPickerView viewYear={viewYear} onSelectDate={handleSelectDate} />
           )}
 
-          {/* ── View 5: Year Picker ─────────────────────────────────────────── */}
           {granularity === "Year" && (
-            <div>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="font-semibold text-foreground text-xs">Select Year</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 text-center">
-                {[2025, 2026, 2027, 2028, 2029, 2030].map((yr) => (
-                  <button
-                    key={yr}
-                    type="button"
-                    onClick={() => handleSelectDate(`${yr}-12-31`)}
-                    className={cn(
-                      "py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                      viewYear === yr
-                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                        : "text-foreground hover:bg-muted/60"
-                    )}
-                  >
-                    {yr}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <YearPickerView viewYear={viewYear} onSelectDate={handleSelectDate} />
           )}
         </DropdownMenuContent>
       </DropdownMenu>

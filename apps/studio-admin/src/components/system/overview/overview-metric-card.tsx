@@ -15,7 +15,7 @@ export function OverviewMetricCard({
   footerLinkHref,
   footerLinkLabel,
 }: OverviewMetricCardProps) {
-  const beamColor = accentClassName?.includes("text-sky") 
+  const _beamColor = accentClassName?.includes("text-sky") 
     ? "#0ea5e9" 
     : accentClassName?.includes("text-violet") 
     ? "#8b5cf6" 

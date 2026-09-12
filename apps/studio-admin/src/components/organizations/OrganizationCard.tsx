@@ -1,26 +1,14 @@
-
-
+import * as React from "react";
 import { useRouter } from "@/lib/navigation-compat";
-import { Badge, Button, ActionTooltip } from "@k2net/ui";
-import {
-  ExternalLink,
-  Globe,
-  Radio,
-  Clock,
-  RefreshCw,
-  Phone,
-  Mail,
-  Map,
-  MessageSquare,
-  Sparkles,
-  Network,
-  AlertTriangle,
-  PauseCircle,
-} from "lucide-react";
+import { Badge } from "@k2net/ui";
+import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTenantUrl } from "@/lib/domain";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
 import { OrganizationContextMenu } from "./OrganizationContextMenu";
+import { OrgStatusBadge } from "./card/OrgStatusBadge";
+import { OrgCardHardwareSection } from "./card/OrgCardHardwareSection";
+import { OrgCardFooter } from "./card/OrgCardFooter";
 
 interface OrganizationCardProps {
   organization: EnrichedOrganization;
@@ -46,54 +34,6 @@ export function OrganizationCard({
   onDelete,
 }: OrganizationCardProps) {
   const router = useRouter();
-  const oltPct = org.maxOlts > 0 ? Math.round((org.usedOlts / org.maxOlts) * 100) : 0;
-
-  const getStatusBadge = () => {
-    switch (org.status) {
-      case "ACTIVE":
-        return (
-          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1 px-2 py-0.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            <span>Active</span>
-          </Badge>
-        );
-      case "TRIAL":
-        return (
-          <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 font-mono text-[10px] gap-1 px-2 py-0.5">
-            <Clock className="h-2.5 w-2.5" />
-            <span>Trial ({org.trialDaysLeft || 14}d)</span>
-          </Badge>
-        );
-      case "PROVISIONING":
-        return (
-          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5">
-            <RefreshCw className="h-2.5 w-2.5 animate-spin" />
-            <span>Provisioning</span>
-          </Badge>
-        );
-      case "OVERDUE":
-        return (
-          <Badge variant="outline" className="border-orange-500/30 bg-orange-500/10 text-orange-500 font-mono text-[10px] gap-1 px-2 py-0.5">
-            <AlertTriangle className="h-2.5 w-2.5" />
-            <span>Overdue</span>
-          </Badge>
-        );
-      case "SUSPENDED":
-      case "TRIAL_EXPIRED":
-        return (
-          <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5">
-            <PauseCircle className="h-2.5 w-2.5" />
-            <span>Suspended</span>
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px]">
-            {org.status}
-          </Badge>
-        );
-    }
-  };
 
   return (
     <OrganizationContextMenu
@@ -145,105 +85,13 @@ export function OrganizationCard({
             </div>
           </div>
 
-          <div className="shrink-0">{getStatusBadge()}</div>
-        </div>
-
-        {/* Middle Hardware & Domain Section */}
-        <div className="space-y-3 w-full pt-1">
-          {/* Hardware Allocation Progress */}
-          <div className="space-y-1 rounded-lg bg-background/50 border border-border/40 p-2.5">
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-foreground flex items-center gap-1">
-                <Network className="h-3 w-3 text-muted-foreground" />
-                <span>{org.usedOlts}/{org.maxOlts} OLTs</span>
-              </span>
-              <span className="text-muted-foreground text-[10px]">
-                {org.usedOdps}/{org.maxOdps} ODPs
-              </span>
-            </div>
-            <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full transition-all", oltPct > 80 ? "bg-amber-500" : "bg-primary")}
-                style={{ width: `${Math.min(100, oltPct)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Custom Domain & PIC Row */}
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            {org.customDomain ? (
-              <div className="flex items-center gap-1 font-mono">
-                <Globe className="h-3 w-3 text-muted-foreground" />
-                <span className="text-foreground">{org.customDomain}</span>
-                <span className={cn("h-1.5 w-1.5 rounded-full ml-1", org.domainSslActive ? "bg-primary" : "bg-amber-500")} />
-              </div>
-            ) : (
-              <span className="font-mono text-[10px] text-muted-foreground/60">— Default Domain</span>
-            )}
-
-            {/* Direct Contact Buttons */}
-            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-              {org.picPhone && (
-                <ActionTooltip label={`Chat PIC (${org.picPhone})`}>
-                  <a
-                    href={`https://wa.me/${org.picPhone.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1 rounded hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
-                  >
-                    <Phone className="h-3 w-3" />
-                  </a>
-                </ActionTooltip>
-              )}
-              {org.picEmail && (
-                <ActionTooltip label={`Email PIC (${org.picEmail})`}>
-                  <a
-                    href={`mailto:${org.picEmail}`}
-                    className="p-1 rounded hover:bg-blue-500/10 hover:text-blue-500 transition-colors text-muted-foreground"
-                  >
-                    <Mail className="h-3 w-3" />
-                  </a>
-                </ActionTooltip>
-              )}
-            </div>
+          <div className="shrink-0">
+            <OrgStatusBadge status={org.status} trialDaysLeft={org.trialDaysLeft} />
           </div>
         </div>
 
-        {/* Footer Add-on Icons & Impersonate Action */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/40 w-full" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <ActionTooltip label="GIS Spatial Core">
-              <div className={cn("p-1 rounded", org.featureFlags.gisCore ? "text-primary" : "opacity-30")}>
-                <Map className="h-3 w-3" />
-              </div>
-            </ActionTooltip>
-            <ActionTooltip label="OLT Snmp Poller">
-              <div className={cn("p-1 rounded", org.featureFlags.oltPoller ? "text-primary bg-primary/10" : "opacity-30")}>
-                <Radio className="h-3 w-3" />
-              </div>
-            </ActionTooltip>
-            <ActionTooltip label="WhatsApp Billing Engine">
-              <div className={cn("p-1 rounded", org.featureFlags.whatsappEngine ? "text-blue-500" : "opacity-30")}>
-                <MessageSquare className="h-3 w-3" />
-              </div>
-            </ActionTooltip>
-            <ActionTooltip label="AI Fiber Routing Copilot">
-              <div className={cn("p-1 rounded", org.featureFlags.aiCopilot ? "text-purple-500" : "opacity-30")}>
-                <Sparkles className="h-3 w-3" />
-              </div>
-            </ActionTooltip>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onImpersonate(org)}
-            className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1 px-2 font-medium"
-          >
-            <span>Open Portal</span>
-            <ExternalLink className="h-3 w-3" />
-          </Button>
-        </div>
+        <OrgCardHardwareSection organization={org} />
+        <OrgCardFooter organization={org} onImpersonate={onImpersonate} />
       </div>
     </OrganizationContextMenu>
   );

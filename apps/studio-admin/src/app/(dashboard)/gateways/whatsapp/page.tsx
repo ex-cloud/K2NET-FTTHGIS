@@ -1,51 +1,25 @@
-
-
 import { useEffect, useState } from "react";
 import { getGatewayConfigByKey, updateGatewayConfigByKey, getNotificationLogs, type NotificationLog } from "@/lib/actions/gateways";
-import { 
-  MessageCircle, 
-  Save, 
-  Loader2, 
-  Eye, 
-  EyeOff, 
-  Lock,
-  Sparkles,
-  Copy
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Input, Label, Badge, ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
+import { MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { GatewayPageWrapper } from "@/components/page-guards/gateway-page-wrapper";
-import { PermissionGuard } from "@/hooks/use-permissions";
-
+import { WhatsappConfigForm } from "@/components/gateways/whatsapp/WhatsappConfigForm";
+import { WhatsappLogsCard } from "@/components/gateways/whatsapp/WhatsappLogsCard";
+import { WhatsappMetaStatusCard } from "@/components/gateways/whatsapp/WhatsappMetaStatusCard";
 import { z } from "zod";
 
 const whatsappSchema = z.object({
   WA_API_URL: z.string().url("Format WhatsApp API URL tidak valid"),
   WA_ACCESS_TOKEN: z.string().min(10, "Access Token minimal 10 karakter"),
   WA_VERIFY_TOKEN: z.string().min(8, "Verify Token minimal 8 karakter"),
-  WA_PHONE_NUMBER_ID: z.string().regex(/^\d+$/, "Phone Number ID harus berupa angka").min(10, "Phone Number ID minimal 10 digit")
+  WA_PHONE_NUMBER_ID: z.string().regex(/^\d+$/, "Phone Number ID harus berupa angka").min(10, "Phone Number ID minimal 10 digit"),
 });
-
-function formatRelativeTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "Baru saja";
-  if (diffMins < 60) return `${diffMins} mnt lalu`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} jam lalu`;
-  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
 
 export default function WhatsappGatewayPage() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [censored, setCensored] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showVerifyToken, setShowVerifyToken] = useState(false);
-  const [showAccessToken, setShowAccessToken] = useState(false);
   const [waLogs, setWaLogs] = useState<NotificationLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
 
@@ -79,8 +53,7 @@ export default function WhatsappGatewayPage() {
     try {
       setLogsLoading(true);
       const all = await getNotificationLogs();
-      // Filter for whatsapp channel only
-      setWaLogs(all.filter(l => l.channel === "whatsapp"));
+      setWaLogs(all.filter((l) => l.channel === "whatsapp"));
     } catch (err) {
       console.error("Gagal memuat WhatsApp logs:", err);
     } finally {
@@ -104,15 +77,15 @@ export default function WhatsappGatewayPage() {
     e.preventDefault();
 
     const updates: Record<string, string> = {};
-    const validationData: Record<string, any> = {};
+    const validationData: Record<string, unknown> = {};
     const keysToUpdate = [
       "WA_API_URL",
       "WA_ACCESS_TOKEN",
       "WA_VERIFY_TOKEN",
-      "WA_PHONE_NUMBER_ID"
+      "WA_PHONE_NUMBER_ID",
     ];
 
-    keysToUpdate.forEach(k => {
+    keysToUpdate.forEach((k) => {
       const currentValue = config[k] || "";
       const censoredValue = censored[k] || "";
       
@@ -127,7 +100,6 @@ export default function WhatsappGatewayPage() {
       return;
     }
 
-    // Run partial validation using Zod
     try {
       const partialSchema = whatsappSchema.partial();
       partialSchema.parse(validationData);
@@ -144,11 +116,7 @@ export default function WhatsappGatewayPage() {
     try {
       const res = await updateGatewayConfigByKey("whatsapp", updates);
       toast.success(res.message || "Konfigurasi WhatsApp berhasil disimpan!");
-      
-      setTimeout(() => {
-        fetchConfig();
-      }, 3000);
-
+      setTimeout(fetchConfig, 3000);
     } catch (err) {
       console.error(err);
       toast.error("Gagal menyimpan konfigurasi: " + (err instanceof Error ? err.message : String(err)));
@@ -157,249 +125,46 @@ export default function WhatsappGatewayPage() {
     }
   };
 
-  // WA logs loaded dynamically from getNotificationLogs() (filtered channel=whatsapp)
-
-  const getWaContextMenuGroups = (log: NotificationLog): ContextMenuGroupConfig[] => [
-    {
-      items: [
-        {
-          label: "Tanya AI Status Pengiriman",
-          icon: Sparkles,
-          shortcut: "Ctrl+J",
-          onClick: () => {
-            window.dispatchEvent(
-              new CustomEvent("k2net-ai-prompt-input", {
-                detail: {
-                  prompt: `Analisa pengiriman WhatsApp ke nomor ${log.recipient}. Subject: ${log.subject || "Notifikasi"}. Status: ${log.status}. Berikan diagnosa pesan.`,
-                },
-              })
-            );
-            window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
-          },
-        },
-      ],
-    },
-    {
-      items: [
-        {
-          label: "Salin Nomor WA",
-          icon: Copy,
-          shortcut: "Ctrl+C",
-          onClick: () => {
-            navigator.clipboard.writeText(log.recipient);
-            toast.success(`Nomor ${log.recipient} disalin!`);
-          },
-        },
-      ],
-    },
-  ];
-
   return (
     <GatewayPageWrapper>
-    <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
-      <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
-        
-        <div className="flex items-center gap-4 border-b border-border pb-6">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-            <MessageCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              WhatsApp Gateway
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Konfigurasi Cloud API WhatsApp Business untuk pengiriman notifikasi interaktif, tagihan otomatis, dan chat template.
-            </p>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-xs text-muted-foreground">Memuat konfigurasi WhatsApp gateway...</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
-              
-              <Card glowingEffect className="bg-card/60 border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-primary" /> WhatsApp Cloud API Credentials
-                  </CardTitle>
-                  <CardDescription className="text-[10px] text-muted-foreground">
-                    Kredensial resmi dari Meta Developer Console untuk modul pengiriman WhatsApp API.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="WA_API_URL" className="text-xs text-muted-foreground">WhatsApp API URL Base</Label>
-                    <Input
-                      id="WA_API_URL"
-                      type="text"
-                      value={config.WA_API_URL || ""}
-                      onChange={(e) => handleInputChange("WA_API_URL", e.target.value)}
-                      placeholder="https://graph.facebook.com/v21.0"
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="WA_PHONE_NUMBER_ID" className="text-xs text-muted-foreground">Phone Number ID</Label>
-                    <Input
-                      id="WA_PHONE_NUMBER_ID"
-                      type="text"
-                      value={config.WA_PHONE_NUMBER_ID || ""}
-                      onChange={(e) => handleInputChange("WA_PHONE_NUMBER_ID", e.target.value)}
-                      placeholder="e.g. 109384738291039"
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="WA_ACCESS_TOKEN" className="text-xs text-muted-foreground">System User Access Token (Permanent)</Label>
-                      <button
-                        type="button"
-                        onClick={() => setShowAccessToken(!showAccessToken)}
-                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
-                      >
-                        {showAccessToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        {showAccessToken ? "Sembunyikan" : "Tampilkan"}
-                      </button>
-                    </div>
-                    <Input
-                      id="WA_ACCESS_TOKEN"
-                      type={showAccessToken ? "text" : "password"}
-                      value={config.WA_ACCESS_TOKEN || ""}
-                      onChange={(e) => handleInputChange("WA_ACCESS_TOKEN", e.target.value)}
-                      placeholder="EAAGxxxxxxxxxxxxxxxxxxxxxxxxxxx..."
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="WA_VERIFY_TOKEN" className="text-xs text-muted-foreground">Webhook Verify Token</Label>
-                      <button
-                        type="button"
-                        onClick={() => setShowVerifyToken(!showVerifyToken)}
-                        className="text-[10px] text-muted-foreground hover:text-muted-foreground flex items-center gap-1"
-                      >
-                        {showVerifyToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        {showVerifyToken ? "Sembunyikan" : "Tampilkan"}
-                      </button>
-                    </div>
-                    <Input
-                      id="WA_VERIFY_TOKEN"
-                      type={showVerifyToken ? "text" : "password"}
-                      value={config.WA_VERIFY_TOKEN || ""}
-                      onChange={(e) => handleInputChange("WA_VERIFY_TOKEN", e.target.value)}
-                      placeholder="Verify Token string..."
-                      className="bg-input border-border text-foreground text-xs focus:border-primary/50"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="flex items-center justify-end gap-3">
-                <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
-                  <Button 
-                    type="button" 
-                    onClick={fetchConfig} 
-                    variant="outline"
-                    className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
-                  >
-                    Reset Form
-                  </Button>
-                </ActionTooltip>
-                <PermissionGuard permission="system.gateway.manage">
-                  <ActionTooltip label="Simpan Konfigurasi WhatsApp Gateway" shortcut="Ctrl+S">
-                    <Button 
-                      type="submit" 
-                      disabled={saving}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
-                    >
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      Save Configuration
-                    </Button>
-                  </ActionTooltip>
-                </PermissionGuard>
-              </div>
-
-            </form>
-
-            <div className="space-y-6">
-              <Card glowingEffect className="bg-card border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                    Metrik Delivery WA
-                    {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {logsLoading ? (
-                    <div className="space-y-3">
-                      {[1,2,3].map(i => (
-                        <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />
-                      ))}
-                    </div>
-                  ) : waLogs.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground/60 text-center py-4">Belum ada log WhatsApp tersimpan.</p>
-                  ) : (
-                    waLogs.map((log) => (
-                      <UniversalContextMenu key={log.id} groups={getWaContextMenuGroups(log)}>
-                        <div className="border-b border-border pb-3 last:border-b-0 last:pb-0 space-y-1 cursor-context-menu hover:bg-muted/10 p-1.5 rounded transition-colors">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs font-medium text-foreground truncate max-w-[140px]">{log.recipient}</span>
-                            <Badge className={`text-[9px] px-1.5 py-0.5 border ${
-                              log.status === "sent"
-                                ? "bg-primary/10 text-primary border-primary/20"
-                                : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                            }`}>
-                              {log.status}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between items-center text-[9px] text-muted-foreground font-mono">
-                            <span className="truncate max-w-[120px]">{log.subject || "WA Notification"}</span>
-                            <span>{formatRelativeTime(log.sentAt)}</span>
-                          </div>
-                        </div>
-                      </UniversalContextMenu>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card glowingEffect className="bg-card border-border shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status API Meta</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-muted-foreground">Meta API Status</span>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Normal</Badge>
-                  </div>
-                  <div className="flex items-center justify-between pb-2 border-b border-border">
-                    <span className="text-muted-foreground">Webhook Connection</span>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px]">Receiving Active</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">WA Terkirim (log)</span>
-                    <Badge className="bg-muted/10 text-muted-foreground border-border text-[9px]">
-                      {logsLoading ? "..." : waLogs.filter(l => l.status === "sent").length}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+      <div className="flex-1 flex flex-col pt-16 px-4 md:px-8 bg-background h-full overflow-y-auto">
+        <div className="w-full max-w-5xl mx-auto space-y-8 pb-20">
+          <div className="flex items-center gap-4 border-b border-border pb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <MessageCircle className="w-6 h-6" />
             </div>
-
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                WhatsApp Gateway
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Konfigurasi Cloud API WhatsApp Business untuk pengiriman notifikasi interaktif, tagihan otomatis, dan chat template.
+              </p>
+            </div>
           </div>
-        )}
 
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-xs text-muted-foreground">Memuat konfigurasi WhatsApp gateway...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <WhatsappConfigForm
+                config={config}
+                saving={saving}
+                onInputChange={handleInputChange}
+                onSave={handleSave}
+                onReset={fetchConfig}
+              />
+              <div className="space-y-6">
+                <WhatsappLogsCard logs={waLogs} loading={logsLoading} />
+                <WhatsappMetaStatusCard logs={waLogs} loading={logsLoading} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </GatewayPageWrapper>
   );
 }

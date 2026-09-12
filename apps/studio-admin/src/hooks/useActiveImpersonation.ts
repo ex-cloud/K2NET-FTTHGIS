@@ -80,8 +80,9 @@ export function useActiveImpersonation() {
           description: err.message || "Silakan coba beberapa saat lagi.",
         });
       }
-    } catch (e: any) {
-      toast.error("Kesalahan Jaringan", { description: e.message });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Terjadi kesalahan jaringan";
+      toast.error("Kesalahan Jaringan", { description: msg });
     } finally {
       setTerminating(false);
     }

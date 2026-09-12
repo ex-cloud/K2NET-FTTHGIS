@@ -28,6 +28,8 @@ export interface Organization {
   // Admin Account Provisioning
   adminEmail?: string;
   adminUsername?: string;
+  adminPassword?: string;
+  plan?: string;
   status?: 'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'PROVISIONING' | 'OVERDUE' | 'TRIAL_EXPIRED' | 'PENDING_APPROVAL' | 'DELETED';
   trialExpiresAt?: string;
   createdAt?: string;

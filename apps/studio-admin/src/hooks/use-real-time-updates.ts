@@ -116,7 +116,8 @@ export function useRealTimeUpdates(projectId?: string) {
           duration: 5000,
         });
       } else if (severity === "INFO") {
-        console.info(`[Net Log] ${assetCode} changed to ${status}`);
+        // INFO events are intentionally silent — not surfaced to avoid console noise in production.
+        // All actionable alerts (CRITICAL/MINOR) are shown via toast.error/toast.warning above.
       }
     },
     [flushEvents]
@@ -205,7 +206,7 @@ export function useRealTimeUpdates(projectId?: string) {
       if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
       if (massiveOutageTimerRef.current) clearTimeout(massiveOutageTimerRef.current);
     };
-  }, [handleUpdate, projectId]);
+  }, [handleUpdate, projectId, queryClient]);
 
   return { connectionStatus };
 }

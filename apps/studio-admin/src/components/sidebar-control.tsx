@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { PanelLeftDashed } from "lucide-react";
-import { Button } from "@k2net/ui";
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -13,13 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@k2net/ui";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
 import {
   useSidebarMode,
   type SidebarMode,
 } from "@/components/sidebar-mode-context";
 
-export function SidebarControl({ isExpanded = false }: { isExpanded?: boolean }) {
+export function SidebarControl({ isExpanded: _isExpanded = false }: { isExpanded?: boolean }) {
   const isMobile = useIsMobile();
   const { sidebarMode, setSidebarMode } = useSidebarMode();
 

@@ -53,15 +53,11 @@ export interface BlockedIp {
   createdAt: string;
 }
 
-export function useSecuritySettings() {
-  const { data: session, status } = useSession();
-  const queryClient = useQueryClient();
-  const baseUrl = getBackendBaseUrl();
-  const token = session?.accessToken;
+export type BlockedIpDto = BlockedIp;
 
-  // 1. Realm Config
+function useRealmConfigSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const realmConfigQuery = useQuery<RealmConfig>({
-    queryKey: ['system-realm-config', token],
+    queryKey: ['system-realm-config', baseUrl, token],
     queryFn: async () => {
       if (!token) return { registrationAllowed: false, verifyEmail: false, resetPasswordAllowed: false };
       const res = await httpClient(`${baseUrl}/system/security/realm-config`, { token });
@@ -90,9 +86,17 @@ export function useSecuritySettings() {
     },
   });
 
-  // 2. Active Sessions
+  return {
+    realmConfig: realmConfigQuery.data,
+    loadingRealmConfig: realmConfigQuery.isLoading,
+    updateRealmConfig: updateRealmConfigMutation.mutateAsync,
+    isUpdatingRealmConfig: updateRealmConfigMutation.isPending,
+  };
+}
+
+function useSessionsSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const activeSessionsQuery = useQuery<ActiveSession[]>({
-    queryKey: ['system-sessions', token],
+    queryKey: ['system-sessions', baseUrl, token],
     queryFn: async () => {
       if (!token) return [];
       const res = await httpClient(`${baseUrl}/system/security/sessions`, { token });
@@ -120,9 +124,17 @@ export function useSecuritySettings() {
     },
   });
 
-  // 3. SSO Providers
+  return {
+    sessions: activeSessionsQuery.data || [],
+    loadingSessions: activeSessionsQuery.isLoading,
+    revokeSession: revokeSessionMutation.mutateAsync,
+    isRevokingSession: revokeSessionMutation.isPending,
+  };
+}
+
+function useSsoSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const ssoProvidersQuery = useQuery<SsoProvider[]>({
-    queryKey: ['system-sso-providers', token],
+    queryKey: ['system-sso-providers', baseUrl, token],
     queryFn: async () => {
       if (!token) return [];
       const res = await httpClient(`${baseUrl}/system/security/sso-providers`, { token });
@@ -151,9 +163,17 @@ export function useSecuritySettings() {
     },
   });
 
-  // 4. Security Alerts
+  return {
+    ssoProviders: ssoProvidersQuery.data || [],
+    loadingSsoProviders: ssoProvidersQuery.isLoading,
+    updateSsoProvider: updateSsoProviderMutation.mutateAsync,
+    isUpdatingSsoProvider: updateSsoProviderMutation.isPending,
+  };
+}
+
+function useAlertsSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const securityAlertsQuery = useQuery<SecurityEvent[]>({
-    queryKey: ['system-security-alerts', token],
+    queryKey: ['system-security-alerts', baseUrl, token],
     queryFn: async () => {
       if (!token) return [];
       const res = await httpClient(`${baseUrl}/system/security/alerts`, { token });
@@ -161,7 +181,7 @@ export function useSecuritySettings() {
       return res.json();
     },
     enabled: status === 'authenticated' && !!token,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds for live feed
+    refetchInterval: 5000,
   });
 
   const clearAlertsMutation = useMutation({
@@ -207,7 +227,7 @@ export function useSecuritySettings() {
       const queryParams = new URLSearchParams({
         username: params.username,
         ipAddress: params.ipAddress,
-        count: String(params.count)
+        count: String(params.count),
       }).toString();
       const res = await httpClient(`${baseUrl}/system/security/alerts/simulate-fail?${queryParams}`, {
         method: 'POST',
@@ -224,9 +244,19 @@ export function useSecuritySettings() {
     },
   });
 
-  // 5. Blocked IPs
+  return {
+    alerts: securityAlertsQuery.data || [],
+    loadingAlerts: securityAlertsQuery.isLoading,
+    clearAlerts: clearAlertsMutation.mutateAsync,
+    simulateTravel: simulateTravelMutation.mutateAsync,
+    simulateFail: simulateFailMutation.mutateAsync,
+    isSimulating: simulateTravelMutation.isPending || simulateFailMutation.isPending,
+  };
+}
+
+function useBlockedIpsSection(baseUrl: string, token: string | null | undefined, status: string, queryClient: ReturnType<typeof useQueryClient>) {
   const blockedIpsQuery = useQuery<BlockedIp[]>({
-    queryKey: ['system-blocked-ips', token],
+    queryKey: ['system-blocked-ips', baseUrl, token],
     queryFn: async () => {
       if (!token) return [];
       const res = await httpClient(`${baseUrl}/system/security/blocked-ips`, { token });
@@ -279,33 +309,32 @@ export function useSecuritySettings() {
   });
 
   return {
-    realmConfig: realmConfigQuery.data,
-    loadingRealmConfig: realmConfigQuery.isLoading,
-    updateRealmConfig: updateRealmConfigMutation.mutateAsync,
-    isUpdatingRealmConfig: updateRealmConfigMutation.isPending,
-
-    sessions: activeSessionsQuery.data || [],
-    loadingSessions: activeSessionsQuery.isLoading,
-    revokeSession: revokeSessionMutation.mutateAsync,
-    isRevokingSession: revokeSessionMutation.isPending,
-
-    ssoProviders: ssoProvidersQuery.data || [],
-    loadingSsoProviders: ssoProvidersQuery.isLoading,
-    updateSsoProvider: updateSsoProviderMutation.mutateAsync,
-    isUpdatingSsoProvider: updateSsoProviderMutation.isPending,
-
-    alerts: securityAlertsQuery.data || [],
-    loadingAlerts: securityAlertsQuery.isLoading,
-    clearAlerts: clearAlertsMutation.mutateAsync,
-    simulateTravel: simulateTravelMutation.mutateAsync,
-    simulateFail: simulateFailMutation.mutateAsync,
-    isSimulating: simulateTravelMutation.isPending || simulateFailMutation.isPending,
-
     blockedIps: blockedIpsQuery.data || [],
     loadingBlockedIps: blockedIpsQuery.isLoading,
     blockIp: blockIpMutation.mutateAsync,
     isBlockingIp: blockIpMutation.isPending,
     unblockIp: unblockIpMutation.mutateAsync,
     isUnblockingIp: unblockIpMutation.isPending,
+  };
+}
+
+export function useSecuritySettings() {
+  const { data: session, status } = useSession();
+  const queryClient = useQueryClient();
+  const baseUrl = getBackendBaseUrl();
+  const token = session?.accessToken;
+
+  const realm = useRealmConfigSection(baseUrl, token, status, queryClient);
+  const sessions = useSessionsSection(baseUrl, token, status, queryClient);
+  const sso = useSsoSection(baseUrl, token, status, queryClient);
+  const alerts = useAlertsSection(baseUrl, token, status, queryClient);
+  const blockedIps = useBlockedIpsSection(baseUrl, token, status, queryClient);
+
+  return {
+    ...realm,
+    ...sessions,
+    ...sso,
+    ...alerts,
+    ...blockedIps,
   };
 }

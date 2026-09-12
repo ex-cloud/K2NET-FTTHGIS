@@ -110,7 +110,7 @@ export function TaskViewOptions({
             <span className="text-xs text-foreground/80 font-medium">Columns</span>
             <select
               value={options.groupBy}
-              onChange={(e) => handleGroupByChange(e.target.value as any)}
+              onChange={(e) => handleGroupByChange(e.target.value as ViewOptionsState["groupBy"])}
               className="bg-background border border-border rounded px-2 py-1 text-xs text-foreground font-medium focus:ring-1 focus:ring-primary focus:outline-none"
             >
               <option value="status">Status</option>
@@ -122,7 +122,7 @@ export function TaskViewOptions({
             <span className="text-xs text-foreground/80 font-medium">Ordering</span>
             <select
               value={options.sortBy}
-              onChange={(e) => handleSortByChange(e.target.value as any)}
+              onChange={(e) => handleSortByChange(e.target.value as ViewOptionsState["sortBy"])}
               className="bg-background border border-border rounded px-2 py-1 text-xs text-foreground font-medium focus:ring-1 focus:ring-primary focus:outline-none"
             >
               <option value="manual">Manual</option>

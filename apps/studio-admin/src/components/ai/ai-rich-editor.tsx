@@ -19,8 +19,9 @@ export function AiRichEditor(props: AiRichEditorProps) {
         const res = await uploadKnowledgeImage(formData);
         toast.success("Gambar berhasil diunggah ke MinIO S3!", { id: toastId });
         return { url: res.url, filename: res.filename || file.name };
-      } catch (err: any) {
-        toast.error("Gagal mengunggah gambar ke MinIO S3: " + err.message, { id: toastId });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error("Gagal mengunggah gambar ke MinIO S3: " + msg, { id: toastId });
         throw err;
       }
     },

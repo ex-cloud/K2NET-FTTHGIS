@@ -1,8 +1,7 @@
 
 
 import * as React from "react";
-import { usePathname } from "@/lib/navigation-compat";
-import { Link } from "@/lib/navigation-compat";
+import { usePathname, Link } from "@/lib/navigation-compat";
 import {
   Users,
   ShieldCheck,

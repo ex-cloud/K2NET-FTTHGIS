@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import {
@@ -20,16 +18,12 @@ import { toast } from "sonner";
 import { type Task } from "@/hooks/useTasksQuery";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface TaskSecondarySidebarProps {
   tasks: Task[];
   obsidianStatus?: "connected" | "disconnected" | "syncing";
   lastSyncTime?: string;
   onSelectProject?: (projectName: string | null) => void;
 }
-
-// ─── Collapsible section wrapper ─────────────────────────────────────────────
 
 function SidebarSection({
   title,
@@ -68,8 +62,6 @@ function SidebarSection({
   );
 }
 
-// ─── Mini Progress Bar ────────────────────────────────────────────────────────
-
 function MiniProgressBar({
   label,
   count,
@@ -99,7 +91,171 @@ function MiniProgressBar({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+interface ProjectStatsItem {
+  name: string;
+  total: number;
+  active: number;
+  progress: number;
+}
+
+interface SidebarProjectsSectionProps {
+  projectStats: ProjectStatsItem[];
+  onSelectProject?: (projectName: string | null) => void;
+  onNavigate: (path: string) => void;
+}
+
+const SidebarProjectsSection: React.FC<SidebarProjectsSectionProps> = ({
+  projectStats,
+  onSelectProject,
+  onNavigate,
+}) => (
+  <SidebarSection title="Workspace Projects" icon={FolderKanban} defaultOpen={true}>
+    <div className="space-y-1 pt-1">
+      {projectStats.length === 0 ? (
+        <div className="px-2.5 py-3 text-center border border-dashed border-border/60 rounded-lg">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Belum ada project aktif. Buat issue bertipe Project untuk memulainya.
+          </p>
+        </div>
+      ) : (
+        projectStats.map((proj) => (
+          <button
+            key={proj.name}
+            onClick={() => {
+              if (onSelectProject) onSelectProject(proj.name);
+              onNavigate(`/tasks?scope=PLATFORM_INTERNAL&project=${encodeURIComponent(proj.name)}`);
+            }}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+          >
+            <div className="flex items-center gap-2 min-w-0 pr-2">
+              <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
+              <div className="min-w-0">
+                <p className="font-medium text-foreground truncate">{proj.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {proj.active} active · {proj.progress}% done
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground group-hover:text-foreground shrink-0">
+              {proj.active}
+            </span>
+          </button>
+        ))
+      )}
+    </div>
+  </SidebarSection>
+);
+
+interface SidebarTeamsSectionProps {
+  currentScope: string | null;
+  tasks: Task[];
+  b2bCount: number;
+  onNavigate: (path: string) => void;
+}
+
+const SidebarTeamsSection: React.FC<SidebarTeamsSectionProps> = ({
+  currentScope,
+  tasks,
+  b2bCount,
+  onNavigate,
+}) => (
+  <SidebarSection title="Teams & Scope" icon={Shield} defaultOpen={true}>
+    <div className="space-y-1 pt-1">
+      <button
+        onClick={() => onNavigate("/tasks?scope=PLATFORM_INTERNAL")}
+        className={cn(
+          "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
+          currentScope === "PLATFORM_INTERNAL"
+            ? "bg-primary/10 text-primary font-semibold"
+            : "hover:bg-muted/50 text-foreground"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Shield className="h-3.5 w-3.5 text-primary" />
+          <span>Platform Internal</span>
+        </div>
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+          {tasks.filter((t) => t.scope === "PLATFORM_INTERNAL").length}
+        </span>
+      </button>
+
+      <button
+        onClick={() => onNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
+        className={cn(
+          "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
+          currentScope === "TENANT_TO_PLATFORM"
+            ? "bg-orange-500/10 text-orange-500 font-semibold"
+            : "hover:bg-muted/50 text-foreground"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Building2 className="h-3.5 w-3.5 text-orange-500" />
+          <span>B2B Mitra Tickets</span>
+        </div>
+        {b2bCount > 0 && (
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-orange-500 text-primary-foreground font-bold animate-pulse">
+            {b2bCount}
+          </span>
+        )}
+      </button>
+    </div>
+  </SidebarSection>
+);
+
+interface ObsidianSyncCardProps {
+  obsidianStatus: string;
+  lastSyncTime: string;
+}
+
+const ObsidianSyncCard: React.FC<ObsidianSyncCardProps> = ({
+  obsidianStatus,
+  lastSyncTime,
+}) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncObsidian = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      toast.success("Obsidian Vault sinkronisasi selesai");
+    }, 1500);
+  };
+
+  return (
+    <div className="p-4 bg-card/40 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-purple-400" />
+          <span className="text-xs font-bold text-foreground">Obsidian Vault</span>
+        </div>
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full capitalize">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          {obsidianStatus}
+        </span>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Projek internal disinkronkan secara otomatis ke <code className="text-primary font-mono text-[10px]">K2NET_Engineering_Vault</code>.
+      </p>
+      {lastSyncTime && (
+        <p className="text-[10px] text-muted-foreground/60">Last sync: {lastSyncTime}</p>
+      )}
+
+      <button
+        onClick={handleSyncObsidian}
+        disabled={isSyncing}
+        className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/50 text-xs font-medium text-foreground transition-colors disabled:opacity-50"
+      >
+        {isSyncing ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+        <span>{isSyncing ? "Menyinkronkan..." : "Sync Vault Now"}</span>
+      </button>
+    </div>
+  );
+};
 
 export function TaskSecondarySidebar({
   tasks,
@@ -109,11 +265,7 @@ export function TaskSecondarySidebar({
 }: TaskSecondarySidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isSyncing, setIsSyncing] = useState(false);
-
   const currentScope = searchParams.get("scope");
-
-  // ── Project Breakdown (100% Dynamic from tasks in database) ─────────────────
 
   const projectStats = useMemo(() => {
     const names = new Set<string>();
@@ -140,35 +292,15 @@ export function TaskSecondarySidebar({
     });
   }, [tasks]);
 
-  // ── Derived metrics ─────────────────────────────────────────────────────────
-
   const derived = useMemo(() => {
     const total = tasks.length;
-    const projects = tasks.filter((t) => t.type === "PROJECT").length;
-    const tickets = tasks.filter((t) => t.type === "TICKET").length;
-    const overdue = tasks.filter(
-      (t) =>
-        t.dueDate &&
-        new Date(t.dueDate) < new Date() &&
-        t.status !== "RESOLVED" &&
-        t.status !== "CLOSED"
-    ).length;
-
-    // Status breakdown
     const statusMap: Record<string, number> = {};
+    const priorityMap: Record<string, number> = {};
+    const assigneeMap: Record<string, number> = {};
+
     for (const t of tasks) {
       statusMap[t.status] = (statusMap[t.status] ?? 0) + 1;
-    }
-
-    // Priority breakdown
-    const priorityMap: Record<string, number> = {};
-    for (const t of tasks) {
       priorityMap[t.priority] = (priorityMap[t.priority] ?? 0) + 1;
-    }
-
-    // Assignee workload
-    const assigneeMap: Record<string, number> = {};
-    for (const t of tasks) {
       if (t.assigneeId) {
         assigneeMap[t.assigneeId] = (assigneeMap[t.assigneeId] ?? 0) + 1;
       } else {
@@ -180,143 +312,52 @@ export function TaskSecondarySidebar({
       (t) => t.scope === "TENANT_TO_PLATFORM" && t.status !== "RESOLVED" && t.status !== "CLOSED"
     ).length;
 
-    return { total, projects, tickets, overdue, statusMap, priorityMap, assigneeMap, b2bCount };
+    return { total, statusMap, priorityMap, assigneeMap, b2bCount };
   }, [tasks]);
-
-  // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const handleSyncObsidian = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      toast.success("Obsidian Vault sinkronisasi selesai");
-    }, 1500);
-  };
-
-  const handleNavigate = (path: string) => {
-    router.push(path);
-  };
 
   return (
     <div className="w-full flex flex-col divide-y divide-border/50 text-xs">
+      <SidebarProjectsSection
+        projectStats={projectStats}
+        onSelectProject={onSelectProject}
+        onNavigate={(path) => router.push(path)}
+      />
 
-      {/* ── 1. WORKSPACE: PROJECTS & PLANS (100% Dynamic) ─────────────── */}
-      <SidebarSection title="Workspace Projects" icon={FolderKanban} defaultOpen={true}>
-        <div className="space-y-1 pt-1">
-          {projectStats.length === 0 ? (
-            <div className="px-2.5 py-3 text-center border border-dashed border-border/60 rounded-lg">
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Belum ada project aktif. Buat issue bertipe Project untuk memulainya.
-              </p>
-            </div>
-          ) : (
-            projectStats.map((proj) => (
-              <button
-                key={proj.name}
-                onClick={() => {
-                  if (onSelectProject) onSelectProject(proj.name);
-                  handleNavigate(`/tasks?scope=PLATFORM_INTERNAL&project=${encodeURIComponent(proj.name)}`);
-                }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-              >
-                <div className="flex items-center gap-2 min-w-0 pr-2">
-                  <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate">{proj.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {proj.active} active · {proj.progress}% done
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground group-hover:text-foreground shrink-0">
-                  {proj.active}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      </SidebarSection>
+      <SidebarTeamsSection
+        currentScope={currentScope}
+        tasks={tasks}
+        b2bCount={derived.b2bCount}
+        onNavigate={(path) => router.push(path)}
+      />
 
-      {/* ── 2. SCOPES & TEAMS ───────────────────────────────────────────── */}
-      <SidebarSection title="Teams & Scope" icon={Shield} defaultOpen={true}>
-        <div className="space-y-1 pt-1">
-          <button
-            onClick={() => handleNavigate("/tasks?scope=PLATFORM_INTERNAL")}
-            className={cn(
-              "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
-              currentScope === "PLATFORM_INTERNAL"
-                ? "bg-primary/10 text-primary font-semibold"
-                : "hover:bg-muted/50 text-foreground"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-primary" />
-              <span>Platform Internal</span>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-              {tasks.filter((t) => t.scope === "PLATFORM_INTERNAL").length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleNavigate("/tasks?scope=TENANT_TO_PLATFORM")}
-            className={cn(
-              "w-full flex items-center justify-between px-2.5 py-2 rounded-lg transition-colors text-left",
-              currentScope === "TENANT_TO_PLATFORM"
-                ? "bg-orange-500/10 text-orange-500 font-semibold"
-                : "hover:bg-muted/50 text-foreground"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <Building2 className="h-3.5 w-3.5 text-orange-500" />
-              <span>B2B Mitra Tickets</span>
-            </div>
-            {derived.b2bCount > 0 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-orange-500 text-primary-foreground font-bold animate-pulse">
-                {derived.b2bCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </SidebarSection>
-
-      {/* ── 3. STATUS DISTRIBUTION ──────────────────────────────────────── */}
       <SidebarSection title="Status Breakdown" icon={BarChart3} defaultOpen={false}>
         <div className="space-y-0.5 pt-1">
-          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
-            const count = derived.statusMap[key] ?? 0;
-            return (
-              <MiniProgressBar
-                key={key}
-                label={cfg.label}
-                count={count}
-                total={derived.total}
-                colorClass={cfg.className.split(" ")[0].replace("text-", "bg-")}
-              />
-            );
-          })}
+          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+            <MiniProgressBar
+              key={key}
+              label={cfg.label}
+              count={derived.statusMap[key] ?? 0}
+              total={derived.total}
+              colorClass={cfg.className.split(" ")[0].replace("text-", "bg-")}
+            />
+          ))}
         </div>
       </SidebarSection>
 
-      {/* ── 4. PRIORITY DISTRIBUTION ────────────────────────────────────── */}
       <SidebarSection title="Priority" icon={Flag} defaultOpen={false}>
         <div className="space-y-0.5 pt-1">
-          {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => {
-            const count = derived.priorityMap[key] ?? 0;
-            return (
-              <MiniProgressBar
-                key={key}
-                label={cfg.label}
-                count={count}
-                total={derived.total}
-                colorClass={cfg.className.split(" ")[0].replace("text-", "bg-")}
-              />
-            );
-          })}
+          {Object.entries(PRIORITY_CONFIG).map(([key, cfg]) => (
+            <MiniProgressBar
+              key={key}
+              label={cfg.label}
+              count={derived.priorityMap[key] ?? 0}
+              total={derived.total}
+              colorClass={cfg.className.split(" ")[0].replace("text-", "bg-")}
+            />
+          ))}
         </div>
       </SidebarSection>
 
-      {/* ── 5. ASSIGNEE WORKLOAD ────────────────────────────────────────── */}
       <SidebarSection title="Workload" icon={Users} defaultOpen={false}>
         <div className="space-y-1 pt-1">
           {Object.entries(derived.assigneeMap).map(([assignee, count]) => (
@@ -337,40 +378,10 @@ export function TaskSecondarySidebar({
         </div>
       </SidebarSection>
 
-      {/* ── 6. OBSIDIAN VAULT SYNC ──────────────────────────────────────── */}
-      <div className="p-4 bg-card/40 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-purple-400" />
-            <span className="text-xs font-bold text-foreground">Obsidian Vault</span>
-          </div>
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full capitalize">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            {obsidianStatus}
-          </span>
-        </div>
-
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Projek internal disinkronkan secara otomatis ke <code className="text-primary font-mono text-[10px]">K2NET_Engineering_Vault</code>.
-        </p>
-        {lastSyncTime && (
-          <p className="text-[10px] text-muted-foreground/60">Last sync: {lastSyncTime}</p>
-        )}
-
-        <button
-          onClick={handleSyncObsidian}
-          disabled={isSyncing}
-          className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/50 text-xs font-medium text-foreground transition-colors disabled:opacity-50"
-        >
-          {isSyncing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-          )}
-          <span>{isSyncing ? "Menyinkronkan..." : "Sync Vault Now"}</span>
-        </button>
-      </div>
-
+      <ObsidianSyncCard
+        obsidianStatus={obsidianStatus}
+        lastSyncTime={lastSyncTime}
+      />
     </div>
   );
 }

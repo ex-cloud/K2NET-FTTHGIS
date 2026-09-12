@@ -4,28 +4,40 @@ import { httpClient } from "../httpClient";
 
 const BACKEND_URL = getBackendBaseUrl();
 
-export async function getUsers(
-  page: number = 0,
-  size: number = 10,
-  search?: string,
-  role?: string,
-  status?: string,
-  org?: string,
-  token?: string,
-): Promise<PaginatedResponse<User>> {
+export interface GetUsersParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  org?: string;
+  token?: string;
+}
+
+export async function getUsers(params?: GetUsersParams): Promise<PaginatedResponse<User>> {
+  const {
+    page = 0,
+    size = 10,
+    search,
+    role,
+    status,
+    org,
+    token,
+  } = params || {};
+
   if (!token) {
     throw new Error("No access token provided");
   }
 
-  const params = new URLSearchParams();
-  params.append("page", page.toString());
-  params.append("size", size.toString());
-  if (search) params.append("search", search);
-  if (role && role !== "all") params.append("role", role);
-  if (status && status !== "all") params.append("status", status);
-  if (org && org !== "all") params.append("org", org);
+  const queryParams = new URLSearchParams();
+  queryParams.append("page", page.toString());
+  queryParams.append("size", size.toString());
+  if (search) queryParams.append("search", search);
+  if (role && role !== "all") queryParams.append("role", role);
+  if (status && status !== "all") queryParams.append("status", status);
+  if (org && org !== "all") queryParams.append("org", org);
 
-  const res = await httpClient(`${BACKEND_URL}/users?${params.toString()}`, {
+  const res = await httpClient(`${BACKEND_URL}/users?${queryParams.toString()}`, {
     token,
     cache: "no-store",
   });
@@ -77,27 +89,39 @@ export async function getUserStats(token: string): Promise<{
   return res.json();
 }
 
-export async function getTenantUsers(
-  orgId: string,
-  page: number = 0,
-  size: number = 10,
-  search?: string,
-  role?: string,
-  status?: string,
-  token?: string,
-): Promise<PaginatedResponse<User>> {
+export interface GetTenantUsersParams {
+  orgId: string;
+  page?: number;
+  size?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  token?: string;
+}
+
+export async function getTenantUsers(params: GetTenantUsersParams): Promise<PaginatedResponse<User>> {
+  const {
+    orgId,
+    page = 0,
+    size = 10,
+    search,
+    role,
+    status,
+    token,
+  } = params;
+
   if (!token) {
     throw new Error("No access token provided");
   }
 
-  const params = new URLSearchParams();
-  params.append("page", page.toString());
-  params.append("size", size.toString());
-  if (search) params.append("search", search);
-  if (role && role !== "all") params.append("role", role);
-  if (status && status !== "all") params.append("status", status);
+  const queryParams = new URLSearchParams();
+  queryParams.append("page", page.toString());
+  queryParams.append("size", size.toString());
+  if (search) queryParams.append("search", search);
+  if (role && role !== "all") queryParams.append("role", role);
+  if (status && status !== "all") queryParams.append("status", status);
 
-  const res = await httpClient(`${BACKEND_URL}/organizations/${orgId}/users?${params.toString()}`, {
+  const res = await httpClient(`${BACKEND_URL}/organizations/${orgId}/users?${queryParams.toString()}`, {
     token,
     cache: "no-store",
   });

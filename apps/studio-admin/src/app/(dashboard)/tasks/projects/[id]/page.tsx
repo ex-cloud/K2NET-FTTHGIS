@@ -1,28 +1,19 @@
-
-
-import React, { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation-compat";
 import { useSession } from "@/lib/auth-compat";
-import { Link } from "@/lib/navigation-compat";
-import {
-  Box,
-  Plus,
-  ExternalLink,
-  Loader2,
-  FileDown,
-} from "lucide-react";
-import { toast } from "sonner";
-import { useTasksQuery, type Task, type TaskComment, type TaskScope } from "@/hooks/useTasksQuery";
+import { Loader2 } from "lucide-react";
+import { useTasksQuery } from "@/hooks/useTasksQuery";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
-import { httpClient } from "@/lib/httpClient";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { NewTaskDialog } from "@/components/tasks/NewTaskDialog";
 import { ProjectOverviewTab } from "@/components/tasks/projects/ProjectOverviewTab";
 import { ProjectActivityTab } from "@/components/tasks/projects/ProjectActivityTab";
 import { ProjectIssuesTab } from "@/components/tasks/projects/ProjectIssuesTab";
-import { cn } from "@/lib/utils";
-
-type ProjectTab = "overview" | "activity" | "issues";
+import { ProjectDetailHeader } from "@/components/tasks/projects/ProjectDetailHeader";
+import {
+  ProjectDetailTabsBar,
+  type ProjectTab,
+} from "@/components/tasks/projects/ProjectDetailTabsBar";
+import { useProjectDetail } from "@/components/tasks/projects/use-project-detail";
 
 export default function ProjectHubDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,271 +22,16 @@ export default function ProjectHubDetailPage() {
   const { users: teamUsers } = useTeamUsers();
 
   const [activeTab, setActiveTab] = useState<ProjectTab>("overview");
-  const { task: projectTask, loading, refresh } = useTasksQuery(id);
-  const [subtasks, setSubtasks] = useState<Task[]>([]);
-  const [subtasksLoading, setSubtasksLoading] = useState(true);
-
-  const fetchSubtasks = React.useCallback(async () => {
-    if (!session?.accessToken || !id) return;
-    try {
-      setSubtasksLoading(true);
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${id}/subtasks`, {
-        token: session.accessToken,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSubtasks(Array.isArray(data) ? data : []);
-      }
-    } catch (e) {
-      console.error("Failed to fetch project subtasks:", e);
-    } finally {
-      setSubtasksLoading(false);
-    }
-  }, [id, session?.accessToken]);
-
-  useEffect(() => {
-    fetchSubtasks();
-  }, [fetchSubtasks]);
-
-  // Editable fields
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("IN_PROGRESS");
-  const [priority, setPriority] = useState("NORMAL");
-  const [assigneeId, setAssigneeId] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<string | undefined>();
-  const [healthStatus, setHealthStatus] = useState<"On track" | "At risk" | "Off track">("On track");
-
-  // Activity update draft
-  const [updateMode, setUpdateMode] = useState<"update" | "comment">("update");
-  const [updateText, setUpdateText] = useState("");
-  const [postingUpdate, setPostingUpdate] = useState(false);
-  const [comments, setComments] = useState<TaskComment[]>([]);
-
-  // Issue creation modal for this project
   const [newIssueOpen, setNewIssueOpen] = useState(false);
 
-  // Sync project data
-  useEffect(() => {
-    if (projectTask) {
-      setTitle(projectTask.title);
-      setDescription(projectTask.description ?? "");
-      setStatus(projectTask.status);
-      setPriority(projectTask.priority);
-      setAssigneeId(projectTask.assigneeId ?? null);
-      setDueDate(projectTask.dueDate);
-      setComments(projectTask.comments ?? []);
-      document.title = `Projects › ${projectTask.title} | FTTH GIS K2NET`;
-    }
-  }, [projectTask]);
+  const { task: projectTask, loading, refresh } = useTasksQuery(id);
 
-  // All issues associated with this project
-  const projectIssues = subtasks;
-
-  const resolvedIssuesCount = projectIssues.filter(
-    (t) => t.status === "RESOLVED" || t.status === "CLOSED"
-  ).length;
-  const totalIssuesCount = projectIssues.length;
-  const progressPercent =
-    totalIssuesCount > 0
-      ? Math.round((resolvedIssuesCount / totalIssuesCount) * 100)
-      : status === "RESOLVED" || status === "CLOSED"
-      ? 100
-      : 0;
-
-  // Save changes to backend (only if fields actually changed)
-  const handleSaveField = async (fields: Partial<Task>) => {
-    if (!projectTask) return;
-
-    const changedFields: Partial<Task> = {};
-    let hasChanges = false;
-
-    if (fields.title !== undefined && fields.title.trim() !== (projectTask.title ?? "")) {
-      changedFields.title = fields.title.trim();
-      hasChanges = true;
-    }
-    if (fields.description !== undefined && fields.description !== (projectTask.description ?? "")) {
-      changedFields.description = fields.description;
-      hasChanges = true;
-    }
-    if (fields.status !== undefined && fields.status !== projectTask.status) {
-      changedFields.status = fields.status;
-      hasChanges = true;
-    }
-    if (fields.priority !== undefined && fields.priority !== projectTask.priority) {
-      changedFields.priority = fields.priority;
-      hasChanges = true;
-    }
-    if (fields.assigneeId !== undefined && fields.assigneeId !== (projectTask.assigneeId ?? null)) {
-      changedFields.assigneeId = fields.assigneeId;
-      hasChanges = true;
-    }
-    if (fields.dueDate !== undefined && fields.dueDate !== (projectTask.dueDate ?? undefined)) {
-      changedFields.dueDate = fields.dueDate;
-      hasChanges = true;
-    }
-
-    if (!hasChanges) {
-      return; // No-op: no actual changes made
-    }
-
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${id}`, {
-        method: "PUT",
-        token: session?.accessToken ?? "",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(changedFields),
-      });
-      if (res.ok) {
-        toast.success("Project updated");
-        refresh();
-      }
-    } catch {
-      toast.error("Failed to update project");
-    }
-  };
-
-  // Post update / comment in Activity tab
-  const handlePostUpdate = async () => {
-    if (!updateText.trim()) return;
-    setPostingUpdate(true);
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${id}/comments`, {
-        method: "POST",
-        token: session?.accessToken ?? "",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: updateText.trim() }),
-      });
-      if (res.ok) {
-        const comment: TaskComment = await res.json();
-        setComments((prev) => [...prev, comment]);
-        setUpdateText("");
-        toast.success("Project update posted");
-      }
-    } catch {
-      toast.error("Failed to post update");
-    } finally {
-      setPostingUpdate(false);
-    }
-  };
-
-  // Quick toggle issue status in Issues tab
-  const handleToggleIssueStatus = async (issue: Task) => {
-    const nextStatus =
-      issue.status === "RESOLVED" || issue.status === "CLOSED" ? "TODO" : "RESOLVED";
-    await handleUpdateIssue(issue.id, { status: nextStatus });
-  };
-
-  const handleUpdateIssue = async (issueId: string, fields: Partial<Task>) => {
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${issueId}`, {
-        method: "PUT",
-        token: session?.accessToken ?? "",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
-      });
-      if (res.ok) {
-        toast.success("Issue updated");
-        fetchSubtasks();
-        refresh();
-      } else {
-        toast.error("Failed to update issue");
-      }
-    } catch {
-      toast.error("Network error while updating issue");
-    }
-  };
-
-  const handleDeleteIssue = async (issueId: string) => {
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const res = await httpClient(`${baseUrl}/tasks/${issueId}`, {
-        method: "DELETE",
-        token: session?.accessToken ?? "",
-      });
-      if (res.ok) {
-        toast.success("Issue deleted successfully");
-        fetchSubtasks();
-        refresh();
-      } else {
-        toast.error("Failed to delete issue");
-      }
-    } catch {
-      toast.error("Network error while deleting issue");
-    }
-  };
-
-  const handleQuickCreateIssue = async (quickTitle: string) => {
-    try {
-      const baseUrl = getBackendBaseUrl();
-      const payload = {
-        type: "TICKET",
-        title: quickTitle,
-        priority: "NORMAL",
-        status: "TODO",
-        scope: projectTask?.scope ?? "PLATFORM_INTERNAL",
-        parentTaskId: id,
-        obsidianRef: projectTask?.obsidianRef || undefined,
-        referenceType: "PROJECT",
-        referenceId: id,
-      };
-      const res = await httpClient(`${baseUrl}/tasks`, {
-        method: "POST",
-        token: session?.accessToken ?? "",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        toast.success(`Issue "${quickTitle}" created`);
-        fetchSubtasks();
-        refresh();
-      } else {
-        toast.error("Failed to create issue");
-      }
-    } catch {
-      toast.error("Network error while creating issue");
-    }
-  };
-
-  const handleExportMarkdown = () => {
-    if (!projectTask) return;
-    const dateStr = new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    let md = `# Project Specification: ${projectTask.title}\n\n`;
-    md += `> **Reference:** \`${projectTask.obsidianRef || "PRJ-DRAFT"}\`  \n`;
-    md += `> **Status:** ${projectTask.status} | **Priority:** ${projectTask.priority || "NORMAL"} | **Health:** ${healthStatus}  \n`;
-    md += `> **Lead:** ${assigneeId || "Unassigned"} | **Target Date:** ${dueDate ? new Date(dueDate).toLocaleDateString("id-ID") : "TBD"}  \n`;
-    md += `> **Export Date:** ${dateStr}  \n\n`;
-    md += `---\n\n`;
-    md += `## 1. Executive Summary & Specification\n\n`;
-    md += `${description || "_No specification description documented._"}\n\n`;
-    md += `---\n\n`;
-    md += `## 2. Issues Breakdown (${resolvedIssuesCount}/${totalIssuesCount} Resolved - ${progressPercent}% Complete)\n\n`;
-
-    if (projectIssues.length === 0) {
-      md += `_No issues logged under this project._\n`;
-    } else {
-      md += `| Ref | Issue Title | Priority | Status | Assignee |\n`;
-      md += `| :--- | :--- | :--- | :--- | :--- |\n`;
-      projectIssues.forEach((issue) => {
-        md += `| ${issue.obsidianRef || issue.id.substring(0, 8)} | ${issue.title} | ${issue.priority || "NORMAL"} | ${issue.status} | ${issue.assigneeId || "Unassigned"} |\n`;
-      });
-    }
-
-    navigator.clipboard.writeText(md).then(() => {
-      toast.success("Tech spec & issues markdown copied to clipboard!");
-    }).catch(() => {
-      toast.info("Markdown generated");
-    });
-  };
+  const proj = useProjectDetail({
+    id,
+    sessionToken: session?.accessToken ?? undefined,
+    projectTask,
+    refresh,
+  });
 
   if (loading) {
     return (
@@ -322,144 +58,72 @@ export default function ProjectHubDetailPage() {
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden">
       {/* ── 1. Top Header with Linear Breadcrumbs ──────────────────────── */}
-      <div className="px-6 py-3.5 border-b border-border/50 shrink-0 flex items-center justify-between bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-xs">
-          <Link
-            href="/tasks/projects"
-            className="text-muted-foreground hover:text-foreground font-medium transition-colors"
-          >
-            Projects
-          </Link>
-          <span className="text-muted-foreground/60">›</span>
-          <div className="flex items-center gap-1.5 font-semibold text-foreground">
-            <Box className="w-3.5 h-3.5 text-purple-400" />
-            <span>{title || projectTask.title}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {projectTask.obsidianRef && (
-            <a
-              href={`obsidian://open?vault=K2NET_Engineering_Vault&file=${projectTask.obsidianRef}`}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted/70 px-2 py-1 rounded-md transition-colors font-mono"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>{projectTask.obsidianRef}</span>
-            </a>
-          )}
-          <button
-            onClick={handleExportMarkdown}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-            title="Copy Spec as Markdown"
-          >
-            <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">Export Spec</span>
-          </button>
-          <button
-            onClick={() => setNewIssueOpen(true)}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-sm transition-colors cursor-pointer"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Add issue</span>
-          </button>
-        </div>
-      </div>
+      <ProjectDetailHeader
+        title={proj.title}
+        projectTask={projectTask}
+        onExportMarkdown={proj.handleExportMarkdown}
+        onOpenNewIssue={() => setNewIssueOpen(true)}
+      />
 
       {/* ── 2. Linear Tabs Bar ─────────────────────────────────────────── */}
-      <div className="px-6 border-b border-border/40 shrink-0 bg-background/50 flex items-center gap-1">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={cn(
-            "px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer",
-            activeTab === "overview"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab("activity")}
-          className={cn(
-            "px-3 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer",
-            activeTab === "activity"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <span>Activity</span>
-          {comments.length > 0 && (
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">
-              {comments.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("issues")}
-          className={cn(
-            "px-3 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer",
-            activeTab === "issues"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <span>Issues</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-bold">
-            {resolvedIssuesCount}/{totalIssuesCount}
-          </span>
-        </button>
-      </div>
+      <ProjectDetailTabsBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        commentsCount={proj.comments.length}
+        resolvedIssuesCount={proj.resolvedIssuesCount}
+        totalIssuesCount={proj.totalIssuesCount}
+      />
 
       {/* ── 3. Tab Contents ────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-auto custom-scrollbar-thin p-6 md:p-8">
         <div className="max-w-4xl mx-auto">
           {activeTab === "overview" && (
             <ProjectOverviewTab
-              title={title}
-              setTitle={setTitle}
-              description={description}
-              setDescription={setDescription}
-              status={status}
-              setStatus={setStatus}
-              priority={priority}
-              setPriority={setPriority}
-              assigneeId={assigneeId}
-              setAssigneeId={setAssigneeId}
-              dueDate={dueDate}
-              setDueDate={setDueDate}
-              healthStatus={healthStatus}
+              title={proj.title}
+              setTitle={proj.setTitle}
+              description={proj.description}
+              setDescription={proj.setDescription}
+              status={proj.status}
+              setStatus={proj.setStatus}
+              priority={proj.priority}
+              setPriority={proj.setPriority}
+              assigneeId={proj.assigneeId}
+              setAssigneeId={proj.setAssigneeId}
+              dueDate={proj.dueDate}
+              setDueDate={proj.setDueDate}
+              healthStatus={proj.healthStatus}
               projectTask={projectTask}
               teamUsers={teamUsers}
-              progressPercent={progressPercent}
-              resolvedIssuesCount={resolvedIssuesCount}
-              totalIssuesCount={totalIssuesCount}
-              onSaveField={handleSaveField}
+              progressPercent={proj.progressPercent}
+              resolvedIssuesCount={proj.resolvedIssuesCount}
+              totalIssuesCount={proj.totalIssuesCount}
+              onSaveField={proj.handleSaveField}
             />
           )}
 
           {activeTab === "activity" && (
             <ProjectActivityTab
-              updateMode={updateMode}
-              setUpdateMode={setUpdateMode}
-              updateText={updateText}
-              setUpdateText={setUpdateText}
-              postingUpdate={postingUpdate}
-              progressPercent={progressPercent}
-              comments={comments}
-              onPostUpdate={handlePostUpdate}
+              updateMode={proj.updateMode}
+              setUpdateMode={proj.setUpdateMode}
+              updateText={proj.updateText}
+              setUpdateText={proj.setUpdateText}
+              postingUpdate={proj.postingUpdate}
+              progressPercent={proj.progressPercent}
+              comments={proj.comments}
+              onPostUpdate={proj.handlePostUpdate}
             />
           )}
 
           {activeTab === "issues" && (
             <ProjectIssuesTab
-              projectIssues={projectIssues}
-              resolvedIssuesCount={resolvedIssuesCount}
-              totalIssuesCount={totalIssuesCount}
+              projectIssues={proj.projectIssues}
+              resolvedIssuesCount={proj.resolvedIssuesCount}
+              totalIssuesCount={proj.totalIssuesCount}
               onNewIssueClick={() => setNewIssueOpen(true)}
-              onQuickCreateIssue={handleQuickCreateIssue}
-              onToggleIssueStatus={handleToggleIssueStatus}
-              onUpdateIssue={handleUpdateIssue}
-              onDeleteIssue={handleDeleteIssue}
+              onQuickCreateIssue={proj.handleQuickCreateIssue}
+              onToggleIssueStatus={proj.handleToggleIssueStatus}
+              onUpdateIssue={proj.handleUpdateIssue}
+              onDeleteIssue={proj.handleDeleteIssue}
             />
           )}
         </div>
@@ -470,7 +134,7 @@ export default function ProjectHubDetailPage() {
         open={newIssueOpen}
         onOpenChange={setNewIssueOpen}
         onSuccess={() => {
-          fetchSubtasks();
+          proj.fetchSubtasks();
           refresh();
         }}
         defaultValues={{

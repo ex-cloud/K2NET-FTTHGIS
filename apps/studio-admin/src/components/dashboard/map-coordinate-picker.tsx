@@ -10,9 +10,9 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter,
+  DialogFooter, 
   DialogDescription,
-  Button
+  Button 
 } from "@k2net/ui";
 import { useTheme } from "@/lib/navigation-compat";
 import { Crosshair, MapPin, Check, X, Plus, Minus, Search, Loader2 } from "lucide-react";
@@ -23,26 +23,25 @@ const MAP_STYLES = {
   dark: "https://tiles.openfreemap.org/styles/dark",
 };
 
-// ESRI Satellite Style (High Quality, Tokenless)
 const SATELLITE_STYLE = {
   version: 8,
   sources: {
-    'satellite': {
-      type: 'raster',
-      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+    satellite: {
+      type: "raster",
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      attribution: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-    }
+      attribution: "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+    },
   },
   layers: [
     {
-      id: 'satellite',
-      type: 'raster',
-      source: 'satellite',
+      id: "satellite",
+      type: "raster",
+      source: "satellite",
       minzoom: 0,
-      maxzoom: 20
-    }
-  ]
+      maxzoom: 20,
+    },
+  ],
 };
 
 interface MapCoordinatePickerProps {
@@ -54,13 +53,159 @@ interface MapCoordinatePickerProps {
   title?: string;
 }
 
+function MapPickerHeader({
+  title,
+  isSatellite,
+  setIsSatellite,
+}: {
+  title: string;
+  isSatellite: boolean;
+  setIsSatellite: (val: boolean) => void;
+}) {
+  return (
+    <DialogHeader className="p-6 bg-muted/80 backdrop-blur-xl border-b border-border z-10">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <DialogTitle className="text-foreground text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-[10px] uppercase font-black tracking-tight mt-1">
+              Click on the map or drag to center the target location
+            </DialogDescription>
+          </div>
+        </div>
+
+        <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSatellite(false)}
+            className={cn(
+              "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+              !isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Standard
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSatellite(true)}
+            className={cn(
+              "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+              isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Satellite
+          </Button>
+        </div>
+      </div>
+    </DialogHeader>
+  );
+}
+
+function MapOverlays({
+  isFetchingAddress,
+  address,
+  latitude,
+  longitude,
+  onZoomIn,
+  onZoomOut,
+}: {
+  isFetchingAddress: boolean;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+}) {
+  return (
+    <>
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 w-16 h-16 -translate-x-8 -translate-y-8 rounded-full border-2 border-blue-500/40 animate-ping" />
+          <div className="absolute inset-0 w-12 h-12 -translate-x-6 -translate-y-6 rounded-full bg-blue-500/10 border border-blue-500/30" />
+          <div className="absolute h-10 w-[2px] bg-blue-500 -left-px top-[-20px]" />
+          <div className="absolute w-10 h-[2px] bg-blue-500 -top-px left-[-20px]" />
+          <Crosshair className="relative w-8 h-8 text-foreground drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
+        </div>
+      </div>
+
+      <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
+        <div className="bg-background/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
+          <div
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
+              isFetchingAddress ? "bg-blue-500/10" : "bg-blue-500/20 shadow-lg shadow-blue-500/10"
+            )}
+          >
+            {isFetchingAddress ? (
+              <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+            ) : (
+              <Search className="w-5 h-5 text-blue-500" />
+            )}
+          </div>
+          <div className="flex flex-col gap-1 overflow-hidden">
+            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">
+              Target Area Identity
+            </span>
+            <p
+              className={cn(
+                "text-xs font-bold text-foreground truncate w-full transition-opacity duration-300",
+                isFetchingAddress ? "opacity-50" : "opacity-100"
+              )}
+            >
+              {address || "Locating coordinates..."}
+            </p>
+            <div className="flex items-center gap-3 mt-1 opacity-50">
+              <span className="text-[9px] font-mono text-muted-foreground">Precision Resolve Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-muted/90 backdrop-blur-xl border border-border/10 shadow-2xl space-y-2">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lat</span>
+          <span className="text-xs font-mono text-blue-400 font-bold">{latitude.toFixed(10)}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lng</span>
+          <span className="text-xs font-mono text-blue-400 font-bold">{longitude.toFixed(10)}</span>
+        </div>
+      </div>
+
+      <div className="absolute right-6 bottom-6 flex flex-col gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={onZoomIn}
+          className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
+        >
+          <Plus className="w-5 h-5" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={onZoomOut}
+          className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
+        >
+          <Minus className="w-5 h-5" />
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function MapCoordinatePicker({
   open,
   onOpenChange,
   initialLat,
   initialLng,
   onConfirm,
-  title = "Select Location from Map"
+  title = "Select Location from Map",
 }: MapCoordinatePickerProps) {
   const mapRef = React.useRef<MapRef>(null);
   const { theme } = useTheme();
@@ -68,31 +213,28 @@ export function MapCoordinatePicker({
   const [isSatellite, setIsSatellite] = React.useState(false);
 
   const [viewState, setViewState] = React.useState({
-    longitude: 107.6191, // Default Bandung
+    longitude: 107.6191,
     latitude: -6.9175,
-    zoom: 15
+    zoom: 15,
   });
 
   const [address, setAddress] = React.useState<string | null>(null);
   const [isFetchingAddress, setIsFetchingAddress] = React.useState(false);
   const addressTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Sync initial position when opening
   React.useEffect(() => {
     if (open) {
       const lat = parseFloat(initialLat || "-6.9175");
       const lng = parseFloat(initialLng || "107.6191");
-      
-      setViewState(prev => ({
+      setViewState((prev) => ({
         ...prev,
         latitude: isNaN(lat) ? -6.9175 : lat,
         longitude: isNaN(lng) ? 107.6191 : lng,
-        zoom: initialLat && initialLng ? 18 : 15
+        zoom: initialLat && initialLng ? 18 : 15,
       }));
     }
   }, [open, initialLat, initialLng]);
 
-  // Fix hydration
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -105,16 +247,12 @@ export function MapCoordinatePicker({
         {
           headers: {
             "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-            "User-Agent": "FTTH-GIS-Dashboard/1.0"
-          }
+            "User-Agent": "FTTH-GIS-Dashboard/1.0",
+          },
         }
       );
       const data = await response.json();
-      if (data && data.display_name) {
-        setAddress(data.display_name);
-      } else {
-        setAddress("Address not found");
-      }
+      setAddress(data?.display_name || "Address not found");
     } catch (error) {
       console.error("Geocoding error:", error);
       setAddress("Error fetching address");
@@ -123,16 +261,12 @@ export function MapCoordinatePicker({
     }
   };
 
-  // Debounced address fetch on viewState change
   React.useEffect(() => {
     if (!open) return;
-
     if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
-
     addressTimeoutRef.current = setTimeout(() => {
       fetchAddress(viewState.latitude, viewState.longitude);
-    }, 800); // Wait for map to settle
-
+    }, 800);
     return () => {
       if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
     };
@@ -150,64 +284,22 @@ export function MapCoordinatePicker({
   const handleMapClick = (evt: MapLayerMouseEvent) => {
     const { lng, lat } = evt.lngLat;
     if (mapRef.current) {
-      mapRef.current.flyTo({
-        center: [lng, lat],
-        duration: 800,
-        essential: true
-      });
+      mapRef.current.flyTo({ center: [lng, lat], duration: 800, essential: true });
     }
   };
 
-  const currentMapStyle = isSatellite 
-    ? SATELLITE_STYLE 
-    : (theme === "dark" ? MAP_STYLES.dark : MAP_STYLES.light);
+  const currentMapStyle = isSatellite
+    ? SATELLITE_STYLE
+    : theme === "dark"
+    ? MAP_STYLES.dark
+    : MAP_STYLES.light;
 
   if (!mounted) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-background border-border rounded-3xl gap-0 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]">
-        <DialogHeader className="p-6 bg-muted/80 backdrop-blur-xl border-b border-border z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <DialogTitle className="text-foreground text-lg font-bold uppercase tracking-widest">{title}</DialogTitle>
-                <DialogDescription className="text-muted-foreground text-[10px] uppercase font-black tracking-tight mt-1">
-                  Click on the map or drag to center the target location
-                </DialogDescription>
-              </div>
-            </div>
-
-            {/* Map Style Toggle */}
-            <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border">
-                <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setIsSatellite(false)}
-                    className={cn(
-                        "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                        !isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                    Standard
-                </Button>
-                <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setIsSatellite(true)}
-                    className={cn(
-                        "h-8 px-4 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                        isSatellite ? "bg-blue-600 text-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                    Satellite
-                </Button>
-            </div>
-          </div>
-        </DialogHeader>
+        <MapPickerHeader title={title} isSatellite={isSatellite} setIsSatellite={setIsSatellite} />
 
         <div className="relative h-[550px] w-full">
           <Map
@@ -215,98 +307,32 @@ export function MapCoordinatePicker({
             onMove={(evt: ViewStateChangeEvent) => setViewState(evt.viewState)}
             onClick={handleMapClick}
             mapStyle={currentMapStyle as StyleSpecification}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: "100%", height: "100%" }}
             ref={mapRef}
             cursor="crosshair"
           >
-            {/* Center Crosshair Overlay */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="relative">
-                {/* Visual Circle Pulse */}
-                <div className="absolute inset-0 w-16 h-16 -translate-x-8 -translate-y-8 rounded-full border-2 border-blue-500/40 animate-ping" />
-                <div className="absolute inset-0 w-12 h-12 -translate-x-6 -translate-y-6 rounded-full bg-blue-500/10 border border-blue-500/30" />
-                
-                {/* Crosshair Lines */}
-                <div className="absolute h-10 w-[2px] bg-blue-500 -left-px top-[-20px]" />
-                <div className="absolute w-10 h-[2px] bg-blue-500 -top-px left-[-20px]" />
-                
-                <Crosshair className="relative w-8 h-8 text-foreground drop-shadow-[0_0_12px_rgba(59,130,246,1)]" />
-              </div>
-            </div>
-
-            {/* Address Indicator Overlay */}
-            <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
-              <div className="bg-background/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
-                  isFetchingAddress ? "bg-blue-500/10" : "bg-blue-500/20 shadow-lg shadow-blue-500/10"
-                )}>
-                  {isFetchingAddress ? (
-                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                  ) : (
-                    <Search className="w-5 h-5 text-blue-500" />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1 overflow-hidden">
-                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Target Area Identity</span>
-                  <p className={cn(
-                    "text-xs font-bold text-foreground truncate w-full transition-opacity duration-300",
-                    isFetchingAddress ? "opacity-50" : "opacity-100"
-                  )}>
-                    {address || "Locating coordinates..."}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1 opacity-50">
-                    <span className="text-[9px] font-mono text-muted-foreground">Precision Resolve Active</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Coordinate Badge Overlay */}
-            <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-muted/90 backdrop-blur-xl border border-border/10 shadow-2xl space-y-2">
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lat</span>
-                    <span className="text-xs font-mono text-blue-400 font-bold">{viewState.latitude.toFixed(10)}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lng</span>
-                    <span className="text-xs font-mono text-blue-400 font-bold">{viewState.longitude.toFixed(10)}</span>
-                </div>
-            </div>
-
-            {/* Quick Zoom Controls */}
-            <div className="absolute right-6 bottom-6 flex flex-col gap-2">
-                <Button 
-                    size="icon" 
-                    variant="outline" 
-                    onClick={() => mapRef.current?.zoomIn()}
-                    className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
-                >
-                    <Plus className="w-5 h-5" />
-                </Button>
-                <Button 
-                    size="icon" 
-                    variant="outline" 
-                    onClick={() => mapRef.current?.zoomOut()}
-                    className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
-                >
-                    <Minus className="w-5 h-5" />
-                </Button>
-            </div>
+            <MapOverlays
+              isFetchingAddress={isFetchingAddress}
+              address={address}
+              latitude={viewState.latitude}
+              longitude={viewState.longitude}
+              onZoomIn={() => mapRef.current?.zoomIn()}
+              onZoomOut={() => mapRef.current?.zoomOut()}
+            />
           </Map>
         </div>
 
         <DialogFooter className="p-6 bg-muted/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             className="h-12 px-6 rounded-2xl border border-border hover:bg-card/5 text-muted-foreground font-bold uppercase tracking-widest text-[10px] transition-all"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={handleConfirm}
             className="h-12 px-10 rounded-2xl bg-blue-600 hover:bg-blue-500 text-foreground font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/25 transition-all active:scale-95"
           >

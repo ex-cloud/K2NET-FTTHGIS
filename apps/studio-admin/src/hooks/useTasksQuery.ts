@@ -26,6 +26,9 @@ export interface Task {
   dueDate?: string;
   resolvedAt?: string;
   obsidianRef?: string;
+  latitude?: number;
+  longitude?: number;
+  assetCode?: string;
   comments?: TaskComment[];
   createdAt: string;
   createdBy?: string;
@@ -140,8 +143,8 @@ export function useTasksQuery(taskId?: string, scope?: TaskScope): UseTasksQuery
           setTasks(content);
           pageRef.current = 0;
         }
-      } catch (err: any) {
-        setError(err.message ?? "Gagal memuat data task");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Gagal memuat data task");
       } finally {
         setLoading(false);
         setLoadingMore(false);

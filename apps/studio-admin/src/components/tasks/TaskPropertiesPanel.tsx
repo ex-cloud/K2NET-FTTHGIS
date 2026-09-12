@@ -254,9 +254,9 @@ export function TaskPropertiesPanel({
 
       {/* ── Spatial GIS Location Preview (Dynamic Auto-detect) ─────── */}
       <TaskSpatialMiniMap
-        latitude={(task as any).latitude}
-        longitude={(task as any).longitude}
-        assetCode={(task as any).assetCode}
+        latitude={task.latitude}
+        longitude={task.longitude}
+        assetCode={task.assetCode}
         textContext={`${task.title} ${task.description ?? ""}`}
         title={task.title}
       />

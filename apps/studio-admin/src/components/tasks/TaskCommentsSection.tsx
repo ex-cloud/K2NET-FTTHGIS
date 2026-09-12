@@ -111,8 +111,8 @@ export function TaskCommentsSection({
         setNewComment((prev) => prev + markdown);
         toast.success(`Berkas ${file.name} berhasil diunggah ke MinIO S3`);
       }
-    } catch (err: any) {
-      toast.error("Gagal mengunggah berkas: " + (err.message ?? "Storage error"));
+    } catch (err: unknown) {
+      toast.error("Gagal mengunggah berkas: " + (err instanceof Error ? err.message : "Storage error"));
     } finally {
       setIsUploadingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

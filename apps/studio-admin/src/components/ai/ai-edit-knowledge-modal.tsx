@@ -8,10 +8,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  Button,
+  Input,
+  Label,
 } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
 import {
   CATEGORIES,
   KNOWLEDGE_SCOPES,
@@ -39,6 +39,114 @@ interface AiEditKnowledgeModalProps {
   onSuccess: () => void;
 }
 
+interface ScopeSelectorProps {
+  scope: KnowledgeScope;
+  setScope: (scope: KnowledgeScope) => void;
+}
+
+function EditScopeSelector({ scope, setScope }: ScopeSelectorProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+        <span>Scope Visibilitas & Hak Akses (Multi-Tenant Isolation)</span>
+        <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
+          Menentukan batasan pengguna yang boleh memanggil pengetahuan ini via AI RAG
+        </span>
+      </Label>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {KNOWLEDGE_SCOPES.map((item) => {
+          const isSelected = scope === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setScope(item.id)}
+              className={`p-3 rounded-lg border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                isSelected
+                  ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
+                  : "border-border bg-background hover:bg-muted/40 text-foreground"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Icon className={`h-4 w-4 ${item.color}`} />
+                  <span className="text-xs font-semibold text-foreground">
+                    {item.label}
+                  </span>
+                </div>
+                {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
+              </div>
+              <p className="text-[11px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
+                {item.description}
+              </p>
+              <div className="mt-2 text-[10px] font-mono font-medium text-foreground/80">
+                {item.id === "PLATFORM_INTERNAL" && "Super Admin Only"}
+                {item.id === "TENANT_INTERNAL" && "Mitra ISP Scope"}
+                {item.id === "GLOBAL" && "Global Knowledge"}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface EditFooterProps {
+  loading: boolean;
+  fetchingDetail: boolean;
+  onClose: () => void;
+  onSave: (targetStatus: KnowledgeStatus, shouldReindex: boolean) => void;
+}
+
+function EditModalFooter({ loading, fetchingDetail, onClose, onSave }: EditFooterProps) {
+  return (
+    <DialogFooter className="px-6 py-3.5 border-t border-border bg-muted/20 flex items-center justify-between sm:justify-between w-full">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onClose}
+        disabled={loading}
+        className="text-xs border-border text-foreground hover:bg-muted cursor-pointer"
+      >
+        Batal
+      </Button>
+
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => onSave("DRAFT", false)}
+          disabled={loading || fetchingDetail}
+          className="text-xs cursor-pointer"
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+          Simpan sebagai Draft
+        </Button>
+
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          onClick={() => onSave("INDEXED", true)}
+          disabled={loading || fetchingDetail}
+          className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs"
+        >
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+          ) : (
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Simpan & Publikasikan (Re-Index)
+        </Button>
+      </div>
+    </DialogFooter>
+  );
+}
+
 export function AiEditKnowledgeModal({
   document,
   isOpen,
@@ -53,7 +161,6 @@ export function AiEditKnowledgeModal({
   const [scope, setScope] = useState<KnowledgeScope>("GLOBAL");
   const [content, setContent] = useState("");
 
-  // Load detail whenever modal opens with a document
   useEffect(() => {
     if (!document || !isOpen) {
       setTitle("");
@@ -69,18 +176,10 @@ export function AiEditKnowledgeModal({
     setFetchingDetail(true);
     getAiDocumentDetail(document.id)
       .then((detail) => {
-        if (detail && detail.raw_content) {
-          setContent(detail.raw_content);
-        }
-        if (detail && detail.title) {
-          setTitle(detail.title);
-        }
-        if (detail && detail.category) {
-          setCategory(detail.category);
-        }
-        if (detail && detail.scope) {
-          setScope(detail.scope as KnowledgeScope);
-        }
+        if (detail?.raw_content) setContent(detail.raw_content);
+        if (detail?.title) setTitle(detail.title);
+        if (detail?.category) setCategory(detail.category);
+        if (detail?.scope) setScope(detail.scope as KnowledgeScope);
       })
       .catch((err) => {
         console.error("Gagal memuat detail dokumen:", err);
@@ -120,8 +219,9 @@ export function AiEditKnowledgeModal({
       );
       onSuccess();
       onClose();
-    } catch (err: any) {
-      toast.error("Gagal menyimpan revisi dokumen: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Gagal menyimpan revisi dokumen: " + msg);
     } finally {
       setLoading(false);
     }
@@ -130,7 +230,6 @@ export function AiEditKnowledgeModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
       <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card border-border shadow-2xl">
-        {/* Header */}
         <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2.5">
@@ -148,7 +247,6 @@ export function AiEditKnowledgeModal({
               </div>
             </div>
 
-            {/* Scope Badge Preview (Offset from close X icon with pr-8) */}
             {document && (
               <div className="flex items-center gap-2">
                 <div className="text-right hidden sm:block">
@@ -164,7 +262,6 @@ export function AiEditKnowledgeModal({
           </div>
         </DialogHeader>
 
-        {/* Body Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
           {fetchingDetail && !content ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-foreground/75 dark:text-muted-foreground">
@@ -173,7 +270,6 @@ export function AiEditKnowledgeModal({
             </div>
           ) : (
             <>
-              {/* Form Grid: Title & Category */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2 space-y-1.5">
                   <Label htmlFor="edit-title" className="text-xs font-semibold text-foreground">
@@ -207,53 +303,8 @@ export function AiEditKnowledgeModal({
                 </div>
               </div>
 
-              {/* Scope Selector: 3 Visual Cards */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                  <span>Scope Visibilitas & Hak Akses (Multi-Tenant Isolation)</span>
-                  <span className="text-[11px] font-normal text-foreground/75 dark:text-muted-foreground">
-                    Menentukan batasan pengguna yang boleh memanggil pengetahuan ini via AI RAG
-                  </span>
-                </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {KNOWLEDGE_SCOPES.map((item) => {
-                    const isSelected = scope === item.id;
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setScope(item.id)}
-                        className={`p-3 rounded-lg border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
-                          isSelected
-                            ? `${item.accentBorder} ${item.accentBg} ring-1 ring-primary/40`
-                            : "border-border bg-background hover:bg-muted/40 text-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Icon className={`h-4 w-4 ${item.color}`} />
-                            <span className="text-xs font-semibold text-foreground">
-                              {item.label}
-                            </span>
-                          </div>
-                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
-                        </div>
-                        <p className="text-[11px] text-foreground/75 dark:text-muted-foreground line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
-                        <div className="mt-2 text-[10px] font-mono font-medium text-foreground/80">
-                          {item.id === "PLATFORM_INTERNAL" && "Super Admin Only"}
-                          {item.id === "TENANT_INTERNAL" && "Mitra ISP Scope"}
-                          {item.id === "GLOBAL" && "Global Knowledge"}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <EditScopeSelector scope={scope} setScope={setScope} />
 
-              {/* Content Editor Section (TipTap Rich Headless Markdown & Table Editor) */}
               <div className="space-y-1.5">
                 <Label htmlFor="edit-content" className="text-xs font-semibold text-foreground flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -273,7 +324,6 @@ export function AiEditKnowledgeModal({
                 />
               </div>
 
-              {/* Status & Re-index notice */}
               <div className="rounded-lg p-3 bg-muted/20 border border-border flex items-start gap-2.5 text-xs text-foreground/80">
                 <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
@@ -289,49 +339,12 @@ export function AiEditKnowledgeModal({
           )}
         </div>
 
-        {/* Footer Actions */}
-        <DialogFooter className="px-6 py-3.5 border-t border-border bg-muted/20 flex items-center justify-between sm:justify-between w-full">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={loading}
-            className="text-xs border-border text-foreground hover:bg-muted cursor-pointer"
-          >
-            Batal
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => handleSave("DRAFT", false)}
-              disabled={loading || fetchingDetail}
-              className="text-xs cursor-pointer"
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
-              Simpan sebagai Draft
-            </Button>
-
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={() => handleSave("INDEXED", true)}
-              disabled={loading || fetchingDetail}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs"
-            >
-              {loading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-              ) : (
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Simpan & Publikasikan (Re-Index)
-            </Button>
-          </div>
-        </DialogFooter>
+        <EditModalFooter
+          loading={loading}
+          fetchingDetail={fetchingDetail}
+          onClose={onClose}
+          onSave={handleSave}
+        />
       </DialogContent>
     </Dialog>
   );

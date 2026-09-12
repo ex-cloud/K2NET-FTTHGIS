@@ -1,6 +1,4 @@
-
-
-import React, { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "@/lib/navigation-compat";
 import {
   CommandPaletteRoot,
@@ -8,39 +6,14 @@ import {
   CommandPaletteGroup,
   CommandPaletteItem,
 } from "@k2net/ui";
-import { SYSTEM_SIDEBAR_NAVIGATION } from "@/config/system-sidebar-navigation";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { toast } from "sonner";
-import { httpClient } from "@/lib/httpClient";
-import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "@/lib/auth-compat";
+import { LayoutDashboard, Users, RefreshCw } from "lucide-react";
 import {
-  LayoutDashboard,
-  Users,
-  ShieldCheck,
-  Radio,
-  Sliders,
-  Database,
-  RefreshCw,
-  Zap,
-  Building2,
-  Mail,
-  FileText,
-  MapPin,
-  Lock,
-  ClipboardList,
-  AlertCircle,
-} from "lucide-react";
-
-interface NavActionItem {
-  id: string;
-  title: string;
-  category: "Navigation" | "Tenants" | "Actions";
-  url?: string;
-  action?: () => Promise<void> | void;
-  icon?: React.ComponentType<{ className?: string }>;
-  badgeText?: string;
-}
+  type NavActionItem,
+  buildStaticNavItems,
+  buildActionItems,
+} from "./command-palette-items";
 
 export function CommandPaletteModal({
   open,
@@ -58,141 +31,25 @@ export function CommandPaletteModal({
   const router = useRouter();
   const { data: session } = useSession();
   const { organizations = [] } = useOrganizations();
-  const [isExecutingAction, setIsExecutingAction] = useState(false);
 
-  // Flatten static navigation items
-  const staticNavItems = useMemo(() => {
-    const items: NavActionItem[] = [
-      { id: "overview", title: "System Overview Dashboard", category: "Navigation", url: "/overview", icon: LayoutDashboard, badgeText: "Page" },
-      { id: "orgs", title: "Organizations & Tenants", category: "Navigation", url: "/organizations", icon: Building2, badgeText: "Page" },
-    ];
+  const staticNavItems = useMemo(() => buildStaticNavItems(), []);
 
-    Object.entries(SYSTEM_SIDEBAR_NAVIGATION).forEach(([sectionKey, sectionData]) => {
-      sectionData.sections.forEach((group) => {
-        group.items.forEach((item) => {
-          items.push({
-            id: `nav-${item.url}`,
-            title: `${sectionData.title} › ${item.title}`,
-            category: "Navigation",
-            url: item.url,
-            badgeText: sectionKey.toUpperCase(),
-          });
-        });
-      });
-    });
-
-    return items;
-  }, []);
-
-  // Map tenants into items
   const tenantItems = useMemo(() => {
     return organizations.slice(0, 10).map((org) => ({
       id: `tenant-${org.id}`,
       title: `${org.name} (${org.slug})`,
       category: "Tenants" as const,
       url: `/organizations/${org.id}`,
-      icon: Building2,
+      icon: Users,
       badgeText: org.status || "Tenant",
     }));
   }, [organizations]);
 
-  // Quick System Actions
-  const actionItems: NavActionItem[] = useMemo(
-    () => [
-      {
-        id: "action-purge-redis",
-        title: "Purge Redis Cache (Flush System Keys)",
-        category: "Actions",
-        icon: Zap,
-        badgeText: "API Action",
-        action: async () => {
-          try {
-            setIsExecutingAction(true);
-            const baseUrl = getBackendBaseUrl();
-            const res = await httpClient(`${baseUrl}/system/cache/purge`, {
-              method: "POST",
-              token: session?.accessToken ?? undefined,
-            });
-            if (res.ok) {
-              toast.success("Redis Cache berhasil dibersihkan!");
-            } else {
-              toast.info("Command cache purge dikirimkan ke worker.");
-            }
-          } catch {
-            toast.info("Sinyal purge Redis cache telah dikirim.");
-          } finally {
-            setIsExecutingAction(false);
-          }
-        },
-      },
-      {
-        id: "action-reload-kong",
-        title: "Reload Kong Gateway Declarative Routes",
-        category: "Actions",
-        icon: RefreshCw,
-        badgeText: "API Action",
-        action: async () => {
-          try {
-            setIsExecutingAction(true);
-            const baseUrl = getBackendBaseUrl();
-            await httpClient(`${baseUrl}/system/gateway/reload-kong`, {
-              method: "POST",
-              token: session?.accessToken ?? undefined,
-            });
-            toast.success("Konfigurasi rute Kong API Gateway diperbarui!");
-          } catch {
-            toast.info("Sinyal reload Kong Gateway dikirim.");
-          } finally {
-            setIsExecutingAction(false);
-          }
-        },
-      },
-      {
-        id: "action-test-smtp",
-        title: "Run SMTP Mail Server Connectivity Test",
-        category: "Actions",
-        icon: Mail,
-        badgeText: "Test",
-        action: () => {
-          router.push("/settings/smtp-mail");
-        },
-      },
-      // ── Task Management Quick Actions ──────────────────────────
-      {
-        id: "action-create-ticket",
-        title: "Create New Support Ticket",
-        category: "Actions",
-        icon: ClipboardList,
-        badgeText: "Tasks",
-        action: () => {
-          router.push("/tasks/new?type=TICKET");
-        },
-      },
-      {
-        id: "action-open-kanban",
-        title: "Open Project Kanban Board",
-        category: "Actions",
-        icon: ClipboardList,
-        badgeText: "Tasks",
-        action: () => {
-          router.push("/tasks?view=kanban");
-        },
-      },
-      {
-        id: "action-view-urgent",
-        title: "View All Urgent Tickets Now",
-        category: "Actions",
-        icon: AlertCircle,
-        badgeText: "Tasks",
-        action: () => {
-          router.push("/tasks?priority=URGENT&status=TODO");
-        },
-      },
-    ],
+  const actionItems = useMemo(
+    () => buildActionItems(session?.accessToken ?? undefined, (path) => router.push(path)),
     [session?.accessToken, router]
   );
 
-  // Filter items by query
   const filteredNav = useMemo(() => {
     if (!query.trim()) return staticNavItems.slice(0, 5);
     const q = query.toLowerCase();
@@ -220,6 +77,9 @@ export function CommandPaletteModal({
       router.push(item.url);
     }
   };
+
+  const hasNoResults =
+    filteredNav.length === 0 && filteredTenants.length === 0 && filteredActions.length === 0;
 
   return (
     <CommandPaletteRoot open={open} onOpenChange={onOpenChange}>
@@ -251,7 +111,7 @@ export function CommandPaletteModal({
               <CommandPaletteItem
                 key={item.id}
                 onSelect={() => handleSelectItem(item)}
-                icon={Building2}
+                icon={item.icon || Users}
                 badgeText={item.badgeText}
               >
                 {item.title}
@@ -275,7 +135,7 @@ export function CommandPaletteModal({
           </CommandPaletteGroup>
         )}
 
-        {filteredNav.length === 0 && filteredTenants.length === 0 && filteredActions.length === 0 && (
+        {hasNoResults && (
           <div className="py-12 text-center text-xs text-muted-foreground">
             Tidak ada hasil untuk &quot;<span className="font-semibold text-foreground">{query}</span>&quot;
           </div>

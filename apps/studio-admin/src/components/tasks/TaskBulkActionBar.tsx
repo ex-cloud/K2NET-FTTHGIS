@@ -6,8 +6,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  Button,
-} from "@k2net/ui";
+  } from "@k2net/ui";
 import {
   CircleDot,
   Clock,
@@ -22,10 +21,8 @@ import {
   X,
   Minus,
   Building2,
-  Layers,
-} from "lucide-react";
+  } from "lucide-react";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
-import { cn } from "@/lib/utils";
 
 interface TaskBulkActionBarProps {
   selectedCount: number;

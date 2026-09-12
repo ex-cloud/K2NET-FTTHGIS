@@ -10,6 +10,108 @@ import { ResetConfirmModal } from "@/components/observability/reset-confirm-moda
 import { QueryPerformanceBanner } from "@/components/observability/query-performance-banner";
 import { QueryPerformanceToolbar } from "@/components/observability/query-performance-toolbar";
 
+function QueryHeader({ error }: { error: string | null }) {
+  return (
+    <div className="flex items-center justify-between px-4 md:px-6">
+      <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
+        Query Performance
+      </h1>
+      <div className="flex items-center gap-2">
+        {error && (
+          <div className="flex items-center gap-1 text-[10px] text-amber-500 mr-2">
+            <AlertCircle className="h-3 w-3" />
+            {error}
+          </div>
+        )}
+        <a
+          href="https://supabase.com/docs/guides/platform/performance"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-card hover:bg-muted/30 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors h-8"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Docs
+        </a>
+        <select
+          disabled
+          className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
+        >
+          <option>Source</option>
+        </select>
+        <select
+          disabled
+          className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
+        >
+          <option>Primary Database</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function QueryKpiBar({ stats }: { stats: { slowQueriesCount: number; cacheHitRate: number; avgRowsPerCall: number } }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6">
+      <div className="flex items-center gap-1.5">
+        <span className="font-bold text-foreground font-mono">{stats.slowQueriesCount}</span>
+        <span>Slow Queries</span>
+        <span title="Number of statements taking longer than 50ms on average." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+          <HelpCircle className="h-3.5 w-3.5" />
+        </span>
+      </div>
+      <span className="text-muted-foreground/30 px-1">/</span>
+      <div className="flex items-center gap-1.5">
+        <span className="font-bold text-foreground font-mono">{stats.cacheHitRate.toFixed(2)}%</span>
+        <span>Cache Hit Rate</span>
+        <span title="Percentage of blocks read from memory buffer cache vs disk." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+          <HelpCircle className="h-3.5 w-3.5" />
+        </span>
+      </div>
+      <span className="text-muted-foreground/30 px-1">/</span>
+      <div className="flex items-center gap-1.5">
+        <span className="font-bold text-foreground font-mono">{stats.avgRowsPerCall.toFixed(1)}</span>
+        <span>Avg. Rows Per Call</span>
+        <span title="Average number of rows returned or affected per statement call." className="cursor-help text-muted-foreground/60 hover:text-foreground">
+          <HelpCircle className="h-3.5 w-3.5" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function QueryTabNav({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: "queries" | "indexes";
+  onTabChange: (tab: "queries" | "indexes") => void;
+}) {
+  return (
+    <div className="flex border-b border-border/80 gap-6 text-xs font-semibold px-4 md:px-6">
+      <button
+        onClick={() => onTabChange("queries")}
+        className={`pb-2 px-1 border-b-2 transition-all ${
+          activeTab === "queries"
+            ? "border-primary text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        Slow Queries Log
+      </button>
+      <button
+        onClick={() => onTabChange("indexes")}
+        className={`pb-2 px-1 border-b-2 transition-all ${
+          activeTab === "indexes"
+            ? "border-primary text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        Spatial Index Registries
+      </button>
+    </div>
+  );
+}
+
 export default function QueryPerformancePage() {
   const {
     slowQueries,
@@ -88,94 +190,9 @@ export default function QueryPerformancePage() {
 
   return (
     <div className="relative flex flex-col w-full h-full bg-background pt-6 pb-0 gap-6 select-none overflow-hidden">
-      {/* Top Header Section */}
-      <div className="flex items-center justify-between px-4 md:px-6">
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 tracking-tight">
-          Query Performance
-        </h1>
-
-        {/* Right side navigation buttons / database selectors */}
-        <div className="flex items-center gap-2">
-          {error && (
-            <div className="flex items-center gap-1 text-[10px] text-amber-500 mr-2">
-              <AlertCircle className="h-3 w-3" />
-              {error}
-            </div>
-          )}
-          <a
-            href="https://supabase.com/docs/guides/platform/performance"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-card hover:bg-muted/30 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors h-8"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Docs
-          </a>
-          <select
-            disabled
-            className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
-          >
-            <option>Source</option>
-          </select>
-          <select
-            disabled
-            className="px-3 py-1.5 text-xs border border-border bg-card text-muted-foreground rounded-lg cursor-not-allowed opacity-80 h-8 font-semibold"
-          >
-            <option>Primary Database</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Supabase style inline KPI Stats bar */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground/90 font-medium px-4 md:px-6">
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-foreground font-mono">{stats.slowQueriesCount}</span>
-          <span>Slow Queries</span>
-          <span title="Number of statements taking longer than 50ms on average." className="cursor-help text-muted-foreground/60 hover:text-foreground">
-            <HelpCircle className="h-3.5 w-3.5" />
-          </span>
-        </div>
-        <span className="text-muted-foreground/30 px-1">/</span>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-foreground font-mono">{stats.cacheHitRate.toFixed(2)}%</span>
-          <span>Cache Hit Rate</span>
-          <span title="Percentage of blocks read from memory buffer cache vs disk." className="cursor-help text-muted-foreground/60 hover:text-foreground">
-            <HelpCircle className="h-3.5 w-3.5" />
-          </span>
-        </div>
-        <span className="text-muted-foreground/30 px-1">/</span>
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-foreground font-mono">{stats.avgRowsPerCall.toFixed(1)}</span>
-          <span>Avg. Rows Per Call</span>
-          <span title="Average number of rows returned or affected per statement call." className="cursor-help text-muted-foreground/60 hover:text-foreground">
-            <HelpCircle className="h-3.5 w-3.5" />
-          </span>
-        </div>
-      </div>
-
-      {/* Tabs Menu Navigation */}
-      <div className="flex border-b border-border/80 gap-6 text-xs font-semibold px-4 md:px-6">
-        <button
-          onClick={() => setActiveTab("queries")}
-          className={`pb-2 px-1 border-b-2 transition-all ${
-            activeTab === "queries"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Slow Queries Log
-        </button>
-        <button
-          onClick={() => setActiveTab("indexes")}
-          className={`pb-2 px-1 border-b-2 transition-all ${
-            activeTab === "indexes"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Spatial Index Registries
-        </button>
-      </div>
+      <QueryHeader error={error} />
+      <QueryKpiBar stats={stats} />
+      <QueryTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === "queries" ? (
         <div className="flex-1 min-h-0 flex flex-col px-4 md:px-6 pb-6">

@@ -11,6 +11,8 @@ export interface TaskSummary {
   resolvedToday: number;
 }
 
+export type TaskSummaryDto = TaskSummary;
+
 interface UseTaskSummaryResult {
   summary: TaskSummary | null;
   loading: boolean;
@@ -42,8 +44,8 @@ export function useTaskSummary(): UseTaskSummaryResult {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: TaskSummary = await res.json();
       setSummary(data);
-    } catch (err: any) {
-      setError(err.message ?? "Gagal memuat task summary");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Gagal memuat task summary");
     } finally {
       setLoading(false);
     }

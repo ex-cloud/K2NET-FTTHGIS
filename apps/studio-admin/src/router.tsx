@@ -8,8 +8,8 @@ import * as React from "react";
 // ----------------------------------------------------------------
 // Resilient dynamic import wrapper (handles post-deployment chunk 404s)
 // ----------------------------------------------------------------
-function lazyWithRetry<T extends React.ComponentType<any>>(
-  componentImport: () => Promise<{ default: T }>
+function lazyWithRetry(
+  componentImport: () => Promise<{ default: React.ComponentType }>
 ) {
   return React.lazy(async () => {
     const pageHasAlreadyBeenForceRefreshed =
@@ -23,20 +23,21 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
         window.sessionStorage.setItem("k2net_chunk_force_refreshed", "false");
       }
       return component;
-    } catch (error: any) {
-      const message = error?.message || "";
+    } catch (error: unknown) {
+      const err = error as Error | null | undefined;
+      const message = err?.message || "";
       const isChunkError =
         message.includes("dynamically imported module") ||
         message.includes("Loading chunk") ||
         message.includes("Failed to fetch dynamically imported module") ||
         message.includes("error loading dynamically imported module") ||
-        error?.name === "ChunkLoadError" ||
-        error?.name === "TypeError";
+        err?.name === "ChunkLoadError" ||
+        err?.name === "TypeError";
 
       if (isChunkError && !pageHasAlreadyBeenForceRefreshed && typeof window !== "undefined") {
         window.sessionStorage.setItem("k2net_chunk_force_refreshed", "true");
         window.location.reload();
-        return new Promise<{ default: T }>(() => {});
+        return new Promise<{ default: React.ComponentType }>(() => {});
       }
 
       throw error;

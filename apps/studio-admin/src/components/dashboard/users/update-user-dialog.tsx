@@ -8,17 +8,15 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Label } from "@k2net/ui";
-import {
+  Button,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
 } from "@k2net/ui";
-import { Textarea } from "@k2net/ui";
 import { type User } from "@/types/user";
 import { useSession } from "@/lib/auth-compat";
 import { updateUser } from "@/lib/api/users";

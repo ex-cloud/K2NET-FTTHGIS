@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from "react";
 import {
   DropdownMenu,
@@ -18,8 +16,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-// ─── Types & Defaults ─────────────────────────────────────────────────────────
 
 export interface TaskLabel {
   id: string;
@@ -47,6 +43,151 @@ export const LABEL_COLORS = [
   { name: "Pink", dotColor: "bg-pink-500", badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
   { name: "Red", dotColor: "bg-red-500", badgeColor: "bg-red-500/10 text-red-500 border-red-500/20" },
 ];
+
+interface SearchStepProps {
+  labelSearch: string;
+  setLabelSearch: (s: string) => void;
+  filteredLabels: TaskLabel[];
+  selectedLabelIds: string[];
+  toggleLabel: (id: string) => void;
+  exactLabelMatch: boolean;
+  onStartCreate: (name: string) => void;
+}
+
+const SearchStep: React.FC<SearchStepProps> = ({
+  labelSearch,
+  setLabelSearch,
+  filteredLabels,
+  selectedLabelIds,
+  toggleLabel,
+  exactLabelMatch,
+  onStartCreate,
+}) => (
+  <div className="space-y-1">
+    <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/40 rounded-lg border border-border/50">
+      <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <input
+        type="text"
+        autoFocus
+        placeholder="Add labels..."
+        value={labelSearch}
+        onChange={(e) => setLabelSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && labelSearch.trim() && !exactLabelMatch) {
+            onStartCreate(labelSearch);
+          }
+        }}
+        className="w-full text-xs bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50"
+      />
+      <span className="text-[10px] text-muted-foreground/60 font-mono">L</span>
+    </div>
+
+    <div className="max-h-48 overflow-y-auto space-y-0.5 pt-1">
+      {filteredLabels.map((lbl) => {
+        const isSelected = selectedLabelIds.includes(lbl.id);
+        return (
+          <div
+            key={lbl.id}
+            onClick={() => toggleLabel(lbl.id)}
+            className={cn(
+              "flex items-center justify-between text-xs py-1.5 px-2.5 rounded-md cursor-pointer transition-colors",
+              isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className={cn("w-2 h-2 rounded-full shrink-0", lbl.dotColor)} />
+              <span>{lbl.name}</span>
+            </div>
+            {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+          </div>
+        );
+      })}
+
+      {filteredLabels.length === 0 && !labelSearch.trim() && (
+        <p className="text-[11px] text-muted-foreground text-center py-2">Belum ada label.</p>
+      )}
+    </div>
+
+    {labelSearch.trim() && !exactLabelMatch && (
+      <div className="pt-1 border-t border-border/40">
+        <button
+          type="button"
+          onClick={() => onStartCreate(labelSearch)}
+          className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-semibold text-left transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Create new label: &ldquo;{labelSearch.trim()}&rdquo;</span>
+        </button>
+      </div>
+    )}
+  </div>
+);
+
+interface ScopeStepProps {
+  onBack: () => void;
+  onSelectScope: (scope: "Workspace" | "K2net") => void;
+}
+
+const ScopeStep: React.FC<ScopeStepProps> = ({ onBack, onSelectScope }) => (
+  <div className="space-y-1">
+    <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 mb-1">
+      <button type="button" onClick={onBack} className="p-1 rounded text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[11px] font-semibold text-muted-foreground">Pick a scope for label</span>
+      <div className="w-5" />
+    </div>
+
+    <button
+      type="button"
+      onClick={() => onSelectScope("Workspace")}
+      className="w-full flex items-center gap-2 text-xs py-2 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
+    >
+      <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+      <span>Workspace</span>
+    </button>
+
+    <button
+      type="button"
+      onClick={() => onSelectScope("K2net")}
+      className="w-full flex items-center gap-2 text-xs py-2 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
+    >
+      <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
+      <span>K2net</span>
+    </button>
+  </div>
+);
+
+interface ColorStepProps {
+  onBack: () => void;
+  onSelectColor: (color: typeof LABEL_COLORS[0]) => void;
+}
+
+const ColorStep: React.FC<ColorStepProps> = ({ onBack, onSelectColor }) => (
+  <div className="space-y-1">
+    <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 mb-1">
+      <button type="button" onClick={onBack} className="p-1 rounded text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[11px] font-semibold text-muted-foreground">Pick a color for label</span>
+      <div className="w-5" />
+    </div>
+
+    <div className="max-h-56 overflow-y-auto space-y-0.5">
+      {LABEL_COLORS.map((col) => (
+        <button
+          key={col.name}
+          type="button"
+          onClick={() => onSelectColor(col)}
+          className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
+        >
+          <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", col.dotColor)} />
+          <span>{col.name}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 interface TaskLabelPickerProps {
   selectedLabelIds: string[];
@@ -112,11 +253,9 @@ export function TaskLabelPicker({
       localStorage.setItem("k2net_custom_labels", JSON.stringify(updated));
     } catch { /* ignore */ }
 
-    // Auto-select the newly created label
     onChange(Array.from(new Set([...selectedLabelIds, id])));
     toast.success(`Label "${newLbl.name}" berhasil dibuat`);
 
-    // Reset wizard
     setLabelSearch("");
     setLabelStep("search");
   };
@@ -150,136 +289,31 @@ export function TaskLabelPicker({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-64 z-[100] p-1.5" onClick={(e) => e.stopPropagation()}>
-        
-        {/* ── STEP 1: Search & Select or Create Label ───────────────── */}
         {labelStep === "search" && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/40 rounded-lg border border-border/50">
-              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Add labels..."
-                value={labelSearch}
-                onChange={(e) => setLabelSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && labelSearch.trim() && !exactLabelMatch) {
-                    handleStartCreateLabel(labelSearch);
-                  }
-                }}
-                className="w-full text-xs bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50"
-              />
-              <span className="text-[10px] text-muted-foreground/60 font-mono">L</span>
-            </div>
-
-            <div className="max-h-48 overflow-y-auto space-y-0.5 pt-1">
-              {filteredLabels.map((lbl) => {
-                const isSelected = selectedLabelIds.includes(lbl.id);
-                return (
-                  <div
-                    key={lbl.id}
-                    onClick={() => toggleLabel(lbl.id)}
-                    className={cn(
-                      "flex items-center justify-between text-xs py-1.5 px-2.5 rounded-md cursor-pointer transition-colors",
-                      isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={cn("w-2 h-2 rounded-full shrink-0", lbl.dotColor)} />
-                      <span>{lbl.name}</span>
-                    </div>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                  </div>
-                );
-              })}
-
-              {filteredLabels.length === 0 && !labelSearch.trim() && (
-                <p className="text-[11px] text-muted-foreground text-center py-2">Belum ada label.</p>
-              )}
-            </div>
-
-            {/* Option to create new label if search term doesn't match */}
-            {labelSearch.trim() && !exactLabelMatch && (
-              <div className="pt-1 border-t border-border/40">
-                <button
-                  type="button"
-                  onClick={() => handleStartCreateLabel(labelSearch)}
-                  className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-semibold text-left transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">Create new label: &ldquo;{labelSearch.trim()}&rdquo;</span>
-                </button>
-              </div>
-            )}
-          </div>
+          <SearchStep
+            labelSearch={labelSearch}
+            setLabelSearch={setLabelSearch}
+            filteredLabels={filteredLabels}
+            selectedLabelIds={selectedLabelIds}
+            toggleLabel={toggleLabel}
+            exactLabelMatch={exactLabelMatch}
+            onStartCreate={handleStartCreateLabel}
+          />
         )}
 
-        {/* ── STEP 2: Pick a Scope for Label ───────────────────────── */}
         {labelStep === "pick_scope" && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 mb-1">
-              <button
-                type="button"
-                onClick={() => setLabelStep("search")}
-                className="p-1 rounded text-muted-foreground hover:text-foreground"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-[11px] font-semibold text-muted-foreground">Pick a scope for label</span>
-              <div className="w-5" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleSelectScope("Workspace")}
-              className="w-full flex items-center gap-2 text-xs py-2 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
-            >
-              <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Workspace</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectScope("K2net")}
-              className="w-full flex items-center gap-2 text-xs py-2 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
-            >
-              <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>K2net</span>
-            </button>
-          </div>
+          <ScopeStep
+            onBack={() => setLabelStep("search")}
+            onSelectScope={handleSelectScope}
+          />
         )}
 
-        {/* ── STEP 3: Pick a Color for Label ───────────────────────── */}
         {labelStep === "pick_color" && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between px-2 py-1 border-b border-border/40 mb-1">
-              <button
-                type="button"
-                onClick={() => setLabelStep("pick_scope")}
-                className="p-1 rounded text-muted-foreground hover:text-foreground"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-[11px] font-semibold text-muted-foreground">Pick a color for label</span>
-              <div className="w-5" />
-            </div>
-
-            <div className="max-h-56 overflow-y-auto space-y-0.5">
-              {LABEL_COLORS.map((col) => (
-                <button
-                  key={col.name}
-                  type="button"
-                  onClick={() => handleSelectColorAndFinishLabel(col)}
-                  className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 hover:bg-muted/50 rounded-md text-left text-foreground transition-colors"
-                >
-                  <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", col.dotColor)} />
-                  <span>{col.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <ColorStep
+            onBack={() => setLabelStep("pick_scope")}
+            onSelectColor={handleSelectColorAndFinishLabel}
+          />
         )}
-
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -14,6 +14,9 @@ import {
   AlertTriangle,
   Loader2
 } from "lucide-react";
+import type { AiDocumentItem } from "@/lib/actions/gateways";
+export type { AiDocumentItem };
+
 
 export type AiTabType = "KNOWLEDGE" | "GRAPH" | "ADD_KNOWLEDGE" | "SIMULATOR" | "TEMPLATES" | "CONFIG";
 

@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button, Checkbox, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@k2net/ui";
 import { Search, ChevronDown, RefreshCw, RotateCcw } from "lucide-react";
 import { type SlowQuery } from "@/hooks/useDbPerformance";
@@ -53,64 +51,217 @@ const ROLE_GROUPS = [
   },
 ];
 
-export function QueryPerformanceToolbar({
-  searchQuery,
-  setSearchQuery,
-  sortBy,
-  setSortBy,
+function TotalTimeDropdown({
   minTotalTime,
   setMinTotalTime,
-  selectedRoles,
-  setSelectedRoles,
-  sourceFilter,
-  setSourceFilter,
-  loading,
-  loadingMore,
-  isScrolled,
-  refresh,
-  onOpenResetModal,
-  slowQueries,
-}: QueryPerformanceToolbarProps) {
-  // Total Time Filter state
+}: {
+  minTotalTime: number | null;
+  setMinTotalTime: (t: number | null) => void;
+}) {
   const [operator, setOperator] = useState<">" | "<">(">");
   const [timeValue, setTimeValue] = useState<string>(minTotalTime ? String(minTotalTime) : "");
-  
-  // Roles selection temp state
-  const [tempRoles, setTempRoles] = useState<string[]>(selectedRoles);
 
-  // Source selection temp state
-  const [tempSource, setTempSource] = useState<"dashboard" | "nondashboard" | "">(sourceFilter);
+  useEffect(() => {
+    setTimeValue(minTotalTime ? String(minTotalTime) : "");
+  }, [minTotalTime]);
+
+  const handleApply = () => {
+    const val = parseFloat(timeValue);
+    if (!isNaN(val) && val > 0) setMinTotalTime(val);
+    else setMinTotalTime(null);
+  };
+
+  const handleClear = () => {
+    setTimeValue("");
+    setMinTotalTime(null);
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+            minTotalTime !== null ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
+          }`}
+        >
+          <span>{minTotalTime !== null ? `Total Time ${operator} ${minTotalTime}ms` : "Total Time"}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
+        <div className="space-y-3">
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Operator</label>
+            <select
+              value={operator}
+              onChange={(e) => setOperator(e.target.value as ">" | "<")}
+              className="w-full px-2.5 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+            >
+              <option value=">">Greater than</option>
+              <option value="<">Less than</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Value</label>
+            <input
+              type="number"
+              placeholder="e.g. 1000"
+              value={timeValue}
+              onChange={(e) => setTimeValue(e.target.value)}
+              className="w-full px-3 py-1.5 text-xs border border-border bg-card text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">Min: 0 ms</p>
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-border/60">
+            <Button variant="ghost" size="sm" onClick={handleClear} className="h-7 text-xs px-2.5">Clear</Button>
+            <Button size="sm" onClick={handleApply} className="h-7 text-xs px-3 font-medium">Apply</Button>
+          </div>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function RolesFilterDropdown({
+  selectedRoles,
+  setSelectedRoles,
+}: {
+  selectedRoles: string[];
+  setSelectedRoles: (roles: string[]) => void;
+}) {
+  const [tempRoles, setTempRoles] = useState<string[]>(selectedRoles);
 
   useEffect(() => {
     setTempRoles(selectedRoles);
   }, [selectedRoles]);
 
+  const handleToggle = (id: string) => {
+    setTempRoles((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+            selectedRoles.length > 0 ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
+          }`}
+        >
+          <span>{selectedRoles.length > 0 ? `Roles (${selectedRoles.length})` : "Roles"}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Select roles</p>
+          <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar-thin pr-1">
+            {ROLE_GROUPS.map((group) => (
+              <div key={group.title} className="space-y-1.5">
+                <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">{group.title}</p>
+                <div className="space-y-1">
+                  {group.roles.map((role) => (
+                    <label
+                      key={role.id}
+                      className="flex items-center gap-2.5 text-xs font-mono text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors"
+                    >
+                      <Checkbox checked={tempRoles.includes(role.id)} onCheckedChange={() => handleToggle(role.id)} />
+                      <span>{role.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/60">
+            <Button variant="ghost" size="sm" onClick={() => { setTempRoles([]); setSelectedRoles([]); }} className="h-7 text-xs px-2.5">Clear</Button>
+            <Button size="sm" onClick={() => setSelectedRoles(tempRoles)} className="h-7 text-xs px-3 font-medium">Save</Button>
+          </div>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function SourceFilterDropdown({
+  sourceFilter,
+  setSourceFilter,
+}: {
+  sourceFilter: "dashboard" | "nondashboard" | "";
+  setSourceFilter: (s: "dashboard" | "nondashboard" | "") => void;
+}) {
+  const [tempSource, setTempSource] = useState<"dashboard" | "nondashboard" | "">(sourceFilter);
+
   useEffect(() => {
     setTempSource(sourceFilter);
   }, [sourceFilter]);
 
-  // Synchronize timeValue state when minTotalTime prop changes from outside (e.g. on reset/clear)
-  useEffect(() => {
-    setTimeValue(minTotalTime ? String(minTotalTime) : "");
-  }, [minTotalTime]);
+  const handleToggle = (source: "dashboard" | "nondashboard") => {
+    setTempSource((prev) => (prev === source ? "" : source));
+  };
 
-  // Export handlers
-  const handleCopyMarkdown = () => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+            sourceFilter ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
+          }`}
+        >
+          <span>{sourceFilter ? (sourceFilter === "dashboard" ? "Dashboard & Portal" : "System & Utility") : "Source"}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-60 z-50">
+        <div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Select query source</p>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
+              <Checkbox checked={tempSource === "dashboard"} onCheckedChange={() => handleToggle("dashboard")} />
+              <div className="flex flex-col">
+                <span className="font-semibold text-xs">Dashboard & Portal Queries</span>
+                <span className="text-[10px] text-muted-foreground">K2NET GIS application tables & core features</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
+              <Checkbox checked={tempSource === "nondashboard"} onCheckedChange={() => handleToggle("nondashboard")} />
+              <div className="flex flex-col">
+                <span className="font-semibold text-xs">System Utility & Background</span>
+                <span className="text-[10px] text-muted-foreground">pg_stat, keycloak internals, and system tables</span>
+              </div>
+            </label>
+          </div>
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/60">
+            <Button variant="ghost" size="sm" onClick={() => { setTempSource(""); setSourceFilter(""); }} className="h-7 text-xs px-2.5">Clear</Button>
+            <Button size="sm" onClick={() => setSourceFilter(tempSource)} className="h-7 text-xs px-3 font-medium">Apply</Button>
+          </div>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ExportMenuDropdown({
+  slowQueries,
+}: {
+  slowQueries: SlowQuery[];
+}) {
+  const handleCopyMarkdown = useCallback(() => {
     const headers = "| Query | Calls | Total Time | Mean Time | Min Time | Max Time | Rows | Cache Hit Rate | Role |";
     const divider = "|---|---|---|---|---|---|---|---|---|";
     const rows = slowQueries.map(
-      (q) =>
-        `| \`${q.query.replace(/`/g, "\\`").slice(0, 50)}\` | ${q.calls} | ${(q.totalTimeMs / 1000).toFixed(2)}s | ${q.meanTimeMs.toFixed(1)}ms | ${q.minTimeMs.toFixed(1)}ms | ${q.maxTimeMs.toFixed(1)}ms | ${q.rows} | ${q.cacheHitRate.toFixed(1)}% | ${q.role} |`
+      (q) => `| \`${q.query.replace(/`/g, "\\`").slice(0, 50)}\` | ${q.calls} | ${(q.totalTimeMs / 1000).toFixed(2)}s | ${q.meanTimeMs.toFixed(1)}ms | ${q.minTimeMs.toFixed(1)}ms | ${q.maxTimeMs.toFixed(1)}ms | ${q.rows} | ${q.cacheHitRate.toFixed(1)}% | ${q.role} |`
     );
-    const markdown = [headers, divider, ...rows].join("\n");
-    navigator.clipboard.writeText(markdown);
-  };
+    navigator.clipboard.writeText([headers, divider, ...rows].join("\n"));
+  }, [slowQueries]);
 
-  const handleCopyJson = () => {
+  const handleCopyJson = useCallback(() => {
     navigator.clipboard.writeText(JSON.stringify(slowQueries, null, 2));
-  };
+  }, [slowQueries]);
 
-  const handleCopyCsv = () => {
+  const handleCopyCsv = useCallback(() => {
     const headers = ["Query", "Calls", "Total Time (ms)", "Mean Time (ms)", "Min Time (ms)", "Max Time (ms)", "Rows", "Cache Hit Rate (%)", "Role"];
     const rows = slowQueries.map((q) => [
       `"${q.query.replace(/"/g, '""')}"`,
@@ -123,11 +274,10 @@ export function QueryPerformanceToolbar({
       q.cacheHitRate,
       q.role,
     ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    navigator.clipboard.writeText(csv);
-  };
+    navigator.clipboard.writeText([headers.join(","), ...rows.map((r) => r.join(","))].join("\n"));
+  }, [slowQueries]);
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = useCallback(() => {
     const headers = ["Query", "Calls", "Total Time (ms)", "Mean Time (ms)", "Min Time (ms)", "Max Time (ms)", "Rows", "Cache Hit Rate (%)", "Role"];
     const rows = slowQueries.map((q) => [
       `"${q.query.replace(/"/g, '""')}"`,
@@ -141,16 +291,14 @@ export function QueryPerformanceToolbar({
       q.role,
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", `database_query_performance_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [slowQueries]);
 
-  // Keyboard shortcuts listener for export
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "m") {
@@ -169,56 +317,63 @@ export function QueryPerformanceToolbar({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [slowQueries, handleCopyMarkdown, handleCopyJson, handleCopyCsv, handleDownloadCsv]);
+  }, [handleCopyMarkdown, handleCopyJson, handleCopyCsv, handleDownloadCsv]);
 
-  const handleApplyTotalTime = () => {
-    const val = parseFloat(timeValue);
-    if (!isNaN(val) && val > 0) {
-      setMinTotalTime(val);
-    } else {
-      setMinTotalTime(null);
-    }
-  };
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/40 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden"
+        >
+          <span>Export</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-56 z-50">
+        <DropdownMenuItem onClick={handleCopyMarkdown} className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+          <span>Copy as Markdown</span>
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">Ctrl M</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleCopyJson} className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+          <span>Copy as JSON</span>
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">Ctrl J</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleCopyCsv} className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+          <span>Copy as CSV</span>
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">Ctrl C</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownloadCsv} className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+          <span>Download CSV</span>
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">Ctrl D</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
-  const handleClearTotalTime = () => {
-    setTimeValue("");
-    setMinTotalTime(null);
-  };
-
-  const handleToggleRole = (roleId: string) => {
-    setTempRoles((prev) =>
-      prev.includes(roleId) ? prev.filter((r) => r !== roleId) : [...prev, roleId]
-    );
-  };
-
-  const handleSaveRoles = () => {
-    setSelectedRoles(tempRoles);
-  };
-
-  const handleClearRoles = () => {
-    setTempRoles([]);
-    setSelectedRoles([]);
-  };
-
-  const handleToggleSource = (source: "dashboard" | "nondashboard") => {
-    setTempSource((prev) => (prev === source ? "" : source));
-  };
-
-  const handleApplySource = () => {
-    setSourceFilter(tempSource);
-  };
-
-  const handleClearSource = () => {
-    setTempSource("");
-    setSourceFilter("");
-  };
-
+export function QueryPerformanceToolbar({
+  searchQuery,
+  setSearchQuery,
+  sortBy,
+  setSortBy,
+  minTotalTime,
+  setMinTotalTime,
+  selectedRoles,
+  setSelectedRoles,
+  sourceFilter,
+  setSourceFilter,
+  loading,
+  loadingMore,
+  isScrolled,
+  refresh,
+  onOpenResetModal,
+  slowQueries,
+}: QueryPerformanceToolbarProps) {
   return (
     <div className="relative z-30 bg-background/50 backdrop-blur-sm py-3 select-none shrink-0 border-b border-border overflow-hidden">
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between px-5">
-        {/* LEFT GROUP: Search & Filters */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {/* Search Input */}
           <div className="relative w-full sm:w-[260px]">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <input
@@ -230,183 +385,32 @@ export function QueryPerformanceToolbar({
             />
           </div>
 
-          {/* Calls Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden"
+              >
                 <span>{sortBy === "calls" ? "Calls: High to Low" : "Calls"}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 w-48 z-50">
-              <DropdownMenuItem
-                onClick={() => setSortBy("calls")}
-                className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
+              <DropdownMenuItem onClick={() => setSortBy("calls")} className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
                 Calls: High to Low
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setSortBy("total_time")}
-                className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
+              <DropdownMenuItem onClick={() => setSortBy("total_time")} className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
                 Default (Total Time)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Total Time Filter Dropdown (Supabase style Popover) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
-                minTotalTime !== null ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
-              }`}>
-                <span>{minTotalTime !== null ? `Total Time ${operator} ${minTotalTime}ms` : "Total Time"}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Operator
-                  </label>
-                  <select
-                    value={operator}
-                    onChange={(e) => setOperator(e.target.value as ">" | "<")}
-                    className="w-full px-2.5 py-1.5 text-xs border border-border bg-card text-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-                  >
-                    <option value=">">Greater than</option>
-                    <option value="<">Less than</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Value
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 1000"
-                    value={timeValue}
-                    onChange={(e) => setTimeValue(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs border border-border bg-card text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary font-mono"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">Min: 0 ms</p>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border/60">
-                  <Button variant="ghost" size="sm" onClick={handleClearTotalTime} className="h-7 text-xs px-2.5">
-                    Clear
-                  </Button>
-                  <Button size="sm" onClick={handleApplyTotalTime} className="h-7 text-xs px-3 font-medium">
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Roles Filter Dropdown (Supabase style Checkboxes Popover with grouping) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
-                selectedRoles.length > 0 ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
-              }`}>
-                <span>{selectedRoles.length > 0 ? `Roles (${selectedRoles.length})` : "Roles"}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Select roles
-                </p>
-                <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar-thin pr-1">
-                  {ROLE_GROUPS.map((group) => (
-                    <div key={group.title} className="space-y-1.5">
-                      <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider px-1">
-                        {group.title}
-                      </p>
-                      <div className="space-y-1">
-                        {group.roles.map((role) => (
-                          <label
-                            key={role.id}
-                            className="flex items-center gap-2.5 text-xs font-mono text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors"
-                          >
-                            <Checkbox
-                              checked={tempRoles.includes(role.id)}
-                              onCheckedChange={() => handleToggleRole(role.id)}
-                            />
-                            <span>{role.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/60">
-                  <Button variant="ghost" size="sm" onClick={handleClearRoles} className="h-7 text-xs px-2.5">
-                    Clear
-                  </Button>
-                  <Button size="sm" onClick={handleSaveRoles} className="h-7 text-xs px-3 font-medium">
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Source Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
-                sourceFilter ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
-              }`}>
-                <span>{sourceFilter ? (sourceFilter === "dashboard" ? "Dashboard & Portal" : "System & Utility") : "Source"}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-60 z-50">
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Select query source
-                </p>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
-                    <Checkbox
-                      checked={tempSource === "dashboard"}
-                      onCheckedChange={() => handleToggleSource("dashboard")}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-xs">Dashboard & Portal Queries</span>
-                      <span className="text-[10px] text-muted-foreground">K2NET GIS application tables & core features</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-2.5 text-xs text-foreground hover:bg-muted/30 p-1.5 rounded-md cursor-pointer transition-colors">
-                    <Checkbox
-                      checked={tempSource === "nondashboard"}
-                      onCheckedChange={() => handleToggleSource("nondashboard")}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-xs">System Utility & Background</span>
-                      <span className="text-[10px] text-muted-foreground">pg_stat, keycloak internals, and system tables</span>
-                    </div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/60">
-                  <Button variant="ghost" size="sm" onClick={handleClearSource} className="h-7 text-xs px-2.5">
-                    Clear
-                  </Button>
-                  <Button size="sm" onClick={handleApplySource} className="h-7 text-xs px-3 font-medium">
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <TotalTimeDropdown minTotalTime={minTotalTime} setMinTotalTime={setMinTotalTime} />
+          <RolesFilterDropdown selectedRoles={selectedRoles} setSelectedRoles={setSelectedRoles} />
+          <SourceFilterDropdown sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} />
         </div>
 
-        {/* RIGHT GROUP: Reset Report, Refresh & Export Dropdown */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
-          {/* Reset Report Button */}
           <Button
             variant="outline"
             size="sm"
@@ -417,7 +421,6 @@ export function QueryPerformanceToolbar({
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
 
-          {/* Refresh Button */}
           <Button
             variant="outline"
             size="sm"
@@ -429,64 +432,16 @@ export function QueryPerformanceToolbar({
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
           </Button>
 
-          {/* Export Dropdown Menu (Matching Supabase Screenshots 3 & 4) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/40 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden">
-                <span>Export</span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-56 z-50">
-              <DropdownMenuItem
-                onClick={handleCopyMarkdown}
-                className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
-                <span>Copy as Markdown</span>
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">
-                  Ctrl M
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleCopyJson}
-                className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
-                <span>Copy as JSON</span>
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">
-                  Ctrl J
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleCopyCsv}
-                className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
-                <span>Copy as CSV</span>
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">
-                  Ctrl C
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleDownloadCsv}
-                className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground"
-              >
-                <span>Download CSV</span>
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">
-                  Ctrl D
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ExportMenuDropdown slowQueries={slowQueries} />
         </div>
       </div>
 
-      {/* Static scroll border: full width, very thin */}
       <div
         className={`absolute bottom-0 left-0 right-0 h-[1px] bg-border/40 transition-opacity duration-300 ${
           isScrolled && !loading && !loadingMore ? "opacity-100" : "opacity-0"
         }`}
       />
 
-      {/* Shimmer loading line */}
       <div className="absolute bottom-0 left-0 right-0 h-[1px] overflow-hidden">
         <div
           className={`h-full w-1/5 bg-gradient-to-r from-transparent via-primary to-transparent transition-opacity duration-300 will-change-transform ${

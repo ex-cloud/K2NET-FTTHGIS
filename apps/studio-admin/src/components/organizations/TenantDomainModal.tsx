@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -14,35 +15,21 @@ import {
 } from "@k2net/ui";
 import {
   Globe,
-  Copy,
   RefreshCw,
   ShieldCheck,
-  Terminal,
   CheckCircle2,
-  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { EnrichedOrganization } from "./types";
+import { DnsDiagnosticConsole, type DnsDiagnosticResult } from "./domain/DnsDiagnosticConsole";
+import { DnsInstructionsCard } from "./domain/DnsInstructionsCard";
 
 interface TenantDomainModalProps {
   organization: EnrichedOrganization | null;
   isOpen: boolean;
   onClose: () => void;
   onSaveDomain: (orgId: string, domain: string) => Promise<void>;
-}
-
-interface DnsDiagnosticResult {
-  success: boolean;
-  domain: string;
-  cname: string | null;
-  isCnameMatched: boolean;
-  ip: string | null;
-  latencyMs: number;
-  status: "OK" | "MISMATCH" | "ERROR";
-  sslReady: boolean;
-  logs: string[];
-  timestamp: string;
 }
 
 export function TenantDomainModal({
@@ -157,80 +144,9 @@ export function TenantDomainModal({
             </div>
           </div>
 
-          {/* DNS Configuration Instructions */}
-          <div className="rounded-xl border border-border/80 bg-card/60 p-3.5 space-y-2.5 text-xs">
-            <span className="font-semibold text-foreground block">
-              DNS Configuration Instructions
-            </span>
-            <p className="text-muted-foreground text-[11px] leading-relaxed">
-              Create a DNS <strong className="text-foreground font-mono">CNAME</strong> record on your domain registrar pointing to K2NET Edge Router:
-            </p>
+          <DnsInstructionsCard onCopy={handleCopy} />
 
-            <div className="flex items-center justify-between rounded-lg bg-background/80 border border-border/60 p-2.5 font-mono text-[11px]">
-              <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[10px] block font-mono">TARGET CNAME</span>
-                <span className="text-primary font-bold">cname.kdua.net</span>
-              </div>
-              <ActionTooltip label="Copy target CNAME">
-                <button
-                  onClick={() => handleCopy("cname.kdua.net", "CNAME target copied")}
-                  className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </button>
-              </ActionTooltip>
-            </div>
-          </div>
-
-          {/* Live Diagnostic Visual Terminal (if verified) */}
-          {dnsResult && (
-            <div className="rounded-xl border border-border/80 bg-background/90 p-3 space-y-2 font-mono text-[11px] animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <Terminal className="h-3.5 w-3.5 text-primary" />
-                  <span>Live DNS Dig Console</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-2.5 w-2.5" />
-                    <span>{dnsResult.latencyMs}ms</span>
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[9px] font-mono",
-                      dnsResult.status === "OK"
-                        ? "border-primary/30 bg-primary/10 text-primary"
-                        : dnsResult.status === "MISMATCH"
-                        ? "border-amber-500/30 bg-amber-500/10 text-amber-500"
-                        : "border-destructive/30 bg-destructive/10 text-destructive"
-                    )}
-                  >
-                    {dnsResult.status}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="bg-muted/40 rounded-lg p-2.5 max-h-36 overflow-y-auto space-y-1 custom-scrollbar text-[10px] leading-relaxed">
-                {dnsResult.logs.map((log, idx) => (
-                  <div
-                    key={idx}
-                    className={cn(
-                      log.includes("[MATCH-SUCCESS]")
-                        ? "text-primary font-bold"
-                        : log.includes("[ERROR]") || log.includes("[DIAGNOSTIC-FAIL]")
-                        ? "text-destructive font-semibold"
-                        : log.includes("[MATCH-WARNING]")
-                        ? "text-amber-500"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {log}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {dnsResult && <DnsDiagnosticConsole dnsResult={dnsResult} />}
 
           {/* SSL Status Card */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3.5">
@@ -249,9 +165,10 @@ export function TenantDomainModal({
             </div>
             <Badge
               variant="outline"
-              className={organization.domainSslActive || dnsResult?.isCnameMatched
-                ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1"
-                : "border-border text-muted-foreground font-mono text-[10px]"
+              className={
+                organization.domainSslActive || dnsResult?.isCnameMatched
+                  ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1"
+                  : "border-border text-muted-foreground font-mono text-[10px]"
               }
             >
               {organization.domainSslActive || dnsResult?.isCnameMatched ? (
@@ -283,4 +200,3 @@ export function TenantDomainModal({
     </Dialog>
   );
 }
-

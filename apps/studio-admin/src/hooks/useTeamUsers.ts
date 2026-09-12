@@ -12,6 +12,17 @@ export interface TeamUser {
   role?: string;
 }
 
+interface RawUserItem {
+  id?: string;
+  username?: string;
+  email?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  roles?: string[];
+}
+
 export function useTeamUsers() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<TeamUser[]>([]);
@@ -30,12 +41,12 @@ export function useTeamUsers() {
         });
         if (res.ok) {
           const data = await res.json();
-          const list = data.content || data.users || (Array.isArray(data) ? data : []);
+          const list: RawUserItem[] = data.content || data.users || (Array.isArray(data) ? data : []);
           if (mounted) {
             setUsers(
-              list.map((u: any) => ({
-                id: u.id || u.username || u.email,
-                email: u.email || u.username || u.id,
+              list.map((u: RawUserItem) => ({
+                id: u.id || u.username || u.email || "",
+                email: u.email || u.username || u.id || "",
                 name:
                   u.name || (u.firstName
                     ? `${u.firstName || ""} ${u.lastName || ""}`.trim()

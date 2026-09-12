@@ -1,434 +1,67 @@
-
-
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { httpClient } from "@/lib/httpClient";
-import { getBackendBaseUrl } from "@/lib/api-config";
-import { useSession } from "@/lib/auth-compat";
-import {
-  Badge,
-  Button,
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  ActionTooltip,
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-} from "@k2net/ui";
-import {
-  Users,
-  UserPlus,
-  ShieldCheck,
-  Mail,
-  KeyRound,
-  Copy,
-  Trash2,
-  UserCheck,
-  Loader2,
-} from "lucide-react";
-import { toast } from "sonner";
 import type { EnrichedOrganization } from "../types";
+import { useOrgTeamState } from "./team/useOrgTeamState";
+import { TeamHeaderBar } from "./team/TeamHeaderBar";
+import { TeamMembersTable } from "./team/TeamMembersTable";
+import { InviteMemberModal } from "./team/InviteMemberModal";
+
+export type { TenantUser, TenantUserRole, TenantUserStatus } from "./team/types";
 
 interface OrgTeamAccessTabProps {
   organization: EnrichedOrganization;
 }
 
-interface TenantUser {
-  id: string;
-  name: string;
-  username: string;
-  email: string;
-  role: "TENANT_ADMIN" | "NOC_OPERATOR" | "FIELD_TECH" | "VIEWER";
-  mfaEnabled: boolean;
-  status: "ACTIVE" | "PENDING";
-  lastLogin: string;
-  source?: string;
-}
-
 export function OrgTeamAccessTab({ organization: org }: OrgTeamAccessTabProps) {
-  const { data: session } = useSession();
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("NOC_OPERATOR");
-  const [localUsers, setLocalUsers] = useState<TenantUser[]>([]);
-
-  // Fetch real tenant users from backend
-  const { data: serverUsers = [], isLoading } = useQuery<TenantUser[]>({
-    queryKey: ["tenant-team-users", org.slug, session?.accessToken],
-    queryFn: async () => {
-      if (!session?.accessToken) return [];
-      const baseUrl = getBackendBaseUrl();
-      try {
-        const res = await httpClient(`${baseUrl}/organizations/${org.slug}/team-users`, {
-          token: session.accessToken,
-        });
-        if (res.ok) {
-          const raw = await res.json();
-          return raw.map((u: any, idx: number) => ({
-            id: u.id || `u-${idx}`,
-            name: u.name || u.username || org.picName || "Tenant Admin",
-            username: u.username || `admin_${org.slug}`,
-            email: u.email || `${u.username || "admin"}@${org.slug}.kdua.net`,
-            role: (u.role === "admin" || u.role === "TENANT_ADMIN" ? "TENANT_ADMIN" : u.role || "NOC_OPERATOR") as TenantUser["role"],
-            mfaEnabled: true,
-            status: (u.status === "ACTIVE" ? "ACTIVE" : "PENDING") as TenantUser["status"],
-            lastLogin: u.lastLogin || "Active recently",
-            source: u.source || "DATABASE",
-          }));
-        }
-      } catch (e) {
-        console.warn("Could not fetch tenant users:", e);
-      }
-      return [];
-    },
-    enabled: !!session?.accessToken,
-  });
-
-  // Combine server users and newly invited local users
-  const effectiveUsers: TenantUser[] = [
-    ...serverUsers,
-    ...localUsers.filter(lu => !serverUsers.some(su => su.email.toLowerCase() === lu.email.toLowerCase()))
-  ];
-
-  const handleSendInvite = () => {
-    if (!inviteName || !inviteEmail) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-    const newUser: TenantUser = {
-      id: `u-${Date.now()}`,
-      name: inviteName,
-      username: inviteName.toLowerCase().replace(/\s+/g, "_"),
-      email: inviteEmail,
-      role: inviteRole as TenantUser["role"],
-      mfaEnabled: false,
-      status: "PENDING",
-      lastLogin: "Never (Invitation sent)",
-      source: "INVITATION",
-    };
-    setLocalUsers((prev) => [...prev, newUser]);
-    setInviteOpen(false);
-    setInviteName("");
-    setInviteEmail("");
-    toast.success(`Invitation sent to ${inviteEmail}`, {
-      description: "User will receive a Keycloak account setup email.",
-    });
-  };
-
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
-  };
-
-  const handlePasswordReset = (user: TenantUser) => {
-    toast.success(`Password reset link generated for ${user.name}`, {
-      description: `Sent to ${user.email} via Keycloak SMTP service.`,
-    });
-  };
-
-  const handleResendInvite = (user: TenantUser) => {
-    toast.success(`Invitation email resent to ${user.email}`);
-  };
-
-  const handleChangeRole = (userId: string, newRole: TenantUser["role"]) => {
-    setLocalUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-    );
-    toast.success(`User role updated to ${newRole}`);
-  };
-
-  const handleRemoveUser = (userId: string, userName: string) => {
-    setLocalUsers((prev) => prev.filter((u) => u.id !== userId));
-    toast.success(`User ${userName} removed from ${org.name}`);
-  };
-
-  const getRoleBadge = (role: TenantUser["role"]) => {
-    switch (role) {
-      case "TENANT_ADMIN":
-        return <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px]">Tenant Admin</Badge>;
-      case "NOC_OPERATOR":
-        return <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px]">NOC Operator</Badge>;
-      case "FIELD_TECH":
-        return <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 font-mono text-[10px]">Field Tech</Badge>;
-      default:
-        return <Badge variant="outline" className="border-border text-muted-foreground font-mono text-[10px]">Viewer</Badge>;
-    }
-  };
+  const {
+    inviteOpen,
+    setInviteOpen,
+    inviteName,
+    setInviteName,
+    inviteEmail,
+    setInviteEmail,
+    inviteRole,
+    setInviteRole,
+    effectiveUsers,
+    isLoading,
+    handleSendInvite,
+    handleCopy,
+    handlePasswordReset,
+    handleResendInvite,
+    handleChangeRole,
+    handleRemoveUser,
+  } = useOrgTeamState(org);
 
   return (
     <div className="space-y-6">
       {/* 1. Header with Invite Action */}
-      <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            <h3 className="text-xs font-bold text-foreground">Tenant Team & Access Control</h3>
-            <Badge variant="outline" className="border-border text-[9px] font-mono px-1.5 py-0">
-              Realm: {org.slug}-realm
-            </Badge>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Pengaturan akun staf, teknisi lapangan, dan hak akses RBAC Keycloak terisolasi.
-          </p>
-        </div>
-
-        <ActionTooltip label="Invite Staff Member to Keycloak Realm" shortcut="I">
-          <Button
-            size="sm"
-            onClick={() => setInviteOpen(true)}
-            className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span>Invite Team Member</span>
-          </Button>
-        </ActionTooltip>
-      </div>
+      <TeamHeaderBar
+        slug={org.slug}
+        onOpenInvite={() => setInviteOpen(true)}
+      />
 
       {/* 2. Team Members Table */}
-      <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden shadow-xs">
-        <div className="py-3 px-4 border-b border-border/80 bg-muted/20 flex items-center justify-between">
-          <span className="text-xs font-bold text-foreground uppercase tracking-wider font-mono">
-            Active Accounts ({effectiveUsers.length})
-          </span>
-          <span className="text-[11px] font-mono text-muted-foreground">
-            MFA Enforced: Yes
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-muted/40 border-b border-border/80">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pl-6">
-                  User Name
-                </TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Role
-                </TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Email
-                </TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  MFA / 2FA
-                </TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Status
-                </TableHead>
-                <TableHead className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pr-6">
-                  Last Login
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      <span>Memuat daftar pengguna Keycloak & Database...</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : effectiveUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground text-xs font-mono">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Users className="h-6 w-6 text-muted-foreground/40" />
-                      <span>Belum ada akun pengguna tambahan di realm ini.</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                effectiveUsers.map((u) => (
-                <ContextMenu key={u.id}>
-                  <ContextMenuTrigger asChild>
-                    <TableRow className="border-b border-border/50 text-xs hover:bg-muted/30 cursor-pointer">
-                      <TableCell className="pl-6 py-3.5">
-                        <div className="space-y-0.5">
-                          <span className="font-semibold text-foreground block">{u.name}</span>
-                          <span className="text-[10px] font-mono text-muted-foreground">@{u.username}</span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        {getRoleBadge(u.role)}
-                      </TableCell>
-
-                      <TableCell className="py-3.5 font-mono text-[11px] text-muted-foreground">
-                        {u.email}
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        {u.mfaEnabled ? (
-                          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[10px] gap-1">
-                            <ShieldCheck className="h-3 w-3" />
-                            <span>Enabled</span>
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-[10px] font-mono">Disabled</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        <Badge variant="outline" className={u.status === "ACTIVE" ? "border-primary/30 bg-primary/10 text-primary font-mono text-[10px]" : "border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-[10px]"}>
-                          {u.status}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="py-3.5 pr-6 font-mono text-[11px] text-muted-foreground">
-                        {u.lastLogin}
-                      </TableCell>
-                    </TableRow>
-                  </ContextMenuTrigger>
-
-                  <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
-                    <ContextMenuItem
-                      onClick={() => handlePasswordReset(u)}
-                      className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
-                    >
-                      <KeyRound className="w-3.5 h-3.5 text-primary" />
-                      <span>Send Password Reset Link</span>
-                      <ContextMenuShortcut>R</ContextMenuShortcut>
-                    </ContextMenuItem>
-
-                    <ContextMenuItem
-                      onClick={() => handleResendInvite(u)}
-                      className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-blue-500" />
-                      <span>Resend Keycloak Invite</span>
-                    </ContextMenuItem>
-
-                    <ContextMenuSeparator className="bg-border/40 my-1" />
-
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
-                        <UserCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Change Role</span>
-                      </ContextMenuSubTrigger>
-                      <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
-                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "TENANT_ADMIN")} className="cursor-pointer">
-                          <span>Tenant Admin</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "NOC_OPERATOR")} className="cursor-pointer">
-                          <span>NOC Operator</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "FIELD_TECH")} className="cursor-pointer">
-                          <span>Field Tech</span>
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleChangeRole(u.id, "VIEWER")} className="cursor-pointer">
-                          <span>Viewer</span>
-                        </ContextMenuItem>
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
-
-                    <ContextMenuSeparator className="bg-border/40 my-1" />
-
-                    <ContextMenuItem
-                      onClick={() => handleCopy(u.email, "Email address")}
-                      className="cursor-pointer gap-2 focus:bg-muted"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Copy Email ({u.email})</span>
-                      <ContextMenuShortcut>C</ContextMenuShortcut>
-                    </ContextMenuItem>
-
-                    <ContextMenuItem
-                      onClick={() => handleRemoveUser(u.id, u.name)}
-                      className="cursor-pointer gap-2 focus:bg-muted text-destructive"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove Member</span>
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              )))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <TeamMembersTable
+        users={effectiveUsers}
+        isLoading={isLoading}
+        onPasswordReset={handlePasswordReset}
+        onResendInvite={handleResendInvite}
+        onChangeRole={handleChangeRole}
+        onCopy={handleCopy}
+        onRemoveUser={handleRemoveUser}
+      />
 
       {/* 3. Invite Member Dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[420px] p-0 overflow-hidden shadow-2xl text-foreground">
-          <DialogHeader className="p-6 pb-2 text-foreground">
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-primary" />
-              <span>Invite Staff to {org.name}</span>
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="p-6 space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Full Name</Label>
-              <Input
-                placeholder="e.g. Ahmad Fauzi"
-                value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
-                className="bg-card border-border text-foreground h-9 text-xs"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Work Email</Label>
-              <Input
-                type="email"
-                placeholder="e.g. fauzi@isp.net"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="bg-card border-border text-foreground h-9 text-xs font-mono"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Role & Access Permission</Label>
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="bg-card border-border text-foreground h-9 text-xs">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-foreground text-xs">
-                  <SelectItem value="TENANT_ADMIN">Tenant Admin (Full Management)</SelectItem>
-                  <SelectItem value="NOC_OPERATOR">NOC Operator (GIS & OLT Poller)</SelectItem>
-                  <SelectItem value="FIELD_TECH">Field Technician (ONT Provisioning)</SelectItem>
-                  <SelectItem value="VIEWER">Read-only Viewer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="p-4 border-t border-border bg-muted/20 flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setInviteOpen(false)} className="text-xs">
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSendInvite} className="text-xs font-semibold bg-primary text-primary-foreground">
-              Send Invitation
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <InviteMemberModal
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        orgName={org.name}
+        name={inviteName}
+        setName={setInviteName}
+        email={inviteEmail}
+        setEmail={setInviteEmail}
+        role={inviteRole}
+        setRole={setInviteRole}
+        onSendInvite={handleSendInvite}
+      />
     </div>
   );
 }

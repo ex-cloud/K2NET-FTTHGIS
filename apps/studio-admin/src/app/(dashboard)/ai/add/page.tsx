@@ -110,8 +110,9 @@ function AiAddContent() {
       } else {
         toast.error("Gagal menyimpan catatan manual");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Terjadi kegagalan jaringan saat memproses catatan");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Terjadi kegagalan jaringan saat memproses catatan";
+      toast.error(message);
     } finally {
       setManualSubmitting(false);
     }

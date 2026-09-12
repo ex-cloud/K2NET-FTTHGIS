@@ -5,11 +5,10 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
+  Button,
 } from "@k2net/ui";
 import { usePathname } from "@/lib/navigation-compat";
 import { Plug2 } from "lucide-react";
-import { Button } from "@k2net/ui";
-
 export function BreadcrumbNav() {
   const pathname = usePathname();
   
@@ -36,7 +35,9 @@ export function BreadcrumbNav() {
           } else if (hostname.endsWith(`.${rootHost}`)) {
             tenantSlug = hostname.substring(0, hostname.length - rootHost.length - 1);
           }
-        } catch {}
+        } catch {
+          // Ignored: URL hostname parsing fallback
+        }
       }
     }
   }

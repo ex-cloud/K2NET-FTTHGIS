@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "@/lib/navigation-compat";
 import { useAuth } from "@k2net/auth/client";
-import { AuthLoginLayout, AuthLoginForm, Button } from "@k2net/ui";
+import { AuthLoginLayout, Button } from "@k2net/ui";
 import { Shield, ArrowRight } from "lucide-react";
 
 export default function AdminLoginPage() {
@@ -30,19 +30,7 @@ export default function AdminLoginPage() {
     });
   };
 
-  const handleContinueWithEmail = (email: string) => {
-    login({
-      loginHint: email,
-      redirectUri: window.location.origin + callbackUrl,
-    });
-  };
 
-  const handleContinueWithProvider = (providerId: string) => {
-    login({
-      idpHint: providerId,
-      redirectUri: window.location.origin + callbackUrl,
-    });
-  };
 
   return (
     <AuthLoginLayout

@@ -16,6 +16,18 @@ export interface OltDevice {
 
 
 
+interface RawOltItem {
+  id?: string;
+  name?: string;
+  code?: string;
+  ipAddress?: string;
+  healthStatus?: string;
+  status?: string;
+  address?: string;
+  lat?: number | string;
+  lng?: number | string;
+}
+
 export function useOltDevices() {
   const { data: session } = useSession();
   const [devices, setDevices] = useState<OltDevice[]>([]);
@@ -34,8 +46,8 @@ export function useOltDevices() {
       if (!res.ok) throw new Error(`olts list returned ${res.status}`);
       const payload = await res.json();
       
-      const content = payload?.content || [];
-      const mapped: OltDevice[] = content.map((o: any) => {
+      const content: RawOltItem[] = payload?.content || [];
+      const mapped: OltDevice[] = content.map((o: RawOltItem) => {
         let snmp: "OK" | "SLOW" | "DOWN" = "OK";
         if (o.healthStatus === "CRITICAL" || o.healthStatus === "DOWN" || o.status === "DOWN") {
           snmp = "DOWN";
@@ -61,7 +73,7 @@ export function useOltDevices() {
         setDevices(mapped);
         setError(null);
       }
-    } catch (err) {
+    } catch (_err) {
       if (mounted.current) {
         setError("OLT telemetry unavailable");
         setDevices([]);

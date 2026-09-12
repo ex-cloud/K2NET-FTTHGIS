@@ -1,5 +1,3 @@
-
-
 import React, { useState } from "react";
 import {
   DropdownMenu,
@@ -73,6 +71,243 @@ const SHOW_CLOSED_OPTIONS: Array<{ key: ShowClosedFilter; label: string }> = [
   { key: "closed", label: "Closed only" },
 ];
 
+const PROJECT_PROPERTIES: Array<{ key: keyof DisplayPropertiesState; label: string }> = [
+  { key: "health", label: "Health" },
+  { key: "priority", label: "Priority" },
+  { key: "lead", label: "Lead" },
+  { key: "targetDate", label: "Target date" },
+  { key: "issues", label: "Issues count" },
+  { key: "status", label: "Status / Progress" },
+  { key: "created", label: "Created date" },
+  { key: "obsidianRef", label: "Obsidian Ref" },
+];
+
+const TASK_PROPERTIES: Array<{ key: keyof DisplayPropertiesState; label: string }> = [
+  { key: "priority", label: "Priority" },
+  { key: "status", label: "Status" },
+  { key: "assignee", label: "Assignee" },
+  { key: "dueDate", label: "Due date" },
+  { key: "scope", label: "Scope" },
+  { key: "type", label: "Type" },
+  { key: "obsidianRef", label: "Obsidian Ref" },
+  { key: "created", label: "Created date" },
+];
+
+interface ViewModeTabsProps {
+  viewMode: "list" | "kanban" | "timeline";
+  availableViews: Array<"list" | "kanban" | "timeline">;
+  onViewModeChange: (mode: "list" | "kanban" | "timeline") => void;
+}
+
+const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
+  viewMode,
+  availableViews,
+  onViewModeChange,
+}) => (
+  <div className="flex items-center bg-muted/40 rounded-xl p-1 border border-border/40">
+    {availableViews.includes("list") && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onViewModeChange("list");
+        }}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          viewMode === "list"
+            ? "bg-background text-foreground shadow-xs font-bold"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <List className="h-3.5 w-3.5" />
+        <span>List</span>
+      </button>
+    )}
+
+    {availableViews.includes("kanban") && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onViewModeChange("kanban");
+        }}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          viewMode === "kanban"
+            ? "bg-background text-foreground shadow-xs font-bold"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <Columns3 className="h-3.5 w-3.5" />
+        <span>Board</span>
+      </button>
+    )}
+
+    {availableViews.includes("timeline") && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onViewModeChange("timeline");
+        }}
+        className={cn(
+          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          viewMode === "timeline"
+            ? "bg-background text-foreground shadow-xs font-bold"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <CalendarRange className="h-3.5 w-3.5" />
+        <span>Timeline</span>
+      </button>
+    )}
+  </div>
+);
+
+interface GroupingSelectorProps {
+  grouping?: ViewGrouping;
+  onGroupingChange?: (g: ViewGrouping) => void;
+}
+
+const GroupingSelector: React.FC<GroupingSelectorProps> = ({ grouping = "none", onGroupingChange }) => {
+  const [open, setOpen] = useState(false);
+  if (!onGroupingChange) return null;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
+      >
+        <span className="text-muted-foreground font-medium">Grouping</span>
+        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+          {GROUPING_OPTIONS.find((o) => o.key === grouping)?.label ?? "No grouping"}
+          <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
+        </span>
+      </div>
+      {open && (
+        <div className="grid grid-cols-2 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
+          {GROUPING_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => {
+                onGroupingChange(opt.key);
+                setOpen(false);
+              }}
+              className={cn(
+                "text-[11px] py-1 px-2 rounded text-left transition-colors cursor-pointer flex items-center justify-between",
+                grouping === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span>{opt.label}</span>
+              {grouping === opt.key && <Check className="h-3 w-3" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface OrderingSelectorProps {
+  ordering?: ViewOrdering;
+  onOrderingChange?: (o: ViewOrdering) => void;
+}
+
+const OrderingSelector: React.FC<OrderingSelectorProps> = ({ ordering = "manual", onOrderingChange }) => {
+  const [open, setOpen] = useState(false);
+  if (!onOrderingChange) return null;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
+      >
+        <span className="text-muted-foreground font-medium">Ordering</span>
+        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+          {ORDERING_OPTIONS.find((o) => o.key === ordering)?.label ?? "Manual"}
+          <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
+        </span>
+      </div>
+      {open && (
+        <div className="grid grid-cols-2 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
+          {ORDERING_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => {
+                onOrderingChange(opt.key);
+                setOpen(false);
+              }}
+              className={cn(
+                "text-[11px] py-1 px-2 rounded text-left transition-colors cursor-pointer flex items-center justify-between",
+                ordering === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span>{opt.label}</span>
+              {ordering === opt.key && <Check className="h-3 w-3" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface ShowClosedSelectorProps {
+  showClosed?: ShowClosedFilter;
+  onShowClosedChange?: (sc: ShowClosedFilter) => void;
+  entityType?: "tasks" | "projects";
+}
+
+const ShowClosedSelector: React.FC<ShowClosedSelectorProps> = ({
+  showClosed = "all",
+  onShowClosedChange,
+  entityType = "tasks",
+}) => {
+  const [open, setOpen] = useState(false);
+  if (!onShowClosedChange) return null;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
+      >
+        <span className="text-muted-foreground font-medium">
+          {entityType === "projects" ? "Show closed projects" : "Show closed issues"}
+        </span>
+        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+          {SHOW_CLOSED_OPTIONS.find((o) => o.key === showClosed)?.label ?? "All"}
+          <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
+        </span>
+      </div>
+      {open && (
+        <div className="grid grid-cols-3 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
+          {SHOW_CLOSED_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => {
+                onShowClosedChange(opt.key);
+                setOpen(false);
+              }}
+              className={cn(
+                "text-[11px] py-1 px-2 rounded text-center transition-colors cursor-pointer font-medium",
+                showClosed === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function LinearDisplayOptionsPopover({
   viewMode,
   onViewModeChange,
@@ -89,34 +324,7 @@ export function LinearDisplayOptionsPopover({
 }: LinearDisplayOptionsPopoverProps) {
   const [open, setOpen] = useState(false);
 
-  // Submenu states
-  const [groupingOpen, setGroupingOpen] = useState(false);
-  const [orderingOpen, setOrderingOpen] = useState(false);
-  const [showClosedOpen, setShowClosedOpen] = useState(false);
-
-  // Property list tailored for tasks vs projects
-  const propertyChips: Array<{ key: keyof DisplayPropertiesState; label: string }> =
-    entityType === "projects"
-      ? [
-          { key: "health", label: "Health" },
-          { key: "priority", label: "Priority" },
-          { key: "lead", label: "Lead" },
-          { key: "targetDate", label: "Target date" },
-          { key: "issues", label: "Issues count" },
-          { key: "status", label: "Status / Progress" },
-          { key: "created", label: "Created date" },
-          { key: "obsidianRef", label: "Obsidian Ref" },
-        ]
-      : [
-          { key: "priority", label: "Priority" },
-          { key: "status", label: "Status" },
-          { key: "assignee", label: "Assignee" },
-          { key: "dueDate", label: "Due date" },
-          { key: "scope", label: "Scope" },
-          { key: "type", label: "Type" },
-          { key: "obsidianRef", label: "Obsidian Ref" },
-          { key: "created", label: "Created date" },
-        ];
+  const propertyChips = entityType === "projects" ? PROJECT_PROPERTIES : TASK_PROPERTIES;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -141,182 +349,22 @@ export function LinearDisplayOptionsPopover({
         sideOffset={6}
         className="w-80 p-3.5 bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 text-xs space-y-3.5"
       >
-        {/* ── View Mode Switcher Tabs (Linear Style) ─────────────────────── */}
-        <div className="flex items-center bg-muted/40 rounded-xl p-1 border border-border/40">
-          {availableViews.includes("list") && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewModeChange("list");
-              }}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-                viewMode === "list"
-                  ? "bg-background text-foreground shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <List className="h-3.5 w-3.5" />
-              <span>List</span>
-            </button>
-          )}
+        <ViewModeTabs
+          viewMode={viewMode}
+          availableViews={availableViews}
+          onViewModeChange={onViewModeChange}
+        />
 
-          {availableViews.includes("kanban") && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewModeChange("kanban");
-              }}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-                viewMode === "kanban"
-                  ? "bg-background text-foreground shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Columns3 className="h-3.5 w-3.5" />
-              <span>Board</span>
-            </button>
-          )}
-
-          {availableViews.includes("timeline") && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewModeChange("timeline");
-              }}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-                viewMode === "timeline"
-                  ? "bg-background text-foreground shadow-xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <CalendarRange className="h-3.5 w-3.5" />
-              <span>Timeline</span>
-            </button>
-          )}
-        </div>
-
-        {/* ── Grouping & Ordering Settings ─────────────────────────────────── */}
         <div className="space-y-2 pt-1 border-t border-border/40">
-          {/* Grouping Selector */}
-          {onGroupingChange && (
-            <div className="flex flex-col gap-1">
-              <div
-                onClick={() => setGroupingOpen((v) => !v)}
-                className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
-              >
-                <span className="text-muted-foreground font-medium">Grouping</span>
-                <span className="inline-flex items-center gap-1 text-foreground font-semibold">
-                  {GROUPING_OPTIONS.find((o) => o.key === grouping)?.label ?? "No grouping"}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", groupingOpen && "rotate-180")} />
-                </span>
-              </div>
-              {groupingOpen && (
-                <div className="grid grid-cols-2 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
-                  {GROUPING_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => {
-                        onGroupingChange(opt.key);
-                        setGroupingOpen(false);
-                      }}
-                      className={cn(
-                        "text-[11px] py-1 px-2 rounded text-left transition-colors cursor-pointer flex items-center justify-between",
-                        grouping === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {grouping === opt.key && <Check className="h-3 w-3" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Ordering Selector */}
-          {onOrderingChange && (
-            <div className="flex flex-col gap-1">
-              <div
-                onClick={() => setOrderingOpen((v) => !v)}
-                className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
-              >
-                <span className="text-muted-foreground font-medium">Ordering</span>
-                <span className="inline-flex items-center gap-1 text-foreground font-semibold">
-                  {ORDERING_OPTIONS.find((o) => o.key === ordering)?.label ?? "Manual"}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", orderingOpen && "rotate-180")} />
-                </span>
-              </div>
-              {orderingOpen && (
-                <div className="grid grid-cols-2 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
-                  {ORDERING_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => {
-                        onOrderingChange(opt.key);
-                        setOrderingOpen(false);
-                      }}
-                      className={cn(
-                        "text-[11px] py-1 px-2 rounded text-left transition-colors cursor-pointer flex items-center justify-between",
-                        ordering === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {ordering === opt.key && <Check className="h-3 w-3" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Show Closed Selector */}
-          {onShowClosedChange && (
-            <div className="flex flex-col gap-1">
-              <div
-                onClick={() => setShowClosedOpen((v) => !v)}
-                className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
-              >
-                <span className="text-muted-foreground font-medium">
-                  {entityType === "projects" ? "Show closed projects" : "Show closed issues"}
-                </span>
-                <span className="inline-flex items-center gap-1 text-foreground font-semibold">
-                  {SHOW_CLOSED_OPTIONS.find((o) => o.key === showClosed)?.label ?? "All"}
-                  <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", showClosedOpen && "rotate-180")} />
-                </span>
-              </div>
-              {showClosedOpen && (
-                <div className="grid grid-cols-3 gap-1 p-1 bg-muted/20 rounded-lg border border-border/40 animate-in fade-in-50 duration-100">
-                  {SHOW_CLOSED_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => {
-                        onShowClosedChange(opt.key);
-                        setShowClosedOpen(false);
-                      }}
-                      className={cn(
-                        "text-[11px] py-1 px-2 rounded text-center transition-colors cursor-pointer font-medium",
-                        showClosed === opt.key ? "bg-primary/15 text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <GroupingSelector grouping={grouping} onGroupingChange={onGroupingChange} />
+          <OrderingSelector ordering={ordering} onOrderingChange={onOrderingChange} />
+          <ShowClosedSelector
+            showClosed={showClosed}
+            onShowClosedChange={onShowClosedChange}
+            entityType={entityType}
+          />
         </div>
 
-        {/* ── Display Properties (Linear Chips Toggle) ──────────────────────── */}
         <div className="space-y-2 pt-2 border-t border-border/40">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -327,7 +375,6 @@ export function LinearDisplayOptionsPopover({
           <div className="flex flex-wrap gap-1.5">
             {propertyChips.map(({ key, label }) => {
               const active = Boolean(displayProperties[key] ?? true);
-
               return (
                 <button
                   key={String(key)}

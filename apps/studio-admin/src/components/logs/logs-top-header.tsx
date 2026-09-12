@@ -1,7 +1,12 @@
 
 
 import * as React from "react";
-import { Badge, Button, ActionTooltip } from "@k2net/ui";
+import {
+  Badge,
+  Button,
+  ActionTooltip,
+  cn,
+} from "@k2net/ui";
 import {
   Search,
   X,
@@ -26,10 +31,8 @@ import {
 } from "./logs-filter-context";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
-import type { Table } from "@tanstack/react-table";
+import type { Table, VisibilityState } from "@tanstack/react-table";
 import type { AuditStreamEntry } from "@/hooks/use-audit-log-stream";
-import { cn } from "@k2net/ui";
-
 // ─── Filter Fields available in builder ──────────────────────────────────────
 
 const FILTER_FIELDS: AdvancedFilterField[] = [
@@ -338,13 +341,13 @@ export function LogsTopHeader({
   clearLogs,
   table,
   columnVisibility,
-  setColumnVisibility,
+  setColumnVisibility: _setColumnVisibility,
 }: {
   filteredLogs: AuditStreamEntry[];
   clearLogs: () => void;
   table: Table<AuditStreamEntry>;
-  columnVisibility: any;
-  setColumnVisibility: React.Dispatch<React.SetStateAction<any>>;
+  columnVisibility: VisibilityState;
+  setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>>;
 }) {
   const {
     searchQuery, setSearchQuery,

@@ -16,6 +16,8 @@ import {
   type ProrationEstimate,
 } from "@/lib/actions/gateways/subscription";
 
+export type { SubscriptionSummary, SubscriptionSummary as TenantSubscriptionSummary, SubscriptionPlanInfo, ProrationEstimate };
+
 export function useTenantSubscription(slug?: string) {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlanInfo[]>([]);
@@ -38,9 +40,10 @@ export function useTenantSubscription(slug?: string) {
           setPlansError(null);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (mounted.current) {
-        setPlansError(err?.message || "Gagal memuat paket dari server");
+        const msg = err instanceof Error ? err.message : "Gagal memuat paket dari server";
+        setPlansError(msg);
       }
     } finally {
       if (mounted.current) {
@@ -58,9 +61,10 @@ export function useTenantSubscription(slug?: string) {
         setSummary(data);
         setError(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (mounted.current) {
-        setError(err.message || "Gagal memuat ringkasan langganan");
+        const msg = err instanceof Error ? err.message : "Gagal memuat ringkasan langganan";
+        setError(msg);
       }
     } finally {
       if (mounted.current && !silent) {
@@ -91,8 +95,9 @@ export function useTenantSubscription(slug?: string) {
         toast.success(`Paket berhasil ditingkatkan ke ${params.newPlanName}!`);
         setSummary(res);
         return res;
-      } catch (err: any) {
-        toast.error(err.message || "Gagal meningkatkan paket");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal meningkatkan paket";
+        toast.error(msg);
         throw err;
       }
     },
@@ -115,8 +120,9 @@ export function useTenantSubscription(slug?: string) {
         }
         setSummary(res.summary);
         return res;
-      } catch (err: any) {
-        toast.error(err.message || "Gagal melakukan downgrade paket");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal melakukan downgrade paket";
+        toast.error(msg);
         throw err;
       }
     },
@@ -148,8 +154,9 @@ export function useTenantSubscription(slug?: string) {
         toast.success(`Emergency booster +${params.boosterOlts} OLTs & +${params.boosterOdps} ODPs aktif!`);
         setSummary(res);
         return res;
-      } catch (err: any) {
-        toast.error(err.message || "Gagal menerapkan emergency booster");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menerapkan emergency booster";
+        toast.error(msg);
         throw err;
       }
     },
@@ -164,8 +171,9 @@ export function useTenantSubscription(slug?: string) {
         toast.success(`Masa trial berhasil diperpanjang +${params.additionalDays || 7} hari!`);
         setSummary(res);
         return res;
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memperpanjang masa trial");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal memperpanjang masa trial";
+        toast.error(msg);
         throw err;
       }
     },
@@ -180,8 +188,9 @@ export function useTenantSubscription(slug?: string) {
         toast.success(`Status dunning berhasil diperbarui ke Level ${params.dunningLevel}`);
         setSummary(res);
         return res;
-      } catch (err: any) {
-        toast.error(err.message || "Gagal memperbarui status dunning");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal memperbarui status dunning";
+        toast.error(msg);
         throw err;
       }
     },

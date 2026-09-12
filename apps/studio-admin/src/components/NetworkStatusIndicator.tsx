@@ -6,7 +6,7 @@ import { WifiOff, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function NetworkStatusIndicator() {
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [_isOnline, setIsOnline] = useState<boolean>(true);
   const [showBanner, setShowBanner] = useState<boolean>(false);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { type Task } from "./useTasksQuery";
 
 interface UseTaskLiveStreamOptions {
@@ -17,7 +17,6 @@ export function useTaskLiveStream({
 }: UseTaskLiveStreamOptions = {}) {
   const [connected, setConnected] = useState(false);
   const [updatedTaskIds, setUpdatedTaskIds] = useState<Set<string>>(new Set());
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Trigger visual flash highlight for updated rows
   const triggerFlash = useCallback((taskId: string) => {
@@ -58,12 +57,11 @@ export function useTaskLiveStream({
 
     return () => {
       if (channel) channel.close();
-      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [enabled, onTaskUpdated, onTaskCreated, onTaskDeleted, triggerFlash]);
 
   // Function to broadcast mutation to other tabs/windows
-  const broadcastTaskMutation = useCallback((type: "TASK_UPDATED" | "TASK_CREATED" | "TASK_DELETED", payload: any) => {
+  const broadcastTaskMutation = useCallback((type: "TASK_UPDATED" | "TASK_CREATED" | "TASK_DELETED", payload: Record<string, unknown>) => {
     try {
       const channel = new BroadcastChannel("k2net_tasks_live");
       channel.postMessage({ type, ...payload });

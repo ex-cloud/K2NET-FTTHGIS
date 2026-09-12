@@ -78,7 +78,62 @@ interface SchedulerCacheData {
   devopsBackupInfo: DevopsBackupInfo | null;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+function parseJobStatus(jobsData: JobStatusResponse[]): SchedulerJob[] {
+  const jobStatusMap: Record<string, JobStatusResponse> = {};
+  jobsData.forEach(j => {
+    jobStatusMap[j.scriptKey] = j;
+  });
+
+  return JOB_STATIC.map(s => {
+    const live = jobStatusMap[s.scriptKey];
+    return {
+      ...s,
+      lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "UNKNOWN",
+      lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "—",
+      lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "—",
+      nextRunAt: computeNextRun(s.cronExpression),
+    };
+  });
+}
+
+function parseDevopsBackupInfo(devopsData: Record<string, unknown>): DevopsBackupInfo | null {
+  if (!devopsData?.lastBackup) return null;
+  const lb = devopsData.lastBackup as Record<string, unknown>;
+  return {
+    lastBackupTime: (lb.lastBackupTime as string) ?? "—",
+    status: (lb.status as string) ?? (lb.lastStatus as string) ?? "UNKNOWN",
+    success: Boolean(lb.success ?? false),
+    minioStatus: (lb.minioStatus as string) ?? "UNKNOWN",
+    minioSyncTime: (lb.minioSyncTime as string) ?? "—",
+    nextcloudStatus: (lb.nextcloudStatus as string) ?? "UNKNOWN",
+    nextcloudSyncTime: (lb.nextcloudSyncTime as string) ?? "—",
+    nextBackupTime: (lb.nextBackupTime as string) ?? "—",
+  };
+}
+
+function parseArtifacts(artData: ArtifactResponse[]): BackupArtifact[] {
+  return artData.map((a, i) => {
+    let sourceScript = "backup.sh";
+    if (a.storageTarget.includes("code")) {
+      sourceScript = "backup-code.sh";
+    } else if (a.storageTarget.includes("docker")) {
+      sourceScript = "backup-docker-volumes.sh";
+    } else if (a.storageTarget.includes("nextcloud")) {
+      sourceScript = "sync-nextcloud.sh";
+    }
+
+    return {
+      id: `a${i + 1}`,
+      artifactName: a.artifactName,
+      sourceScript,
+      storageTarget: (a.storageTarget ?? "minio-db") as BackupArtifact["storageTarget"],
+      storageLabel: a.storageLabel,
+      fileSize: a.fileSize,
+      completedAt: a.completedAt,
+      checksumSha256: a.checksumSha256 ?? "a3f9c2d1e8b74f56a9c0",
+    };
+  });
+}
 
 export function useSchedulerStatus() {
   const { data: session } = useSession();
@@ -97,6 +152,12 @@ export function useSchedulerStatus() {
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const jobsRef = useRef(jobs);
+  jobsRef.current = jobs;
+  const artifactsRef = useRef(artifacts);
+  artifactsRef.current = artifacts;
+  const devopsRef = useRef(devopsBackupInfo);
+  devopsRef.current = devopsBackupInfo;
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!session?.accessToken) {
@@ -114,27 +175,13 @@ export function useSchedulerStatus() {
         fetch("/api/v1/system/devops-stats",            { headers, cache: "no-store" }),
       ]);
 
-      let updatedJobs = jobs;
-      let updatedArtifacts = artifacts;
-      let updatedDevops = devopsBackupInfo;
+      let updatedJobs = jobsRef.current;
+      let updatedArtifacts = artifactsRef.current;
+      let updatedDevops = devopsRef.current;
 
       if (jobsRes.status === "fulfilled" && jobsRes.value.ok) {
         const jobsData: JobStatusResponse[] = await jobsRes.value.json();
-        const jobStatusMap: Record<string, JobStatusResponse> = {};
-        jobsData.forEach(j => { jobStatusMap[j.scriptKey] = j; });
-
-        // Merge static metadata with live status
-        updatedJobs = JOB_STATIC.map(s => {
-          const live = jobStatusMap[s.scriptKey];
-          return {
-            ...s,
-            lastStatus: (live?.lastStatus && live.lastStatus !== "UNKNOWN") ? live.lastStatus : "UNKNOWN",
-            lastRunAt: (live?.lastRunAt && live.lastRunAt !== "—") ? live.lastRunAt : "—",
-            lastDuration: (live?.lastDuration && live.lastDuration !== "—") ? live.lastDuration : "—",
-            nextRunAt: computeNextRun(s.cronExpression),
-          };
-        });
-
+        updatedJobs = parseJobStatus(jobsData);
         if (mounted.current) {
           setJobs(updatedJobs);
           setError(null);
@@ -143,41 +190,18 @@ export function useSchedulerStatus() {
         throw new Error("backup-status/jobs unavailable");
       }
 
-      // DevOps stats (Nextcloud, MinIO and DB Backup Info)
       if (devopsRes.status === "fulfilled" && devopsRes.value.ok) {
         const devopsData = await devopsRes.value.json();
-        if (devopsData?.lastBackup && mounted.current) {
-          const lb = devopsData.lastBackup;
-          updatedDevops = {
-            lastBackupTime: lb.lastBackupTime ?? "—",
-            status: lb.status ?? lb.lastStatus ?? "UNKNOWN",
-            success: lb.success ?? false,
-            minioStatus: lb.minioStatus ?? "UNKNOWN",
-            minioSyncTime: lb.minioSyncTime ?? "—",
-            nextcloudStatus: lb.nextcloudStatus ?? "UNKNOWN",
-            nextcloudSyncTime: lb.nextcloudSyncTime ?? "—",
-            nextBackupTime: lb.nextBackupTime ?? "—",
-          };
+        const parsedDevops = parseDevopsBackupInfo(devopsData);
+        if (parsedDevops && mounted.current) {
+          updatedDevops = parsedDevops;
           setDevopsBackupInfo(updatedDevops);
         }
       }
 
-      // Artifacts (best-effort, non-blocking)
       if (artifactsRes.status === "fulfilled" && artifactsRes.value.ok) {
         const artData: ArtifactResponse[] = await artifactsRes.value.json();
-        updatedArtifacts = artData.map((a, i) => ({
-          id: `a${i + 1}`,
-          artifactName: a.artifactName,
-          sourceScript: a.storageTarget.includes("code") ? "backup-code.sh"
-                      : a.storageTarget.includes("docker") ? "backup-docker-volumes.sh"
-                      : a.storageTarget.includes("nextcloud") ? "sync-nextcloud.sh"
-                      : "backup.sh",
-          storageTarget: (a.storageTarget ?? "minio-db") as BackupArtifact["storageTarget"],
-          storageLabel: a.storageLabel,
-          fileSize: a.fileSize,
-          completedAt: a.completedAt,
-          checksumSha256: a.checksumSha256 ?? "a3f9c2d1e8b74f56a9c0",
-        }));
+        updatedArtifacts = parseArtifacts(artData);
         if (mounted.current) setArtifacts(updatedArtifacts);
       }
 

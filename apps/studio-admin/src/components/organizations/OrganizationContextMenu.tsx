@@ -1,13 +1,9 @@
-
-
+import * as React from "react";
 import {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
   ContextMenuSeparator,
   ContextMenuShortcut,
 } from "@k2net/ui";
@@ -15,21 +11,18 @@ import {
   ExternalLink,
   MessageCircle,
   Mail,
-  ShieldCheck,
-  CheckCircle2,
   Sliders,
   Globe,
   Network,
   Clock,
-  Copy,
   Trash2,
   Lock,
-  PauseCircle,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
-import { getTenantUrl } from "@/lib/domain";
+import { OrgStatusSubmenu } from "./menu/OrgStatusSubmenu";
+import { OrgCopySubmenu } from "./menu/OrgCopySubmenu";
 
 interface OrganizationContextMenuProps {
   organization: EnrichedOrganization;
@@ -62,11 +55,6 @@ export function OrganizationContextMenu({
   onDelete,
   children,
 }: OrganizationContextMenuProps) {
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
-  };
-
   const handleOpenWhatsApp = () => {
     if (!organization.picPhone) {
       toast.error("No WhatsApp number configured for this PIC");
@@ -152,35 +140,7 @@ export function OrganizationContextMenu({
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 3. Change Status Submenu */}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
-            <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Lifecycle Status</span>
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
-            <ContextMenuItem
-              onClick={() => onUpdateStatus?.(organization, "ACTIVE")}
-              className="cursor-pointer gap-2 focus:bg-muted"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-              <span>Set Active</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => onUpdateStatus?.(organization, "SUSPENDED")}
-              className="cursor-pointer gap-2 focus:bg-muted text-destructive"
-            >
-              <PauseCircle className="w-3.5 h-3.5" />
-              <span>Suspend Tenant</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => onUpdateStatus?.(organization, "TRIAL")}
-              className="cursor-pointer gap-2 focus:bg-muted text-blue-500"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>Set as Trial</span>
-            </ContextMenuItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
+        <OrgStatusSubmenu organization={organization} onUpdateStatus={onUpdateStatus} />
 
         {/* 4. Feature Flags & Add-ons */}
         <ContextMenuItem
@@ -225,42 +185,7 @@ export function OrganizationContextMenu({
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 8. Copy Details Submenu */}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
-            <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Copy Tenant Info</span>
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border/80 shadow-xl rounded-xl py-1">
-            <ContextMenuItem
-              onClick={() => handleCopy(organization.slug, "Tenant Slug")}
-              className="cursor-pointer gap-2 focus:bg-muted"
-            >
-              <span>Copy Slug ({organization.slug})</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={() => handleCopy(getTenantUrl(organization.slug), "Tenant Portal URL")}
-              className="cursor-pointer gap-2 focus:bg-muted"
-            >
-              <span>Copy Subdomain URL</span>
-            </ContextMenuItem>
-            {organization.picPhone && (
-              <ContextMenuItem
-                onClick={() => handleCopy(organization.picPhone!, "PIC Phone")}
-                className="cursor-pointer gap-2 focus:bg-muted"
-              >
-                <span>Copy PIC Phone</span>
-              </ContextMenuItem>
-            )}
-            {organization.customDomain && (
-              <ContextMenuItem
-                onClick={() => handleCopy(organization.customDomain!, "Custom Domain")}
-                className="cursor-pointer gap-2 focus:bg-muted"
-              >
-                <span>Copy Custom Domain</span>
-              </ContextMenuItem>
-            )}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
+        <OrgCopySubmenu organization={organization} />
 
         <ContextMenuSeparator className="bg-border/40 my-1" />
 

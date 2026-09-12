@@ -1,7 +1,5 @@
-
-
 import { useState, useEffect } from "react";
-import { type User } from "@/types/user";
+import type { User } from "@/types/user";
 import {
   Dialog,
   DialogContent,
@@ -9,15 +7,23 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Button,
+  Input,
+  Label,
+  Checkbox,
 } from "@k2net/ui";
-import { Button } from "@k2net/ui";
-import { Input } from "@k2net/ui";
-import { Label } from "@k2net/ui";
-import { Checkbox } from "@k2net/ui";
 import { Key, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-
 import { useSession } from "@/lib/auth-compat";
+
+interface PasswordPolicy {
+  minLength: number;
+  requireSymbols: boolean;
+  requireNumbers: boolean;
+  requireUppercase: boolean;
+  historyLimit: number;
+  expiryDays: number;
+}
 
 interface ResetPasswordDialogProps {
   user: User;
@@ -26,101 +32,122 @@ interface ResetPasswordDialogProps {
   token?: string;
 }
 
+function generateRandom(minLength = 8): string {
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const num = "0123456789";
+  const sym = "!@#$%^&*";
+  const all = lower + upper + num + sym;
+
+  let password = "";
+  password += lower.charAt(Math.floor(Math.random() * lower.length));
+  password += upper.charAt(Math.floor(Math.random() * upper.length));
+  password += num.charAt(Math.floor(Math.random() * num.length));
+  password += sym.charAt(Math.floor(Math.random() * sym.length));
+
+  const targetLength = Math.max(12, minLength);
+  for (let i = 4; i < targetLength; i++) {
+    password += all.charAt(Math.floor(Math.random() * all.length));
+  }
+  return password.split("").sort(() => 0.5 - Math.random()).join("");
+}
+
+function validatePasswordRules(password: string, policy: PasswordPolicy | null): string | null {
+  const minLen = policy?.minLength || 8;
+  if (!password || password.length < minLen) {
+    return `Password must be at least ${minLen} characters long.`;
+  }
+  if (policy?.requireUppercase && !/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter (A-Z).";
+  }
+  if (policy?.requireNumbers && !/[0-9]/.test(password)) {
+    return "Password must contain at least one numeric digit (0-9).";
+  }
+  if (policy?.requireSymbols && !/[!@#$%^&*()_+={}[\]|\\:;"'<>,.?/~`-]/.test(password)) {
+    return "Password must contain at least one special character/symbol.";
+  }
+  return null;
+}
+
+function PasswordPolicyRuleIndicators({
+  password,
+  policy,
+}: {
+  password: string;
+  policy: PasswordPolicy;
+}) {
+  if (password.length === 0) return null;
+
+  return (
+    <div className="pt-1.5 space-y-1 text-[10px]">
+      <div className="flex items-center gap-1.5">
+        <span className={`w-1.5 h-1.5 rounded-full ${password.length >= policy.minLength ? "bg-primary" : "bg-red-500"}`} />
+        <span className={password.length >= policy.minLength ? "text-muted-foreground line-through font-light" : "text-muted-foreground"}>
+          Min. {policy.minLength} characters
+        </span>
+      </div>
+      {policy.requireUppercase && (
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(password) ? "bg-primary" : "bg-red-500"}`} />
+          <span className={/[A-Z]/.test(password) ? "text-muted-foreground line-through font-light" : "text-muted-foreground"}>
+            At least one uppercase letter (A-Z)
+          </span>
+        </div>
+      )}
+      {policy.requireNumbers && (
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(password) ? "bg-primary" : "bg-red-500"}`} />
+          <span className={/[0-9]/.test(password) ? "text-muted-foreground line-through font-light" : "text-muted-foreground"}>
+            At least one numeric digit (0-9)
+          </span>
+        </div>
+      )}
+      {policy.requireSymbols && (
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*()_+={}[\]|\\:;"'<>,.?/~`-]/.test(password) ? "bg-primary" : "bg-red-500"}`} />
+          <span className={/[!@#$%^&*()_+={}[\]|\\:;"'<>,.?/~`-]/.test(password) ? "text-muted-foreground line-through font-light" : "text-muted-foreground"}>
+            At least one special character/symbol
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPasswordDialogProps) {
   const { data: session } = useSession();
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [temporary, setTemporary] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  interface PasswordPolicy {
-    minLength: number;
-    requireSymbols: boolean;
-    requireNumbers: boolean;
-    requireUppercase: boolean;
-    historyLimit: number;
-    expiryDays: number;
-  }
   const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy | null>(null);
 
   useEffect(() => {
     const activeToken = token || session?.accessToken;
     if (open && activeToken) {
       fetch("/api/v1/users/password-policy", {
-        headers: {
-          "Authorization": `Bearer ${activeToken}`
-        }
+        headers: { Authorization: `Bearer ${activeToken}` },
       })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error("Failed to fetch password policy");
-      })
-      .then(data => setPasswordPolicy(data))
-      .catch(err => console.error("Error loading password policy:", err));
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => data && setPasswordPolicy(data))
+        .catch((err) => console.error("Error loading password policy:", err));
     }
   }, [open, token, session]);
 
-  const generateRandomPassword = () => {
-    const lower = "abcdefghijklmnopqrstuvwxyz";
-    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const num = "0123456789";
-    const sym = "!@#$%^&*";
-    const all = lower + upper + num + sym;
-    
-    let password = "";
-    password += lower.charAt(Math.floor(Math.random() * lower.length));
-    password += upper.charAt(Math.floor(Math.random() * upper.length));
-    password += num.charAt(Math.floor(Math.random() * num.length));
-    password += sym.charAt(Math.floor(Math.random() * sym.length));
-    
-    const targetLength = Math.max(12, passwordPolicy?.minLength || 8);
-    for (let i = 4; i < targetLength; i++) {
-      password += all.charAt(Math.floor(Math.random() * all.length));
-    }
-    // Shuffle the password
-    password = password.split('').sort(() => 0.5 - Math.random()).join('');
-    
-    setNewPassword(password);
+  const handleGenerate = () => {
+    setNewPassword(generateRandom(passwordPolicy?.minLength || 8));
     setShowPassword(true);
   };
 
   const handleResetPassword = async () => {
-    const minLen = passwordPolicy?.minLength || 8;
-    if (!newPassword || newPassword.length < minLen) {
-      toast.error("Validation Error", {
-        description: `Password must be at least ${minLen} characters long.`,
-      });
-      return;
-    }
-
-    if (passwordPolicy?.requireUppercase && !/[A-Z]/.test(newPassword)) {
-      toast.error("Validation Error", {
-        description: "Password must contain at least one uppercase letter (A-Z).",
-      });
-      return;
-    }
-
-    if (passwordPolicy?.requireNumbers && !/[0-9]/.test(newPassword)) {
-      toast.error("Validation Error", {
-        description: "Password must contain at least one numeric digit (0-9).",
-      });
-      return;
-    }
-
-    if (passwordPolicy?.requireSymbols && !/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword)) {
-      toast.error("Validation Error", {
-        description: "Password must contain at least one special character/symbol.",
-      });
-      return;
+    const validationError = validatePasswordRules(newPassword, passwordPolicy);
+    if (validationError) {
+      return toast.error("Validation Error", { description: validationError });
     }
 
     const activeToken = token || session?.accessToken;
-
     if (!activeToken) {
-      toast.error("Authentication Error", {
-        description: "You must be logged in to perform this action.",
-      });
-      return;
+      return toast.error("Authentication Error", { description: "You must be logged in to perform this action." });
     }
 
     setIsSubmitting(true);
@@ -129,12 +156,9 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${activeToken}`,
+          Authorization: `Bearer ${activeToken}`,
         },
-        body: JSON.stringify({
-          newPassword,
-          temporary,
-        }),
+        body: JSON.stringify({ newPassword, temporary }),
       });
 
       if (!response.ok) {
@@ -145,7 +169,6 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
       toast.success("Password Reset Successful", {
         description: `Password for ${user.email} has been updated.`,
       });
-      
       onOpenChange(false);
       setNewPassword("");
     } catch (error) {
@@ -188,7 +211,7 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  onClick={generateRandomPassword}
+                  onClick={handleGenerate}
                   title="Generate Random"
                 >
                   <RefreshCw className="h-4 w-4" />
@@ -204,47 +227,15 @@ export function ResetPasswordDialog({ user, open, onOpenChange, token }: ResetPa
                 </Button>
               </div>
             </div>
-            {/* Real-time rule indicator list */}
-            {passwordPolicy && newPassword.length > 0 && (
-              <div className="pt-1.5 space-y-1 text-[10px]">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${newPassword.length >= passwordPolicy.minLength ? 'bg-primary' : 'bg-red-500'}`} />
-                  <span className={newPassword.length >= passwordPolicy.minLength ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
-                    Min. {passwordPolicy.minLength} characters
-                  </span>
-                </div>
-                {passwordPolicy.requireUppercase && (
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
-                    <span className={/[A-Z]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
-                      At least one uppercase letter (A-Z)
-                    </span>
-                  </div>
-                )}
-                {passwordPolicy.requireNumbers && (
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[0-9]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
-                    <span className={/[0-9]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
-                      At least one numeric digit (0-9)
-                    </span>
-                  </div>
-                )}
-                {passwordPolicy.requireSymbols && (
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'bg-primary' : 'bg-red-500'}`} />
-                    <span className={/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`\-]/.test(newPassword) ? 'text-muted-foreground line-through font-light' : 'text-muted-foreground'}>
-                      At least one special character/symbol
-                    </span>
-                  </div>
-                )}
-              </div>
+            {passwordPolicy && (
+              <PasswordPolicyRuleIndicators password={newPassword} policy={passwordPolicy} />
             )}
           </div>
 
           <div className="flex items-start space-x-2 pt-2">
-            <Checkbox 
-              id="temporary" 
-              checked={temporary} 
+            <Checkbox
+              id="temporary"
+              checked={temporary}
               onCheckedChange={(checked) => setTemporary(checked === true)}
               className="mt-1 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
             />

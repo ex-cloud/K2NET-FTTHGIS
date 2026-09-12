@@ -1,5 +1,3 @@
-
-
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import { type Task } from "@/hooks/useTasksQuery";
 import { STATUS_CONFIG, PRIORITY_CONFIG } from "./configs";
@@ -28,6 +26,125 @@ interface TimelineMonth {
   endMs: number;
 }
 
+const MONTH_SHORTS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+function generateTimelineMonths(startDate: Date, endDate: Date): TimelineMonth[] {
+  const timelineMonths: TimelineMonth[] = [];
+  let cur = new Date(startDate);
+
+  while (cur <= endDate) {
+    const year = cur.getFullYear();
+    const monthIndex = cur.getMonth();
+    const mStart = new Date(year, monthIndex, 1).getTime();
+    const mEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59).getTime();
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const weeks: number[] = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dObj = new Date(year, monthIndex, day);
+      if (dObj.getDay() === 1 || day === 1 || day === 15) {
+        if (!weeks.includes(day)) weeks.push(day);
+      }
+    }
+    weeks.sort((a, b) => a - b);
+
+    timelineMonths.push({
+      year,
+      monthIndex,
+      name: MONTH_SHORTS[monthIndex],
+      shortName: MONTH_SHORTS[monthIndex],
+      weeks: weeks.slice(0, 4),
+      startMs: mStart,
+      endMs: mEnd,
+    });
+
+    cur = new Date(year, monthIndex + 1, 1);
+  }
+  return timelineMonths;
+}
+
+interface TimelineRowProps {
+  task: Task;
+  leftPx: number;
+  widthPx: number;
+  totalGridWidth: number;
+  onRowClick: (task: Task) => void;
+}
+
+const TimelineRow: React.FC<TimelineRowProps> = ({
+  task,
+  leftPx,
+  widthPx,
+  totalGridWidth,
+  onRowClick,
+}) => {
+  const statusCfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
+  const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
+  const StatusIcon = statusCfg.icon;
+
+  return (
+    <div className="flex items-stretch hover:bg-muted/10 transition-colors group relative">
+      <div
+        onClick={() => onRowClick(task)}
+        className="sticky left-0 z-30 w-[300px] shrink-0 px-4 py-3 border-r border-border/70 bg-background/95 backdrop-blur-md flex items-center justify-between min-w-0 cursor-pointer shadow-xs group-hover:bg-muted/30 transition-colors"
+      >
+        <div className="min-w-0 pr-3 flex-1">
+          <div className="flex items-center gap-2">
+            <StatusIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <span className="font-semibold text-xs text-foreground truncate group-hover:text-primary transition-colors">
+              {task.title}
+            </span>
+          </div>
+          {task.obsidianRef && (
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {task.obsidianRef}
+            </span>
+          )}
+        </div>
+
+        <span
+          className={cn(
+            "text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0",
+            priorityCfg.className
+          )}
+        >
+          {task.priority}
+        </span>
+      </div>
+
+      <div
+        className="relative h-14 flex items-center"
+        style={{ width: `${totalGridWidth}px` }}
+      >
+        <div
+          onClick={() => onRowClick(task)}
+          style={{
+            left: `${leftPx}px`,
+            width: `${widthPx}px`,
+          }}
+          className={cn(
+            "absolute h-8 rounded-xl border flex items-center px-3 text-[11px] font-semibold shadow-sm transition-all cursor-pointer hover:brightness-110 hover:shadow-md z-15 active:scale-[0.99]",
+            task.status === "RESOLVED" || task.status === "CLOSED"
+              ? "bg-primary/20 border-primary/60 text-foreground dark:text-primary"
+              : task.priority === "URGENT" || task.priority === "HIGH"
+              ? "bg-amber-500/20 border-amber-500/60 text-foreground dark:text-amber-400"
+              : "bg-muted/60 border-border text-foreground hover:border-primary/50"
+          )}
+        >
+          <span className="truncate relative z-10 font-semibold">{task.title}</span>
+          {task.dueDate && (
+            <span className="ml-auto text-[10px] font-mono opacity-80 pl-2 shrink-0 relative z-10">
+              {new Date(task.dueDate).toLocaleDateString("id-ID", { month: "short", day: "numeric" })}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function TaskTimelineView({
   tasks,
   onRowClick,
@@ -36,7 +153,6 @@ export function TaskTimelineView({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const monthColWidth = 180;
 
-  // ── Setup 18-Month Timeline Window (Past 4 months to Future 14 months) ──────
   const { timelineMonths, startTimelineMs, endTimelineMs, totalTimelineMs } = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -45,62 +161,23 @@ export function TaskTimelineView({
     const startDate = new Date(currentYear, currentMonth - 4, 1);
     const endDate = new Date(currentYear, currentMonth + 14, 0, 23, 59, 59);
 
-    const startTimelineMs = startDate.getTime();
-    const endTimelineMs = endDate.getTime();
-    const totalTimelineMs = endTimelineMs - startTimelineMs;
+    const startMs = startDate.getTime();
+    const endMs = endDate.getTime();
+    const totalMs = endMs - startMs;
+    const months = generateTimelineMonths(startDate, endDate);
 
-    const timelineMonths: TimelineMonth[] = [];
-    let cur = new Date(startDate);
-
-    const MONTH_SHORTS = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-
-    while (cur <= endDate) {
-      const year = cur.getFullYear();
-      const monthIndex = cur.getMonth();
-      const mStart = new Date(year, monthIndex, 1).getTime();
-      const mEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59).getTime();
-
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-      const weeks: number[] = [];
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dObj = new Date(year, monthIndex, day);
-        if (dObj.getDay() === 1 || day === 1 || day === 15) {
-          if (!weeks.includes(day)) weeks.push(day);
-        }
-      }
-      weeks.sort((a, b) => a - b);
-
-      timelineMonths.push({
-        year,
-        monthIndex,
-        name: MONTH_SHORTS[monthIndex],
-        shortName: MONTH_SHORTS[monthIndex],
-        weeks: weeks.slice(0, 4),
-        startMs: mStart,
-        endMs: mEnd,
-      });
-
-      cur = new Date(year, monthIndex + 1, 1);
-    }
-
-    return { timelineMonths, startTimelineMs, endTimelineMs, totalTimelineMs };
+    return { timelineMonths: months, startTimelineMs: startMs, endTimelineMs: endMs, totalTimelineMs: totalMs };
   }, []);
 
   const totalGridWidth = timelineMonths.length * monthColWidth;
-
-  // ── Today Marker Position ──────────────────────────────────────────────────
-   
   const [nowMs] = useState(() => Date.now());
+
   const todayLeftPx = useMemo(() => {
     if (nowMs < startTimelineMs || nowMs > endTimelineMs) return -1;
     const progress = (nowMs - startTimelineMs) / totalTimelineMs;
     return progress * totalGridWidth;
   }, [nowMs, startTimelineMs, endTimelineMs, totalTimelineMs, totalGridWidth]);
 
-  // ── Scroll to Today ────────────────────────────────────────────────────────
   const scrollToToday = (smooth = true) => {
     if (!scrollContainerRef.current || todayLeftPx < 0) return;
     const containerWidth = scrollContainerRef.current.clientWidth;
@@ -117,26 +194,22 @@ export function TaskTimelineView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayLeftPx]);
 
-  // ── Compute Task Duration Bar ──────────────────────────────────────────────
   const computeBarGeometry = (createdAt?: string, dueDate?: string) => {
     const defaultStart = createdAt ? new Date(createdAt).getTime() : nowMs - 7 * 86400000;
     const defaultEnd = dueDate ? new Date(dueDate).getTime() : defaultStart + 14 * 86400000;
-
     const clampedStart = Math.max(startTimelineMs, defaultStart);
     const clampedEnd = Math.min(endTimelineMs, Math.max(defaultEnd, clampedStart + 86400000));
-
     const leftFrac = (clampedStart - startTimelineMs) / totalTimelineMs;
     const widthFrac = (clampedEnd - clampedStart) / totalTimelineMs;
 
-    const leftPx = Math.max(0, leftFrac * totalGridWidth);
-    const widthPx = Math.max(48, widthFrac * totalGridWidth);
-
-    return { leftPx, widthPx };
+    return {
+      leftPx: Math.max(0, leftFrac * totalGridWidth),
+      widthPx: Math.max(48, widthFrac * totalGridWidth),
+    };
   };
 
   return (
     <div className="flex flex-col h-full bg-card border border-border/80 rounded-xl overflow-hidden select-none">
-      {/* ── Top Header Controls Bar ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/70 bg-muted/40 shrink-0 text-xs z-30">
         <div className="flex items-center gap-3">
           <span className="font-bold text-foreground">Timeline View</span>
@@ -157,7 +230,6 @@ export function TaskTimelineView({
         </div>
       </div>
 
-      {/* ── Unified Dual-Axis Scroll Container ── */}
       <div
         ref={scrollContainerRef}
         className="flex-1 min-h-0 overflow-x-auto overflow-y-auto relative custom-scrollbar-thin bg-background/50"
@@ -166,9 +238,7 @@ export function TaskTimelineView({
           className="relative flex flex-col"
           style={{ width: `${300 + totalGridWidth}px` }}
         >
-          {/* ── Sticky Header Bar ── */}
           <div className="sticky top-0 z-40 flex border-b border-border/80 bg-background/95 backdrop-blur-md shadow-xs">
-            {/* Frozen Left Title Header */}
             <div className="sticky left-0 z-50 w-[300px] shrink-0 px-4 py-3 border-r border-border/70 bg-background/95 backdrop-blur-md flex items-center justify-between shadow-xs">
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Task Name
@@ -178,7 +248,6 @@ export function TaskTimelineView({
               </span>
             </div>
 
-            {/* Horizontal Months + Weeks Scale Header */}
             <div className="flex relative" style={{ width: `${totalGridWidth}px` }}>
               {timelineMonths.map((m) => {
                 const isCurrentMonth =
@@ -216,7 +285,6 @@ export function TaskTimelineView({
                 );
               })}
 
-              {/* Today Pill Header Marker */}
               {todayLeftPx >= 0 && (
                 <div
                   className="absolute top-1 -translate-x-1/2 z-30 pointer-events-none"
@@ -230,9 +298,7 @@ export function TaskTimelineView({
             </div>
           </div>
 
-          {/* ── Rows Container ── */}
           <div className="relative divide-y divide-border/30">
-            {/* Global Vertical Grid Lines & Today Line */}
             <div
               className="absolute top-0 bottom-0 left-[300px] pointer-events-none z-10 flex"
               style={{ width: `${totalGridWidth}px` }}
@@ -253,7 +319,6 @@ export function TaskTimelineView({
               )}
             </div>
 
-            {/* Task Rows */}
             {tasks.length === 0 ? (
               <div className="py-20 text-center text-xs text-muted-foreground italic w-full">
                 Belum ada task dalam rentang waktu ini.
@@ -261,73 +326,15 @@ export function TaskTimelineView({
             ) : (
               tasks.map((task) => {
                 const { leftPx, widthPx } = computeBarGeometry(task.createdAt, task.dueDate);
-                const statusCfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.TODO;
-                const priorityCfg = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.NORMAL;
-                const StatusIcon = statusCfg.icon;
-
                 return (
-                  <div
+                  <TimelineRow
                     key={task.id}
-                    className="flex items-stretch hover:bg-muted/10 transition-colors group relative"
-                  >
-                    {/* Frozen Left Info (Sticky Left) */}
-                    <div
-                      onClick={() => onRowClick(task)}
-                      className="sticky left-0 z-30 w-[300px] shrink-0 px-4 py-3 border-r border-border/70 bg-background/95 backdrop-blur-md flex items-center justify-between min-w-0 cursor-pointer shadow-xs group-hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="min-w-0 pr-3 flex-1">
-                        <div className="flex items-center gap-2">
-                          <StatusIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                          <span className="font-semibold text-xs text-foreground truncate group-hover:text-primary transition-colors">
-                            {task.title}
-                          </span>
-                        </div>
-                        {task.obsidianRef && (
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {task.obsidianRef}
-                          </span>
-                        )}
-                      </div>
-
-                      <span
-                        className={cn(
-                          "text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0",
-                          priorityCfg.className
-                        )}
-                      >
-                        {task.priority}
-                      </span>
-                    </div>
-
-                    {/* Right Timeline Canvas Row with Duration Bar */}
-                    <div
-                      className="relative h-14 flex items-center"
-                      style={{ width: `${totalGridWidth}px` }}
-                    >
-                      <div
-                        onClick={() => onRowClick(task)}
-                        style={{
-                          left: `${leftPx}px`,
-                          width: `${widthPx}px`,
-                        }}
-                        className={cn(
-                          "absolute h-8 rounded-xl border flex items-center px-3 text-[11px] font-semibold shadow-sm transition-all cursor-pointer hover:brightness-110 hover:shadow-md z-15 active:scale-[0.99]",
-                          task.status === "RESOLVED" || task.status === "CLOSED"
-                            ? "bg-primary/20 border-primary/60 text-foreground dark:text-primary"
-                            : task.priority === "URGENT" || task.priority === "HIGH"
-                            ? "bg-amber-500/20 border-amber-500/60 text-foreground dark:text-amber-400"
-                            : "bg-muted/60 border-border text-foreground hover:border-primary/50"
-                        )}
-                      >
-                        <span className="truncate relative z-10 font-semibold">{task.title}</span>
-                        {task.dueDate && (
-                          <span className="ml-auto text-[10px] font-mono opacity-80 pl-2 shrink-0 relative z-10">
-                            {new Date(task.dueDate).toLocaleDateString("id-ID", { month: "short", day: "numeric" })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    task={task}
+                    leftPx={leftPx}
+                    widthPx={widthPx}
+                    totalGridWidth={totalGridWidth}
+                    onRowClick={onRowClick}
+                  />
                 );
               })
             )}
