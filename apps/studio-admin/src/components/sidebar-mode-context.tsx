@@ -43,7 +43,7 @@ export function SidebarModeProvider({
     setIsInitialized(true);
   }, []);
 
-  const setSidebarMode = (mode: SidebarMode) => {
+  const setSidebarMode = React.useCallback((mode: SidebarMode) => {
     setSidebarModeState(mode);
     localStorage.setItem("sidebar-mode", mode);
 
@@ -53,12 +53,15 @@ export function SidebarModeProvider({
     } else if (mode === "expanded") {
       setOpen(true);
     }
-  };
+  }, []);
+
+  const contextValue = React.useMemo(
+    () => ({ sidebarMode, setSidebarMode, open, setOpen }),
+    [sidebarMode, setSidebarMode, open]
+  );
 
   return (
-    <SidebarModeContext.Provider
-      value={{ sidebarMode, setSidebarMode, open, setOpen }}
-    >
+    <SidebarModeContext.Provider value={contextValue}>
       {/* Remove the blank screen, just let it render but use the state */}
       <div className={isInitialized ? "" : "invisible"}>{children}</div>
     </SidebarModeContext.Provider>

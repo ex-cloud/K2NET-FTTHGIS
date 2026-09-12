@@ -9,7 +9,11 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { Toaster } from "sonner";
 import { getAdminKeycloakConfig } from "./lib/keycloak-config";
 import { router } from "./router";
+import { initWebVitals } from "./lib/web-vitals";
 import "./index.css";
+
+// Initialize Core Web Vitals telemetry
+initWebVitals();
 
 // Auto-reload on deployment chunk update (prevents "error loading dynamically imported module").
 // Pattern: after each deployment, React.lazy() chunks get new hashes. If user navigates before

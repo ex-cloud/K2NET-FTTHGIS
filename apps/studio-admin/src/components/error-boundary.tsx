@@ -15,7 +15,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
     error: null,
   };
@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const message = error?.message || "";
     const isChunkError =
       message.includes("dynamically imported module") ||
@@ -43,19 +43,21 @@ export class ErrorBoundary extends Component<Props, State> {
     // Task 15.2: In production, we would send this to Sentry/LogRocket
     console.error("Uncaught error:", error, errorInfo);
     
-    // Simple local logging simulation
+    // Security: Only store minimal, non-sensitive error info in localStorage.
+    // Stack traces and componentStack are EXCLUDED to prevent information disclosure
+    // (sensitive file paths, library internals, component tree structure).
     const logData = {
       timestamp: new Date().toISOString(),
       message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      url: typeof window !== "undefined" ? window.location.href : "SSR",
+      // Sanitized: no stack, no componentStack
+      url: typeof window !== "undefined" ? window.location.pathname : "unknown",
+      errorCode: error.name || "UnknownError",
     };
     
     localStorage.setItem("last_app_error", JSON.stringify(logData));
   }
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

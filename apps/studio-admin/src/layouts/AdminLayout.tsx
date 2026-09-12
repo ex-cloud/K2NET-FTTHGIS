@@ -10,8 +10,13 @@ import { usePathname } from "@/lib/navigation-compat";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getLogoUrl } from "@/lib/domain";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
-import { FloatingAiAssistant } from "@/components/ai/FloatingAiAssistant";
 import { getRouteHeaderTitle } from "@/lib/route-utils";
+
+const FloatingAiAssistant = React.lazy(() =>
+  import("@/components/ai/FloatingAiAssistant").then((m) => ({
+    default: m.FloatingAiAssistant,
+  }))
+);
 
 function SystemLayoutContent() {
   const pathname = usePathname();
@@ -54,7 +59,9 @@ function SystemLayoutContent() {
         </div>
       </div>
       {/* K2NET AI Assistant — Floating Chat (Ctrl+J) */}
-      <FloatingAiAssistant />
+      <React.Suspense fallback={null}>
+        <FloatingAiAssistant />
+      </React.Suspense>
     </div>
   );
 }

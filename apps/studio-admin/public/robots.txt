@@ -1,0 +1,13 @@
+# Admin panel — disallow all web crawlers
+# K2NET FTTH GIS System Administration portal is internal only
+
+User-agent: *
+Disallow: /
+
+# Googlebot
+User-agent: Googlebot
+Disallow: /
+
+# Bing
+User-agent: Bingbot
+Disallow: /

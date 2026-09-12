@@ -5,7 +5,10 @@ import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -40,42 +43,80 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
-    chunkSizeWarningLimit: 1200,
+    // Turun dari 1200 → 600 (standar production quality gate)
+    chunkSizeWarningLimit: 600,
+    // Percepat CI: tidak perlu hitung ukuran compressed di setiap build
+    reportCompressedSize: false,
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
+            // ── Map (besar ~2MB, hanya dipakai di /assets-3d & spatial routes) ──
             if (id.includes("maplibre-gl") || id.includes("react-map-gl")) {
               return "maplibre";
             }
-            if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-vendor")) {
-              return "charts";
+            // ── AI Editor (TipTap + ProseMirror, hanya di /ai/add route) ──────
+            if (
+              id.includes("@tiptap") ||
+              id.includes("prosemirror")
+            ) {
+              return "ai-editor";
             }
-            if (id.includes("lucide-react")) {
-              return "icons";
-            }
+            // ── Markdown Renderer (react-markdown, remark, mdast) ────────────
             if (
               id.includes("react-markdown") ||
               id.includes("remark-gfm") ||
               id.includes("micromark") ||
               id.includes("mdast-") ||
-              id.includes("tiptap") ||
-              id.includes("prosemirror")
+              id.includes("unist-")
             ) {
-              return "markdown-renderer";
+              return "markdown";
             }
+            // ── Charts (recharts + d3 ecosystem) ─────────────────────────────
+            if (
+              id.includes("recharts") ||
+              id.includes("d3-") ||
+              id.includes("victory-vendor")
+            ) {
+              return "charts";
+            }
+            // ── Icons (lucide-react, tree-shakeable tapi chunk tersendiri) ───
+            if (id.includes("lucide-react")) {
+              return "icons";
+            }
+            // ── Form handling (react-hook-form + resolvers + zod) ────────────
+            if (
+              id.includes("react-hook-form") ||
+              id.includes("@hookform/resolvers") ||
+              id.includes("zod")
+            ) {
+              return "form";
+            }
+            // ── Date utilities ────────────────────────────────────────────────
+            if (id.includes("date-fns") || id.includes("react-day-picker")) {
+              return "date";
+            }
+            // ── TanStack Query (state / fetching) ─────────────────────────────
+            if (id.includes("@tanstack/react-query")) {
+              return "tanstack-query";
+            }
+            // ── TanStack Router ───────────────────────────────────────────────
             if (id.includes("@tanstack/react-router")) {
               return "router";
             }
-            if (id.includes("@tanstack/react-query") || id.includes("@tanstack/react-table")) {
-              return "tanstack-data";
+            // ── TanStack Table ────────────────────────────────────────────────
+            if (id.includes("@tanstack/react-table")) {
+              return "tanstack-table";
             }
+            // ── Core vendor (react, zustand, utilities) ───────────────────────
             if (
-              id.includes("react") ||
+              id.includes("react/") ||
               id.includes("react-dom") ||
               id.includes("zustand") ||
               id.includes("clsx") ||
-              id.includes("tailwind-merge")
+              id.includes("tailwind-merge") ||
+              id.includes("class-variance-authority")
             ) {
               return "vendor";
             }

@@ -487,6 +487,8 @@ const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
 
 export const router = createRouter({
   routeTree,
+  defaultPreload: "intent",
+  defaultPreloadStaleTime: 30000,
   defaultErrorComponent: RouterErrorComponent,
   defaultNotFoundComponent: NotFoundFallback,
 });
