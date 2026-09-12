@@ -54,6 +54,9 @@ public class OrganizationController {
                 "slug", saved.getSlug(),
                 "adminPassword", adminPassword
             ));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            String slugMsg = request.getSlug() != null ? "'" + request.getSlug() + "'" : "yang dimasukkan";
+            return ResponseEntity.badRequest().body("Subdomain slug " + slugMsg + " sudah terdaftar atau terjadi konflik data. Silakan coba kembali dengan slug yang baru.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

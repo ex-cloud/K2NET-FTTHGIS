@@ -92,3 +92,18 @@ export const INITIAL_FORM_DATA: WizardFormData = {
   adminEmail: "",
   adminUsername: "",
 };
+
+export interface ProvisioningStageInfo {
+  id: number;
+  label: string;
+  detail: string;
+}
+
+export const PROVISIONING_STAGES: ProvisioningStageInfo[] = [
+  { id: 1, label: "Validasi Konfigurasi & Subdomain", detail: "Memeriksa keunikan slug dan otorisasi sistem..." },
+  { id: 2, label: "Inisialisasi Database & PostGIS", detail: "Membuat profil organisasi dan menyiapkan skema isolasi data..." },
+  { id: 3, label: "Setup Keycloak 26 Security Realm", detail: "Membuat realm terisolasi, client OIDC, dan protokol otentikasi..." },
+  { id: 4, label: "Registrasi Akun Admin PIC", detail: "Mendaftarkan user pengelola teknis dan binding hak akses master..." },
+  { id: 5, label: "Finalisasi Workspace & Audit Trail", detail: "Menyelesaikan sinkronisasi metadata dan menyiapkan portal tenant..." },
+];
+

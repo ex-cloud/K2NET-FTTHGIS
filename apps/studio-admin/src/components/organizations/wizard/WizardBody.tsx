@@ -13,6 +13,9 @@ interface WizardBodyProps {
   slugError: string | null;
   setSlugError: React.Dispatch<React.SetStateAction<string | null>>;
   onRegenerateRandomSlug: () => void;
+  isSubmitting?: boolean;
+  provisioningStage?: number;
+  provisioningStages?: import("./types").ProvisioningStageInfo[];
   testingLdap: boolean;
   ldapTestPassed: boolean;
   onTestLdap: () => Promise<void>;
@@ -35,6 +38,9 @@ export function WizardBody({
   slugError,
   setSlugError,
   onRegenerateRandomSlug,
+  isSubmitting = false,
+  provisioningStage = 1,
+  provisioningStages,
   testingLdap,
   ldapTestPassed,
   onTestLdap,
@@ -72,7 +78,17 @@ export function WizardBody({
         />
       )}
 
-      {step === 4 && <Step4Admin formData={formData} setFormData={setFormData} />}
+      {step === 4 && (
+        <Step4Admin
+          formData={formData}
+          setFormData={setFormData}
+          isSubmitting={isSubmitting}
+          provisioningStage={provisioningStage}
+          provisioningStages={provisioningStages}
+          slugError={slugError}
+          onRegenerateRandomSlug={onRegenerateRandomSlug}
+        />
+      )}
 
       {step === 5 && deployedData && (
         <Step5Success
@@ -85,3 +101,4 @@ export function WizardBody({
     </div>
   );
 }
+

@@ -54,6 +54,9 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           slugError={state.slugError}
           setSlugError={state.setSlugError}
           onRegenerateRandomSlug={state.handleRegenerateRandomSlug}
+          isSubmitting={state.isSubmitting}
+          provisioningStage={state.provisioningStage}
+          provisioningStages={state.provisioningStages}
           testingLdap={state.testingLdap}
           ldapTestPassed={state.ldapTestPassed}
           onTestLdap={state.handleTestLdap}
@@ -73,6 +76,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
           closeWizard={state.closeWizard}
           onOpenChange={onOpenChange}
           isSubmitting={state.isSubmitting}
+          provisioningStage={state.provisioningStage}
           formData={state.formData}
           ldapTestPassed={state.ldapTestPassed}
         />
@@ -80,3 +84,4 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
     </Dialog>
   );
 }
+

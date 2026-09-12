@@ -11,6 +11,7 @@ interface WizardFooterProps {
   closeWizard: () => void;
   onOpenChange: (open: boolean) => void;
   isSubmitting: boolean;
+  provisioningStage?: number;
   formData: WizardFormData;
   ldapTestPassed: boolean;
 }
@@ -43,6 +44,7 @@ export function WizardFooter({
   const isNextDisabled =
     !formData.name ||
     !formData.slug ||
+    isSubmitting ||
     (step === 3 && formData.ldapEnabled && !ldapTestPassed);
 
   return (
@@ -52,7 +54,8 @@ export function WizardFooter({
           variant="ghost"
           size="sm"
           onClick={prevStep}
-          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
+          disabled={isSubmitting}
+          className="text-muted-foreground hover:text-foreground text-xs gap-1.5 disabled:opacity-40"
         >
           <ArrowLeft className="size-3.5" /> Kembali
         </Button>
@@ -64,8 +67,9 @@ export function WizardFooter({
         <Button
           variant="outline"
           size="sm"
+          disabled={isSubmitting}
           onClick={() => onOpenChange(false)}
-          className="text-muted-foreground hover:text-foreground text-xs border-border h-8"
+          className="text-muted-foreground hover:text-foreground text-xs border-border h-8 disabled:opacity-40"
         >
           Batal
         </Button>
@@ -85,12 +89,12 @@ export function WizardFooter({
             size="sm"
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.adminEmail}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold h-8 min-w-[120px]"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold h-8 min-w-[130px]"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-                <span>Deploying...</span>
+                <span>Memproses Provisi...</span>
               </>
             ) : (
               "Deploy Organization Now"
@@ -101,3 +105,4 @@ export function WizardFooter({
     </div>
   );
 }
+

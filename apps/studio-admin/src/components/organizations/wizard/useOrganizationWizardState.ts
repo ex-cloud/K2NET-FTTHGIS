@@ -1,7 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { INITIAL_FORM_DATA, type WizardFormData } from "./types";
+import { INITIAL_FORM_DATA, PROVISIONING_STAGES, type WizardFormData } from "./types";
 
 export const generateRandom20Alpha = () =>
   Array.from({ length: 20 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
@@ -10,6 +10,10 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   const [step, setStep] = React.useState(1);
   const { createOrganization, checkSlugAvailable, organizations } = useOrganizations();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isSubmittingRef = React.useRef(false);
+  const [provisioningStage, setProvisioningStage] = React.useState(1);
+  const stageTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const [testingLdap, setTestingLdap] = React.useState(false);
   const [ldapTestPassed, setLdapTestPassed] = React.useState(false);
   const [slugError, setSlugError] = React.useState<string | null>(null);
@@ -20,6 +24,13 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   } | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [formData, setFormData] = React.useState<WizardFormData>(INITIAL_FORM_DATA);
+
+  // Clear timers on unmount
+  React.useEffect(() => {
+    return () => {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+    };
+  }, []);
 
   const handleRegenerateRandomSlug = () => {
     const randomSlug = generateRandom20Alpha();
@@ -66,14 +77,71 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
     setStep((prev) => prev + 1);
   };
 
-  const prevStep = () => setStep((prev) => prev - 1);
+  const prevStep = () => {
+    if (isSubmittingRef.current) return;
+    setStep((prev) => prev - 1);
+  };
+
+  const startProvisioningStageTicker = () => {
+    setProvisioningStage(1);
+    const startTime = Date.now();
+    if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+
+    stageTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 12500) {
+        setProvisioningStage(5);
+      } else if (elapsed > 9000) {
+        setProvisioningStage(4);
+      } else if (elapsed > 4000) {
+        setProvisioningStage(3);
+      } else if (elapsed > 1500) {
+        setProvisioningStage(2);
+      } else {
+        setProvisioningStage(1);
+      }
+    }, 500);
+  };
+
+  const stopProvisioningStageTicker = () => {
+    if (stageTimerRef.current) {
+      clearInterval(stageTimerRef.current);
+      stageTimerRef.current = null;
+    }
+  };
 
   const handleSubmit = async () => {
+    // Atomic Mutex: prevent duplicate submission / double-click
+    if (isSubmittingRef.current) {
+      console.warn("Deploy submission already in-flight, ignoring duplicate trigger.");
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+    setSlugError(null);
+    startProvisioningStageTicker();
+
+    let targetSlug = formData.slug;
+
     try {
+      // Pre-flight slug validation
+      if (targetSlug) {
+        const isAvailable = await checkSlugAvailable(targetSlug);
+        if (!isAvailable) {
+          if (formData.slugMode === "random" || formData.plan === "FREE") {
+            const freshSlug = generateRandom20Alpha();
+            targetSlug = freshSlug;
+            setFormData((prev) => ({ ...prev, slug: freshSlug }));
+          } else {
+            throw new Error(`Subdomain slug '${targetSlug}' sudah digunakan oleh organisasi lain. Silakan ubah slug.`);
+          }
+        }
+      }
+
       const result = await createOrganization({
         name: formData.name,
-        slug: formData.slug,
+        slug: targetSlug,
         description: formData.description,
         website: formData.website,
         address: formData.address,
@@ -87,8 +155,9 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
         adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
       });
 
+      setProvisioningStage(5);
       setDeployedData({
-        slug: result?.slug || formData.slug,
+        slug: result?.slug || targetSlug,
         adminPassword: result?.adminPassword || "K2net@InitialPass2026",
         adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
       });
@@ -100,12 +169,24 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
       setStep(5);
       onSuccess();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
-      setSlugError(errorMessage);
+      stopProvisioningStageTicker();
+      const rawMessage = err instanceof Error ? err.message : "Gagal membuat organisasi.";
+      
+      let userMessage = rawMessage;
+      if (rawMessage.includes("organizations_slug_key") || rawMessage.includes("already exists") || rawMessage.includes("sudah terdaftar")) {
+        userMessage = `Subdomain slug '${targetSlug}' sudah digunakan. Sistem telah menyiapkan slug acak baru.`;
+        // Auto-regenerate fresh random slug for next attempt
+        const freshSlug = generateRandom20Alpha();
+        setFormData((prev) => ({ ...prev, slug: freshSlug, slugMode: "random" }));
+      }
+
+      setSlugError(userMessage);
       toast.error("Deployment failed", {
-        description: errorMessage || "Please check your configuration and try again.",
+        description: userMessage,
       });
     } finally {
+      stopProvisioningStageTicker();
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -118,12 +199,15 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
   };
 
   const closeWizard = () => {
+    if (isSubmittingRef.current) return;
     onOpenChange(false);
     setTimeout(() => {
       setStep(1);
       setDeployedData(null);
       setFormData(INITIAL_FORM_DATA);
       setLdapTestPassed(false);
+      setSlugError(null);
+      setProvisioningStage(1);
     }, 300);
   };
 
@@ -162,6 +246,8 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
     step,
     organizations,
     isSubmitting,
+    provisioningStage,
+    provisioningStages: PROVISIONING_STAGES,
     testingLdap,
     ldapTestPassed,
     slugError,
@@ -182,3 +268,4 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
     isLdapFormatValid,
   };
 }
+
