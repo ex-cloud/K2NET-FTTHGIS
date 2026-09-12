@@ -81,7 +81,11 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
 
 const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  defaultPreloadStaleTime: 30000,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

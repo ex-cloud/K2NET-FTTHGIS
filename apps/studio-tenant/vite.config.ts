@@ -44,12 +44,14 @@ export default defineConfig({
   },
   build: {
     target: "esnext",
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 600,
+    reportCompressedSize: false,
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("maplibre-gl") || id.includes("react-map-gl")) {
+            if (id.includes("maplibre-gl") || id.includes("react-map-gl") || id.includes("@mapbox")) {
               return "maplibre";
             }
             if (id.includes("@tanstack/react-router")) {
@@ -57,6 +59,9 @@ export default defineConfig({
             }
             if (id.includes("@tanstack/react-query")) {
               return "query";
+            }
+            if (id.includes("lucide-react")) {
+              return "icons";
             }
             if (id.includes("react") || id.includes("react-dom") || id.includes("clsx") || id.includes("tailwind-merge")) {
               return "vendor";

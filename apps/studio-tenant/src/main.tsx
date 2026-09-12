@@ -6,8 +6,12 @@ import { Toaster } from "sonner";
 import { getTenantKeycloakConfig, resolveTenantRealm } from "./lib/keycloak-config";
 import { ThemeProvider } from "@k2net/ui";
 import { setApiAuthToken } from "./lib/api-client";
+import { initWebVitals } from "./lib/web-vitals";
 import { App } from "./App";
 import "./index.css";
+
+// Initialize Core Web Vitals telemetry
+initWebVitals();
 
 // Auto-reload on deployment chunk update (prevents "error loading dynamically imported module")
 if (typeof window !== "undefined") {

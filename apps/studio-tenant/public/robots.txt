@@ -1,0 +1,4 @@
+# K2NET FTTH GIS — Tenant ISP Portal
+# Disallow web crawlers from indexing authenticated tenant portal routes
+User-agent: *
+Disallow: /

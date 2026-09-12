@@ -2,8 +2,6 @@ import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
 // ── Timer Globals Polyfill ───────────────────────────────────────────────────
-// jsdom may not expose clearTimeout/clearInterval as globals in all contexts.
-// Polyfill to prevent "clearTimeout is not defined" in React cleanup effects.
 if (typeof globalThis.clearTimeout === "undefined") {
   globalThis.clearTimeout = (id) => { if (id) global.clearTimeout(id as NodeJS.Timeout); };
 }
@@ -13,36 +11,36 @@ if (typeof globalThis.clearInterval === "undefined") {
 
 // ── Browser API Mocks ─────────────────────────────────────────────────────────
 
-// Mock window.matchMedia (used by theme detection & responsive hooks)
+// Mock window.matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
 });
 
-// Mock ResizeObserver (used by layout and sidebar components)
+// Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// Mock IntersectionObserver (used by virtual scroll components)
+// Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// Mock scrollTo (jsdom doesn't implement it)
+// Mock scrollTo
 window.scrollTo = vi.fn();
 
 // ── Storage Mocks ─────────────────────────────────────────────────────────────
@@ -64,20 +62,20 @@ Object.defineProperty(window, "sessionStorage", { value: createStorageMock() });
 
 // ── Module Mocks ──────────────────────────────────────────────────────────────
 
-// Mock @k2net/auth/client — avoid full Keycloak initialization in tests
+// Mock @k2net/auth/client
 vi.mock("@k2net/auth/client", () => ({
   useAuth: vi.fn(() => ({
-    token: "mock-jwt-token",
+    token: "mock-tenant-jwt-token",
     isAuthenticated: true,
     user: {
-      id: "test-user-id",
-      email: "admin@k2net.id",
-      name: "Test Admin",
-      roles: ["super_admin"],
+      id: "test-tenant-user-id",
+      email: "tenant-admin@isp.id",
+      name: "Tenant Admin",
+      roles: ["tenant_admin"],
       permissions: [
-        "system.support.impersonate",
-        "system.organizations.manage",
-        "system.users.manage",
+        "network.manage",
+        "customers.manage",
+        "billing.view",
       ],
     },
     signOut: vi.fn(),
@@ -85,13 +83,13 @@ vi.mock("@k2net/auth/client", () => ({
   ProtectedRoute: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock @k2net/auth — avoid Keycloak in tests
+// Mock @k2net/auth
 vi.mock("@k2net/auth", () => ({
-  getToken: vi.fn(() => Promise.resolve("mock-jwt-token")),
+  getToken: vi.fn(() => Promise.resolve("mock-tenant-jwt-token")),
   signOut: vi.fn(),
 }));
 
-// Mock sonner toast (avoid DOM side effects in tests)
+// Mock sonner toast
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
