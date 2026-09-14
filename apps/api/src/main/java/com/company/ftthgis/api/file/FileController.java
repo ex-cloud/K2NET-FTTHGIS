@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/files")
 @Slf4j
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasAuthority('network.manage')")
+@PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create')")
 public class FileController {
 
     @Value("${app.gateway.storage-url}")
@@ -32,23 +32,27 @@ public class FileController {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAuthority('network.manage')")
+    @PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create')")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "tenant", required = false) String tenant,
-            @RequestParam(value = "folder", required = false, defaultValue = "asset") String folder) {
+            @RequestParam(value = "bucket", required = false, defaultValue = "tenant-assets") String bucket,
+            @RequestParam(value = "folder", required = false, defaultValue = "documents") String folder) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
         }
 
         try {
             String originalFilename = file.getOriginalFilename();
-            log.info("Forwarding upload of file: {} to storage-gateway...", originalFilename);
+            log.info("Forwarding upload of file: {} to storage-gateway (bucket: {}, folder: {})...", originalFilename, bucket, folder);
 
             // Configure headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.set("X-Gateway-Token", gatewayToken);
+            if (tenant != null && !tenant.isBlank()) {
+                headers.set("X-Tenant-ID", tenant);
+            }
 
             // Configure body
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -58,7 +62,9 @@ public class FileController {
                     return originalFilename;
                 }
             };
-            body.add("image", resource);
+            body.add("file", resource);
+            body.add("bucket", bucket);
+            body.add("folder", folder);
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             String apiUrl = gatewayUrl + "/api/v1/upload";
@@ -73,7 +79,9 @@ public class FileController {
                 return ResponseEntity.ok(Map.of(
                     "url", remoteUrl,
                     "name", originalFilename,
-                    "size", file.getSize()
+                    "size", file.getSize(),
+                    "bucket", bucket,
+                    "folder", folder
                 ));
             } else {
                 log.error("Storage-gateway returned error: Status={}, Body={}", response.getStatusCode(), response.getBody());

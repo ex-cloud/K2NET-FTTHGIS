@@ -36,7 +36,7 @@ export async function uploadTaskAttachment(
   }
 
   const baseUrl = getBackendBaseUrl();
-  const res = await httpClient(`${baseUrl}/upload`, {
+  const res = await httpClient(`${baseUrl}/files/upload`, {
     method: "POST",
     token: token ?? "",
     body: formData,

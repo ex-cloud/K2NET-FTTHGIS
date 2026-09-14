@@ -31,6 +31,7 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
     uploading,
     documents,
     filteredDocs,
+    storageFolder,
     handleUploadSubmit,
     handleDelete,
     handleDownload,
@@ -50,7 +51,7 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
 
       {/* 3. Document Repository & Explorer Table */}
       <DocumentsTable
-        slug={org.slug}
+        slug={storageFolder}
         filteredDocs={filteredDocs}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -79,6 +80,7 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
       {/* 5. Document Preview Modal */}
       <DocumentPreviewModal
         previewDoc={previewDoc}
+        org={org}
         onClose={() => setPreviewDoc(null)}
         onDownload={handleDownload}
       />

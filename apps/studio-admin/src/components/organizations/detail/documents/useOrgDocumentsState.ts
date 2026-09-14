@@ -3,11 +3,26 @@ import { toast } from "sonner";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument, DocumentCategory } from "./types";
 
+import { downloadDocumentFile } from "./document-templates";
+
+import { uploadTaskAttachment } from "@/lib/storage-client";
+
+export function getTenantStorageFolder(org: { name: string; slug?: string }): string {
+  const cleanName = (org.name || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleanName || org.slug || "tenant";
+}
+
 export function useOrgDocumentsState(org: EnrichedOrganization) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<TenantDocument | null>(null);
+
+  const storageFolder = useMemo(() => getTenantStorageFolder(org), [org]);
 
   // Upload Form State
   const [newDocName, setNewDocName] = useState("");
@@ -19,7 +34,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
   const [documents, setDocuments] = useState<TenantDocument[]>([
     {
       id: "doc-1",
-      name: `MoU-SaaS-Enterprise-Agreement-${org.slug.toUpperCase()}-2026.pdf`,
+      name: `MoU-SaaS-Enterprise-Agreement-${storageFolder.toUpperCase()}-2026.pdf`,
       category: "LEGAL",
       sizeBytes: 2450000,
       format: "PDF",
@@ -31,7 +46,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     },
     {
       id: "doc-2",
-      name: `BAST-Serah-Terima-Onboarding-NOC-${org.slug}.pdf`,
+      name: `BAST-Serah-Terima-Onboarding-NOC-${storageFolder}.pdf`,
       category: "TECHNICAL",
       sizeBytes: 1820000,
       format: "PDF",
@@ -42,7 +57,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     },
     {
       id: "doc-3",
-      name: `NPWP-NIB-Legalitas-Badan-Hukum-${org.slug}.pdf`,
+      name: `NPWP-NIB-Legalitas-Badan-Hukum-${storageFolder}.pdf`,
       category: "COMPLIANCE",
       sizeBytes: 950000,
       format: "PDF",
@@ -53,7 +68,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     },
     {
       id: "doc-4",
-      name: `Topology-Core-Router-BRAS-Interconnect-${org.slug}.kmz`,
+      name: `Topology-Core-Router-BRAS-Interconnect-${storageFolder}.kmz`,
       category: "TECHNICAL",
       sizeBytes: 4200000,
       format: "KMZ",
@@ -84,7 +99,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     });
   }, [documents, searchQuery, selectedCategory]);
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDocName.trim()) {
       toast.error("Nama dokumen wajib diisi.");
@@ -92,26 +107,50 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     }
 
     setUploading(true);
-    setTimeout(() => {
+    const toastId = toast.loading(`Mengunggah dokumen ke MinIO S3 Vault...`);
+
+    try {
+      const fileName = newDocName.endsWith(".pdf") || newDocName.endsWith(".kmz")
+        ? newDocName
+        : `${newDocName}.pdf`;
+
+      const fileToUpload = newDocFile ?? new File(
+        [new Blob([`Dokumen ${fileName} untuk organisasi ${org.name}`], { type: "application/pdf" })],
+        fileName,
+        { type: "application/pdf" }
+      );
+
+      const folder = `tenants/${storageFolder}/documents/${newDocCategory.toLowerCase()}`;
+      const uploadRes = await uploadTaskAttachment(
+        fileToUpload,
+        undefined,
+        "tenant-assets",
+        folder
+      );
+
       const newDoc: TenantDocument = {
         id: `doc-${Date.now()}`,
-        name: newDocName.endsWith(".pdf") ? newDocName : `${newDocName}.pdf`,
+        name: fileName,
         category: newDocCategory,
-        sizeBytes: newDocFile ? newDocFile.size : 1450000,
-        format: "PDF",
+        sizeBytes: fileToUpload.size,
+        format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
         uploadedBy: "Super Admin",
         uploadedAt: "Baru saja",
         status: "VERIFIED",
-        downloadUrl: "#",
+        downloadUrl: uploadRes.url,
       };
 
       setDocuments((prev) => [newDoc, ...prev]);
-      setUploading(false);
       setIsUploadOpen(false);
       setNewDocName("");
       setNewDocFile(null);
-      toast.success(`Dokumen ${newDoc.name} berhasil diunggah ke MinIO S3 Vault.`);
-    }, 750);
+      toast.success(`Dokumen ${newDoc.name} berhasil tersinkron ke MinIO S3 Vault.`, { id: toastId });
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Gagal mengunggah dokumen";
+      toast.error(errMsg, { id: toastId });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = (docId: string, docName: string) => {
@@ -120,10 +159,13 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
   };
 
   const handleDownload = (doc: TenantDocument) => {
-    const toastId = toast.loading(`Mengunduh berkas ${doc.name}...`);
-    setTimeout(() => {
+    const toastId = toast.loading(`Menyiapkan berkas ${doc.name}...`);
+    try {
+      downloadDocumentFile(doc, org);
       toast.success(`Berkas ${doc.name} berhasil diunduh.`, { id: toastId });
-    }, 600);
+    } catch {
+      toast.error(`Gagal mengunduh berkas ${doc.name}`, { id: toastId });
+    }
   };
 
   return {
@@ -144,6 +186,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     uploading,
     documents,
     filteredDocs,
+    storageFolder,
     handleUploadSubmit,
     handleDelete,
     handleDownload,
