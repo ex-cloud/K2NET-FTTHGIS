@@ -20,7 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/files")
 @Slf4j
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasAnyAuthority('ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin', 'network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'organizations.view')")
+@PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin')")
 public class FileController {
 
     @Value("${app.gateway.storage-url}")
@@ -32,10 +32,9 @@ public class FileController {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyAuthority('ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin', 'network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'organizations.view')")
+    @PreAuthorize("hasAnyAuthority('network.manage', 'system.contracts.upload', 'system.settings.manage', 'organizations.update', 'system.tenants.approve', 'system.tenants.create', 'system.documents.manage', 'ROLE_super_admin', 'ROLE_admin', 'super_admin', 'admin')")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "bucket", required = false) String bucketParam,
             @RequestParam(value = "tenant", required = false) String tenant,
             @RequestParam(value = "folder", required = false, defaultValue = "documents") String folder) {
         if (file.isEmpty()) {
@@ -44,8 +43,8 @@ public class FileController {
 
         try {
             String originalFilename = file.getOriginalFilename();
-            String bucket = (bucketParam != null && !bucketParam.isBlank()) ? bucketParam : "tenant-assets";
-            if (bucketParam == null && folder != null && (folder.startsWith("public") || folder.startsWith("tasks/public"))) {
+            String bucket = "tenant-assets";
+            if (folder != null && (folder.startsWith("public") || folder.startsWith("tasks/public"))) {
                 bucket = "public-contents";
             }
             log.info("Forwarding upload of file: {} to storage-gateway (bucket: {}, folder: {})...", originalFilename, bucket, folder);
