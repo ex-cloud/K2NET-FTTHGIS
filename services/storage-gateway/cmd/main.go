@@ -144,6 +144,38 @@ func main() {
 			})
 		})
 
+		api.POST("/init-tenant-vault", func(c *gin.Context) {
+			slug := c.DefaultPostForm("slug", "")
+			if slug == "" {
+				slug = c.Query("slug")
+			}
+			if slug == "" {
+				var req struct {
+					Slug string `json:"slug"`
+				}
+				if err := c.ShouldBindJSON(&req); err == nil {
+					slug = req.Slug
+				}
+			}
+
+			if slug == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "tenant slug is required"})
+				return
+			}
+
+			err := storageService.InitTenantVaultFolders(c.Request.Context(), slug)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "Success",
+				"message": "Tenant vault folders initialized in MinIO S3",
+				"slug":    slug,
+			})
+		})
+
 		api.GET("/bucket-stats", func(c *gin.Context) {
 			bucket := c.Query("bucket")
 			if bucket == "" {

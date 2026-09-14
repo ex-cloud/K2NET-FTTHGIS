@@ -238,6 +238,44 @@ func (s *StorageService) UploadFile(ctx context.Context, file io.Reader, filenam
 	return publicURL, nil
 }
 
+func (s *StorageService) InitTenantVaultFolders(ctx context.Context, tenantSlug string) error {
+	cleanSlug := strings.ToLower(strings.TrimSpace(tenantSlug))
+	if cleanSlug == "" {
+		return errors.New("tenant slug cannot be empty")
+	}
+
+	if s.localStore {
+		return nil
+	}
+
+	folderPrefixes := []string{
+		"documents/legal",
+		"documents/technical",
+		"documents/compliance",
+		"documents/billing",
+		"users/avatars",
+		"branding",
+		"tasks/attachments",
+		"network/assets",
+	}
+	bucket := "tenant-assets"
+
+	for _, prefix := range folderPrefixes {
+		key := fmt.Sprintf("tenants/%s/%s/.keep", cleanSlug, prefix)
+		_, err := s.s3Client.PutObjectWithContext(ctx, &s3.PutObjectInput{
+			Bucket:        aws.String(bucket),
+			Key:           aws.String(key),
+			Body:          bytes.NewReader([]byte{}),
+			ContentLength: aws.Int64(0),
+			ContentType:   aws.String("application/x-directory"),
+		})
+		if err != nil {
+			logger.Warn(ctx, "Failed to create .keep marker in S3", zap.String("key", key), zap.Error(err))
+		}
+	}
+	return nil
+}
+
 func (s *StorageService) GeneratePresignedURL(ctx context.Context, bucket string, key string, expiry time.Duration) (string, error) {
 	if s.localStore {
 		return "file://localhost/opt/project5/backups/" + key, nil

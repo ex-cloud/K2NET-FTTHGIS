@@ -43,6 +43,9 @@ export function TrashDialogs({
   isProcessing,
   totalStats,
 }: TrashDialogsProps) {
+  const restorePath = typeof activeItemToRestore?.details?.path === "string" ? activeItemToRestore.details.path : null;
+  const deletePath = typeof activeItemToDelete?.details?.path === "string" ? activeItemToDelete.details.path : null;
+
   return (
     <>
       {/* Confirmation Dialog: Pre-flight Restore Single Item */}
@@ -78,6 +81,19 @@ export function TrashDialogs({
                       <span className="text-primary font-bold">•</span>
                       <span>Status organisasi dikembalikan ke status <strong className="text-primary font-bold">ACTIVE</strong>.</span>
                     </li>
+                  </>
+                ) : activeItemToRestore?.type === "DOCUMENT" ? (
+                  <>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-primary font-bold">•</span>
+                      <span>Dokumen akan dikembalikan ke tab <strong>Documents &amp; Legal</strong> tenant <strong className="text-foreground">{activeItemToRestore.originName}</strong>.</span>
+                    </li>
+                    {restorePath && (
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-primary font-bold">•</span>
+                        <span>Lokasi berkas: <span className="font-mono text-foreground break-all">{restorePath}</span></span>
+                      </li>
+                    )}
                   </>
                 ) : (
                   <li className="flex items-start gap-1.5">
@@ -141,9 +157,17 @@ export function TrashDialogs({
               <span className="font-semibold text-foreground">
                 &ldquo;{activeItemToDelete?.name}&rdquo;
               </span>{" "}
-              akan dihapus secara fisik dari database PostgreSQL.
+              {activeItemToDelete?.type === "DOCUMENT"
+                ? "akan dihapus secara fisik dan permanen dari sistem."
+                : "akan dihapus secara fisik dari database PostgreSQL."}
             </DialogDescription>
           </DialogHeader>
+          {deletePath && (
+            <div className="p-2.5 rounded-lg bg-muted/40 border border-border text-[11px] font-mono text-muted-foreground break-all">
+              <span className="text-foreground font-semibold">Target Path: </span>
+              {deletePath}
+            </div>
+          )}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"

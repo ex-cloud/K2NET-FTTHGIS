@@ -1,18 +1,13 @@
 import { Card, CardContent } from "@k2net/ui";
+import type { TrashStats } from "@/hooks/useTrashCan";
 
 interface TrashKpiCardsProps {
-  stats: {
-    total: number;
-    organizations: number;
-    projects: number;
-    tasks: number;
-    networkAssets: number;
-  };
+  stats: TrashStats;
 }
 
 export function TrashKpiCards({ stats }: TrashKpiCardsProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
       <Card className="bg-card border-border shadow-xs">
         <CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Total di Trash</div>
@@ -50,6 +45,14 @@ export function TrashKpiCards({ stats }: TrashKpiCardsProps) {
           <div className="text-xs text-muted-foreground">Network Assets</div>
           <div className="text-2xl font-bold font-mono text-purple-500 mt-1">
             {stats.networkAssets}
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="bg-card border-border shadow-xs">
+        <CardContent className="p-4">
+          <div className="text-xs text-muted-foreground">Dokumen Vault</div>
+          <div className="text-2xl font-bold font-mono text-primary mt-1">
+            {stats.documents}
           </div>
         </CardContent>
       </Card>

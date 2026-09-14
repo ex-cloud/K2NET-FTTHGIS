@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument, DocumentCategory, DocumentStatus } from "./types";
@@ -16,6 +16,90 @@ export function getTenantStorageFolder(org: { name: string; slug?: string }): st
   return cleanName || org.slug || "tenant";
 }
 
+function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): TenantDocument[] {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem(`k2net_vault_docs_${storageFolder}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse saved vault docs", e);
+      }
+    }
+  }
+
+  return [
+    {
+      id: `doc-1-${storageFolder}`,
+      name: `MoU-SaaS-Enterprise-Agreement-${storageFolder.toUpperCase()}-2026.pdf`,
+      category: "LEGAL",
+      sizeBytes: 2450000,
+      format: "PDF",
+      uploadedBy: "Super Admin (K2NET)",
+      uploadedAt: "2026-08-01 10:30 WIB",
+      expiryDate: "2027-08-01",
+      status: "VERIFIED",
+      verifiedBy: "Compliance Legal Lead",
+      verifiedAt: "2026-08-01 10:45 WIB",
+      downloadUrl: "#",
+    },
+    {
+      id: `doc-2-${storageFolder}`,
+      name: `BAST-Serah-Terima-Onboarding-NOC-${storageFolder}.pdf`,
+      category: "TECHNICAL",
+      sizeBytes: 1820000,
+      format: "PDF",
+      uploadedBy: "NOC Lead Engineer",
+      uploadedAt: "2026-08-02 14:15 WIB",
+      status: "VERIFIED",
+      verifiedBy: "Lead System Architect",
+      verifiedAt: "2026-08-02 15:00 WIB",
+      downloadUrl: "#",
+    },
+    {
+      id: `doc-3-${storageFolder}`,
+      name: `NPWP-NIB-Legalitas-Badan-Hukum-${storageFolder}.pdf`,
+      category: "COMPLIANCE",
+      sizeBytes: 950000,
+      format: "PDF",
+      uploadedBy: org.picName || "Admin Tenant",
+      uploadedAt: "2026-08-01 09:12 WIB",
+      status: "VERIFIED",
+      verifiedBy: "Super Admin",
+      verifiedAt: "2026-08-01 09:30 WIB",
+      downloadUrl: "#",
+    },
+    {
+      id: `doc-4-${storageFolder}`,
+      name: `Topology-Core-Router-BRAS-Interconnect-${storageFolder}.kmz`,
+      category: "TECHNICAL",
+      sizeBytes: 4200000,
+      format: "KMZ",
+      uploadedBy: "FTTH Field Team",
+      uploadedAt: "2026-08-10 16:45 WIB",
+      status: "ACTIVE",
+      verifiedBy: "NOC Lead Engineer",
+      verifiedAt: "2026-08-10 17:00 WIB",
+      downloadUrl: "#",
+    },
+    {
+      id: `doc-5-${storageFolder}`,
+      name: `SLA-Commitment-Guarantee-99.5-Tier.pdf`,
+      category: "LEGAL",
+      sizeBytes: 1100000,
+      format: "PDF",
+      uploadedBy: "Legal Ops K2NET",
+      uploadedAt: "2026-08-01 11:00 WIB",
+      expiryDate: "2027-08-01",
+      status: "ACTIVE",
+      downloadUrl: "#",
+    },
+  ];
+}
+
 export function useOrgDocumentsState(org: EnrichedOrganization) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
@@ -31,74 +115,28 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
   const [newDocFile, setNewDocFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Initial Documents Data
-  const [documents, setDocuments] = useState<TenantDocument[]>([
-    {
-      id: "doc-1",
-      name: `MoU-SaaS-Enterprise-Agreement-${storageFolder.toUpperCase()}-2026.pdf`,
-      category: "LEGAL",
-      sizeBytes: 2450000,
-      format: "PDF",
-      uploadedBy: "Super Admin (K2NET)",
-      uploadedAt: "2026-08-01 10:30 WIB",
-      expiryDate: "2027-08-01",
-      status: "VERIFIED",
-      verifiedBy: "Compliance Legal Lead",
-      verifiedAt: "2026-08-01 10:45 WIB",
-      downloadUrl: "#",
+  // Documents State with LocalStorage Sync per Tenant
+  const [documents, setDocuments] = useState<TenantDocument[]>(() =>
+    getInitialDocuments(storageFolder, org)
+  );
+
+  useEffect(() => {
+    setDocuments(getInitialDocuments(storageFolder, org));
+  }, [storageFolder, org]);
+
+  const saveDocuments = useCallback(
+    (newDocs: TenantDocument[]) => {
+      setDocuments(newDocs);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(`k2net_vault_docs_${storageFolder}`, JSON.stringify(newDocs));
+        } catch (e) {
+          console.error("Failed to save vault docs to localStorage", e);
+        }
+      }
     },
-    {
-      id: "doc-2",
-      name: `BAST-Serah-Terima-Onboarding-NOC-${storageFolder}.pdf`,
-      category: "TECHNICAL",
-      sizeBytes: 1820000,
-      format: "PDF",
-      uploadedBy: "NOC Lead Engineer",
-      uploadedAt: "2026-08-02 14:15 WIB",
-      status: "VERIFIED",
-      verifiedBy: "Lead System Architect",
-      verifiedAt: "2026-08-02 15:00 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: "doc-3",
-      name: `NPWP-NIB-Legalitas-Badan-Hukum-${storageFolder}.pdf`,
-      category: "COMPLIANCE",
-      sizeBytes: 950000,
-      format: "PDF",
-      uploadedBy: org.picName || "Admin Tenant",
-      uploadedAt: "2026-08-01 09:12 WIB",
-      status: "VERIFIED",
-      verifiedBy: "Super Admin",
-      verifiedAt: "2026-08-01 09:30 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: "doc-4",
-      name: `Topology-Core-Router-BRAS-Interconnect-${storageFolder}.kmz`,
-      category: "TECHNICAL",
-      sizeBytes: 4200000,
-      format: "KMZ",
-      uploadedBy: "FTTH Field Team",
-      uploadedAt: "2026-08-10 16:45 WIB",
-      status: "ACTIVE",
-      verifiedBy: "NOC Lead Engineer",
-      verifiedAt: "2026-08-10 17:00 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: "doc-5",
-      name: `SLA-Commitment-Guarantee-99.5-Tier.pdf`,
-      category: "LEGAL",
-      sizeBytes: 1100000,
-      format: "PDF",
-      uploadedBy: "Legal Ops K2NET",
-      uploadedAt: "2026-08-01 11:00 WIB",
-      expiryDate: "2027-08-01",
-      status: "ACTIVE",
-      downloadUrl: "#",
-    },
-  ]);
+    [storageFolder]
+  );
 
   const kycSummary = useMemo(() => {
     const totalDocs = documents.length;
@@ -106,7 +144,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     const pendingCount = documents.filter((d) => d.status === "PENDING_REVIEW").length;
     const revisionCount = documents.filter((d) => d.status === "REVISION_REQUIRED" || d.status === "REJECTED").length;
     const completionPercent = totalDocs > 0 ? Math.round((verifiedCount / totalDocs) * 100) : 0;
-    
+
     let overallKycStatus: "VERIFIED" | "PENDING" | "REVISION" | "INCOMPLETE" = "INCOMPLETE";
     if (totalDocs > 0 && verifiedCount === totalDocs) {
       overallKycStatus = "VERIFIED";
@@ -157,7 +195,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
       let fileToUpload = newDocFile;
       if (!fileToUpload) {
         const dummyDoc: TenantDocument = {
-          id: "temp",
+          id: `temp-${Date.now()}`,
           name: fileName,
           category: newDocCategory,
           sizeBytes: 0,
@@ -192,7 +230,8 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
         downloadUrl: uploadRes.url,
       };
 
-      setDocuments((prev) => [newDoc, ...prev]);
+      const nextDocs = [newDoc, ...documents];
+      saveDocuments(nextDocs);
       setIsUploadOpen(false);
       setNewDocName("");
       setNewDocFile(null);
@@ -206,8 +245,44 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
   };
 
   const handleDelete = (docId: string, docName: string) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== docId));
-    toast.success(`Dokumen ${docName} dihapus dari penyimpanan.`);
+    const docToDelete = documents.find((d) => d.id === docId);
+    const updated = documents.filter((d) => d.id !== docId);
+    saveDocuments(updated);
+
+    if (docToDelete && typeof window !== "undefined") {
+      const s3Path = `s3://tenant-assets/tenants/${storageFolder}/documents/${docToDelete.category.toLowerCase()}/${docToDelete.name}`;
+      const trashItem = {
+        id: `trash-doc-${docToDelete.id}-${Date.now()}`,
+        name: docToDelete.name,
+        type: "DOCUMENT",
+        identifier: docToDelete.id,
+        originName: org.name,
+        deletedAt: new Date().toISOString(),
+        deletedBy: "Super Admin",
+        daysRemaining: 30,
+        details: {
+          path: s3Path,
+          s3Uri: s3Path,
+          orgSlug: storageFolder,
+          orgName: org.name,
+          category: docToDelete.category,
+          sizeBytes: docToDelete.sizeBytes,
+          format: docToDelete.format,
+          docData: docToDelete,
+        },
+      };
+
+      try {
+        const rawTrash = localStorage.getItem("k2net_system_trash");
+        const trashList = rawTrash ? JSON.parse(rawTrash) : [];
+        trashList.unshift(trashItem);
+        localStorage.setItem("k2net_system_trash", JSON.stringify(trashList));
+      } catch (e) {
+        console.error("Failed to push to trash", e);
+      }
+    }
+
+    toast.success(`Dokumen "${docName}" dipindahkan ke Recycle Bin & Data Recovery (Retensi 30 Hari).`);
   };
 
   const handleDownload = (doc: TenantDocument) => {
@@ -228,21 +303,21 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     const targetDoc = documents.find((d) => d.id === docId);
     const nowStr = "Baru saja";
 
-    setDocuments((prev) =>
-      prev.map((doc) => {
-        if (doc.id === docId) {
-          const updated: TenantDocument = {
-            ...doc,
-            status: newStatus,
-            reviewNotes: reviewNotes !== undefined ? reviewNotes : doc.reviewNotes,
-            verifiedBy: newStatus === "VERIFIED" ? "Super Admin" : doc.verifiedBy,
-            verifiedAt: newStatus === "VERIFIED" ? nowStr : doc.verifiedAt,
-          };
-          return updated;
-        }
-        return doc;
-      })
-    );
+    const nextDocs = documents.map((doc) => {
+      if (doc.id === docId) {
+        const updated: TenantDocument = {
+          ...doc,
+          status: newStatus,
+          reviewNotes: reviewNotes !== undefined ? reviewNotes : doc.reviewNotes,
+          verifiedBy: newStatus === "VERIFIED" ? "Super Admin" : doc.verifiedBy,
+          verifiedAt: newStatus === "VERIFIED" ? nowStr : doc.verifiedAt,
+        };
+        return updated;
+      }
+      return doc;
+    });
+
+    saveDocuments(nextDocs);
 
     if (previewDoc && previewDoc.id === docId) {
       setPreviewDoc((prev) =>
@@ -297,3 +372,4 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     handleUpdateStatus,
   };
 }
+

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { initTenantVaultFolders } from "@/lib/storage-client";
 import { INITIAL_FORM_DATA, PROVISIONING_STAGES, type WizardFormData } from "./types";
 
 export const generateRandom20Alpha = () =>
@@ -155,9 +156,18 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
         adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
       });
 
+      const targetFinalSlug = result?.slug || targetSlug;
+
+      // Auto initialize MinIO S3 Vault folders (legal, technical, compliance, billing)
+      if (targetFinalSlug) {
+        initTenantVaultFolders(targetFinalSlug).catch((e) =>
+          console.warn("S3 MinIO Vault auto-init warn:", e)
+        );
+      }
+
       setProvisioningStage(5);
       setDeployedData({
-        slug: result?.slug || targetSlug,
+        slug: targetFinalSlug,
         adminPassword: result?.adminPassword || "K2net@InitialPass2026",
         adminUsername: formData.adminUsername || formData.adminEmail.split("@")[0],
       });

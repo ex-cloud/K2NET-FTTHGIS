@@ -55,3 +55,29 @@ export async function uploadTaskAttachment(
     compressed: data.compressed ?? true,
   };
 }
+
+/**
+ * Initializes the default S3 folder structure for a tenant in MinIO
+ * (tenants/<slug>/documents/{legal, technical, compliance, billing})
+ */
+export async function initTenantVaultFolders(
+  slug: string,
+  token?: string
+): Promise<boolean> {
+  try {
+    const baseUrl = getBackendBaseUrl();
+    const res = await httpClient(`${baseUrl}/files/init-tenant-vault`, {
+      method: "POST",
+      token: token ?? "",
+      body: JSON.stringify({ slug }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn("Failed to init tenant vault folders in MinIO:", e);
+    return false;
+  }
+}
+

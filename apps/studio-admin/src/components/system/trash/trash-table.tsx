@@ -7,6 +7,7 @@ import {
   Network,
   Search,
   Clock,
+  FileText,
 } from "lucide-react";
 import {
   Card,
@@ -20,17 +21,11 @@ import {
   TabsTrigger,
 } from "@k2net/ui";
 import { PermissionGuard } from "@/hooks/use-permissions";
-import type { TrashItem } from "@/hooks/useTrashCan";
+import type { TrashItem, TrashStats } from "@/hooks/useTrashCan";
 
 interface TrashTableProps {
   items: TrashItem[];
-  stats: {
-    total: number;
-    organizations: number;
-    projects: number;
-    tasks: number;
-    networkAssets: number;
-  };
+  stats: TrashStats;
   selectedCategory: string;
   onSelectCategory: (val: string) => void;
   searchQuery: string;
@@ -50,6 +45,8 @@ function getItemIcon(type: TrashItem["type"]) {
     case "NETWORK_NODE":
     case "NETWORK_EDGE":
       return <Network className="h-4 w-4 text-purple-500" />;
+    case "DOCUMENT":
+      return <FileText className="h-4 w-4 text-primary" />;
     default:
       return <Trash2 className="h-4 w-4 text-muted-foreground" />;
   }
@@ -85,6 +82,12 @@ function getTypeBadge(type: TrashItem["type"]) {
       return (
         <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-500 border-purple-500/20">
           Fiber Cable
+        </Badge>
+      );
+    case "DOCUMENT":
+      return (
+        <Badge variant="outline" className="text-xs bg-primary/15 text-primary border-primary/30">
+          Dokumen Vault
         </Badge>
       );
     default:
@@ -136,7 +139,7 @@ export function TrashTable({
             onValueChange={onSelectCategory}
             className="w-full md:w-auto"
           >
-            <TabsList className="grid grid-cols-3 sm:grid-cols-5 h-9 bg-muted/60">
+            <TabsList className="grid grid-cols-3 sm:grid-cols-6 h-9 bg-muted/60">
               <TabsTrigger value="all" className="text-xs">
                 Semua ({stats.total})
               </TabsTrigger>
@@ -152,13 +155,16 @@ export function TrashTable({
               <TabsTrigger value="assets" className="text-xs">
                 Aset ({stats.networkAssets})
               </TabsTrigger>
+              <TabsTrigger value="documents" className="text-xs">
+                Dokumen ({stats.documents})
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari data terhapus..."
+              placeholder="Cari entitas, path, ID..."
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               className="pl-8 h-9 text-xs"
@@ -178,7 +184,7 @@ export function TrashTable({
                 Recycle Bin Kosong
               </p>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Tidak ada entitas yang sedang berada di Recycle Bin. Data yang dihapus akan otomatis disimpan di sini selama 30 hari.
+                Tidak ada entitas yang sedang berada di Recycle Bin. Data atau berkas dokumen yang dihapus akan otomatis disimpan di sini selama 30 hari.
               </p>
             </div>
           </div>
@@ -196,36 +202,58 @@ export function TrashTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {items.map((item) => (
-                  <tr
-                    key={`${item.type}-${item.id}`}
-                    className="hover:bg-muted/20 transition-colors group"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-muted/60 shrink-0">
-                          {getItemIcon(item.type)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {item.name}
-                          </div>
-                          <div className="text-[11px] font-mono text-muted-foreground">
-                            ID: {item.identifier || item.id.substring(0, 8)}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
+                {items.map((item) => {
+                  const itemPath = typeof item.details?.path === "string" ? item.details.path : null;
+                  const itemCategory = typeof item.details?.category === "string" ? item.details.category : null;
+                  const itemSizeBytes = typeof item.details?.sizeBytes === "number" ? item.details.sizeBytes : null;
 
-                    <td className="py-3 px-4">
-                      {getTypeBadge(item.type)}
-                    </td>
+                  return (
+                    <tr
+                      key={`${item.type}-${item.id}`}
+                      className="hover:bg-muted/20 transition-colors group"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-start gap-2.5">
+                          <div className="p-1.5 rounded-lg bg-muted/60 shrink-0 mt-0.5">
+                            {getItemIcon(item.type)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2 flex-wrap">
+                              <span className="truncate">{item.name}</span>
+                              {itemCategory ? (
+                                <Badge variant="outline" className="text-[9px] py-0 px-1.5 h-4 font-mono font-normal">
+                                  {itemCategory}
+                                </Badge>
+                              ) : null}
+                            </div>
+                            {itemPath ? (
+                              <div className="text-[10px] font-mono text-muted-foreground break-all mt-0.5 flex items-center gap-1">
+                                <span className="text-primary font-bold">📁</span>
+                                <span>{itemPath}</span>
+                                {itemSizeBytes !== null && (
+                                  <span className="text-foreground/75 font-semibold">
+                                    ({(itemSizeBytes / (1024 * 1024)).toFixed(1)} MB)
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-[11px] font-mono text-muted-foreground">
+                                ID: {item.identifier || item.id.substring(0, 8)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                    <td className="py-3 px-4 text-foreground/80 font-medium">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {getTypeBadge(item.type)}
+                      </td>
+
+                    <td className="py-3 px-4 text-foreground/80 font-medium whitespace-nowrap">
                       {item.originName}
                     </td>
 
-                    <td className="py-3 px-4 text-muted-foreground">
+                    <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">
                       <div>
                         {item.deletedAt !== "—"
                           ? new Date(item.deletedAt).toLocaleDateString("id-ID", {
@@ -242,11 +270,11 @@ export function TrashTable({
                       </div>
                     </td>
 
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap">
                       {getRetentionBadge(item.daysRemaining)}
                     </td>
 
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
                       <PermissionGuard
                         permission="system.trash.manage"
                         fallback={
@@ -276,7 +304,8 @@ export function TrashTable({
                       </PermissionGuard>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
