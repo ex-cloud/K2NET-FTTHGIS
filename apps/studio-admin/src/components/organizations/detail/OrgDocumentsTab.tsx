@@ -58,6 +58,7 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
 
       {/* 3. Document Repository & Explorer Table */}
       <DocumentsTable
+        org={org}
         slug={storageFolder}
         filteredDocs={filteredDocs}
         searchQuery={searchQuery}
