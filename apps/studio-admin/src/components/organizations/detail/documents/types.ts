@@ -1,5 +1,13 @@
 export type DocumentCategory = "LEGAL" | "TECHNICAL" | "COMPLIANCE" | "BILLING";
 
+export type DocumentStatus =
+  | "VERIFIED"
+  | "PENDING_REVIEW"
+  | "REVISION_REQUIRED"
+  | "REJECTED"
+  | "ACTIVE"
+  | "EXPIRING_SOON";
+
 export interface TenantDocument {
   id: string;
   name: string;
@@ -9,7 +17,10 @@ export interface TenantDocument {
   uploadedBy: string;
   uploadedAt: string;
   expiryDate?: string;
-  status: "VERIFIED" | "PENDING_REVIEW" | "ACTIVE" | "EXPIRING_SOON";
+  status: DocumentStatus;
+  reviewNotes?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
   downloadUrl: string;
 }
 

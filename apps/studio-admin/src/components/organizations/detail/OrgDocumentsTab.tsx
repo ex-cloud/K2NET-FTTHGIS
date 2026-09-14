@@ -31,16 +31,23 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
     uploading,
     documents,
     filteredDocs,
+    kycSummary,
+    statusFilter,
+    setStatusFilter,
     storageFolder,
     handleUploadSubmit,
     handleDelete,
     handleDownload,
+    handleUpdateStatus,
   } = useOrgDocumentsState(org);
 
   return (
     <div className="space-y-6">
       {/* 1. KYC & Legal Verification Banner */}
-      <DocumentsHeaderBar onOpenUpload={() => setIsUploadOpen(true)} />
+      <DocumentsHeaderBar
+        onOpenUpload={() => setIsUploadOpen(true)}
+        kycSummary={kycSummary}
+      />
 
       {/* 2. Key B2B Document Cards Grid */}
       <DocumentsKeyCards
@@ -57,9 +64,12 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
         setSearchQuery={setSearchQuery}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
         onPreview={(doc) => setPreviewDoc(doc)}
         onDownload={handleDownload}
         onDelete={handleDelete}
+        onUpdateStatus={handleUpdateStatus}
       />
 
       {/* 4. Upload Document Modal */}
@@ -83,6 +93,7 @@ export function OrgDocumentsTab({ organization: org }: OrgDocumentsTabProps) {
         org={org}
         onClose={() => setPreviewDoc(null)}
         onDownload={handleDownload}
+        onUpdateStatus={handleUpdateStatus}
       />
     </div>
   );

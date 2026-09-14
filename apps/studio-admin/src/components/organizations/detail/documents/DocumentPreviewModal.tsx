@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Badge,
   Button,
@@ -6,9 +7,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  Input,
 } from "@k2net/ui";
-import { FileText, Download, Printer, ShieldCheck, Calendar, Building2 } from "lucide-react";
-import { type TenantDocument, formatFileSize } from "./types";
+import {
+  FileText,
+  Download,
+  Printer,
+  ShieldCheck,
+  Calendar,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  XCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { type TenantDocument, type DocumentStatus, formatFileSize } from "./types";
 import type { EnrichedOrganization } from "../../types";
 import { getDocumentTemplate, generateDownloadableHtml } from "./document-templates";
 
@@ -17,6 +31,7 @@ interface DocumentPreviewModalProps {
   org: EnrichedOrganization;
   onClose: () => void;
   onDownload: (doc: TenantDocument) => void;
+  onUpdateStatus?: (docId: string, status: DocumentStatus, notes?: string) => void;
 }
 
 export function DocumentPreviewModal({
@@ -24,7 +39,11 @@ export function DocumentPreviewModal({
   org,
   onClose,
   onDownload,
+  onUpdateStatus,
 }: DocumentPreviewModalProps) {
+  const [isRevisionMode, setIsRevisionMode] = useState(false);
+  const [revisionNote, setRevisionNote] = useState("");
+
   if (!previewDoc) return null;
 
   const tpl = getDocumentTemplate(previewDoc, org);
@@ -41,6 +60,21 @@ export function DocumentPreviewModal({
     }
   };
 
+  const handleApprove = () => {
+    if (onUpdateStatus) {
+      onUpdateStatus(previewDoc.id, "VERIFIED");
+    }
+  };
+
+  const handleSubmitRevision = () => {
+    if (!revisionNote.trim()) return;
+    if (onUpdateStatus) {
+      onUpdateStatus(previewDoc.id, "REVISION_REQUIRED", revisionNote.trim());
+      setIsRevisionMode(false);
+      setRevisionNote("");
+    }
+  };
+
   return (
     <Dialog open={!!previewDoc} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-4xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-2xl p-6 max-h-[90vh] flex flex-col">
@@ -51,8 +85,17 @@ export function DocumentPreviewModal({
               <span>{tpl.categoryLabel}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/10 text-[10px] font-mono font-bold">
-                {tpl.classification}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "font-mono text-[10px] font-bold",
+                  previewDoc.status === "VERIFIED" && "border-primary/40 text-primary bg-primary/10",
+                  previewDoc.status === "ACTIVE" && "border-blue-500/40 text-blue-500 bg-blue-500/10",
+                  previewDoc.status === "PENDING_REVIEW" && "border-amber-500/40 text-amber-500 bg-amber-500/10",
+                  previewDoc.status === "REVISION_REQUIRED" && "border-destructive/40 text-destructive bg-destructive/10"
+                )}
+              >
+                {previewDoc.status}
               </Badge>
               <Badge variant="outline" className="border-border text-[10px] font-mono">
                 {previewDoc.format}
@@ -73,10 +116,96 @@ export function DocumentPreviewModal({
             <span>•</span>
             <span className="text-primary font-semibold">No: {tpl.docNumber}</span>
           </div>
+
+          {/* Super Admin Audit Trail info banner */}
+          <div className="mt-2 flex items-center justify-between p-2 rounded-lg bg-muted/40 border border-border/60 text-[11px]">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              <span>
+                Diupload oleh <strong className="text-foreground">{previewDoc.uploadedBy}</strong> ({previewDoc.uploadedAt})
+              </span>
+              {previewDoc.verifiedBy && (
+                <>
+                  <span>•</span>
+                  <span>
+                    Divalidasi oleh <strong className="text-primary">{previewDoc.verifiedBy}</strong> ({previewDoc.verifiedAt})
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Quick verification buttons inside header */}
+            {onUpdateStatus && (
+              <div className="flex items-center gap-1.5">
+                {previewDoc.status !== "VERIFIED" && (
+                  <Button
+                    size="sm"
+                    onClick={handleApprove}
+                    className="h-6 px-2 text-[10px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Setujui (Verify)</span>
+                  </Button>
+                )}
+                {previewDoc.status !== "REVISION_REQUIRED" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsRevisionMode(true)}
+                    className="h-6 px-2 text-[10px] text-amber-500 border-amber-500/30 hover:bg-amber-500/10 gap-1 cursor-pointer"
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Minta Revisi</span>
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Inline revision reason form */}
+          {isRevisionMode && (
+            <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2">
+              <div className="text-xs font-semibold text-amber-500 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>Masukkan Catatan Revisi untuk Tenant:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={revisionNote}
+                  onChange={(e) => setRevisionNote(e.target.value)}
+                  placeholder="Contoh: Lampirkan SK Izin Penyelenggaraan ISP terbaru yang telah dilegalisir..."
+                  className="h-7 text-xs bg-card border-border flex-1"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleSubmitRevision}
+                  className="h-7 px-3 text-xs font-semibold bg-amber-600 text-amber-50 hover:bg-amber-700 cursor-pointer"
+                >
+                  Kirim Revisi
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsRevisionMode(false)}
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Batal
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Existing Revision Notes Callout */}
+          {previewDoc.reviewNotes && (
+            <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span>Catatan Revisi: {previewDoc.reviewNotes}</span>
+            </div>
+          )}
         </DialogHeader>
 
         {/* Scrollable Formal Document Viewport */}
-        <div className="flex-1 my-3 overflow-y-auto max-h-[58vh] pr-2 space-y-6 rounded-xl border border-border bg-card/60 p-6 text-foreground font-sans select-text">
+        <div className="flex-1 my-3 overflow-y-auto max-h-[50vh] pr-2 space-y-6 rounded-xl border border-border bg-card/60 p-6 text-foreground font-sans select-text">
           {/* Document Header Letterhead */}
           <div className="flex items-start justify-between border-b border-border/80 pb-4">
             <div>
