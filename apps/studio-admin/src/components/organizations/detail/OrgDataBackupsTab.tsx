@@ -3,6 +3,7 @@ import { useOrgDataBackupsState } from "./backups/useOrgDataBackupsState";
 import { BackupsHeaderBar } from "./backups/BackupsHeaderBar";
 import { BackupStorageCards } from "./backups/BackupStorageCards";
 import { BackupSnapshotsTable } from "./backups/BackupSnapshotsTable";
+import { BackupProgressModal } from "./backups/BackupProgressModal";
 
 export type { TenantSnapshot } from "./backups/types";
 
@@ -23,6 +24,15 @@ export function OrgDataBackupsTab({
     handleTriggerSnapshot,
     handleSpatialExport,
     handleRestoreSnapshot,
+    isBackupModalOpen,
+    backupProgress,
+    backupStage,
+    backupStatus,
+    backupError,
+    terminalLogs,
+    downloadFileName,
+    handleDownloadAgain,
+    closeBackupModal,
   } = useOrgDataBackupsState(org);
 
   return (
@@ -47,6 +57,22 @@ export function OrgDataBackupsTab({
         restoring={restoring}
         onDownloadSnapshot={handleTriggerSnapshot}
         onRestoreSnapshot={handleRestoreSnapshot}
+      />
+
+      {/* 4. Live Informative Backup Pipeline Modal (Step-by-Step HUD) */}
+      <BackupProgressModal
+        isOpen={isBackupModalOpen}
+        onClose={closeBackupModal}
+        orgName={org.name}
+        orgSlug={org.slug || org.id}
+        progress={backupProgress}
+        currentStage={backupStage}
+        status={backupStatus}
+        error={backupError}
+        terminalLogs={terminalLogs}
+        onRetry={handleTriggerSnapshot}
+        onDownloadAgain={handleDownloadAgain}
+        downloadFileName={downloadFileName}
       />
     </div>
   );

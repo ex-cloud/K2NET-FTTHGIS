@@ -23,10 +23,10 @@ public interface NetworkNodeRepository extends JpaRepository<NetworkNode, UUID> 
     @Query(value = """
         SELECT n.id, n.code, n.status, n.node_type as nodeType, ST_Y(n.geom) as lat, ST_X(n.geom) as lng 
         FROM network_nodes n
-        JOIN projects p ON n.project_id = p.id
-        JOIN organizations o ON p.org_id = o.id
+        JOIN organizations o ON n.organization_id = o.id
+        LEFT JOIN projects p ON n.project_id = p.id
         WHERE o.slug = :orgSlug 
-        AND (:projectId IS NULL OR p.id = :projectId)
+        AND (:projectId IS NULL OR n.project_id = :projectId)
     """, nativeQuery = true)
     List<AssetMapProjection> findAllByOrgSlugAndProjectId(@Param("orgSlug") String orgSlug, @Param("projectId") UUID projectId);
 

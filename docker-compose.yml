@@ -5,6 +5,8 @@ services:
     container_name: traefik
     restart: always
     command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -20,6 +22,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "100.110.205.109:8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./docker/certs:/certs:ro"
