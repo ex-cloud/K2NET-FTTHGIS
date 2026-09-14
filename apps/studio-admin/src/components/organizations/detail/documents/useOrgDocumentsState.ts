@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument, DocumentCategory } from "./types";
 
-import { downloadDocumentFile } from "./document-templates";
+import { downloadDocumentFile, getDocumentTemplate, createBinaryPdfBlob } from "./document-templates";
 
 import { uploadTaskAttachment } from "@/lib/storage-client";
 
@@ -114,11 +114,23 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
         ? newDocName
         : `${newDocName}.pdf`;
 
-      const fileToUpload = newDocFile ?? new File(
-        [new Blob([`Dokumen ${fileName} untuk organisasi ${org.name}`], { type: "application/pdf" })],
-        fileName,
-        { type: "application/pdf" }
-      );
+      let fileToUpload = newDocFile;
+      if (!fileToUpload) {
+        const dummyDoc: TenantDocument = {
+          id: "temp",
+          name: fileName,
+          category: newDocCategory,
+          sizeBytes: 0,
+          format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
+          uploadedBy: "Super Admin",
+          uploadedAt: "Baru saja",
+          status: "VERIFIED",
+          downloadUrl: "#",
+        };
+        const tpl = getDocumentTemplate(dummyDoc, org);
+        const pdfBlob = createBinaryPdfBlob(tpl, org);
+        fileToUpload = new File([pdfBlob], fileName, { type: "application/pdf" });
+      }
 
       const folder = `tenants/${storageFolder}/documents/${newDocCategory.toLowerCase()}`;
       const uploadRes = await uploadTaskAttachment(
