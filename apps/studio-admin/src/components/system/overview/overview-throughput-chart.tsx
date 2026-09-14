@@ -20,6 +20,8 @@ import {
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -60,20 +62,17 @@ interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{ payload: EnrichedThroughputPoint }>;
   label?: string;
-  onDrilldown?: (point: EnrichedThroughputPoint) => void;
 }
 
 function FloatingRichTooltipContent({
   point,
   serviceFilter,
-  onDrilldown,
 }: {
   point: EnrichedThroughputPoint;
   serviceFilter: ServiceFilterType;
-  onDrilldown?: (point: EnrichedThroughputPoint) => void;
 }) {
   return (
-    <div className="w-72 rounded-xl border border-border/80 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl text-xs space-y-3 z-50">
+    <div className="w-72 rounded-xl border border-border/80 bg-card/95 p-3.5 shadow-2xl backdrop-blur-xl text-xs space-y-3 pointer-events-none select-none z-50">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/60 pb-2">
         <div className="flex items-center gap-1.5 font-semibold text-foreground">
@@ -120,15 +119,15 @@ function FloatingRichTooltipContent({
         </div>
         <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted/60">
           <div
-            style={{ width: `${(point.successCount / point.filteredHits) * 100}%` }}
+            style={{ width: `${(point.successCount / Math.max(1, point.filteredHits)) * 100}%` }}
             className="bg-primary transition-all duration-300"
           />
           <div
-            style={{ width: `${(point.clientErrCount / point.filteredHits) * 100}%` }}
+            style={{ width: `${(point.clientErrCount / Math.max(1, point.filteredHits)) * 100}%` }}
             className="bg-amber-500 transition-all duration-300"
           />
           <div
-            style={{ width: `${(point.serverErrCount / point.filteredHits) * 100}%` }}
+            style={{ width: `${(point.serverErrCount / Math.max(1, point.filteredHits)) * 100}%` }}
             className="bg-destructive transition-all duration-300"
           />
         </div>
@@ -175,15 +174,11 @@ function FloatingRichTooltipContent({
         </div>
       )}
 
-      {/* Action CTA */}
-      <button
-        type="button"
-        onClick={() => onDrilldown?.(point)}
-        className="flex w-full items-center justify-between rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/20 cursor-pointer"
-      >
-        <span>Inspeksi di Observability</span>
-        <ArrowUpRight className="h-3 w-3" />
-      </button>
+      {/* Helper Footer */}
+      <div className="border-t border-border/50 pt-1.5 flex items-center justify-between text-[9px] text-muted-foreground font-mono">
+        <span>Klik untuk inspeksi observabilitas</span>
+        <ArrowUpRight className="h-3 w-3 text-primary" />
+      </div>
     </div>
   );
 }
@@ -192,10 +187,8 @@ function RechartsCustomTooltip({
   active,
   payload,
   serviceFilter,
-  onDrilldown,
 }: CustomTooltipProps & {
   serviceFilter: ServiceFilterType;
-  onDrilldown?: (point: EnrichedThroughputPoint) => void;
 }) {
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
@@ -203,7 +196,6 @@ function RechartsCustomTooltip({
     <FloatingRichTooltipContent
       point={point}
       serviceFilter={serviceFilter}
-      onDrilldown={onDrilldown}
     />
   );
 }
@@ -212,7 +204,6 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
   const router = useRouter();
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("ALL");
   const [chartMode, setChartMode] = useState<ChartViewMode>("bars");
-  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
   // Transform raw data points into richly enriched points
   const enrichedData: EnrichedThroughputPoint[] = useMemo(() => {
@@ -293,11 +284,6 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
     toast.info(`Membuka ${targetLabel} (${point.timeRange})...`);
     router.push(targetPath);
   };
-
-  const activeHoverPoint =
-    hoveredBarIndex !== null && enrichedData[hoveredBarIndex]
-      ? enrichedData[hoveredBarIndex]
-      : null;
 
   return (
     <Card className="border-border bg-card p-5 md:p-6 transition-all">
@@ -408,59 +394,49 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
         </div>
       </div>
 
-      {/* ─── Main Chart Viewport ────────────────────────────────────────────── */}
+      {/* ─── Main Chart Viewport (Recharts Native Engine - 0 Flicker) ───────── */}
       <div className="relative mt-4">
-        {chartMode === "bars" ? (
-          /* ─── Mode 1: Interactive Bar Histogram with Floating Popover ─── */
-          <div className="relative">
-            <div className="relative flex h-32 items-end gap-1 border-b border-border px-1 pb-2">
-              {enrichedData.map((d, idx) => {
-                const isHovered = hoveredBarIndex === idx;
-                const heightPercent = Math.max(6, (d.filteredHits / maxHits) * 100);
-
-                return (
-                  <div
-                    key={d.hour}
-                    className="group relative flex h-full flex-1 flex-col justify-end"
-                    onMouseEnter={() => setHoveredBarIndex(idx)}
-                    onMouseLeave={() => setHoveredBarIndex(null)}
-                    onClick={() => handleDrilldown(d)}
-                  >
-                    <div
-                      style={{ height: `${heightPercent}%` }}
-                      className={cn(
-                        "w-full rounded-t transition-all duration-200 cursor-pointer",
-                        isHovered
-                          ? "bg-primary shadow-[0_0_12px_var(--primary)] scale-y-105"
-                          : "bg-gradient-to-t from-primary/20 via-primary/50 to-primary/80 group-hover:to-primary"
-                      )}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Floating popover anchored to hovered bar */}
-            {activeHoverPoint && hoveredBarIndex !== null && (
-              <div
-                className="absolute top-0 z-50 pointer-events-auto transform transition-all duration-150"
-                style={{
-                  left: `${Math.min(75, Math.max(2, (hoveredBarIndex / enrichedData.length) * 100))}%`,
-                  transform: hoveredBarIndex > 14 ? "translateX(-85%)" : "translateX(0%)",
+        <div className="h-32 w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            {chartMode === "bars" ? (
+              <BarChart
+                data={enrichedData}
+                margin={{ top: 5, right: 4, left: 4, bottom: 0 }}
+                barSize={14}
+                onClick={(state: any) => {
+                  if (state?.activePayload?.[0]?.payload) {
+                    handleDrilldown(state.activePayload[0].payload as EnrichedThroughputPoint);
+                  }
                 }}
               >
-                <FloatingRichTooltipContent
-                  point={activeHoverPoint}
-                  serviceFilter={serviceFilter}
-                  onDrilldown={handleDrilldown}
+                <defs>
+                  <linearGradient id="throughputBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.25} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={3}
                 />
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ─── Mode 2: Smooth Area Wave via Recharts ─── */
-          <div className="h-32 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
+                <YAxis hide domain={[0, "dataMax + 20"]} />
+                <Tooltip
+                  content={<RechartsCustomTooltip serviceFilter={serviceFilter} />}
+                  cursor={{ fill: "hsl(var(--muted) / 0.2)", radius: 4 }}
+                  isAnimationActive={false}
+                />
+                <Bar
+                  dataKey="filteredHits"
+                  name="Requests"
+                  fill="url(#throughputBarGradient)"
+                  radius={[3, 3, 0, 0]}
+                  className="cursor-pointer"
+                />
+              </BarChart>
+            ) : (
               <AreaChart
                 data={enrichedData}
                 margin={{ top: 5, right: 4, left: 4, bottom: 0 }}
@@ -485,13 +461,9 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
                 />
                 <YAxis hide domain={[0, "dataMax + 20"]} />
                 <Tooltip
-                  content={
-                    <RechartsCustomTooltip
-                      serviceFilter={serviceFilter}
-                      onDrilldown={handleDrilldown}
-                    />
-                  }
+                  content={<RechartsCustomTooltip serviceFilter={serviceFilter} />}
                   cursor={{ stroke: "var(--primary)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                  isAnimationActive={false}
                 />
                 <Area
                   type="monotone"
@@ -500,6 +472,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
                   stroke="var(--primary)"
                   fill="url(#throughputAreaGradient)"
                   strokeWidth={2}
+                  className="cursor-pointer"
                   activeDot={{
                     r: 5,
                     stroke: "var(--card)",
@@ -508,9 +481,9 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
                   }}
                 />
               </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+            )}
+          </ResponsiveContainer>
+        </div>
 
         {/* Timeline Axis Labels */}
         <div className="mt-2 flex justify-between px-1 text-[9px] font-mono text-muted-foreground">
