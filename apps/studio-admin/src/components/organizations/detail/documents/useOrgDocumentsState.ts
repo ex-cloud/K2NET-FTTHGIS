@@ -20,10 +20,10 @@ export function getTenantStorageFolder(org: { name: string; slug?: string }): st
 function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): TenantDocument[] {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem(`k2net_vault_docs_${storageFolder}`);
-    if (saved) {
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       } catch (e) {
@@ -32,7 +32,7 @@ function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): 
     }
   }
 
-  return [
+  const initialList: TenantDocument[] = [
     {
       id: `doc-1-${storageFolder}`,
       name: `MoU-SaaS-Enterprise-Agreement-${storageFolder.toUpperCase()}-2026.pdf`,
@@ -99,6 +99,16 @@ function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): 
       downloadUrl: "#",
     },
   ];
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(`k2net_vault_docs_${storageFolder}`, JSON.stringify(initialList));
+    } catch (e) {
+      console.error("Failed to seed initial vault docs to localStorage", e);
+    }
+  }
+
+  return initialList;
 }
 
 export function useOrgDocumentsState(org: EnrichedOrganization) {
