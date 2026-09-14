@@ -17,9 +17,12 @@ export function OrgDataBackupsTab({
 }: OrgDataBackupsTabProps) {
   const {
     triggering,
+    restoring,
+    loadingSnapshots,
     snapshots,
     handleTriggerSnapshot,
     handleSpatialExport,
+    handleRestoreSnapshot,
   } = useOrgDataBackupsState(org);
 
   return (
@@ -40,7 +43,10 @@ export function OrgDataBackupsTab({
       {/* 3. Snapshot History Table */}
       <BackupSnapshotsTable
         snapshots={snapshots}
+        loading={loadingSnapshots}
+        restoring={restoring}
         onDownloadSnapshot={handleTriggerSnapshot}
+        onRestoreSnapshot={handleRestoreSnapshot}
       />
     </div>
   );

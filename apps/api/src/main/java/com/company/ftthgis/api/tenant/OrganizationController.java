@@ -139,6 +139,34 @@ public class OrganizationController {
         return ResponseEntity.ok(organizationService.exportTenantBackup(idOrSlug));
     }
 
+    @GetMapping("/{idOrSlug}/spatial-export")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    public ResponseEntity<?> exportSpatial(
+            @PathVariable String idOrSlug,
+            @RequestParam(defaultValue = "geojson") String format
+    ) {
+        String cleanFormat = format != null ? format.toLowerCase().trim() : "geojson";
+        if ("kml".equals(cleanFormat) || "kmz".equals(cleanFormat)) {
+            String kml = organizationService.exportSpatialKml(idOrSlug);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"ftth-spatial-" + idOrSlug + ".kml\"")
+                    .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.google-earth.kml+xml"))
+                    .body(kml);
+        }
+
+        java.util.Map<String, Object> geojson = organizationService.exportSpatialGeoJson(idOrSlug);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"ftth-spatial-" + idOrSlug + ".geojson\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(geojson);
+    }
+
+    @GetMapping("/{idOrSlug}/snapshots")
+    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getSnapshots(@PathVariable String idOrSlug) {
+        return ResponseEntity.ok(organizationService.getTenantSnapshots(idOrSlug));
+    }
+
     @DeleteMapping("/{idOrSlug}")
     @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.delete'))")
     public ResponseEntity<Void> delete(
