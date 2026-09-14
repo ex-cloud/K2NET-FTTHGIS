@@ -19,6 +19,7 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
     private final OrganizationRepository organizationRepository;
     private final KeycloakService keycloakService;
     private final KongConfigSyncService kongConfigSyncService;
+    private final com.company.ftthgis.service.FileStorageService fileStorageService;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -53,8 +54,9 @@ public class KeycloakStartupReconciliationRunner implements ApplicationRunner {
                 try {
                     keycloakService.ensureRealmExists(realmName, hasSso, org.getName(), planCode, planDisplayName, org.getLogoUrl());
                     kongConfigSyncService.syncRealmToKong(realmName);
+                    fileStorageService.initTenantVault(org.getSlug());
                 } catch (Exception ex) {
-                    log.warn("⚠️ Failed to reconcile realm '{}' during startup: {}", realmName, ex.getMessage());
+                    log.warn("⚠️ Failed to reconcile realm/vault '{}' during startup: {}", realmName, ex.getMessage());
                 }
             }
 

@@ -283,6 +283,13 @@ public class OrganizationService {
                 keycloakService.configureLdap(saved.getSlug(), ldapConfig);
             }
 
+            // Step 5: Initialize Tenant Vault Folders in MinIO S3
+            try {
+                fileStorageService.initTenantVault(saved.getSlug());
+            } catch (Exception storageEx) {
+                log.warn("⚠️ Non-fatal: storage vault init warning for {}: {}", saved.getSlug(), storageEx.getMessage());
+            }
+
             log.info("✅ SUCCESS: Organization '{}' provisioned. Owner: {}, Temp Password: {}",
                     saved.getName(), adminUsername, tempPassword);
 
@@ -1030,6 +1037,13 @@ public class OrganizationService {
                 new java.util.HashMap<>()
             );
         } catch (Exception ignored) {}
+
+        // Ensure MinIO S3 storage vault folders are initialized
+        try {
+            fileStorageService.initTenantVault(org.getSlug());
+        } catch (Exception ex) {
+            log.warn("⚠️ Non-critical failure initializing storage vault for imported tenant {}: {}", slug, ex.getMessage());
+        }
 
         log.info("✅ SUCCESS: Tenant '{}' imported and provisioned successfully.", slug);
         return org;

@@ -97,4 +97,30 @@ public class FileController {
             return ResponseEntity.status(500).body("Could not upload file: " + e.getMessage());
         }
     }
+
+    @PostMapping("/init-tenant-vault")
+    @PreAuthorize("hasAnyAuthority('system.tenants.create', 'organizations.create', 'organizations.update', 'ROLE_super_admin', 'super_admin')")
+    public ResponseEntity<?> initTenantVault(@RequestBody Map<String, String> request) {
+        String slug = request.get("slug");
+        if (slug == null || slug.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Tenant slug is required"));
+        }
+
+        try {
+            log.info("Forwarding init-tenant-vault for slug '{}' to storage-gateway...", slug);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Gateway-Token", gatewayToken);
+            headers.set("X-Tenant-ID", slug);
+
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(Map.of("slug", slug), headers);
+            String apiUrl = gatewayUrl + "/api/v1/init-tenant-vault";
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl, requestEntity, Map.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (Exception e) {
+            log.error("Failed to init tenant vault in storage-gateway", e);
+            return ResponseEntity.status(500).body(Map.of("error", "Could not init tenant vault: " + e.getMessage()));
+        }
+    }
 }
