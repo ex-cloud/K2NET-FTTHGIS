@@ -158,9 +158,12 @@ export function useOrganizationWizardState(onSuccess: () => void, onOpenChange: 
 
       const targetFinalSlug = result?.slug || targetSlug;
 
-      // Auto initialize MinIO S3 Vault folders (legal, technical, compliance, billing)
-      if (targetFinalSlug) {
-        initTenantVaultFolders(targetFinalSlug).catch((e) =>
+      // Auto initialize MinIO S3 Vault folders using human-readable tenant name
+      const readableFolder = formData.name
+        ? formData.name.toLowerCase().trim().replace(/[^a-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "")
+        : targetFinalSlug;
+      if (readableFolder) {
+        initTenantVaultFolders(readableFolder).catch((e) =>
           console.warn("S3 MinIO Vault auto-init warn:", e)
         );
       }
