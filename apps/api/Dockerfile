@@ -9,9 +9,9 @@ RUN mvn package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Install bash, postgresql-client, and download mc (MinIO Client) CLI
-RUN apk add --no-cache bash postgresql-client wget && \
-    wget -q https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc && \
+# Install bash, postgresql-client, curl, and download mc (MinIO Client) CLI from official GitHub releases
+RUN apk add --no-cache bash postgresql-client curl && \
+    curl -fsSL https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.linux-amd64.RELEASE.2025-08-13T08-35-41Z -o /usr/local/bin/mc && \
     chmod +x /usr/local/bin/mc
 
 RUN addgroup -S spring && adduser -S spring -G spring
