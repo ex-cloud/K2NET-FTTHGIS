@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth-compat";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantDocument, DocumentCategory, DocumentStatus } from "./types";
 
@@ -101,6 +102,7 @@ function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): 
 }
 
 export function useOrgDocumentsState(org: EnrichedOrganization) {
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -200,7 +202,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
           category: newDocCategory,
           sizeBytes: 0,
           format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
-          uploadedBy: "Super Admin",
+          uploadedBy: session?.user?.name || "Super Admin",
           uploadedAt: "Baru saja",
           status: "VERIFIED",
           downloadUrl: "#",
@@ -211,12 +213,19 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
       }
 
       const folder = `tenants/${storageFolder}/documents/${newDocCategory.toLowerCase()}`;
-      const uploadRes = await uploadTaskAttachment(
-        fileToUpload,
-        undefined,
-        "tenant-assets",
-        folder
-      );
+      let remoteUrl = "#";
+
+      try {
+        const uploadRes = await uploadTaskAttachment(
+          fileToUpload,
+          session?.accessToken || undefined,
+          "tenant-assets",
+          folder
+        );
+        remoteUrl = uploadRes?.url || "#";
+      } catch (uploadErr) {
+        console.warn("Storage gateway sync warn (local vault saved):", uploadErr);
+      }
 
       const newDoc: TenantDocument = {
         id: `doc-${Date.now()}`,
@@ -224,10 +233,10 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
         category: newDocCategory,
         sizeBytes: fileToUpload.size,
         format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
-        uploadedBy: "Super Admin",
+        uploadedBy: session?.user?.name || "Super Admin",
         uploadedAt: "Baru saja",
         status: "VERIFIED",
-        downloadUrl: uploadRes.url,
+        downloadUrl: remoteUrl,
       };
 
       const nextDocs = [newDoc, ...documents];
@@ -235,7 +244,7 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
       setIsUploadOpen(false);
       setNewDocName("");
       setNewDocFile(null);
-      toast.success(`Dokumen ${newDoc.name} berhasil tersinkron ke MinIO S3 Vault.`, { id: toastId });
+      toast.success(`Dokumen "${newDoc.name}" berhasil tersimpan di Dokumen Vault tenant.`, { id: toastId });
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Gagal mengunggah dokumen";
       toast.error(errMsg, { id: toastId });

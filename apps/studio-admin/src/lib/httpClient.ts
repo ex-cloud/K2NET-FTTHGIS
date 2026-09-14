@@ -49,21 +49,20 @@ async function handle401Response(
   rest: RequestInit,
   requestHeaders: Headers
 ): Promise<Response> {
-  const lastLoginStr = typeof window !== "undefined" ? localStorage.getItem("last_login_time") : null;
-  const lastLogin = lastLoginStr ? parseInt(lastLoginStr, 10) : Date.now();
-  const isTransient = Date.now() - lastLogin < 30000;
+  const auth = typeof window !== "undefined" ? (window as unknown as { __K2NET_AUTH__?: { updateToken?: (minValidity?: number) => Promise<boolean>; token?: string } }).__K2NET_AUTH__ : undefined;
 
-  if (!isTransient) {
-    signOut();
-    return response;
-  }
-
-  const maxSilentRetries = 3;
-  for (let attempt = 1; attempt <= maxSilentRetries; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
-    const retryResponse = await fetch(url, { ...rest, headers: requestHeaders });
-    if (retryResponse.ok || retryResponse.status !== 401) {
-      return retryResponse;
+  if (auth?.updateToken) {
+    try {
+      const refreshed = await auth.updateToken(30);
+      if (refreshed && auth.token) {
+        requestHeaders.set("Authorization", `Bearer ${auth.token}`);
+        const retryResponse = await fetch(url, { ...rest, headers: requestHeaders });
+        if (retryResponse.ok || retryResponse.status !== 401) {
+          return retryResponse;
+        }
+      }
+    } catch (e) {
+      console.warn("[HTTP Client] Silent token refresh on 401 failed:", e);
     }
   }
 
@@ -72,9 +71,9 @@ async function handle401Response(
 
 /**
  * A centralized fetch wrapper that handles:
- * 1. Authorization header injecting
+ * 1. Authorization header injecting (with auto-fallback to active Keycloak session)
  * 2. Project ID header injecting
- * 3. Graceful 401 Unauthorized handling (automatic logout)
+ * 3. Graceful 401 Unauthorized handling
  */
 export async function httpClient(url: string, options: HttpClientOptions = {}): Promise<Response> {
   const { token, projectId, headers, ...rest } = options;
@@ -82,15 +81,22 @@ export async function httpClient(url: string, options: HttpClientOptions = {}): 
   const isWrite = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
   const requestHeaders = new Headers(headers);
 
+  const activeAuth = typeof window !== "undefined" ? (window as unknown as { __K2NET_AUTH__?: { token?: string } }).__K2NET_AUTH__ : undefined;
+  const effectiveToken = token || activeAuth?.token;
+
   if (typeof window !== "undefined" && !navigator.onLine && isWrite) {
-    if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
+    if (effectiveToken) requestHeaders.set("Authorization", `Bearer ${effectiveToken}`);
     if (projectId) requestHeaders.set("X-Project-ID", projectId);
     const offlineRes = await handleOfflineEnqueue(url, method, rest.body, requestHeaders);
     if (offlineRes) return offlineRes;
   }
 
-  if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
-  if (projectId) requestHeaders.set("X-Project-ID", projectId);
+  if (effectiveToken && !requestHeaders.has("Authorization")) {
+    requestHeaders.set("Authorization", `Bearer ${effectiveToken}`);
+  }
+  if (projectId && !requestHeaders.has("X-Project-ID")) {
+    requestHeaders.set("X-Project-ID", projectId);
+  }
 
   if (rest.body && !requestHeaders.has("Content-Type") && typeof rest.body === "string") {
     requestHeaders.set("Content-Type", "application/json");
@@ -110,7 +116,7 @@ export async function httpClient(url: string, options: HttpClientOptions = {}): 
       return handle401Response(response, url, rest, requestHeaders);
     }
 
-    if (response.ok && token && typeof window !== "undefined" && !localStorage.getItem("last_login_time")) {
+    if (response.ok && effectiveToken && typeof window !== "undefined" && !localStorage.getItem("last_login_time")) {
       localStorage.setItem("last_login_time", Date.now().toString());
     }
 
