@@ -74,11 +74,6 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                         {org.status}
                       </Badge>
                     </div>
-
-                    <div className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground transition-all duration-200 group-hover:bg-primary/10 group-hover:text-primary border border-border/60 group-hover:border-primary/30 shrink-0">
-                      <span>Detail Organisasi</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                    </div>
                   </div>
                 </Link>
               </OrganizationContextMenu>
