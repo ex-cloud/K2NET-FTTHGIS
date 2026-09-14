@@ -1,9 +1,10 @@
 import { Badge } from "@k2net/ui";
-import { Link } from "@/lib/navigation-compat";
+import { Link, useRouter } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { Building2, ArrowRight } from "lucide-react";
 import type { Organization } from "@/hooks/useOrganizations";
-import { normalizePlanTier } from "@/components/organizations/types";
+import { normalizePlanTier, enrichOrganization } from "@/components/organizations/types";
+import { OrganizationContextMenu } from "@/components/organizations/OrganizationContextMenu";
 
 interface OverviewActivityFeedProps {
   loading: boolean;
@@ -11,6 +12,8 @@ interface OverviewActivityFeedProps {
 }
 
 export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFeedProps) {
+  const router = useRouter();
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-2">
@@ -32,41 +35,53 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
         ) : recentOrgs.length > 0 ? (
           recentOrgs.map((org) => {
             const planTier = normalizePlanTier(org.subscriptionPlan?.name);
+            const enrichedOrg = enrichOrganization(org);
 
             return (
-              <div key={org.slug} className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card/60 p-4 transition-all hover:border-border/10 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                    <Building2 className="h-4.5 w-4.5 text-primary" />
+              <OrganizationContextMenu
+                key={org.slug}
+                organization={enrichedOrg}
+                onViewDetail={(o) => router.push(`/organizations/${o.slug}`)}
+                onImpersonate={(o) => router.push(`/organizations/impersonation?target=${o.slug}`)}
+              >
+                <Link
+                  href={`/organizations/${org.slug}`}
+                  className="group flex flex-col justify-between gap-4 rounded-xl border border-border bg-card/60 p-4 transition-all duration-200 hover:bg-card/95 hover:border-primary/50 hover:shadow-xs sm:flex-row sm:items-center cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors group-hover:border-primary/40 group-hover:bg-primary/10 shrink-0">
+                      <Building2 className="h-4.5 w-4.5 text-primary transition-transform duration-200 group-hover:scale-105" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-semibold text-foreground transition-colors duration-150 group-hover:text-primary truncate">
+                        {org.name}
+                      </h3>
+                      <p className="mt-0.5 text-[10px] font-mono text-muted-foreground truncate">
+                        {org.slug}.gis.kdua.net
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-foreground">{org.name}</h3>
-                    <p className="mt-0.5 text-[10px] font-mono text-muted-foreground">{org.slug}.gis.kdua.net</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 sm:flex-nowrap sm:justify-end">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-border bg-card/40 px-2 py-0.5 text-[9px] uppercase font-mono text-muted-foreground">
-                      {planTier}
-                    </Badge>
-                    <Badge className={cn(
-                      "border border-border px-2 py-0.5 text-[9px] font-bold",
-                      org.status === "ACTIVE" ? "bg-primary/10 text-primary" : org.status === "SUSPENDED" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
-                    )}>
-                      {org.status}
-                    </Badge>
-                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:justify-end">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-border bg-card/40 px-2 py-0.5 text-[9px] uppercase font-mono text-muted-foreground">
+                        {planTier}
+                      </Badge>
+                      <Badge className={cn(
+                        "border border-border px-2 py-0.5 text-[9px] font-bold",
+                        org.status === "ACTIVE" ? "bg-primary/10 text-primary" : org.status === "SUSPENDED" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
+                      )}>
+                        {org.status}
+                      </Badge>
+                    </div>
 
-                  <Link
-                    href={`/organizations/${org.slug}`}
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary group border border-border/60 hover:border-primary/30"
-                  >
-                    <span>Detail Organisasi</span>
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                </div>
-              </div>
+                    <div className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground transition-all duration-200 group-hover:bg-primary/10 group-hover:text-primary border border-border/60 group-hover:border-primary/30 shrink-0">
+                      <span>Detail Organisasi</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </Link>
+              </OrganizationContextMenu>
             );
           })
         ) : (
