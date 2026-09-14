@@ -1,8 +1,7 @@
-import { Badge, Button } from "@k2net/ui";
+import { Badge } from "@k2net/ui";
 import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { Building2, ArrowRight } from "lucide-react";
-import { getTenantUrl } from "@/lib/domain";
 import type { Organization } from "@/hooks/useOrganizations";
 import { normalizePlanTier } from "@/components/organizations/types";
 
@@ -59,10 +58,13 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                     </Badge>
                   </div>
 
-                  <Button onClick={() => window.location.assign(getTenantUrl(org.slug))} variant="ghost" size="sm" className="group gap-1.5 text-xs text-muted-foreground transition-all hover:bg-primary/5 hover:text-primary">
-                    Access Tenant
+                  <Link
+                    href={`/organizations/${org.slug}`}
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary group border border-border/60 hover:border-primary/30"
+                  >
+                    <span>Detail Organisasi</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </Button>
+                  </Link>
                 </div>
               </div>
             );
