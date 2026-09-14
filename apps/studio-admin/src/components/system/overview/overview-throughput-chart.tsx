@@ -176,8 +176,10 @@ function FloatingRichTooltipContent({
 
       {/* Helper Footer */}
       <div className="border-t border-border/50 pt-1.5 flex items-center justify-between text-[9px] text-muted-foreground font-mono">
-        <span>Klik untuk inspeksi observabilitas</span>
-        <ArrowUpRight className="h-3 w-3 text-primary" />
+        <span className="text-primary font-medium flex items-center gap-1">
+          💡 Klik batang bar untuk inspeksi telemetri
+        </span>
+        <ArrowUpRight className="h-3 w-3 text-primary animate-pulse" />
       </div>
     </div>
   );
@@ -425,7 +427,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
                 <YAxis hide domain={[0, "dataMax + 20"]} />
                 <Tooltip
                   content={<RechartsCustomTooltip serviceFilter={serviceFilter} />}
-                  cursor={{ fill: "hsl(var(--muted) / 0.2)", radius: 4 }}
+                  cursor={false}
                   isAnimationActive={false}
                 />
                 <Bar
@@ -434,6 +436,12 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
                   fill="url(#throughputBarGradient)"
                   radius={[3, 3, 0, 0]}
                   className="cursor-pointer"
+                  activeBar={{
+                    fill: "var(--primary)",
+                    stroke: "var(--primary)",
+                    strokeWidth: 1,
+                    opacity: 1,
+                  }}
                 />
               </BarChart>
             ) : (
