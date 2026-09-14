@@ -207,6 +207,12 @@ export function OverviewInfrastructureMap({
     // Only drag canvas with primary click on empty canvas area
     if (e.button !== 0 || nodeDragRef.current) return;
     
+    // Ignore clicks on buttons, links, or other interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a") || target.closest("[role='button']")) {
+      return;
+    }
+
     panStartRef.current = {
       clientX: e.clientX,
       clientY: e.clientY,
@@ -214,7 +220,11 @@ export function OverviewInfrastructureMap({
       panY: pan.y,
     };
     setIsPanning(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Safe ignore
+    }
   };
 
   const handleCanvasPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {

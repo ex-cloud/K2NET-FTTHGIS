@@ -174,7 +174,8 @@ export function InfrastructureGatewayCluster({
     <>
       <div
         style={{ left: CLUSTER_FRAME_X + 16, top: CLUSTER_FRAME_Y + 12 }}
-        className="absolute z-20 flex items-center justify-between w-[312px] select-none pointer-events-auto"
+        className="absolute z-30 flex items-center justify-between w-[312px] select-none pointer-events-auto"
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)] animate-pulse" />
@@ -184,8 +185,13 @@ export function InfrastructureGatewayCluster({
         </div>
 
         <button
-          onClick={onToggleCollapse}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-mono font-semibold transition-all cursor-pointer shadow-sm"
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleCollapse();
+          }}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/40 bg-primary/15 hover:bg-primary/25 text-primary text-[9px] font-mono font-semibold transition-all cursor-pointer shadow-sm active:scale-95 z-40"
           title="Collapse cluster back to hub node"
         >
           <span>{onlineGatewayCount}/9 Active</span>
