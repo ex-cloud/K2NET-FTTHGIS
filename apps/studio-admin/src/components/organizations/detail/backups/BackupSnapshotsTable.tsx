@@ -23,7 +23,7 @@ interface BackupSnapshotsTableProps {
   snapshots: TenantSnapshot[];
   loading?: boolean;
   restoring?: boolean;
-  onDownloadSnapshot: () => void;
+  onDownloadSnapshot: (snapshot: TenantSnapshot) => void;
   onRestoreSnapshot?: (snapshot: TenantSnapshot) => void;
 }
 
@@ -131,7 +131,7 @@ export function BackupSnapshotsTable({
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={onDownloadSnapshot}
+                            onClick={() => onDownloadSnapshot(snap)}
                             className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <Download className="h-3.5 w-3.5" />
@@ -158,7 +158,7 @@ export function BackupSnapshotsTable({
 
                 <ContextMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border shadow-2xl text-xs z-50 py-1 rounded-xl">
                   <ContextMenuItem
-                    onClick={onDownloadSnapshot}
+                    onClick={() => onDownloadSnapshot(snap)}
                     className="cursor-pointer font-medium gap-2 text-foreground focus:bg-accent"
                   >
                     <Download className="h-3.5 w-3.5 text-primary" />

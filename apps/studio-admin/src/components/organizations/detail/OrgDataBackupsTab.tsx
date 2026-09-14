@@ -21,7 +21,10 @@ export function OrgDataBackupsTab({
     restoring,
     loadingSnapshots,
     snapshots,
-    handleTriggerSnapshot,
+    handleOpenTriggerModal,
+    handleStartBackupExecution,
+    handleDownloadFile,
+    handleDownloadSnapshot,
     handleSpatialExport,
     handleRestoreSnapshot,
     isBackupModalOpen,
@@ -31,7 +34,8 @@ export function OrgDataBackupsTab({
     backupError,
     terminalLogs,
     downloadFileName,
-    handleDownloadAgain,
+    fileSizeBytes,
+    sha256Fingerprint,
     closeBackupModal,
   } = useOrgDataBackupsState(org);
 
@@ -40,7 +44,7 @@ export function OrgDataBackupsTab({
       {/* 1. Master Backup & Data Sovereignty Banner */}
       <BackupsHeaderBar
         onOpenImportModal={onOpenImportModal}
-        onTriggerSnapshot={handleTriggerSnapshot}
+        onTriggerSnapshot={handleOpenTriggerModal}
         triggering={triggering}
       />
 
@@ -55,7 +59,7 @@ export function OrgDataBackupsTab({
         snapshots={snapshots}
         loading={loadingSnapshots}
         restoring={restoring}
-        onDownloadSnapshot={handleTriggerSnapshot}
+        onDownloadSnapshot={handleDownloadSnapshot}
         onRestoreSnapshot={handleRestoreSnapshot}
       />
 
@@ -70,9 +74,12 @@ export function OrgDataBackupsTab({
         status={backupStatus}
         error={backupError}
         terminalLogs={terminalLogs}
-        onRetry={handleTriggerSnapshot}
-        onDownloadAgain={handleDownloadAgain}
+        onStartExecution={handleStartBackupExecution}
+        onRetry={() => handleStartBackupExecution()}
+        onDownloadFile={handleDownloadFile}
         downloadFileName={downloadFileName}
+        fileSizeBytes={fileSizeBytes}
+        sha256Fingerprint={sha256Fingerprint}
       />
     </div>
   );
