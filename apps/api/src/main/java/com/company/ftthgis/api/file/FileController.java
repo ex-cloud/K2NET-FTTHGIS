@@ -36,7 +36,6 @@ public class FileController {
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "tenant", required = false) String tenant,
-            @RequestParam(value = "bucket", required = false, defaultValue = "tenant-assets") String bucket,
             @RequestParam(value = "folder", required = false, defaultValue = "documents") String folder) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
@@ -44,6 +43,10 @@ public class FileController {
 
         try {
             String originalFilename = file.getOriginalFilename();
+            String bucket = "tenant-assets";
+            if (folder != null && (folder.startsWith("public") || folder.startsWith("tasks"))) {
+                bucket = "public-contents";
+            }
             log.info("Forwarding upload of file: {} to storage-gateway (bucket: {}, folder: {})...", originalFilename, bucket, folder);
 
             // Configure headers
