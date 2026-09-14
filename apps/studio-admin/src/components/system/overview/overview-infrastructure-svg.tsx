@@ -1,28 +1,105 @@
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   STAGE_EDGES,
+  GATEWAY_MATRIX,
+  DEFAULT_NODE_POSITIONS,
   CLUSTER_FRAME_X,
   CLUSTER_FRAME_Y,
   CLUSTER_FRAME_W,
   CLUSTER_FRAME_H,
   getEdgeHealthColor,
   getParticleClass,
+  calculateDynamicBezier,
   type NodeStatus,
 } from "./overview-infrastructure-constants";
 
 interface InfrastructureSvgProps {
   statusMap: Record<string, NodeStatus>;
   isNodeDimmed: (id: string) => boolean;
-  incomingDataCables: { id: string; path: string; speed: "normal" | "slow" }[];
+  nodePositions: Record<string, { x: number; y: number }>;
   collapsed: boolean;
+  activeGatewayId: string | null;
 }
 
 export function InfrastructureSvg({
   statusMap,
   isNodeDimmed,
-  incomingDataCables,
+  nodePositions,
   collapsed,
+  activeGatewayId,
 }: InfrastructureSvgProps) {
+  // Compute dynamic inter-tier edges based on live node positions
+  const dynamicEdges = useMemo(() => {
+    return STAGE_EDGES.map((edge) => {
+      const p1 = nodePositions[edge.from] || DEFAULT_NODE_POSITIONS[edge.from] || { x: 0, y: 0 };
+      const p2 = nodePositions[edge.to] || DEFAULT_NODE_POSITIONS[edge.to] || { x: 0, y: 0 };
+      return {
+        ...edge,
+        path: calculateDynamicBezier(p1, p2),
+      };
+    });
+  }, [nodePositions]);
+
+  // Compute dynamic cables connecting Storage to Gateway Cluster or individual Gateways
+  const dynamicGatewayCables = useMemo(() => {
+    const pPostgres = nodePositions["postgres-db"] || DEFAULT_NODE_POSITIONS["postgres-db"] || { x: 420, y: 165 };
+    const pRedis = nodePositions["redis-cache"] || DEFAULT_NODE_POSITIONS["redis-cache"] || { x: 420, y: 335 };
+    const pKeycloak = nodePositions["keycloak-iam"] || DEFAULT_NODE_POSITIONS["keycloak-iam"] || { x: 255, y: 400 };
+
+    if (collapsed) {
+      const pHub = nodePositions["gw-cluster"] || DEFAULT_NODE_POSITIONS["gw-cluster"] || { x: 640, y: 250 };
+      return [
+        {
+          id: "postgres-hub-col",
+          path: calculateDynamicBezier(pPostgres, pHub),
+          speed: "normal" as const,
+          source: "postgres-db",
+          target: "gw-cluster",
+        },
+        {
+          id: "redis-hub-col",
+          path: calculateDynamicBezier(pRedis, pHub),
+          speed: "slow" as const,
+          source: "redis-cache",
+          target: "gw-cluster",
+        },
+      ];
+    }
+
+    // Expanded mode: Cables from storage nodes to each gateway based on connectsTo
+    const cables: {
+      id: string;
+      path: string;
+      speed: "normal" | "slow";
+      source: string;
+      target: string;
+    }[] = [];
+
+    GATEWAY_MATRIX.forEach((gw) => {
+      const pGw = nodePositions[gw.id] || { x: gw.x, y: gw.y };
+      gw.connectsTo.forEach((src) => {
+        const pSrc =
+          src === "postgres-db"
+            ? pPostgres
+            : src === "redis-cache"
+            ? pRedis
+            : src === "keycloak-iam"
+            ? pKeycloak
+            : nodePositions[src] || { x: 0, y: 0 };
+
+        cables.push({
+          id: `${src}-${gw.id}`,
+          path: calculateDynamicBezier(pSrc, pGw),
+          speed: src === "redis-cache" ? "slow" : "normal",
+          source: src,
+          target: gw.id,
+        });
+      });
+    });
+
+    return cables;
+  }, [collapsed, nodePositions]);
   return (
     <svg
       className="absolute inset-0 w-[920px] h-[500px] overflow-visible pointer-events-none z-0"
@@ -31,7 +108,7 @@ export function InfrastructureSvg({
       aria-label="Animated service dependencies"
     >
       {/* Static & Animated Inter-Tier Edges */}
-      {STAGE_EDGES.map((edge, edgeIdx) => {
+      {dynamicEdges.map((edge, edgeIdx) => {
         const dimmed = isNodeDimmed(edge.from) || isNodeDimmed(edge.to);
         const edgeColor = getEdgeHealthColor(edge.from, edge.to, statusMap);
         const fromStatus = statusMap[edge.from] ?? "healthy";
@@ -97,39 +174,49 @@ export function InfrastructureSvg({
         );
       })}
 
-      {/* Dynamic Incoming PostgreSQL & Redis Trunk Cables */}
-      {incomingDataCables.map((cable, idx) => (
-        <g key={cable.id}>
-          <path
-            d={cable.path}
-            fill="none"
-            stroke="currentColor"
-            className="text-border/40 dark:text-border/30"
-            strokeWidth="1"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            d={cable.path}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeOpacity="0.3"
-            className="animate-glow-pulse"
-          />
-          <path
-            d={cable.path}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeDasharray="14 140"
-            className="animate-flow-particle-fast"
-            style={{ animationDelay: `${-(idx * 0.5)}s` }}
-          />
-        </g>
-      ))}
+      {/* Dynamic Incoming PostgreSQL, Redis & IAM Gateway Cables */}
+      {dynamicGatewayCables.map((cable, idx) => {
+        const dimmed = isNodeDimmed(cable.source) || isNodeDimmed(cable.target);
+        const isFocused = activeGatewayId === cable.target;
+        return (
+          <g
+            key={cable.id}
+            className={cn(
+              "transition-opacity duration-300",
+              dimmed ? "opacity-10" : "opacity-100"
+            )}
+          >
+            <path
+              d={cable.path}
+              fill="none"
+              stroke="currentColor"
+              className="text-border/40 dark:text-border/30"
+              strokeWidth="1"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={cable.path}
+              fill="none"
+              stroke="var(--primary)"
+              strokeWidth={isFocused ? "2" : "1.2"}
+              strokeLinecap="round"
+              strokeOpacity={isFocused ? "0.8" : "0.3"}
+              className="animate-glow-pulse"
+            />
+            <path
+              d={cable.path}
+              fill="none"
+              stroke="var(--primary)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeDasharray="14 140"
+              className={cable.speed === "slow" ? "animate-flow-particle-slow" : "animate-flow-particle-fast"}
+              style={{ animationDelay: `${-(idx * 0.35)}s` }}
+            />
+          </g>
+        );
+      })}
 
       {/* ── Matrix Cluster Frame & Branching Bus (When Expanded) ── */}
       {!collapsed && (

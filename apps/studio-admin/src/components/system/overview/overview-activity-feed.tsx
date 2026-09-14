@@ -1,4 +1,5 @@
 import { Badge, Button } from "@k2net/ui";
+import { Link } from "@/lib/navigation-compat";
 import { cn } from "@/lib/utils";
 import { Building2, ArrowRight } from "lucide-react";
 import { getTenantUrl } from "@/lib/domain";
@@ -17,9 +18,13 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
         <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
           <Building2 className="h-4.5 w-4.5 text-muted-foreground" /> Recent Organizations
         </h2>
-        <Button variant="link" className="gap-1.5 p-0 text-xs text-muted-foreground hover:text-primary">
-          View All Organizations <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
+        <Link
+          href="/organizations"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary group"
+        >
+          <span>View All Organizations</span>
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-3">

@@ -67,6 +67,31 @@ export interface StageNodePosition {
   nodeId: string;
 }
 
+export const DEFAULT_NODE_POSITIONS: Record<string, { x: number; y: number }> = {
+  // Tier 1 — Edge Ingress
+  "edge-router":   { x: 65,  y: 250 },
+  // Tier 2 — Core, AI & IAM
+  "core-backend":  { x: 255, y: 100 },
+  "ai-gateway":    { x: 255, y: 250 },
+  "keycloak-iam":  { x: 255, y: 400 },
+  // Tier 3 — Storage & Data Layer
+  "postgres-db":   { x: 420, y: 165 },
+  "redis-cache":   { x: 420, y: 335 },
+  // Tier 4 — Gateway Cluster Hub
+  "gw-cluster":    { x: 640, y: 250 },
+  // Column 1 Gateways
+  "gw-notification": { x: 645, y: 115 },
+  "gw-whatsapp":     { x: 645, y: 180 },
+  "gw-payment":      { x: 645, y: 245 },
+  "gw-storage":      { x: 645, y: 310 },
+  "gw-map":          { x: 645, y: 375 },
+  // Column 2 Gateways
+  "gw-audit":        { x: 780, y: 115 },
+  "gw-scheduler":    { x: 780, y: 180 },
+  "gw-export":       { x: 780, y: 245 },
+  "gw-olt":          { x: 780, y: 310 },
+};
+
 export const STAGE_NODE_POSITIONS: Record<string, StageNodePosition> = {
   // Tier 1 — Edge Ingress (Spacious Left X = 65)
   "edge-router":   { x: 65,  y: 250, label: "Traefik / Kong API", sublabel: "Edge Router",    icon: Server,   tone: "green", nodeId: "edge-router"  },
@@ -83,21 +108,38 @@ export interface StageEdge {
   id: string;
   from: string;
   to: string;
-  path: string;
+  path?: string;
   speed?: "fast" | "normal" | "slow";
+}
+
+export function calculateDynamicBezier(
+  p1: { x: number; y: number },
+  p2: { x: number; y: number }
+): string {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  
+  // Smooth directional curvature
+  const curvature = Math.max(Math.abs(dx) * 0.45, 35);
+  const cx1 = p1.x + (dx >= 0 ? curvature : -curvature * 0.6);
+  const cy1 = p1.y + (dx < 0 ? dy * 0.15 : 0);
+  const cx2 = p2.x - (dx >= 0 ? curvature : -curvature * 0.6);
+  const cy2 = p2.y - (dx < 0 ? dy * 0.15 : 0);
+  
+  return `M ${Math.round(p1.x)} ${Math.round(p1.y)} C ${Math.round(cx1)} ${Math.round(cy1)}, ${Math.round(cx2)} ${Math.round(cy2)}, ${Math.round(p2.x)} ${Math.round(p2.y)}`;
 }
 
 export const STAGE_EDGES: StageEdge[] = [
   // Edge → Core Layer (Spacious smooth bezier arcs)
-  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast",   path: "M 65 250 C 145 250, 165 100, 255 100" },
-  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast",   path: "M 65 250 L 255 250" },
-  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal", path: "M 65 250 C 145 250, 165 400, 255 400" },
+  { id: "edge-core",      from: "edge-router",  to: "core-backend", speed: "fast" },
+  { id: "edge-ai",        from: "edge-router",  to: "ai-gateway",   speed: "fast" },
+  { id: "edge-keycloak",  from: "edge-router",  to: "keycloak-iam", speed: "normal" },
 
   // Core Layer → Storage & Data Layer
-  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal", path: "M 255 100 C 330 100, 345 165, 420 165" },
-  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow",   path: "M 255 100 C 330 100, 345 335, 420 335" },
-  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal", path: "M 255 250 C 330 250, 345 165, 420 165" },
-  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast",   path: "M 255 250 C 330 250, 345 335, 420 335" },
+  { id: "core-postgres",  from: "core-backend", to: "postgres-db",  speed: "normal" },
+  { id: "core-redis",     from: "core-backend", to: "redis-cache",  speed: "slow" },
+  { id: "ai-postgres",    from: "ai-gateway",   to: "postgres-db",  speed: "normal" },
+  { id: "ai-redis",       from: "ai-gateway",   to: "redis-cache",  speed: "fast" },
 ];
 
 export const subNodesMap: Record<string, SubNode[]> = {
