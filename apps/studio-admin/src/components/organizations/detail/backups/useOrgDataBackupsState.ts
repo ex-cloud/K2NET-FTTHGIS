@@ -1,20 +1,34 @@
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth-compat";
 import type { EnrichedOrganization } from "../../types";
 import type { TenantSnapshot } from "./types";
 
 export function useOrgDataBackupsState(org: EnrichedOrganization) {
+  const { data: session } = useSession();
   const [triggering, setTriggering] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [loadingSnapshots, setLoadingSnapshots] = useState(false);
   const [snapshots, setSnapshots] = useState<TenantSnapshot[]>([]);
 
+  const orgIdentifier = org.slug || org.id;
+
+  const authHeaders = useCallback((extra: Record<string, string> = {}) => {
+    const headers: Record<string, string> = { ...extra };
+    if (session?.accessToken) {
+      headers["Authorization"] = `Bearer ${session.accessToken}`;
+    }
+    return headers;
+  }, [session?.accessToken]);
+
   // Fetch real snapshot list from backend API
   const fetchSnapshots = useCallback(async () => {
-    if (!org.slug) return;
+    if (!orgIdentifier) return;
     setLoadingSnapshots(true);
     try {
-      const res = await fetch(`/api/v1/organizations/${org.slug}/snapshots`);
+      const res = await fetch(`/api/v1/organizations/${orgIdentifier}/snapshots`, {
+        headers: authHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -27,7 +41,7 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
     } finally {
       setLoadingSnapshots(false);
     }
-  }, [org.slug]);
+  }, [orgIdentifier, authHeaders]);
 
   useEffect(() => {
     fetchSnapshots();
@@ -39,18 +53,21 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
     const toastId = toast.loading(`Mempersiapkan snapshot database PostGIS & metadata untuk ${org.name}...`);
 
     try {
-      const res = await fetch(`/api/v1/organizations/${org.slug}/export-backup`, {
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch(`/api/v1/organizations/${orgIdentifier}/export-backup`, {
+        headers: authHeaders({ "Content-Type": "application/json" }),
       });
 
-      if (!res.ok) throw new Error("Gagal mengekspor snapshot");
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(errText || "Gagal mengekspor snapshot");
+      }
       const data = await res.json();
 
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const downloadName = `k2net-backup-${org.slug}-${new Date().toISOString().split("T")[0]}.json`;
+      const downloadName = `k2net-backup-${org.slug || orgIdentifier}-${new Date().toISOString().split("T")[0]}.json`;
       a.download = downloadName;
       document.body.appendChild(a);
       a.click();
@@ -67,7 +84,7 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
     } finally {
       setTriggering(false);
     }
-  }, [org.name, org.slug, fetchSnapshots]);
+  }, [org.name, org.slug, orgIdentifier, authHeaders, fetchSnapshots]);
 
   // Real Spatial Data Exporter (GeoJSON, KMZ / KML, Shapefile)
   const handleSpatialExport = useCallback(async (format: "Shapefile" | "GeoJSON" | "KMZ") => {
@@ -76,14 +93,19 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
     const toastId = toast.loading(`Mengekstrak topologi spasial PostGIS untuk ${org.name} (${format})...`);
 
     try {
-      const res = await fetch(`/api/v1/organizations/${org.slug}/spatial-export?format=${formatParam}`);
-      if (!res.ok) throw new Error(`Gagal mengekspor format ${format}`);
+      const res = await fetch(`/api/v1/organizations/${orgIdentifier}/spatial-export?format=${formatParam}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(errText || `Gagal mengekspor format ${format}`);
+      }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const fileName = `ftth-spatial-${org.slug}-${new Date().toISOString().split("T")[0]}.${ext}`;
+      const fileName = `ftth-spatial-${org.slug || orgIdentifier}-${new Date().toISOString().split("T")[0]}.${ext}`;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
@@ -98,7 +120,7 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
       const errMsg = err instanceof Error ? err.message : `Gagal mengekspor spasial ${format}.`;
       toast.error(errMsg, { id: toastId });
     }
-  }, [org.name, org.slug]);
+  }, [org.name, org.slug, orgIdentifier, authHeaders]);
 
   // Restore Tenant from Snapshot
   const handleRestoreSnapshot = useCallback(async (snapshot: TenantSnapshot) => {
@@ -107,22 +129,27 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
 
     try {
       // 1. Fetch current snapshot data or execute restore
-      const res = await fetch(`/api/v1/organizations/${org.slug}/export-backup`);
+      const res = await fetch(`/api/v1/organizations/${orgIdentifier}/export-backup`, {
+        headers: authHeaders(),
+      });
       if (!res.ok) throw new Error("Gagal membaca payload snapshot");
       const backupData = await res.json();
 
       // 2. Submit import backup to restore
       const importRes = await fetch("/api/v1/organizations/import-backup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
-          backup: backupData,
-          overrideExisting: true,
-          restoreKeycloak: true,
+          organization: backupData.organization,
+          projects: backupData.projects || [],
+          mode: "update_existing",
         }),
       });
 
-      if (!importRes.ok) throw new Error("Gagal menerapkan restore snapshot ke database");
+      if (!importRes.ok) {
+        const errText = await importRes.text().catch(() => "");
+        throw new Error(errText || "Gagal menerapkan restore snapshot ke database");
+      }
 
       toast.success(`Data tenant ${org.name} berhasil dipulihkan dari snapshot.`, {
         id: toastId,
@@ -134,7 +161,7 @@ export function useOrgDataBackupsState(org: EnrichedOrganization) {
     } finally {
       setRestoring(false);
     }
-  }, [org.name, org.slug]);
+  }, [org.name, org.slug, orgIdentifier, authHeaders]);
 
   return {
     triggering,

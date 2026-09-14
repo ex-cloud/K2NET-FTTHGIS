@@ -36,7 +36,7 @@ export function OrgDataBackupsTab({
 
       {/* 2. 3-Layer Storage Status & Spatial Exporters */}
       <BackupStorageCards
-        slug={org.slug}
+        slug={org.slug || org.id}
         onSpatialExport={handleSpatialExport}
       />
 
