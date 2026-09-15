@@ -1,6 +1,7 @@
 package com.company.ftthgis.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +39,7 @@ public class SecretEncryptionUtil {
         this(rawKey, "test");
     }
 
+    @Autowired
     public SecretEncryptionUtil(
             @Value("${app.security.encryption-key:ftth-gis-master-secret-key-32b!!}") String rawKey,
             @Value("${spring.profiles.active:default}") String activeProfiles
