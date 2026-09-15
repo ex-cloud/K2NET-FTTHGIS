@@ -1,6 +1,8 @@
 -- Migration V39: Create tenant_webhook_configs and tenant_webhook_logs tables
 -- Supporting secure hashed API key storage, encrypted HMAC secrets, rate limits, and SSRF-audited delivery logs.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS tenant_webhook_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
@@ -51,7 +53,7 @@ INSERT INTO tenant_webhook_configs (
 )
 SELECT 
     o.id,
-    encode(digest('k2_live_' || o.slug || '_' || md5(o.id::text || o.slug), 'sha256'), 'hex'),
+    encode(sha256(('k2_live_' || o.slug || '_' || md5(o.id::text || o.slug))::bytea), 'hex'),
     'k2_live_' || SUBSTRING(o.slug FROM 1 FOR 8) || '_',
     SUBSTRING(md5(o.id::text) FROM 1 FOR 4),
     NULL,
