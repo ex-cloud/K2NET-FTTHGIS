@@ -1,5 +1,6 @@
 package com.company.ftthgis.api.tenant.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class ScopedTokenCreateResponse {
     private UUID id;
     private String name;
     private String plainTextToken;
+    private String token;
     private String tokenPrefix;
     private String tokenLast4;
     private String maskedToken;
@@ -24,4 +26,9 @@ public class ScopedTokenCreateResponse {
     private LocalDateTime expiresAt;
     private String message;
     private LocalDateTime createdAt;
+
+    @JsonProperty("token")
+    public String getToken() {
+        return token != null ? token : plainTextToken;
+    }
 }

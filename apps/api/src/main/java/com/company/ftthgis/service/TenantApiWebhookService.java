@@ -348,9 +348,10 @@ public class TenantApiWebhookService {
     }
 
     private TenantWebhookConfig getOrCreateConfig(Organization org) {
-        return configRepository.findByOrganization(org).orElseGet(() -> {
+        return configRepository.findByOrganizationIdNative(org.getId()).orElseGet(() -> {
             String initialHex = encryptionUtil.generateSecureToken(16);
-            String prefix = "k2_live_" + (org.getSlug().length() > 8 ? org.getSlug().substring(0, 8) : org.getSlug()) + "_";
+            String cleanSlug = org.getSlug() != null ? org.getSlug().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "-") : "tenant";
+            String prefix = "k2_live_" + (cleanSlug.length() > 8 ? cleanSlug.substring(0, 8) : cleanSlug) + "_";
             String last4 = initialHex.substring(initialHex.length() - 4);
             String fullKey = prefix + initialHex;
             String hash = encryptionUtil.sha256Hex(fullKey);

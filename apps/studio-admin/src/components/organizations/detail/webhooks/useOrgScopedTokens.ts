@@ -45,9 +45,10 @@ export function useOrgScopedTokens(orgIdentifier: string) {
         }
 
         const created = await res.json();
-        setNewGeneratedToken(created.token);
+        const tokenString = created.plainTextToken || created.token || "";
+        setNewGeneratedToken(tokenString);
         setIsTokenModalOpen(true);
-        fetchScopedTokens();
+        await fetchScopedTokens();
 
         toast.success("Scoped API Token berhasil diterbitkan.", {
           description: "Salin token sekarang sebelum modal ditutup.",
@@ -74,7 +75,7 @@ export function useOrgScopedTokens(orgIdentifier: string) {
         }
 
         toast.success("Scoped Token berhasil dicabut (revoked).");
-        fetchScopedTokens();
+        await fetchScopedTokens();
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat mencabut token.";
         toast.error(msg);

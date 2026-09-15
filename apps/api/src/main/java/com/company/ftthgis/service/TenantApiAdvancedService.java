@@ -115,6 +115,7 @@ public class TenantApiAdvancedService {
                 .id(saved.getId())
                 .name(saved.getName())
                 .plainTextToken(plainTextToken)
+                .token(plainTextToken)
                 .tokenPrefix(prefix)
                 .tokenLast4(last4)
                 .maskedToken(prefix + "••••••••" + last4)
@@ -621,7 +622,7 @@ public class TenantApiAdvancedService {
     }
 
     // ==========================================
-    // 5. API Usage & Latency Analytics
+    // 5. API Usage & Latency Analytics (Live Production Data)
     // ==========================================
 
     @Transactional(readOnly = true)
@@ -632,49 +633,67 @@ public class TenantApiAdvancedService {
         long activeEndpoints = endpointRepository.findByOrganizationAndIsActiveTrue(org).size();
         long pendingRetries = logRepository.countByOrganizationAndDeliveryStatus(org, "RETRYING");
         long dlqCount = logRepository.countByOrganizationAndDeliveryStatus(org, "FAILED_DLQ");
-        long total30d = logRepository.countByOrganizationAndCreatedAtAfter(org, LocalDateTime.now().minusDays(30));
 
-        // Generate 7-day traffic trend
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime since24h = now.minusHours(24);
+        LocalDateTime since30d = now.minusDays(30);
+
+        long total24h = logRepository.countByOrganizationAndCreatedAtAfter(org, since24h);
+        long total30d = logRepository.countByOrganizationAndCreatedAtAfter(org, since30d);
+        long errors24h = logRepository.countByOrganizationAndDeliveryStatusAndCreatedAtAfter(org, "FAILED_DLQ", since24h);
+
+        Double p95Val = logRepository.calculateP95LatencyMsNative(org.getId(), since30d);
+        int p95Latency = p95Val != null && p95Val > 0 ? (int) Math.round(p95Val) : 0;
+
+        long count2xx = logRepository.countByStatusRangeNative(org.getId(), 200, 299, since30d);
+        long count4xx = logRepository.countByStatusRangeNative(org.getId(), 400, 499, since30d);
+        long count5xx = logRepository.countByStatusRangeNative(org.getId(), 500, 599, since30d) + dlqCount;
+
+        double successRate = total30d > 0
+                ? Math.round(((double) count2xx / total30d) * 1000.0) / 10.0
+                : 100.0;
+
+        // Query real 7-day volume
+        LocalDateTime since7d = now.minusDays(6).toLocalDate().atStartOfDay();
+        List<Object[]> dailyRows = logRepository.findDailyVolumeNative(org.getId(), since7d);
+        Map<String, long[]> dailyMap = new HashMap<>();
+        for (Object[] row : dailyRows) {
+            String d = (String) row[0];
+            long total = ((Number) row[1]).longValue();
+            long err = ((Number) row[2]).longValue();
+            dailyMap.put(d, new long[]{total, err});
+        }
+
         List<ApiAnalyticsResponse.DailyTrafficPoint> dailyPoints = new ArrayList<>();
         List<ApiAnalyticsResponse.DailyVolumeStat> dailySeries = new ArrayList<>();
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        long total24h = 0;
-        long errors24h = 0;
 
         for (int i = 6; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
-            long requests = (long) (Math.random() * 400 + 1200); // Baseline traffic
-            long failed = (long) (requests * 0.005);
-            long success = requests - failed;
             String dateStr = date.format(dtf);
-
-            if (i == 0) {
-                total24h = requests;
-                errors24h = failed;
-            }
+            long[] stats = dailyMap.getOrDefault(dateStr, new long[]{0L, 0L});
+            long reqs = stats[0];
+            long errs = stats[1];
+            long succ = Math.max(0, reqs - errs);
 
             dailyPoints.add(ApiAnalyticsResponse.DailyTrafficPoint.builder()
                     .date(dateStr)
-                    .totalRequests(requests)
-                    .successfulRequests(success)
-                    .failedRequests(failed)
+                    .totalRequests(reqs)
+                    .successfulRequests(succ)
+                    .failedRequests(errs)
                     .build());
 
             dailySeries.add(ApiAnalyticsResponse.DailyVolumeStat.builder()
                     .date(dateStr)
-                    .requests(requests)
-                    .errors(failed)
+                    .requests(reqs)
+                    .errors(errs)
                     .build());
         }
-
-        long count2xx = (long) (total30d * 0.985 + 45000);
-        long count4xx = 24L;
-        long count5xx = dlqCount;
 
         Map<String, Long> statusDist = new LinkedHashMap<>();
         statusDist.put("2xx Success", count2xx);
         statusDist.put("4xx Client Error", count4xx);
-        statusDist.put("429 Rate Limited", 5L);
+        statusDist.put("429 Rate Limited", 0L);
         statusDist.put("5xx Server Error", count5xx);
 
         ApiAnalyticsResponse.StatusCodeBreakdown breakdown = ApiAnalyticsResponse.StatusCodeBreakdown.builder()
@@ -683,15 +702,19 @@ public class TenantApiAdvancedService {
                 .status5xx(count5xx)
                 .build();
 
+        double quotaUsed = total24h > 0
+                ? Math.min(100.0, Math.round(((double) total24h / (5000.0 * 60.0 * 24.0)) * 10000.0) / 100.0)
+                : 0.0;
+
         return ApiAnalyticsResponse.builder()
-                .totalRequests24h(total24h > 0 ? total24h : 1420)
-                .totalRequests30d(total30d > 0 ? total30d : 45029)
-                .successRatePercent(99.6)
-                .deliverySuccessRatePercent(99.6)
-                .p95LatencyMs(42)
+                .totalRequests24h(total24h)
+                .totalRequests30d(total30d)
+                .successRatePercent(successRate)
+                .deliverySuccessRatePercent(successRate)
+                .p95LatencyMs(p95Latency)
                 .errorCount24h(errors24h)
-                .rateLimitQuotaUsedPercent(3.8)
-                .totalThrottled429(5)
+                .rateLimitQuotaUsedPercent(quotaUsed)
+                .totalThrottled429(0)
                 .activeTokensCount(activeTokens)
                 .activeEndpointsCount(activeEndpoints)
                 .pendingRetryCount(pendingRetries)
