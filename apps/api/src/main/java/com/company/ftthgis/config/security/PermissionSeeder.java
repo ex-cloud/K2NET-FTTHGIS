@@ -86,13 +86,14 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("users.invite", "Invite Users",             "security"),
 
             // system — platform-level administration (SYSTEM scope only)
-            new PermissionData("system.organizations.view",   "View Organizations Directory",       "system", "SYSTEM"),
-            new PermissionData("system.organizations.create", "Create Tenant Organization",         "system", "SYSTEM"),
-            new PermissionData("system.organizations.update", "Update Organization & Webhooks",     "system", "SYSTEM"),
-            new PermissionData("system.organizations.delete", "Delete Tenant Organization",         "system", "SYSTEM"),
-            new PermissionData("system.organizations.manage", "Manage Organization Subscriptions",  "system", "SYSTEM"),
-            new PermissionData("orgs.view",                   "View Organizations (Legacy Alias)",  "system", "SYSTEM"),
-            new PermissionData("orgs.manage",                 "Manage Organizations (Legacy Alias)","system", "SYSTEM"),
+            new PermissionData("system.organizations.view",            "View Organizations Directory",         "system", "SYSTEM"),
+            new PermissionData("system.organizations.create",          "Create Tenant Organization",           "system", "SYSTEM"),
+            new PermissionData("system.organizations.update",          "Update Tenant Organization Profile",   "system", "SYSTEM"),
+            new PermissionData("system.organizations.delete",          "Delete Tenant Organization",           "system", "SYSTEM"),
+            new PermissionData("system.organizations.manage",          "Manage Organization Subscriptions",    "system", "SYSTEM"),
+            new PermissionData("system.organizations.webhooks.manage", "Manage Organization Webhooks & Keys",  "system", "SYSTEM"),
+            new PermissionData("orgs.view",                            "View Organizations (Legacy Alias)",    "system", "SYSTEM"),
+            new PermissionData("orgs.manage",                          "Manage Organizations (Legacy Alias)",  "system", "SYSTEM"),
             new PermissionData("system.gateway.manage",       "Manage Gateway Config",              "system", "SYSTEM"),
             new PermissionData("system.security.manage",      "Manage Platform Security",           "system", "SYSTEM"),
             new PermissionData("system.trash.manage",         "Manage Recycle Bin",                 "system", "SYSTEM"),
@@ -112,10 +113,11 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("system.quotas.manage",        "Manage Tenant Quotas",               "system", "SYSTEM"),
 
             // organizations — tenant-scoped organization settings
-            new PermissionData("organizations.view",   "View Organization Details",  "organizations"),
-            new PermissionData("organizations.update", "Update Organization Settings","organizations"),
-            new PermissionData("organizations.create", "Create Organizations",        "organizations"),
-            new PermissionData("organizations.delete", "Delete Organizations",        "organizations")
+            new PermissionData("organizations.view",            "View Organization Details",       "organizations"),
+            new PermissionData("organizations.update",          "Update Organization Settings",    "organizations"),
+            new PermissionData("organizations.create",          "Create Organizations",            "organizations"),
+            new PermissionData("organizations.delete",          "Delete Organizations",            "organizations"),
+            new PermissionData("organizations.webhooks.manage", "Manage Tenant Webhooks & Keys",   "organizations", "TENANT")
         );
 
         // 2. Ensure all permissions exist in DB and load full catalog
@@ -169,7 +171,7 @@ public class PermissionSeeder implements CommandLineRunner {
         syncSystemRole("platform_engineer", allPermissionsInDb, 
             "system.gis.manage", "system.gateway.manage", "system.backup.manage", 
             "system.observability.view", "system.integration.manage", 
-            "system.organizations.view", "system.organizations.update", "system.organizations.manage");
+            "system.organizations.view", "system.organizations.webhooks.manage");
         syncSystemRole("account_manager", allPermissionsInDb, 
             "system.tenants.create", "system.tenants.approve", "system.tenants.suspend", 
             "system.contracts.view", "system.contracts.upload", "system.quotas.manage", 

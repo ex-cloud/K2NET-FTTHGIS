@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.tenant.dto.*;
 import com.company.ftthgis.config.logging.AuditRequired;
+import com.company.ftthgis.config.security.SSRFSafeHttpClient;
 import com.company.ftthgis.config.security.WebhookSecurityValidator;
 import com.company.ftthgis.domain.tenant.entity.Organization;
 import com.company.ftthgis.domain.tenant.entity.TenantWebhookConfig;
@@ -42,6 +43,8 @@ public class TenantApiWebhookService {
     private final WebhookSecurityValidator securityValidator;
     private final SecretEncryptionUtil encryptionUtil;
     private final ObjectMapper objectMapper;
+
+    private final SSRFSafeHttpClient ssrfSafeHttpClient;
 
     @Value("${app.kong.admin-url:http://kong:8001}")
     private String kongAdminUrl;
@@ -250,41 +253,17 @@ public class TenantApiWebhookService {
         // 4. Compute HMAC signature
         String signatureHeader = secret != null ? encryptionUtil.computeHmacSha256(secret, payloadJson) : "sha256=none";
 
-        // 5. Dispatch HTTP Request
-        int httpStatus = 0;
-        int latencyMs = 0;
-        String responseBody = "";
-        String errorMessage = null;
-        boolean success = false;
+        // 5. Dispatch HTTP Request with IP Pinning Anti-SSRF Defense
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("X-K2NET-Event", "ping.test_event");
+        headers.put("X-K2NET-Signature", signatureHeader);
 
-        long startTime = System.currentTimeMillis();
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(5))
-                    .build();
-
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(targetUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Content-Type", "application/json")
-                    .header("User-Agent", "K2NET-FTTH-Webhook-Engine/1.0")
-                    .header("X-K2NET-Event", "ping.test_event")
-                    .header("X-K2NET-Signature", signatureHeader)
-                    .POST(HttpRequest.BodyPublishers.ofString(payloadJson));
-
-            HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            httpStatus = response.statusCode();
-            responseBody = response.body();
-            if (responseBody != null && responseBody.length() > 1000) {
-                responseBody = responseBody.substring(0, 1000) + "... [truncated]";
-            }
-            success = httpStatus >= 200 && httpStatus < 300;
-        } catch (Exception e) {
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            errorMessage = e.getMessage();
-            log.warn("Test ping failed to target '{}': {}", targetUrl, e.getMessage());
-        }
+        SSRFSafeHttpClient.HttpResponse httpResp = ssrfSafeHttpClient.executePost(targetUrl, payloadJson, headers);
+        int httpStatus = httpResp.getStatusCode();
+        int latencyMs = httpResp.getLatencyMs();
+        String responseBody = httpResp.getBody();
+        String errorMessage = httpResp.getErrorMessage();
+        boolean success = httpResp.isSuccess();
 
         // 6. Record to tenant_webhook_logs
         TenantWebhookLog deliveryLog = TenantWebhookLog.builder()

@@ -2,6 +2,7 @@ package com.company.ftthgis.service;
 
 import com.company.ftthgis.api.tenant.dto.*;
 import com.company.ftthgis.config.logging.AuditRequired;
+import com.company.ftthgis.config.security.SSRFSafeHttpClient;
 import com.company.ftthgis.config.security.WebhookSecurityValidator;
 import com.company.ftthgis.domain.tenant.entity.*;
 import com.company.ftthgis.domain.tenant.repository.*;
@@ -35,6 +36,7 @@ public class TenantApiAdvancedService {
     private final WebhookSecurityValidator securityValidator;
     private final SecretEncryptionUtil encryptionUtil;
     private final ObjectMapper objectMapper;
+    private final SSRFSafeHttpClient ssrfSafeHttpClient;
 
     // ==========================================
     // 1. Scoped Personal Access Tokens
@@ -314,34 +316,16 @@ public class TenantApiAdvancedService {
 
         String signature = secret != null ? encryptionUtil.computeHmacSha256(secret, payloadJson) : "sha256=none";
 
-        long startTime = System.currentTimeMillis();
-        int httpStatus = 0;
-        int latencyMs = 0;
-        String responseBody = "";
-        String errorMessage = null;
-        boolean success = false;
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("X-K2NET-Event", "ping.test_event");
+        headers.put("X-K2NET-Signature", signature);
 
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(endpoint.getTargetUrl()))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Content-Type", "application/json")
-                    .header("User-Agent", "K2NET-FTTH-Webhook-Engine/1.0")
-                    .header("X-K2NET-Event", "ping.test_event")
-                    .header("X-K2NET-Signature", signature)
-                    .POST(HttpRequest.BodyPublishers.ofString(payloadJson))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            httpStatus = response.statusCode();
-            responseBody = response.body();
-            success = httpStatus >= 200 && httpStatus < 300;
-        } catch (Exception e) {
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            errorMessage = e.getMessage();
-        }
+        SSRFSafeHttpClient.HttpResponse httpResp = ssrfSafeHttpClient.executePost(endpoint.getTargetUrl(), payloadJson, headers);
+        int httpStatus = httpResp.getStatusCode();
+        int latencyMs = httpResp.getLatencyMs();
+        String responseBody = httpResp.getBody();
+        String errorMessage = httpResp.getErrorMessage();
+        boolean success = httpResp.isSuccess();
 
         TenantWebhookLog logItem = TenantWebhookLog.builder()
                 .organization(org)
@@ -455,34 +439,16 @@ public class TenantApiAdvancedService {
 
         String signature = secret != null ? encryptionUtil.computeHmacSha256(secret, payload) : "sha256=simulation";
 
-        long startTime = System.currentTimeMillis();
-        int httpStatus = 0;
-        int latencyMs = 0;
-        String responseBody = "";
-        String errorMessage = null;
-        boolean success = false;
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("X-K2NET-Event", request.getEventType() != null ? request.getEventType() : "simulation.event");
+        headers.put("X-K2NET-Signature", signature);
 
-        try {
-            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(targetUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Content-Type", "application/json")
-                    .header("User-Agent", "K2NET-FTTH-Webhook-Engine/1.0 (Simulation)")
-                    .header("X-K2NET-Event", request.getEventType() != null ? request.getEventType() : "simulation.event")
-                    .header("X-K2NET-Signature", signature)
-                    .POST(HttpRequest.BodyPublishers.ofString(payload))
-                    .build();
-
-            HttpResponse<String> response = client.send(req, HttpResponse.BodyHandlers.ofString());
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            httpStatus = response.statusCode();
-            responseBody = response.body();
-            success = httpStatus >= 200 && httpStatus < 300;
-        } catch (Exception e) {
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            errorMessage = e.getMessage();
-        }
+        SSRFSafeHttpClient.HttpResponse httpResp = ssrfSafeHttpClient.executePost(targetUrl, payload, headers);
+        int httpStatus = httpResp.getStatusCode();
+        int latencyMs = httpResp.getLatencyMs();
+        String responseBody = httpResp.getBody();
+        String errorMessage = httpResp.getErrorMessage();
+        boolean success = httpResp.isSuccess();
 
         TenantWebhookLog logItem = TenantWebhookLog.builder()
                 .organization(org)

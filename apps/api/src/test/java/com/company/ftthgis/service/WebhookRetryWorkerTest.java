@@ -29,13 +29,16 @@ class WebhookRetryWorkerTest {
     @Mock
     private WebhookSecurityValidator securityValidator;
 
+    @Mock
+    private com.company.ftthgis.config.security.SSRFSafeHttpClient ssrfSafeHttpClient;
+
     private SecretEncryptionUtil encryptionUtil;
     private WebhookRetryWorker retryWorker;
 
     @BeforeEach
     void setUp() {
         encryptionUtil = new SecretEncryptionUtil("test-encryption-secret-key-32-chars!");
-        retryWorker = new WebhookRetryWorker(logRepository, securityValidator, encryptionUtil);
+        retryWorker = new WebhookRetryWorker(logRepository, securityValidator, encryptionUtil, ssrfSafeHttpClient);
     }
 
     @Test

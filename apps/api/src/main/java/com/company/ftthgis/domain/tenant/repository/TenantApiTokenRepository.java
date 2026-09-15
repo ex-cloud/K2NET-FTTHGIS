@@ -16,6 +16,7 @@ import java.util.UUID;
 public interface TenantApiTokenRepository extends JpaRepository<TenantApiToken, UUID> {
     List<TenantApiToken> findByOrganizationOrderByCreatedAtDesc(Organization organization);
     List<TenantApiToken> findByOrganizationAndIsRevokedFalseOrderByCreatedAtDesc(Organization organization);
+    Optional<TenantApiToken> findByTokenHash(String tokenHash);
     Optional<TenantApiToken> findByTokenHashAndIsRevokedFalse(String tokenHash);
 
     @Query(value = "SELECT * FROM tenant_api_tokens WHERE organization_id = :orgId ORDER BY created_at DESC", nativeQuery = true)

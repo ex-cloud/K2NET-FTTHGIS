@@ -1,5 +1,6 @@
 package com.company.ftthgis.service;
 
+import com.company.ftthgis.config.security.SSRFSafeHttpClient;
 import com.company.ftthgis.config.security.WebhookSecurityValidator;
 import com.company.ftthgis.domain.tenant.entity.TenantWebhookLog;
 import com.company.ftthgis.domain.tenant.repository.TenantWebhookLogRepository;
@@ -16,7 +17,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * WebhookRetryWorker — Background daemon implementing Exponential Backoff retries and Dead Letter Queue (DLQ).
@@ -36,6 +39,7 @@ public class WebhookRetryWorker {
     private final TenantWebhookLogRepository logRepository;
     private final WebhookSecurityValidator securityValidator;
     private final SecretEncryptionUtil encryptionUtil;
+    private final SSRFSafeHttpClient ssrfSafeHttpClient;
 
     private static final int[] BACKOFF_SECONDS = {0, 30, 300, 1800};
 
@@ -77,39 +81,16 @@ public class WebhookRetryWorker {
             return;
         }
 
-        long startTime = System.currentTimeMillis();
-        int httpStatus = 0;
-        int latencyMs = 0;
-        String responseBody = "";
-        String errorMessage = null;
-        boolean success = false;
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("X-K2NET-Event", item.getEventName());
+        headers.put("X-K2NET-Retry-Count", String.valueOf(currentAttempt));
 
-        try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(5))
-                    .build();
-
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(targetUrl))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Content-Type", "application/json")
-                    .header("User-Agent", "K2NET-FTTH-Webhook-Engine/1.0")
-                    .header("X-K2NET-Event", item.getEventName())
-                    .header("X-K2NET-Retry-Count", String.valueOf(currentAttempt))
-                    .POST(HttpRequest.BodyPublishers.ofString(payload));
-
-            HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            httpStatus = response.statusCode();
-            responseBody = response.body();
-            if (responseBody != null && responseBody.length() > 1000) {
-                responseBody = responseBody.substring(0, 1000) + "... [truncated]";
-            }
-            success = httpStatus >= 200 && httpStatus < 300;
-        } catch (Exception e) {
-            latencyMs = (int) (System.currentTimeMillis() - startTime);
-            errorMessage = e.getMessage();
-        }
+        SSRFSafeHttpClient.HttpResponse httpResp = ssrfSafeHttpClient.executePost(targetUrl, payload, headers);
+        int httpStatus = httpResp.getStatusCode();
+        int latencyMs = httpResp.getLatencyMs();
+        String responseBody = httpResp.getBody();
+        String errorMessage = httpResp.getErrorMessage();
+        boolean success = httpResp.isSuccess();
 
         item.setHttpStatus(httpStatus);
         item.setLatencyMs(latencyMs);

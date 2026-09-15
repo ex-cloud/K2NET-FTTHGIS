@@ -64,7 +64,7 @@ public class UserSeeder implements CommandLineRunner {
         put("platform_engineer", List.of(
             "system.gis.manage", "system.gateway.manage", "system.backup.manage",
             "system.observability.view", "system.integration.manage",
-            "system.organizations.view", "system.organizations.update", "system.organizations.manage"
+            "system.organizations.view", "system.organizations.webhooks.manage"
         ));
         put("account_manager", List.of(
             "system.tenants.create", "system.tenants.approve", "system.tenants.suspend",
@@ -89,7 +89,8 @@ public class UserSeeder implements CommandLineRunner {
             "network.view", "network.monitor", "network.manage", "network.nodes", "network.audit",
             "report.view", "report.export", "customer.view", "ticket.view", "ticket.create", "ticket.update",
             "survey.create", "audit.view", "approval.manage", "map.view", "map.edit",
-            "organizations.view", "organizations.update", "projects.view", "projects.create", "projects.edit", "projects.delete"
+            "organizations.view", "organizations.update", "organizations.webhooks.manage",
+            "projects.view", "projects.create", "projects.edit", "projects.delete"
         ));
         put("finance", List.of("billing.view", "billing.manage", "report.view", "report.export"));
         put("noc", List.of("network.view", "network.monitor", "inventory.view", "dashboard.view"));

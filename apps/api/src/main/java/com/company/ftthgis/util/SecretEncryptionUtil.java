@@ -29,10 +29,30 @@ public class SecretEncryptionUtil {
     private static final int GCM_IV_LENGTH = 12; // 96 bits standard for GCM
     private static final int GCM_TAG_LENGTH = 128; // 128 bit authentication tag
 
+    private static final String DEFAULT_INSECURE_KEY = "ftth-gis-master-secret-key-32b!!";
+
     private final byte[] keyBytes;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public SecretEncryptionUtil(@Value("${app.security.encryption-key:ftth-gis-master-secret-key-32b!!}") String rawKey) {
+    public SecretEncryptionUtil(String rawKey) {
+        this(rawKey, "test");
+    }
+
+    public SecretEncryptionUtil(
+            @Value("${app.security.encryption-key:ftth-gis-master-secret-key-32b!!}") String rawKey,
+            @Value("${spring.profiles.active:default}") String activeProfiles
+    ) {
+        boolean isProduction = activeProfiles.toLowerCase().contains("prod");
+
+        if (isProduction && (rawKey == null || rawKey.equals(DEFAULT_INSECURE_KEY) || rawKey.trim().length() < 32)) {
+            log.error("CRITICAL SECURITY ERROR: Production deployment detected with default or insecure encryption key!");
+            throw new IllegalStateException("FATAL: app.security.encryption-key must be explicitly configured with at least 32 characters (256-bit entropy) in production mode.");
+        }
+
+        if (rawKey.equals(DEFAULT_INSECURE_KEY)) {
+            log.warn("⚠️ SECURITY WARNING: Using default development encryption key. Do NOT use in production!");
+        }
+
         // Ensure 256-bit key via SHA-256
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

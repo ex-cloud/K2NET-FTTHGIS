@@ -42,6 +42,7 @@ public class SecurityConfig {
             JwtIssuerAuthenticationManagerResolver authenticationManagerResolver,
             RateLimitingFilter rateLimitingFilter,
             IpBlockingFilter ipBlockingFilter,
+            ScopedTokenAuthenticationFilter scopedTokenAuthenticationFilter,
             com.company.ftthgis.config.tenant.OrganizationStatusFilter organizationStatusFilter,
             com.company.ftthgis.config.tenant.TenantFilter tenantFilter,
             com.company.ftthgis.config.tenant.ImpersonationContextFilter impersonationContextFilter,
@@ -54,6 +55,8 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(ipBlockingFilter, RateLimitingFilter.class)
                 .addFilterBefore(apiRequestLoggingFilter, IpBlockingFilter.class)
+                .addFilterBefore(scopedTokenAuthenticationFilter,
+                        org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(organizationStatusFilter,
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(tenantFilter, com.company.ftthgis.config.tenant.OrganizationStatusFilter.class)
@@ -98,9 +101,15 @@ public class SecurityConfig {
 
     @Bean
     public BearerTokenResolver bearerTokenResolver() {
-        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
-        resolver.setAllowUriQueryParameter(true);
-        return resolver;
+        DefaultBearerTokenResolver defaultResolver = new DefaultBearerTokenResolver();
+        defaultResolver.setAllowUriQueryParameter(true);
+        return request -> {
+            String token = defaultResolver.resolve(request);
+            if (token != null && token.startsWith(ScopedTokenAuthenticationFilter.SCOPED_TOKEN_PREFIX)) {
+                return null; // Let ScopedTokenAuthenticationFilter handle it
+            }
+            return token;
+        };
     }
 
     @Bean

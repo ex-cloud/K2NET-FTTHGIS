@@ -40,6 +40,9 @@ class TenantApiAdvancedServiceTest {
     @Mock
     private WebhookSecurityValidator securityValidator;
 
+    @Mock
+    private com.company.ftthgis.config.security.SSRFSafeHttpClient ssrfSafeHttpClient;
+
     private SecretEncryptionUtil encryptionUtil;
     private ObjectMapper objectMapper;
     private TenantApiAdvancedService service;
@@ -57,7 +60,8 @@ class TenantApiAdvancedServiceTest {
                 logRepository,
                 securityValidator,
                 encryptionUtil,
-                objectMapper
+                objectMapper,
+                ssrfSafeHttpClient
         );
 
         testOrg = Organization.builder()
