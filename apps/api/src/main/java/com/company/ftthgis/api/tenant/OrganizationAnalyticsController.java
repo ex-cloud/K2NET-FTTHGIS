@@ -17,7 +17,7 @@ public class OrganizationAnalyticsController {
     private final OrganizationAnalyticsService analyticsService;
 
     @GetMapping("/analytics/all-stats")
-    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('organizations.view') or hasAuthority('orgs.view')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or hasAuthority('organizations.view')")
     public ResponseEntity<Map<String, Map<String, Object>>> getAllStats() {
         try {
             return ResponseEntity.ok(analyticsService.getAllOrganizationsStats());
@@ -27,7 +27,7 @@ public class OrganizationAnalyticsController {
     }
 
     @GetMapping("/{slug}/analytics/summary")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Map<String, Object>> getSummary(@PathVariable String slug) {
         try {
             return ResponseEntity.ok(analyticsService.getOrganizationStats(slug));
@@ -37,7 +37,7 @@ public class OrganizationAnalyticsController {
     }
 
     @GetMapping("/{slug}/devices")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#slug) or @tenantSecurity.hasEffectivePermission('network.view')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#slug) or @tenantSecurity.hasEffectivePermission('network.view')")
     public ResponseEntity<java.util.List<Map<String, Object>>> getDevices(@PathVariable String slug) {
         try {
             return ResponseEntity.ok(analyticsService.getOrganizationDevices(slug));
@@ -47,7 +47,7 @@ public class OrganizationAnalyticsController {
     }
 
     @GetMapping("/{slug}/audit-events")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.audit.view') or @tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.audit.view') or hasAuthority('system.organizations.view') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<java.util.List<Map<String, Object>>> getAuditEvents(
             @PathVariable String slug,
             @RequestParam(defaultValue = "50") int limit
@@ -60,7 +60,7 @@ public class OrganizationAnalyticsController {
     }
 
     @GetMapping("/{slug}/features")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Map<String, Boolean>> getFeatures(@PathVariable String slug) {
         try {
             Map<String, Object> stats = analyticsService.getOrganizationStats(slug);
@@ -73,7 +73,7 @@ public class OrganizationAnalyticsController {
     }
 
     @PutMapping("/{slug}/features")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.settings.manage') or hasAuthority('orgs.manage')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or hasAuthority('system.settings.manage') or hasAuthority('orgs.manage')")
     public ResponseEntity<Map<String, Boolean>> updateFeatures(
             @PathVariable String slug,
             @RequestBody Map<String, Boolean> flags

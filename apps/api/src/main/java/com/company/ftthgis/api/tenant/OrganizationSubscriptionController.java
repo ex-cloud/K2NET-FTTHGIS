@@ -20,13 +20,13 @@ public class OrganizationSubscriptionController {
     private final OrganizationSubscriptionService subscriptionService;
 
     @GetMapping
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<SubscriptionSummaryResponse> getSummary(@PathVariable String slug) {
         return ResponseEntity.ok(subscriptionService.getSubscriptionSummary(slug));
     }
 
     @PostMapping("/upgrade")
-    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
     public ResponseEntity<SubscriptionSummaryResponse> upgradePlan(
             @PathVariable String slug,
             @RequestBody PlanUpgradeRequest request) {
@@ -34,7 +34,7 @@ public class OrganizationSubscriptionController {
     }
 
     @PostMapping("/downgrade")
-    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
     public ResponseEntity<Map<String, Object>> downgradePlan(
             @PathVariable String slug,
             @RequestBody PlanDowngradeRequest request) {
@@ -42,7 +42,7 @@ public class OrganizationSubscriptionController {
     }
 
     @GetMapping("/prorate-estimate")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Map<String, Object>> getProrationEstimate(
             @PathVariable String slug,
             @RequestParam(defaultValue = "ENTERPRISE") String targetPlan,
@@ -51,7 +51,7 @@ public class OrganizationSubscriptionController {
     }
 
     @PostMapping("/booster")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('system.billing.manage')")
     public ResponseEntity<SubscriptionSummaryResponse> applyBooster(
             @PathVariable String slug,
             @RequestBody EmergencyBoosterRequest request) {
@@ -59,7 +59,7 @@ public class OrganizationSubscriptionController {
     }
 
     @PostMapping("/trial-extend")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.approve')")
     public ResponseEntity<SubscriptionSummaryResponse> extendTrial(
             @PathVariable String slug,
             @RequestBody TrialExtendRequest request) {
@@ -67,7 +67,7 @@ public class OrganizationSubscriptionController {
     }
 
     @PostMapping("/dunning")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('system.organizations.manage') or hasAuthority('system.billing.manage')")
     public ResponseEntity<SubscriptionSummaryResponse> updateDunning(
             @PathVariable String slug,
             @RequestBody DunningUpdateRequest request) {

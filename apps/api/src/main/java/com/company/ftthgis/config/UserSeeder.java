@@ -61,14 +61,26 @@ public class UserSeeder implements CommandLineRunner {
     private static final Map<String, List<String>> ROLE_PERMISSIONS = new LinkedHashMap<>() {{
         // SYSTEM Roles
         put("super_admin", List.of("*.*")); // Full access
-        put("system_support", List.of("system.support.impersonate", "orgs.view"));
-        put("system_billing", List.of("system.billing.manage"));
+        put("platform_engineer", List.of(
+            "system.gis.manage", "system.gateway.manage", "system.backup.manage",
+            "system.observability.view", "system.integration.manage",
+            "system.organizations.view", "system.organizations.update", "system.organizations.manage"
+        ));
         put("account_manager", List.of(
             "system.tenants.create", "system.tenants.approve", "system.tenants.suspend",
-            "system.contracts.view", "system.contracts.upload", "system.quotas.manage", "orgs.view"
+            "system.contracts.view", "system.contracts.upload", "system.quotas.manage",
+            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view"
         ));
-        put("system_auditor", List.of("system.audit.view", "orgs.view"));
-        put("platform_engineer", List.of("system.gis.manage"));
+        put("system_support", List.of(
+            "system.support.impersonate", "system.security.manage", "system.observability.view",
+            "system.organizations.view", "orgs.view"
+        ));
+        put("system_billing", List.of(
+            "system.billing.manage", "system.organizations.view", "system.organizations.manage"
+        ));
+        put("system_auditor", List.of(
+            "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view"
+        ));
 
         // TENANT Roles
         put("admin", List.of(

@@ -22,7 +22,7 @@ public class OrganizationController {
     private final com.company.ftthgis.service.OrganizationSlugMigrationService organizationSlugMigrationService;
 
     @GetMapping
-    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('organizations.view')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or hasAuthority('organizations.view')")
     public ResponseEntity<List<Organization>> getAll() {
         return ResponseEntity.ok(organizationService.getAllOrganizations());
     }
@@ -33,7 +33,7 @@ public class OrganizationController {
     }
 
     @GetMapping("/{slug}")
-    @PreAuthorize("@tenantSecurity.isOwner(#slug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or hasAuthority('orgs.view') or @tenantSecurity.isOwner(#slug)")
     public ResponseEntity<Organization> getBySlug(@PathVariable String slug) {
         return organizationService.getBySlug(slug)
                 .map(ResponseEntity::ok)
@@ -41,7 +41,7 @@ public class OrganizationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('system.tenants.create')")
+    @PreAuthorize("hasAuthority('system.organizations.create') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.create')")
     public ResponseEntity<?> create(@RequestBody OrganizationCreateRequest request) {
         try {
             java.util.Map<String, Object> result = organizationService.createOrganization(request);
@@ -78,7 +78,7 @@ public class OrganizationController {
     }
 
     @PostMapping("/{orgId}/approve")
-    @PreAuthorize("hasRole('super_admin') or hasRole('account_manager') or hasAuthority('system.tenants.approve')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.approve')")
     public ResponseEntity<?> approve(@PathVariable java.util.UUID orgId) {
         try {
             java.util.Map<String, Object> result = organizationService.approveOrganization(orgId);
@@ -122,25 +122,25 @@ public class OrganizationController {
     }
 
     @PutMapping("/{slug}")
-    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#slug) and hasAuthority('organizations.update'))")
     public ResponseEntity<Organization> update(@PathVariable String slug, @RequestBody Organization org) {
         return ResponseEntity.ok(organizationService.updateOrganization(slug, org));
     }
 
     @GetMapping("/{idOrSlug}/impact-summary")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#idOrSlug)")
     public ResponseEntity<java.util.Map<String, Object>> getImpactSummary(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(organizationService.getImpactSummary(idOrSlug));
     }
 
     @GetMapping("/{idOrSlug}/export-backup")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#idOrSlug)")
     public ResponseEntity<java.util.Map<String, Object>> exportBackup(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(organizationService.exportTenantBackup(idOrSlug));
     }
 
     @GetMapping("/{idOrSlug}/spatial-export")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#idOrSlug)")
     public ResponseEntity<?> exportSpatial(
             @PathVariable String idOrSlug,
             @RequestParam(defaultValue = "geojson") String format
@@ -162,13 +162,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/{idOrSlug}/snapshots")
-    @PreAuthorize("hasRole('super_admin') or @tenantSecurity.isOwner(#idOrSlug)")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or @tenantSecurity.isOwner(#idOrSlug)")
     public ResponseEntity<List<java.util.Map<String, Object>>> getSnapshots(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(organizationService.getTenantSnapshots(idOrSlug));
     }
 
     @DeleteMapping("/{idOrSlug}")
-    @PreAuthorize("hasRole('super_admin') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.delete'))")
+    @PreAuthorize("hasAuthority('system.organizations.delete') or hasAuthority('system.organizations.manage') or hasAuthority('system.tenants.suspend') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.delete'))")
     public ResponseEntity<Void> delete(
             @PathVariable String idOrSlug,
             @RequestParam(required = false, defaultValue = "soft") String mode,
@@ -179,26 +179,26 @@ public class OrganizationController {
     }
 
     @PostMapping("/import-backup")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('system.organizations.create') or hasAuthority('system.organizations.manage') or hasAuthority('system.backup.manage')")
     public ResponseEntity<Organization> importBackup(@RequestBody com.company.ftthgis.api.tenant.dto.OrganizationImportRequest request) {
         return ResponseEntity.ok(organizationService.importTenantBackup(request));
     }
 
     @PostMapping("/{slug}/sync-keycloak")
-    @PreAuthorize("hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.security.manage')")
     public ResponseEntity<Void> syncKeycloak(@PathVariable String slug) {
         keycloakService.ensureRealmExists(slug);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{slug}/team-users")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage') or (@tenantSecurity.isOwner(#slug) and @tenantSecurity.hasEffectivePermission('users.view'))")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.security.manage') or (@tenantSecurity.isOwner(#slug) and @tenantSecurity.hasEffectivePermission('users.view'))")
     public ResponseEntity<List<java.util.Map<String, Object>>> getTeamUsers(@PathVariable String slug) {
         return ResponseEntity.ok(organizationService.getOrganizationUsers(slug));
     }
 
     @PostMapping("/{slug}/reset-realm")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('system.security.manage')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.security.manage')")
     public ResponseEntity<java.util.Map<String, Object>> resetRealm(@PathVariable String slug) {
         boolean success = organizationService.resetTenantRealm(slug);
         return ResponseEntity.ok(java.util.Map.of("success", success, "message", "Realm synchronized successfully"));

@@ -86,8 +86,30 @@ public class PermissionSeeder implements CommandLineRunner {
             new PermissionData("users.invite", "Invite Users",             "security"),
 
             // system — platform-level administration (SYSTEM scope only)
-            new PermissionData("orgs.view",   "View Organizations",   "system", "SYSTEM"),
-            new PermissionData("orgs.manage", "Manage Organizations", "system", "SYSTEM"),
+            new PermissionData("system.organizations.view",   "View Organizations Directory",       "system", "SYSTEM"),
+            new PermissionData("system.organizations.create", "Create Tenant Organization",         "system", "SYSTEM"),
+            new PermissionData("system.organizations.update", "Update Organization & Webhooks",     "system", "SYSTEM"),
+            new PermissionData("system.organizations.delete", "Delete Tenant Organization",         "system", "SYSTEM"),
+            new PermissionData("system.organizations.manage", "Manage Organization Subscriptions",  "system", "SYSTEM"),
+            new PermissionData("orgs.view",                   "View Organizations (Legacy Alias)",  "system", "SYSTEM"),
+            new PermissionData("orgs.manage",                 "Manage Organizations (Legacy Alias)","system", "SYSTEM"),
+            new PermissionData("system.gateway.manage",       "Manage Gateway Config",              "system", "SYSTEM"),
+            new PermissionData("system.security.manage",      "Manage Platform Security",           "system", "SYSTEM"),
+            new PermissionData("system.trash.manage",         "Manage Recycle Bin",                 "system", "SYSTEM"),
+            new PermissionData("system.settings.manage",      "Manage Platform Settings",           "system", "SYSTEM"),
+            new PermissionData("system.backup.manage",        "Manage Backups",                     "system", "SYSTEM"),
+            new PermissionData("system.observability.view",   "View Platform Observability",        "system", "SYSTEM"),
+            new PermissionData("system.integration.manage",   "Manage External Integrations",       "system", "SYSTEM"),
+            new PermissionData("system.audit.view",           "View Audit Logs",                    "system", "SYSTEM"),
+            new PermissionData("system.support.impersonate",  "Impersonate Tenant User",            "system", "SYSTEM"),
+            new PermissionData("system.gis.manage",           "Manage GIS Engine",                  "system", "SYSTEM"),
+            new PermissionData("system.billing.manage",       "Manage System Billing",              "system", "SYSTEM"),
+            new PermissionData("system.tenants.create",       "Create Platform Tenants",            "system", "SYSTEM"),
+            new PermissionData("system.tenants.approve",      "Approve Platform Tenants",           "system", "SYSTEM"),
+            new PermissionData("system.tenants.suspend",      "Suspend Platform Tenants",           "system", "SYSTEM"),
+            new PermissionData("system.contracts.view",       "View Tenant Contracts",              "system", "SYSTEM"),
+            new PermissionData("system.contracts.upload",     "Upload Tenant Contracts",            "system", "SYSTEM"),
+            new PermissionData("system.quotas.manage",        "Manage Tenant Quotas",               "system", "SYSTEM"),
 
             // organizations — tenant-scoped organization settings
             new PermissionData("organizations.view",   "View Organization Details",  "organizations"),
@@ -142,13 +164,31 @@ public class PermissionSeeder implements CommandLineRunner {
         }
 
         // 3. Sync System Roles
+        // Scope SYSTEM roles
         syncSystemRole("super_admin", allPermissionsInDb, ""); // Super Admin gets everything
+        syncSystemRole("platform_engineer", allPermissionsInDb, 
+            "system.gis.manage", "system.gateway.manage", "system.backup.manage", 
+            "system.observability.view", "system.integration.manage", 
+            "system.organizations.view", "system.organizations.update", "system.organizations.manage");
+        syncSystemRole("account_manager", allPermissionsInDb, 
+            "system.tenants.create", "system.tenants.approve", "system.tenants.suspend", 
+            "system.contracts.view", "system.contracts.upload", "system.quotas.manage", 
+            "system.organizations.view", "system.organizations.create", "system.organizations.update", "orgs.view");
+        syncSystemRole("system_support", allPermissionsInDb, 
+            "system.support.impersonate", "system.security.manage", "system.observability.view", 
+            "system.organizations.view", "orgs.view");
+        syncSystemRole("system_billing", allPermissionsInDb, 
+            "system.billing.manage", "system.organizations.view", "system.organizations.manage");
+        syncSystemRole("system_auditor", allPermissionsInDb, 
+            "system.audit.view", "system.observability.view", "system.organizations.view", "orgs.view");
+
+        // Scope TENANT roles
         syncSystemRole("admin", allPermissionsInDb, "TENANT_ALL"); // Tenant Admin gets all TENANT-scoped permissions
         syncSystemRole("supervisor", allPermissionsInDb, "projects.", "network.", "ticket.", "task.", "approval.", "inventory.view", "inventory.report", "map.", "coverage.", "customer.", "report.", "team.view");
         syncSystemRole("technician", allPermissionsInDb, "projects.view", "network.view", "inventory.view", "ticket.", "task.", "map.");
         syncSystemRole("viewer", allPermissionsInDb, ".view");
 
-        log.info("✅ System Roles synchronized.");
+        log.info("✅ System & Tenant template roles synchronized.");
 
         // 4. Propagate to ALL Organization Admins (Dynamic Sync for existing tenants)
         // propagateToAllTenantAdmins(allPermissionsInDb);

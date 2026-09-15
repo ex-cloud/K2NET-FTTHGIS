@@ -15,7 +15,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/organizations/{idOrSlug}")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+@PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or hasAuthority('organizations.update')")
 public class TenantApiAdvancedController {
 
     private final TenantApiAdvancedService advancedService;
@@ -23,13 +23,13 @@ public class TenantApiAdvancedController {
     // --- 1. Scoped Personal Access Tokens ---
 
     @GetMapping("/api-tokens")
-    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.view'))")
     public ResponseEntity<List<ScopedTokenResponse>> listTokens(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(advancedService.listTokens(idOrSlug));
     }
 
     @PostMapping("/api-tokens")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<ScopedTokenCreateResponse> createScopedToken(
             @PathVariable String idOrSlug,
             @RequestBody ScopedTokenCreateRequest request) {
@@ -37,7 +37,7 @@ public class TenantApiAdvancedController {
     }
 
     @DeleteMapping("/api-tokens/{tokenId}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<Void> revokeToken(
             @PathVariable String idOrSlug,
             @PathVariable UUID tokenId) {
@@ -48,13 +48,13 @@ public class TenantApiAdvancedController {
     // --- 2. Multi-Endpoint Webhook Router ---
 
     @GetMapping("/webhook-endpoints")
-    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.view'))")
     public ResponseEntity<List<WebhookEndpointResponse>> listEndpoints(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(advancedService.listEndpoints(idOrSlug));
     }
 
     @PostMapping("/webhook-endpoints")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<WebhookEndpointResponse> createEndpoint(
             @PathVariable String idOrSlug,
             @RequestBody WebhookEndpointRequest request) {
@@ -62,7 +62,7 @@ public class TenantApiAdvancedController {
     }
 
     @PutMapping("/webhook-endpoints/{endpointId}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<WebhookEndpointResponse> updateEndpoint(
             @PathVariable String idOrSlug,
             @PathVariable UUID endpointId,
@@ -71,7 +71,7 @@ public class TenantApiAdvancedController {
     }
 
     @DeleteMapping("/webhook-endpoints/{endpointId}")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<Void> deleteEndpoint(
             @PathVariable String idOrSlug,
             @PathVariable UUID endpointId) {
@@ -80,7 +80,7 @@ public class TenantApiAdvancedController {
     }
 
     @PostMapping("/webhook-endpoints/{endpointId}/roll-secret")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<RollSecretResponse> rollEndpointSecret(
             @PathVariable String idOrSlug,
             @PathVariable UUID endpointId) {
@@ -88,7 +88,7 @@ public class TenantApiAdvancedController {
     }
 
     @PostMapping("/webhook-endpoints/{endpointId}/test-ping")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<TestPingResponse> testPingEndpoint(
             @PathVariable String idOrSlug,
             @PathVariable UUID endpointId) {
@@ -98,13 +98,13 @@ public class TenantApiAdvancedController {
     // --- 3. Event Catalog & Payload Simulator ---
 
     @GetMapping("/webhooks/event-schemas")
-    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.view'))")
     public ResponseEntity<List<EventSchemaDto>> getEventSchemas() {
         return ResponseEntity.ok(advancedService.getEventSchemas());
     }
 
     @PostMapping("/webhooks/simulate-event")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<SimulateEventResponse> simulateEventDispatch(
             @PathVariable String idOrSlug,
             @RequestBody SimulateEventRequest request) {
@@ -114,13 +114,13 @@ public class TenantApiAdvancedController {
     // --- 4. Dead Letter Queue & Replay ---
 
     @GetMapping("/webhooks/dlq-logs")
-    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.view'))")
     public ResponseEntity<List<DeadLetterLogResponse>> getDeadLetterLogs(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(advancedService.getDeadLetterLogs(idOrSlug));
     }
 
     @PostMapping("/webhooks/dlq-logs/{logId}/replay")
-    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.update') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.update'))")
     public ResponseEntity<TestPingResponse> replayFailedWebhook(
             @PathVariable String idOrSlug,
             @PathVariable UUID logId) {
@@ -130,7 +130,7 @@ public class TenantApiAdvancedController {
     // --- 5. API Usage & Latency Analytics ---
 
     @GetMapping("/api-analytics")
-    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
+    @PreAuthorize("hasAuthority('system.organizations.view') or hasAuthority('system.organizations.manage') or (@tenantSecurity.isOwner(#idOrSlug) and hasAuthority('organizations.view'))")
     public ResponseEntity<ApiAnalyticsResponse> getApiAnalytics(
             @PathVariable String idOrSlug,
             @RequestParam(value = "range", required = false, defaultValue = "24h") String range) {
