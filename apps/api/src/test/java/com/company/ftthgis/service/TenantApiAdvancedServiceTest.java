@@ -236,4 +236,52 @@ class TenantApiAdvancedServiceTest {
         assertEquals(1L, analytics.getActiveEndpointsCount());
         assertEquals(95.0, analytics.getSuccessRatePercent());
     }
+
+    @Test
+    @DisplayName("Should revoke Scoped Token using native query")
+    void testRevokeToken() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+        UUID tokenId = UUID.randomUUID();
+        when(tokenRepository.revokeTokenNative(testOrg.getId(), tokenId)).thenReturn(1);
+
+        service.revokeToken("garut", tokenId);
+
+        verify(tokenRepository).revokeTokenNative(testOrg.getId(), tokenId);
+    }
+
+    @Test
+    @DisplayName("Should delete Webhook Endpoint using native query")
+    void testDeleteEndpoint() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+        UUID endpointId = UUID.randomUUID();
+        when(endpointRepository.deleteEndpointNative(testOrg.getId(), endpointId)).thenReturn(1);
+
+        service.deleteEndpoint("garut", endpointId);
+
+        verify(endpointRepository).deleteEndpointNative(testOrg.getId(), endpointId);
+    }
+
+    @Test
+    @DisplayName("Should roll Webhook Endpoint secret using native query")
+    void testRollEndpointSecret() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+        UUID endpointId = UUID.randomUUID();
+        TenantWebhookEndpoint endpoint = TenantWebhookEndpoint.builder()
+                .id(endpointId)
+                .organization(testOrg)
+                .name("NOC Slack")
+                .targetUrl("https://slack.com/webhook")
+                .isActive(true)
+                .build();
+
+        when(endpointRepository.findByIdAndOrganizationIdNative(testOrg.getId(), endpointId))
+                .thenReturn(Optional.of(endpoint));
+        when(endpointRepository.save(any(TenantWebhookEndpoint.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RollSecretResponse res = service.rollEndpointSecret("garut", endpointId);
+
+        assertNotNull(res);
+        assertTrue(res.getPlainTextSecret().startsWith("whsec_"));
+        verify(endpointRepository).save(any(TenantWebhookEndpoint.class));
+    }
 }

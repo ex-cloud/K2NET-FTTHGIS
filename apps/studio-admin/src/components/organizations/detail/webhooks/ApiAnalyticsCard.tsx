@@ -13,6 +13,8 @@ import { ApiAnalyticsKpis } from "./ApiAnalyticsKpis";
 import { ApiAnalyticsTimeseries } from "./ApiAnalyticsTimeseries";
 import { TelemetryDateRangePicker } from "./TelemetryDateRangePicker";
 
+import { ApiAnalyticsSkeleton } from "./ApiAnalyticsSkeleton";
+
 interface ApiAnalyticsCardProps {
   analytics: ApiAnalytics | null;
   loadingAnalytics: boolean;
@@ -39,7 +41,14 @@ export function ApiAnalyticsCard({
   };
 
   return (
-    <Card className="p-5 space-y-5 bg-card border-border shadow-xs">
+    <Card className="p-5 space-y-5 bg-card border-border shadow-xs relative overflow-hidden">
+      {/* Subtle syncing indicator bar when refreshing existing data */}
+      {loadingAnalytics && analytics && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/20 overflow-hidden">
+          <div className="h-full bg-primary animate-pulse w-full" />
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-xs">
@@ -79,16 +88,23 @@ export function ApiAnalyticsCard({
         </div>
       </div>
 
-      {loadingAnalytics ? (
-        <div className="p-6 text-center text-xs text-muted-foreground animate-pulse">
-          Memuat metrik observabilitas API...
-        </div>
+      {loadingAnalytics && !analytics ? (
+        <ApiAnalyticsSkeleton />
       ) : !analytics ? (
-        <div className="p-6 text-center text-xs text-muted-foreground">
-          Belum ada data analitik tersedia.
+        <div className="p-8 rounded-xl border border-dashed border-border bg-background/50 text-center space-y-2">
+          <BarChart3 className="h-6 w-6 text-muted-foreground mx-auto" />
+          <div className="text-xs font-medium text-foreground">Belum ada data analitik tersedia</div>
+          <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+            Metrik akan otomatis muncul setelah ada aktivitas pemanggilan REST API melalui Kong Gateway.
+          </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div
+          className={cn(
+            "space-y-5 transition-opacity duration-300",
+            loadingAnalytics && "opacity-60 pointer-events-none"
+          )}
+        >
           <ApiAnalyticsKpis analytics={analytics} />
           <ApiAnalyticsTimeseries analytics={analytics} />
         </div>

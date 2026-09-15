@@ -8,6 +8,7 @@ import {
   Network,
   Plus,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { WebhookEndpoint, WebhookSubscriptions, PingResult } from "./types";
 import { EndpointModal } from "./EndpointModal";
 import { EndpointRowItem } from "./EndpointRowItem";
@@ -142,9 +143,20 @@ export function MultiEndpointCard({
       </div>
 
       <div className="space-y-3 pt-1">
-        {loadingEndpoints ? (
-          <div className="p-6 text-center text-xs text-muted-foreground animate-pulse">
-            Memuat daftar endpoint webhook...
+        {loadingEndpoints && endpoints.length === 0 ? (
+          <div className="space-y-3 animate-pulse">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="p-4 rounded-xl border border-border/80 bg-background/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-32 bg-muted/70 rounded" />
+                    <div className="h-4 w-14 bg-muted/50 rounded-full" />
+                  </div>
+                  <div className="h-7 w-20 bg-muted/60 rounded" />
+                </div>
+                <div className="h-3 w-3/4 bg-muted/50 rounded" />
+              </div>
+            ))}
           </div>
         ) : endpoints.length === 0 ? (
           <div className="p-6 rounded-lg border border-dashed border-border bg-background/50 text-center space-y-2">
@@ -155,7 +167,12 @@ export function MultiEndpointCard({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div
+            className={cn(
+              "space-y-3 transition-opacity duration-300",
+              loadingEndpoints && "opacity-60 pointer-events-none"
+            )}
+          >
             {endpoints.map((ep) => (
               <EndpointRowItem
                 key={ep.id}

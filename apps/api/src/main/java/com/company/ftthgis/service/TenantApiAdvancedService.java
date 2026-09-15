@@ -130,18 +130,11 @@ public class TenantApiAdvancedService {
     @AuditRequired(action = "TENANT_SCOPED_TOKEN_REVOKED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
     public void revokeToken(String idOrSlug, UUID tokenId) {
         Organization org = resolveOrganization(idOrSlug);
-        TenantApiToken token = tokenRepository.findById(tokenId)
-                .orElseThrow(() -> new IllegalArgumentException("Token tidak ditemukan."));
-
-        if (!token.getOrganization().getId().equals(org.getId())) {
-            throw new IllegalArgumentException("Token tidak sesuai dengan organisasi.");
+        int updated = tokenRepository.revokeTokenNative(org.getId(), tokenId);
+        if (updated == 0) {
+            throw new IllegalArgumentException("Token tidak ditemukan untuk organisasi ini.");
         }
-
-        token.setRevoked(true);
-        token.setUpdatedAt(LocalDateTime.now());
-        tokenRepository.save(token);
-
-        log.info("Scoped API Token '{}' revoked for organization '{}'", token.getName(), org.getSlug());
+        log.info("Scoped API Token '{}' revoked for organization '{}'", tokenId, org.getSlug());
     }
 
     // ==========================================
@@ -223,12 +216,8 @@ public class TenantApiAdvancedService {
     @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_UPDATED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
     public WebhookEndpointResponse updateEndpoint(String idOrSlug, UUID endpointId, WebhookEndpointRequest request) {
         Organization org = resolveOrganization(idOrSlug);
-        TenantWebhookEndpoint endpoint = endpointRepository.findById(endpointId)
+        TenantWebhookEndpoint endpoint = endpointRepository.findByIdAndOrganizationIdNative(org.getId(), endpointId)
                 .orElseThrow(() -> new IllegalArgumentException("Endpoint tidak ditemukan."));
-
-        if (!endpoint.getOrganization().getId().equals(org.getId())) {
-            throw new IllegalArgumentException("Endpoint tidak sesuai dengan organisasi.");
-        }
 
         if (request.getTargetUrl() != null && !request.getTargetUrl().trim().isEmpty()) {
             securityValidator.validateUrl(request.getTargetUrl());
@@ -268,21 +257,17 @@ public class TenantApiAdvancedService {
     @AuditRequired(action = "TENANT_WEBHOOK_ENDPOINT_DELETED", resourceType = "ORGANIZATION", tenantSlugExpression = "#idOrSlug")
     public void deleteEndpoint(String idOrSlug, UUID endpointId) {
         Organization org = resolveOrganization(idOrSlug);
-        TenantWebhookEndpoint endpoint = endpointRepository.findById(endpointId)
-                .orElseThrow(() -> new IllegalArgumentException("Endpoint tidak ditemukan."));
-
-        if (!endpoint.getOrganization().getId().equals(org.getId())) {
-            throw new IllegalArgumentException("Endpoint tidak sesuai dengan organisasi.");
+        int deleted = endpointRepository.deleteEndpointNative(org.getId(), endpointId);
+        if (deleted == 0) {
+            throw new IllegalArgumentException("Endpoint tidak ditemukan untuk organisasi ini.");
         }
-
-        endpointRepository.delete(endpoint);
-        log.info("Webhook endpoint '{}' deleted for organization '{}'", endpoint.getName(), org.getSlug());
+        log.info("Webhook endpoint '{}' deleted for organization '{}'", endpointId, org.getSlug());
     }
 
     @Transactional
     public RollSecretResponse rollEndpointSecret(String idOrSlug, UUID endpointId) {
         Organization org = resolveOrganization(idOrSlug);
-        TenantWebhookEndpoint endpoint = endpointRepository.findById(endpointId)
+        TenantWebhookEndpoint endpoint = endpointRepository.findByIdAndOrganizationIdNative(org.getId(), endpointId)
                 .orElseThrow(() -> new IllegalArgumentException("Endpoint tidak ditemukan."));
 
         String randomHex = encryptionUtil.generateSecureToken(16);
@@ -301,7 +286,7 @@ public class TenantApiAdvancedService {
     @Transactional
     public TestPingResponse testPingEndpoint(String idOrSlug, UUID endpointId) {
         Organization org = resolveOrganization(idOrSlug);
-        TenantWebhookEndpoint endpoint = endpointRepository.findById(endpointId)
+        TenantWebhookEndpoint endpoint = endpointRepository.findByIdAndOrganizationIdNative(org.getId(), endpointId)
                 .orElseThrow(() -> new IllegalArgumentException("Endpoint tidak ditemukan."));
 
         securityValidator.validateUrl(endpoint.getTargetUrl());
