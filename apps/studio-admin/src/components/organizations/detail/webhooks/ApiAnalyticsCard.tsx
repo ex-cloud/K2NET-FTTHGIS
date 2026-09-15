@@ -11,18 +11,33 @@ import { cn } from "@/lib/utils";
 import type { ApiAnalytics } from "./types";
 import { ApiAnalyticsKpis } from "./ApiAnalyticsKpis";
 import { ApiAnalyticsTimeseries } from "./ApiAnalyticsTimeseries";
+import { TelemetryDateRangePicker } from "./TelemetryDateRangePicker";
 
 interface ApiAnalyticsCardProps {
   analytics: ApiAnalytics | null;
   loadingAnalytics: boolean;
+  timeRange?: string;
+  onTimeRangeChange?: (range: string) => void;
   onRefreshAnalytics: () => void;
 }
 
 export function ApiAnalyticsCard({
   analytics,
   loadingAnalytics,
+  timeRange = "24h",
+  onTimeRangeChange,
   onRefreshAnalytics,
 }: ApiAnalyticsCardProps) {
+  const getBadgeLabel = (range: string) => {
+    if (range === "24h") return "LIVE METRICS (24H)";
+    if (range === "1h") return "LIVE METRICS (1H)";
+    if (range === "7d") return "RENTANG: 7 HARI";
+    if (range === "14d") return "RENTANG: 14 HARI";
+    if (range === "30d") return "RENTANG: 30 HARI";
+    if (range.startsWith("custom:")) return "RENTANG KUSTOM";
+    return `RENTANG: ${range.toUpperCase()}`;
+  };
+
   return (
     <Card className="p-5 space-y-5 bg-card border-border shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -34,7 +49,7 @@ export function ApiAnalyticsCard({
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-bold text-foreground">API Usage & Gateway Latency Telemetry</h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
-                LIVE METRICS (24H)
+                {getBadgeLabel(timeRange)}
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -43,7 +58,14 @@ export function ApiAnalyticsCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onTimeRangeChange && (
+            <TelemetryDateRangePicker
+              value={timeRange}
+              onChange={onTimeRangeChange}
+            />
+          )}
+
           <Button
             variant="outline"
             size="sm"

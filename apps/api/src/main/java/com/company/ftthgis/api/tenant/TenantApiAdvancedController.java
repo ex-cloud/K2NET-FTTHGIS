@@ -131,7 +131,9 @@ public class TenantApiAdvancedController {
 
     @GetMapping("/api-analytics")
     @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
-    public ResponseEntity<ApiAnalyticsResponse> getApiAnalytics(@PathVariable String idOrSlug) {
-        return ResponseEntity.ok(advancedService.getApiAnalytics(idOrSlug));
+    public ResponseEntity<ApiAnalyticsResponse> getApiAnalytics(
+            @PathVariable String idOrSlug,
+            @RequestParam(value = "range", required = false, defaultValue = "24h") String range) {
+        return ResponseEntity.ok(advancedService.getApiAnalytics(idOrSlug, range));
     }
 }

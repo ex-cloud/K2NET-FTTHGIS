@@ -132,6 +132,8 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
         <ApiAnalyticsCard
           analytics={state.apiAnalytics}
           loadingAnalytics={state.loadingAnalytics}
+          timeRange={state.timeRange}
+          onTimeRangeChange={state.setTimeRange}
           onRefreshAnalytics={state.refreshAnalytics}
         />
       )}

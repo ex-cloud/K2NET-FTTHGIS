@@ -107,6 +107,8 @@ export function useOrgWebhooksState(org: EnrichedOrganization) {
 
     apiAnalytics: simulatorAndDlqState.apiAnalytics,
     loadingAnalytics: simulatorAndDlqState.loadingAnalytics,
+    timeRange: simulatorAndDlqState.timeRange,
+    setTimeRange: simulatorAndDlqState.setTimeRange,
     refreshAnalytics: simulatorAndDlqState.refreshAnalytics,
   };
 }

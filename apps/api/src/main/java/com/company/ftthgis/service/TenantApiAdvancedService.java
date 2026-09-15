@@ -43,7 +43,7 @@ public class TenantApiAdvancedService {
     @Transactional(readOnly = true)
     public List<ScopedTokenResponse> listTokens(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
-        List<TenantApiToken> tokens = tokenRepository.findByOrganizationOrderByCreatedAtDesc(org);
+        List<TenantApiToken> tokens = tokenRepository.findByOrganizationIdNative(org.getId());
 
         return tokens.stream().map(t -> ScopedTokenResponse.builder()
                 .id(t.getId())
@@ -151,7 +151,7 @@ public class TenantApiAdvancedService {
     @Transactional(readOnly = true)
     public List<WebhookEndpointResponse> listEndpoints(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
-        List<TenantWebhookEndpoint> endpoints = endpointRepository.findByOrganizationOrderByCreatedAtDesc(org);
+        List<TenantWebhookEndpoint> endpoints = endpointRepository.findByOrganizationIdNative(org.getId());
 
         return endpoints.stream().map(e -> WebhookEndpointResponse.builder()
                 .id(e.getId())
@@ -533,8 +533,8 @@ public class TenantApiAdvancedService {
     @Transactional(readOnly = true)
     public List<DeadLetterLogResponse> getDeadLetterLogs(String idOrSlug) {
         Organization org = resolveOrganization(idOrSlug);
-        List<TenantWebhookLog> logs = logRepository.findByOrganizationAndDeliveryStatusOrderByCreatedAtDesc(org, "FAILED_DLQ");
-        List<TenantWebhookLog> retrying = logRepository.findByOrganizationAndDeliveryStatusOrderByCreatedAtDesc(org, "RETRYING");
+        List<TenantWebhookLog> logs = logRepository.findByStatusAndOrganizationIdNative(org.getId(), "FAILED_DLQ", 100);
+        List<TenantWebhookLog> retrying = logRepository.findByStatusAndOrganizationIdNative(org.getId(), "RETRYING", 100);
 
         List<TenantWebhookLog> all = new ArrayList<>(logs);
         all.addAll(retrying);
@@ -625,37 +625,77 @@ public class TenantApiAdvancedService {
     // 5. API Usage & Latency Analytics (Live Production Data)
     // ==========================================
 
+    public record TimeRangeWindow(LocalDateTime since, LocalDateTime until, int daysSpan) {}
+
+    private TimeRangeWindow parseTimeRange(String rangeStr) {
+        LocalDateTime now = LocalDateTime.now();
+        if (rangeStr == null || rangeStr.isBlank()) {
+            return new TimeRangeWindow(now.minusHours(24), now, 1);
+        }
+
+        String trimmed = rangeStr.trim().toLowerCase(Locale.ROOT);
+        if (trimmed.startsWith("custom:")) {
+            try {
+                String raw = rangeStr.substring(7);
+                String[] parts = raw.split("_");
+                if (parts.length == 2) {
+                    LocalDateTime from = java.time.Instant.parse(parts[0]).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+                    LocalDateTime to = java.time.Instant.parse(parts[1]).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+                    long days = Math.max(1, java.time.Duration.between(from, to).toDays() + 1);
+                    return new TimeRangeWindow(from, to, (int) Math.min(days, 90));
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse custom date range: {}", rangeStr);
+            }
+        }
+
+        return switch (trimmed) {
+            case "10m" -> new TimeRangeWindow(now.minusMinutes(10), now, 1);
+            case "30m" -> new TimeRangeWindow(now.minusMinutes(30), now, 1);
+            case "1h", "60m" -> new TimeRangeWindow(now.minusHours(1), now, 1);
+            case "3h" -> new TimeRangeWindow(now.minusHours(3), now, 1);
+            case "7d" -> new TimeRangeWindow(now.minusDays(6).toLocalDate().atStartOfDay(), now, 7);
+            case "14d" -> new TimeRangeWindow(now.minusDays(13).toLocalDate().atStartOfDay(), now, 14);
+            case "28d", "30d" -> new TimeRangeWindow(now.minusDays(29).toLocalDate().atStartOfDay(), now, 30);
+            default -> new TimeRangeWindow(now.minusHours(24), now, 1);
+        };
+    }
+
     @Transactional(readOnly = true)
     public ApiAnalyticsResponse getApiAnalytics(String idOrSlug) {
+        return getApiAnalytics(idOrSlug, "24h");
+    }
+
+    @Transactional(readOnly = true)
+    public ApiAnalyticsResponse getApiAnalytics(String idOrSlug, String rangeStr) {
         Organization org = resolveOrganization(idOrSlug);
 
-        long activeTokens = tokenRepository.findByOrganizationAndIsRevokedFalseOrderByCreatedAtDesc(org).size();
-        long activeEndpoints = endpointRepository.findByOrganizationAndIsActiveTrue(org).size();
-        long pendingRetries = logRepository.countByOrganizationAndDeliveryStatus(org, "RETRYING");
-        long dlqCount = logRepository.countByOrganizationAndDeliveryStatus(org, "FAILED_DLQ");
+        long activeTokens = tokenRepository.countActiveByOrganizationIdNative(org.getId());
+        long activeEndpoints = endpointRepository.countActiveByOrganizationIdNative(org.getId());
+        long pendingRetries = logRepository.countByStatusAndOrganizationIdNative(org.getId(), "RETRYING");
+        long dlqCount = logRepository.countByStatusAndOrganizationIdNative(org.getId(), "FAILED_DLQ");
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime since24h = now.minusHours(24);
-        LocalDateTime since30d = now.minusDays(30);
+        TimeRangeWindow window = parseTimeRange(rangeStr);
+        LocalDateTime since = window.since();
+        LocalDateTime until = window.until();
 
-        long total24h = logRepository.countByOrganizationAndCreatedAtAfter(org, since24h);
-        long total30d = logRepository.countByOrganizationAndCreatedAtAfter(org, since30d);
-        long errors24h = logRepository.countByOrganizationAndDeliveryStatusAndCreatedAtAfter(org, "FAILED_DLQ", since24h);
+        long totalRequestsInRange = logRepository.countBetweenNative(org.getId(), since, until);
+        long errorsInRange = logRepository.countByStatusBetweenNative(org.getId(), "FAILED_DLQ", since, until);
 
-        Double p95Val = logRepository.calculateP95LatencyMsNative(org.getId(), since30d);
+        Double p95Val = logRepository.calculateP95LatencyMsBetweenNative(org.getId(), since, until);
         int p95Latency = p95Val != null && p95Val > 0 ? (int) Math.round(p95Val) : 0;
 
-        long count2xx = logRepository.countByStatusRangeNative(org.getId(), 200, 299, since30d);
-        long count4xx = logRepository.countByStatusRangeNative(org.getId(), 400, 499, since30d);
-        long count5xx = logRepository.countByStatusRangeNative(org.getId(), 500, 599, since30d) + dlqCount;
+        long count2xx = logRepository.countByStatusRangeBetweenNative(org.getId(), 200, 299, since, until);
+        long count4xx = logRepository.countByStatusRangeBetweenNative(org.getId(), 400, 499, since, until);
+        long count5xx = logRepository.countByStatusRangeBetweenNative(org.getId(), 500, 599, since, until) + errorsInRange;
 
-        double successRate = total30d > 0
-                ? Math.round(((double) count2xx / total30d) * 1000.0) / 10.0
+        double successRate = totalRequestsInRange > 0
+                ? Math.round(((double) count2xx / totalRequestsInRange) * 1000.0) / 10.0
                 : 100.0;
 
-        // Query real 7-day volume
-        LocalDateTime since7d = now.minusDays(6).toLocalDate().atStartOfDay();
-        List<Object[]> dailyRows = logRepository.findDailyVolumeNative(org.getId(), since7d);
+        // Query series volume
+        int daysSpan = Math.max(1, window.daysSpan());
+        List<Object[]> dailyRows = logRepository.findDailyVolumeBetweenNative(org.getId(), since, until);
         Map<String, long[]> dailyMap = new HashMap<>();
         for (Object[] row : dailyRows) {
             String d = (String) row[0];
@@ -668,8 +708,9 @@ public class TenantApiAdvancedService {
         List<ApiAnalyticsResponse.DailyVolumeStat> dailySeries = new ArrayList<>();
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        for (int i = 6; i >= 0; i--) {
-            LocalDate date = LocalDate.now().minusDays(i);
+        int daysToIterate = Math.max(daysSpan, 7);
+        for (int i = daysToIterate - 1; i >= 0; i--) {
+            LocalDate date = until.minusDays(i).toLocalDate();
             String dateStr = date.format(dtf);
             long[] stats = dailyMap.getOrDefault(dateStr, new long[]{0L, 0L});
             long reqs = stats[0];
@@ -702,17 +743,17 @@ public class TenantApiAdvancedService {
                 .status5xx(count5xx)
                 .build();
 
-        double quotaUsed = total24h > 0
-                ? Math.min(100.0, Math.round(((double) total24h / (5000.0 * 60.0 * 24.0)) * 10000.0) / 100.0)
+        double quotaUsed = totalRequestsInRange > 0
+                ? Math.min(100.0, Math.round(((double) totalRequestsInRange / (5000.0 * 60.0 * 24.0)) * 10000.0) / 100.0)
                 : 0.0;
 
         return ApiAnalyticsResponse.builder()
-                .totalRequests24h(total24h)
-                .totalRequests30d(total30d)
+                .totalRequests24h(totalRequestsInRange)
+                .totalRequests30d(totalRequestsInRange)
                 .successRatePercent(successRate)
                 .deliverySuccessRatePercent(successRate)
                 .p95LatencyMs(p95Latency)
-                .errorCount24h(errors24h)
+                .errorCount24h(errorsInRange)
                 .rateLimitQuotaUsedPercent(quotaUsed)
                 .totalThrottled429(0)
                 .activeTokensCount(activeTokens)

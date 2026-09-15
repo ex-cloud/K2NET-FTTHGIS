@@ -19,6 +19,7 @@ export function useOrgSimulatorAndDlq(orgIdentifier: string) {
 
   const [apiAnalytics, setApiAnalytics] = useState<ApiAnalytics | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [timeRange, setTimeRange] = useState<string>("24h");
 
   const fetchEventSchemas = useCallback(async () => {
     try {
@@ -54,53 +55,68 @@ export function useOrgSimulatorAndDlq(orgIdentifier: string) {
     }
   }, [orgIdentifier]);
 
-  const fetchApiAnalytics = useCallback(async () => {
-    try {
-      setLoadingAnalytics(true);
-      const res = await fetch(`/api/v1/organizations/${orgIdentifier}/api-analytics`, {
-        headers: getAuthHeaders(),
-      });
-      if (res.ok) {
-        const raw = await res.json();
-        const safeDaily: DailyVolumeStat[] = Array.isArray(raw?.dailyTimeseries)
-          ? raw.dailyTimeseries
-          : Array.isArray(raw?.dailyTraffic)
-          ? raw.dailyTraffic.map((d: { date?: string; totalRequests?: number; requests?: number; failedRequests?: number; errors?: number }) => ({
-              date: d.date || "",
-              requests: d.requests ?? d.totalRequests ?? 0,
-              errors: d.errors ?? d.failedRequests ?? 0,
-            }))
-          : [];
+  const fetchApiAnalytics = useCallback(
+    async (rangeToFetch?: string) => {
+      const activeRange = rangeToFetch || timeRange;
+      try {
+        setLoadingAnalytics(true);
+        const res = await fetch(
+          `/api/v1/organizations/${orgIdentifier}/api-analytics?range=${encodeURIComponent(activeRange)}`,
+          {
+            headers: getAuthHeaders(),
+          }
+        );
+        if (res.ok) {
+          const raw = await res.json();
+          const safeDaily: DailyVolumeStat[] = Array.isArray(raw?.dailyTimeseries)
+            ? raw.dailyTimeseries
+            : Array.isArray(raw?.dailyTraffic)
+            ? raw.dailyTraffic.map((d: { date?: string; totalRequests?: number; requests?: number; failedRequests?: number; errors?: number }) => ({
+                date: d.date || "",
+                requests: d.requests ?? d.totalRequests ?? 0,
+                errors: d.errors ?? d.failedRequests ?? 0,
+              }))
+            : [];
 
-        const statusDist = raw?.statusDistribution || {};
-        const safeBreakdown: StatusCodeBreakdown = {
-          status2xx: raw?.statusBreakdown?.status2xx ?? statusDist["2xx Success"] ?? 0,
-          status4xx: raw?.statusBreakdown?.status4xx ?? statusDist["4xx Client Error"] ?? 0,
-          status5xx: raw?.statusBreakdown?.status5xx ?? statusDist["5xx Server Error"] ?? 0,
-        };
+          const statusDist = raw?.statusDistribution || {};
+          const safeBreakdown: StatusCodeBreakdown = {
+            status2xx: raw?.statusBreakdown?.status2xx ?? statusDist["2xx Success"] ?? 0,
+            status4xx: raw?.statusBreakdown?.status4xx ?? statusDist["4xx Client Error"] ?? 0,
+            status5xx: raw?.statusBreakdown?.status5xx ?? statusDist["5xx Server Error"] ?? 0,
+          };
 
-        const normalized: ApiAnalytics = {
-          totalRequests24h: raw?.totalRequests24h ?? raw?.totalRequests30d ?? 0,
-          successRatePercent: raw?.successRatePercent ?? raw?.deliverySuccessRatePercent ?? 99.5,
-          p95LatencyMs: raw?.p95LatencyMs ?? 42,
-          errorCount24h: raw?.errorCount24h ?? 0,
-          rateLimitQuotaUsedPercent: raw?.rateLimitQuotaUsedPercent ?? 0,
-          dailyTimeseries: safeDaily,
-          statusBreakdown: safeBreakdown,
-        };
-        setApiAnalytics(normalized);
+          const normalized: ApiAnalytics = {
+            totalRequests24h: raw?.totalRequests24h ?? raw?.totalRequests30d ?? 0,
+            successRatePercent: raw?.successRatePercent ?? raw?.deliverySuccessRatePercent ?? 99.5,
+            p95LatencyMs: raw?.p95LatencyMs ?? 42,
+            errorCount24h: raw?.errorCount24h ?? 0,
+            rateLimitQuotaUsedPercent: raw?.rateLimitQuotaUsedPercent ?? 0,
+            dailyTimeseries: safeDaily,
+            statusBreakdown: safeBreakdown,
+          };
+          setApiAnalytics(normalized);
+        }
+      } catch (err: unknown) {
+        console.error("Failed to fetch API analytics:", err);
+      } finally {
+        setLoadingAnalytics(false);
       }
-    } catch (err: unknown) {
-      console.error("Failed to fetch API analytics:", err);
-    } finally {
-      setLoadingAnalytics(false);
-    }
-  }, [orgIdentifier]);
+    },
+    [orgIdentifier, timeRange]
+  );
+
+  const handleTimeRangeChange = useCallback(
+    (newRange: string) => {
+      setTimeRange(newRange);
+      fetchApiAnalytics(newRange);
+    },
+    [fetchApiAnalytics]
+  );
 
   useEffect(() => {
     fetchEventSchemas();
     fetchDlqLogs();
-    fetchApiAnalytics();
+    fetchApiAnalytics("24h");
   }, [fetchEventSchemas, fetchDlqLogs, fetchApiAnalytics]);
 
   const handleSimulateEvent = useCallback(
@@ -177,6 +193,8 @@ export function useOrgSimulatorAndDlq(orgIdentifier: string) {
     refreshDlq: fetchDlqLogs,
     apiAnalytics,
     loadingAnalytics,
-    refreshAnalytics: fetchApiAnalytics,
+    timeRange,
+    setTimeRange: handleTimeRangeChange,
+    refreshAnalytics: () => fetchApiAnalytics(timeRange),
   };
 }
