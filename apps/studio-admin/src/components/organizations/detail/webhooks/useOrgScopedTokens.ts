@@ -36,7 +36,12 @@ export function useOrgScopedTokens(orgIdentifier: string) {
         const res = await fetch(`/api/v1/organizations/${orgIdentifier}/api-tokens`, {
           method: "POST",
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify(data),
+          body: JSON.stringify({
+            name: data.name,
+            scopes: data.scopes,
+            expirationDays: data.expiresInDays,
+            expiresInDays: data.expiresInDays,
+          }),
         });
 
         if (!res.ok) {
