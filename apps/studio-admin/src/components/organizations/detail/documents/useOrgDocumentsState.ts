@@ -1,154 +1,38 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { useSession } from "@/lib/auth-compat";
 import type { EnrichedOrganization } from "../../types";
-import type { TenantDocument, DocumentCategory, DocumentStatus } from "./types";
+import type { TenantDocument, DocumentStatus } from "./types";
+import { downloadDocumentFile } from "./document-templates";
+import { useDocumentsLocalStorage, getTenantStorageFolder } from "./useDocumentsLocalStorage";
+import { useDocumentUpload } from "./useDocumentUpload";
 
-import { downloadDocumentFile, getDocumentTemplate, createBinaryPdfBlob } from "./document-templates";
-
-import { uploadTaskAttachment } from "@/lib/storage-client";
-
-export function getTenantStorageFolder(org: { name: string; slug?: string }): string {
-  const cleanName = (org.name || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return cleanName || org.slug || "tenant";
-}
-
-function getInitialDocuments(storageFolder: string, org: EnrichedOrganization): TenantDocument[] {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem(`k2net_vault_docs_${storageFolder}`);
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error("Failed to parse saved vault docs", e);
-      }
-    }
-  }
-
-  const initialList: TenantDocument[] = [
-    {
-      id: `doc-1-${storageFolder}`,
-      name: `MoU-SaaS-Enterprise-Agreement-${storageFolder.toUpperCase()}-2026.pdf`,
-      category: "LEGAL",
-      sizeBytes: 2450000,
-      format: "PDF",
-      uploadedBy: "Super Admin (K2NET)",
-      uploadedAt: "2026-08-01 10:30 WIB",
-      expiryDate: "2027-08-01",
-      status: "VERIFIED",
-      verifiedBy: "Compliance Legal Lead",
-      verifiedAt: "2026-08-01 10:45 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: `doc-2-${storageFolder}`,
-      name: `BAST-Serah-Terima-Onboarding-NOC-${storageFolder}.pdf`,
-      category: "TECHNICAL",
-      sizeBytes: 1820000,
-      format: "PDF",
-      uploadedBy: "NOC Lead Engineer",
-      uploadedAt: "2026-08-02 14:15 WIB",
-      status: "VERIFIED",
-      verifiedBy: "Lead System Architect",
-      verifiedAt: "2026-08-02 15:00 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: `doc-3-${storageFolder}`,
-      name: `NPWP-NIB-Legalitas-Badan-Hukum-${storageFolder}.pdf`,
-      category: "COMPLIANCE",
-      sizeBytes: 950000,
-      format: "PDF",
-      uploadedBy: org.picName || "Admin Tenant",
-      uploadedAt: "2026-08-01 09:12 WIB",
-      status: "VERIFIED",
-      verifiedBy: "Super Admin",
-      verifiedAt: "2026-08-01 09:30 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: `doc-4-${storageFolder}`,
-      name: `Topology-Core-Router-BRAS-Interconnect-${storageFolder}.kmz`,
-      category: "TECHNICAL",
-      sizeBytes: 4200000,
-      format: "KMZ",
-      uploadedBy: "FTTH Field Team",
-      uploadedAt: "2026-08-10 16:45 WIB",
-      status: "ACTIVE",
-      verifiedBy: "NOC Lead Engineer",
-      verifiedAt: "2026-08-10 17:00 WIB",
-      downloadUrl: "#",
-    },
-    {
-      id: `doc-5-${storageFolder}`,
-      name: `SLA-Commitment-Guarantee-99.5-Tier.pdf`,
-      category: "LEGAL",
-      sizeBytes: 1100000,
-      format: "PDF",
-      uploadedBy: "Legal Ops K2NET",
-      uploadedAt: "2026-08-01 11:00 WIB",
-      expiryDate: "2027-08-01",
-      status: "ACTIVE",
-      downloadUrl: "#",
-    },
-  ];
-
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(`k2net_vault_docs_${storageFolder}`, JSON.stringify(initialList));
-    } catch (e) {
-      console.error("Failed to seed initial vault docs to localStorage", e);
-    }
-  }
-
-  return initialList;
-}
+export { getTenantStorageFolder };
 
 export function useOrgDocumentsState(org: EnrichedOrganization) {
-  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<TenantDocument | null>(null);
 
-  const storageFolder = useMemo(() => getTenantStorageFolder(org), [org]);
+  const { storageFolder, documents, saveDocuments } = useDocumentsLocalStorage(org);
 
-  // Upload Form State
-  const [newDocName, setNewDocName] = useState("");
-  const [newDocCategory, setNewDocCategory] = useState<DocumentCategory>("LEGAL");
-  const [newDocFile, setNewDocFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  // Documents State with LocalStorage Sync per Tenant
-  const [documents, setDocuments] = useState<TenantDocument[]>(() =>
-    getInitialDocuments(storageFolder, org)
-  );
-
-  useEffect(() => {
-    setDocuments(getInitialDocuments(storageFolder, org));
-  }, [storageFolder, org]);
-
-  const saveDocuments = useCallback(
-    (newDocs: TenantDocument[]) => {
-      setDocuments(newDocs);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(`k2net_vault_docs_${storageFolder}`, JSON.stringify(newDocs));
-        } catch (e) {
-          console.error("Failed to save vault docs to localStorage", e);
-        }
-      }
-    },
-    [storageFolder]
-  );
+  const {
+    isUploadOpen,
+    setIsUploadOpen,
+    newDocName,
+    setNewDocName,
+    newDocCategory,
+    setNewDocCategory,
+    newDocFile,
+    setNewDocFile,
+    uploading,
+    handleUploadSubmit,
+  } = useDocumentUpload({
+    org,
+    storageFolder,
+    documents,
+    saveDocuments,
+  });
 
   const kycSummary = useMemo(() => {
     const totalDocs = documents.length;
@@ -188,80 +72,6 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
       return matchesSearch && matchesCategory && matchesStatus;
     });
   }, [documents, searchQuery, selectedCategory, statusFilter]);
-
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDocName.trim()) {
-      toast.error("Nama dokumen wajib diisi.");
-      return;
-    }
-
-    setUploading(true);
-    const toastId = toast.loading(`Mengunggah dokumen ke MinIO S3 Vault...`);
-
-    try {
-      const fileName = newDocName.endsWith(".pdf") || newDocName.endsWith(".kmz")
-        ? newDocName
-        : `${newDocName}.pdf`;
-
-      let fileToUpload = newDocFile;
-      if (!fileToUpload) {
-        const dummyDoc: TenantDocument = {
-          id: `temp-${Date.now()}`,
-          name: fileName,
-          category: newDocCategory,
-          sizeBytes: 0,
-          format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
-          uploadedBy: session?.user?.name || "Super Admin",
-          uploadedAt: "Baru saja",
-          status: "VERIFIED",
-          downloadUrl: "#",
-        };
-        const tpl = getDocumentTemplate(dummyDoc, org);
-        const pdfBlob = createBinaryPdfBlob(tpl, org);
-        fileToUpload = new File([pdfBlob], fileName, { type: "application/pdf" });
-      }
-
-      const folder = `tenants/${storageFolder}/documents/${newDocCategory.toLowerCase()}`;
-      let remoteUrl = "#";
-
-      try {
-        const uploadRes = await uploadTaskAttachment(
-          fileToUpload,
-          session?.accessToken || undefined,
-          "tenant-assets",
-          folder
-        );
-        remoteUrl = uploadRes?.url || "#";
-      } catch (uploadErr) {
-        console.warn("Storage gateway sync warn (local vault saved):", uploadErr);
-      }
-
-      const newDoc: TenantDocument = {
-        id: `doc-${Date.now()}`,
-        name: fileName,
-        category: newDocCategory,
-        sizeBytes: fileToUpload.size,
-        format: fileName.endsWith(".kmz") ? "KMZ" : "PDF",
-        uploadedBy: session?.user?.name || "Super Admin",
-        uploadedAt: "Baru saja",
-        status: "VERIFIED",
-        downloadUrl: remoteUrl,
-      };
-
-      const nextDocs = [newDoc, ...documents];
-      saveDocuments(nextDocs);
-      setIsUploadOpen(false);
-      setNewDocName("");
-      setNewDocFile(null);
-      toast.success(`Dokumen "${newDoc.name}" berhasil tersimpan di Dokumen Vault tenant.`, { id: toastId });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : "Gagal mengunggah dokumen";
-      toast.error(errMsg, { id: toastId });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleDelete = (docId: string, docName: string) => {
     const docToDelete = documents.find((d) => d.id === docId);
@@ -355,9 +165,9 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     if (newStatus === "VERIFIED") {
       toast.success(`Dokumen "${targetDoc?.name ?? docId}" berhasil disetujui & diverifikasi.`);
     } else if (newStatus === "REVISION_REQUIRED") {
-      toast.warning(`Status dokumen diubah menjadi: Memerlukan Revisi.`);
+      toast.warning("Status dokumen diubah menjadi: Memerlukan Revisi.");
     } else if (newStatus === "REJECTED") {
-      toast.error(`Dokumen ditolak.`);
+      toast.error("Dokumen ditolak.");
     } else {
       toast.info(`Status dokumen diperbarui: ${newStatus}`);
     }
@@ -391,4 +201,3 @@ export function useOrgDocumentsState(org: EnrichedOrganization) {
     handleUpdateStatus,
   };
 }
-

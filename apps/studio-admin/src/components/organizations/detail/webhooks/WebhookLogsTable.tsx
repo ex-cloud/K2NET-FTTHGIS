@@ -55,7 +55,6 @@ export function WebhookLogsTable({ deliveryLogs }: WebhookLogsTableProps) {
           <TableBody>
             {deliveryLogs.map((log) => {
               const isSuccess = log.status >= 200 && log.status < 300;
-              const isBlockedOrError = log.status === 0 || log.status >= 400;
 
               return (
                 <TableRow key={log.id} className="border-border hover:bg-muted/30 transition-colors">

@@ -11,14 +11,12 @@ import {
   FlaskConical,
   Send,
   Copy,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Sparkles,
   Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EventSchema, SimulateEventResponse, WebhookEndpoint } from "./types";
+import { PayloadSimulatorResult } from "./PayloadSimulatorResult";
 
 interface PayloadSimulatorCardProps {
   eventSchemas: EventSchema[];
@@ -45,7 +43,6 @@ export function PayloadSimulatorCard({
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState<SimulateEventResponse | null>(null);
 
-  // Active Schema
   const activeSchema = eventSchemas.find((s) => s.eventType === selectedEventType) || eventSchemas[0];
 
   const currentPayloadText =
@@ -55,10 +52,6 @@ export function PayloadSimulatorCard({
     setSelectedEventType(type);
     setCustomPayload("");
     setSimulationResult(null);
-  };
-
-  const handleSelectEndpointUrl = (url: string) => {
-    setTargetUrl(url);
   };
 
   const handleDispatch = async () => {
@@ -104,31 +97,26 @@ export function PayloadSimulatorCard({
         </div>
       ) : (
         <div className="space-y-4 pt-1">
-          {/* Event Selector Chips */}
           <div className="flex items-center gap-2 flex-wrap">
-            {eventSchemas.map((schema) => {
-              const isSelected = schema.eventType === selectedEventType;
-              return (
-                <button
-                  key={schema.eventType}
-                  type="button"
-                  onClick={() => handleSelectEvent(schema.eventType)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5",
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                      : "bg-background border-border text-foreground hover:bg-muted"
-                  )}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  <span>{schema.displayName}</span>
-                  <span className="font-mono text-[10px] opacity-80">({schema.eventType})</span>
-                </button>
-              );
-            })}
+            {eventSchemas.map((schema) => (
+              <button
+                key={schema.eventType}
+                type="button"
+                onClick={() => handleSelectEvent(schema.eventType)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5",
+                  schema.eventType === selectedEventType
+                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                    : "bg-background border-border text-foreground hover:bg-muted"
+                )}
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>{schema.displayName}</span>
+                <span className="font-mono text-[10px] opacity-80">({schema.eventType})</span>
+              </button>
+            ))}
           </div>
 
-          {/* Event Description */}
           {activeSchema && (
             <div className="p-3 rounded-lg bg-background/50 border border-border/80 flex items-start gap-2.5">
               <div className="text-xs text-foreground flex-1">
@@ -140,7 +128,6 @@ export function PayloadSimulatorCard({
             </div>
           )}
 
-          {/* Target URL Selector */}
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Target URL Tujuan Uji Coba (HTTPS)</span>
@@ -166,7 +153,6 @@ export function PayloadSimulatorCard({
               </Button>
             </div>
 
-            {/* Quick URL chips from active endpoints */}
             {endpoints.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                 <span className="text-[10px] text-muted-foreground">Gunakan endpoint:</span>
@@ -174,7 +160,7 @@ export function PayloadSimulatorCard({
                   <button
                     key={ep.id}
                     type="button"
-                    onClick={() => handleSelectEndpointUrl(ep.targetUrl)}
+                    onClick={() => setTargetUrl(ep.targetUrl)}
                     className="text-[10px] font-mono px-2 py-0.5 rounded bg-muted text-foreground hover:bg-muted/80 border border-border cursor-pointer"
                   >
                     {ep.name}
@@ -184,7 +170,6 @@ export function PayloadSimulatorCard({
             )}
           </div>
 
-          {/* JSON Payload Editor / Viewer */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -218,63 +203,12 @@ export function PayloadSimulatorCard({
             <Textarea
               value={currentPayloadText}
               onChange={(e) => setCustomPayload(e.target.value)}
-              rows={11}
+              rows={9}
               className="font-mono text-[11px] leading-relaxed bg-background border-border text-foreground p-3 rounded-lg resize-y"
             />
           </div>
 
-          {/* Simulation Outcome Card */}
-          {simulationResult && (
-            <div
-              className={cn(
-                "p-4 rounded-xl border space-y-2.5 transition-all",
-                simulationResult.success
-                  ? "bg-primary/5 border-primary/30"
-                  : "bg-destructive/5 border-destructive/30"
-              )}
-            >
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  {simulationResult.success ? (
-                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-destructive shrink-0" />
-                  )}
-                  <span className="text-xs font-bold text-foreground">
-                    Hasil Pengiriman Simulasi:
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "font-mono text-[9px]",
-                      simulationResult.success
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-destructive/40 bg-destructive/10 text-destructive"
-                    )}
-                  >
-                    HTTP {simulationResult.httpStatus || "ERR"}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Latency: {simulationResult.latencyMs}ms
-                  </span>
-                </div>
-              </div>
-
-              {simulationResult.errorMessage && (
-                <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[11px]">
-                  <strong>Error:</strong> {simulationResult.errorMessage}
-                </div>
-              )}
-
-              <div className="text-[11px] text-muted-foreground">
-                Payload berhasil diverifikasi dan dikirim ke <code className="font-mono text-foreground">{simulationResult.targetUrl}</code>.
-              </div>
-            </div>
-          )}
+          <PayloadSimulatorResult result={simulationResult} />
         </div>
       )}
     </Card>

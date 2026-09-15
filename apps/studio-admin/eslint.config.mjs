@@ -64,8 +64,30 @@ export default tseslint.config(
       "@tanstack/query/no-rest-destructuring": "warn",
 
       // ----------------------------------------------------
-      // 4. CODE METRICS & MODULARITY (Anti God-Component)
+      // 4. CODE METRICS BASE (Shared Metrics)
       // ----------------------------------------------------
+      "max-depth": ["warn", 5],
+      "max-params": ["warn", 6],
+      "max-nested-callbacks": ["warn", 4],
+
+      // ----------------------------------------------------
+      // 5. CLEAN CODE & PRODUCTION HYGIENE
+      // ----------------------------------------------------
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-debugger": "error",
+      "no-empty": "warn",           // catch blocks kadang sengaja kosong
+      "no-useless-escape": "warn",  // regex escape lebih aman sebagai warn
+      "prefer-const": "warn",
+      "no-duplicate-imports": "warn", // refactor bertahap ke single import per module
+    },
+  },
+  {
+    // ----------------------------------------------------
+    // 4A. PURE TYPESCRIPT LOGIC (*.ts: Hooks, Utils, Services)
+    // Standar ketat untuk mencegah penumpukan logika & side-effects
+    // ----------------------------------------------------
+    files: ["**/*.ts"],
+    rules: {
       "max-lines": [
         "warn",
         {
@@ -83,20 +105,35 @@ export default tseslint.config(
           IIFEs: true,
         },
       ],
-      "max-depth": ["warn", 5],
       "complexity": ["warn", 25],
-      "max-params": ["warn", 6],
-      "max-nested-callbacks": ["warn", 4],
-
-      // ----------------------------------------------------
-      // 5. CLEAN CODE & PRODUCTION HYGIENE
-      // ----------------------------------------------------
-      "no-console": ["warn", { allow: ["warn", "error"] }],
-      "no-debugger": "error",
-      "no-empty": "warn",           // catch blocks kadang sengaja kosong
-      "no-useless-escape": "warn",  // regex escape lebih aman sebagai warn
-      "prefer-const": "warn",
-      "no-duplicate-imports": "warn", // refactor bertahap ke single import per module
+    },
+  },
+  {
+    // ----------------------------------------------------
+    // 4B. REACT UI COMPONENTS & LAYOUTS (*.tsx)
+    // Realistis untuk komponen form, modal, table & visual rendering
+    // Kompleksitas tetap dijaga (maks 25) agar logika tidak bercabang liar
+    // ----------------------------------------------------
+    files: ["**/*.tsx"],
+    rules: {
+      "max-lines": [
+        "warn",
+        {
+          max: 600,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      "max-lines-per-function": [
+        "warn",
+        {
+          max: 400,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+      "complexity": ["warn", 25],
     },
   }
 );

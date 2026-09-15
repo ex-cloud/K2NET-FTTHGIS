@@ -1,18 +1,11 @@
-import { useState, useMemo, useCallback, useRef } from "react";
-import { Button, Card } from "@k2net/ui";
-import {
-  Minimize2,
-  RefreshCw,
-  ZoomIn,
-  ZoomOut,
-  Move,
-} from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Card } from "@k2net/ui";
+import { Move } from "lucide-react";
 import type { ServiceNode } from "./overview-types";
 import { MapDetailPanel } from "./map-detail-panel";
 import type { GatewayServiceStatus } from "@/lib/actions/gateways";
 import {
   GATEWAY_MATRIX,
-  DEFAULT_NODE_POSITIONS,
   STAGE_EDGES,
   subNodesMap,
   type NodeStatus,
@@ -23,6 +16,8 @@ import {
   InfrastructureGatewayCluster,
   InfrastructureSubNodes,
 } from "./overview-infrastructure-nodes";
+import { MapToolbar } from "./overview-map-toolbar";
+import { useInfrastructureCanvas } from "./useInfrastructureCanvas";
 
 export type { GatewayMatrixNode } from "./overview-infrastructure-constants";
 
@@ -34,76 +29,6 @@ interface OverviewInfrastructureMapProps {
   gateways: GatewayServiceStatus[];
 }
 
-function MapToolbar({
-  zoom,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  onResetAll,
-}: {
-  zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
-  onResetAll: () => void;
-}) {
-  return (
-    <div className="flex justify-between items-start z-20 pointer-events-none">
-      <div>
-        <h4 className="text-sm font-semibold text-foreground pointer-events-auto flex items-center gap-2">
-          <span>Infrastructure Dependency Map</span>
-        </h4>
-        <p className="mt-0.5 text-[10px] text-muted-foreground pointer-events-auto">
-          3-Tier Enterprise SaaS Architecture. Traffic flows Edge ➔ Core/AI ➔ Storage ➔ Microservices.
-        </p>
-      </div>
-      <div className="flex items-center gap-1 bg-popover/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
-          onClick={onZoomIn}
-          title="Zoom In (+)"
-        >
-          <ZoomIn className="h-3.5 w-3.5" />
-        </Button>
-        <span className="text-[9px] font-mono font-bold text-muted-foreground px-1 select-none">
-          {Math.round(zoom * 100)}%
-        </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
-          onClick={onZoomOut}
-          title="Zoom Out (-)"
-        >
-          <ZoomOut className="h-3.5 w-3.5" />
-        </Button>
-        <div className="w-[1px] h-3 bg-border mx-0.5" />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer"
-          onClick={onResetZoom}
-          title="Reset Zoom (100%)"
-        >
-          <RefreshCw className="h-3 w-3" />
-        </Button>
-        <div className="w-[1px] h-3 bg-border mx-0.5" />
-        <Button
-          variant="ghost"
-          className="h-6 px-2 text-[9px] font-medium text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
-          onClick={onResetAll}
-          title="Reset View & Node Positions"
-        >
-          <Minimize2 className="h-3 w-3" />
-          <span>Reset</span>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export function OverviewInfrastructureMap({
   serviceNodes,
   activeNode,
@@ -111,26 +36,28 @@ export function OverviewInfrastructureMap({
   activeNodeData,
   gateways,
 }: OverviewInfrastructureMapProps) {
-  // Canvas Viewport Transformation (Pan & Zoom)
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const panStartRef = useRef<{ clientX: number; clientY: number; panX: number; panY: number } | null>(null);
-
-  // Draggable Node Positions
-  const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>(DEFAULT_NODE_POSITIONS);
-  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
-  const nodeDragRef = useRef<{
-    nodeId: string;
-    clientX: number;
-    clientY: number;
-    origX: number;
-    origY: number;
-    hasMoved: boolean;
-  } | null>(null);
-
   const [collapsed, setCollapsed] = useState(true);
   const [activeGatewayId, setActiveGatewayId] = useState<string | null>(null);
+
+  const toggleCollapse = () => {
+    setCollapsed((val) => !val);
+    if (!collapsed) setActiveGatewayId(null);
+  };
+
+  const {
+    zoom,
+    setZoom,
+    pan,
+    isPanning,
+    nodePositions,
+    draggingNodeId,
+    handleCanvasPointerDown,
+    handleCanvasPointerMove,
+    handleCanvasPointerUp,
+    handleNodePointerDown,
+    handleWheel,
+    handleResetAll,
+  } = useInfrastructureCanvas(onSelectNode, setActiveGatewayId, toggleCollapse);
 
   const statusMap = useMemo<Record<string, NodeStatus>>(() => {
     const map: Record<string, NodeStatus> = {};
@@ -192,139 +119,10 @@ export function OverviewInfrastructureMap({
     [selectedServices]
   );
 
-  const toggleCollapse = () => {
-    setCollapsed((val) => !val);
-    if (!collapsed) setActiveGatewayId(null);
-  };
-
   const onlineGatewayCount = useMemo(
     () => GATEWAY_MATRIX.filter((gw) => gateways.find((g) => g.name === gw.gatewayName)?.active).length,
     [gateways]
   );
-
-  // ── Canvas Panning Event Handlers ──────────────────────────────────────────
-  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only drag canvas with primary click on empty canvas area
-    if (e.button !== 0 || nodeDragRef.current) return;
-    
-    // Ignore clicks on buttons, links, or other interactive elements
-    const target = e.target as HTMLElement;
-    if (target.closest("button") || target.closest("a") || target.closest("[role='button']")) {
-      return;
-    }
-
-    panStartRef.current = {
-      clientX: e.clientX,
-      clientY: e.clientY,
-      panX: pan.x,
-      panY: pan.y,
-    };
-    setIsPanning(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Safe ignore
-    }
-  };
-
-  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Handle Node Dragging
-    if (nodeDragRef.current) {
-      const { nodeId, clientX, clientY, origX, origY } = nodeDragRef.current;
-      const deltaX = (e.clientX - clientX) / zoom;
-      const deltaY = (e.clientY - clientY) / zoom;
-
-      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
-        nodeDragRef.current.hasMoved = true;
-      }
-
-      if (nodeDragRef.current.hasMoved) {
-        const newX = Math.round(Math.max(20, Math.min(900, origX + deltaX)));
-        const newY = Math.round(Math.max(20, Math.min(480, origY + deltaY)));
-        setNodePositions((prev) => ({
-          ...prev,
-          [nodeId]: { x: newX, y: newY },
-        }));
-      }
-      return;
-    }
-
-    // Handle Canvas Viewport Panning
-    if (panStartRef.current && isPanning) {
-      const deltaX = e.clientX - panStartRef.current.clientX;
-      const deltaY = e.clientY - panStartRef.current.clientY;
-      setPan({
-        x: Math.round(panStartRef.current.panX + deltaX),
-        y: Math.round(panStartRef.current.panY + deltaY),
-      });
-    }
-  };
-
-  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Release Node Drag
-    if (nodeDragRef.current) {
-      const { nodeId, hasMoved } = nodeDragRef.current;
-      nodeDragRef.current = null;
-      setDraggingNodeId(null);
-
-      // If user clicked without dragging, select node
-      if (!hasMoved) {
-        if (nodeId === "gw-cluster") {
-          toggleCollapse();
-        } else if (nodeId.startsWith("gw-")) {
-          setActiveGatewayId(nodeId);
-          onSelectNode("gw-cluster");
-        } else {
-          onSelectNode(nodeId);
-          setActiveGatewayId(null);
-        }
-      }
-      return;
-    }
-
-    // Release Canvas Panning
-    if (panStartRef.current) {
-      panStartRef.current = null;
-      setIsPanning(false);
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        // Safe ignore
-      }
-    }
-  };
-
-  // ── Node Dragging Initiator ────────────────────────────────────────────────
-  const handleNodePointerDown = (nodeId: string, e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    e.stopPropagation();
-
-    const currentPos = nodePositions[nodeId] || DEFAULT_NODE_POSITIONS[nodeId] || { x: 0, y: 0 };
-    nodeDragRef.current = {
-      nodeId,
-      clientX: e.clientX,
-      clientY: e.clientY,
-      origX: currentPos.x,
-      origY: currentPos.y,
-      hasMoved: false,
-    };
-    setDraggingNodeId(nodeId);
-  };
-
-  // ── Mouse Wheel Zooming ───────────────────────────────────────────────────
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomDelta = e.deltaY > 0 ? -0.08 : 0.08;
-    setZoom((z) => Math.min(Math.max(Number((z + zoomDelta).toFixed(2)), 0.5), 1.8));
-  };
-
-  const handleResetAll = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setNodePositions(DEFAULT_NODE_POSITIONS);
-    onSelectNode("");
-    setActiveGatewayId(null);
-  };
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -337,7 +135,7 @@ export function OverviewInfrastructureMap({
           onResetAll={handleResetAll}
         />
 
-        {/* Viewport Canvas Stage (Interactive Panning & Zooming) */}
+        {/* Viewport Canvas Stage */}
         <div
           onPointerDown={handleCanvasPointerDown}
           onPointerMove={handleCanvasPointerMove}

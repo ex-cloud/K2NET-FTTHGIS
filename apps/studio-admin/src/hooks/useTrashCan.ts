@@ -1,54 +1,21 @@
-
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "@/lib/auth-compat";
 import { memoryCache } from "@/lib/memoryCache";
 import { toast } from "sonner";
+import {
+  type TrashItem,
+  type TrashStats,
+  getLocalTrashItems,
+  saveLocalTrashItems,
+  filterTrashItems,
+  restoreDocumentLocal,
+  deleteDocumentLocal,
+  fetchApiTrash,
+} from "./trashCanUtils";
 
-export interface TrashItem {
-  id: string;
-  name: string;
-  type: "ORGANIZATION" | "PROJECT" | "TASK" | "NETWORK_NODE" | "NETWORK_EDGE" | "DOCUMENT";
-  identifier: string;
-  originName: string;
-  deletedAt: string;
-  deletedBy: string;
-  daysRemaining: number;
-  details?: Record<string, unknown>;
-}
-
-export interface TrashStats {
-  total: number;
-  organizations: number;
-  projects: number;
-  tasks: number;
-  networkAssets: number;
-  documents: number;
-}
+export type { TrashItem, TrashStats };
 
 const CACHE_KEY_PREFIX = "trash_can_";
-
-function getLocalTrashItems(): TrashItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem("k2net_system_trash");
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    console.error("Failed to parse k2net_system_trash", e);
-    return [];
-  }
-}
-
-function saveLocalTrashItems(items: TrashItem[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem("k2net_system_trash", JSON.stringify(items));
-  } catch (e) {
-    console.error("Failed to save k2net_system_trash", e);
-  }
-}
 
 export function useTrashCan(category: string = "all", searchQuery: string = "") {
   const { data: session } = useSession();
@@ -80,48 +47,16 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
       }
 
       try {
-        const queryParams = new URLSearchParams();
-        if (category && category !== "all" && category !== "documents") {
-          queryParams.set("category", category);
-        }
-        if (searchQuery.trim()) {
-          queryParams.set("query", searchQuery.trim());
-        }
+        const { items: apiItems, stats: apiStats } = await fetchApiTrash(
+          category,
+          searchQuery,
+          session.accessToken
+        );
 
-        let apiItems: TrashItem[] = [];
-        let apiStats = {
-          total: 0,
-          organizations: 0,
-          projects: 0,
-          tasks: 0,
-          networkAssets: 0,
-        };
-
-        if (category !== "documents") {
-          try {
-            const res = await fetch(`/api/v1/system/trash?${queryParams.toString()}`, {
-              headers: {
-                Authorization: `Bearer ${session.accessToken}`,
-              },
-              cache: "no-store",
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              apiItems = data.items || [];
-              apiStats = data.stats || apiStats;
-            }
-          } catch (e) {
-            console.warn("Failed to fetch API trash items:", e);
-          }
-        }
-
-        // Get local trash items (Document Vault deleted items)
         const localTrash = getLocalTrashItems();
         const docCount = localTrash.length;
 
         let combinedItems: TrashItem[] = [];
-
         if (category === "all") {
           combinedItems = [...localTrash, ...apiItems];
         } else if (category === "documents") {
@@ -130,19 +65,7 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
           combinedItems = apiItems;
         }
 
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          combinedItems = combinedItems.filter((item) => {
-            const nameMatch = item.name.toLowerCase().includes(q);
-            const idMatch = item.identifier.toLowerCase().includes(q);
-            const orgMatch = item.originName.toLowerCase().includes(q);
-            const pathMatch =
-              item.details?.path &&
-              typeof item.details.path === "string" &&
-              item.details.path.toLowerCase().includes(q);
-            return nameMatch || idMatch || orgMatch || pathMatch;
-          });
-        }
+        combinedItems = filterTrashItems(combinedItems, searchQuery);
 
         const combinedStats: TrashStats = {
           total: (apiStats.total || 0) + docCount,
@@ -177,38 +100,17 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
   const restoreItem = useCallback(
     async (type: string, id: string, name: string) => {
       if (type === "DOCUMENT") {
-        try {
-          const localTrash = getLocalTrashItems();
-          const target = localTrash.find((item) => item.id === id || item.identifier === id);
-
-          if (target && target.details) {
-            const orgSlug = (target.details.orgSlug as string) || "tenant";
-            const docData = target.details.docData as Record<string, unknown> | undefined;
-
-            if (docData && typeof window !== "undefined") {
-              const rawVault = localStorage.getItem(`k2net_vault_docs_${orgSlug}`);
-              const vaultDocs = rawVault ? JSON.parse(rawVault) : [];
-              vaultDocs.unshift(docData);
-              localStorage.setItem(`k2net_vault_docs_${orgSlug}`, JSON.stringify(vaultDocs));
-            }
-          }
-
-          const remaining = localTrash.filter((item) => item.id !== id && item.identifier !== id);
-          saveLocalTrashItems(remaining);
-
+        const res = restoreDocumentLocal(id);
+        if (res.success) {
           toast.success("Dokumen Berhasil Dipulihkan", {
-            description: `"${name}" telah dikembalikan ke Vault Dokumen tenant ${target?.originName || ""}.`,
+            description: `"${name}" telah dikembalikan ke Vault Dokumen tenant ${res.originName || ""}.`,
           });
-
           memoryCache.clear();
           fetchData(true);
           return true;
-        } catch (err) {
-          toast.error("Gagal Memulihkan Dokumen", {
-            description: err instanceof Error ? err.message : "Terjadi kesalahan lokal.",
-          });
-          return false;
         }
+        toast.error("Gagal Memulihkan Dokumen");
+        return false;
       }
 
       if (!session?.accessToken) return false;
@@ -244,24 +146,17 @@ export function useTrashCan(category: string = "all", searchQuery: string = "") 
   const permanentDelete = useCallback(
     async (type: string, id: string, name: string) => {
       if (type === "DOCUMENT") {
-        try {
-          const localTrash = getLocalTrashItems();
-          const remaining = localTrash.filter((item) => item.id !== id && item.identifier !== id);
-          saveLocalTrashItems(remaining);
-
+        const success = deleteDocumentLocal(id);
+        if (success) {
           toast.success("Dokumen Dihapus Permanen", {
             description: `"${name}" telah dihapus secara fisik dan permanen.`,
           });
-
           memoryCache.clear();
           fetchData(true);
           return true;
-        } catch (err) {
-          toast.error("Gagal Menghapus Dokumen Permanen", {
-            description: err instanceof Error ? err.message : "Terjadi kesalahan.",
-          });
-          return false;
         }
+        toast.error("Gagal Menghapus Dokumen Permanen");
+        return false;
       }
 
       if (!session?.accessToken) return false;

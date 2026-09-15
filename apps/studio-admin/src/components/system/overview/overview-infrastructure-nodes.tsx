@@ -19,8 +19,8 @@ interface InfrastructureTierNodesProps {
   nodePositions: Record<string, { x: number; y: number }>;
   draggingNodeId: string | null;
   onPointerDownNode: (nodeId: string, e: React.PointerEvent) => void;
-  onSelectNode: (nodeId: string) => void;
-  onSelectGateway: (gwId: string | null) => void;
+  onSelectNode?: (nodeId: string) => void;
+  onSelectGateway?: (gwId: string | null) => void;
 }
 
 export function InfrastructureTierNodes({
@@ -30,8 +30,8 @@ export function InfrastructureTierNodes({
   nodePositions,
   draggingNodeId,
   onPointerDownNode,
-  onSelectNode,
-  onSelectGateway,
+  onSelectNode: _onSelectNode,
+  onSelectGateway: _onSelectGateway,
 }: InfrastructureTierNodesProps) {
   return (
     <>
@@ -133,8 +133,8 @@ export function InfrastructureGatewayCluster({
   getGatewayStatus,
   onToggleCollapse,
   onPointerDownNode,
-  onSelectGateway,
-  onSelectNode,
+  onSelectGateway: _onSelectGateway,
+  onSelectNode: _onSelectNode,
 }: InfrastructureGatewayClusterProps) {
   if (collapsed) {
     const hubPos = nodePositions["gw-cluster"] || { x: COLLAPSED_HUB_X, y: COLLAPSED_HUB_Y };

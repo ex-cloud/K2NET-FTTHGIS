@@ -4,7 +4,7 @@ import { Step2Plan } from "./Step2Plan";
 import { Step3Network } from "./Step3Network";
 import { Step4Admin } from "./Step4Admin";
 import { Step5Success } from "./Step5Success";
-import type { WizardFormData } from "./types";
+import type { WizardFormData, ProvisioningStageInfo } from "./types";
 
 interface WizardBodyProps {
   step: number;
@@ -15,7 +15,7 @@ interface WizardBodyProps {
   onRegenerateRandomSlug: () => void;
   isSubmitting?: boolean;
   provisioningStage?: number;
-  provisioningStages?: import("./types").ProvisioningStageInfo[];
+  provisioningStages?: ProvisioningStageInfo[];
   testingLdap: boolean;
   ldapTestPassed: boolean;
   onTestLdap: () => Promise<void>;

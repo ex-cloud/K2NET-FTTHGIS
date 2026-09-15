@@ -16,7 +16,6 @@ import {
   Webhook,
   FlaskConical,
   Layers,
-  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +50,10 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       </div>
     );
   }
+
+  const showApiKeys = activeSection === "all" || activeSection === "api-keys";
+  const showWebhooks = activeSection === "all" || activeSection === "webhooks";
+  const showDevTools = activeSection === "all" || activeSection === "developer-tools";
 
   return (
     <div className="space-y-6">
@@ -125,7 +128,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       </div>
 
       {/* 1. API Usage & Latency Telemetry */}
-      {(activeSection === "all" || activeSection === "api-keys") && (
+      {showApiKeys && (
         <ApiAnalyticsCard
           analytics={state.apiAnalytics}
           loadingAnalytics={state.loadingAnalytics}
@@ -134,7 +137,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 2. Kong Consumer API Key Card */}
-      {(activeSection === "all" || activeSection === "api-keys") && (
+      {showApiKeys && (
         <ApiKeyCard
           apiKeyOverview={state.apiKeyOverview}
           showKey={state.showKey}
@@ -147,7 +150,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 3. Granular Scoped Personal Access Tokens Card */}
-      {(activeSection === "all" || activeSection === "api-keys") && (
+      {showApiKeys && (
         <ScopedTokensCard
           tokens={state.scopedTokens}
           loadingTokens={state.loadingTokens}
@@ -157,7 +160,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 4. Primary NOC Alarm Webhook Configuration Card */}
-      {(activeSection === "all" || activeSection === "webhooks") && (
+      {showWebhooks && (
         <WebhookConfigCard
           lastPingResult={state.lastPingResult}
           testingPing={state.testingPing}
@@ -178,7 +181,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 5. Multi-Endpoint Webhook Router Card */}
-      {(activeSection === "all" || activeSection === "webhooks") && (
+      {showWebhooks && (
         <MultiEndpointCard
           endpoints={state.webhookEndpoints}
           loadingEndpoints={state.loadingEndpoints}
@@ -192,12 +195,12 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 6. Recent Deliveries Logs Table */}
-      {(activeSection === "all" || activeSection === "webhooks") && (
+      {showWebhooks && (
         <WebhookLogsTable deliveryLogs={state.deliveryLogs} />
       )}
 
       {/* 7. Interactive Payload Simulator & Playground */}
-      {(activeSection === "all" || activeSection === "developer-tools") && (
+      {showDevTools && (
         <PayloadSimulatorCard
           eventSchemas={state.eventSchemas}
           endpoints={state.webhookEndpoints}
@@ -208,7 +211,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
       )}
 
       {/* 8. Dead Letter Queue & Retry Engine Table */}
-      {(activeSection === "all" || activeSection === "developer-tools") && (
+      {showDevTools && (
         <DeadLetterQueueTable
           dlqLogs={state.dlqLogs}
           loadingDlq={state.loadingDlq}

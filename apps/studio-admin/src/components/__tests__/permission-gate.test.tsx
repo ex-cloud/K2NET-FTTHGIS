@@ -71,7 +71,7 @@ describe("Permission Gate Pattern", () => {
       "system.settings.manage",
     ];
 
-    const { container } = render(
+    render(
       <>
         {createPermissionGate(
           "system.support.impersonate",
