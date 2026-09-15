@@ -27,6 +27,10 @@ public class TenantWebhookLog {
     @JoinColumn(name = "organization_id", nullable = false)
     private Organization organization;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "endpoint_id")
+    private TenantWebhookEndpoint endpoint;
+
     @Column(name = "event_name", nullable = false, length = 100)
     private String eventName;
 
@@ -48,6 +52,24 @@ public class TenantWebhookLog {
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
+
+    @Builder.Default
+    @Column(name = "delivery_status", nullable = false, length = 30)
+    private String deliveryStatus = "SUCCESS"; // SUCCESS, RETRYING, FAILED_DLQ
+
+    @Builder.Default
+    @Column(name = "retry_count", nullable = false)
+    private Integer retryCount = 0;
+
+    @Builder.Default
+    @Column(name = "max_retries", nullable = false)
+    private Integer maxRetries = 4;
+
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
+    @Column(name = "last_attempt_at")
+    private LocalDateTime lastAttemptAt;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)

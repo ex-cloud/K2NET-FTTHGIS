@@ -1,50 +1,48 @@
+import { useState } from "react";
 import type { EnrichedOrganization } from "../types";
 import { useOrgWebhooksState } from "./webhooks/useOrgWebhooksState";
 import { ApiKeyCard } from "./webhooks/ApiKeyCard";
+import { ScopedTokensCard } from "./webhooks/ScopedTokensCard";
 import { WebhookConfigCard } from "./webhooks/WebhookConfigCard";
+import { MultiEndpointCard } from "./webhooks/MultiEndpointCard";
+import { PayloadSimulatorCard } from "./webhooks/PayloadSimulatorCard";
+import { DeadLetterQueueTable } from "./webhooks/DeadLetterQueueTable";
 import { WebhookLogsTable } from "./webhooks/WebhookLogsTable";
+import { ApiAnalyticsCard } from "./webhooks/ApiAnalyticsCard";
 import { ShowOnceSecretModal } from "./webhooks/ShowOnceSecretModal";
 import { Card } from "@k2net/ui";
+import {
+  Key,
+  Webhook,
+  FlaskConical,
+  Layers,
+  BarChart3,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export type { WebhookDeliveryLog, WebhookSubscriptions, PingResult } from "./webhooks/types";
+export type {
+  WebhookDeliveryLog,
+  WebhookSubscriptions,
+  PingResult,
+  ScopedToken,
+  WebhookEndpoint,
+  EventSchema,
+  DeadLetterLog,
+  ApiAnalytics,
+} from "./webhooks/types";
 
 interface OrgApiWebhooksTabProps {
   organization: EnrichedOrganization;
 }
 
-export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps) {
-  const {
-    loading,
-    apiKeyOverview,
-    showKey,
-    setShowKey,
-    isRegenerating,
-    newGeneratedKey,
-    isKeyModalOpen,
-    setIsKeyModalOpen,
-    webhookUrl,
-    setWebhookUrl,
-    webhookSecretMasked,
-    hasSecret,
-    isRollingSecret,
-    newRolledSecret,
-    isSecretModalOpen,
-    setIsSecretModalOpen,
-    subscribedEvents,
-    setSubscribedEvents,
-    isDirty,
-    isSavingWebhook,
-    testingPing,
-    lastPingResult,
-    deliveryLogs,
-    handleCopy,
-    handleRegenerateKey,
-    handleSaveWebhook,
-    handleRollSecret,
-    handleTestPing,
-  } = useOrgWebhooksState(org);
+type SubSection = "all" | "api-keys" | "webhooks" | "developer-tools";
 
-  if (loading) {
+export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps) {
+  const [activeSection, setActiveSection] = useState<SubSection>("all");
+
+  const state = useOrgWebhooksState(org);
+
+  if (state.loading) {
     return (
       <div className="space-y-6">
         <Card className="p-5 h-36 bg-card border-border animate-pulse" />
@@ -56,56 +54,196 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
 
   return (
     <div className="space-y-6">
-      {/* 1. Kong API Gateway Key Manager Card */}
-      <ApiKeyCard
-        apiKeyOverview={apiKeyOverview}
-        showKey={showKey}
-        setShowKey={setShowKey}
-        isRegenerating={isRegenerating}
-        apiRateLimitMax={org.apiRateLimitMax || 5000}
-        onRegenerateKey={handleRegenerateKey}
-        onCopy={handleCopy}
-      />
+      {/* Top Segmented Navigation Pills */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-background/80 border border-border overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSection("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+            activeSection === "all"
+              ? "bg-card text-foreground shadow-xs border border-border"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          <span>Semua Modul</span>
+        </button>
 
-      {/* 2. NOC Alarm Webhook Configuration */}
-      <WebhookConfigCard
-        lastPingResult={lastPingResult}
-        testingPing={testingPing}
-        onTestPing={handleTestPing}
-        webhookUrl={webhookUrl}
-        setWebhookUrl={setWebhookUrl}
-        webhookSecretMasked={webhookSecretMasked}
-        hasSecret={hasSecret}
-        isRollingSecret={isRollingSecret}
-        onRollSecret={handleRollSecret}
-        subscribedEvents={subscribedEvents}
-        setSubscribedEvents={setSubscribedEvents}
-        isDirty={isDirty}
-        isSaving={isSavingWebhook}
-        onSaveWebhook={handleSaveWebhook}
-        onCopy={handleCopy}
-      />
+        <button
+          type="button"
+          onClick={() => setActiveSection("api-keys")}
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+            activeSection === "api-keys"
+              ? "bg-card text-foreground shadow-xs border border-border"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Key className="h-3.5 w-3.5 text-primary" />
+          <span>API Keys & Scoped Tokens</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
+            {state.scopedTokens.length + (state.apiKeyOverview?.hasActiveKey ? 1 : 0)}
+          </span>
+        </button>
 
-      {/* 3. Recent Deliveries Table */}
-      <WebhookLogsTable deliveryLogs={deliveryLogs} />
+        <button
+          type="button"
+          onClick={() => setActiveSection("webhooks")}
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+            activeSection === "webhooks"
+              ? "bg-card text-foreground shadow-xs border border-border"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Webhook className="h-3.5 w-3.5 text-primary" />
+          <span>Webhooks & Multi-Endpoint</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
+            {state.webhookEndpoints.length + (state.webhookUrl ? 1 : 0)}
+          </span>
+        </button>
 
-      {/* 4. Show-Once Modal for Regenerated API Key */}
+        <button
+          type="button"
+          onClick={() => setActiveSection("developer-tools")}
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+            activeSection === "developer-tools"
+              ? "bg-card text-foreground shadow-xs border border-border"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <FlaskConical className="h-3.5 w-3.5 text-primary" />
+          <span>Simulator & DLQ Retry</span>
+          {state.dlqLogs.length > 0 && (
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-destructive/15 text-destructive font-bold">
+              {state.dlqLogs.length} DLQ
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* 1. API Usage & Latency Telemetry */}
+      {(activeSection === "all" || activeSection === "api-keys") && (
+        <ApiAnalyticsCard
+          analytics={state.apiAnalytics}
+          loadingAnalytics={state.loadingAnalytics}
+          onRefreshAnalytics={state.refreshAnalytics}
+        />
+      )}
+
+      {/* 2. Kong Consumer API Key Card */}
+      {(activeSection === "all" || activeSection === "api-keys") && (
+        <ApiKeyCard
+          apiKeyOverview={state.apiKeyOverview}
+          showKey={state.showKey}
+          setShowKey={state.setShowKey}
+          isRegenerating={state.isRegenerating}
+          apiRateLimitMax={org.apiRateLimitMax || 5000}
+          onRegenerateKey={state.handleRegenerateKey}
+          onCopy={state.handleCopy}
+        />
+      )}
+
+      {/* 3. Granular Scoped Personal Access Tokens Card */}
+      {(activeSection === "all" || activeSection === "api-keys") && (
+        <ScopedTokensCard
+          tokens={state.scopedTokens}
+          loadingTokens={state.loadingTokens}
+          onCreateToken={state.handleCreateScopedToken}
+          onRevokeToken={state.handleRevokeScopedToken}
+        />
+      )}
+
+      {/* 4. Primary NOC Alarm Webhook Configuration Card */}
+      {(activeSection === "all" || activeSection === "webhooks") && (
+        <WebhookConfigCard
+          lastPingResult={state.lastPingResult}
+          testingPing={state.testingPing}
+          onTestPing={state.handleTestPing}
+          webhookUrl={state.webhookUrl}
+          setWebhookUrl={state.setWebhookUrl}
+          webhookSecretMasked={state.webhookSecretMasked}
+          hasSecret={state.hasSecret}
+          isRollingSecret={state.isRollingSecret}
+          onRollSecret={state.handleRollSecret}
+          subscribedEvents={state.subscribedEvents}
+          setSubscribedEvents={state.setSubscribedEvents}
+          isDirty={state.isDirty}
+          isSaving={state.isSavingWebhook}
+          onSaveWebhook={state.handleSaveWebhook}
+          onCopy={state.handleCopy}
+        />
+      )}
+
+      {/* 5. Multi-Endpoint Webhook Router Card */}
+      {(activeSection === "all" || activeSection === "webhooks") && (
+        <MultiEndpointCard
+          endpoints={state.webhookEndpoints}
+          loadingEndpoints={state.loadingEndpoints}
+          onCreateEndpoint={state.handleCreateEndpoint}
+          onUpdateEndpoint={state.handleUpdateEndpoint}
+          onDeleteEndpoint={state.handleDeleteEndpoint}
+          onRollEndpointSecret={state.handleRollEndpointSecret}
+          onTestPingEndpoint={state.handleTestPingEndpoint}
+          onCopy={state.handleCopy}
+        />
+      )}
+
+      {/* 6. Recent Deliveries Logs Table */}
+      {(activeSection === "all" || activeSection === "webhooks") && (
+        <WebhookLogsTable deliveryLogs={state.deliveryLogs} />
+      )}
+
+      {/* 7. Interactive Payload Simulator & Playground */}
+      {(activeSection === "all" || activeSection === "developer-tools") && (
+        <PayloadSimulatorCard
+          eventSchemas={state.eventSchemas}
+          endpoints={state.webhookEndpoints}
+          loadingSchemas={state.loadingSchemas}
+          onSimulateEvent={state.handleSimulateEvent}
+          onCopy={state.handleCopy}
+        />
+      )}
+
+      {/* 8. Dead Letter Queue & Retry Engine Table */}
+      {(activeSection === "all" || activeSection === "developer-tools") && (
+        <DeadLetterQueueTable
+          dlqLogs={state.dlqLogs}
+          loadingDlq={state.loadingDlq}
+          onReplayWebhook={state.handleReplayWebhook}
+          onRefreshDlq={state.refreshDlq}
+        />
+      )}
+
+      {/* Modals: Show-Once Modal for Regenerated Kong API Key */}
       <ShowOnceSecretModal
-        isOpen={isKeyModalOpen}
-        onClose={() => setIsKeyModalOpen(false)}
+        isOpen={state.isKeyModalOpen}
+        onClose={() => state.setIsKeyModalOpen(false)}
         title="Kong API Key Baru Diterbitkan"
         type="api-key"
-        secretValue={newGeneratedKey}
+        secretValue={state.newGeneratedKey}
         orgSlug={org.slug}
       />
 
-      {/* 5. Show-Once Modal for Rolled HMAC Webhook Secret */}
+      {/* Modals: Show-Once Modal for Rolled HMAC Webhook Secret */}
       <ShowOnceSecretModal
-        isOpen={isSecretModalOpen}
-        onClose={() => setIsSecretModalOpen(false)}
+        isOpen={state.isSecretModalOpen}
+        onClose={() => state.setIsSecretModalOpen(false)}
         title="HMAC Webhook Secret Baru Dibuat"
         type="webhook-secret"
-        secretValue={newRolledSecret}
+        secretValue={state.newRolledSecret}
+        orgSlug={org.slug}
+      />
+
+      {/* Modals: Show-Once Modal for Generated Scoped API Token */}
+      <ShowOnceSecretModal
+        isOpen={state.isTokenModalOpen}
+        onClose={() => state.setIsTokenModalOpen(false)}
+        title="Scoped API Token Baru Diterbitkan"
+        type="api-key"
+        secretValue={state.newGeneratedToken}
         orgSlug={org.slug}
       />
     </div>
