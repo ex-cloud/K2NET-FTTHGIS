@@ -1,6 +1,7 @@
 import {
   Badge,
   Button,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Send,
@@ -8,6 +9,7 @@ import {
   Trash2,
   Edit2,
   Copy,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WebhookEndpoint, PingResult } from "./types";
@@ -18,6 +20,7 @@ interface EndpointRowItemProps {
   isPinging: boolean;
   isRolling: boolean;
   isDeleting: boolean;
+  canManage?: boolean;
   onTestPing: (id: string) => void;
   onEdit: (ep: WebhookEndpoint) => void;
   onDelete: (id: string) => void;
@@ -31,6 +34,7 @@ export function EndpointRowItem({
   isPinging,
   isRolling,
   isDeleting,
+  canManage = true,
   onTestPing,
   onEdit,
   onDelete,
@@ -82,25 +86,43 @@ export function EndpointRowItem({
             <span>{isPinging ? "Pinging..." : "Test Ping"}</span>
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(ep)}
-            className="h-7 px-2 text-xs border-border text-foreground hover:bg-muted gap-1 cursor-pointer"
-          >
-            <Edit2 className="h-3 w-3" />
-            <span>Edit</span>
-          </Button>
+          {canManage ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(ep)}
+                className="h-7 px-2 text-xs border-border text-foreground hover:bg-muted gap-1 cursor-pointer"
+              >
+                <Edit2 className="h-3 w-3" />
+                <span>Edit</span>
+              </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(ep.id)}
-            disabled={isDeleting}
-            className="h-7 px-2 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 cursor-pointer"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(ep.id)}
+                disabled={isDeleting}
+                className="h-7 px-2 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 cursor-pointer"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </>
+          ) : (
+            <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+              <span className="inline-block">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="h-7 px-2 text-xs border-border text-muted-foreground opacity-50 cursor-not-allowed gap-1"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  <span>Read-Only</span>
+                </Button>
+              </span>
+            </ActionTooltip>
+          )}
         </div>
       </div>
 
@@ -153,16 +175,24 @@ export function EndpointRowItem({
           <span className="text-muted-foreground font-mono">
             HMAC: {ep.secretMasked || "whsec_••••••••"}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onRollSecret(ep.id)}
-            disabled={isRolling}
-            className="h-6 px-1.5 text-[10px] text-primary hover:text-primary hover:bg-primary/10 gap-1 cursor-pointer"
-          >
-            <RefreshCw className={cn("h-2.5 w-2.5", isRolling && "animate-spin")} />
-            <span>Roll Secret</span>
-          </Button>
+          {canManage ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRollSecret(ep.id)}
+              disabled={isRolling}
+              className="h-6 px-1.5 text-[10px] text-primary hover:text-primary hover:bg-primary/10 gap-1 cursor-pointer"
+            >
+              <RefreshCw className={cn("h-2.5 w-2.5", isRolling && "animate-spin")} />
+              <span>Roll Secret</span>
+            </Button>
+          ) : (
+            <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+              <span className="inline-block text-[10px] text-muted-foreground opacity-60">
+                (Read-Only Secret)
+              </span>
+            </ActionTooltip>
+          )}
         </div>
       </div>
     </div>

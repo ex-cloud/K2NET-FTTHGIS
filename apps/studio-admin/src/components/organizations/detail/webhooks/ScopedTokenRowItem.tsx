@@ -1,23 +1,27 @@
 import {
   Badge,
   Button,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Trash2,
   Clock,
   Calendar,
+  ShieldAlert,
 } from "lucide-react";
 import type { ScopedToken } from "./types";
 
 interface ScopedTokenRowItemProps {
   token: ScopedToken;
   isRevoking: boolean;
+  canManage?: boolean;
   onRevoke: (id: string) => void;
 }
 
 export function ScopedTokenRowItem({
   token,
   isRevoking,
+  canManage = true,
   onRevoke,
 }: ScopedTokenRowItemProps) {
   const isRevoked = Boolean(token.isRevoked || token.revoked);
@@ -78,16 +82,32 @@ export function ScopedTokenRowItem({
       </div>
 
       {!isRevoked && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onRevoke(token.id)}
-          disabled={isRevoking}
-          className="h-7 px-2 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive gap-1 self-start md:self-center cursor-pointer"
-        >
-          <Trash2 className="h-3 w-3" />
-          <span>{isRevoking ? "Mencabut..." : "Revoke"}</span>
-        </Button>
+        canManage ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onRevoke(token.id)}
+            disabled={isRevoking}
+            className="h-7 px-2 text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive gap-1 self-start md:self-center cursor-pointer"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>{isRevoking ? "Mencabut..." : "Revoke"}</span>
+          </Button>
+        ) : (
+          <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+            <span className="inline-block self-start md:self-center">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="h-7 px-2 text-xs border-border text-muted-foreground opacity-50 cursor-not-allowed gap-1"
+              >
+                <ShieldAlert className="h-3 w-3" />
+                <span>Revoke</span>
+              </Button>
+            </span>
+          </ActionTooltip>
+        )
       )}
     </div>
   );

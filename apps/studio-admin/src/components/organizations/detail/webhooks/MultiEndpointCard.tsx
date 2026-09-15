@@ -3,12 +3,16 @@ import {
   Badge,
   Button,
   Card,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   Network,
   Plus,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { WebhookEndpoint, WebhookSubscriptions, PingResult } from "./types";
 import { EndpointModal } from "./EndpointModal";
 import { EndpointRowItem } from "./EndpointRowItem";
@@ -49,6 +53,9 @@ export function MultiEndpointCard({
   onTestPingEndpoint,
   onCopy,
 }: MultiEndpointCardProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.organizations.webhooks.manage");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEndpoint, setEditingEndpoint] = useState<WebhookEndpoint | null>(null);
 
@@ -120,10 +127,14 @@ export function MultiEndpointCard({
             <Network className="h-4.5 w-4.5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-xs font-bold text-foreground">Multi-Endpoint Webhook Router</h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
                 {endpoints.filter((e) => e.isActive).length} ACTIVE DESTINATIONS
+              </Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono gap-1">
+                <ShieldCheck className="h-2.5 w-2.5 text-primary" />
+                SSRF L2 PINNED
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -132,14 +143,29 @@ export function MultiEndpointCard({
           </div>
         </div>
 
-        <Button
-          size="sm"
-          onClick={openCreateModal}
-          className="h-7 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer shadow-xs"
-        >
-          <Plus className="h-3 w-3" />
-          <span>Add Webhook Endpoint</span>
-        </Button>
+        {canManage ? (
+          <Button
+            size="sm"
+            onClick={openCreateModal}
+            className="h-7 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer shadow-xs"
+          >
+            <Plus className="h-3 w-3" />
+            <span>Add Webhook Endpoint</span>
+          </Button>
+        ) : (
+          <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+            <span className="inline-block">
+              <Button
+                size="sm"
+                disabled
+                className="h-7 px-2.5 text-xs bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5"
+              >
+                <ShieldAlert className="h-3 w-3" />
+                <span>Add Endpoint</span>
+              </Button>
+            </span>
+          </ActionTooltip>
+        )}
       </div>
 
       <div className="space-y-3 pt-1">
@@ -181,6 +207,7 @@ export function MultiEndpointCard({
                 isPinging={pingingId === ep.id}
                 isRolling={rollingSecretId === ep.id}
                 isDeleting={deletingId === ep.id}
+                canManage={canManage}
                 onTestPing={handleTestPing}
                 onEdit={openEditModal}
                 onDelete={handleDelete}

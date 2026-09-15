@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   KeyRound,
@@ -16,8 +17,10 @@ import {
   Shield,
   AlertTriangle,
   Trash2,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { ScopedToken } from "./types";
 import { CreateScopedTokenModal } from "./CreateScopedTokenModal";
 import { ScopedTokenRowItem } from "./ScopedTokenRowItem";
@@ -35,6 +38,9 @@ export function ScopedTokensCard({
   onCreateToken,
   onRevokeToken,
 }: ScopedTokensCardProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.organizations.webhooks.manage");
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [tokenToRevoke, setTokenToRevoke] = useState<ScopedToken | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
@@ -79,6 +85,9 @@ export function ScopedTokensCard({
                 <Shield className="h-2.5 w-2.5 text-primary" />
                 LEAST PRIVILEGE
               </Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono">
+                SHA-256 HASHED
+              </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Buat token dengan izin akses terbatas (scope) dan tanggal kedaluwarsa untuk integrasi sistem pihak ketiga yang aman.
@@ -116,14 +125,29 @@ export function ScopedTokensCard({
             </div>
           )}
 
-          <Button
-            size="sm"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="h-7 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer shadow-xs"
-          >
-            <Plus className="h-3 w-3" />
-            <span>Generate Scoped Token</span>
-          </Button>
+          {canManage ? (
+            <Button
+              size="sm"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="h-7 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Plus className="h-3 w-3" />
+              <span>Generate Scoped Token</span>
+            </Button>
+          ) : (
+            <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+              <span className="inline-block">
+                <Button
+                  size="sm"
+                  disabled
+                  className="h-7 px-2.5 text-xs bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  <span>Generate Token</span>
+                </Button>
+              </span>
+            </ActionTooltip>
+          )}
         </div>
       </div>
 
@@ -164,6 +188,7 @@ export function ScopedTokensCard({
               <ScopedTokenRowItem
                 key={token.id}
                 token={token}
+                canManage={canManage}
                 isRevoking={isRevoking && tokenToRevoke?.id === token.id}
                 onRevoke={handleOpenRevoke}
               />

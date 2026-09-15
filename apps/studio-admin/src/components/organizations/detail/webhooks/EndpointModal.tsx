@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Badge,
   Button,
   Input,
   Label,
@@ -116,7 +117,9 @@ export function EndpointModal({
           <div className="space-y-1">
             <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Webhook URL (HTTPS)</span>
-              <span className="text-[10px] text-muted-foreground font-normal">SSRF Protected</span>
+              <Badge variant="outline" className="text-[9px] font-mono border-primary/30 bg-primary/10 text-primary">
+                SSRF L2 GUARDED (HTTPS ONLY)
+              </Badge>
             </Label>
             <Input
               value={targetUrl}

@@ -6,6 +6,7 @@ import {
   Input,
   Label,
   Textarea,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   FlaskConical,
@@ -13,8 +14,11 @@ import {
   Copy,
   Sparkles,
   Terminal,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { EventSchema, SimulateEventResponse, WebhookEndpoint } from "./types";
 import { PayloadSimulatorResult } from "./PayloadSimulatorResult";
 
@@ -37,6 +41,9 @@ export function PayloadSimulatorCard({
   onSimulateEvent,
   onCopy,
 }: PayloadSimulatorCardProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.organizations.webhooks.manage");
+
   const [selectedEventType, setSelectedEventType] = useState<string>("cable.fiber_cut");
   const [targetUrl, setTargetUrl] = useState<string>("");
   const [customPayload, setCustomPayload] = useState<string>("");
@@ -78,10 +85,14 @@ export function PayloadSimulatorCard({
             <FlaskConical className="h-4.5 w-4.5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-xs font-bold text-foreground">Interactive Payload Simulator & Playground</h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
                 DEVELOPER PLAYGROUND
+              </Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono gap-1">
+                <ShieldCheck className="h-2.5 w-2.5 text-primary" />
+                SSRF L2 PINNED
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -131,9 +142,9 @@ export function PayloadSimulatorCard({
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Target URL Tujuan Uji Coba (HTTPS)</span>
-              {endpoints.length > 0 && (
-                <span className="text-[10px] text-muted-foreground">Pilih dari endpoint terdaftar</span>
-              )}
+              <Badge variant="outline" className="text-[9px] font-mono border-primary/30 bg-primary/10 text-primary">
+                SSRF L2 GUARDED (HTTPS ONLY)
+              </Badge>
             </Label>
             <div className="flex gap-2">
               <Input
@@ -142,15 +153,30 @@ export function PayloadSimulatorCard({
                 placeholder="https://noc.isp.net/webhook-receiver atau pilih tombol di bawah"
                 className="h-9 text-xs font-mono bg-background border-border text-foreground flex-1"
               />
-              <Button
-                type="button"
-                onClick={handleDispatch}
-                disabled={!targetUrl.trim() || isSimulating}
-                className="h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
-              >
-                <Send className={cn("h-3.5 w-3.5", isSimulating && "animate-pulse")} />
-                <span>{isSimulating ? "Mengirim..." : "Send Sample Payload"}</span>
-              </Button>
+              {canManage ? (
+                <Button
+                  type="button"
+                  onClick={handleDispatch}
+                  disabled={!targetUrl.trim() || isSimulating}
+                  className="h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Send className={cn("h-3.5 w-3.5", isSimulating && "animate-pulse")} />
+                  <span>{isSimulating ? "Mengirim..." : "Send Sample Payload"}</span>
+                </Button>
+              ) : (
+                <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+                  <span className="inline-block">
+                    <Button
+                      type="button"
+                      disabled
+                      className="h-9 px-4 text-xs font-semibold bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5 shrink-0"
+                    >
+                      <ShieldAlert className="h-3.5 w-3.5" />
+                      <span>Send Payload</span>
+                    </Button>
+                  </span>
+                </ActionTooltip>
+              )}
             </div>
 
             {endpoints.length > 0 && (

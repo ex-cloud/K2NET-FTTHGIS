@@ -1,6 +1,7 @@
-import { Badge, Button, Card, Input } from "@k2net/ui";
-import { Key, Copy, Eye, EyeOff, RefreshCw, ShieldCheck } from "lucide-react";
+import { Badge, Button, Card, Input, ActionTooltip } from "@k2net/ui";
+import { Key, Copy, Eye, EyeOff, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { ApiKeyOverview } from "./types";
 
 interface ApiKeyCardProps {
@@ -22,6 +23,9 @@ export function ApiKeyCard({
   onRegenerateKey,
   onCopy,
 }: ApiKeyCardProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.organizations.webhooks.manage");
+
   const displayKey = apiKeyOverview?.maskedApiKey || "k2_live_••••••••••••••••••••";
   const rateLimit = apiKeyOverview?.rateLimitPerMinute || apiRateLimitMax || 5000;
 
@@ -33,7 +37,7 @@ export function ApiKeyCard({
             <Key className="h-4.5 w-4.5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-xs font-bold text-foreground">Kong Consumer API Key</h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
                 {apiKeyOverview?.hasActiveKey !== false ? "ACTIVE" : "INACTIVE"}
@@ -41,6 +45,9 @@ export function ApiKeyCard({
               <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono gap-1">
                 <ShieldCheck className="h-2.5 w-2.5 text-primary" />
                 SHA-256 HASHED
+              </Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono">
+                KONG SYNCED
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -50,16 +57,32 @@ export function ApiKeyCard({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRegenerateKey}
-            disabled={isRegenerating}
-            className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <RefreshCw className={cn("h-3 w-3", isRegenerating && "animate-spin")} />
-            <span>{isRegenerating ? "Menerbitkan..." : "Regenerate Key"}</span>
-          </Button>
+          {canManage ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRegenerateKey}
+              disabled={isRegenerating}
+              className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <RefreshCw className={cn("h-3 w-3", isRegenerating && "animate-spin")} />
+              <span>{isRegenerating ? "Menerbitkan..." : "Regenerate Key"}</span>
+            </Button>
+          ) : (
+            <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+              <span className="inline-block">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground opacity-50 cursor-not-allowed"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  <span>Read-Only</span>
+                </Button>
+              </span>
+            </ActionTooltip>
+          )}
         </div>
       </div>
 

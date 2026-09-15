@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Card,
+  ActionTooltip,
 } from "@k2net/ui";
 import {
   AlertOctagon,
@@ -10,7 +11,9 @@ import {
   Eye,
   CheckCircle2,
   Clock,
+  ShieldAlert,
 } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { DeadLetterLog, PingResult } from "./types";
 import { DlqDetailModal } from "./DlqDetailModal";
 
@@ -27,6 +30,9 @@ export function DeadLetterQueueTable({
   onReplayWebhook,
   onRefreshDlq,
 }: DeadLetterQueueTableProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.organizations.webhooks.manage");
+
   const [selectedLog, setSelectedLog] = useState<DeadLetterLog | null>(null);
   const [replayingId, setReplayingId] = useState<string | null>(null);
 
@@ -158,15 +164,30 @@ export function DeadLetterQueueTable({
                         <Eye className="h-2.5 w-2.5" />
                         <span>Detail</span>
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleReplay(log.id)}
-                        disabled={replayingId === log.id}
-                        className="h-6 px-2 text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
-                      >
-                        <RotateCcw className="h-2.5 w-2.5" />
-                        <span>{replayingId === log.id ? "Replaying..." : "Replay"}</span>
-                      </Button>
+                      {canManage ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleReplay(log.id)}
+                          disabled={replayingId === log.id}
+                          className="h-6 px-2 text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
+                        >
+                          <RotateCcw className="h-2.5 w-2.5" />
+                          <span>{replayingId === log.id ? "Replaying..." : "Replay"}</span>
+                        </Button>
+                      ) : (
+                        <ActionTooltip label="Akses Read-Only: Memerlukan izin system.organizations.webhooks.manage">
+                          <span className="inline-block">
+                            <Button
+                              size="sm"
+                              disabled
+                              className="h-6 px-2 text-[10px] bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1"
+                            >
+                              <ShieldAlert className="h-2.5 w-2.5" />
+                              <span>Replay</span>
+                            </Button>
+                          </span>
+                        </ActionTooltip>
+                      )}
                     </div>
                   </td>
                 </tr>
