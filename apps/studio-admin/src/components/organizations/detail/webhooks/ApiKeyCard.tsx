@@ -1,9 +1,10 @@
 import { Badge, Button, Card, Input } from "@k2net/ui";
-import { Key, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Key, Copy, Eye, EyeOff, RefreshCw, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ApiKeyOverview } from "./types";
 
 interface ApiKeyCardProps {
-  apiKey: string;
+  apiKeyOverview: ApiKeyOverview | null;
   showKey: boolean;
   setShowKey: (show: boolean) => void;
   isRegenerating: boolean;
@@ -13,7 +14,7 @@ interface ApiKeyCardProps {
 }
 
 export function ApiKeyCard({
-  apiKey,
+  apiKeyOverview,
   showKey,
   setShowKey,
   isRegenerating,
@@ -21,6 +22,9 @@ export function ApiKeyCard({
   onRegenerateKey,
   onCopy,
 }: ApiKeyCardProps) {
+  const displayKey = apiKeyOverview?.maskedApiKey || "k2_live_••••••••••••••••••••";
+  const rateLimit = apiKeyOverview?.rateLimitPerMinute || apiRateLimitMax || 5000;
+
   return (
     <Card className="p-5 space-y-4 bg-card border-border shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -32,7 +36,11 @@ export function ApiKeyCard({
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-bold text-foreground">Kong Consumer API Key</h3>
               <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[9px] font-mono">
-                ACTIVE
+                {apiKeyOverview?.hasActiveKey !== false ? "ACTIVE" : "INACTIVE"}
+              </Badge>
+              <Badge variant="outline" className="border-border text-muted-foreground text-[9px] font-mono gap-1">
+                <ShieldCheck className="h-2.5 w-2.5 text-primary" />
+                SHA-256 HASHED
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -50,7 +58,7 @@ export function ApiKeyCard({
             className="h-7 px-2.5 text-xs border-border gap-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <RefreshCw className={cn("h-3 w-3", isRegenerating && "animate-spin")} />
-            <span>Regenerate Key</span>
+            <span>{isRegenerating ? "Menerbitkan..." : "Regenerate Key"}</span>
           </Button>
         </div>
       </div>
@@ -61,9 +69,9 @@ export function ApiKeyCard({
           <div className="relative flex-1">
             <Input
               type={showKey ? "text" : "password"}
-              value={apiKey}
+              value={displayKey}
               readOnly
-              className="h-9 text-xs font-mono bg-background border-border text-foreground pr-10"
+              className="h-9 text-xs font-mono bg-background border-border text-foreground pr-10 select-all"
             />
             <button
               type="button"
@@ -75,7 +83,7 @@ export function ApiKeyCard({
           </div>
           <Button
             size="sm"
-            onClick={() => onCopy(apiKey, "Kong API Key")}
+            onClick={() => onCopy(displayKey, "Kong API Key Masked")}
             className="h-9 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
           >
             <Copy className="h-3.5 w-3.5" />
@@ -84,8 +92,12 @@ export function ApiKeyCard({
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-          <span className="font-mono">Header: <code>X-API-Key: {apiKey.substring(0, 12)}...</code></span>
-          <span className="font-mono">Rate Limit: <strong className="text-foreground">{apiRateLimitMax} req/min</strong></span>
+          <span className="font-mono">
+            Header: <code>X-API-Key: {apiKeyOverview?.apiKeyPrefix || "k2_live_"}...</code>
+          </span>
+          <span className="font-mono">
+            Rate Limit: <strong className="text-foreground">{rateLimit.toLocaleString()} req/min</strong>
+          </span>
         </div>
       </div>
     </Card>
