@@ -84,13 +84,15 @@ class TenantApiWebhookServiceTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+
+        lenient().when(configRepository.findByOrganizationIdNative(any(UUID.class))).thenReturn(Optional.of(testConfig));
+        lenient().when(configRepository.findByOrganization(any(Organization.class))).thenReturn(Optional.of(testConfig));
     }
 
     @Test
     @DisplayName("Should return masked API key overview")
     void testGetApiKeyOverview() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
-        when(configRepository.findByOrganization(testOrg)).thenReturn(Optional.of(testConfig));
 
         ApiKeyOverviewResponse response = service.getApiKeyOverview("garut");
 
@@ -106,7 +108,6 @@ class TenantApiWebhookServiceTest {
     @DisplayName("Should regenerate API key with Show-Once plaintext return and SHA-256 hash in DB")
     void testRegenerateApiKey() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
-        when(configRepository.findByOrganization(testOrg)).thenReturn(Optional.of(testConfig));
         when(configRepository.save(any(TenantWebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
 
         RegenerateApiKeyResponse response = service.regenerateApiKey("garut");
@@ -127,7 +128,6 @@ class TenantApiWebhookServiceTest {
     @DisplayName("Should roll HMAC Webhook Secret with AES-256-GCM encryption at rest")
     void testRollWebhookSecret() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
-        when(configRepository.findByOrganization(testOrg)).thenReturn(Optional.of(testConfig));
         when(configRepository.save(any(TenantWebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
 
         RollSecretResponse response = service.rollWebhookSecret("garut");
@@ -149,7 +149,6 @@ class TenantApiWebhookServiceTest {
     @DisplayName("Should update webhook config after validating URL against SSRF")
     void testUpdateWebhookConfig() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
-        when(configRepository.findByOrganization(testOrg)).thenReturn(Optional.of(testConfig));
         when(configRepository.save(any(TenantWebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
 
         WebhookConfigRequest request = WebhookConfigRequest.builder()
