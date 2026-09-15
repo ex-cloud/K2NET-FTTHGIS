@@ -99,8 +99,8 @@ export function WorkspaceDomainSettings() {
         }
       }, 1000);
 
-    } catch (err: any) {
-      setErrorMsg(err.message || "Terjadi kesalahan saat memproses migrasi domain.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan saat memproses migrasi domain.");
       setShowConfirmModal(false);
     } finally {
       setIsMigrating(false);

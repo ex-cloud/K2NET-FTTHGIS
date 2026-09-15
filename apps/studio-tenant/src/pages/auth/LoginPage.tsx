@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@k2net/auth/client";
-import { AuthLoginLayout, AuthLoginForm, Button } from "@k2net/ui";
+import { AuthLoginLayout, Button } from "@k2net/ui";
 import { extractTenantSlug } from "../../lib/keycloak-config";
 import { Shield, ArrowRight } from "lucide-react";
 
@@ -65,7 +65,7 @@ export function LoginPage() {
     }
   }, [initialized, authenticated, navigate, login, redirectTriggered]);
 
-  const { data: authConfig, isLoading: isFetchingMethods } = useQuery<OrganizationAuthMethodsResponse>({
+  const { data: authConfig } = useQuery<OrganizationAuthMethodsResponse>({
     queryKey: ["auth-methods", tenantSlug],
     queryFn: async () => {
       try {
@@ -104,20 +104,6 @@ export function LoginPage() {
 
   const handleManualLogin = () => {
     login({
-      redirectUri: window.location.origin,
-    });
-  };
-
-  const handleContinueWithEmail = (email: string) => {
-    login({
-      loginHint: email,
-      redirectUri: window.location.origin,
-    });
-  };
-
-  const handleContinueWithProvider = (providerId: string) => {
-    login({
-      idpHint: providerId,
       redirectUri: window.location.origin,
     });
   };

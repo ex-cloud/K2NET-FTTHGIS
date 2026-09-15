@@ -30,6 +30,7 @@ function computeRemainingSeconds(expiresAtStr?: string): number {
   return Math.max(0, diff);
 }
 
+// eslint-disable-next-line max-lines-per-function
 export function useImpersonationSession() {
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);

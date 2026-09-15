@@ -43,7 +43,7 @@ export function TenantLayout() {
     endedTenantName,
   } = useImpersonationSession();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const navigate = useNavigate();
   const routerState = useRouterState();

@@ -14,31 +14,31 @@ import java.util.List;
 @RequestMapping("/api/v1/organizations/{idOrSlug}")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasAuthority('system.organizations.update')")
+@PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
 public class TenantApiWebhookController {
 
     private final TenantApiWebhookService webhookService;
 
     @GetMapping("/api-key")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
     public ResponseEntity<ApiKeyOverviewResponse> getApiKeyOverview(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.getApiKeyOverview(idOrSlug));
     }
 
     @PostMapping("/api-key/regenerate")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
     public ResponseEntity<RegenerateApiKeyResponse> regenerateApiKey(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.regenerateApiKey(idOrSlug));
     }
 
     @GetMapping("/webhook-config")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
     public ResponseEntity<WebhookConfigResponse> getWebhookConfig(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.getWebhookConfig(idOrSlug));
     }
 
     @PutMapping("/webhook-config")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
     public ResponseEntity<WebhookConfigResponse> updateWebhookConfig(
             @PathVariable String idOrSlug,
             @RequestBody WebhookConfigRequest request) {
@@ -46,13 +46,13 @@ public class TenantApiWebhookController {
     }
 
     @PostMapping("/webhooks/roll-secret")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
     public ResponseEntity<RollSecretResponse> rollWebhookSecret(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.rollWebhookSecret(idOrSlug));
     }
 
     @PostMapping("/webhooks/test-ping")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAuthority('organizations.update')")
     public ResponseEntity<TestPingResponse> testPingWebhook(
             @PathVariable String idOrSlug,
             @RequestBody(required = false) TestPingRequest request) {
@@ -60,7 +60,7 @@ public class TenantApiWebhookController {
     }
 
     @GetMapping("/webhook-logs")
-    @PreAuthorize("hasAuthority('system.organizations.update')")
+    @PreAuthorize("hasRole('super_admin') or hasAnyAuthority('organizations.view', 'organizations.update')")
     public ResponseEntity<List<TenantWebhookLogResponse>> getWebhookLogs(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(webhookService.getWebhookLogs(idOrSlug));
     }
