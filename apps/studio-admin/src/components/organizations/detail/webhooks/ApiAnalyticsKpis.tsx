@@ -6,6 +6,11 @@ interface ApiAnalyticsKpisProps {
 }
 
 export function ApiAnalyticsKpis({ analytics }: ApiAnalyticsKpisProps) {
+  const total24h = analytics?.totalRequests24h ?? 0;
+  const successRate = analytics?.successRatePercent ?? 100;
+  const p95Latency = analytics?.p95LatencyMs ?? 0;
+  const quotaUsed = analytics?.rateLimitQuotaUsedPercent ?? 0;
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="p-3.5 rounded-xl border border-border/80 bg-background/50 space-y-1">
@@ -13,7 +18,7 @@ export function ApiAnalyticsKpis({ analytics }: ApiAnalyticsKpisProps) {
           Total Requests (24h)
         </span>
         <div className="text-lg font-bold text-foreground font-mono">
-          {analytics.totalRequests24h.toLocaleString()}
+          {total24h.toLocaleString()}
         </div>
         <div className="text-[10px] text-primary flex items-center gap-1 font-medium">
           <TrendingUp className="h-3 w-3" />
@@ -26,7 +31,7 @@ export function ApiAnalyticsKpis({ analytics }: ApiAnalyticsKpisProps) {
           Success Rate
         </span>
         <div className="text-lg font-bold text-foreground font-mono">
-          {analytics.successRatePercent.toFixed(1)}%
+          {successRate.toFixed(1)}%
         </div>
         <div className="text-[10px] text-primary flex items-center gap-1 font-medium">
           <CheckCircle2 className="h-3 w-3" />
@@ -39,7 +44,7 @@ export function ApiAnalyticsKpis({ analytics }: ApiAnalyticsKpisProps) {
           p95 Latency SLA
         </span>
         <div className="text-lg font-bold text-foreground font-mono">
-          {analytics.p95LatencyMs} ms
+          {p95Latency} ms
         </div>
         <div className="text-[10px] text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
@@ -52,7 +57,7 @@ export function ApiAnalyticsKpis({ analytics }: ApiAnalyticsKpisProps) {
           Rate Limit Quota
         </span>
         <div className="text-lg font-bold text-foreground font-mono">
-          {analytics.rateLimitQuotaUsedPercent.toFixed(1)}%
+          {quotaUsed.toFixed(1)}%
         </div>
         <div className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
           <Zap className="h-3 w-3" />

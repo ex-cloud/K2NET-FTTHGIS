@@ -6,18 +6,36 @@ interface ApiAnalyticsTimeseriesProps {
 }
 
 export function ApiAnalyticsTimeseries({ analytics }: ApiAnalyticsTimeseriesProps) {
-  const total =
-    (analytics.statusBreakdown.status2xx || 0) +
-    (analytics.statusBreakdown.status4xx || 0) +
-    (analytics.statusBreakdown.status5xx || 0);
+  const status2xx = analytics?.statusBreakdown?.status2xx ?? 0;
+  const status4xx = analytics?.statusBreakdown?.status4xx ?? 0;
+  const status5xx = analytics?.statusBreakdown?.status5xx ?? 0;
+  const total = status2xx + status4xx + status5xx;
 
-  const pct2xx = total > 0 ? ((analytics.statusBreakdown.status2xx || 0) / total) * 100 : 98;
-  const pct4xx = total > 0 ? ((analytics.statusBreakdown.status4xx || 0) / total) * 100 : 1.5;
-  const pct5xx = total > 0 ? ((analytics.statusBreakdown.status5xx || 0) / total) * 100 : 0.5;
+  const pct2xx = total > 0 ? (status2xx / total) * 100 : 98;
+  const pct4xx = total > 0 ? (status4xx / total) * 100 : 1.5;
+  const pct5xx = total > 0 ? (status5xx / total) * 100 : 0.5;
 
-  const maxDaily = analytics.dailyTimeseries
-    ? Math.max(...analytics.dailyTimeseries.map((d) => d.requests), 100)
+  const dailyTimeseries = analytics?.dailyTimeseries || [];
+  const maxDaily = dailyTimeseries.length > 0
+    ? Math.max(...dailyTimeseries.map((d) => d.requests || 0), 100)
     : 100;
+
+  const formatDayLabel = (dateStr: string) => {
+    if (!dateStr) return "";
+    try {
+      const fullDate = dateStr.length === 5 ? `2026-${dateStr}` : dateStr;
+      const d = new Date(fullDate);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("id-ID", {
+          weekday: "short",
+          day: "numeric",
+        });
+      }
+    } catch {
+      // ignore
+    }
+    return dateStr;
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
@@ -31,37 +49,43 @@ export function ApiAnalyticsTimeseries({ analytics }: ApiAnalyticsTimeseriesProp
         </div>
 
         <div className="h-32 flex items-end justify-between gap-2 pt-4 px-1">
-          {analytics.dailyTimeseries.map((day) => {
-            const heightPct = Math.max(Math.round((day.requests / maxDaily) * 100), 10);
-            const dayLabel = new Date(day.date).toLocaleDateString("id-ID", {
-              weekday: "short",
-              day: "numeric",
-            });
-            return (
-              <div
-                key={day.date}
-                className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group"
-              >
-                <div className="text-[9px] font-mono text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                  {day.requests.toLocaleString()}
-                </div>
+          {dailyTimeseries.length === 0 ? (
+            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+              Belum ada riwayat aktivitas 7 hari.
+            </div>
+          ) : (
+            dailyTimeseries.map((day) => {
+              const requests = day.requests || 0;
+              const errors = day.errors || 0;
+              const heightPct = Math.max(Math.round((requests / maxDaily) * 100), 10);
+              const dayLabel = formatDayLabel(day.date);
+
+              return (
                 <div
-                  style={{ height: `${heightPct}%` }}
-                  className="w-full max-w-[28px] rounded-t bg-primary/70 group-hover:bg-primary transition-all relative"
+                  key={day.date}
+                  className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group"
                 >
-                  {day.errors > 0 && (
-                    <div
-                      style={{ height: `${Math.min((day.errors / day.requests) * 100, 100)}%` }}
-                      className="w-full rounded-t bg-destructive absolute bottom-0 left-0"
-                    />
-                  )}
+                  <div className="text-[9px] font-mono text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    {requests.toLocaleString()}
+                  </div>
+                  <div
+                    style={{ height: `${heightPct}%` }}
+                    className="w-full max-w-[28px] rounded-t bg-primary/70 group-hover:bg-primary transition-all relative"
+                  >
+                    {errors > 0 && requests > 0 && (
+                      <div
+                        style={{ height: `${Math.min((errors / requests) * 100, 100)}%` }}
+                        className="w-full rounded-t bg-destructive absolute bottom-0 left-0"
+                      />
+                    )}
+                  </div>
+                  <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">
+                    {dayLabel}
+                  </span>
                 </div>
-                <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">
-                  {dayLabel}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -98,7 +122,7 @@ export function ApiAnalyticsTimeseries({ analytics }: ApiAnalyticsTimeseriesProp
               <span>2xx OK / Created</span>
             </span>
             <span className="font-mono text-[11px] font-bold text-foreground">
-              {analytics.statusBreakdown.status2xx.toLocaleString()} ({pct2xx.toFixed(1)}%)
+              {status2xx.toLocaleString()} ({pct2xx.toFixed(1)}%)
             </span>
           </div>
 
@@ -108,7 +132,7 @@ export function ApiAnalyticsTimeseries({ analytics }: ApiAnalyticsTimeseriesProp
               <span>4xx Client Errors (401/404)</span>
             </span>
             <span className="font-mono text-[11px] font-bold text-foreground">
-              {analytics.statusBreakdown.status4xx.toLocaleString()} ({pct4xx.toFixed(1)}%)
+              {status4xx.toLocaleString()} ({pct4xx.toFixed(1)}%)
             </span>
           </div>
 
@@ -118,7 +142,7 @@ export function ApiAnalyticsTimeseries({ analytics }: ApiAnalyticsTimeseriesProp
               <span>5xx Server Errors</span>
             </span>
             <span className="font-mono text-[11px] font-bold text-foreground">
-              {analytics.statusBreakdown.status5xx.toLocaleString()} ({pct5xx.toFixed(1)}%)
+              {status5xx.toLocaleString()} ({pct5xx.toFixed(1)}%)
             </span>
           </div>
         </div>
