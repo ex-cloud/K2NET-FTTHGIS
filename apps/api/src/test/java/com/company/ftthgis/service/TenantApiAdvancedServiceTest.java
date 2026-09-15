@@ -128,7 +128,61 @@ class TenantApiAdvancedServiceTest {
     }
 
     @Test
-    @DisplayName("Should fetch Dead Letter Queue logs")
+    @DisplayName("Should list Scoped Personal Access Tokens using native query")
+    void testListTokens() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+
+        TenantApiToken token = TenantApiToken.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .name("Sales Bot")
+                .tokenPrefix("k2_tok_garut_")
+                .tokenLast4("1234")
+                .scopes("[\"coverage:read\"]")
+                .isRevoked(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(tokenRepository.findByOrganizationIdNative(testOrg.getId()))
+                .thenReturn(List.of(token));
+
+        List<ScopedTokenResponse> tokens = service.listTokens("garut");
+
+        assertNotNull(tokens);
+        assertEquals(1, tokens.size());
+        assertEquals("Sales Bot", tokens.get(0).getName());
+        assertEquals(List.of("coverage:read"), tokens.get(0).getScopes());
+    }
+
+    @Test
+    @DisplayName("Should list Webhook Endpoints using native query")
+    void testListEndpoints() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+
+        TenantWebhookEndpoint endpoint = TenantWebhookEndpoint.builder()
+                .id(UUID.randomUUID())
+                .organization(testOrg)
+                .name("NOC Slack")
+                .targetUrl("https://slack.com/webhook")
+                .webhookSecretEncrypted(encryptionUtil.encrypt("whsec_secret"))
+                .isActive(true)
+                .subscribedEvents("{\"fiberCut\":true}")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(endpointRepository.findByOrganizationIdNative(testOrg.getId()))
+                .thenReturn(List.of(endpoint));
+
+        List<WebhookEndpointResponse> endpoints = service.listEndpoints("garut");
+
+        assertNotNull(endpoints);
+        assertEquals(1, endpoints.size());
+        assertEquals("NOC Slack", endpoints.get(0).getName());
+        assertTrue(endpoints.get(0).isHasSecret());
+    }
+
+    @Test
+    @DisplayName("Should fetch Dead Letter Queue logs using native query")
     void testGetDeadLetterLogs() {
         when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
         
@@ -145,9 +199,9 @@ class TenantApiAdvancedServiceTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(logRepository.findByOrganizationAndDeliveryStatusOrderByCreatedAtDesc(testOrg, "FAILED_DLQ"))
+        when(logRepository.findByStatusAndOrganizationIdNative(testOrg.getId(), "FAILED_DLQ", 100))
                 .thenReturn(List.of(dlqItem));
-        when(logRepository.findByOrganizationAndDeliveryStatusOrderByCreatedAtDesc(testOrg, "RETRYING"))
+        when(logRepository.findByStatusAndOrganizationIdNative(testOrg.getId(), "RETRYING", 100))
                 .thenReturn(List.of());
 
         List<DeadLetterLogResponse> logs = service.getDeadLetterLogs("garut");
@@ -155,5 +209,31 @@ class TenantApiAdvancedServiceTest {
         assertEquals(1, logs.size());
         assertEquals("FAILED_DLQ", logs.get(0).getDeliveryStatus());
         assertEquals(4, logs.get(0).getRetryCount());
+    }
+
+    @Test
+    @DisplayName("Should calculate API Analytics with time-range window")
+    void testGetApiAnalytics() {
+        when(organizationRepository.findBySlug("garut")).thenReturn(Optional.of(testOrg));
+        when(tokenRepository.countActiveByOrganizationIdNative(testOrg.getId())).thenReturn(2L);
+        when(endpointRepository.countActiveByOrganizationIdNative(testOrg.getId())).thenReturn(1L);
+        when(logRepository.countByStatusAndOrganizationIdNative(testOrg.getId(), "RETRYING")).thenReturn(0L);
+        when(logRepository.countByStatusAndOrganizationIdNative(testOrg.getId(), "FAILED_DLQ")).thenReturn(0L);
+        when(logRepository.countBetweenNative(eq(testOrg.getId()), any(), any())).thenReturn(100L);
+        when(logRepository.countByStatusBetweenNative(eq(testOrg.getId()), eq("FAILED_DLQ"), any(), any())).thenReturn(2L);
+        when(logRepository.calculateP95LatencyMsBetweenNative(eq(testOrg.getId()), any(), any())).thenReturn(45.0);
+        when(logRepository.countByStatusRangeBetweenNative(eq(testOrg.getId()), eq(200), eq(299), any(), any())).thenReturn(95L);
+        when(logRepository.countByStatusRangeBetweenNative(eq(testOrg.getId()), eq(400), eq(499), any(), any())).thenReturn(3L);
+        when(logRepository.countByStatusRangeBetweenNative(eq(testOrg.getId()), eq(500), eq(599), any(), any())).thenReturn(2L);
+        when(logRepository.findDailyVolumeBetweenNative(eq(testOrg.getId()), any(), any())).thenReturn(List.of());
+
+        ApiAnalyticsResponse analytics = service.getApiAnalytics("garut", "24h");
+
+        assertNotNull(analytics);
+        assertEquals(100L, analytics.getTotalRequests24h());
+        assertEquals(45, analytics.getP95LatencyMs());
+        assertEquals(2L, analytics.getActiveTokensCount());
+        assertEquals(1L, analytics.getActiveEndpointsCount());
+        assertEquals(95.0, analytics.getSuccessRatePercent());
     }
 }
