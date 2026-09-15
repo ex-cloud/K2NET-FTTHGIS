@@ -16,7 +16,21 @@ export function useOrgScopedTokens(orgIdentifier: string) {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
-        const data = await res.json();
+        const rawList = await res.json();
+        const data: ScopedToken[] = (Array.isArray(rawList) ? rawList : []).map(
+          (t: Record<string, unknown>) => ({
+            id: String(t.id || ""),
+            name: String(t.name || ""),
+            tokenPrefix: String(t.tokenPrefix || ""),
+            tokenLast4: String(t.tokenLast4 || ""),
+            scopes: Array.isArray(t.scopes) ? (t.scopes as string[]) : [],
+            expiresAt: (t.expiresAt as string) || null,
+            lastUsedAt: (t.lastUsedAt as string) || null,
+            createdAt: String(t.createdAt || ""),
+            isRevoked: Boolean(t.isRevoked ?? t.revoked),
+            revoked: Boolean(t.isRevoked ?? t.revoked),
+          })
+        );
         setScopedTokens(data);
       }
     } catch (err: unknown) {
@@ -78,6 +92,11 @@ export function useOrgScopedTokens(orgIdentifier: string) {
         if (!res.ok) {
           throw new Error("Gagal mencabut token.");
         }
+
+        // Optimistically mark token as revoked immediately in local state
+        setScopedTokens((prev) =>
+          prev.map((t) => (t.id === tokenId ? { ...t, isRevoked: true, revoked: true } : t))
+        );
 
         toast.success("Scoped Token berhasil dicabut (revoked).");
         await fetchScopedTokens();

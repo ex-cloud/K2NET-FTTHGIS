@@ -55,6 +55,7 @@ export interface ScopedToken {
   lastUsedAt: string | null;
   createdAt: string;
   isRevoked: boolean;
+  revoked?: boolean;
 }
 
 export interface ScopedTokenCreateResponse {

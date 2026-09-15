@@ -86,7 +86,7 @@ export function OrgApiWebhooksTab({ organization: org }: OrgApiWebhooksTabProps)
           <Key className="h-3.5 w-3.5 text-primary" />
           <span>API Keys & Scoped Tokens</span>
           <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground">
-            {state.scopedTokens.length + (state.apiKeyOverview?.hasActiveKey ? 1 : 0)}
+            {state.scopedTokens.filter((t) => !t.isRevoked && !t.revoked).length + (state.apiKeyOverview?.hasActiveKey ? 1 : 0)}
           </span>
         </button>
 

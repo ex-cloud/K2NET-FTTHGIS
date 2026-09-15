@@ -40,7 +40,8 @@ export function ScopedTokensCard({
   const [isRevoking, setIsRevoking] = useState(false);
   const [filterMode, setFilterMode] = useState<"active" | "all">("active");
 
-  const activeTokens = tokens.filter((t) => !t.isRevoked);
+  const isTokenRevoked = (t: ScopedToken) => Boolean(t.isRevoked || t.revoked);
+  const activeTokens = tokens.filter((t) => !isTokenRevoked(t));
   const displayedTokens = filterMode === "active" ? activeTokens : tokens;
 
   const handleOpenRevoke = (id: string) => {

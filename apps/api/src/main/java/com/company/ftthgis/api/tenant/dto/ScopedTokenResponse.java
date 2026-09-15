@@ -1,5 +1,6 @@
 package com.company.ftthgis.api.tenant.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,15 @@ public class ScopedTokenResponse {
     private List<String> scopes;
     private LocalDateTime expiresAt;
     private LocalDateTime lastUsedAt;
+
+    @JsonProperty("isRevoked")
     private boolean isRevoked;
+
     private LocalDateTime createdAt;
+
+    @JsonProperty("revoked")
+    public boolean getRevoked() {
+        return isRevoked;
+    }
 }
+

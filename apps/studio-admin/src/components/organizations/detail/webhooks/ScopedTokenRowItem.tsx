@@ -20,6 +20,7 @@ export function ScopedTokenRowItem({
   isRevoking,
   onRevoke,
 }: ScopedTokenRowItemProps) {
+  const isRevoked = Boolean(token.isRevoked || token.revoked);
   const isExpired = token.expiresAt && new Date(token.expiresAt) < new Date();
 
   return (
@@ -30,7 +31,7 @@ export function ScopedTokenRowItem({
           <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground border border-border">
             {token.tokenPrefix}...{token.tokenLast4}
           </span>
-          {token.isRevoked ? (
+          {isRevoked ? (
             <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-[9px] font-mono">
               REVOKED
             </Badge>
@@ -76,7 +77,7 @@ export function ScopedTokenRowItem({
         </div>
       </div>
 
-      {!token.isRevoked && (
+      {!isRevoked && (
         <Button
           variant="outline"
           size="sm"
