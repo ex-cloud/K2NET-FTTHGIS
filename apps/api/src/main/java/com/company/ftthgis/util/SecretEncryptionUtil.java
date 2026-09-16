@@ -41,14 +41,14 @@ public class SecretEncryptionUtil {
 
     @Autowired
     public SecretEncryptionUtil(
-            @Value("${app.security.encryption-key:ftth-gis-master-secret-key-32b!!}") String rawKey,
+            @Value("${app.security.encryption-key:${AUTH_SECRET:ftth-gis-master-secret-key-32b!!}}") String rawKey,
             @Value("${spring.profiles.active:default}") String activeProfiles
     ) {
         boolean isProduction = activeProfiles.toLowerCase().contains("prod");
 
         if (isProduction && (rawKey == null || rawKey.equals(DEFAULT_INSECURE_KEY) || rawKey.trim().length() < 32)) {
             log.error("CRITICAL SECURITY ERROR: Production deployment detected with default or insecure encryption key!");
-            throw new IllegalStateException("FATAL: app.security.encryption-key must be explicitly configured with at least 32 characters (256-bit entropy) in production mode.");
+            throw new IllegalStateException("FATAL: app.security.encryption-key or AUTH_SECRET must be configured with at least 32 characters (256-bit entropy) in production mode.");
         }
 
         if (rawKey.equals(DEFAULT_INSECURE_KEY)) {

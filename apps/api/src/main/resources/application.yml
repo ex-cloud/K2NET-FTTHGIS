@@ -94,6 +94,7 @@ app:
     enabled: false # Data sudah sinkron. Set true HANYA jika ingin reset ulang semua aset.
   frontend-url: ${FRONTEND_URL:localhost:3000}
   security:
+    encryption-key: ${APP_SECURITY_ENCRYPTION_KEY:${AUTH_SECRET:ftth-gis-master-secret-key-32b!!}}
     keycloak:
       provision-client-id: ${AUTH_KEYCLOAK_ID:ftth-gis-frontend}
       provision-client-secret: ${AUTH_KEYCLOAK_SECRET:}
