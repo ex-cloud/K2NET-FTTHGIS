@@ -229,4 +229,4 @@ cd apps/api && mvn clean test
 ---
 
 ## 📄 Lisensi & Hak Cipta
-Hak Cipta © 2026 **K2NET Enterprise / PT. Dua Multi Solusindo**. Seluruh hak dilindungi undang-undang.
+Hak Cipta © 2026 **K2NET | Kirana Karina Networks**. Seluruh hak dilindungi undang-undang.
