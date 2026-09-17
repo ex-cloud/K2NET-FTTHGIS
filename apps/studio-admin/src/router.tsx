@@ -408,7 +408,7 @@ const gatewaysAuditRoute = createRoute({ getParentRoute: () => authenticatedLayo
 const gatewaysPollerRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/gateways/poller", component: () => <Lazy><GatewaysPollerPage /></Lazy> });
 
 // Security
-const securityRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security", component: () => <Navigate to="/security/alerts" /> });
+const securityRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security", component: () => <Navigate to="/security/roles" /> });
 
 const securityAlertsRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/alerts", component: () => <Lazy><SecurityAlertsPage /></Lazy> });
 const securityAuditRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/security/audit", component: () => <Lazy><SecurityAuditPage /></Lazy> });

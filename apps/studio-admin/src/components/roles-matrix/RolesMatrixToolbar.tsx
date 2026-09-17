@@ -1,4 +1,7 @@
+import React from "react";
 import { Search, X, Filter } from "lucide-react";
+import { Input, Button, Badge, ActionTooltip } from "@k2net/ui";
+import { cn } from "@/lib/utils";
 
 interface RolesMatrixToolbarProps {
   searchQuery: string;
@@ -18,44 +21,53 @@ export function RolesMatrixToolbar({
   totalPerms,
 }: RolesMatrixToolbarProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-card/40 rounded-xl border border-border backdrop-blur-sm">
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 bg-card/60 backdrop-blur-xl rounded-xl border border-border/80 shadow-xs">
+      <div className="relative flex-1 max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+        <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Cari permission, kode, atau modul..."
-          className="w-full pl-9 pr-8 py-1.5 text-xs bg-muted/60 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Filter permissions, code, atau modul..."
+          className="h-8 pl-8 pr-8 text-xs bg-background/60 border-border/80 text-foreground placeholder:text-muted-foreground rounded-lg focus-visible:ring-1 focus-visible:ring-primary"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded"
+            title="Hapus pencarian"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setDiffOnly((prev) => !prev)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
-            diffOnly
-              ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-              : "bg-muted/40 text-muted-foreground border-border hover:text-foreground"
-          }`}
-        >
-          <Filter className="w-3.5 h-3.5" />
-          Tampilkan Perbedaan Saja
-        </button>
+      <div className="flex items-center gap-2">
+        <ActionTooltip label={diffOnly ? "Tampilkan semua permission" : "Hanya tampilkan permission dengan perbedaan antar role"}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setDiffOnly((prev) => !prev)}
+            className={cn(
+              "h-8 px-3 text-xs font-medium rounded-lg border transition-colors cursor-pointer gap-1.5",
+              diffOnly
+                ? "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
+                : "bg-background/40 text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/60"
+            )}
+          >
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Tampilkan Perbedaan Saja</span>
+          </Button>
+        </ActionTooltip>
 
-        <span className="text-[11px] font-mono text-muted-foreground px-2 py-1 rounded bg-muted">
+        <Badge
+          variant="outline"
+          className="h-8 px-2.5 text-[11px] font-mono font-medium rounded-lg border-border/80 bg-muted/40 text-muted-foreground flex items-center justify-center"
+        >
           {totalFilteredPerms} / {totalPerms} Hak Akses
-        </span>
+        </Badge>
       </div>
     </div>
   );

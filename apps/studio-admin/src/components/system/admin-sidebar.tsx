@@ -42,7 +42,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
   { title: "Observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
   { title: "Global Logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
-  { title: "Security", icon: Lock, href: "/security", requiredPermission: "system.security.manage" },
+  { title: "Security", icon: Lock, href: "/security/roles", requiredPermission: "system.security.manage" },
   { title: "Gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
   { title: "AI Assistant", icon: Sparkles, href: "/ai", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
   { title: "3D Assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
@@ -60,6 +60,7 @@ export const checkIsActive = (href: string, pathname: string) => {
   if (href === "/overview") return pathname === "/overview";
   if (href.startsWith("/ai")) return pathname.startsWith("/ai");
   if (href.startsWith("/gateways")) return pathname.startsWith("/gateways");
+  if (href.startsWith("/security")) return pathname.startsWith("/security");
   if (href === "/observability") return pathname.startsWith("/observability");
   if (href === "/tasks") return pathname === "/tasks" || pathname.startsWith("/tasks/");
   if (href === "/system/trash") return pathname.startsWith("/system/trash");
