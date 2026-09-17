@@ -26,13 +26,13 @@ export function RolesMatrixTable({
   const moduleEntries = Object.entries(filteredGroupedPermissions);
 
   return (
-    <div className="w-full rounded-xl border border-border bg-card overflow-hidden shadow-xs flex flex-col">
+    <div className="w-full rounded-xl border border-border bg-card overflow-hidden flex flex-col">
       <div className="max-h-[calc(100vh-320px)] overflow-auto custom-scrollbar relative">
         <table className="w-full border-collapse text-left text-xs border-separate border-spacing-0">
           <thead>
             <tr>
               {/* Sticky Top-Left Corner (Intersection) - Solid Opaque */}
-              <th className="sticky left-0 top-0 z-40 bg-muted px-4 py-3 font-semibold text-muted-foreground uppercase text-[10px] tracking-wider border-b border-r border-border min-w-[300px] max-w-[380px] shadow-[2px_2px_6px_rgba(0,0,0,0.08)] dark:shadow-[2px_2px_8px_rgba(0,0,0,0.4)]">
+              <th className="sticky left-0 top-0 z-40 bg-muted px-4 py-3 font-semibold text-muted-foreground uppercase text-[10px] tracking-wider border-b border-r border-border min-w-[300px] max-w-[380px]">
                 Modul &amp; Hak Akses
               </th>
 
@@ -40,7 +40,7 @@ export function RolesMatrixTable({
               {roles.map((role) => (
                 <th
                   key={role.id}
-                  className="sticky top-0 z-30 px-3 py-3 font-medium text-center min-w-[130px] max-w-[170px] border-b border-r border-border last:border-r-0 bg-muted shadow-[0_2px_6px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+                  className="sticky top-0 z-30 px-3 py-3 font-medium text-center min-w-[130px] max-w-[170px] border-b border-r border-border last:border-r-0 bg-muted"
                 >
                   <span className="block text-xs font-semibold text-foreground truncate" title={role.displayName || role.name}>
                     {role.displayName || role.name}
@@ -78,7 +78,7 @@ export function RolesMatrixTable({
                 <React.Fragment key={moduleName}>
                   {/* Module Divider Row - Solid Opaque */}
                   <tr>
-                    <td className="sticky left-0 z-20 bg-muted px-4 py-2 border-r border-b border-border text-primary font-mono text-[11px] font-bold uppercase tracking-wider shadow-[2px_0_6px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
+                    <td className="sticky left-0 z-20 bg-muted px-4 py-2 border-r border-b border-border text-primary font-mono text-[11px] font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-primary" />
                         <span>{moduleName}</span>
@@ -91,7 +91,7 @@ export function RolesMatrixTable({
                   {perms.map((perm) => (
                     <tr key={perm.id} className="hover:bg-muted/40 transition-colors group">
                       {/* Sticky Left Column (Permission Info) - Solid Opaque */}
-                      <td className="sticky left-0 z-10 bg-card px-4 py-2.5 border-r border-b border-border group-hover:bg-muted/80 transition-colors shadow-[2px_0_6px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_8px_rgba(0,0,0,0.35)]">
+                      <td className="sticky left-0 z-10 bg-card px-4 py-2.5 border-r border-b border-border group-hover:bg-muted/80 transition-colors">
                         <div className="font-medium text-foreground text-xs leading-snug">
                           {perm.description || perm.code}
                         </div>
