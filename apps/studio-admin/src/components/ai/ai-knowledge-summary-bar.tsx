@@ -74,7 +74,7 @@ export function AiKnowledgeSummaryBar({
       {syncStatus && syncStatus.unindexed_count > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/20 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+            <div className="w-8 h-8 rounded-md bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0">
               <FolderSync className="w-4 h-4" />
             </div>
             <div>
@@ -105,7 +105,7 @@ export function AiKnowledgeSummaryBar({
               size="sm"
               onClick={onSyncServerDocs}
               disabled={isSyncing}
-              className="text-xs h-8 gap-1.5 bg-amber-600 hover:bg-amber-500 text-primary-foreground font-semibold cursor-pointer shadow-xs"
+              className="text-xs h-8 gap-1.5 bg-amber-600 hover:bg-amber-500 text-primary-foreground font-medium cursor-pointer shadow-xs"
             >
               {isSyncing ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

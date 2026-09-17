@@ -16,7 +16,7 @@ export function ImpersonationCenterHeader({
     <div className="border-b border-border/80 bg-card/60 backdrop-blur-xs px-6 py-4 flex flex-wrap items-center justify-between gap-4">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+          <div className="h-8 w-8 rounded-md bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
             <ShieldAlert className="h-4 w-4" />
           </div>
           <div>
@@ -41,7 +41,7 @@ export function ImpersonationCenterHeader({
           variant="outline"
           onClick={onRefresh}
           disabled={loading}
-          className="h-8 text-xs font-semibold gap-1.5 border-border cursor-pointer"
+          className="h-8 text-xs font-medium gap-1.5 border-border cursor-pointer"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           <span>Segarkan Data</span>

@@ -35,7 +35,7 @@ export function CustomersPage() {
           </p>
         </div>
 
-        <Button size="sm" className="h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer">
+        <Button size="sm" className="h-9 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer">
           <Plus className="h-4 w-4" />
           <span>Tambah Pelanggan Baru</span>
         </Button>

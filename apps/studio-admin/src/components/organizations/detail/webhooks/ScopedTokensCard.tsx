@@ -157,7 +157,7 @@ export function ScopedTokensCard({
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="p-3.5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-muted/70" />
+                  <div className="h-8 w-8 rounded-md bg-muted/70" />
                   <div className="space-y-1.5">
                     <div className="h-3.5 w-32 bg-muted/70 rounded" />
                     <div className="h-2.5 w-48 bg-muted/50 rounded" />

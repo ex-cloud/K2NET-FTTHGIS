@@ -72,7 +72,7 @@ export function OrgNetworkDomainTab({
                 size="sm"
                 onClick={handleCheckDns}
                 disabled={checkingDns}
-                className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
+                className="h-7 px-2.5 text-xs font-medium border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs"
               >
                 <RefreshCw className={cn("h-3 w-3", checkingDns && "animate-spin text-primary")} />
                 <span>Check DNS</span>
@@ -83,7 +83,7 @@ export function OrgNetworkDomainTab({
               <Button
                 size="sm"
                 onClick={onOpenDomainModal}
-                className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs"
+                className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs"
               >
                 <Globe className="h-3.5 w-3.5" />
                 <span>Configure Domain</span>
@@ -160,7 +160,7 @@ export function OrgNetworkDomainTab({
               size="sm"
               onClick={handleTestVpn}
               disabled={testingVpn}
-              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs"
+              className="h-7 px-2.5 text-xs font-medium border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs"
             >
               <RefreshCw className={cn("h-3 w-3", testingVpn && "animate-spin text-primary")} />
               <span>Test Handshake</span>

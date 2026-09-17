@@ -42,7 +42,7 @@ export function PromptFormModal({
       <div className="w-full max-w-xl bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="p-4 border-b border-border/70 bg-muted/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <div className="w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center">
               <Sparkles className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-foreground">
@@ -110,7 +110,7 @@ export function PromptFormModal({
                 id="promptCategory"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                className="w-full text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
               >
                 {PROMPT_CATEGORIES.filter((c) => c.id !== "ALL").map((c) => (
                   <option key={c.id} value={c.id}>
@@ -128,7 +128,7 @@ export function PromptFormModal({
                 id="promptRole"
                 value={formData.target_role}
                 onChange={(e) => setFormData({ ...formData, target_role: e.target.value })}
-                className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                className="w-full text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
               >
                 {PROMPT_ROLES.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -202,7 +202,7 @@ export function PromptFormModal({
               type="submit"
               size="sm"
               disabled={formSubmitting}
-              className="text-xs font-bold gap-1.5 px-4 bg-primary text-primary-foreground cursor-pointer shadow-xs"
+              className="text-xs font-medium gap-1.5 px-4 bg-primary text-primary-foreground cursor-pointer shadow-xs"
             >
               {formSubmitting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

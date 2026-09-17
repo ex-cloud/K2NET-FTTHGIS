@@ -40,7 +40,7 @@ export function AiServerFileRejectModal({
       <DialogContent className="max-w-md bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl">
         <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shrink-0">
+            <div className="w-8 h-8 rounded-md bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shrink-0">
               <XCircle className="w-4 h-4" />
             </div>
             <div>
@@ -86,7 +86,7 @@ export function AiServerFileRejectModal({
             variant="destructive"
             onClick={onConfirmReject}
             disabled={isRejecting}
-            className="text-xs h-8 gap-1.5 font-semibold cursor-pointer"
+            className="text-xs h-8 gap-1.5 font-medium cursor-pointer"
           >
             {isRejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
             {isRejecting ? "Menolak..." : "Ya, Tolak Berkas"}

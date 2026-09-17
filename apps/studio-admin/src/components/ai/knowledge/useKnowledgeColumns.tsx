@@ -97,7 +97,7 @@ export function useKnowledgeColumns({
           const Icon = meta.icon;
           return (
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap ${meta.accentBg} ${meta.accentBorder}`}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium border whitespace-nowrap ${meta.accentBg} ${meta.accentBorder}`}
             >
               <Icon className="h-3 w-3 shrink-0" />
               <span>{meta.shortLabel}</span>

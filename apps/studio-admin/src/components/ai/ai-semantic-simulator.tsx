@@ -91,7 +91,7 @@ function AiSimulatorForm({
             type="submit"
             size="sm"
             disabled={simSearching || !simQuery.trim()}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 text-xs gap-1.5 bg-primary text-primary-foreground font-semibold"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 text-xs gap-1.5 bg-primary text-primary-foreground font-medium"
           >
             {simSearching ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

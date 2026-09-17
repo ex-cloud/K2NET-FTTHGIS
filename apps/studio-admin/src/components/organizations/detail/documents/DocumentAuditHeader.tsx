@@ -56,7 +56,7 @@ export function DocumentAuditHeader({
               <Button
                 size="sm"
                 onClick={handleApprove}
-                className="h-6 px-2 text-[10px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
+                className="h-6 px-2 text-[10px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1 cursor-pointer"
               >
                 <CheckCircle2 className="h-3 w-3" />
                 <span>Setujui (Verify)</span>
@@ -94,7 +94,7 @@ export function DocumentAuditHeader({
             <Button
               size="sm"
               onClick={handleSubmitRevision}
-              className="h-7 px-3 text-xs font-semibold bg-amber-600 text-amber-50 hover:bg-amber-700 cursor-pointer"
+              className="h-7 px-3 text-xs font-medium bg-amber-600 text-amber-50 hover:bg-amber-700 cursor-pointer"
             >
               Kirim Revisi
             </Button>

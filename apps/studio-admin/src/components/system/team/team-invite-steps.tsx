@@ -96,7 +96,7 @@ export function StepUserDetails({
             <Briefcase className="size-3" /> Target Organization
           </label>
           <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
-            <SelectTrigger className="w-full bg-muted/30 border-border text-sm h-10">
+            <SelectTrigger className="w-full bg-muted/30 border-border text-sm h-8">
               <SelectValue placeholder="Select Organization" />
             </SelectTrigger>
             <SelectContent>

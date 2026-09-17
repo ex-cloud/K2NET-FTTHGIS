@@ -40,7 +40,7 @@ export default function SchedulerPage() {
             <CalendarClock className="h-5 w-5 text-primary" />
             System Jobs &amp; Cron Scheduler
             {hasFailedJobs && (
-              <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400">
+              <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400">
                 <XCircle className="w-3 h-3" /> FAILURES DETECTED
               </span>
             )}

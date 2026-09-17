@@ -95,7 +95,7 @@ export function ShowOnceSecretModal({
               type="button"
               size="sm"
               onClick={handleCopy}
-              className="h-10 px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
+              className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
             >
               {copied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               <span>{copied ? "Tersalin" : "Salin"}</span>
@@ -107,7 +107,7 @@ export function ShowOnceSecretModal({
           <Button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto h-8 px-4 text-xs font-semibold bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
+            className="w-full sm:w-auto h-8 px-4 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 cursor-pointer"
           >
             Saya Sudah Menyimpan Kunci Ini
           </Button>

@@ -57,7 +57,7 @@ export function OrgFeatureFlagsTab({
       {/* 1. Header with Save Action */}
       <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <Sliders className="h-4 w-4" />
           </div>
           <div>
@@ -78,7 +78,7 @@ export function OrgFeatureFlagsTab({
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
+            className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
           >
             <Save className="h-3.5 w-3.5" />
             <span>{saving ? "Saving..." : "Save Entitlements"}</span>

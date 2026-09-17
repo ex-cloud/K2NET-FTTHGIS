@@ -85,7 +85,7 @@ export function DocumentsHeaderBar({ onOpenUpload, kycSummary }: DocumentsHeader
         <Button
           size="sm"
           onClick={onOpenUpload}
-          className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+          className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
         >
           <Upload className="h-3.5 w-3.5" />
           <span>Upload Document</span>

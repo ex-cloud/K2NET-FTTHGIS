@@ -22,7 +22,7 @@ export function DocumentsKeyCards({
       {/* Card 1: MoU & SaaS Contract */}
       <Card className="p-4 space-y-3 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
         <div className="flex items-center justify-between">
-          <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+          <div className="h-8 w-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
             <FileCheck className="h-4 w-4" />
           </div>
           <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-500 font-mono text-[9px]">
@@ -54,7 +54,7 @@ export function DocumentsKeyCards({
       {/* Card 2: BAST Serah Terima */}
       <Card className="p-4 space-y-3 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
         <div className="flex items-center justify-between">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+          <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-[9px]">
@@ -86,7 +86,7 @@ export function DocumentsKeyCards({
       {/* Card 3: SLA Commitment */}
       <Card className="p-4 space-y-3 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
         <div className="flex items-center justify-between">
-          <div className="h-8 w-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+          <div className="h-8 w-8 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
             <Sparkles className="h-4 w-4" />
           </div>
           <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[9px]">

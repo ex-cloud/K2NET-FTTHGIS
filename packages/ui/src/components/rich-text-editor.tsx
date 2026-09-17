@@ -460,7 +460,7 @@ export function RichTextEditor({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-md border text-[11px] font-medium transition-colors cursor-pointer ${
                   editor?.isActive("table")
                     ? "bg-primary/15 text-primary border-primary/40"
                     : "bg-background border-border text-foreground hover:bg-muted/60"

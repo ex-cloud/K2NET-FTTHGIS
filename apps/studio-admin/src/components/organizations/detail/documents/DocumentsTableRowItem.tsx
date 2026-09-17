@@ -88,7 +88,7 @@ export function DocumentsTableRowItem({
             <Badge
               variant="outline"
               className={cn(
-                "font-mono text-[9px] font-semibold",
+                "font-mono text-[9px] font-medium",
                 doc.status === "VERIFIED" && "border-primary/40 bg-primary/10 text-primary",
                 doc.status === "ACTIVE" && "border-blue-500/40 bg-blue-500/10 text-blue-500",
                 doc.status === "PENDING_REVIEW" && "border-amber-500/40 bg-amber-500/10 text-amber-500",

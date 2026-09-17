@@ -20,7 +20,7 @@ export function ProjectOverviewSummaryCard({
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span>Latest Status Update</span>
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           <TrendingUp className="w-3 h-3" />
           {healthStatus}
         </span>

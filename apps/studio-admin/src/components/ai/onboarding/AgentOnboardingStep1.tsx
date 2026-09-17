@@ -96,7 +96,7 @@ export function AgentOnboardingStep1({
         <Button
           onClick={onNext}
           disabled={loading}
-          className="w-full text-xs font-bold h-10 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
+          className="w-full text-xs font-medium h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

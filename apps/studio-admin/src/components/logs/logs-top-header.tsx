@@ -319,7 +319,7 @@ function FilterBuilder({ anchorRef, onClose, onAdd }: FilterBuilderProps) {
             </button>
             <button onClick={handleApply} disabled={!value.trim()}
               className={cn(
-                "flex-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors",
+                "flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors",
                 value.trim()
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted/40 text-muted-foreground/50 cursor-not-allowed"

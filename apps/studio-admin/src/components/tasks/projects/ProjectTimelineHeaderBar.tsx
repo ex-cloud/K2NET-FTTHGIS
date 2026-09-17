@@ -46,7 +46,7 @@ export function ProjectTimelineHeaderBar({
         <button
           type="button"
           onClick={onScrollToToday}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-semibold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-medium text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
           title="Scroll to current date"
         >
           <Crosshair className="w-3.5 h-3.5 text-primary" />

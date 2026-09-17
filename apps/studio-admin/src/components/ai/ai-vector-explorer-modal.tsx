@@ -38,7 +38,7 @@ export function AiVectorExplorerModal({
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col bg-background border-border">
         <DialogHeader className="border-b border-border pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="w-8 h-8 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
               <BrainCircuit className="w-4 h-4" />
             </div>
             <div>

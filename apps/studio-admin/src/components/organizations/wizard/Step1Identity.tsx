@@ -85,7 +85,7 @@ export function Step1Identity({
                 className={cn(
                   "px-2 py-0.5 rounded font-medium transition-all flex items-center gap-1",
                   formData.slugMode === "random"
-                    ? "bg-card text-foreground shadow-xs font-semibold"
+                    ? "bg-card text-foreground shadow-xs font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >

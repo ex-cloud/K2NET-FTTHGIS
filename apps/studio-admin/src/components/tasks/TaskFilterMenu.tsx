@@ -248,7 +248,7 @@ export function TaskFilterMenu({
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
-              className="text-[10px] text-destructive hover:underline font-semibold flex items-center gap-0.5"
+              className="text-[10px] text-destructive hover:underline font-medium flex items-center gap-0.5"
             >
               <X className="h-3 w-3" />
               <span>Clear</span>

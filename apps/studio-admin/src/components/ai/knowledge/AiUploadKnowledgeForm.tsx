@@ -204,7 +204,7 @@ export function AiUploadKnowledgeForm({
             type="submit"
             size="sm"
             disabled={uploading || !selectedFile}
-            className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold"
+            className="text-xs gap-1.5 bg-primary text-primary-foreground font-medium"
           >
             {uploading ? (
               <>

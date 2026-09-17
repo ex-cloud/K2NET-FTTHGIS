@@ -99,7 +99,7 @@ export function TablePageSkeleton() {
               <Skeleton className="h-4 w-24 mr-20" />
               <Skeleton className="h-4 w-32 mr-20" />
               <Skeleton className="h-5 w-16 rounded-full mr-4" />
-              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-8 w-8 rounded-md" />
             </div>
           ))}
         </div>
@@ -109,9 +109,9 @@ export function TablePageSkeleton() {
       <div className="flex items-center justify-between px-2">
         <Skeleton className="h-4 w-40" />
         <div className="flex gap-1">
-          <Skeleton className="h-8 w-8 rounded-lg" />
-          <Skeleton className="h-8 w-8 rounded-lg" />
-          <Skeleton className="h-8 w-8 rounded-lg" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-md" />
+          <Skeleton className="h-8 w-8 rounded-md" />
         </div>
       </div>
     </div>

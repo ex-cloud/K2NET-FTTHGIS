@@ -78,7 +78,7 @@ export function ProjectOverviewPlanEditor({
             size="sm"
             onClick={handleSaveDocument}
             disabled={isSavingPlan}
-            className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
+            className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             {isSavingPlan ? (
               <>

@@ -55,7 +55,7 @@ export function PromptsManagementTable({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+            className="text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
           >
             {PROMPT_CATEGORIES.map((c) => (
               <option key={c.id} value={c.id}>
@@ -67,7 +67,7 @@ export function PromptsManagementTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+            className="text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
           >
             <option value="ALL">Semua Status</option>
             <option value="active">Hanya Aktif</option>
@@ -79,7 +79,7 @@ export function PromptsManagementTable({
         <Button
           size="sm"
           onClick={onOpenCreateModal}
-          className="text-xs gap-1.5 font-bold px-4 h-8 bg-primary text-primary-foreground cursor-pointer shrink-0 shadow-xs"
+          className="text-xs gap-1.5 font-medium px-4 h-8 bg-primary text-primary-foreground cursor-pointer shrink-0 shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Tambah Prompt Baru</span>

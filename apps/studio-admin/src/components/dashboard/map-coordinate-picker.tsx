@@ -177,22 +177,22 @@ function MapOverlays({
         </div>
       </div>
 
-      <div className="absolute right-6 bottom-6 flex flex-col gap-2">
+      <div className="absolute right-6 bottom-6 flex flex-col gap-1.5">
         <Button
           size="icon"
           variant="outline"
           onClick={onZoomIn}
-          className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
+          className="w-8 h-8 rounded-md bg-muted/90 backdrop-blur-xl border-border/80 text-foreground hover:bg-muted shadow-xs"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="size-3.5" />
         </Button>
         <Button
           size="icon"
           variant="outline"
           onClick={onZoomOut}
-          className="w-10 h-10 rounded-xl bg-muted/90 backdrop-blur-xl border-border/10 text-foreground hover:bg-muted"
+          className="w-8 h-8 rounded-md bg-muted/90 backdrop-blur-xl border-border/80 text-foreground hover:bg-muted shadow-xs"
         >
-          <Minus className="w-5 h-5" />
+          <Minus className="size-3.5" />
         </Button>
       </div>
     </>
@@ -322,21 +322,23 @@ export function MapCoordinatePicker({
           </Map>
         </div>
 
-        <DialogFooter className="p-6 bg-muted/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-4">
+        <DialogFooter className="p-4 bg-muted/80 backdrop-blur-xl border-t border-border flex sm:justify-between items-center gap-3">
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-12 px-6 rounded-2xl border border-border hover:bg-card/5 text-muted-foreground font-bold uppercase tracking-widest text-[10px] transition-all"
+            className="h-8 px-3 rounded-md border border-border hover:bg-card/5 text-muted-foreground font-medium text-xs transition-all"
           >
-            <X className="w-4 h-4 mr-2" />
+            <X className="size-3.5 mr-1.5" />
             Cancel
           </Button>
 
           <Button
+            size="sm"
             onClick={handleConfirm}
-            className="h-12 px-10 rounded-2xl bg-blue-600 hover:bg-blue-500 text-foreground font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/25 transition-all active:scale-95"
+            className="h-8 px-4 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs shadow-xs transition-all active:scale-95"
           >
-            <Check className="w-4 h-4 mr-2" />
+            <Check className="size-3.5 mr-1.5" />
             Confirm Location
           </Button>
         </DialogFooter>

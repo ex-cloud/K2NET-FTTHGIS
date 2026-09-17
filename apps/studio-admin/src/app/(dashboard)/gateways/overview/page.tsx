@@ -47,7 +47,7 @@ export default function GatewaysOverviewPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 text-[10px] uppercase font-medium tracking-wider px-2 py-0.5">
                 System Integration
               </Badge>
             </div>

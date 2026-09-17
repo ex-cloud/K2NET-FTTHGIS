@@ -79,7 +79,7 @@ export function ImpersonateFormBody({
               variant="destructive"
               onClick={onRetryWithAutoSwitch}
               disabled={submitting}
-              className="h-7 text-xs font-semibold gap-1.5"
+              className="h-7 text-xs font-medium gap-1.5"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" />
               <span>Akhiri Sesi Lama & Beralih Sekarang</span>

@@ -92,7 +92,7 @@ export function BreadcrumbNav() {
       {/* Connect Button (right side of breadcrumbs area) */}
       {projectId && (
          <div className="flex items-center">
-           <Button variant="outline" size="sm" className="h-6 text-[10px] font-semibold gap-1.5 rounded-full px-3 border-border text-foreground hover:bg-accent">
+           <Button variant="outline" size="sm" className="h-6 text-[10px] font-medium gap-1.5 rounded-full px-3 border-border text-foreground hover:bg-accent">
              <Plug2 className="w-2 h-2" />
              Connect
            </Button>

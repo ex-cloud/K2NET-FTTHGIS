@@ -27,7 +27,7 @@ function QueryHeader({ error }: { error: string | null }) {
           href="https://supabase.com/docs/guides/platform/performance"
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-card hover:bg-muted/30 text-xs font-semibold text-muted-foreground hover:text-foreground rounded-lg transition-colors h-8"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-card hover:bg-muted/30 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors h-8"
         >
           <FileText className="h-3.5 w-3.5" />
           Docs

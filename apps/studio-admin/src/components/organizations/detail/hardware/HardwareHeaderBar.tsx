@@ -46,7 +46,7 @@ export function HardwareHeaderBar({
             size="sm"
             variant="outline"
             onClick={onOpenBoosterModal}
-            className="h-7 px-2.5 text-xs font-semibold border-amber-500/30 bg-card hover:bg-amber-500/10 text-amber-500 gap-1.5 shadow-2xs cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium border-amber-500/30 bg-card hover:bg-amber-500/10 text-amber-500 gap-1.5 shadow-2xs cursor-pointer"
           >
             <Zap className="h-3.5 w-3.5 text-amber-500" />
             <span>+ Emergency Booster</span>
@@ -58,7 +58,7 @@ export function HardwareHeaderBar({
             variant="outline"
             size="sm"
             onClick={onOpenQuotaModal}
-            className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
           >
             <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Adjust Quotas</span>

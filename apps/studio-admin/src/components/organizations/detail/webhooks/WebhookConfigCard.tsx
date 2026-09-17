@@ -192,7 +192,7 @@ export function WebhookConfigCard({
             size="sm"
             onClick={onSaveWebhook}
             disabled={!isDirty || isSaving}
-            className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1.5 disabled:opacity-50"
+            className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1.5 disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" />
             <span>{isSaving ? "Menyimpan..." : "Simpan Konfigurasi Webhook"}</span>
@@ -203,7 +203,7 @@ export function WebhookConfigCard({
               <Button
                 size="sm"
                 disabled
-                className="h-8 px-3 text-xs font-semibold bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5"
+                className="h-8 px-3 text-xs font-medium bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5"
               >
                 <ShieldAlert className="h-3.5 w-3.5" />
                 <span>Read-Only Mode</span>

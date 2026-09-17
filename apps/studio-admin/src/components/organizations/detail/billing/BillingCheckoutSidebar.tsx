@@ -93,7 +93,7 @@ export function BillingCheckoutSidebar({
           size="sm"
           disabled={isSubmitDisabled}
           onClick={isDowngradeMode ? onExecuteDowngrade : onExecuteUpgrade}
-          className="w-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-8 gap-1.5 shadow-xs cursor-pointer"
+          className="w-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-8 gap-1.5 shadow-xs cursor-pointer"
         >
           {isExecuting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

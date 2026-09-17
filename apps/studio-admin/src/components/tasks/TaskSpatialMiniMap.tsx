@@ -95,7 +95,7 @@ export function TaskSpatialMiniMap({
           <button
             type="button"
             onClick={handleOpenGis}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-semibold transition-colors cursor-pointer text-[11px]"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-colors cursor-pointer text-[11px]"
             title="Buka di Peta GIS Utama"
           >
             <span>GIS Map</span>

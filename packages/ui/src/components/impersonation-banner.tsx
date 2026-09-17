@@ -77,7 +77,7 @@ export function ImpersonationBanner({
           type="button"
           onClick={onExit}
           disabled={isExiting}
-          className="inline-flex items-center gap-1.5 rounded-md bg-white text-stone-900 px-3 py-1 text-xs font-semibold shadow hover:bg-stone-100 dark:bg-stone-900 dark:text-white dark:hover:bg-stone-800 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-white text-stone-900 px-3 py-1 text-xs font-medium shadow hover:bg-stone-100 dark:bg-stone-900 dark:text-white dark:hover:bg-stone-800 transition-colors disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" />
           <span>{isExiting ? "Keluar..." : "Keluar Sesi"}</span>

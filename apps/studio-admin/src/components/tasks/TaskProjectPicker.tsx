@@ -49,7 +49,7 @@ export function TaskProjectPicker({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors",
+            "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors",
             selectedProject
               ? "border-primary/40 bg-primary/10 text-primary"
               : "border-border/60 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -120,7 +120,7 @@ export function TaskProjectPicker({
               <button
                 type="button"
                 onClick={handleAddNewProject}
-                className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-semibold"
+                className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-medium"
               >
                 Add
               </button>
@@ -133,7 +133,7 @@ export function TaskProjectPicker({
               e.preventDefault();
               setIsAddingProject(true);
             }}
-            className="w-full text-left flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-semibold"
+            className="w-full text-left flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-medium"
           >
             <Plus className="h-3 w-3" />
             Create new project...

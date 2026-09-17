@@ -22,7 +22,7 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h4 className="text-xs font-semibold uppercase tracking-widest text-foreground/75 dark:text-muted-foreground">Service Details</h4>
               {activeNodeData.port ? (
-                <Badge variant="outline" className="border-border text-[9px] font-mono text-muted-foreground bg-muted/40 font-bold">
+                <Badge variant="outline" className="border-border text-[9px] font-mono text-muted-foreground bg-muted/40 font-medium">
                   Port {activeNodeData.port}
                 </Badge>
               ) : null}

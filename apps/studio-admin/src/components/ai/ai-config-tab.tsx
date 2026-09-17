@@ -105,7 +105,7 @@ export function AiConfigTab({
             <Button
               type="submit"
               disabled={configSaving}
-              className="text-xs gap-2 font-bold px-6 h-9 shadow-xs cursor-pointer w-full sm:w-auto"
+              className="text-xs gap-2 font-medium px-6 h-9 shadow-xs cursor-pointer w-full sm:w-auto"
             >
               {configSaving ? (
                 <>

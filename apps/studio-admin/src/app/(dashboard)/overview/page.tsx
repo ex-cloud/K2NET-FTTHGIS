@@ -58,7 +58,7 @@ export default function SystemOverviewPage() {
           <div className="flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20">
+                <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary hover:bg-primary/20">
                   Admin Platform Control
                 </Badge>
               </div>

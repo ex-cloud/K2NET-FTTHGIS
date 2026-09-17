@@ -81,7 +81,7 @@ function TotalTimeDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden ${
             minTotalTime !== null ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
           }`}
         >
@@ -145,7 +145,7 @@ function RolesFilterDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden ${
             selectedRoles.length > 0 ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
           }`}
         >
@@ -206,7 +206,7 @@ function SourceFilterDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden ${
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden ${
             sourceFilter ? "text-primary border-primary/40 bg-primary/10" : "text-foreground"
           }`}
         >
@@ -324,7 +324,7 @@ function ExportMenuDropdown({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/40 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/40 text-foreground rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden"
         >
           <span>Export</span>
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -389,7 +389,7 @@ export function QueryPerformanceToolbar({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden"
               >
                 <span>{sortBy === "calls" ? "Calls: High to Low" : "Calls"}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />

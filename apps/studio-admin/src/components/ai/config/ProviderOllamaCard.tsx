@@ -30,7 +30,7 @@ export function ProviderOllamaCard({
       <div>
         <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+            <div className="w-8 h-8 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
               <Server className="w-4 h-4" />
             </div>
             <div>
@@ -100,7 +100,7 @@ export function ProviderOllamaCard({
               id="ollamaModel"
               value={config["OLLAMA_CHAT_MODEL"] || "llama3.2"}
               onChange={(e) => setConfig({ ...config, OLLAMA_CHAT_MODEL: e.target.value })}
-              className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
+              className="w-full text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
             >
               {models.map((m) => (
                 <option key={m.id} value={m.id}>

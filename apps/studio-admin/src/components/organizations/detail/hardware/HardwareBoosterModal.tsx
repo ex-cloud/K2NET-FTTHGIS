@@ -109,7 +109,7 @@ export function HardwareBoosterModal({
             size="sm"
             onClick={onApplyBooster}
             disabled={isSavingBooster || !boosterReason.trim()}
-            className="text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 cursor-pointer"
+            className="text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 cursor-pointer"
           >
             {isSavingBooster ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Aktifkan Booster Sekarang"}
           </Button>

@@ -83,7 +83,7 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden",
                   statusFilter !== "ALL"
                     ? "bg-primary/10 border-primary/40 text-primary"
                     : "bg-card border-border hover:bg-muted/30 text-foreground"
@@ -134,7 +134,7 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden",
                   priorityFilter !== "ALL"
                     ? "bg-primary/10 border-primary/40 text-primary"
                     : "bg-card border-border hover:bg-muted/30 text-foreground"
@@ -202,7 +202,7 @@ export const ProjectsHubToolbar: React.FC<ProjectsHubToolbarProps> = ({
               toast.info("Refreshing project plans...");
             }}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg bg-card hover:bg-muted/30 text-foreground transition-colors font-semibold h-8 cursor-pointer shadow-xs disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border rounded-lg bg-card hover:bg-muted/30 text-foreground transition-colors font-medium h-8 cursor-pointer shadow-xs disabled:opacity-50"
             title="Refresh data"
           >
             <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", loading && "animate-spin text-primary")} />

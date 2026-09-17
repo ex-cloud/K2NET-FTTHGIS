@@ -312,7 +312,7 @@ export function AgentOnboardingStep2({
             size="sm"
             onClick={onAuthorize}
             disabled={submitting || totalGranted === 0}
-            className="text-xs font-bold gap-1.5 px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
+            className="text-xs font-medium gap-1.5 px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
           >
             {submitting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

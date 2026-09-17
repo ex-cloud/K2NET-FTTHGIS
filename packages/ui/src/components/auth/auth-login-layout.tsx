@@ -55,7 +55,7 @@ export function AuthLoginLayout({
                 <span>System Docs</span>
               </a>
             )}
-            <ModeToggle className="h-8 w-8 rounded-lg border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-accent/80" />
+            <ModeToggle className="h-8 w-8 rounded-md border border-border/80 bg-background/50 text-muted-foreground hover:text-foreground hover:bg-accent/80" />
           </div>
         </div>
 
@@ -118,7 +118,7 @@ export function AuthLoginLayout({
 
         {/* Top Right Figure Pill Badge */}
         <div className="w-full flex justify-end z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-semibold tracking-wider text-muted-foreground uppercase shadow-xs">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-medium tracking-wider text-muted-foreground uppercase shadow-xs">
             <Sparkles className="h-3 w-3 text-primary" />
             <span>FIG 0.1: PURPOSE-BUILT ARCHITECTURE</span>
           </div>
@@ -168,7 +168,7 @@ export function AuthLoginLayout({
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-border/60 bg-muted/30">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
+                <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
                 <div>

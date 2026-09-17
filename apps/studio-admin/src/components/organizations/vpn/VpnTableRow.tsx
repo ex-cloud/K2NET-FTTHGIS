@@ -48,7 +48,7 @@ export function VpnTableRow({
           {/* Organization */}
           <TableCell className="pl-6 py-3.5" onClick={() => onNavigateNetwork(t.orgSlug)}>
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs">
+              <div className="h-8 w-8 rounded-md bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs">
                 {t.orgName.charAt(0).toUpperCase()}
               </div>
               <div className="space-y-0.5">

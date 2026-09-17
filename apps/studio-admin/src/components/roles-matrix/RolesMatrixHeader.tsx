@@ -34,7 +34,7 @@ export function RolesMatrixHeader({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
               Access Control & PBAC
             </Badge>
             <span className="text-xs text-muted-foreground">• Centralized Permission Mapping</span>

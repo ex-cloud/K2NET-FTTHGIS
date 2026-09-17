@@ -31,7 +31,7 @@ export function ProviderOpenAiCard({
       <div>
         <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Bot className="w-4 h-4" />
             </div>
             <div>
@@ -107,7 +107,7 @@ export function ProviderOpenAiCard({
               id="openaiModel"
               value={config["OPENAI_CHAT_MODEL"] || "gpt-4o-mini"}
               onChange={(e) => setConfig({ ...config, OPENAI_CHAT_MODEL: e.target.value })}
-              className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
+              className="w-full text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden focus:ring-1 focus:ring-primary"
             >
               {models.length > 0 ? (
                 models.map((m) => (

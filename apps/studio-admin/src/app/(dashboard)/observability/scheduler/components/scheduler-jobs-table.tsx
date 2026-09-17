@@ -20,7 +20,7 @@ function StatusBadge({ status }: { status: SchedulerJob["lastStatus"] }) {
   };
   const s = map[status] ?? map.SUCCESS;
   return (
-    <Badge className={`text-[10px] font-mono font-bold ${s.cls}`}>
+    <Badge className={`text-[10px] font-mono font-medium ${s.cls}`}>
       {s.label}
     </Badge>
   );

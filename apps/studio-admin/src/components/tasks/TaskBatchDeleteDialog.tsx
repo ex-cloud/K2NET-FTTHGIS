@@ -56,7 +56,7 @@ export function TaskBatchDeleteDialog({
             type="button"
             disabled={loading}
             onClick={onConfirmDelete}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-50"
+            className="px-4 py-2 text-xs font-medium rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-50"
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>Ya, Hapus {selectedCount} Tugas</span>

@@ -27,7 +27,7 @@ export function ActiveImpersonationBanner({
   return (
     <div className="mx-4 md:mx-6 mt-4 mb-2 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+        <div className="h-8 w-8 rounded-md bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
           <ShieldAlert className="h-4 w-4 animate-pulse" />
         </div>
         <div className="space-y-0.5 text-xs">
@@ -58,7 +58,7 @@ export function ActiveImpersonationBanner({
           variant="destructive"
           onClick={onStopSession}
           disabled={terminating}
-          className="h-8 text-xs font-semibold gap-1.5"
+          className="h-8 text-xs font-medium gap-1.5"
         >
           <XCircle className="h-3.5 w-3.5" />
           <span>{terminating ? "Mengakhiri..." : "Akhiri Sesi"}</span>

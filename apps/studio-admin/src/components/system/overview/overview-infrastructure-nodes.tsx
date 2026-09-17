@@ -191,7 +191,7 @@ export function InfrastructureGatewayCluster({
             e.stopPropagation();
             onToggleCollapse();
           }}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/40 bg-primary/15 hover:bg-primary/25 text-primary text-[9px] font-mono font-semibold transition-all cursor-pointer shadow-sm active:scale-95 z-40"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/40 bg-primary/15 hover:bg-primary/25 text-primary text-[9px] font-mono font-medium transition-all cursor-pointer shadow-sm active:scale-95 z-40"
           title="Collapse cluster back to hub node"
         >
           <span>{onlineGatewayCount}/9 Active</span>

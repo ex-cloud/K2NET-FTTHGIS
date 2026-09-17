@@ -71,11 +71,11 @@ export function NewProjectDialog({
                     type="button"
                     title="Pilih Icon Projek"
                     className={cn(
-                      "w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 transition-all hover:scale-105 cursor-pointer shadow-sm mt-0.5",
+                      "w-8 h-8 rounded-md border flex items-center justify-center shrink-0 transition-all hover:scale-105 cursor-pointer shadow-xs mt-0.5",
                       form.activeIconObj.color
                     )}
                   >
-                    <IconComponent className="w-5 h-5" />
+                    <IconComponent className="size-4" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 p-1.5 grid grid-cols-4 gap-1.5 z-[150]">
@@ -165,14 +165,14 @@ export function NewProjectDialog({
                 type="button"
                 variant="ghost"
                 onClick={() => onOpenChange(false)}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-3 rounded-lg"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground h-8 px-3 rounded-md"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={form.isSubmitting || !form.name.trim()}
-                className="h-8 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                className="h-8 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 {form.isSubmitting ? (
                   <>

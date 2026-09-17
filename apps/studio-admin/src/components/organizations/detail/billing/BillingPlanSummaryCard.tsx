@@ -98,7 +98,7 @@ export function BillingPlanSummaryCard({
                 size="sm"
                 onClick={onOpenChangePlan}
                 disabled={isLoading || !canManageBilling}
-                className="h-8 px-3.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                className="h-8 px-3.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
               >
                 <CreditCard className="h-3.5 w-3.5" />
                 <span>Change subscription plan</span>

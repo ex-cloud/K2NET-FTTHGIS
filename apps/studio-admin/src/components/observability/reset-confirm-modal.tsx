@@ -34,7 +34,7 @@ export function ResetConfirmModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors"
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted text-foreground transition-colors"
           >
             Cancel
           </button>
@@ -43,7 +43,7 @@ export function ResetConfirmModal({
             onClick={() => {
               onConfirm();
             }}
-            className="inline-flex items-center justify-center h-8 px-3 text-xs font-semibold rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
+            className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-md bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors"
           >
             Reset stats
           </button>

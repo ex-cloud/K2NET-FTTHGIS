@@ -84,7 +84,7 @@ export function TenantFeatureFlagsModal({
           {/* 1. GIS Core */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                 <Map className="h-4 w-4" />
               </div>
               <div>
@@ -105,7 +105,7 @@ export function TenantFeatureFlagsModal({
           {/* 2. OLT Poller Gateway */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                 <Radio className="h-4 w-4" />
               </div>
               <div>
@@ -126,7 +126,7 @@ export function TenantFeatureFlagsModal({
           {/* 3. WhatsApp Notification Engine */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+              <div className="h-8 w-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
                 <MessageSquare className="h-4 w-4" />
               </div>
               <div>
@@ -147,7 +147,7 @@ export function TenantFeatureFlagsModal({
           {/* 4. AI Copilot */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
+              <div className="h-8 w-8 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
@@ -168,7 +168,7 @@ export function TenantFeatureFlagsModal({
           {/* 5. Sandbox Mode */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+              <div className="h-8 w-8 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                 <FlaskConical className="h-4 w-4" />
               </div>
               <div>

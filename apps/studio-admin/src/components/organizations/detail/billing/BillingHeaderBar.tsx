@@ -23,7 +23,7 @@ export function BillingHeaderBar({
         <div className="flex flex-wrap items-center gap-2">
           <CreditCard className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground">Tata Kelola Paket Langganan &amp; Billing</h3>
-          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-bold">
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-medium">
             {currentTier.toUpperCase()} PLAN
           </Badge>
 

@@ -42,7 +42,7 @@ export function FullscreenChatInput({
             onClick={isStreaming ? onStop : onSend}
             disabled={!input.trim() && !isStreaming}
             className={cn(
-              "h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-all cursor-pointer",
+              "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-xs transition-all cursor-pointer",
               "disabled:opacity-40 disabled:cursor-not-allowed",
               isStreaming
                 ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
@@ -51,9 +51,9 @@ export function FullscreenChatInput({
             title={isStreaming ? "Stop" : "Send"}
           >
             {isStreaming ? (
-              <Square className="w-4 h-4 fill-current" />
+              <Square className="size-3.5 fill-current" />
             ) : (
-              <Send className="w-4 h-4 -translate-x-px" />
+              <Send className="size-3.5 -translate-x-px" />
             )}
           </button>
         </div>

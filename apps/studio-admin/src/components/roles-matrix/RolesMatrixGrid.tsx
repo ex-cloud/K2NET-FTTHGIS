@@ -52,11 +52,11 @@ export function RolesMatrixGrid({
 
                 <div className="flex items-center gap-1.5">
                   {role.isSystemRole ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium uppercase">
                       <Lock className="w-2.5 h-2.5" /> Template
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold uppercase">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium uppercase">
                       <ShieldCheck className="w-2.5 h-2.5" /> Custom
                     </span>
                   )}
@@ -126,7 +126,7 @@ export function RolesMatrixGrid({
                   type="button"
                   onClick={() => onSaveRole(role)}
                   disabled={saving === role.id}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-lg transition-all"
                 >
                   {saving === role.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

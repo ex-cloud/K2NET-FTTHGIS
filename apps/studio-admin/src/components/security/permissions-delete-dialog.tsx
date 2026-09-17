@@ -43,7 +43,7 @@ export function DeleteConfirmDialog({
             id="btn-confirm-delete-perm"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 bg-rose-600 hover:bg-rose-500 text-foreground font-semibold shadow-lg shadow-rose-600/20"
+            className="flex-1 bg-rose-600 hover:bg-rose-500 text-foreground font-medium shadow-lg shadow-rose-600/20"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Hapus"}
           </Button>

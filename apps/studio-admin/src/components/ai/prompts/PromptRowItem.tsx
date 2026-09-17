@@ -25,7 +25,7 @@ export function PromptRowItem({
   return (
     <tr className="hover:bg-muted/30 transition-colors">
       <td className="py-3 px-4 text-center">
-        <div className="w-7 h-7 mx-auto rounded-lg bg-primary/10 text-primary flex items-center justify-center shadow-xs">
+        <div className="w-7 h-7 mx-auto rounded-md bg-primary/10 text-primary flex items-center justify-center shadow-xs">
           <IconComp className="w-3.5 h-3.5" />
         </div>
       </td>

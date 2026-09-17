@@ -66,7 +66,7 @@ export function AiDrawerOnboarding({ onReviewPermissions }: AiDrawerOnboardingPr
           <button
             type="button"
             onClick={onReviewPermissions}
-            className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors cursor-pointer shadow-md shadow-primary/20"
+            className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-md shadow-primary/20"
           >
             Review permissions
           </button>

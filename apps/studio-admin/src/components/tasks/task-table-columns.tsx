@@ -32,7 +32,7 @@ export const PriorityCell: React.FC<PriorityCellProps> = ({ task, onUpdateTask }
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "text-xs px-2 py-1 rounded-md font-semibold flex items-center gap-1 border border-transparent hover:border-border transition-all",
+              "text-xs px-2 py-1 rounded-md font-medium flex items-center gap-1 border border-transparent hover:border-border transition-all",
               priority.className
             )}
           >

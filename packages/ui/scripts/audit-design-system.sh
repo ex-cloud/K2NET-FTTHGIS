@@ -54,13 +54,15 @@ case "$TARGET" in
     DIRS_TO_SCAN=("/opt/project5/apps/studio-tenant/src")
     ;;
   ui|packages)
-    DIRS_TO_SCAN=("/opt/project5/packages/ui/src")
+    DIRS_TO_SCAN=("/opt/project5/packages/ui/src" "/opt/project5/packages/auth/src" "/opt/project5/packages/design-system/src")
     ;;
   all)
     DIRS_TO_SCAN=(
       "/opt/project5/apps/studio-admin/src"
       "/opt/project5/apps/studio-tenant/src"
       "/opt/project5/packages/ui/src"
+      "/opt/project5/packages/auth/src"
+      "/opt/project5/packages/design-system/src"
     )
     ;;
   *)
@@ -91,7 +93,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 1: Semantic Color Token Compliance (Hardcoded Tailwind Colors)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [1/5] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
+echo -e "${CYAN}▶ [1/6] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
 COLOR_REGEX="text-zinc-|bg-zinc-|border-zinc-|text-slate-|bg-slate-|border-slate-|text-gray-|bg-gray-|border-gray-|text-neutral-|bg-neutral-|border-neutral-|text-emerald-|bg-emerald-|border-emerald-"
 
 COLOR_VIOLATIONS=$(grep -rnE "$COLOR_REGEX" "${VALID_DIRS[@]}" \
@@ -121,11 +123,10 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
-# ATURAN 2: Button & Action Typography Standard (Supabase: font-medium, bukan bold)
+# ATURAN 2: Button & Control Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [2/5] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
-# Cari pemanggilan Button atau kelas tombol yang menimpa ke font-bold / font-black / font-extrabold
-BTN_FONT_VIOLATIONS=$(grep -rnE '(<Button[^>]*className=[^>]*font-(bold|black|extrabold)|class(Name)?="[^"]*btn[^"]*font-(bold|black|extrabold))' "${VALID_DIRS[@]}" \
+echo -e "${CYAN}▶ [2/6] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
+BTN_FONT_VIOLATIONS=$(grep -rnE '(<Button|<button|<SelectTrigger)[^>]*font-(bold|black|extrabold|semibold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
 
@@ -135,7 +136,7 @@ if [ -n "$BTN_FONT_VIOLATIONS" ]; then
 fi
 
 if [ "$BTN_FONT_COUNT" -gt 0 ]; then
-  echo -e "  ${RED}❌ Ditemukan $BTN_FONT_COUNT tombol dengan font weight non-standar (Gunakan 'font-medium'):${NC}"
+  echo -e "  ${RED}❌ Ditemukan $BTN_FONT_COUNT tombol/kontrol dengan font weight non-standar (Gunakan 'font-medium'):${NC}"
   echo "$BTN_FONT_VIOLATIONS" | head -n 8 | while read -r line; do
     echo -e "     ${RED}•${NC} $line"
   done
@@ -146,13 +147,37 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
-# ATURAN 3: Control Sizing & Oversized Elements (Supabase: h-6, h-7, h-8, h-9)
+# ATURAN 3: Badge Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [3/5] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
-# Flag oversized button classes like h-14, h-16, h-20 on buttons/inputs
-OVERSIZED_VIOLATIONS=$(grep -rnE '(<Button[^>]*className=[^>]*h-(14|16|20|24)|<Input[^>]*className=[^>]*h-(14|16|20|24))' "${VALID_DIRS[@]}" \
+echo -e "${CYAN}▶ [3/6] Memeriksa Standar Tipografi Badge (Supabase: font-medium)...${NC}"
+BADGE_FONT_VIOLATIONS=$(grep -rnE '<Badge[^>]*font-(bold|black|extrabold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
+
+BADGE_FONT_COUNT=0
+if [ -n "$BADGE_FONT_VIOLATIONS" ]; then
+  BADGE_FONT_COUNT=$(echo "$BADGE_FONT_VIOLATIONS" | wc -l | tr -d ' ')
+fi
+
+if [ "$BADGE_FONT_COUNT" -gt 0 ]; then
+  echo -e "  ${RED}❌ Ditemukan $BADGE_FONT_COUNT badge dengan font weight non-standar (Gunakan 'font-medium'):${NC}"
+  echo "$BADGE_FONT_VIOLATIONS" | head -n 8 | while read -r line; do
+    echo -e "     ${RED}•${NC} $line"
+  done
+  FATAL_ERRORS=$((FATAL_ERRORS + BADGE_FONT_COUNT))
+else
+  echo -e "  ${GREEN}✓ 0 pelanggaran font weight badge (100% font-medium standard).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
+# ATURAN 4: Control Sizing & Oversized Elements (Supabase: h-6, h-7, h-8, h-9)
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [4/6] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
+OVERSIZED_VIOLATIONS=$(grep -rnE '(<Button[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<Input[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<SelectTrigger[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b)' "${VALID_DIRS[@]}" \
+  --include="*.tsx" --include="*.ts" 2>/dev/null \
+  | grep -v "node_modules" \
+  | grep -v 'size="lg"' || true)
 
 OVERSIZED_COUNT=0
 if [ -n "$OVERSIZED_VIOLATIONS" ]; then
@@ -160,7 +185,7 @@ if [ -n "$OVERSIZED_VIOLATIONS" ]; then
 fi
 
 if [ "$OVERSIZED_COUNT" -gt 0 ]; then
-  echo -e "  ${RED}❌ Ditemukan $OVERSIZED_COUNT kontrol dengan ukuran oversized (h-14+):${NC}"
+  echo -e "  ${RED}❌ Ditemukan $OVERSIZED_COUNT kontrol dengan ukuran oversized (h-10+ pada kontrol compact):${NC}"
   echo "$OVERSIZED_VIOLATIONS" | head -n 5 | while read -r line; do
     echo -e "     ${RED}•${NC} $line"
   done
@@ -171,9 +196,9 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
-# ATURAN 4: Inline Hex & RGB Styles Audit (Zero Hardcoded Inline Color Styles)
+# ATURAN 5: Inline Hex & RGB Styles Audit (Zero Hardcoded Inline Color Styles)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [4/5] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
+echo -e "${CYAN}▶ [5/6] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
 INLINE_COLOR_VIOLATIONS=$(grep -rnE 'style=\{\{[^}]*(color|backgroundColor|borderColor|background):[[:space:]]*["\x27]#[0-9a-fA-F]{3,8}' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" \
@@ -197,9 +222,9 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
-# ATURAN 5: Heavy Shadow Degradation (Advisory — Supabase uses flat border-driven elevation)
+# ATURAN 6: Heavy Shadow Degradation (Supabase uses flat border-driven elevation)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [5/5] Memeriksa Konsistensi Elevation & Border-Driven Surface (Advisory)...${NC}"
+echo -e "${CYAN}▶ [6/6] Memeriksa Konsistensi Elevation & Border-Driven Surface...${NC}"
 SHADOW_VIOLATIONS=$(grep -rnE 'className=[^>]*shadow-(2xl|3xl)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -210,8 +235,13 @@ if [ -n "$SHADOW_VIOLATIONS" ]; then
 fi
 
 if [ "$SHADOW_COUNT" -gt 0 ]; then
-  echo -e "  ${YELLOW}ℹ️  Ditemukan $SHADOW_COUNT elemen dengan shadow-2xl/3xl (Saran: Gunakan border semantik & shadow-md/lg):${NC}"
-  ADVISORY_WARNS=$((ADVISORY_WARNS + SHADOW_COUNT))
+  if [ "$STRICT_MODE" = true ]; then
+    echo -e "  ${RED}❌ Ditemukan $SHADOW_COUNT elemen dengan shadow-2xl/3xl (Gunakan border semantik):${NC}"
+    FATAL_ERRORS=$((FATAL_ERRORS + SHADOW_COUNT))
+  else
+    echo -e "  ${YELLOW}ℹ️  Ditemukan $SHADOW_COUNT elemen dengan shadow-2xl/3xl (Saran: Gunakan border semantik & shadow-md/lg):${NC}"
+    ADVISORY_WARNS=$((ADVISORY_WARNS + SHADOW_COUNT))
+  fi
 else
   echo -e "  ${GREEN}✓ 0 heavy archaic shadows (Desain border-driven konsisten).${NC}"
 fi
@@ -231,7 +261,7 @@ if [ "$FATAL_ERRORS" -eq 0 ]; then
   if [ "$ADVISORY_WARNS" -gt 0 ]; then
     echo -e "${YELLOW}     (Catatan: Ada $ADVISORY_WARNS advisory warnings untuk optimasi visual)     ${NC}"
   fi
-  echo -e "${GREEN}     Codebase selaras dengan Supabase Design System Standards.        ${NC}"
+  echo -e "${GREEN}     Codebase 100% selaras dengan Supabase Design System Standards.   ${NC}"
   echo -e "${BLUE}======================================================================${NC}\n"
   exit 0
 else

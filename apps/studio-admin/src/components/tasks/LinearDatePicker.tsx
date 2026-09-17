@@ -296,8 +296,8 @@ export function LinearDatePicker({
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer select-none",
               value
                 ? type === "target"
-                  ? "bg-amber-500/10 border-amber-500/40 text-amber-500 font-semibold"
-                  : "bg-primary/10 border-primary/40 text-primary font-semibold"
+                  ? "bg-amber-500/10 border-amber-500/40 text-amber-500 font-medium"
+                  : "bg-primary/10 border-primary/40 text-primary font-medium"
                 : "bg-muted/40 hover:bg-muted/80 text-foreground border-border/50",
               buttonClassName
             )}

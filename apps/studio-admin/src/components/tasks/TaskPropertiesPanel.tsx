@@ -89,7 +89,7 @@ export function TaskPropertiesPanel({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md cursor-pointer hover:opacity-80 transition-opacity w-full",
+                  "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md cursor-pointer hover:opacity-80 transition-opacity w-full",
                   statusClass
                 )}
               >
@@ -126,7 +126,7 @@ export function TaskPropertiesPanel({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md cursor-pointer hover:opacity-80 transition-opacity w-full",
+                  "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md cursor-pointer hover:opacity-80 transition-opacity w-full",
                   currentPriority.className
                 )}
               >

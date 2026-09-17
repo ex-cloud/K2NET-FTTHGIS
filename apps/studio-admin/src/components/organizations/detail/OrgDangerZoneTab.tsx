@@ -105,7 +105,7 @@ export function OrgDangerZoneTab({
               size="sm"
               onClick={onImpersonate}
               disabled={!canImpersonate}
-              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
+              className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
             >
               <span>Open Tenant Portal</span>
               <ExternalLink className="h-3.5 w-3.5" />
@@ -173,7 +173,7 @@ export function OrgDangerZoneTab({
               size="sm"
               onClick={handleResetRealm}
               disabled={!canManageSecurity || resettingRealm}
-              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
+              className="h-7 px-2.5 text-xs font-medium border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
               <span>Reset IAM Realm</span>
@@ -199,7 +199,7 @@ export function OrgDangerZoneTab({
               variant="outline"
               size="sm"
               disabled
-              className="h-7 px-2.5 text-xs font-semibold opacity-60 cursor-not-allowed gap-1.5 shrink-0"
+              className="h-7 px-2.5 text-xs font-medium opacity-60 cursor-not-allowed gap-1.5 shrink-0"
             >
               <Lock className="h-3.5 w-3.5" />
               <span>Protected from Deletion</span>
@@ -227,7 +227,7 @@ export function OrgDangerZoneTab({
                 size="sm"
                 onClick={onDelete}
                 disabled={!canDeleteOrg}
-                className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
+                className="h-7 px-2.5 text-xs font-medium bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete Tenant</span>

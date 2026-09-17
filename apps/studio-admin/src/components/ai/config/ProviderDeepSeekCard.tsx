@@ -26,7 +26,7 @@ export function ProviderDeepSeekCard({
       <div>
         <div className="border-b border-border/70 bg-muted/20 px-5 py-4 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+            <div className="w-8 h-8 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
               <Flame className="w-4 h-4" />
             </div>
             <div>
@@ -112,7 +112,7 @@ export function ProviderDeepSeekCard({
                 id="deepseekModel"
                 value={config["DEEPSEEK_CHAT_MODEL"] || "deepseek-chat"}
                 onChange={(e) => setConfig({ ...config, DEEPSEEK_CHAT_MODEL: e.target.value })}
-                className="w-full text-xs h-8 px-2.5 rounded-lg bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
+                className="w-full text-xs h-8 px-2.5 rounded-md bg-background border border-border text-foreground font-mono cursor-pointer outline-hidden"
               >
                 <option value="deepseek-chat">deepseek-chat (DeepSeek-V3)</option>
                 <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek-R1)</option>

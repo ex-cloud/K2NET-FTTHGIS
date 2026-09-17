@@ -87,7 +87,7 @@ export function OrganizationTableRow({
 
         <TableCell className="py-3.5">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs group-hover:border-primary/40 transition-colors">
+            <div className="h-8 w-8 rounded-md bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs group-hover:border-primary/40 transition-colors">
               {org.name.charAt(0).toUpperCase()}
             </div>
             <div className="space-y-0.5">
@@ -132,7 +132,7 @@ export function OrganizationTableRow({
                 }}
                 className="cursor-pointer"
               >
-                <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-semibold hover:bg-amber-500/25 transition-colors">
+                <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-medium hover:bg-amber-500/25 transition-colors">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
                   <span>ACTIVE ({formatRemaining(activeImpersonationRemainingSeconds)})</span>
                 </Badge>

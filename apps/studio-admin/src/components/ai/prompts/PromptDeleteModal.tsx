@@ -21,7 +21,7 @@ export function PromptDeleteModal({
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-md bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4" />
           </div>
           <div>
@@ -48,7 +48,7 @@ export function PromptDeleteModal({
             size="sm"
             onClick={onConfirmDelete}
             disabled={isDeleting}
-            className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+            className="text-xs font-medium gap-1.5 cursor-pointer shadow-xs"
           >
             {isDeleting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

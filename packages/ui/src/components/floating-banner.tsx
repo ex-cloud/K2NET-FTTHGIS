@@ -123,7 +123,7 @@ export function FloatingBanner({
       {actionText && (
         <button
           onClick={onAction}
-          className={cn("relative z-10 text-[10px] font-semibold py-1.5 px-3 rounded border text-center transition-all w-fit", btnColors[variant])}
+          className={cn("relative z-10 text-[10px] font-medium py-1.5 px-3 rounded border text-center transition-all w-fit", btnColors[variant])}
         >
           {actionText}
         </button>

@@ -63,7 +63,7 @@ export function FullscreenSidebar({
           <button
             type="button"
             onClick={onNewChat}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-muted/80 text-foreground text-xs font-semibold transition-all cursor-pointer border border-border/70 hover:border-primary/40 shadow-xs"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-card hover:bg-muted/80 text-foreground text-xs font-medium transition-all cursor-pointer border border-border/70 hover:border-primary/40 shadow-xs"
           >
             <Plus className="w-4 h-4 text-primary" />
             <span>New chat</span>

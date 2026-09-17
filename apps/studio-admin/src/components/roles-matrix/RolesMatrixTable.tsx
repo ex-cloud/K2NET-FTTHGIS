@@ -49,7 +49,7 @@ export function RolesMatrixTable({
                   <div className="flex items-center justify-center gap-1.5 mt-1">
                     <Badge
                       variant="outline"
-                      className="text-[9px] font-mono font-bold px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
+                      className="text-[9px] font-mono font-medium px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
                     >
                       {role.code || (selectedScope === "SYSTEM" ? `SYS-${role.id}` : `TENT-${role.id}`)}
                     </Badge>

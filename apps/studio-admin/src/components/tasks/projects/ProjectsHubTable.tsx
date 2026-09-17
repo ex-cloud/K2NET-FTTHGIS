@@ -63,7 +63,7 @@ const ColumnHeader: React.FC<ColumnHeaderProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+        <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
           <span>{title}</span>
           <span className="flex items-center">
             {isSorted ? (
@@ -245,7 +245,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
             </p>
             <button
               onClick={onNewProject}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
+              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>New Project</span>

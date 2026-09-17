@@ -31,7 +31,7 @@ export function QueryPerformanceBanner({
         <div>
           <h4 className="font-semibold text-foreground mb-1">Reset report</h4>
           <p className="mb-3 leading-relaxed">Consider resetting the analysis statistics after optimizing any indexes or queries to clear the historical baselines.</p>
-          <Button variant="outline" size="sm" onClick={onOpenResetModal} className="h-8 font-semibold">
+          <Button variant="outline" size="sm" onClick={onOpenResetModal} className="h-8 font-medium">
             Reset report
           </Button>
         </div>

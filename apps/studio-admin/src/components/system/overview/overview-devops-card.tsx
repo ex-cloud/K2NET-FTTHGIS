@@ -64,7 +64,7 @@ export function OverviewDevOpsCard({
         </div>
         {actionLabel && href ? (
           <div className="mt-4 pt-2 border-t border-border/40">
-            <div className={cn("inline-flex items-center gap-1 text-[10px] font-semibold transition-colors", actionClassName)}>
+            <div className={cn("inline-flex items-center gap-1 text-[10px] font-medium transition-colors", actionClassName)}>
               {actionLabel}
               {isExternal ? <ExternalLink className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
             </div>
@@ -93,7 +93,7 @@ export function OverviewStatusBadge({ children, tone = "neutral" }: { children: 
   return (
     <Badge
       className={cn(
-        "border text-[9px] font-mono px-1.5 py-0 font-bold",
+        "border text-[9px] font-mono px-1.5 py-0 font-medium",
         tone === "success" && "bg-primary/10 text-primary border-primary/20",
         tone === "warning" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
         tone === "danger" && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",

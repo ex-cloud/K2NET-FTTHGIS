@@ -180,7 +180,7 @@ const GroupingSelector: React.FC<GroupingSelectorProps> = ({ grouping = "none", 
         className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
       >
         <span className="text-muted-foreground font-medium">Grouping</span>
-        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+        <span className="inline-flex items-center gap-1 text-foreground font-medium">
           {GROUPING_OPTIONS.find((o) => o.key === grouping)?.label ?? "No grouping"}
           <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
         </span>
@@ -226,7 +226,7 @@ const OrderingSelector: React.FC<OrderingSelectorProps> = ({ ordering = "manual"
         className="flex items-center justify-between py-1 px-1 rounded-md hover:bg-muted/40 cursor-pointer transition-colors"
       >
         <span className="text-muted-foreground font-medium">Ordering</span>
-        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+        <span className="inline-flex items-center gap-1 text-foreground font-medium">
           {ORDERING_OPTIONS.find((o) => o.key === ordering)?.label ?? "Manual"}
           <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
         </span>
@@ -279,7 +279,7 @@ const ShowClosedSelector: React.FC<ShowClosedSelectorProps> = ({
         <span className="text-muted-foreground font-medium">
           {entityType === "projects" ? "Show closed projects" : "Show closed issues"}
         </span>
-        <span className="inline-flex items-center gap-1 text-foreground font-semibold">
+        <span className="inline-flex items-center gap-1 text-foreground font-medium">
           {SHOW_CLOSED_OPTIONS.find((o) => o.key === showClosed)?.label ?? "All"}
           <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", open && "rotate-180")} />
         </span>

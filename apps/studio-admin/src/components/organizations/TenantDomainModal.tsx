@@ -151,7 +151,7 @@ export function TenantDomainModal({
           {/* SSL Status Card */}
           <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 p-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <div className="h-7 w-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <div>

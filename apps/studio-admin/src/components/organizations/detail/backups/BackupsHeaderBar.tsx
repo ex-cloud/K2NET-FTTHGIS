@@ -48,7 +48,7 @@ export function BackupsHeaderBar({
           size="sm"
           onClick={onTriggerSnapshot}
           disabled={triggering}
-          className="h-8 px-3 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+          className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", triggering && "animate-spin")} />
           <span>{triggering ? "Creating Snapshot..." : "Trigger Full Backup Now"}</span>

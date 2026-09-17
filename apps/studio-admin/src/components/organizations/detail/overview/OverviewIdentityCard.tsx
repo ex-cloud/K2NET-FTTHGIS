@@ -85,7 +85,7 @@ export function OverviewIdentityCard({
               <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               <span>{activeStatus}</span>
             </Badge>
-            <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px] font-semibold px-2 py-0.5">
+            <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-purple-500 font-mono text-[10px] font-medium px-2 py-0.5">
               {summary?.planTier ?? org.planTier} PLAN
             </Badge>
           </div>

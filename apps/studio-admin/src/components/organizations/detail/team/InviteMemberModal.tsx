@@ -100,7 +100,7 @@ export function InviteMemberModal({
           <Button
             size="sm"
             onClick={onSendInvite}
-            className="text-xs font-semibold bg-primary text-primary-foreground cursor-pointer"
+            className="text-xs font-medium bg-primary text-primary-foreground cursor-pointer"
           >
             Send Invitation
           </Button>

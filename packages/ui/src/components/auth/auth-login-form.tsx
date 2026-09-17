@@ -142,22 +142,22 @@ export function AuthLoginForm({
 
             {/* Tier Badge */}
             {isInternal && (
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
                 {planDisplayName ? planDisplayName.toUpperCase() : "SYSTEM ADMIN"}
               </Badge>
             )}
             {isFreePlan && (
-              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-bold tracking-wider shrink-0">
+              <Badge variant="outline" className="bg-primary/5 border-primary/25 text-primary text-[9px] font-mono font-medium tracking-wider shrink-0">
                 {planDisplayName ? planDisplayName.toUpperCase() : "FREE • 7 DAYS"}
               </Badge>
             )}
             {isProPlan && (
-              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-500 dark:text-cyan-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
                 {planDisplayName ? planDisplayName.toUpperCase() : "PROFESSIONAL"}
               </Badge>
             )}
             {isEnterprisePlan && (
-              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-bold tracking-wider shrink-0">
+              <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-500 dark:text-purple-400 text-[9px] font-mono font-medium tracking-wider shrink-0">
                 {planDisplayName ? planDisplayName.toUpperCase() : "ENTERPRISE"}
               </Badge>
             )}
@@ -194,7 +194,7 @@ export function AuthLoginForm({
           <Button
             type="submit"
             disabled={isLoading || isSuspended}
-            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all duration-200 group"
+            className="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all duration-200 group"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -281,14 +281,14 @@ export function AuthLoginForm({
                   key={method.id}
                   type="button"
                   variant="outline"
-                  className="w-full h-11 text-xs font-semibold justify-center gap-2.5 border-border/70 bg-background/40 hover:bg-accent hover:text-foreground rounded-xl transition-all"
+                  className="w-full h-9 text-xs font-medium justify-center gap-2 border-border/80 bg-background/40 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs"
                   onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
                   disabled={isLoading || isSuspended}
                 >
-                  {method.icon === "google" && <GoogleIcon className="h-4 w-4" />}
-                  {method.icon === "github" && <GithubIcon className="h-4 w-4" />}
+                  {method.icon === "google" && <GoogleIcon className="size-3.5" />}
+                  {method.icon === "github" && <GithubIcon className="size-3.5" />}
                   {method.icon !== "google" && method.icon !== "github" && (
-                    <KeyRound className="h-4 w-4 text-primary" />
+                    <KeyRound className="size-3.5 text-primary" />
                   )}
                   <span>Continue with {method.name}</span>
                 </Button>

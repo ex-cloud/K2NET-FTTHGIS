@@ -43,7 +43,7 @@ export function ProjectDetailHeader({
         )}
         <button
           onClick={onExportMarkdown}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border hover:bg-muted text-foreground text-xs font-medium shadow-2xs transition-colors cursor-pointer"
           title="Copy Spec as Markdown"
         >
           <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
@@ -51,7 +51,7 @@ export function ProjectDetailHeader({
         </button>
         <button
           onClick={onOpenNewIssue}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-sm transition-colors cursor-pointer"
         >
           <Plus className="w-3 h-3" />
           <span>Add issue</span>

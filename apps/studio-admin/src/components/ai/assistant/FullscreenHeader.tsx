@@ -33,7 +33,7 @@ export function FullscreenHeader({
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <PanelLeftClose className="w-3.5 h-3.5 rotate-180" />
             </button>
@@ -64,7 +64,7 @@ export function FullscreenHeader({
           <ActionTooltip label="Ekspor Percakapan (Markdown)" shortcut="Ctrl+E" side="bottom">
             <button
               onClick={() => exportChatToMarkdown(messages)}
-              className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -74,7 +74,7 @@ export function FullscreenHeader({
         <ActionTooltip label="Kembali ke Mode Floating Drawer" shortcut="Alt+F" side="bottom">
           <button
             onClick={onExitFullscreen}
-            className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <Minimize2 className="w-3.5 h-3.5" />
           </button>
@@ -83,7 +83,7 @@ export function FullscreenHeader({
         <ActionTooltip label="Tutup Mode Layar Penuh" shortcut="Esc" side="bottom">
           <button
             onClick={onExitFullscreen}
-            className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>

@@ -60,7 +60,7 @@ export function ProjectActivityTab({
             </button>
           </div>
 
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
             <TrendingUp className="w-3 h-3" />
             On track
           </span>
@@ -84,7 +84,7 @@ export function ProjectActivityTab({
             type="button"
             onClick={onPostUpdate}
             disabled={!updateText.trim() || postingUpdate}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
           >
             {postingUpdate && <Loader2 className="w-3 h-3 animate-spin" />}
             <span>Post update</span>

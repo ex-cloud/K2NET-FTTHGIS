@@ -163,8 +163,8 @@ function AgentDomainAccordion({
                       "text-[9px] font-mono px-1 py-0 border",
                       isChecked
                         ? perm.scope === "Write"
-                          ? "text-amber-500 border-amber-500/40 bg-amber-500/10 font-bold"
-                          : "text-primary border-primary/40 bg-primary/10 font-bold"
+                          ? "text-amber-500 border-amber-500/40 bg-amber-500/10 font-medium"
+                          : "text-primary border-primary/40 bg-primary/10 font-medium"
                         : "text-muted-foreground border-border opacity-60"
                     )}
                   >
@@ -206,7 +206,7 @@ function AgentPanelFooter({
       <Button
         onClick={onSave}
         disabled={saving}
-        className="w-full text-xs font-bold h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
+        className="w-full text-xs font-medium h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 cursor-pointer"
       >
         {saving ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -10,7 +10,7 @@ export function OverviewTelemetryBanner({ org }: OverviewTelemetryBannerProps) {
   return (
     <div className="p-3.5 rounded-xl border border-border bg-card/70 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+        <div className="h-8 w-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
           <Activity className="h-4 w-4 animate-pulse" />
         </div>
         <div>

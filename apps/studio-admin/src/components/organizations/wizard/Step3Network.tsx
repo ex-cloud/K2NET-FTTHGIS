@@ -153,7 +153,7 @@ export function Step3Network({
             variant="outline"
             onClick={onTestLdap}
             disabled={testingLdap || !isLdapFormComplete || !isLdapFormatValid}
-            className="w-full h-8 text-xs font-semibold mt-1 border-primary/30 text-primary hover:bg-primary/10"
+            className="w-full h-8 text-xs font-medium mt-1 border-primary/30 text-primary hover:bg-primary/10"
           >
             {testingLdap ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Zap className="size-3.5 mr-1.5" />}
             {testingLdap ? "Testing LDAP Connection..." : ldapTestPassed ? "Connection Verified ✓" : "Test LDAP Connection"}

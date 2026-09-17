@@ -74,7 +74,7 @@ export function FloatingAiAssistantHeader({
               <ChevronRight className="w-4 h-4 rotate-180" />
             </button>
           )}
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs shrink-0">
+          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary via-primary/90 to-primary/70 flex items-center justify-center text-primary-foreground shadow-xs shrink-0">
             <Sparkles className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -102,7 +102,7 @@ export function FloatingAiAssistantHeader({
                 <button
                   type="button"
                   onClick={createNewSession}
-                  className="flex items-center gap-1 h-7 px-2 rounded-lg bg-card hover:bg-muted text-foreground text-xs font-semibold border border-border/70 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 h-7 px-2 rounded-md bg-card hover:bg-muted text-foreground text-xs font-medium border border-border/70 transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 text-primary" />
                   <span>New</span>
@@ -136,7 +136,7 @@ export function FloatingAiAssistantHeader({
                     setPermSearch("");
                     setView("settings");
                   }}
-                  className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
                 </button>
@@ -147,7 +147,7 @@ export function FloatingAiAssistantHeader({
                   <button
                     type="button"
                     onClick={() => exportChatToMarkdown(messages)}
-                    className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </button>
@@ -162,7 +162,7 @@ export function FloatingAiAssistantHeader({
                     setIsOpen(false);
                     setIsFullscreen(true);
                   }}
-                  className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                 </button>
@@ -174,7 +174,7 @@ export function FloatingAiAssistantHeader({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

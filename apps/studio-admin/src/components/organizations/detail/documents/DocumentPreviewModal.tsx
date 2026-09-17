@@ -65,7 +65,7 @@ export function DocumentPreviewModal({
               <Badge
                 variant="outline"
                 className={cn(
-                  "font-mono text-[10px] font-bold",
+                  "font-mono text-[10px] font-medium",
                   previewDoc.status === "VERIFIED" && "border-primary/40 text-primary bg-primary/10",
                   previewDoc.status === "ACTIVE" && "border-blue-500/40 text-blue-500 bg-blue-500/10",
                   previewDoc.status === "PENDING_REVIEW" && "border-amber-500/40 text-amber-500 bg-amber-500/10",

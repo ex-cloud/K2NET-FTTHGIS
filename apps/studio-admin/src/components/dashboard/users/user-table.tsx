@@ -169,7 +169,7 @@ function UserTableRowItem({
           <Badge
             variant="outline"
             className={cn(
-              "rounded-md font-bold text-[10px]",
+              "rounded-md font-medium text-[10px]",
               user.roleName === "super_admin" && "bg-primary/10 text-primary border-primary/20",
               user.roleName === "admin" && "bg-sky-500/10 text-sky-500 border-sky-500/20",
               user.roleName === "technician" && "bg-purple-500/10 text-purple-400 border-purple-500/20",

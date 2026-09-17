@@ -38,7 +38,7 @@ function ToolbarCategoryDropdown({ selectedCategory, setSelectedCategory }: Cate
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden shrink-0",
+          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden shrink-0",
           selectedCategory !== "ALL"
             ? "bg-primary/10 text-primary border-primary/40 shadow-xs"
             : "bg-card border-border hover:bg-muted/40 text-foreground"
@@ -98,7 +98,7 @@ function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdown
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden shrink-0",
+          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden shrink-0",
           selectedScope !== "ALL"
             ? "bg-primary/10 text-primary border-primary/40 shadow-xs"
             : "bg-card border-border hover:bg-muted/40 text-foreground"
@@ -167,7 +167,7 @@ function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDrop
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden shrink-0",
+          "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden shrink-0",
           selectedStatus !== "ALL"
             ? "bg-primary/10 text-primary border-primary/40 shadow-xs"
             : "bg-card border-border hover:bg-muted/40 text-foreground"
@@ -260,7 +260,7 @@ function ToolbarActionButtons({
         <button
           onClick={onSyncServerDocs}
           disabled={isSyncing || !canManage}
-          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Sinkronkan Direktori Server Docs"
         >
           {isSyncing ? (
@@ -275,7 +275,7 @@ function ToolbarActionButtons({
         <button
           onClick={onRefresh}
           disabled={docsLoading}
-          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
           aria-label="Segarkan Data pgvector"
         >
           <RefreshCw className={`w-4 h-4 ${docsLoading ? "animate-spin text-primary" : ""}`} />
@@ -293,7 +293,7 @@ function ToolbarActionButtons({
         <button
           onClick={onGoToUpload}
           disabled={!canManage}
-          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-md transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Tambah Pengetahuan (Upload / Tulis)"
         >
           <Plus className="w-4 h-4" />

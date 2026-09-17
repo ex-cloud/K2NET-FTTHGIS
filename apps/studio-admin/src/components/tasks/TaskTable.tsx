@@ -182,7 +182,7 @@ export function TaskTable({
               {canSort && header.column.id !== "select" ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-semibold cursor-pointer">
+                    <button className="flex items-center gap-1 hover:text-foreground transition-colors outline-hidden select-none py-1 px-1.5 -mx-1.5 rounded hover:bg-muted/40 font-medium cursor-pointer">
                       <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
                       <span className="flex items-center">
                         {isSorted === "asc" ? (

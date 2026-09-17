@@ -133,7 +133,7 @@ export function WorkspaceDomainSettings() {
           <div className="pt-2">
             <a
               href={migrationSuccess.newUrl}
-              className="inline-flex items-center gap-2 text-xs font-semibold font-mono text-primary hover:underline"
+              className="inline-flex items-center gap-2 text-xs font-medium font-mono text-primary hover:underline"
             >
               {migrationSuccess.newUrl} <ExternalLink className="size-3.5" />
             </a>
@@ -255,7 +255,7 @@ export function WorkspaceDomainSettings() {
               type="submit"
               disabled={isMigrating || !targetSlug.trim()}
               size="sm"
-              className="text-xs font-semibold"
+              className="text-xs font-medium"
             >
               Lanjutkan Pembaruan Subdomain
               <ArrowRight className="size-3.5 ml-1" />

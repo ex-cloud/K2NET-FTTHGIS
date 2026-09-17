@@ -98,7 +98,7 @@ export function BillingDunningModal({
             size="sm"
             onClick={onExecuteDunning}
             disabled={isExecuting}
-            className="text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 cursor-pointer"
+            className="text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 cursor-pointer"
           >
             {isExecuting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Simpan Status Dunning"}
           </Button>

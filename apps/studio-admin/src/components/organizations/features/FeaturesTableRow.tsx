@@ -24,20 +24,20 @@ interface FeaturesTableRowProps {
 function renderPlanTierBadge(planTier: string) {
   if (planTier === "Enterprise") {
     return (
-      <Badge variant="outline" className="border-purple-500/40 bg-purple-500/10 text-purple-400 font-mono text-[10px] font-bold tracking-wider">
+      <Badge variant="outline" className="border-purple-500/40 bg-purple-500/10 text-purple-400 font-mono text-[10px] font-medium tracking-wider">
         ENTERPRISE
       </Badge>
     );
   }
   if (planTier === "Professional") {
     return (
-      <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-bold tracking-wider">
+      <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px] font-medium tracking-wider">
         PROFESSIONAL
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="border-border bg-muted/40 text-muted-foreground font-mono text-[10px] font-semibold tracking-wider">
+    <Badge variant="outline" className="border-border bg-muted/40 text-muted-foreground font-mono text-[10px] font-medium tracking-wider">
       STARTER
     </Badge>
   );
@@ -83,7 +83,7 @@ export function FeaturesTableRow({
           {/* Organization Name */}
           <TableCell className="pl-6 py-3.5" onClick={() => onNavigateDetail(org.slug)}>
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs">
+              <div className="h-8 w-8 rounded-md bg-secondary/80 border border-border flex items-center justify-center text-foreground font-bold font-mono text-xs shrink-0 shadow-2xs">
                 {org.name.charAt(0).toUpperCase()}
               </div>
               <div className="space-y-0.5">

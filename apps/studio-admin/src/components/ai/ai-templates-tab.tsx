@@ -65,7 +65,7 @@ export function AiTemplatesTab({ onUseTemplate }: AiTemplatesTabProps) {
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <tmpl.icon className="w-4 h-4" />
                       </div>
                       <div>

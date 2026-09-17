@@ -127,7 +127,7 @@ export function DocumentUploadModal({
               type="submit"
               size="sm"
               disabled={uploading}
-              className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
             >
               {uploading ? "Mengunggah..." : "Simpan Dokumen"}
             </Button>

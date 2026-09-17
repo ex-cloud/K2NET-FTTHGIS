@@ -71,7 +71,7 @@ export function SystemAiParamsCard({ config, setConfig }: SystemAiParamsCardProp
           <Label className="text-xs font-medium text-foreground">
             Auto-Fallback Status
           </Label>
-          <div className="flex items-center gap-2 h-8 px-3 rounded-lg bg-background border border-border">
+          <div className="flex items-center gap-2 h-8 px-3 rounded-md bg-background border border-border">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs font-semibold text-foreground">Aktif Otomatis</span>
           </div>

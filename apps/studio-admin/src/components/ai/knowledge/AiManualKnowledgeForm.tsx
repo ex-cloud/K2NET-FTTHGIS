@@ -188,7 +188,7 @@ export function AiManualKnowledgeForm({
             type="submit"
             size="sm"
             disabled={manualSubmitting || !manualTitle.trim() || !manualContent.trim()}
-            className="text-xs gap-1.5 bg-primary text-primary-foreground font-semibold"
+            className="text-xs gap-1.5 bg-primary text-primary-foreground font-medium"
           >
             {manualSubmitting ? (
               <>

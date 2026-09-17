@@ -106,7 +106,7 @@ export function ServiceTableView({
               className="hover:bg-muted/30 transition-colors cursor-pointer group/row"
             >
               <td className="px-5 py-3.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border">
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider border">
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
                       svc.status === "up" ? "bg-primary animate-pulse" : svc.status === "down" ? "bg-rose-500" : "bg-muted-foreground"
@@ -165,7 +165,7 @@ export function ServiceCardView({
               </span>
             </div>
             <Badge
-              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border ${
+              className={`text-[9px] font-medium uppercase tracking-wider px-2 py-0.5 border ${
                 svc.status === "up"
                   ? "bg-primary/10 border-primary/20 text-primary"
                   : svc.status === "down"

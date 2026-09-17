@@ -91,7 +91,7 @@ export function ImpersonationActiveTable({
                 </TableCell>
 
                 <TableCell className="py-3">
-                  <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5 font-semibold">
+                  <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1 px-2 py-0.5 font-medium">
                     <Clock className="h-3 w-3 animate-spin" />
                     <span>{formatRemaining(s.remainingSeconds)}</span>
                   </Badge>

@@ -117,7 +117,7 @@ export function ProjectIssuesHeaderBar({
           <button
             type="button"
             onClick={onNewIssueClick}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New issue</span>

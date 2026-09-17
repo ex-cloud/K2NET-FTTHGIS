@@ -158,7 +158,7 @@ export function PayloadSimulatorCard({
                   type="button"
                   onClick={handleDispatch}
                   disabled={!targetUrl.trim() || isSimulating}
-                  className="h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
+                  className="h-9 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
                 >
                   <Send className={cn("h-3.5 w-3.5", isSimulating && "animate-pulse")} />
                   <span>{isSimulating ? "Mengirim..." : "Send Sample Payload"}</span>
@@ -169,7 +169,7 @@ export function PayloadSimulatorCard({
                     <Button
                       type="button"
                       disabled
-                      className="h-9 px-4 text-xs font-semibold bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5 shrink-0"
+                      className="h-9 px-4 text-xs font-medium bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5 shrink-0"
                     >
                       <ShieldAlert className="h-3.5 w-3.5" />
                       <span>Send Payload</span>

@@ -256,7 +256,7 @@ function NotFoundFallback() {
         </p>
         <a
           href="/overview"
-          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Kembali ke Overview
         </a>

@@ -53,7 +53,7 @@ export function AiEditorHeader({
             <button
               type="button"
               onClick={onStopGeneration}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
             >
               <StopCircle className="w-3 h-3 animate-pulse" />
               Hentikan ({aiGeneratedChars} karakter)
@@ -68,7 +68,7 @@ export function AiEditorHeader({
                   ? "Isi judul minimal 5 karakter terlebih dahulu"
                   : "Generate draft SOP dengan AI berdasarkan judul, kategori & visibilitas"
               }
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 className="w-3 h-3" />
               Generate dengan AI

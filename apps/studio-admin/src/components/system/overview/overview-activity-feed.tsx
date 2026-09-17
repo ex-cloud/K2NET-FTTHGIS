@@ -68,7 +68,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                         {planTier}
                       </Badge>
                       <Badge className={cn(
-                        "border border-border px-2 py-0.5 text-[9px] font-bold",
+                        "border border-border px-2 py-0.5 text-[9px] font-medium",
                         org.status === "ACTIVE" ? "bg-primary/10 text-primary" : org.status === "SUSPENDED" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
                       )}>
                         {org.status}

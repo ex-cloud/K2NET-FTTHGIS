@@ -89,7 +89,7 @@ export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportMo
                 size="sm"
                 onClick={state.handleImportSubmit}
                 disabled={!state.parsedData || state.isProcessing}
-                className="text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="text-xs font-medium gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Mulai Impor & Provisioning

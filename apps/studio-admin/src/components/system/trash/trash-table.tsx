@@ -98,7 +98,7 @@ function getTypeBadge(type: TrashItem["type"]) {
 function getRetentionBadge(days: number) {
   if (days <= 5) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-destructive/10 text-destructive border border-destructive/20 animate-pulse">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-destructive/10 text-destructive border border-destructive/20 animate-pulse">
         <Clock className="h-3 w-3" />
         Purge in {days}d
       </span>

@@ -89,7 +89,7 @@ export function AiPermissionsDomainList({
             placeholder="Search permissions..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full h-8 pl-8 pr-3 text-xs rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full h-8 pl-8 pr-3 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>
@@ -184,7 +184,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
           <button
             type="button"
             onClick={onCancel}
-            className="flex-none px-4 py-2 rounded-xl text-xs font-semibold border border-border text-foreground hover:bg-muted cursor-pointer"
+            className="flex-none px-4 py-2 rounded-xl text-xs font-medium border border-border text-foreground hover:bg-muted cursor-pointer"
           >
             Cancel
           </button>
@@ -192,7 +192,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
             type="button"
             onClick={onAuthorize}
             disabled={saving || selected.size === 0}
-            className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-colors cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
+            className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             Authorize K2 Agent ({selected.size})
@@ -240,7 +240,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
+          className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
           Save changes ({selected.size} permissions)
@@ -249,7 +249,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           type="button"
           onClick={onRevoke}
           disabled={revoking}
-          className="w-full py-2 rounded-xl border border-border text-destructive hover:bg-destructive/10 text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+          className="w-full py-2 rounded-xl border border-border text-destructive hover:bg-destructive/10 text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
         >
           {revoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "✕"}
           Revoke K2 Agent Access

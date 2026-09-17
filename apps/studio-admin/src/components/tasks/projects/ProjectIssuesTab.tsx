@@ -82,7 +82,7 @@ export function ProjectIssuesTab({
           <button
             type="button"
             onClick={onNewIssueClick}
-            className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+            className="text-xs text-primary font-medium hover:underline cursor-pointer"
           >
             + Tambahkan Issue Pertama
           </button>

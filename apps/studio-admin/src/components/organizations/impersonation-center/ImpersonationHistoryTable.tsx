@@ -32,14 +32,14 @@ export function getStatusBadge(status: string) {
   switch (status) {
     case "ACTIVE":
       return (
-        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-semibold">
+        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/15 text-amber-500 font-mono text-[10px] gap-1.5 px-2 py-0.5 shadow-2xs font-medium">
           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
           <span>ACTIVE</span>
         </Badge>
       );
     case "REVOKED":
       return (
-        <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5 font-semibold">
+        <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive font-mono text-[10px] gap-1 px-2 py-0.5 font-medium">
           <span>REVOKED</span>
         </Badge>
       );

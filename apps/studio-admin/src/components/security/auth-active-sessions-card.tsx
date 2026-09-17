@@ -122,7 +122,7 @@ function SessionTableRow({
                 variant="destructive"
                 onClick={() => onRevoke(session.id)}
                 disabled={isRevoking}
-                className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-lg transition-all"
+                className="bg-rose-500/10 hover:bg-rose-500 hover:text-foreground border border-rose-500/20 text-rose-400 text-[10px] h-7 px-2.5 rounded-md transition-all"
               >
                 <Trash2 className="w-3 h-3 mr-1" /> Revoke
               </Button>

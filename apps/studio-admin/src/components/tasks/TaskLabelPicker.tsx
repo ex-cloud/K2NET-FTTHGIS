@@ -113,7 +113,7 @@ const SearchStep: React.FC<SearchStepProps> = ({
         <button
           type="button"
           onClick={() => onStartCreate(labelSearch)}
-          className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-semibold text-left transition-colors"
+          className="w-full flex items-center gap-2 text-xs py-1.5 px-2.5 text-primary hover:bg-primary/10 rounded-md font-medium text-left transition-colors"
         >
           <Plus className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Create new label: &ldquo;{labelSearch.trim()}&rdquo;</span>
@@ -276,7 +276,7 @@ export function TaskLabelPicker({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors",
+            "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors",
             selectedLabelIds.length > 0
               ? "border-primary/40 bg-primary/10 text-primary"
               : "border-border/60 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50",

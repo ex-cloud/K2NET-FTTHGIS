@@ -195,7 +195,7 @@ function AiDrawerEmptyState({ greeting, pinnedIdeas, onSelectIdea }: EmptyStateP
                   "transition-all duration-150 group cursor-pointer shadow-xs"
                 )}
               >
-                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
+                <div className="w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">

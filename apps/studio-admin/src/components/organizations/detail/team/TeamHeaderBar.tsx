@@ -26,7 +26,7 @@ export function TeamHeaderBar({ slug, onOpenInvite }: TeamHeaderBarProps) {
         <Button
           size="sm"
           onClick={onOpenInvite}
-          className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs cursor-pointer"
+          className="h-7 px-2.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs cursor-pointer"
         >
           <UserPlus className="h-3.5 w-3.5" />
           <span>Invite Team Member</span>

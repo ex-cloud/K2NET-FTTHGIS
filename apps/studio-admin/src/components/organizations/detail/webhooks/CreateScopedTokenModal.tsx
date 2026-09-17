@@ -242,7 +242,7 @@ export function CreateScopedTokenModal({
               type="button"
               onClick={handleCreate}
               disabled={!tokenName.trim() || selectedScopes.length === 0 || isSubmitting}
-              className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              className="h-8 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               <span>{isSubmitting ? "Membuat..." : "Generate Token"}</span>

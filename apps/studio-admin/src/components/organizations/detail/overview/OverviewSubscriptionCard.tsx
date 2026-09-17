@@ -20,7 +20,7 @@ export function OverviewSubscriptionCard({
         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">
           Subscription Tier
         </h4>
-        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-xs font-semibold">
+        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-mono text-xs font-medium">
           {summary?.planTier ?? org.planTier}
         </Badge>
       </div>
