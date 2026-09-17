@@ -28,7 +28,7 @@ export function RolesMatrixTable({
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden flex flex-col">
       <div className="max-h-[calc(100vh-320px)] overflow-auto custom-scrollbar relative">
-        <table className="w-full border-collapse text-left text-xs border-separate border-spacing-0">
+        <table className="w-full text-left text-xs border-separate border-spacing-0">
           <thead>
             <tr>
               {/* Sticky Top-Left Corner (Intersection) - Solid Opaque */}
@@ -105,7 +105,7 @@ export function RolesMatrixTable({
                         const isChecked = editedRoles[role.id]?.has(perm.id);
 
                         return (
-                          <td key={role.id} className="p-2.5 text-center border-b border-border/60 border-r border-border/40 last:border-r-0">
+                          <td key={role.id} className="p-2.5 text-center border-b border-r border-border last:border-r-0">
                             <button
                               type="button"
                               disabled={!canEdit}
