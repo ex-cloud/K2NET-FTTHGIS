@@ -114,7 +114,7 @@ export function AuthLoginForm({
       )}
 
       {/* Main Login Card */}
-      <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+      <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-lg backdrop-blur-md space-y-4">
         {/* Tenant Identity & Subscription Tier Header */}
         {(orgName || title) && (
           <div className="flex items-center justify-between pb-3 border-b border-border/50">

@@ -259,7 +259,7 @@ export function TaskDetailSheet({
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full sm:max-w-2xl lg:max-w-3xl p-0 bg-background/95 backdrop-blur-xl border-l border-border/80 flex flex-col h-full overflow-hidden shadow-2xl"
+        className="w-full sm:max-w-2xl lg:max-w-3xl p-0 bg-background/95 backdrop-blur-xl border-l border-border/80 flex flex-col h-full overflow-hidden shadow-lg"
       >
         <SheetHeaderBar task={task} saving={saving} isDirty={isDirty} />
 

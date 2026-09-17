@@ -79,7 +79,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Status</span>
           <ContextMenuShortcut>S</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateStatus?.("BACKLOG")} className="cursor-pointer">
             <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
             <span>Backlog</span>
@@ -114,7 +114,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Priority</span>
           <ContextMenuShortcut>P</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdatePriority?.("URGENT")} className="text-destructive font-semibold cursor-pointer">
             <AlertCircle className="mr-2 h-3.5 w-3.5 text-destructive" />
             <span>Urgent</span>
@@ -141,7 +141,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Assignee</span>
           <ContextMenuShortcut>A</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-56 max-h-60 overflow-y-auto bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-56 max-h-60 overflow-y-auto bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateAssignee?.(undefined)} className="text-muted-foreground cursor-pointer">
             <span>Unassigned</span>
           </ContextMenuItem>
@@ -166,7 +166,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Due date</span>
           <ContextMenuShortcut>⇧ D</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem
             onClick={() => {
               const d = new Date();
@@ -219,7 +219,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Labels</span>
           <ContextMenuShortcut>L</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           {["Bug", "Feature", "Improvement", "Security", "GIS", "Network"].map((lbl) => (
             <ContextMenuItem key={lbl} onClick={() => toast.success(`Label "${lbl}" tagged`)} className="cursor-pointer flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary" />
@@ -236,7 +236,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <span>Project</span>
           <ContextMenuShortcut>⇧ P</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => toast.info(`Project ref: ${task.obsidianRef || "None"}`)} className="cursor-pointer">
             <span>{task.obsidianRef || "No Project Linked"}</span>
           </ContextMenuItem>
@@ -249,7 +249,7 @@ const TaskPropertySubmenus: React.FC<TaskPropertySubmenusProps> = ({
           <Shield className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Scope</span>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateScope?.("PLATFORM_INTERNAL")} className="cursor-pointer">
             <Shield className="mr-2 h-3.5 w-3.5 text-blue-400" />
             <span>Platform Internal</span>
@@ -297,7 +297,7 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
           <Copy className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Copy</span>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem
             onClick={() => handleCopy(`${window.location.origin}/tasks?issue=${task.id}`, "Issue Link")}
             className="cursor-pointer"
@@ -348,7 +348,7 @@ const TaskActions: React.FC<TaskActionsProps> = ({ task, onDelete }) => {
           <span>Remind me</span>
           <ContextMenuShortcut>H</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => handleRemindMe("In 1 hour")} className="cursor-pointer">
             <span>An hour from now</span>
           </ContextMenuItem>
@@ -415,7 +415,7 @@ export function TaskContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-60 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+      <ContextMenuContent className="w-60 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
         <TaskPropertySubmenus
           task={task}
           onUpdateStatus={onUpdateStatus}

@@ -36,7 +36,7 @@ export function OrganizationWizard({ open, onOpenChange, onSuccess }: WizardProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-popover/95 backdrop-blur-xl border-border text-foreground p-0 overflow-hidden rounded-2xl shadow-2xl">
+      <DialogContent className="sm:max-w-2xl bg-popover/95 backdrop-blur-xl border-border text-foreground p-0 overflow-hidden rounded-2xl shadow-lg">
         {/* Top Progress Bar */}
         <div className="absolute top-0 left-0 w-full h-[3px] bg-border">
           <div

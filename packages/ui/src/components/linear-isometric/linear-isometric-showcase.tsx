@@ -24,7 +24,7 @@ export function LinearIsometricShowcase({
           <div
             key={item.id}
             className={cn(
-              "flex flex-col justify-between p-6 rounded-2xl bg-card border transition-all duration-300 group shadow-md hover:shadow-2xl relative",
+              "flex flex-col justify-between p-6 rounded-2xl bg-card border transition-all duration-300 group shadow-md hover:shadow-lg relative",
               isActive ? "border-primary/80 ring-1 ring-primary/40" : "border-border/60 hover:border-primary/50"
             )}
           >

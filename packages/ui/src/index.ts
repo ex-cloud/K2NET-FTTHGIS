@@ -44,6 +44,9 @@ export * from "./components/mode-toggle";
 export * from "./components/markdown";
 export * from "./components/kanban-board";
 export * from "./components/rich-text-editor";
+export * from "./components/form-fieldset";
+export * from "./components/empty-state";
+export * from "./components/status-dot";
 
 // Technical Isometric Wireframe Figures & Pure SVG Animated Mascot (Linear Style)
 export * from "./components/linear-isometric";

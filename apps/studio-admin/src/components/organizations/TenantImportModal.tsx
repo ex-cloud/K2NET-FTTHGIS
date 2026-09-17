@@ -25,7 +25,7 @@ export function TenantImportModal({ isOpen, onClose, onSuccess }: TenantImportMo
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !state.isProcessing && onClose()}>
-      <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-2xl border-border p-0 overflow-hidden shadow-2xl rounded-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-2xl border-border p-0 overflow-hidden shadow-lg rounded-2xl max-h-[90vh] flex flex-col">
         {state.isProcessing ? (
           <ImportHudTerminal
             processStatus={state.processStatus}

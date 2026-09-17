@@ -60,22 +60,24 @@ export function RolesMatrixModals({
               Seluruh anggota tim yang memiliki role ini akan otomatis dimigrasikan ke versi kustom yang baru.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex gap-3 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setShowConfirmDialog(false)}
-              className="border-border hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
+              className="border-border/80 text-muted-foreground hover:text-foreground"
             >
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (pendingRoleToSave) {
                   setShowConfirmDialog(false);
                   onConfirmStandardTemplate(pendingRoleToSave);
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-500 text-foreground shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all font-semibold"
+              className="bg-blue-600 hover:bg-blue-500 text-primary-foreground"
             >
               Continue &amp; Save
             </Button>
@@ -111,7 +113,7 @@ export function RolesMatrixModals({
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-foreground text-sm">{r.displayName || r.name}</span>
                     <span className="flex items-center gap-1 text-xs font-mono font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">
-                      <UserCheck className="w-3.5 h-3.5" />
+                      <UserCheck className="size-3.5" />
                       {count.activeUserCount} Pengguna Aktif
                     </span>
                   </div>
@@ -130,22 +132,24 @@ export function RolesMatrixModals({
             })}
           </div>
 
-          <DialogFooter className="flex gap-3 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setImpactModalOpen(false)}
-              className="border-border text-muted-foreground hover:text-foreground"
+              className="border-border/80 text-muted-foreground hover:text-foreground"
             >
               Batalkan
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 setImpactModalOpen(false);
                 if (impactData) {
                   onConfirmImpact(impactData);
                 }
               }}
-              className="bg-amber-600 hover:bg-amber-500 text-foreground font-semibold shadow-lg shadow-amber-600/30"
+              className="bg-amber-600 hover:bg-amber-500 text-primary-foreground"
             >
               Saya Mengerti &amp; Simpan Perubahan
             </Button>

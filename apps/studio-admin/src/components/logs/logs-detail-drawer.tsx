@@ -61,7 +61,7 @@ export function LogsDetailDrawer({ selectedLog, onClose, onCopyLog }: LogsDetail
   const level = getLevel(selectedLog);
 
   return (
-    <div className="absolute right-0 top-0 h-full w-96 bg-card border-l border-border flex flex-col z-20 shadow-2xl animate-in slide-in-from-right duration-250">
+    <div className="absolute right-0 top-0 h-full w-96 bg-card border-l border-border flex flex-col z-20 shadow-lg animate-in slide-in-from-right duration-250">
       <div className="p-3 border-b border-border flex items-center justify-between bg-muted/40 shrink-0">
         <div className="flex items-center gap-2">
           <FileCode className="w-4 h-4 text-primary" />

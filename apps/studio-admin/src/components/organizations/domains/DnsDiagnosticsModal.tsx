@@ -25,7 +25,7 @@ export function DnsDiagnosticsModal({
 }: DnsDiagnosticsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[560px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl">
+      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[560px] p-0 overflow-hidden shadow-lg text-foreground rounded-2xl">
         <DialogHeader className="p-6 pb-2 text-foreground">
           <DialogTitle className="text-base font-bold flex items-center gap-2 font-mono">
             <Terminal className="w-4 h-4 text-primary" />

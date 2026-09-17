@@ -15,7 +15,7 @@ interface TaskEmojiPickerProps {
 
 export function TaskEmojiPicker({ onSelect, onClose }: TaskEmojiPickerProps) {
   return (
-    <div className="absolute top-8 left-0 z-50 bg-card border border-border rounded-xl shadow-2xl p-3 w-56">
+    <div className="absolute top-8 left-0 z-50 bg-card border border-border rounded-xl shadow-lg p-3 w-56">
       <div className="grid grid-cols-8 gap-1">
         {EMOJI_SET.map((e) => (
           <button

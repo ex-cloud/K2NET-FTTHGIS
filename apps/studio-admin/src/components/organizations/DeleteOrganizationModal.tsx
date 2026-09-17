@@ -40,7 +40,7 @@ export function DeleteOrganizationModal({
 
   return (
     <Dialog open={!!orgToDelete} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border/80 sm:max-w-[580px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border/80 sm:max-w-[580px] p-0 overflow-hidden shadow-lg text-foreground rounded-2xl max-h-[90vh] flex flex-col">
         <DialogHeader className="p-6 pb-3 text-foreground border-b border-border/60">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-base font-bold flex items-center gap-2.5 text-foreground">
@@ -111,7 +111,7 @@ export function DeleteOrganizationModal({
         </div>
 
         <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2 shrink-0">
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Batal
           </Button>
           <Button
@@ -120,20 +120,20 @@ export function DeleteOrganizationModal({
             onClick={state.handleDelete}
             disabled={!state.canDelete || state.deleting}
             className={cn(
-              "text-xs font-semibold gap-1.5",
+              "gap-1.5",
               state.deleteMode === "soft" && "bg-amber-600 hover:bg-amber-700 text-primary-foreground"
             )}
           >
             {state.deleting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="size-3.5 animate-spin" />
             ) : state.deleteMode === "soft" ? (
               <>
-                <Archive className="w-3.5 h-3.5" />
+                <Archive className="size-3.5" />
                 Pindahkan ke Recycle Bin
               </>
             ) : (
               <>
-                <Flame className="w-3.5 h-3.5" />
+                <Flame className="size-3.5" />
                 Musnahkan Permanen
               </>
             )}

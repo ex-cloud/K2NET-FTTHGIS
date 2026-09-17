@@ -77,7 +77,7 @@ export function CustomersPage() {
                   <td className="px-5 py-3 text-foreground font-bold">{cust.odpCode} · Port #{cust.portNumber}</td>
                   <td className="px-5 py-3 text-foreground">{cust.packageSpeed}</td>
                   <td className="px-5 py-3">
-                    <span className={cust.rxPower.includes("-27") ? "text-amber-500 font-bold" : "text-emerald-500"}>
+                    <span className={cust.rxPower.includes("-27") ? "text-amber-500 font-medium" : "text-primary font-medium"}>
                       {cust.rxPower}
                     </span>
                   </td>
@@ -86,7 +86,7 @@ export function CustomersPage() {
                       variant="outline"
                       className={
                         cust.status === "ACTIVE"
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500 text-[10px]"
+                          ? "border-primary/40 bg-primary/10 text-primary text-[10px]"
                           : "border-destructive/40 bg-destructive/10 text-destructive text-[10px]"
                       }
                     >

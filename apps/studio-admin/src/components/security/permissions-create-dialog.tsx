@@ -23,7 +23,7 @@ export function CreatePermissionDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6">
+      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-primary/15 border border-primary/25">
             <Plus className="w-4 h-4 text-primary" />
@@ -125,22 +125,24 @@ export function CreatePermissionDialog({
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-2.5 mt-6">
           <Button
             variant="outline"
+            size="default"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 border-border text-muted-foreground hover:text-foreground"
+            className="flex-1 border-border/80 text-muted-foreground hover:text-foreground"
           >
             Batal
           </Button>
           <Button
             id="btn-submit-create-perm"
+            size="default"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+            className="flex-1"
           >
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Tambah Permission"}
+            {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : "Tambah Permission"}
           </Button>
         </div>
       </div>

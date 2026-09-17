@@ -469,7 +469,7 @@ export function AgentSettingsPanel({
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex justify-end">
-      <div className="w-full max-w-md bg-card border-l border-border h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+      <div className="w-full max-w-md bg-card border-l border-border h-full flex flex-col shadow-lg animate-in slide-in-from-right duration-200">
         <AgentPanelHeader
           scope={scope}
           agentName={currentAuth.agent_name || "K2 Agent"}

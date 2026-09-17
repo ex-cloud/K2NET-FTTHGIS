@@ -11,9 +11,9 @@ export function DashboardPage() {
       value: "4 / 4",
       subtext: "Semua POP terhubung",
       icon: Server,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
+      color: "text-primary",
+      bg: "bg-primary/10",
+      border: "border-primary/20",
     },
     {
       title: "Kapasitas ODP",
@@ -51,7 +51,7 @@ export function DashboardPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-foreground">Ringkasan Operasional Jaringan</h2>
-            <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500 font-mono text-[10px]">
+            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px]">
               ONLINE & TERKONEKSI
             </Badge>
           </div>
@@ -64,7 +64,7 @@ export function DashboardPage() {
           <Button
             size="sm"
             onClick={() => navigate({ to: "/map" })}
-            className="h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+            className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
           >
             <Activity className="h-4 w-4" />
             <span>Buka Web-QGIS Map</span>
@@ -120,7 +120,7 @@ export function DashboardPage() {
                 className="flex items-center justify-between p-3.5 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-xs font-mono"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-primary" />
                   <div>
                     <span className="font-bold text-foreground block">{olt.name}</span>
                     <span className="text-[10px] text-muted-foreground">{olt.vendor} · {olt.ip}</span>
@@ -131,7 +131,7 @@ export function DashboardPage() {
                     <span className="text-foreground block">{olt.ports}</span>
                     <span className="text-[10px] text-muted-foreground">Load: {olt.load}</span>
                   </div>
-                  <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-500 text-[10px]">
+                  <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[10px]">
                     {olt.status}
                   </Badge>
                 </div>

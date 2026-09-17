@@ -148,7 +148,7 @@ export function AiFullscreenLayout({
 
   return (
     <div className="fixed inset-0 z-[200] p-2.5 sm:p-4 md:p-5 lg:p-6 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200 overflow-hidden">
-      <div className="w-full h-full max-w-[1680px] rounded-2xl md:rounded-3xl border border-border/80 bg-background text-foreground shadow-2xl flex overflow-hidden relative">
+      <div className="w-full h-full max-w-[1680px] rounded-2xl md:rounded-3xl border border-border/80 bg-background text-foreground shadow-lg flex overflow-hidden relative">
         <FullscreenSidebar
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}

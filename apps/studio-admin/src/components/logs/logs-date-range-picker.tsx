@@ -436,7 +436,7 @@ export function LogsDateRangePicker({ value, onChange }: LogsDateRangePickerProp
         <div
           ref={contentRef}
           style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden text-foreground font-sans text-xs"
+          className="z-[9999] w-[480px] rounded-xl border border-border bg-card shadow-lg overflow-hidden text-foreground font-sans text-xs"
         >
           <div className="flex bg-card">
             <PresetsSidebar

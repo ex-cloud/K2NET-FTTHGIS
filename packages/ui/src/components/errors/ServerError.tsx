@@ -87,7 +87,7 @@ export function ServerError({
       <div className="absolute inset-0 bg-linear-to-br from-background via-muted/20 to-background z-0" />
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl z-0 pointer-events-none" />
 
-      <div className="relative z-10 max-w-lg w-full text-center space-y-6 backdrop-blur-md bg-card/40 border border-border/80 p-8 rounded-2xl shadow-2xl">
+      <div className="relative z-10 max-w-lg w-full text-center space-y-6 backdrop-blur-md bg-card/40 border border-border/80 p-8 rounded-2xl shadow-lg">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive shadow-inner mb-2 animate-pulse">
           <ServerCrash className="w-8 h-8" />
         </div>

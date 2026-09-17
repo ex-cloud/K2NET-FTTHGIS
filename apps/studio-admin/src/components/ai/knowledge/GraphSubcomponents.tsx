@@ -216,7 +216,7 @@ export function GraphNodeInspector({
   onTestSimulator?: (title: string) => void;
 }) {
   return (
-    <div className="absolute bottom-4 right-4 w-80 bg-background/95 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl space-y-3 z-30 animate-in fade-in slide-in-from-bottom-3">
+    <div className="absolute bottom-4 right-4 w-80 bg-background/95 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-lg space-y-3 z-30 animate-in fade-in slide-in-from-bottom-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           <Badge className="text-[9px] font-mono bg-primary/10 text-primary border-primary/20">

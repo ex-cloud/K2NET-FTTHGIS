@@ -5,30 +5,30 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-xs md:text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 aria-invalid:ring-rose-500/20 aria-invalid:border-rose-500",
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-3.5 shrink-0 outline-none focus-visible:ring-1 focus-visible:ring-primary/50 aria-invalid:ring-rose-500/20 aria-invalid:border-rose-500",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110 shadow-xs font-semibold",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs font-medium",
         destructive:
           "bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 dark:bg-rose-500/15 font-medium",
         outline:
-          "bg-card text-foreground border border-border hover:bg-muted hover:text-foreground shadow-xs font-medium",
+          "bg-card text-foreground border border-border/80 hover:bg-muted/80 hover:text-foreground shadow-xs font-medium",
         secondary:
-          "bg-muted text-foreground hover:bg-muted/80 font-medium",
+          "bg-muted text-foreground border border-border/60 hover:bg-muted/80 font-medium",
         ghost:
-          "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium",
+          "text-muted-foreground hover:text-foreground hover:bg-muted/60 font-medium",
         link: "text-primary underline-offset-4 hover:underline font-medium",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 rounded-lg gap-1.5 px-3 has-[>svg]:px-2.5 text-xs",
-        lg: "h-10 rounded-lg px-6 has-[>svg]:px-4 text-sm",
-        icon: "size-9 rounded-lg",
+        default: "h-8 px-3 text-xs gap-1.5 rounded-md",
+        xs: "h-6 px-2 text-[11px] gap-1 rounded-md [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 px-2.5 text-xs gap-1.5 rounded-md",
+        lg: "h-9 px-3.5 text-sm gap-2 rounded-md [&_svg:not([class*='size-'])]:size-4",
+        icon: "size-8 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8 rounded-lg",
-        "icon-lg": "size-10 rounded-lg",
+        "icon-sm": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-lg": "size-9 rounded-md [&_svg:not([class*='size-'])]:size-4",
       },
     },
     defaultVariants: {

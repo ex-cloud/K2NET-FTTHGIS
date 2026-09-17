@@ -94,7 +94,7 @@ export function BackupProgressModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isRunning && !open && onClose()}>
       <DialogContent
-        className="max-w-xl bg-card/95 border-border shadow-2xl backdrop-blur-xl p-6 rounded-2xl"
+        className="max-w-xl bg-card/95 border-border shadow-lg backdrop-blur-xl p-6 rounded-2xl"
         showCloseButton={!isRunning}
       >
         {/* Header */}

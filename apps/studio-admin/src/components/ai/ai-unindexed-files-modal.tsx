@@ -49,7 +49,7 @@ export function AiUnindexedFilesModal({
 }: AiUnindexedFilesModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
+      <DialogContent className="max-w-3xl bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl">
         <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">

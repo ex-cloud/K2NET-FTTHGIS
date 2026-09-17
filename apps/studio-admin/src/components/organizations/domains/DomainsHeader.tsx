@@ -28,9 +28,9 @@ export function DomainsHeader({ onRefresh }: DomainsHeaderProps) {
               onRefresh();
               toast.success("Domain and TLS states refreshed");
             }}
-            className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
+            className="border-border/80 bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="size-3.5" />
             <span>Refresh</span>
           </Button>
         </ActionTooltip>

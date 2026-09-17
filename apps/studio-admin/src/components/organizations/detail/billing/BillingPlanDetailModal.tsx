@@ -50,7 +50,7 @@ export function BillingPlanDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-popover/95 backdrop-blur-2xl border-border sm:max-w-[900px] p-0 overflow-hidden shadow-2xl rounded-2xl">
+      <DialogContent className="bg-popover/95 backdrop-blur-2xl border-border sm:max-w-[900px] p-0 overflow-hidden shadow-lg rounded-2xl">
         <div className="grid grid-cols-1 md:grid-cols-12 min-h-[480px]">
           {/* Left Column (Features or Downgrade Impact) */}
           <div className="md:col-span-7 p-6 md:p-7 space-y-5 border-b md:border-b-0 md:border-r border-border/70 bg-card/40">

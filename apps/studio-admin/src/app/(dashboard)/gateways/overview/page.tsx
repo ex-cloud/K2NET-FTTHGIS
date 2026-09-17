@@ -64,9 +64,10 @@ export default function GatewaysOverviewPage() {
               onClick={() => fetchStatus(true)} 
               disabled={refreshing || loading}
               variant="outline"
-              className="border-border/10 hover:border-primary/30 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground text-xs gap-2 transition-all"
+              size="sm"
+              className="border-border/80 bg-background/80 hover:bg-muted text-muted-foreground hover:text-foreground gap-1.5 transition-all"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
               Refresh Status
             </Button>
           </ActionTooltip>

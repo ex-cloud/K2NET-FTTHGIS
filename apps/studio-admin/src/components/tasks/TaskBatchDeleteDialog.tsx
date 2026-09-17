@@ -28,7 +28,7 @@ export function TaskBatchDeleteDialog({
 }: TaskBatchDeleteDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-6">
+      <DialogContent className="max-w-md bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-lg p-6">
         <DialogHeader className="flex flex-col items-center text-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">
             <Trash2 className="w-6 h-6" />

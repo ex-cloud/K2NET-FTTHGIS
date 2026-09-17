@@ -246,7 +246,7 @@ function PageFallback() {
 function NotFoundFallback() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-2xl backdrop-blur-sm max-w-md w-full space-y-4">
+      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4">
         <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
           <span className="font-mono font-bold text-lg">404</span>
         </div>
@@ -284,7 +284,7 @@ function RouterErrorComponent({ error, reset }: { error: unknown; reset?: () => 
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
-      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-2xl backdrop-blur-sm max-w-md w-full space-y-4 animate-in zoom-in duration-300">
+      <div className="rounded-2xl border border-border bg-card/60 p-8 shadow-lg backdrop-blur-sm max-w-md w-full space-y-4 animate-in zoom-in duration-300">
         <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
           <AlertTriangle className="w-6 h-6" />
         </div>

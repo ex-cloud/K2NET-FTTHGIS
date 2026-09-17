@@ -186,8 +186,8 @@ export function MapPage() {
             <div className="border-t border-border pt-2 flex justify-between items-center">
               <span className="font-bold text-foreground">Total Estimasi Loss:</span>
               <span
-                className={`text-sm font-extrabold ${
-                  attenuationResult.isWithinStandard ? "text-emerald-500" : "text-destructive"
+                className={`text-sm font-bold ${
+                  attenuationResult.isWithinStandard ? "text-primary" : "text-destructive"
                 }`}
               >
                 {attenuationResult.totalLossDb} dB
@@ -204,7 +204,7 @@ export function MapPage() {
           <span>·</span>
           <span>Tile Source: Martin PostGIS MVT</span>
           <span>·</span>
-          <span className="text-emerald-500 font-semibold flex items-center gap-1">
+          <span className="text-primary font-medium flex items-center gap-1">
             <Activity className="h-3.5 w-3.5" /> Ready for Simulation
           </span>
         </div>

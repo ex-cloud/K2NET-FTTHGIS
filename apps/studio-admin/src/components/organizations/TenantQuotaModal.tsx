@@ -99,7 +99,7 @@ export function TenantQuotaModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-popover/95 backdrop-blur-xl border-border/80 text-foreground shadow-2xl rounded-2xl">
+      <DialogContent className="sm:max-w-lg bg-popover/95 backdrop-blur-xl border-border/80 text-foreground shadow-lg rounded-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Network className="h-4 w-4" />
@@ -192,14 +192,13 @@ export function TenantQuotaModal({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-xs border-border">
+          <Button variant="outline" size="sm" onClick={onClose} className="border-border/80">
             Cancel
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {saving ? "Saving..." : "Save Quotas"}
           </Button>

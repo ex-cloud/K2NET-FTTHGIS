@@ -322,7 +322,7 @@ export function LinearDatePicker({
         <DropdownMenuContent
           align="start"
           sideOffset={6}
-          className="w-[280px] p-3 bg-popover/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-2xl z-[1000] text-xs animate-in fade-in-0 zoom-in-95"
+          className="w-[280px] p-3 bg-popover/95 backdrop-blur-xl border border-border/80 rounded-2xl shadow-lg z-[1000] text-xs animate-in fade-in-0 zoom-in-95"
         >
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/40">
             <span className="font-semibold text-foreground text-xs capitalize">

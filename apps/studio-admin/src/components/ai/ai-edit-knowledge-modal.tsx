@@ -229,7 +229,7 @@ export function AiEditKnowledgeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
-      <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card border-border shadow-2xl">
+      <DialogContent className="sm:max-w-5xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card border-border shadow-lg">
         <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2.5">

@@ -49,44 +49,44 @@ export function TaskHeaderStatsBar({
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">{scopeDescription}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {onToggleKpiCards && (
             <ActionTooltip label={showKpiCards ? "Compact View (Sembunyikan KPI Strip)" : "Standard View (Tampilkan KPI Strip)"}>
               <button
                 onClick={onToggleKpiCards}
                 className={cn(
-                  "p-2 rounded-lg border border-border bg-card transition-colors cursor-pointer",
+                  "size-8 rounded-md border border-border/80 bg-card flex items-center justify-center transition-colors cursor-pointer",
                   !showKpiCards
                     ? "text-primary border-primary/40 bg-primary/10"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 )}
                 aria-label={showKpiCards ? "Switch to compact view" : "Switch to standard view"}
               >
-                {showKpiCards ? <LayoutList className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                {showKpiCards ? <LayoutList className="size-3.5" /> : <LayoutGrid className="size-3.5" />}
               </button>
             </ActionTooltip>
           )}
           <ActionTooltip label="Keyboard Shortcuts" shortcut="?">
             <button
               onClick={onOpenShortcutsHelp}
-              className="p-2 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
+              className="size-8 rounded-md border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Keyboard Shortcuts"
             >
-              <Keyboard className="h-4 w-4" />
+              <Keyboard className="size-3.5" />
             </button>
           </ActionTooltip>
           <ActionTooltip label={rightPanelOpen ? "Tutup Panel Overview" : "Buka Panel Overview"}>
             <button
               onClick={onToggleRightPanel}
               className={cn(
-                "p-2 rounded-lg border border-border bg-card transition-colors cursor-pointer",
+                "size-8 rounded-md border border-border/80 bg-card flex items-center justify-center transition-colors cursor-pointer",
                 rightPanelOpen
                   ? "text-primary border-primary/30 bg-primary/5"
                   : "text-muted-foreground hover:text-foreground"
               )}
               aria-label={rightPanelOpen ? "Hide overview panel" : "Show overview panel"}
             >
-              <PanelRight className="h-4 w-4" />
+              <PanelRight className="size-3.5" />
             </button>
           </ActionTooltip>
           <ActionTooltip
@@ -100,11 +100,11 @@ export function TaskHeaderStatsBar({
             <button
               onClick={onOpenNewTask}
               disabled={!canManageTask}
-              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs font-medium text-xs"
               aria-label="New Issue"
             >
-              <Plus className="h-4 w-4" />
-              <span className="text-xs font-semibold hidden sm:inline">New Issue</span>
+              <Plus className="size-3.5" />
+              <span className="hidden sm:inline">New Issue</span>
               <kbd className="hidden sm:inline text-[10px] opacity-70 font-mono">C</kbd>
             </button>
           </ActionTooltip>

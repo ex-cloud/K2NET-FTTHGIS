@@ -38,7 +38,7 @@ export function OrganizationBulkActionBar({
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-border/80 bg-popover/90 backdrop-blur-xl shadow-2xl text-xs">
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border border-border/80 bg-popover/90 backdrop-blur-xl shadow-lg text-xs">
         {/* Selected Count Badge */}
         <div className="flex items-center gap-2 pr-3 border-r border-border/60">
           <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-mono text-[10px] font-bold">

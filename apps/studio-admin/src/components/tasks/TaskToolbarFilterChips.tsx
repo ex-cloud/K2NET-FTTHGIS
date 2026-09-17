@@ -47,25 +47,25 @@ export function TaskToolbarFilterChips({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs border rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden",
               filters.status.length > 0
                 ? "bg-primary/10 border-primary/40 text-primary"
-                : "bg-card border-border hover:bg-muted/30 text-foreground"
+                : "bg-card border-border/80 hover:bg-muted text-foreground"
             )}
           >
             <span>Status{filters.status.length > 0 ? ` (${filters.status.length})` : ""}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronDown className="size-3 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-36 z-50">
+        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-md p-1 min-w-36 z-50">
           {Object.keys(STATUS_CONFIG).map((key) => (
             <DropdownMenuItem
               key={key}
               onClick={() => onToggleFilter("status", key)}
               className={cn(
-                "text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between gap-2",
+                "text-xs py-1.5 px-2.5 rounded-md cursor-pointer flex items-center justify-between gap-2",
                 filters.status.includes(key)
-                  ? "bg-primary/10 text-primary font-semibold"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/50 text-foreground"
               )}
             >
@@ -83,25 +83,25 @@ export function TaskToolbarFilterChips({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs border rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden",
               filters.priority.length > 0
                 ? "bg-primary/10 border-primary/40 text-primary"
-                : "bg-card border-border hover:bg-muted/30 text-foreground"
+                : "bg-card border-border/80 hover:bg-muted text-foreground"
             )}
           >
             <span>Priority{filters.priority.length > 0 ? ` (${filters.priority.length})` : ""}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronDown className="size-3 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-32 z-50">
+        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-md p-1 min-w-32 z-50">
           {Object.keys(PRIORITY_CONFIG).map((key) => (
             <DropdownMenuItem
               key={key}
               onClick={() => onToggleFilter("priority", key)}
               className={cn(
-                "text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between gap-2",
+                "text-xs py-1.5 px-2.5 rounded-md cursor-pointer flex items-center justify-between gap-2",
                 filters.priority.includes(key)
-                  ? "bg-primary/10 text-primary font-semibold"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/50 text-foreground"
               )}
             >
@@ -119,25 +119,25 @@ export function TaskToolbarFilterChips({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs border rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden",
               filters.scope.length > 0
                 ? "bg-primary/10 border-primary/40 text-primary"
-                : "bg-card border-border hover:bg-muted/30 text-foreground"
+                : "bg-card border-border/80 hover:bg-muted text-foreground"
             )}
           >
             <span>Scope{filters.scope.length > 0 ? ` (${filters.scope.length})` : ""}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronDown className="size-3 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-36 z-50">
+        <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-md p-1 min-w-36 z-50">
           {SCOPE_OPTIONS.map((opt) => (
             <DropdownMenuItem
               key={opt.id}
               onClick={() => onToggleFilter("scope", opt.id)}
               className={cn(
-                "text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between gap-2",
+                "text-xs py-1.5 px-2.5 rounded-md cursor-pointer flex items-center justify-between gap-2",
                 filters.scope.includes(opt.id)
-                  ? "bg-primary/10 text-primary font-semibold"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/50 text-foreground"
               )}
             >
@@ -156,23 +156,23 @@ export function TaskToolbarFilterChips({
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs border rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden",
                 selectedProject
-                  ? "bg-purple-500/10 border-purple-500/40 text-purple-400 font-semibold"
-                  : "bg-card border-border hover:bg-muted/30 text-foreground"
+                  ? "bg-purple-500/10 border-purple-500/40 text-purple-400 font-medium"
+                  : "bg-card border-border/80 hover:bg-muted text-foreground"
               )}
             >
-              <FolderKanban className="h-3.5 w-3.5" />
+              <FolderKanban className="size-3.5" />
               <span className="truncate max-w-[130px]">
                 {selectedProject || "Project"}
               </span>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronDown className="size-3 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 min-w-48 max-h-60 overflow-y-auto z-50">
+          <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-md p-1 min-w-48 max-h-60 overflow-y-auto z-50">
             <DropdownMenuItem
               onClick={() => onSelectProject?.(null)}
-              className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer text-muted-foreground"
+              className="text-xs py-1.5 px-2.5 rounded-md cursor-pointer text-muted-foreground"
             >
               <span>All Projects (Any)</span>
             </DropdownMenuItem>
@@ -181,9 +181,9 @@ export function TaskToolbarFilterChips({
                 key={proj}
                 onClick={() => onSelectProject?.(proj === selectedProject ? null : proj)}
                 className={cn(
-                  "text-xs py-1.5 px-2.5 rounded-lg cursor-pointer flex items-center justify-between gap-2",
+                  "text-xs py-1.5 px-2.5 rounded-md cursor-pointer flex items-center justify-between gap-2",
                   selectedProject === proj
-                    ? "bg-purple-500/10 text-purple-400 font-semibold"
+                    ? "bg-purple-500/10 text-purple-400 font-medium"
                     : "hover:bg-muted/50 text-foreground"
                 )}
               >

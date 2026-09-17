@@ -69,9 +69,9 @@ export function OverviewSubscriptionCard({
           variant="outline"
           size="sm"
           onClick={onOpenPlanUpgrade}
-          className="w-full text-xs font-semibold border-border bg-card hover:bg-accent gap-2 cursor-pointer"
+          className="w-full text-xs font-medium border-border/80 bg-card hover:bg-accent gap-1.5 cursor-pointer"
         >
-          <CreditCard className="h-3.5 w-3.5 text-primary" />
+          <CreditCard className="size-3.5 text-primary" />
           <span>Upgrade / Ubah Paket</span>
         </Button>
       </div>

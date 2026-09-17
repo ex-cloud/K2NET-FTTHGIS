@@ -142,7 +142,7 @@ export function QuotasTableRow({
         </TableRow>
       </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+      <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
         <ContextMenuItem
           onClick={() => onAdjustQuotas(org)}
           className="cursor-pointer font-semibold text-primary focus:bg-primary/10 focus:text-primary gap-2"

@@ -44,7 +44,7 @@ export function BillingDunningModal({
 }: BillingDunningModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[480px] p-0 overflow-hidden shadow-2xl text-foreground rounded-2xl">
+      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[480px] p-0 overflow-hidden shadow-lg text-foreground rounded-2xl">
         <DialogHeader className="p-5 pb-2 text-foreground">
           <DialogTitle className="text-base font-bold flex items-center gap-2 text-amber-500">
             <ShieldAlert className="w-5 h-5 text-amber-500" />

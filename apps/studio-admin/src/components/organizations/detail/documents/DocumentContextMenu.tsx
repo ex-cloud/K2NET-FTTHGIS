@@ -71,7 +71,7 @@ export function DocumentContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+      <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
         {/* 1. Preview Document */}
         <ContextMenuItem
           onClick={() => onPreview(doc)}
@@ -110,7 +110,7 @@ export function DocumentContextMenu({
             <ShieldCheck className="w-3.5 h-3.5 text-primary" />
             <span>Status Verifikasi &amp; Validasi</span>
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+          <ContextMenuSubContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
             <ContextMenuItem
               onClick={() => onUpdateStatus(doc.id, "VERIFIED")}
               className="cursor-pointer gap-2 focus:bg-primary/10 text-primary font-semibold"
@@ -156,7 +156,7 @@ export function DocumentContextMenu({
             <Copy className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Salin Info Dokumen</span>
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+          <ContextMenuSubContent className="w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
             <ContextMenuItem
               onClick={() => handleCopy(doc.name, "Nama Berkas")}
               className="cursor-pointer gap-2 focus:bg-muted"

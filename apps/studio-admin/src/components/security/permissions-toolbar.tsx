@@ -46,9 +46,9 @@ export function PermissionsToolbar({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-card/5 border border-border/80 transition-all disabled:opacity-40"
+              className="flex items-center gap-1.5 px-2.5 h-8 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-card/5 border border-border/80 transition-all disabled:opacity-40 cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
               Refresh
             </button>
           </ActionTooltip>
@@ -64,9 +64,9 @@ export function PermissionsToolbar({
               id="btn-add-permission"
               onClick={onOpenCreate}
               disabled={!canManageSecurity}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="size-3.5" />
               Tambah Permission
             </button>
           </ActionTooltip>
@@ -90,27 +90,27 @@ export function PermissionsToolbar({
       {/* Filter bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <input
             id="input-permission-search"
             type="text"
             placeholder="Cari permission (code, name, module)…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-card/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:bg-card/60 transition-all"
+            className="w-full pl-8 pr-4 h-8 rounded-md border border-border/80 bg-card/40 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-all"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-1.5">
+          <Filter className="size-3.5 text-muted-foreground shrink-0" />
           {["ALL", "SYSTEM", "TENANT"].map((s) => (
             <button
               key={s}
               id={`filter-scope-${s.toLowerCase()}`}
               onClick={() => onScopeFilterChange(s)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`px-2.5 h-8 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 scopeFilter === s
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border/80 text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
               {s === "ALL" ? "Semua" : s}

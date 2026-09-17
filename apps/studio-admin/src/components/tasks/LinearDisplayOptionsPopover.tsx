@@ -104,7 +104,7 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
   availableViews,
   onViewModeChange,
 }) => (
-  <div className="flex items-center bg-muted/40 rounded-xl p-1 border border-border/40">
+  <div className="flex items-center bg-muted/40 rounded-md p-0.5 border border-border/40">
     {availableViews.includes("list") && (
       <button
         type="button"
@@ -113,13 +113,13 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
           onViewModeChange("list");
         }}
         className={cn(
-          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          "flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded-sm transition-all cursor-pointer",
           viewMode === "list"
-            ? "bg-background text-foreground shadow-xs font-bold"
+            ? "bg-background text-foreground shadow-xs font-semibold"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <List className="h-3.5 w-3.5" />
+        <List className="size-3.5" />
         <span>List</span>
       </button>
     )}
@@ -132,13 +132,13 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
           onViewModeChange("kanban");
         }}
         className={cn(
-          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          "flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded-sm transition-all cursor-pointer",
           viewMode === "kanban"
-            ? "bg-background text-foreground shadow-xs font-bold"
+            ? "bg-background text-foreground shadow-xs font-semibold"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <Columns3 className="h-3.5 w-3.5" />
+        <Columns3 className="size-3.5" />
         <span>Board</span>
       </button>
     )}
@@ -151,13 +151,13 @@ const ViewModeTabs: React.FC<ViewModeTabsProps> = ({
           onViewModeChange("timeline");
         }}
         className={cn(
-          "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+          "flex-1 flex items-center justify-center gap-1.5 py-1 text-xs font-medium rounded-sm transition-all cursor-pointer",
           viewMode === "timeline"
-            ? "bg-background text-foreground shadow-xs font-bold"
+            ? "bg-background text-foreground shadow-xs font-semibold"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <CalendarRange className="h-3.5 w-3.5" />
+        <CalendarRange className="size-3.5" />
         <span>Timeline</span>
       </button>
     )}
@@ -332,14 +332,14 @@ export function LinearDisplayOptionsPopover({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer shadow-xs h-8 outline-hidden",
+            "inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all cursor-pointer shadow-xs h-8 outline-hidden",
             open
               ? "bg-primary/10 border-primary/40 text-primary"
-              : "bg-card border-border hover:bg-muted/40 text-foreground"
+              : "bg-card border-border/80 hover:bg-muted/40 text-foreground"
           )}
           title="Display / View options"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
+          <SlidersHorizontal className="size-3.5" />
           <span className="hidden sm:inline">Display</span>
         </button>
       </DropdownMenuTrigger>
@@ -347,7 +347,7 @@ export function LinearDisplayOptionsPopover({
       <DropdownMenuContent
         align="end"
         sideOffset={6}
-        className="w-80 p-3.5 bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl z-50 text-xs space-y-3.5"
+        className="w-80 p-3.5 bg-popover/95 backdrop-blur-xl border border-border rounded-xl shadow-lg z-50 text-xs space-y-3.5"
       >
         <ViewModeTabs
           viewMode={viewMode}
@@ -384,9 +384,9 @@ export function LinearDisplayOptionsPopover({
                     onToggleDisplayProperty(key);
                   }}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer shadow-xs active:scale-95",
+                    "px-2 py-0.5 text-[11px] font-medium rounded-md border transition-all cursor-pointer shadow-2xs active:scale-95",
                     active
-                      ? "bg-primary/15 border-primary/50 text-foreground font-bold"
+                      ? "bg-primary/15 border-primary/50 text-foreground font-semibold"
                       : "bg-muted/30 border-border/60 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"
                   )}
                 >

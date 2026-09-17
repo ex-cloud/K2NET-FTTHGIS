@@ -37,7 +37,7 @@ export function AiServerFileRejectModal({
 }: AiServerFileRejectModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl">
+      <DialogContent className="max-w-md bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl">
         <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shrink-0">

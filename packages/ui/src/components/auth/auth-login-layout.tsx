@@ -133,7 +133,7 @@ export function AuthLoginLayout({
 
         {/* Bottom Right Testimonial Card */}
         <div className="w-full max-w-lg mx-auto z-10">
-          <div className="relative rounded-2xl border border-border/70 bg-card/75 p-6 backdrop-blur-xl shadow-2xl shadow-black/20">
+          <div className="relative rounded-2xl border border-border/70 bg-card/75 p-6 backdrop-blur-xl shadow-lg shadow-black/20">
             <Quote className="h-6 w-6 text-primary/60 mb-3 transform rotate-180" />
             <blockquote className="text-xs sm:text-sm font-normal text-foreground/90 leading-relaxed mb-4 font-sans">
               &ldquo;{testimonialQuote}&rdquo;
@@ -162,7 +162,7 @@ export function AuthLoginLayout({
           onClick={() => setActivePolicyModal(null)}
         >
           <div 
-            className="bg-card border border-border/80 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden"
+            className="bg-card border border-border/80 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-lg overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

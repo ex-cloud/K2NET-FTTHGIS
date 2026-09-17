@@ -92,20 +92,20 @@ export function UserFilters() {
                 value={orgInput}
                 onChange={(e) => setOrgInput(e.target.value)}
                 placeholder="e.g. telkom, indosat..."
-                className="bg-muted/40 border-border/40 text-xs h-9"
+                className="bg-muted/40 border-border/80 text-xs h-8 rounded-md"
                 onKeyDown={(e) => e.key === "Enter" && handleOrgSearch()}
               />
               <Button 
                 onClick={handleOrgSearch}
-                size="sm"
+                size="default"
                 variant="default"
-                className="h-9 px-3 text-xs"
+                className="h-8 px-3 text-xs shrink-0 font-medium"
               >
                 Apply
               </Button>
             </div>
             {currentOrg && (
-              <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary font-medium">
+              <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded-md text-xs text-primary font-medium">
                 <span>Active: <strong>{currentOrg}</strong></span>
                 <X className="w-3.5 h-3.5 cursor-pointer hover:text-foreground transition-colors" onClick={() => updateParam("org", "all")} />
               </div>
@@ -123,9 +123,9 @@ export function UserFilters() {
                   key={r.id}
                   onClick={() => updateParam("role", r.id)}
                   className={cn(
-                    "p-2.5 text-left rounded-lg text-xs font-medium transition-all flex items-center justify-between border active:scale-[0.98]",
+                    "px-2.5 py-2 text-left rounded-md text-xs font-medium transition-all flex items-center justify-between border cursor-pointer active:scale-[0.98]",
                     currentRole === r.id
-                      ? "bg-primary/10 border-primary text-primary font-bold shadow-xs"
+                      ? "bg-primary/10 border-primary text-primary font-medium shadow-xs"
                       : "bg-card/60 border-border/60 text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground"
                   )}
                 >

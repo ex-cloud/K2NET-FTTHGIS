@@ -95,7 +95,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Status</span>
           <ContextMenuShortcut>P then S</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateStatus?.("BACKLOG")} className="cursor-pointer">
             <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
             <span>Backlog</span>
@@ -130,7 +130,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Priority</span>
           <ContextMenuShortcut>P then P</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdatePriority?.("URGENT")} className="text-destructive font-semibold cursor-pointer">
             <AlertCircle className="mr-2 h-3.5 w-3.5 text-destructive" />
             <span>Urgent</span>
@@ -157,7 +157,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Project lead</span>
           <ContextMenuShortcut>P then A</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-56 max-h-60 overflow-y-auto bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-56 max-h-60 overflow-y-auto bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateLead?.("Unassigned")} className="text-muted-foreground cursor-pointer">
             <span>Unassign Lead</span>
           </ContextMenuItem>
@@ -182,7 +182,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Members</span>
           <ContextMenuShortcut>P then M</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => toast.info(`Managing team members for ${project.name}`)} className="cursor-pointer">
             <span>{teamUsers.length} Active Engineers</span>
           </ContextMenuItem>
@@ -196,7 +196,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Target date...</span>
           <ContextMenuShortcut>Ctrl Alt D</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem
             onClick={() => {
               const d = new Date();
@@ -240,7 +240,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <span>Labels</span>
           <ContextMenuShortcut>P then L</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-48 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           {["Core Upgrade", "Fiber Rollout", "Platform SaaS", "Infrastructure", "Security"].map((lbl) => (
             <ContextMenuItem
               key={lbl}
@@ -260,7 +260,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
           <TrendingUp className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>More properties</span>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => onUpdateHealth?.("On track")} className="text-primary font-medium cursor-pointer">
             <TrendingUp className="mr-2 h-3.5 w-3.5 text-primary" />
             <span>On track</span>
@@ -307,7 +307,7 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
           <Copy className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Copy</span>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem
             onClick={() =>
               handleCopy(
@@ -380,7 +380,7 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
           <span>Remind me</span>
           <ContextMenuShortcut>H</ContextMenuShortcut>
         </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-2xl z-[10000] rounded-xl p-1">
+        <ContextMenuSubContent className="w-52 bg-popover/95 backdrop-blur-xl border-border shadow-lg z-[10000] rounded-xl p-1">
           <ContextMenuItem onClick={() => handleRemindMe("In 1 hour")} className="cursor-pointer">
             <span>An hour from now</span>
           </ContextMenuItem>
@@ -461,7 +461,7 @@ export function ProjectContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-60 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+      <ContextMenuContent className="w-60 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
         <ProjectPropertySubmenus
           project={project}
           onUpdateStatus={onUpdateStatus}

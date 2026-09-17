@@ -48,7 +48,7 @@ function ToolbarCategoryDropdown({ selectedCategory, setSelectedCategory }: Cate
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-60 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-60 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
           Filter Kategori Pengetahuan
         </p>
@@ -112,7 +112,7 @@ function ToolbarScopeDropdown({ selectedScope, setSelectedScope }: ScopeDropdown
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-64 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-64 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
           Filter Scope Visibilitas
         </p>
@@ -181,7 +181,7 @@ function ToolbarStatusDropdown({ selectedStatus, setSelectedStatus }: StatusDrop
           <ChevronDown className="w-3.5 h-3.5 opacity-60" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-56 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-56 z-50">
         <p className="text-[10px] font-bold text-foreground/75 dark:text-muted-foreground uppercase tracking-wider px-2 py-1.5">
           Filter Status Dokumen
         </p>

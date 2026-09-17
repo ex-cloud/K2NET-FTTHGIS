@@ -46,7 +46,7 @@ export function DocumentUploadModal({
 }: DocumentUploadModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-popover/95 backdrop-blur-xl border-border text-foreground rounded-2xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-md bg-popover/95 backdrop-blur-xl border-border text-foreground rounded-2xl shadow-lg p-6">
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase tracking-wider font-bold">
             <Upload className="h-4 w-4" />

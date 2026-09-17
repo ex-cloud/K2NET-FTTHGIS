@@ -48,25 +48,25 @@ export function OrgToolbarActions({
           size="sm"
           onClick={() => setCompactView((prev) => !prev)}
           className={cn(
-            "h-8 px-2.5 border-border bg-card hover:bg-accent text-muted-foreground",
+            "border-border/80 bg-card hover:bg-accent text-muted-foreground",
             compactView && "text-primary border-primary/40 bg-primary/5"
           )}
         >
-          <Layers className="h-3.5 w-3.5" />
+          <Layers className="size-3.5" />
         </Button>
       </ActionTooltip>
 
       {/* View Switcher: Grid, List, Table */}
-      <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
+      <div className="flex items-center rounded-md border border-border/80 bg-card p-0.5">
         <ActionTooltip label="Grid View" shortcut="1">
           <button
             onClick={() => setViewMode("grid")}
             className={cn(
-              "p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-all",
+              "p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer",
               viewMode === "grid" && "bg-secondary text-foreground shadow-xs"
             )}
           >
-            <LayoutGrid className="h-3.5 w-3.5" />
+            <LayoutGrid className="size-3.5" />
           </button>
         </ActionTooltip>
 
@@ -74,11 +74,11 @@ export function OrgToolbarActions({
           <button
             onClick={() => setViewMode("list")}
             className={cn(
-              "p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-all",
+              "p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer",
               viewMode === "list" && "bg-secondary text-foreground shadow-xs"
             )}
           >
-            <ListIcon className="h-3.5 w-3.5" />
+            <ListIcon className="size-3.5" />
           </button>
         </ActionTooltip>
 
@@ -86,11 +86,11 @@ export function OrgToolbarActions({
           <button
             onClick={() => setViewMode("table")}
             className={cn(
-              "p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-all",
+              "p-1 rounded-sm text-muted-foreground hover:text-foreground transition-all cursor-pointer",
               viewMode === "table" && "bg-secondary text-foreground shadow-xs"
             )}
           >
-            <TableIcon className="h-3.5 w-3.5" />
+            <TableIcon className="size-3.5" />
           </button>
         </ActionTooltip>
       </div>
@@ -102,9 +102,9 @@ export function OrgToolbarActions({
           size="sm"
           onClick={onRefresh}
           disabled={loading}
-          className="h-8 px-2.5 border-border bg-card hover:bg-accent text-muted-foreground"
+          className="border-border/80 bg-card hover:bg-accent text-muted-foreground"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
+          <RefreshCw className={cn("size-3.5", loading && "animate-spin text-primary")} />
         </Button>
       </ActionTooltip>
 
@@ -122,9 +122,9 @@ export function OrgToolbarActions({
             size="sm"
             onClick={onImportBackup}
             disabled={!canCreateOrg}
-            className="h-8 text-xs font-medium gap-1.5 border-border bg-card hover:bg-accent text-foreground shadow-xs disabled:opacity-50"
+            className="border-border/80 bg-card hover:bg-accent text-foreground shadow-xs disabled:opacity-50"
           >
-            <Upload className="h-3.5 w-3.5 text-primary" />
+            <Upload className="size-3.5 text-primary" />
             <span>Import Backup</span>
           </Button>
         </ActionTooltip>
@@ -143,9 +143,9 @@ export function OrgToolbarActions({
           size="sm"
           onClick={onNewOrganization}
           disabled={!canCreateOrg}
-          className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm disabled:opacity-50"
+          className="shadow-xs disabled:opacity-50"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           <span>New Organization</span>
         </Button>
       </ActionTooltip>

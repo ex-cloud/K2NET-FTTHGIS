@@ -19,7 +19,7 @@ function CommandPaletteRoot({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content className="fixed left-[50%] top-[20%] z-50 w-full max-w-2xl translate-x-[-50%] p-0 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-150">
-          <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card/95 backdrop-blur-2xl shadow-2xl">
+          <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card/95 backdrop-blur-2xl shadow-lg">
             {children}
           </div>
         </DialogPrimitive.Content>

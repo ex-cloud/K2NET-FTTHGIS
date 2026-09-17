@@ -26,9 +26,9 @@ export function FeaturesHeader({ onBulkEnableAI, onRefresh }: FeaturesHeaderProp
             variant="outline"
             size="sm"
             onClick={onBulkEnableAI}
-            className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
+            className="border-border/80 bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
           >
-            <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+            <Sparkles className="size-3.5 text-purple-500" />
             <span>Enable AI on Enterprise</span>
           </Button>
         </ActionTooltip>
@@ -41,9 +41,9 @@ export function FeaturesHeader({ onBulkEnableAI, onRefresh }: FeaturesHeaderProp
               onRefresh();
               toast.success("Entitlements refreshed from backend");
             }}
-            className="h-8 px-3 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
+            className="border-border/80 bg-card hover:bg-muted text-foreground gap-1.5 shadow-2xs cursor-pointer"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="size-3.5" />
             <span>Refresh</span>
           </Button>
         </ActionTooltip>

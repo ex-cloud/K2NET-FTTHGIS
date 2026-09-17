@@ -18,7 +18,7 @@ export function DeleteConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 text-center">
+      <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-lg p-6 text-center">
         <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-6 h-6" />
         </div>

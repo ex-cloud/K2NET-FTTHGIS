@@ -9,15 +9,15 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-wider",
+        default: "bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium uppercase tracking-wider",
         secondary:
           "bg-muted text-muted-foreground border border-border text-[10px] font-medium uppercase tracking-wider",
         destructive:
-          "bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-bold uppercase tracking-wider",
+          "bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-medium uppercase tracking-wider",
         success:
-          "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider",
+          "bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium uppercase tracking-wider",
         warning:
-          "bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold uppercase tracking-wider",
+          "bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-medium uppercase tracking-wider",
         outline:
           "border border-border text-foreground text-[10px] font-medium uppercase tracking-wider",
         ghost: "text-muted-foreground text-[10px] font-medium uppercase tracking-wider",

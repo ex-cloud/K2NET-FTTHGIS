@@ -156,7 +156,7 @@ export function BackupSnapshotsTable({
                   </TableRow>
                 </ContextMenuTrigger>
 
-                <ContextMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border shadow-2xl text-xs z-50 py-1 rounded-xl">
+                <ContextMenuContent className="w-56 bg-popover/95 backdrop-blur-xl border-border shadow-lg text-xs z-50 py-1 rounded-xl">
                   <ContextMenuItem
                     onClick={() => onDownloadSnapshot(snap)}
                     className="cursor-pointer font-medium gap-2 text-foreground focus:bg-accent"

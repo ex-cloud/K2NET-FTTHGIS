@@ -65,30 +65,31 @@ export function ImpersonateTenantModal({
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
             variant="ghost"
+            size="sm"
             onClick={onClose}
             disabled={state.submitting}
-            className="text-xs"
           >
             Batal
           </Button>
           <Button
+            size="sm"
             onClick={() => state.triggerStart(state.reason, state.ticketReference, state.hasDifferentActiveSession)}
             disabled={!state.isReasonValid || state.submitting}
-            className="text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-primary-foreground font-semibold"
+            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-primary-foreground"
           >
             {state.submitting ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="size-3.5 animate-spin" />
                 <span>Memproses Sesi...</span>
               </>
             ) : state.hasDifferentActiveSession ? (
               <>
-                <ArrowRightLeft className="h-3.5 w-3.5" />
+                <ArrowRightLeft className="size-3.5" />
                 <span>Beralih ke {organization.name}</span>
               </>
             ) : (
               <>
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="size-3.5" />
                 <span>Mulai Impersonasi</span>
               </>
             )}

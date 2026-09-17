@@ -89,7 +89,7 @@ function TotalTimeDropdown({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-4 w-64 z-50">
         <div className="space-y-3">
           <div>
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Operator</label>
@@ -153,7 +153,7 @@ function RolesFilterDropdown({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-64 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-4 w-64 z-50">
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Select roles</p>
           <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar-thin pr-1">
@@ -214,7 +214,7 @@ function SourceFilterDropdown({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-2xl rounded-xl p-4 w-60 z-50">
+      <DropdownMenuContent align="start" className="bg-popover border border-border shadow-lg rounded-xl p-4 w-60 z-50">
         <div>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Select query source</p>
           <div className="space-y-2">
@@ -330,7 +330,7 @@ function ExportMenuDropdown({
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-popover border border-border shadow-2xl rounded-xl p-1.5 min-w-56 z-50">
+      <DropdownMenuContent align="end" className="bg-popover border border-border shadow-lg rounded-xl p-1.5 min-w-56 z-50">
         <DropdownMenuItem onClick={handleCopyMarkdown} className="flex items-center justify-between text-xs py-2 px-3 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
           <span>Copy as Markdown</span>
           <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded border border-border">Ctrl M</span>

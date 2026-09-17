@@ -17,7 +17,7 @@ export function ResetConfirmModal({
 }: ResetConfirmModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border sm:max-w-[450px] p-6 shadow-2xl">
+      <DialogContent className="bg-card border-border sm:max-w-[450px] p-6 shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-rose-500" />

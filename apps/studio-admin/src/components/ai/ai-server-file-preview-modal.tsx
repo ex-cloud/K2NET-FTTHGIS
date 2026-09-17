@@ -36,7 +36,7 @@ export function AiServerFilePreviewModal({
 }: AiServerFilePreviewModalProps) {
   return (
     <Dialog open={!!previewData} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-border shadow-2xl p-0 overflow-hidden rounded-xl flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-card border-border shadow-lg p-0 overflow-hidden rounded-xl flex flex-col">
         <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20 pr-10">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">

@@ -21,7 +21,7 @@ export function AuditEventDiffModal({
 }: AuditEventDiffModalProps) {
   return (
     <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-2xl p-6 max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-lg p-6 max-h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase font-bold">

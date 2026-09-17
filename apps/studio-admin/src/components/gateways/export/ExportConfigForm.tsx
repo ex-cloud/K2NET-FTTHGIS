@@ -130,13 +130,15 @@ export function ExportConfigForm({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-end gap-3">
+      {/* Action Buttons */}
+      <div className="flex items-center justify-end gap-2.5">
         <ActionTooltip label="Kembalikan Nilai Form" shortcut="Alt+R">
           <Button
             type="button"
             onClick={onReset}
             variant="outline"
-            className="border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent text-xs h-9 px-4"
+            size="default"
+            className="border-border/80 text-muted-foreground hover:text-foreground"
           >
             Reset Form
           </Button>
@@ -146,9 +148,10 @@ export function ExportConfigForm({
             <Button
               type="submit"
               disabled={saving}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 flex items-center gap-1.5"
+              size="default"
+              className="gap-1.5"
             >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
               Save Configuration
             </Button>
           </ActionTooltip>

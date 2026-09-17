@@ -165,7 +165,7 @@ export function TeamMembersTable({
                     </TableRow>
                   </ContextMenuTrigger>
 
-                  <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl">
+                  <ContextMenuContent className="w-64 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl">
                     <ContextMenuItem
                       onClick={() => onPasswordReset(u)}
                       className="cursor-pointer font-medium text-foreground focus:bg-accent gap-2"

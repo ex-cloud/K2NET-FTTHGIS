@@ -145,7 +145,7 @@ export function AgentOnboardingModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
         {step === 1 ? (
           <AgentOnboardingStep1
             scope={scope}

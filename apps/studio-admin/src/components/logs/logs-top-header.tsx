@@ -110,7 +110,7 @@ function ColumnPicker({ table, columnVisibility, anchorRef, onClose }: ColumnPic
     <div
       ref={panelRef}
       style={{ position: "absolute", top: `${coords.top}px`, right: `${coords.right}px` }}
-      className="z-[9999] w-[220px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden font-mono text-xs text-foreground"
+      className="z-[9999] w-[220px] rounded-xl border border-border bg-card shadow-lg overflow-hidden font-mono text-xs text-foreground"
     >
       <div className="px-3 pt-3 pb-2 border-b border-border/50">
         <div className="relative">
@@ -227,7 +227,7 @@ function FilterBuilder({ anchorRef, onClose, onAdd }: FilterBuilderProps) {
     <div
       ref={panelRef}
       style={{ position: "absolute", top: `${coords.top}px`, left: `${coords.left}px` }}
-      className="z-[9999] w-[240px] rounded-xl border border-border bg-card shadow-2xl overflow-hidden font-mono text-xs text-foreground"
+      className="z-[9999] w-[240px] rounded-xl border border-border bg-card shadow-lg overflow-hidden font-mono text-xs text-foreground"
     >
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border/50 text-[10px] text-muted-foreground/70 flex-wrap">

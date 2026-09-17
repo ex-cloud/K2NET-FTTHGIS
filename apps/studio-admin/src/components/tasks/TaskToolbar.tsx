@@ -63,13 +63,13 @@ export function TaskToolbar({
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Search Input */}
           <div className="relative w-full sm:w-[220px]">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Filter by title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
+              className="w-full pl-8 pr-4 py-1.5 text-xs rounded-md border border-border/80 bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-all h-8"
             />
           </div>
 
@@ -106,10 +106,10 @@ export function TaskToolbar({
             <button
               onClick={onRefresh}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-semibold h-8 transition-colors cursor-pointer outline-hidden disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border/80 bg-card hover:bg-muted text-foreground rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden disabled:opacity-50"
               aria-label="Refresh tasks"
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-primary")} />
+              <RefreshCw className={cn("size-3.5", loading && "animate-spin text-primary")} />
               <span className="hidden sm:inline">{loading ? "Loading..." : "Refresh"}</span>
             </button>
           </ActionTooltip>

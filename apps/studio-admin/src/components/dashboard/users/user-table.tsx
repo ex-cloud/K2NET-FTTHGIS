@@ -208,15 +208,15 @@ function UserTableRowItem({
           <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {canManageUsers && (
               <ActionTooltip label="Ubah Profil & Role" shortcut="Alt+E">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => onEdit(user)}>
-                  <Edit className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onEdit(user)}>
+                  <Edit className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
             {canManageUsers && (
               <ActionTooltip label="Reset Password" shortcut="Alt+R">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => onResetPassword(user)}>
-                  <Key className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" onClick={() => onResetPassword(user)}>
+                  <Key className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
@@ -224,25 +224,25 @@ function UserTableRowItem({
               <ActionTooltip label="Putus Sesi Keycloak">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
                   onClick={() => toast.success(`Keycloak active session revoked for ${user.email}`)}
                 >
-                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <ShieldAlert className="size-3.5" />
                 </Button>
               </ActionTooltip>
             )}
             <ActionTooltip label="Lihat Riwayat Audit" shortcut="Alt+L">
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
                 onClick={() => {
                   const userTarget = user.email || user.username || "";
                   window.location.assign(`/security/audit?user=${encodeURIComponent(userTarget)}`);
                 }}
               >
-                <History className="w-3.5 h-3.5" />
+                <History className="size-3.5" />
               </Button>
             </ActionTooltip>
           </div>
@@ -271,18 +271,18 @@ function UserTablePagination({
       <span className="text-[12px] text-muted-foreground">
         Showing {totalElements === 0 ? 0 : startParam} to {endParam} of {totalElements} results
       </span>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" className="h-8 w-8 border-border/40 bg-transparent" disabled={currentPage === 0} asChild>
+      <div className="flex items-center gap-1.5">
+        <Button variant="outline" size="icon-sm" className="border-border/60 bg-transparent" disabled={currentPage === 0} asChild>
           <Link href={`?page=${Math.max(0, currentPage - 1)}`}>
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="size-3.5" />
           </Link>
         </Button>
-        <Button size="sm" className="h-8 bg-primary/20 text-primary border border-primary hover:bg-primary/30 font-bold text-xs">
+        <Button size="sm" className="bg-primary/20 text-primary border border-primary hover:bg-primary/30 font-medium text-xs">
           {currentPage + 1}
         </Button>
-        <Button variant="outline" size="icon" className="h-8 w-8 border-border/40 bg-transparent" disabled={currentPage >= totalPages - 1} asChild>
+        <Button variant="outline" size="icon-sm" className="border-border/60 bg-transparent" disabled={currentPage >= totalPages - 1} asChild>
           <Link href={`?page=${currentPage + 1}`}>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="size-3.5" />
           </Link>
         </Button>
       </div>
@@ -323,13 +323,13 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
             <UserSearch placeholder="Filter users..." />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="hidden sm:flex">
+            <Button variant="outline" size="sm" className="hidden sm:flex border-border/80">
               Docs
             </Button>
             {canInviteUsers && (
               <ActionTooltip label="Undang / Tambah Pengguna Baru" shortcut="C">
-                <Button onClick={() => setIsInviteWizardOpen(true)} variant="default" size="sm" className="w-full sm:w-auto">
-                  <UserPlus className="w-4 h-4 mr-1.5" />
+                <Button onClick={() => setIsInviteWizardOpen(true)} variant="default" size="sm" className="w-full sm:w-auto gap-1.5">
+                  <UserPlus className="size-3.5" />
                   Add User
                 </Button>
               </ActionTooltip>

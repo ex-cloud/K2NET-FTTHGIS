@@ -46,7 +46,7 @@ interface RunNowDialogProps {
 function RunNowDialog({ job, onClose, onConfirm, triggering }: RunNowDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4 shadow-2xl border-border/80">
+      <Card className="w-full max-w-md mx-4 shadow-lg border-border/80">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Play className="w-4 h-4 text-primary" />
@@ -170,7 +170,7 @@ function LiveLogModal({ job, onClose }: LiveLogModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-2xl mx-4 shadow-2xl border-border/80 flex flex-col h-[400px]">
+      <Card className="w-full max-w-2xl mx-4 shadow-lg border-border/80 flex flex-col h-[400px]">
         <CardHeader className="border-b border-border pb-3 flex flex-row items-center justify-between shrink-0">
           <div className="space-y-0.5">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">

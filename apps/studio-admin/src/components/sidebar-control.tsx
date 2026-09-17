@@ -47,7 +47,7 @@ export function SidebarControl({ isExpanded: _isExpanded = false }: { isExpanded
         <DropdownMenuContent
           align="end"
           side="right"
-          className="w-48 bg-popover border-border shadow-2xl p-1 animate-in fade-in zoom-in duration-200"
+          className="w-48 bg-popover border-border shadow-lg p-1 animate-in fade-in zoom-in duration-200"
           sideOffset={10}
         >
           <DropdownMenuGroup>

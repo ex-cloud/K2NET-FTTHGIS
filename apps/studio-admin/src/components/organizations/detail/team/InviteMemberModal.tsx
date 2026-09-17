@@ -42,7 +42,7 @@ export function InviteMemberModal({
 }: InviteMemberModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[420px] p-0 overflow-hidden shadow-2xl text-foreground">
+      <DialogContent className="bg-popover/95 backdrop-blur-xl border-border sm:max-w-[420px] p-0 overflow-hidden shadow-lg text-foreground">
         <DialogHeader className="p-6 pb-2 text-foreground">
           <DialogTitle className="text-base font-bold flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-primary" />

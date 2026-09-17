@@ -54,7 +54,7 @@ export function DocumentPreviewModal({
 
   return (
     <Dialog open={!!previewDoc} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-2xl p-6 max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-4xl bg-popover/95 backdrop-blur-2xl border-border text-foreground rounded-2xl shadow-lg p-6 max-h-[90vh] flex flex-col">
         <DialogHeader className="pb-3 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary font-mono text-xs uppercase font-bold">

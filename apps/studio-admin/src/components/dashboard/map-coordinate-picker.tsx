@@ -134,7 +134,7 @@ function MapOverlays({
       </div>
 
       <div className="absolute top-4 left-4 right-16 z-10 animate-in fade-in slide-in-from-top-2 duration-500">
-        <div className="bg-background/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl flex items-start gap-4">
+        <div className="bg-background/80 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-lg flex items-start gap-4">
           <div
             className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300",
@@ -166,7 +166,7 @@ function MapOverlays({
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-muted/90 backdrop-blur-xl border border-border/10 shadow-2xl space-y-2">
+      <div className="absolute bottom-6 left-6 p-4 rounded-2xl bg-muted/90 backdrop-blur-xl border border-border/10 shadow-lg space-y-2">
         <div className="flex items-center gap-3">
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest w-8">Lat</span>
           <span className="text-xs font-mono text-blue-400 font-bold">{latitude.toFixed(10)}</span>

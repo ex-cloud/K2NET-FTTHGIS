@@ -39,7 +39,7 @@ export function NewTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="w-full sm:max-w-[660px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-2xl rounded-2xl overflow-hidden flex flex-col gap-0"
+        className="w-full sm:max-w-[660px] p-0 bg-card/95 backdrop-blur-2xl border border-border shadow-lg rounded-2xl overflow-hidden flex flex-col gap-0"
       >
         {/* ── Linear-Style Header Bar ──────────────────────────────────── */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-background/50 shrink-0">

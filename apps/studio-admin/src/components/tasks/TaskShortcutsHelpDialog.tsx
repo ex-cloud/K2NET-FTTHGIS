@@ -15,7 +15,7 @@ export function TaskShortcutsHelpDialog({
 }: TaskShortcutsHelpDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-5">
+      <DialogContent className="max-w-md bg-popover/95 backdrop-blur-xl border border-border rounded-2xl shadow-lg p-5">
         <DialogHeader>
           <DialogTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
             <Keyboard className="w-4 h-4 text-primary" />

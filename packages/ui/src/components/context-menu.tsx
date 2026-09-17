@@ -85,7 +85,7 @@ function ContextMenuSubContent({
       <ContextMenuPrimitive.SubContent
         data-slot="context-menu-sub-content"
         className={cn(
-          "bg-popover/95 backdrop-blur-xl text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-44 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-xl border border-border p-1 shadow-2xl",
+          "bg-popover/95 backdrop-blur-xl text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-44 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-xl border border-border p-1 shadow-lg",
           className
         )}
         {...props}
@@ -103,7 +103,7 @@ function ContextMenuContent({
       <ContextMenuPrimitive.Content
         data-slot="context-menu-content"
         className={cn(
-          "bg-popover/95 backdrop-blur-xl text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-48 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-xl border border-border p-1 shadow-2xl",
+          "bg-popover/95 backdrop-blur-xl text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 min-w-48 origin-(--radix-context-menu-content-transform-origin) overflow-hidden rounded-xl border border-border p-1 shadow-lg",
           className
         )}
         {...props}
@@ -284,7 +284,7 @@ function UniversalContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className={cn("w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl text-xs z-[9999] py-1.5 rounded-xl", className)}>
+      <ContextMenuContent className={cn("w-56 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg text-xs z-[9999] py-1.5 rounded-xl", className)}>
         {effectiveGroups.map((group, groupIdx) => (
           <React.Fragment key={group.title || groupIdx}>
             {group.title && (
@@ -300,7 +300,7 @@ function UniversalContextMenu({
                       {item.icon && <item.icon className="mr-2 h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                       <span>{item.label}</span>
                     </ContextMenuSubTrigger>
-                    <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border/80 shadow-2xl rounded-xl p-1">
+                    <ContextMenuSubContent className="w-44 bg-popover/95 backdrop-blur-xl border-border/80 shadow-lg rounded-xl p-1">
                       {item.subItems.map((sub, subIdx) => (
                         <ContextMenuItem
                           key={sub.id || subIdx}

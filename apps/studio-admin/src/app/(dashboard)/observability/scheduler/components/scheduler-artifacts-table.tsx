@@ -44,7 +44,7 @@ function ChecksumModal({ artifact, onClose }: ChecksumModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4 shadow-2xl border-border/80">
+      <Card className="w-full max-w-md mx-4 shadow-lg border-border/80">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-primary" />
@@ -102,7 +102,7 @@ function MetadataModal({ artifact, onClose }: MetadataModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-lg mx-4 shadow-2xl border-border/80">
+      <Card className="w-full max-w-lg mx-4 shadow-lg border-border/80">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Archive className="w-4 h-4 text-primary" />
@@ -140,7 +140,7 @@ interface DeleteConfirmDialogProps {
 function DeleteConfirmDialog({ filename, onClose, onConfirm }: DeleteConfirmDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-md mx-4 shadow-2xl border-border/80">
+      <Card className="w-full max-w-md mx-4 shadow-lg border-border/80">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-sm font-semibold flex items-center gap-2 text-rose-500">
             <Trash2 className="w-4 h-4" />
