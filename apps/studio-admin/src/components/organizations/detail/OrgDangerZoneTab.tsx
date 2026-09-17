@@ -5,6 +5,7 @@ import { Button, Card, ActionTooltip } from "@k2net/ui";
 import { httpClient } from "@/lib/httpClient";
 import { getBackendBaseUrl } from "@/lib/api-config";
 import { useSession } from "@/lib/auth-compat";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   PauseCircle,
   PlayCircle,
@@ -31,6 +32,12 @@ export function OrgDangerZoneTab({
   onDelete,
 }: OrgDangerZoneTabProps) {
   const { data: session } = useSession();
+  const { canAccess } = usePermissions();
+  const canImpersonate = canAccess("system.support.impersonate");
+  const canUpdateOrg = canAccess(["system.organizations.update", "system.organizations.manage"]);
+  const canManageSecurity = canAccess("system.security.manage");
+  const canDeleteOrg = canAccess("system.organizations.delete");
+
   const [resettingRealm, setResettingRealm] = useState(false);
 
   const handleResetRealm = async () => {
@@ -86,11 +93,19 @@ export function OrgDangerZoneTab({
               Masuk langsung ke dashboard portal tenant sebagai Super Admin tanpa memerlukan kata sandi pengguna mitra.
             </p>
           </div>
-          <ActionTooltip label="Login to tenant portal as Super Admin" shortcut="Ctrl+Enter">
+          <ActionTooltip
+            label={
+              canImpersonate
+                ? "Login to tenant portal as Super Admin"
+                : "Akses Read-Only: Memerlukan izin system.support.impersonate"
+            }
+            shortcut={canImpersonate ? "Ctrl+Enter" : undefined}
+          >
             <Button
               size="sm"
               onClick={onImpersonate}
-              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs"
+              disabled={!canImpersonate}
+              className="h-7 px-2.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
             >
               <span>Open Tenant Portal</span>
               <ExternalLink className="h-3.5 w-3.5" />
@@ -110,15 +125,24 @@ export function OrgDangerZoneTab({
                 : "Membekukan sementara akses seluruh pengguna tenant dan menolak query peta GIS."}
             </p>
           </div>
-          <ActionTooltip label={isSuspended ? "Unfreeze and resume tenant operations" : "Freeze tenant API and poller access"}>
+          <ActionTooltip
+            label={
+              !canUpdateOrg
+                ? "Akses Read-Only: Memerlukan izin system.organizations.update"
+                : isSuspended
+                ? "Unfreeze and resume tenant operations"
+                : "Freeze tenant API and poller access"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={() => onUpdateStatus(isSuspended ? "ACTIVE" : "SUSPENDED")}
+              disabled={!canUpdateOrg}
               className={
                 isSuspended
-                  ? "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0 shadow-2xs"
-                  : "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0 shadow-2xs"
+                  ? "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-primary/10 hover:text-primary gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
+                  : "h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
               }
             >
               {isSuspended ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
@@ -137,13 +161,19 @@ export function OrgDangerZoneTab({
               Mengatur ulang client secret OAuth2 dan melakukan sinkronisasi ulang role RBAC Keycloak untuk realm <code className="text-primary font-mono text-[10px]">{org.slug}-realm</code>.
             </p>
           </div>
-          <ActionTooltip label="Re-sync Keycloak client secrets & RBAC roles">
+          <ActionTooltip
+            label={
+              !canManageSecurity
+                ? "Akses Read-Only: Memerlukan izin system.security.manage"
+                : "Re-sync Keycloak client secrets & RBAC roles"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={handleResetRealm}
-              disabled={resettingRealm}
-              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs"
+              disabled={!canManageSecurity || resettingRealm}
+              className="h-7 px-2.5 text-xs font-semibold border-border bg-card hover:bg-muted text-foreground gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${resettingRealm ? "animate-spin text-primary" : ""}`} />
               <span>Reset IAM Realm</span>
@@ -185,12 +215,19 @@ export function OrgDangerZoneTab({
                 Menghapus permanen skema database tenant, akun Keycloak, dan seluruh topologi peta GIS yang terafiliasi.
               </p>
             </div>
-            <ActionTooltip label="Danger: Open permanent deletion confirmation dialog">
+            <ActionTooltip
+              label={
+                canDeleteOrg
+                  ? "Danger: Open permanent deletion confirmation dialog"
+                  : "Akses Read-Only: Memerlukan izin system.organizations.delete"
+              }
+            >
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={onDelete}
-                className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs"
+                disabled={!canDeleteOrg}
+                className="h-7 px-2.5 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete Tenant</span>

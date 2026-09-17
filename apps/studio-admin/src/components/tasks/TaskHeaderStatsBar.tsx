@@ -3,6 +3,7 @@
 import React from "react";
 import { ClipboardList, Plus, PanelRight, HelpCircle, Keyboard, LayoutGrid, LayoutList } from "lucide-react";
 import { ActionTooltip } from "@k2net/ui";
+import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 
 interface TaskHeaderStatsBarProps {
@@ -34,6 +35,9 @@ export function TaskHeaderStatsBar({
   summary,
   totalElements,
 }: TaskHeaderStatsBarProps) {
+  const { canAccess } = usePermissions();
+  const canManageTask = canAccess("system.task.manage");
+
   return (
     <>
       {/* ── Page Header ─────────────────────────────────────────── */}
@@ -85,10 +89,18 @@ export function TaskHeaderStatsBar({
               <PanelRight className="h-4 w-4" />
             </button>
           </ActionTooltip>
-          <ActionTooltip label="Buat Issue Baru" shortcut="C">
+          <ActionTooltip
+            label={
+              canManageTask
+                ? "Buat Issue Baru"
+                : "Akses Read-Only: Memerlukan izin system.task.manage"
+            }
+            shortcut={canManageTask ? "C" : undefined}
+          >
             <button
               onClick={onOpenNewTask}
-              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer"
+              disabled={!canManageTask}
+              className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="New Issue"
             >
               <Plus className="h-4 w-4" />

@@ -198,9 +198,18 @@ public class PermissionSeeder implements CommandLineRunner {
         log.info("✅ Total permission synchronization complete.");
     }
 
+    private static final Set<String> SYSTEM_SCOPE_ROLES = Set.of(
+        "super_admin",
+        "platform_engineer",
+        "account_manager",
+        "system_support",
+        "system_billing",
+        "system_auditor"
+    );
+
     private void syncSystemRole(String roleName, Set<Permission> allPermissions, String... prefixes) {
         roleRepository.findByNameAndIsSystemRoleTrue(roleName).ifPresent(role -> {
-            String expectedScope = "super_admin".equalsIgnoreCase(roleName) ? "SYSTEM" : "TENANT";
+            String expectedScope = SYSTEM_SCOPE_ROLES.contains(roleName.toLowerCase()) ? "SYSTEM" : "TENANT";
             if (!expectedScope.equals(role.getScope())) {
                 role.setScope(expectedScope);
             }

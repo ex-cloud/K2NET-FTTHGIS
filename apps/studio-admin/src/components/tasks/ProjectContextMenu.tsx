@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTeamUsers } from "@/hooks/useTeamUsers";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export interface ProjectData {
   id: string;
@@ -82,12 +83,14 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
   onUpdateDueDate,
 }) => {
   const { users: teamUsers } = useTeamUsers();
+  const { canAccess } = usePermissions();
+  const canManageTask = canAccess("system.task.manage");
 
   return (
     <>
       {/* 1. Status Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <CircleDot className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Status</span>
           <ContextMenuShortcut>P then S</ContextMenuShortcut>
@@ -122,7 +125,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
 
       {/* 2. Priority Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <Flame className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Priority</span>
           <ContextMenuShortcut>P then P</ContextMenuShortcut>
@@ -149,7 +152,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
 
       {/* 3. Project Lead Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <User className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Project lead</span>
           <ContextMenuShortcut>P then A</ContextMenuShortcut>
@@ -188,7 +191,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
 
       {/* 5. Target Date Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <Target className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Target date...</span>
           <ContextMenuShortcut>Ctrl Alt D</ContextMenuShortcut>
@@ -232,7 +235,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
 
       {/* 6. Labels Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <Tag className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>Labels</span>
           <ContextMenuShortcut>P then L</ContextMenuShortcut>
@@ -253,7 +256,7 @@ const ProjectPropertySubmenus: React.FC<PropertySubmenusProps> = ({
 
       {/* 7. More Properties Submenu */}
       <ContextMenuSub>
-        <ContextMenuSubTrigger className="cursor-pointer">
+        <ContextMenuSubTrigger disabled={!canManageTask} className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           <TrendingUp className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
           <span>More properties</span>
         </ContextMenuSubTrigger>
@@ -282,6 +285,9 @@ interface ProjectActionsProps {
 }
 
 const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) => {
+  const { canAccess } = usePermissions();
+  const canManageTask = canAccess("system.task.manage");
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
@@ -422,18 +428,22 @@ const ProjectActions: React.FC<ProjectActionsProps> = ({ project, onDelete }) =>
         <span>Open in new tab</span>
       </ContextMenuItem>
 
-      <ContextMenuSeparator className="my-1" />
+      {canManageTask && (
+        <>
+          <ContextMenuSeparator className="my-1" />
 
-      {/* Delete Project */}
-      <ContextMenuItem
-        variant="destructive"
-        onClick={() => onDelete?.()}
-        className="cursor-pointer"
-      >
-        <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
-        <span>Delete</span>
-        <ContextMenuShortcut>Ctrl ⌫</ContextMenuShortcut>
-      </ContextMenuItem>
+          {/* Delete Project */}
+          <ContextMenuItem
+            variant="destructive"
+            onClick={() => onDelete?.()}
+            className="cursor-pointer"
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
+            <span>Delete</span>
+            <ContextMenuShortcut>Ctrl ⌫</ContextMenuShortcut>
+          </ContextMenuItem>
+        </>
+      )}
     </>
   );
 };

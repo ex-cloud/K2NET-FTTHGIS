@@ -24,13 +24,13 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     sections: [
       {
         title: "Tenant Directory",
-        requiredPermission: "system.tenant.view",
+        requiredPermission: ["system.organizations.view", "orgs.view"],
         items: [
-          { title: "All Organizations", url: "/organizations", icon: "Building2", requiredPermission: "system.tenant.view" },
-          { title: "Active Tenants", url: "/organizations?status=ACTIVE", icon: "CheckCircle", requiredPermission: "system.tenant.view" },
-          { title: "Trial Accounts", url: "/organizations?status=TRIAL", icon: "Clock", requiredPermission: "system.tenant.view" },
-          { title: "Provisioning Queue", url: "/organizations?status=PROVISIONING", icon: "UploadCloud", requiredPermission: "system.tenant.view" },
-          { title: "Suspended & Inactive", url: "/organizations?status=SUSPENDED", icon: "UserX", requiredPermission: "system.tenant.view" },
+          { title: "All Organizations", url: "/organizations", icon: "Building2", requiredPermission: ["system.organizations.view", "orgs.view"] },
+          { title: "Active Tenants", url: "/organizations?status=ACTIVE", icon: "CheckCircle", requiredPermission: ["system.organizations.view", "orgs.view"] },
+          { title: "Trial Accounts", url: "/organizations?status=TRIAL", icon: "Clock", requiredPermission: ["system.organizations.view", "orgs.view"] },
+          { title: "Provisioning Queue", url: "/organizations?status=PROVISIONING", icon: "UploadCloud", requiredPermission: ["system.organizations.view", "orgs.view"] },
+          { title: "Suspended & Inactive", url: "/organizations?status=SUSPENDED", icon: "UserX", requiredPermission: ["system.organizations.view", "orgs.view"] },
         ],
       },
       {
@@ -42,18 +42,18 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       },
       {
         title: "Entitlements & Limits",
-        requiredPermission: "system.tenant.manage",
+        requiredPermission: ["system.organizations.manage", "system.quotas.manage"],
         items: [
-          { title: "Feature Flags & Add-ons", url: "/organizations/features", icon: "Sliders", requiredPermission: "system.tenant.manage" },
-          { title: "FTTH Spatial Quotas", url: "/organizations/quotas", icon: "Network", requiredPermission: "system.tenant.manage" },
+          { title: "Feature Flags & Add-ons", url: "/organizations/features", icon: "Sliders", requiredPermission: ["system.organizations.manage", "system.organizations.update"] },
+          { title: "FTTH Spatial Quotas", url: "/organizations/quotas", icon: "Network", requiredPermission: ["system.organizations.manage", "system.quotas.manage"] },
         ],
       },
       {
         title: "Domains & Routing",
-        requiredPermission: "system.tenant.manage",
+        requiredPermission: ["system.organizations.manage", "system.organizations.update"],
         items: [
-          { title: "Custom Domains", url: "/organizations/domains", icon: "Globe", requiredPermission: "system.tenant.manage" },
-          { title: "VPN & Tunneling", url: "/organizations/vpn", icon: "ShieldCheck", requiredPermission: "system.tenant.manage" },
+          { title: "Custom Domains", url: "/organizations/domains", icon: "Globe", requiredPermission: ["system.organizations.manage", "system.organizations.update"] },
+          { title: "VPN & Tunneling", url: "/organizations/vpn", icon: "ShieldCheck", requiredPermission: ["system.organizations.manage", "system.organizations.update"] },
         ],
       },
     ],
@@ -82,16 +82,16 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
     sections: [
       {
         title: "User Management",
-        requiredPermission: "system.user.view",
+        requiredPermission: ["system.security.manage", "users.view", "roles.view"],
         items: [
-          { title: "Global Users", url: "/users", icon: "Users", requiredPermission: "system.user.view" },
+          { title: "Global Users", url: "/users", icon: "Users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
         ],
       },
       {
         title: "Access Control",
-        requiredPermission: "system.user.manage",
+        requiredPermission: ["system.security.manage", "roles.update", "users.manage"],
         items: [
-          { title: "Global Roles", url: "/users/roles", icon: "ShieldCheck", requiredPermission: "system.user.manage" },
+          { title: "Global Roles", url: "/users/roles", icon: "ShieldCheck", requiredPermission: ["system.security.manage", "roles.update", "users.manage"] },
         ],
       },
       {

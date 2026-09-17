@@ -7,6 +7,7 @@ import {
   PauseCircle,
 } from "lucide-react";
 import { Button, ActionTooltip } from "@k2net/ui";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface OrganizationBulkActionBarProps {
   selectedCount: number;
@@ -27,6 +28,12 @@ export function OrganizationBulkActionBar({
   onBulkExport,
   onBulkBackupJson,
 }: OrganizationBulkActionBarProps) {
+  const { canAccess } = usePermissions();
+  const canUpdateOrg = canAccess(["system.organizations.update", "system.organizations.manage"]);
+  const canBroadcast = canAccess(["system.organizations.manage", "system.organizations.update"]);
+  const canExport = canAccess(["system.organizations.view", "orgs.view"]);
+  const canBackup = canAccess(["system.organizations.manage", "system.backup.manage"]);
+
   if (selectedCount === 0) return null;
 
   return (
@@ -44,48 +51,76 @@ export function OrganizationBulkActionBar({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
-          <ActionTooltip label="Resume all selected organizations">
+          <ActionTooltip
+            label={
+              canUpdateOrg
+                ? "Resume all selected organizations"
+                : "Akses Read-Only: Memerlukan izin system.organizations.update"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={onBulkResume}
-              className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5"
+              disabled={!canUpdateOrg}
+              className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 disabled:opacity-50"
             >
               <PlayCircle className="h-3 w-3" />
               <span>Resume</span>
             </Button>
           </ActionTooltip>
 
-          <ActionTooltip label="Suspend all selected organizations">
+          <ActionTooltip
+            label={
+              canUpdateOrg
+                ? "Suspend all selected organizations"
+                : "Akses Read-Only: Memerlukan izin system.organizations.update"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={onBulkSuspend}
-              className="h-7 text-xs border-border bg-card/80 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 gap-1.5"
+              disabled={!canUpdateOrg}
+              className="h-7 text-xs border-border bg-card/80 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 gap-1.5 disabled:opacity-50"
             >
               <PauseCircle className="h-3 w-3" />
               <span>Suspend</span>
             </Button>
           </ActionTooltip>
 
-          <ActionTooltip label="Send announcement notification to selected tenants">
+          <ActionTooltip
+            label={
+              canBroadcast
+                ? "Send announcement notification to selected tenants"
+                : "Akses Read-Only: Memerlukan izin system.organizations.manage"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={onBulkBroadcast}
-              className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5"
+              disabled={!canBroadcast}
+              className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 disabled:opacity-50"
             >
               <MessageSquare className="h-3 w-3" />
               <span>Broadcast</span>
             </Button>
           </ActionTooltip>
 
-          <ActionTooltip label="Export selected organizations to CSV">
+          <ActionTooltip
+            label={
+              canExport
+                ? "Export selected organizations to CSV"
+                : "Akses Read-Only: Memerlukan izin system.organizations.view"
+            }
+          >
             <Button
               variant="outline"
               size="sm"
               onClick={onBulkExport}
-              className="h-7 text-xs border-border bg-card/80 hover:bg-accent text-foreground gap-1.5"
+              disabled={!canExport}
+              className="h-7 text-xs border-border bg-card/80 hover:bg-accent text-foreground gap-1.5 disabled:opacity-50"
             >
               <Download className="h-3 w-3" />
               <span>Export CSV</span>
@@ -93,12 +128,19 @@ export function OrganizationBulkActionBar({
           </ActionTooltip>
 
           {onBulkBackupJson && (
-            <ActionTooltip label="Unduh paket arsip cadangan (.JSON) organisasi terpilih">
+            <ActionTooltip
+              label={
+                canBackup
+                  ? "Unduh paket arsip cadangan (.JSON) organisasi terpilih"
+                  : "Akses Read-Only: Memerlukan izin system.backup.manage"
+              }
+            >
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onBulkBackupJson}
-                className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 text-foreground gap-1.5"
+                disabled={!canBackup}
+                className="h-7 text-xs border-border bg-card/80 hover:bg-primary/10 hover:text-primary hover:border-primary/30 text-foreground gap-1.5 disabled:opacity-50"
               >
                 <FileJson className="h-3 w-3 text-primary" />
                 <span>Backup JSON</span>

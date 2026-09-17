@@ -11,12 +11,16 @@ import type { EnrichedOrganization, OrganizationStatus } from "../types";
 interface OrgStatusSubmenuProps {
   organization: EnrichedOrganization;
   onUpdateStatus?: (org: EnrichedOrganization, status: OrganizationStatus) => void;
+  disabled?: boolean;
 }
 
-export function OrgStatusSubmenu({ organization, onUpdateStatus }: OrgStatusSubmenuProps) {
+export function OrgStatusSubmenu({ organization, onUpdateStatus, disabled }: OrgStatusSubmenuProps) {
   return (
     <ContextMenuSub>
-      <ContextMenuSubTrigger className="cursor-pointer gap-2 focus:bg-muted">
+      <ContextMenuSubTrigger
+        disabled={disabled}
+        className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
         <span>Lifecycle Status</span>
       </ContextMenuSubTrigger>

@@ -20,6 +20,7 @@ import {
   ActionTooltip 
 } from "@k2net/ui";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 import { 
   CATEGORIES, 
   KNOWLEDGE_SCOPES, 
@@ -241,13 +242,25 @@ function ToolbarActionButtons({
   onRefresh,
   onGoToUpload,
 }: ActionButtonsProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.ai.manage");
+
   return (
     <div className="flex items-center gap-1 w-full sm:w-auto justify-end shrink-0">
-      <ActionTooltip label={isSyncing ? "Menyinkronkan Server..." : "Sinkronkan Direktori Server"} shortcut="S">
+      <ActionTooltip
+        label={
+          !canManage
+            ? "Akses Read-Only: Memerlukan izin system.ai.manage"
+            : isSyncing
+            ? "Menyinkronkan Server..."
+            : "Sinkronkan Direktori Server"
+        }
+        shortcut={canManage ? "S" : undefined}
+      >
         <button
           onClick={onSyncServerDocs}
-          disabled={isSyncing}
-          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50"
+          disabled={isSyncing || !canManage}
+          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Sinkronkan Direktori Server Docs"
         >
           {isSyncing ? (
@@ -269,10 +282,18 @@ function ToolbarActionButtons({
         </button>
       </ActionTooltip>
 
-      <ActionTooltip label="Tambah Pengetahuan (Upload / Tulis)" shortcut="C">
+      <ActionTooltip
+        label={
+          !canManage
+            ? "Akses Read-Only: Memerlukan izin system.ai.manage"
+            : "Tambah Pengetahuan (Upload / Tulis)"
+        }
+        shortcut={canManage ? "C" : undefined}
+      >
         <button
           onClick={onGoToUpload}
-          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden"
+          disabled={!canManage}
+          className="h-8 w-8 p-0 shrink-0 border-0 bg-transparent hover:bg-muted/60 text-foreground/75 dark:text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer flex items-center justify-center outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Tambah Pengetahuan (Upload / Tulis)"
         >
           <Plus className="w-4 h-4" />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Code2, Sparkles, Copy, Tag, Trash2, Layers, ChevronDown, ExternalLink } from "lucide-react";
 import { ActionTooltip, UniversalContextMenu, type ContextMenuGroupConfig } from "@k2net/ui";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
 import { type Permission, scopeBadge } from "./permissions-types";
 
 interface ModuleGroupProps {
@@ -13,6 +14,8 @@ interface ModuleGroupProps {
 
 export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: ModuleGroupProps) {
   const [open, setOpen] = useState(true);
+  const { canAccess } = usePermissions();
+  const canManageSecurity = canAccess("system.security.manage");
 
   const getPermissionContextMenuGroups = (p: Permission): ContextMenuGroupConfig[] => [
     {
@@ -61,16 +64,20 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
         },
       ],
     },
-    {
-      items: [
-        {
-          label: "Hapus Permission",
-          icon: Trash2,
-          shortcut: "Del",
-          onClick: () => onDelete(p),
-        },
-      ],
-    },
+    ...(canManageSecurity
+      ? [
+          {
+            items: [
+              {
+                label: "Hapus Permission",
+                icon: Trash2,
+                shortcut: "Del",
+                onClick: () => onDelete(p),
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -117,15 +124,17 @@ export function ModuleGroup({ module, permissions, onDelete, onViewUsages }: Mod
                     <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{p.description}</p>
                   )}
                 </div>
-                <ActionTooltip label="Hapus Permission" shortcut="Del">
-                  <button
-                    id={`btn-delete-perm-${p.id}`}
-                    onClick={() => onDelete(p)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground/60 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </ActionTooltip>
+                {canManageSecurity && (
+                  <ActionTooltip label="Hapus Permission" shortcut="Del">
+                    <button
+                      id={`btn-delete-perm-${p.id}`}
+                      onClick={() => onDelete(p)}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground/60 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </ActionTooltip>
+                )}
               </div>
             </UniversalContextMenu>
           ))}

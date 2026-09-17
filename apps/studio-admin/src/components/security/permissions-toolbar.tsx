@@ -1,5 +1,6 @@
 import { Shield, Plus, Search, Filter, RefreshCw } from "lucide-react";
 import { Card, ActionTooltip } from "@k2net/ui";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface PermissionsToolbarProps {
   onRefresh: () => void;
@@ -22,6 +23,9 @@ export function PermissionsToolbar({
   scopeFilter,
   onScopeFilterChange,
 }: PermissionsToolbarProps) {
+  const { canAccess } = usePermissions();
+  const canManageSecurity = canAccess("system.security.manage");
+
   return (
     <>
       {/* Header */}
@@ -48,11 +52,19 @@ export function PermissionsToolbar({
               Refresh
             </button>
           </ActionTooltip>
-          <ActionTooltip label="Tambah Permission Baru" shortcut="C">
+          <ActionTooltip
+            label={
+              canManageSecurity
+                ? "Tambah Permission Baru"
+                : "Akses Read-Only: Memerlukan izin system.security.manage"
+            }
+            shortcut={canManageSecurity ? "C" : undefined}
+          >
             <button
               id="btn-add-permission"
               onClick={onOpenCreate}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-lg shadow-primary/20"
+              disabled={!canManageSecurity}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               Tambah Permission

@@ -1,7 +1,8 @@
 import React, { useMemo } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Copy, Check, FileEdit, CheckCircle2, Trash2, BrainCircuit } from "lucide-react";
-import { Button } from "@k2net/ui";
+import { Button, ActionTooltip } from "@k2net/ui";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   type AiDocumentItem,
   CATEGORIES,
@@ -29,6 +30,9 @@ export function useKnowledgeColumns({
   onApprove,
   onDelete,
 }: UseKnowledgeColumnsProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.ai.manage");
+
   return useMemo(
     () => [
       columnHelper.accessor("title", {
@@ -174,43 +178,52 @@ export function useKnowledgeColumns({
           return (
             <div className="flex items-center justify-end gap-1">
               {onEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(doc)}
-                  className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer"
-                  title="Edit & Revisi Pengetahuan"
-                >
-                  <FileEdit className="w-3.5 h-3.5" />
-                </Button>
+                <ActionTooltip label={canManage ? "Edit & Revisi Pengetahuan" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(doc)}
+                    disabled={!canManage}
+                    className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Edit & Revisi Pengetahuan"
+                  >
+                    <FileEdit className="w-3.5 h-3.5" />
+                  </Button>
+                </ActionTooltip>
               )}
 
               {doc.status !== "INDEXED" && onApprove && (
+                <ActionTooltip label={canManage ? "Setujui & Publikasikan (Approve)" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onApprove(doc.id, doc.title)}
+                    disabled={!canManage}
+                    className="h-7 w-7 p-0 text-primary hover:bg-primary/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Setujui & Publikasikan (Approve)"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </Button>
+                </ActionTooltip>
+              )}
+
+              <ActionTooltip label={canManage ? "Hapus dari memori AI" : "Akses Read-Only: Memerlukan izin system.ai.manage"}>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onApprove(doc.id, doc.title)}
-                  className="h-7 w-7 p-0 text-primary hover:bg-primary/10 rounded-md cursor-pointer"
-                  title="Setujui & Publikasikan (Approve)"
+                  onClick={() => onDelete(doc.id, doc.title)}
+                  disabled={!canManage}
+                  className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Hapus dari memori AI"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
-              )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(doc.id, doc.title)}
-                className="h-7 w-7 p-0 text-foreground/75 dark:text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-md cursor-pointer"
-                title="Hapus dari memori AI"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              </ActionTooltip>
             </div>
           );
         },
       }),
     ],
-    [copiedId, handleCopy, onDelete, onEdit, onApprove]
+    [copiedId, handleCopy, onDelete, onEdit, onApprove, canManage]
   );
 }

@@ -123,6 +123,7 @@ function getUserContextMenuGroups(
           icon: ShieldAlert,
           variant: "destructive",
           shortcut: "Alt+X",
+          disabled: !canManageUsers,
           onClick: () => {
             toast.success(`Keycloak active session revoked for ${user.email}`);
           },
@@ -219,16 +220,18 @@ function UserTableRowItem({
                 </Button>
               </ActionTooltip>
             )}
-            <ActionTooltip label="Putus Sesi Keycloak">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
-                onClick={() => toast.success(`Keycloak active session revoked for ${user.email}`)}
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-              </Button>
-            </ActionTooltip>
+            {canManageUsers && (
+              <ActionTooltip label="Putus Sesi Keycloak">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:text-amber-400"
+                  onClick={() => toast.success(`Keycloak active session revoked for ${user.email}`)}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                </Button>
+              </ActionTooltip>
+            )}
             <ActionTooltip label="Lihat Riwayat Audit" shortcut="Alt+L">
               <Button
                 variant="ghost"
@@ -293,7 +296,7 @@ export function UserTable({ data, currentPage, isGlobalView = false, token }: Us
   const totalElements = data?.totalElements || 0;
 
   const { canAccess, isSuperAdmin } = usePermissions();
-  const canManageUsers = canAccess("users.manage") || isSuperAdmin;
+  const canManageUsers = canAccess("users.manage") || canAccess("system.security.manage") || isSuperAdmin;
   const canInviteUsers = canAccess("users.invite") || canManageUsers;
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);

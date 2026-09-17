@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { EnrichedOrganization, OrganizationStatus } from "./types";
 import { OrgStatusSubmenu } from "./menu/OrgStatusSubmenu";
 import { OrgCopySubmenu } from "./menu/OrgCopySubmenu";
@@ -55,6 +56,10 @@ export function OrganizationContextMenu({
   onDelete,
   children,
 }: OrganizationContextMenuProps) {
+  const { canAccess } = usePermissions();
+  const canImpersonate = canAccess("system.support.impersonate");
+  const canUpdateOrg = canAccess(["system.organizations.update", "system.organizations.manage"]);
+  const canDeleteOrg = canAccess("system.organizations.delete");
   const handleOpenWhatsApp = () => {
     if (!organization.picPhone) {
       toast.error("No WhatsApp number configured for this PIC");
@@ -91,14 +96,16 @@ export function OrganizationContextMenu({
           <>
             <ContextMenuItem
               onClick={() => onReopenPortal?.(organization)}
-              className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
+              disabled={!canImpersonate}
+              className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Buka Kembali Portal Tenant</span>
             </ContextMenuItem>
             <ContextMenuItem
               onClick={() => onStopImpersonation?.(organization)}
-              className="cursor-pointer font-semibold text-destructive focus:bg-destructive/10 focus:text-destructive gap-2"
+              disabled={!canImpersonate}
+              className="cursor-pointer font-semibold text-destructive focus:bg-destructive/10 focus:text-destructive gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <XCircle className="w-3.5 h-3.5" />
               <span>Akhiri Sesi Impersonasi</span>
@@ -108,7 +115,8 @@ export function OrganizationContextMenu({
         ) : (
           <ContextMenuItem
             onClick={() => onImpersonate?.(organization)}
-            className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2"
+            disabled={!canImpersonate}
+            className="cursor-pointer font-medium text-primary focus:bg-primary/10 focus:text-primary gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Login as Tenant Admin</span>
@@ -140,12 +148,17 @@ export function OrganizationContextMenu({
         <ContextMenuSeparator className="bg-border/40 my-1" />
 
         {/* 3. Change Status Submenu */}
-        <OrgStatusSubmenu organization={organization} onUpdateStatus={onUpdateStatus} />
+        <OrgStatusSubmenu
+          organization={organization}
+          onUpdateStatus={onUpdateStatus}
+          disabled={!canUpdateOrg}
+        />
 
         {/* 4. Feature Flags & Add-ons */}
         <ContextMenuItem
           onClick={() => onOpenFlagsModal?.(organization)}
-          className="cursor-pointer gap-2 focus:bg-muted"
+          disabled={!canUpdateOrg}
+          className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sliders className="w-3.5 h-3.5 text-muted-foreground" />
           <span>Feature Flags & Add-ons</span>
@@ -155,7 +168,8 @@ export function OrganizationContextMenu({
         {/* 5. Custom Domain & SSL */}
         <ContextMenuItem
           onClick={() => onOpenDomainModal?.(organization)}
-          className="cursor-pointer gap-2 focus:bg-muted"
+          disabled={!canUpdateOrg}
+          className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Globe className="w-3.5 h-3.5 text-muted-foreground" />
           <span>Custom Domain & SSL</span>
@@ -165,7 +179,8 @@ export function OrganizationContextMenu({
         {/* 6. Hardware Quotas */}
         <ContextMenuItem
           onClick={() => onOpenQuotaModal?.(organization)}
-          className="cursor-pointer gap-2 focus:bg-muted"
+          disabled={!canUpdateOrg}
+          className="cursor-pointer gap-2 focus:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Network className="w-3.5 h-3.5 text-muted-foreground" />
           <span>FTTH Spatial Quotas</span>
@@ -175,7 +190,8 @@ export function OrganizationContextMenu({
         {/* 7. Extend Trial */}
         <ContextMenuItem
           onClick={() => onExtendTrial?.(organization)}
-          className="cursor-pointer gap-2 focus:bg-muted text-amber-500"
+          disabled={!canUpdateOrg}
+          className="cursor-pointer gap-2 focus:bg-muted text-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Clock className="w-3.5 h-3.5" />
           <span>Extend Trial (+14 Days)</span>
@@ -197,6 +213,14 @@ export function OrganizationContextMenu({
           >
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Delete (System Protected)</span>
+          </ContextMenuItem>
+        ) : !canDeleteOrg ? (
+          <ContextMenuItem
+            disabled
+            className="opacity-50 cursor-not-allowed gap-2 text-muted-foreground select-none"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Delete (No Permission)</span>
           </ContextMenuItem>
         ) : (
           <ContextMenuItem

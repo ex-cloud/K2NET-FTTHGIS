@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button, ActionTooltip } from "@k2net/ui";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface OrgToolbarActionsProps {
   viewMode: "grid" | "list" | "table";
@@ -32,6 +33,9 @@ export function OrgToolbarActions({
   onNewOrganization,
   onImportBackup,
 }: OrgToolbarActionsProps) {
+  const { canAccess } = usePermissions();
+  const canCreateOrg = canAccess(["system.organizations.create", "system.tenants.create"]);
+
   return (
     <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
       {/* Toggle KPI Strip */}
@@ -106,12 +110,19 @@ export function OrgToolbarActions({
 
       {/* Import Backup Button */}
       {onImportBackup && (
-        <ActionTooltip label="Impor Cadangan Tenant (.JSON)">
+        <ActionTooltip
+          label={
+            canCreateOrg
+              ? "Impor Cadangan Tenant (.JSON)"
+              : "Akses Read-Only: Memerlukan izin system.organizations.create"
+          }
+        >
           <Button
             variant="outline"
             size="sm"
             onClick={onImportBackup}
-            className="h-8 text-xs font-medium gap-1.5 border-border bg-card hover:bg-accent text-foreground shadow-xs"
+            disabled={!canCreateOrg}
+            className="h-8 text-xs font-medium gap-1.5 border-border bg-card hover:bg-accent text-foreground shadow-xs disabled:opacity-50"
           >
             <Upload className="h-3.5 w-3.5 text-primary" />
             <span>Import Backup</span>
@@ -120,11 +131,19 @@ export function OrgToolbarActions({
       )}
 
       {/* New Organization Button */}
-      <ActionTooltip label="Create New Organization" shortcut="N">
+      <ActionTooltip
+        label={
+          canCreateOrg
+            ? "Create New Organization"
+            : "Akses Read-Only: Memerlukan izin system.organizations.create"
+        }
+        shortcut={canCreateOrg ? "N" : undefined}
+      >
         <Button
           size="sm"
           onClick={onNewOrganization}
-          className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+          disabled={!canCreateOrg}
+          className="h-8 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>New Organization</span>

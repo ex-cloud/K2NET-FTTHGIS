@@ -1,5 +1,6 @@
-import { Button } from "@k2net/ui";
+import { Button, ActionTooltip } from "@k2net/ui";
 import { Clock } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { TenantSubscriptionSummary } from "@/hooks/useTenantSubscription";
 
 interface BillingTrialAlertProps {
@@ -13,6 +14,9 @@ export function BillingTrialAlert({
   summary,
   onExtendTrial,
 }: BillingTrialAlertProps) {
+  const { canAccess } = usePermissions();
+  const canManageOrg = canAccess(["system.organizations.manage", "system.organizations.update"]);
+
   if (status !== "TRIAL" && !summary?.trialExpiresAt) {
     return null;
   }
@@ -31,22 +35,41 @@ export function BillingTrialAlert({
         </div>
       </div>
       <div className="flex items-center gap-1.5 self-end sm:self-center">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onExtendTrial(7)}
-          className="h-7 text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-medium cursor-pointer"
+        <ActionTooltip
+          label={
+            canManageOrg
+              ? "Perpanjang Masa Trial +7 Hari"
+              : "Akses Read-Only: Memerlukan izin system.organizations.manage"
+          }
         >
-          +7 Hari Trial
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onExtendTrial(14)}
-          className="h-7 text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-medium cursor-pointer"
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onExtendTrial(7)}
+            disabled={!canManageOrg}
+            className="h-7 text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-medium cursor-pointer disabled:opacity-50"
+          >
+            +7 Hari Trial
+          </Button>
+        </ActionTooltip>
+
+        <ActionTooltip
+          label={
+            canManageOrg
+              ? "Perpanjang Masa Trial +14 Hari"
+              : "Akses Read-Only: Memerlukan izin system.organizations.manage"
+          }
         >
-          +14 Hari Trial
-        </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onExtendTrial(14)}
+            disabled={!canManageOrg}
+            className="h-7 text-xs border-amber-500/40 bg-card hover:bg-amber-500/20 text-foreground font-medium cursor-pointer disabled:opacity-50"
+          >
+            +14 Hari Trial
+          </Button>
+        </ActionTooltip>
       </div>
     </div>
   );

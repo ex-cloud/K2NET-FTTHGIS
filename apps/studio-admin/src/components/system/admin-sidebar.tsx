@@ -37,14 +37,14 @@ export type NavItem = {
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Overview", icon: LayoutDashboard, href: "/overview" },
-  { title: "Organizations", icon: Building2, href: "/organizations", requiredPermission: "system.tenant.view" },
-  { title: "Global Users", icon: Users, href: "/users", requiredPermission: "system.user.view" },
-  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: "system.task.manage" },
+  { title: "Organizations", icon: Building2, href: "/organizations", requiredPermission: ["system.organizations.view", "orgs.view"] },
+  { title: "Global Users", icon: Users, href: "/users", requiredPermission: ["system.security.manage", "users.view", "roles.view"] },
+  { title: "Projects & Issues", icon: ClipboardList, href: "/tasks", requiredPermission: ["system.task.manage", "system.observability.view"] },
   { title: "Observability", icon: ScanLine, href: "/observability", requiredPermission: "system.observability.view" },
   { title: "Global Logs", icon: Terminal, href: "/logs", requiredPermission: "system.audit.view" },
   { title: "Security", icon: Lock, href: "/security", requiredPermission: "system.security.manage" },
-  { title: "Gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: "system.observability.view" },
-  { title: "AI Assistant", icon: Sparkles, href: "/ai", requiredPermission: "system.ai.manage" },
+  { title: "Gateways", icon: Cpu, href: "/gateways/overview", requiredPermission: ["system.observability.view", "system.gateway.manage"] },
+  { title: "AI Assistant", icon: Sparkles, href: "/ai", requiredPermission: ["system.ai.manage", "system.settings.manage"] },
   { title: "3D Assets", icon: Box, href: "/assets-3d", requiredPermission: "system.settings.manage" },
 ];
 

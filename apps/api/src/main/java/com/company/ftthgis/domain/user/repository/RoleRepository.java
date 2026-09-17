@@ -23,9 +23,9 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     // For System Admin: Only pure templates (no tenant roles, no duplicates)
     List<Role> findByIsSystemRoleTrueAndOrganizationIsNull();
 
-    // For Tenants: (Templates EXCEPT super_admin) + (Own Custom Roles)
+    // For Tenants: (Tenant-scoped Templates) + (Own Custom Roles)
     @Query("SELECT r FROM Role r WHERE " +
-           "(r.isSystemRole = true AND r.name != 'super_admin') OR " +
+           "(r.isSystemRole = true AND r.scope = 'TENANT') OR " +
            "(r.organization.id = :organizationId)")
     List<Role> findAvailableRolesForTenant(@Param("organizationId") UUID organizationId);
 

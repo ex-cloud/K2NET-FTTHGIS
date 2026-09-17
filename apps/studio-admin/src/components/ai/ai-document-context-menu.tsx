@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { type AiDocumentItem } from "@/lib/actions/gateways";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface AiDocumentContextMenuProps {
   document: AiDocumentItem;
@@ -45,6 +46,9 @@ export function AiDocumentContextMenu({
   onTestSimulator,
   children,
 }: AiDocumentContextMenuProps) {
+  const { canAccess } = usePermissions();
+  const canManage = canAccess("system.ai.manage");
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} disalin ke clipboard!`);
@@ -69,7 +73,8 @@ export function AiDocumentContextMenu({
         {/* 1. Edit / Revisi Dokumen */}
         <ContextMenuItem
           onClick={() => onEdit?.(document)}
-          className="cursor-pointer font-semibold text-foreground"
+          disabled={!canManage}
+          className="cursor-pointer font-semibold text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FileEdit className="mr-2 h-3.5 w-3.5 text-primary" />
           <span>Edit / Revisi Dokumen</span>
@@ -80,7 +85,8 @@ export function AiDocumentContextMenu({
         {document.status !== "INDEXED" && onApprove && (
           <ContextMenuItem
             onClick={() => onApprove(document.id, document.title)}
-            className="cursor-pointer font-medium text-primary"
+            disabled={!canManage}
+            className="cursor-pointer font-medium text-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckCircle2 className="mr-2 h-3.5 w-3.5 text-primary" />
             <span>Setujui & Indeks (Approve)</span>
@@ -92,7 +98,8 @@ export function AiDocumentContextMenu({
         {document.status === "PENDING_REVIEW" && onReject && (
           <ContextMenuItem
             onClick={() => onReject(document.id, document.title)}
-            className="cursor-pointer font-medium text-amber-600 dark:text-amber-400"
+            disabled={!canManage}
+            className="cursor-pointer font-medium text-amber-600 dark:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <XCircle className="mr-2 h-3.5 w-3.5 text-amber-500" />
             <span>Tolak Dokumen (Reject)</span>
@@ -165,7 +172,8 @@ export function AiDocumentContextMenu({
         {/* 10. Delete */}
         <ContextMenuItem
           onClick={() => onDelete?.(document.id, document.title)}
-          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-medium"
+          disabled={!canManage}
+          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
           <span>Hapus dari Knowledge Base</span>

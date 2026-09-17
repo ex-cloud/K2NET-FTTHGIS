@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Button, Input, Label, Switch, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Skeleton, Separator, TracingBeam, ActionTooltip } from "@k2net/ui";
+import { usePermissions } from "@/hooks/use-permissions";
 
 function PasswordComplexityToggles({
   requireSymbols,
@@ -184,6 +185,8 @@ function PasswordEvaluationMatrixCard({
 
 export default function PasswordPolicyPage() {
   const { settings, loading, updateSettings, isUpdating } = useSystemSettings();
+  const { canAccess } = usePermissions();
+  const canManageSecurity = canAccess("system.security.manage");
 
   // Password Policy Local States
   const [minLength, setMinLength] = useState<number>(8);
@@ -328,10 +331,19 @@ export default function PasswordPolicyPage() {
                 />
               </CardContent>
               <CardFooter className="border-t border-border/40 pt-4 flex justify-end gap-3">
-                <ActionTooltip label={isChanged() ? "Simpan Perubahan Kebijakan Password" : "Tidak Ada Perubahan"} shortcut="Ctrl+S">
+                <ActionTooltip
+                  label={
+                    !canManageSecurity
+                      ? "Akses Read-Only: Memerlukan izin system.security.manage"
+                      : isChanged()
+                      ? "Simpan Perubahan Kebijakan Password"
+                      : "Tidak Ada Perubahan"
+                  }
+                  shortcut={canManageSecurity && isChanged() ? "Ctrl+S" : undefined}
+                >
                   <Button
                     onClick={handleSavePolicies}
-                    disabled={isUpdating || !isChanged()}
+                    disabled={!canManageSecurity || isUpdating || !isChanged()}
                     className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
                   >
                     {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}

@@ -1,8 +1,9 @@
 
 
 
-import { Badge, Button } from "@k2net/ui";
+import { Badge, Button, ActionTooltip } from "@k2net/ui";
 import { CreditCard } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { SubscriptionSummary } from "./billing-types";
 
 interface BillingPlanSummaryCardProps {
@@ -26,6 +27,8 @@ export function BillingPlanSummaryCard({
   isLoading = false,
   onOpenChangePlan,
 }: BillingPlanSummaryCardProps) {
+  const { canAccess } = usePermissions();
+  const canManageBilling = canAccess(["system.organizations.manage", "system.billing.manage"]);
   const priceNum = Number(summary?.planPrice || 0);
   const formattedPrice =
     isLoading
@@ -84,15 +87,23 @@ export function BillingPlanSummaryCard({
             </div>
 
             {/* Primary Action: Change Subscription Plan */}
-            <Button
-              size="sm"
-              onClick={onOpenChangePlan}
-              disabled={isLoading}
-              className="h-8 px-3.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+            <ActionTooltip
+              label={
+                canManageBilling
+                  ? "Change subscription plan"
+                  : "Akses Read-Only: Memerlukan izin system.organizations.manage"
+              }
             >
-              <CreditCard className="h-3.5 w-3.5" />
-              <span>Change subscription plan</span>
-            </Button>
+              <Button
+                size="sm"
+                onClick={onOpenChangePlan}
+                disabled={isLoading || !canManageBilling}
+                className="h-8 px-3.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>Change subscription plan</span>
+              </Button>
+            </ActionTooltip>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground font-mono pt-1">

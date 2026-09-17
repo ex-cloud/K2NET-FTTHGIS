@@ -23,7 +23,7 @@ import {
   UniversalContextMenu,
   type ContextMenuGroupConfig,
 } from "@k2net/ui";
-import { PermissionGuard } from "@/hooks/use-permissions";
+import { PermissionGuard, usePermissions } from "@/hooks/use-permissions";
 import type { ActiveSession } from "@/hooks/useSecuritySettings";
 
 function SessionsPagination({
@@ -143,6 +143,9 @@ export function AuthActiveSessionsCard({
   revokeSession: (sessionId: string) => Promise<void>;
   isRevokingSession: boolean;
 }) {
+  const { canAccess } = usePermissions();
+  const canManageSecurity = canAccess("system.security.manage");
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -215,16 +218,20 @@ export function AuthActiveSessionsCard({
         },
       ],
     },
-    {
-      items: [
-        {
-          label: "Putus Sesi Pengguna",
-          icon: Trash2,
-          shortcut: "Del",
-          onClick: () => handleRevokeSession(sessionItem.id),
-        },
-      ],
-    },
+    ...(canManageSecurity
+      ? [
+          {
+            items: [
+              {
+                label: "Putus Sesi Pengguna",
+                icon: Trash2,
+                shortcut: "Del",
+                onClick: () => handleRevokeSession(sessionItem.id),
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
