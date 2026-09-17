@@ -12,6 +12,8 @@ import { getLogoUrl } from "@/lib/domain";
 import { useTaskNotifications } from "@/hooks/useTaskNotifications";
 import { getRouteHeaderTitle } from "@/lib/route-utils";
 
+import { MobileFloatingDock } from "@/components/system/mobile-floating-dock";
+
 const FloatingAiAssistant = React.lazy(() =>
   import("@/components/ai/FloatingAiAssistant").then((m) => ({
     default: m.FloatingAiAssistant,
@@ -58,6 +60,8 @@ function SystemLayoutContent() {
           </div>
         </div>
       </div>
+      {/* Mobile Floating Command Dock (Thumb Zone) */}
+      <MobileFloatingDock />
       {/* K2NET AI Assistant — Floating Chat (Ctrl+J) */}
       <React.Suspense fallback={null}>
         <FloatingAiAssistant />

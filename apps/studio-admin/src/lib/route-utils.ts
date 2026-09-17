@@ -56,6 +56,63 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
+export interface RouteBreadcrumb {
+  label: string;
+  href?: string;
+}
+
+const ROOT_BREADCRUMB_MAP: Record<string, { label: string; defaultHref: string }> = {
+  observability: { label: "Observability", defaultHref: "/observability/overview" },
+  security: { label: "Security", defaultHref: "/security/audit" },
+  gateways: { label: "Gateways", defaultHref: "/gateways/overview" },
+  settings: { label: "Settings", defaultHref: "/settings/general" },
+  tasks: { label: "Projects & Issues", defaultHref: "/tasks" },
+  organizations: { label: "Organizations", defaultHref: "/organizations" },
+  ai: { label: "AI Assistant", defaultHref: "/ai" },
+};
+
+/**
+ * Returns an array of hierarchical breadcrumbs for the top header.
+ * E.g. /observability/database -> [{ label: "Observability", href: "/observability/overview" }, { label: "Database & Storage", href: "/observability/database" }]
+ */
+export function getRouteBreadcrumbs(pathname: string): RouteBreadcrumb[] {
+  if (!pathname || pathname === "/" || pathname === "/overview") {
+    return [{ label: "Overview", href: "/overview" }];
+  }
+
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) {
+    return [{ label: "Overview", href: "/overview" }];
+  }
+
+  const rootSeg = segments[0];
+  const rootConfig = ROOT_BREADCRUMB_MAP[rootSeg];
+
+  if (rootConfig) {
+    const breadcrumbs: RouteBreadcrumb[] = [{ label: rootConfig.label, href: rootConfig.defaultHref }];
+
+    if (segments.length > 1) {
+      if (rootSeg === "organizations") {
+        breadcrumbs.push({ label: "Organization Details" });
+      } else if (rootSeg === "tasks" && segments[1] === "projects") {
+        breadcrumbs.push({ label: "Projects", href: "/tasks/projects" });
+        if (segments.length > 2) {
+          breadcrumbs.push({ label: "Details" });
+        }
+      } else {
+        const subPath = `/${rootSeg}/${segments[1]}`;
+        const subLabel = ROUTE_TITLE_MAP[subPath] || segments[1].replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+        breadcrumbs.push({ label: subLabel, href: subPath });
+      }
+    }
+    return breadcrumbs;
+  }
+
+  // Fallback: single breadcrumb
+  const title = ROUTE_TITLE_MAP[pathname] || getRouteHeaderTitle(pathname);
+  return [{ label: title, href: pathname }];
+}
+
 /**
  * Returns a clean, human-friendly title for the top header breadcrumb.
  * E.g. /tasks/projects/d16d2ba6-... -> "Projects"

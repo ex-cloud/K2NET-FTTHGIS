@@ -52,8 +52,8 @@ export function TaskBulkActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in-0 slide-in-from-bottom-6 duration-200">
-      <div className="flex items-center gap-2 bg-popover/95 backdrop-blur-xl border border-border/80 text-foreground shadow-lg rounded-md px-3.5 py-1.5 text-xs">
+    <div className="fixed bottom-16 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 max-w-[95vw] overflow-x-auto animate-in fade-in-0 slide-in-from-bottom-6 duration-200">
+      <div className="flex items-center gap-2 bg-popover/95 backdrop-blur-xl border border-border/80 text-foreground shadow-lg rounded-md px-3.5 py-1.5 text-xs whitespace-nowrap">
         {/* Selected Count & Clear */}
         <div className="flex items-center gap-2 pr-3 border-r border-border/60">
           <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[11px] flex items-center justify-center">

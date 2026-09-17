@@ -10,6 +10,30 @@ import type {
   StatusCodeBreakdown,
 } from "./types";
 
+function parseDailyVolumeStats(raw: Record<string, unknown> | null | undefined): DailyVolumeStat[] {
+  if (Array.isArray(raw?.dailyTimeseries)) {
+    return raw.dailyTimeseries as DailyVolumeStat[];
+  }
+  if (Array.isArray(raw?.dailyTraffic)) {
+    return raw.dailyTraffic.map((d: { date?: string; totalRequests?: number; requests?: number; failedRequests?: number; errors?: number }) => ({
+      date: d.date || "",
+      requests: d.requests ?? d.totalRequests ?? 0,
+      errors: d.errors ?? d.failedRequests ?? 0,
+    }));
+  }
+  return [];
+}
+
+function parseStatusBreakdown(raw: Record<string, unknown> | null | undefined): StatusCodeBreakdown {
+  const statusDist = (raw?.statusDistribution as Record<string, number>) || {};
+  const statusBreakdown = raw?.statusBreakdown as StatusCodeBreakdown | undefined;
+  return {
+    status2xx: statusBreakdown?.status2xx ?? statusDist["2xx Success"] ?? 0,
+    status4xx: statusBreakdown?.status4xx ?? statusDist["4xx Client Error"] ?? 0,
+    status5xx: statusBreakdown?.status5xx ?? statusDist["5xx Server Error"] ?? 0,
+  };
+}
+
 export function useOrgSimulatorAndDlq(orgIdentifier: string) {
   const [eventSchemas, setEventSchemas] = useState<EventSchema[]>([]);
   const [loadingSchemas, setLoadingSchemas] = useState(false);
@@ -68,31 +92,14 @@ export function useOrgSimulatorAndDlq(orgIdentifier: string) {
         );
         if (res.ok) {
           const raw = await res.json();
-          const safeDaily: DailyVolumeStat[] = Array.isArray(raw?.dailyTimeseries)
-            ? raw.dailyTimeseries
-            : Array.isArray(raw?.dailyTraffic)
-            ? raw.dailyTraffic.map((d: { date?: string; totalRequests?: number; requests?: number; failedRequests?: number; errors?: number }) => ({
-                date: d.date || "",
-                requests: d.requests ?? d.totalRequests ?? 0,
-                errors: d.errors ?? d.failedRequests ?? 0,
-              }))
-            : [];
-
-          const statusDist = raw?.statusDistribution || {};
-          const safeBreakdown: StatusCodeBreakdown = {
-            status2xx: raw?.statusBreakdown?.status2xx ?? statusDist["2xx Success"] ?? 0,
-            status4xx: raw?.statusBreakdown?.status4xx ?? statusDist["4xx Client Error"] ?? 0,
-            status5xx: raw?.statusBreakdown?.status5xx ?? statusDist["5xx Server Error"] ?? 0,
-          };
-
           const normalized: ApiAnalytics = {
             totalRequests24h: raw?.totalRequests24h ?? raw?.totalRequests30d ?? 0,
             successRatePercent: raw?.successRatePercent ?? raw?.deliverySuccessRatePercent ?? 99.5,
             p95LatencyMs: raw?.p95LatencyMs ?? 42,
             errorCount24h: raw?.errorCount24h ?? 0,
             rateLimitQuotaUsedPercent: raw?.rateLimitQuotaUsedPercent ?? 0,
-            dailyTimeseries: safeDaily,
-            statusBreakdown: safeBreakdown,
+            dailyTimeseries: parseDailyVolumeStats(raw),
+            statusBreakdown: parseStatusBreakdown(raw),
           };
           setApiAnalytics(normalized);
         }

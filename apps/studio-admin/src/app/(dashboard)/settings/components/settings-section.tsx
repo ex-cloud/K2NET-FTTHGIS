@@ -24,7 +24,7 @@ export function SettingsSection({
           <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         )}
       </div>
-      <div className="border border-border rounded-xl bg-card/40 p-6 shadow-sm">
+      <div className="border border-border rounded-xl bg-card/40 p-4 sm:p-6 shadow-sm">
         {children}
       </div>
     </div>

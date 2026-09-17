@@ -53,36 +53,55 @@ export default function SystemOverviewPage() {
   return (
     <SystemOverviewWrapper>
       <PageLayout variant="dashboard">
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Page header */}
-          <div className="flex flex-col justify-between gap-4 border-b border-border pb-5 md:flex-row md:items-center">
+          <div className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:pb-5 sm:flex-row sm:items-center">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Badge className="border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary hover:bg-primary/20">
                   Admin Platform Control
                 </Badge>
               </div>
-              <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground">
-                System Overview <Sparkles className="h-5 w-5 animate-pulse text-primary" />
-              </h1>
-              <p className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between sm:block">
+                <h1 className="flex items-center gap-2 sm:gap-3 text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                  System Overview <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse text-primary" />
+                </h1>
+                <div className="sm:hidden">
+                  <Button
+                    onClick={() => {
+                      data.loadData(true);
+                      refreshTasks();
+                    }}
+                    disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
+                    <span className="sr-only">Refresh</span>
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground line-clamp-2 sm:line-clamp-none">
                 Global dashboard monitoring tenant health, authentication flow, spatial data services, and live gateway status.
               </p>
             </div>
-            <ActionTooltip label="Segarkan Dashboard" shortcut="R">
-              <Button
-                onClick={() => {
-                  data.loadData(true);
-                  refreshTasks();
-                }}
-                disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
-                variant="outline"
-                size="sm"
-              >
-                <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
-                Refresh Dashboard
-              </Button>
-            </ActionTooltip>
+            <div className="hidden sm:block">
+              <ActionTooltip label="Segarkan Dashboard" shortcut="R">
+                <Button
+                  onClick={() => {
+                    data.loadData(true);
+                    refreshTasks();
+                  }}
+                  disabled={data.refreshing || data.loadingOrgs || data.loadingStats || loadingTasks}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", data.refreshing && "animate-spin text-primary")} />
+                  Refresh Dashboard
+                </Button>
+              </ActionTooltip>
+            </div>
           </div>
 
           {/* Status banner — only visible when there are issues */}
