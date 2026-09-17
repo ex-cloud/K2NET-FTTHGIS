@@ -392,7 +392,7 @@ services:
       - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend-tenant.rule=Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)"
+      - "traefik.http.routers.frontend-tenant.rule=(Host(`gis.kdua.net`) || HostRegexp(`^[a-z0-9-]+\\.gis\\.kdua\\.net$`) || HostRegexp(`^[a-z0-9-]+-gis\\.kdua\\.net$`)) && !Host(`system-gis.kdua.net`)"
       - "traefik.http.routers.frontend-tenant.entrypoints=websecure"
       - "traefik.http.routers.frontend-tenant.tls=true"
       - "traefik.http.routers.frontend-tenant.priority=5"
