@@ -92,6 +92,7 @@ export function MobileNavigationSheet({
       {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent
         side="right"
+        showCloseButton={false}
         className="w-full sm:max-w-md bg-sidebar border-l border-border p-0 dark text-foreground flex flex-col h-full overflow-hidden"
       >
         {/* TOP DOCK PILL HEADER */}
@@ -216,7 +217,7 @@ export function MobileNavigationSheet({
         )}
 
         {/* TAB 3: AUTHENTIC K2NET AI ASSISTANT */}
-        {activeTab === "ai" && <MobileAiTab />}
+        {activeTab === "ai" && <MobileAiTab onClose={() => onOpenChange(false)} />}
 
         {/* TAB 4: TASKS & ISSUES INBOX */}
         {activeTab === "tasks" && (
