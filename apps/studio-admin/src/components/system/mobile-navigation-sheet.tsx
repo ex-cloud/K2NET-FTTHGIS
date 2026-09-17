@@ -91,69 +91,72 @@ export function MobileNavigationSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent
-        side="right"
+        side="bottom"
         showCloseButton={false}
-        className="w-full sm:max-w-md bg-sidebar border-l border-border p-0 dark text-foreground flex flex-col h-full overflow-hidden"
+        className="w-full h-[88vh] max-h-[90vh] sm:max-w-2xl sm:mx-auto bg-sidebar border-t border-border rounded-t-2xl p-0 dark text-foreground flex flex-col overflow-hidden shadow-2xl"
       >
-        {/* TOP DOCK PILL HEADER */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/70 bg-background/95 backdrop-blur-xl shrink-0">
-          <div className="flex items-center gap-1 bg-muted/60 border border-border/80 rounded-full p-1 shadow-xs">
+        {/* TOP GRAB HANDLE */}
+        <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted-foreground/30 shrink-0" />
+
+        {/* TOP DOCK HEADER (Directly Aligned Icons) */}
+        <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/70 bg-background/95 backdrop-blur-xl shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={() => handleTabSelect("search")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                 activeTab === "search"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="Search & Commands"
             >
-              <Search className="size-3.5" />
+              <Search className="size-4" />
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSelect("help")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                 activeTab === "help"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="Help & Support"
             >
-              <HelpCircle className="size-3.5" />
+              <HelpCircle className="size-4" />
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSelect("ai")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                 activeTab === "ai"
-                  ? "bg-background text-primary shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary/10 text-primary font-semibold border border-primary/20 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="K2NET AI Copilot"
             >
-              <Sparkles className="size-3.5" />
+              <Sparkles className="size-4" />
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSelect("tasks")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all relative cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all relative cursor-pointer",
                 activeTab === "tasks"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="Projects & Issues"
             >
-              <ClipboardList className="size-3.5" />
+              <ClipboardList className="size-4" />
               {unreadB2BCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 size-1.5 bg-destructive rounded-full" />
+                <span className="absolute top-1.5 right-1.5 size-2 bg-destructive rounded-full" />
               )}
             </button>
 
@@ -161,28 +164,28 @@ export function MobileNavigationSheet({
               type="button"
               onClick={() => handleTabSelect("gis")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                 activeTab === "gis"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="GIS Diagnostics"
             >
-              <MapPin className="size-3.5" />
+              <MapPin className="size-4" />
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSelect("menu")}
               className={cn(
-                "size-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
+                "size-8 rounded-lg flex items-center justify-center transition-all cursor-pointer",
                 activeTab === "menu"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
               title="Navigation Menu"
             >
-              <Menu className="size-3.5" />
+              <Menu className="size-4" />
             </button>
           </div>
 
@@ -190,7 +193,8 @@ export function MobileNavigationSheet({
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground cursor-pointer ml-1"
+            className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer shrink-0"
+            title="Tutup Modal"
           >
             <X className="size-4" />
           </Button>
