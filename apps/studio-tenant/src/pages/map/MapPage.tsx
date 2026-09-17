@@ -218,7 +218,7 @@ export function MapPage() {
             <Calculator className="h-3 w-3 text-primary" />
             <span>Simulasi Redaman Fiber</span>
           </Button>
-          <Button size="sm" className="h-7 px-2.5 text-[11px] bg-primary text-primary-foreground font-medium cursor-pointer">
+          <Button size="sm" className="h-7 px-2.5 text-[11px] rounded-md font-medium cursor-pointer shadow-xs">
             Tarik Kabel Baru
           </Button>
         </div>

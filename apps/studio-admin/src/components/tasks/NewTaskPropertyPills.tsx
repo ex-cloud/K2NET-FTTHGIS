@@ -56,7 +56,7 @@ export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border border-border/60 bg-card hover:bg-muted/50 transition-colors",
+              "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-7 rounded-md border border-border/60 bg-card hover:bg-muted/50 transition-colors cursor-pointer",
               currentStatus.className
             )}
           >
@@ -91,7 +91,7 @@ export const NewTaskPropertyPills: React.FC<NewTaskPropertyPillsProps> = ({
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border border-border/60 bg-card hover:bg-muted/50 transition-colors",
+              "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 h-7 rounded-md border border-border/60 bg-card hover:bg-muted/50 transition-colors cursor-pointer",
               PRIORITY_CONFIG[priority]?.className ?? "text-muted-foreground"
             )}
           >

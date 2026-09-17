@@ -58,14 +58,14 @@ export function AiPermissionsDomainList({
     <>
       {/* Tier tabs */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60 shrink-0">
-        <div className="flex gap-1 p-1 bg-muted rounded-xl text-xs font-semibold">
+        <div className="flex gap-0.5 p-0.5 bg-muted/50 rounded-md border border-border/70 text-xs font-medium">
           {(["FULL", "READ_ONLY", "CUSTOM"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onSetTier(t)}
               className={cn(
-                "flex-1 py-1.5 rounded-lg transition-all cursor-pointer",
+                "flex-1 py-1 rounded text-xs font-medium transition-all cursor-pointer",
                 tier === t ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -108,7 +108,7 @@ export function AiPermissionsDomainList({
             const grantedCount = domain.permissions.filter((p) => selected.has(p.id)).length;
 
             return (
-              <div key={domain.id} className="rounded-xl border border-border/70 bg-card overflow-hidden">
+              <div key={domain.id} className="rounded-md border border-border/70 bg-card overflow-hidden">
                 <button
                   type="button"
                   onClick={() => onToggleDomain(domain.id)}
@@ -184,7 +184,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
           <button
             type="button"
             onClick={onCancel}
-            className="flex-none px-4 py-2 rounded-xl text-xs font-medium border border-border text-foreground hover:bg-muted cursor-pointer"
+            className="flex-none px-3 h-8 rounded-md text-xs font-medium border border-border text-foreground hover:bg-muted cursor-pointer"
           >
             Cancel
           </button>
@@ -192,7 +192,7 @@ export function AiDrawerPermissions({ saving, onCancel, onAuthorize, selected, .
             type="button"
             onClick={onAuthorize}
             disabled={saving || selected.size === 0}
-            className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
+            className="flex-1 h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors cursor-pointer shadow-xs disabled:opacity-60 flex items-center justify-center gap-1.5"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
             Authorize K2 Agent ({selected.size})
@@ -219,7 +219,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Account status card */}
       <div className="px-4 pt-3 pb-2 shrink-0">
-        <div className="p-3 rounded-xl bg-background border border-border flex items-center justify-between">
+        <div className="p-3 rounded-md bg-background border border-border flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-foreground">K2NET Core Platform (Root HQ)</p>
             <p className="text-[10px] text-primary flex items-center gap-1 font-mono mt-0.5">
@@ -240,7 +240,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 cursor-pointer shadow-md shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1.5"
+          className="w-full h-8 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 cursor-pointer shadow-xs disabled:opacity-60 flex items-center justify-center gap-1.5"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
           Save changes ({selected.size} permissions)
@@ -249,7 +249,7 @@ export function AiDrawerSettings({ accessTier, saving, revoking, onSave, onRevok
           type="button"
           onClick={onRevoke}
           disabled={revoking}
-          className="w-full py-2 rounded-xl border border-border text-destructive hover:bg-destructive/10 text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
+          className="w-full h-8 rounded-md border border-border text-destructive hover:bg-destructive/10 text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
         >
           {revoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "✕"}
           Revoke K2 Agent Access

@@ -38,7 +38,7 @@ export function BackupsHeaderBar({
             variant="outline"
             size="sm"
             onClick={onOpenImportModal}
-            className="h-8 px-3 text-xs border-border gap-1.5 shadow-xs cursor-pointer"
+            className="h-7 px-2.5 text-xs border-border gap-1.5 shadow-xs cursor-pointer rounded-md"
           >
             <Upload className="h-3.5 w-3.5" />
             <span>Restore / Import</span>
@@ -48,7 +48,7 @@ export function BackupsHeaderBar({
           size="sm"
           onClick={onTriggerSnapshot}
           disabled={triggering}
-          className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+          className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", triggering && "animate-spin")} />
           <span>{triggering ? "Creating Snapshot..." : "Trigger Full Backup Now"}</span>

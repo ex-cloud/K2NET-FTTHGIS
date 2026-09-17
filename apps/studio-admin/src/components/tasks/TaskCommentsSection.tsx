@@ -191,9 +191,9 @@ export function TaskCommentsSection({
             onClick={handleAddComment}
             disabled={!newComment.trim() || submitting}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm",
+              "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium transition-all shadow-xs",
               newComment.trim()
-                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 cursor-pointer"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             )}
           >

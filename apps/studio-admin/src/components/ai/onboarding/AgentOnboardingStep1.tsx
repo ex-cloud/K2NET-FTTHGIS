@@ -31,11 +31,11 @@ export function AgentOnboardingStep1({
   return (
     <div className="p-6 md:p-8 space-y-6 flex flex-col items-center text-center">
       <div className="relative mt-2">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-primary/30 via-primary/15 to-amber-500/20 border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/10">
-          <Sparkles className="w-10 h-10 text-primary animate-pulse" />
+        <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-primary/30 via-primary/15 to-amber-500/20 border border-primary/30 flex items-center justify-center shadow-md shadow-primary/10">
+          <Sparkles className="w-8 h-8 text-primary animate-pulse" />
         </div>
-        <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-xl bg-background border border-border flex items-center justify-center shadow-xs">
-          <ShieldCheck className="w-4 h-4 text-primary" />
+        <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-md bg-background border border-border flex items-center justify-center shadow-xs">
+          <ShieldCheck className="w-3.5 h-3.5 text-primary" />
         </div>
       </div>
 
@@ -48,7 +48,7 @@ export function AgentOnboardingStep1({
         </p>
       </div>
 
-      <div className="w-full text-left p-4 rounded-xl bg-background border border-border space-y-3.5 shadow-xs">
+      <div className="w-full text-left p-4 rounded-md bg-background border border-border space-y-3.5 shadow-xs">
         <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
           <div>
             <p className="text-xs font-semibold text-foreground">
@@ -72,7 +72,7 @@ export function AgentOnboardingStep1({
             <span className="font-mono text-primary text-[10px]">1 terpilih</span>
           </div>
           
-          <div className="p-3 rounded-lg border border-primary/40 bg-primary/5 flex items-center justify-between">
+          <div className="p-3 rounded-md border border-primary/40 bg-primary/5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <input
                 type="checkbox"
@@ -96,14 +96,14 @@ export function AgentOnboardingStep1({
         <Button
           onClick={onNext}
           disabled={loading}
-          className="w-full text-xs font-medium h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
+          className="w-full text-xs font-medium h-8 rounded-md gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
         >
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <>
               <span>Review permissions</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </>
           )}
         </Button>

@@ -342,9 +342,10 @@ export default function PasswordPolicyPage() {
                   shortcut={canManageSecurity && isChanged() ? "Ctrl+S" : undefined}
                 >
                   <Button
+                    size="sm"
                     onClick={handleSavePolicies}
                     disabled={!canManageSecurity || isUpdating || !isChanged()}
-                    className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-xs h-9 px-4 font-medium transition-all shadow-md gap-2"
+                    className="h-7 px-2.5 rounded-md text-xs font-medium transition-all shadow-xs gap-1.5 cursor-pointer"
                   >
                     {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                     Apply Password Policies

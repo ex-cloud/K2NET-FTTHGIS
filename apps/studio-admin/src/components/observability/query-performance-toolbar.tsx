@@ -381,7 +381,7 @@ export function QueryPerformanceToolbar({
               placeholder="Filter by query"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
+              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
             />
           </div>
 
@@ -389,17 +389,17 @@ export function QueryPerformanceToolbar({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-lg font-medium h-8 transition-colors cursor-pointer outline-hidden"
+                className="inline-flex items-center gap-1.5 px-2.5 text-xs border border-border bg-card hover:bg-muted/30 text-foreground rounded-md font-medium h-8 transition-colors cursor-pointer outline-hidden"
               >
                 <span>{sortBy === "calls" ? "Calls: High to Low" : "Calls"}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-xl rounded-xl p-1 w-48 z-50">
-              <DropdownMenuItem onClick={() => setSortBy("calls")} className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+            <DropdownMenuContent align="start" className="bg-popover border border-border shadow-md rounded-md p-1 w-48 z-50">
+              <DropdownMenuItem onClick={() => setSortBy("calls")} className="text-xs py-1.5 px-2.5 rounded-md cursor-pointer hover:bg-muted/50 text-foreground">
                 Calls: High to Low
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("total_time")} className="text-xs py-1.5 px-2.5 rounded-lg cursor-pointer hover:bg-muted/50 text-foreground">
+              <DropdownMenuItem onClick={() => setSortBy("total_time")} className="text-xs py-1.5 px-2.5 rounded-md cursor-pointer hover:bg-muted/50 text-foreground">
                 Default (Total Time)
               </DropdownMenuItem>
             </DropdownMenuContent>

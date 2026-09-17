@@ -64,9 +64,9 @@ export function DashboardPage() {
           <Button
             size="sm"
             onClick={() => navigate({ to: "/map" })}
-            className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md"
           >
-            <Activity className="h-4 w-4" />
+            <Activity className="h-3.5 w-3.5" />
             <span>Buka Web-QGIS Map</span>
           </Button>
         </div>

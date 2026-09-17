@@ -95,15 +95,15 @@ export function AiAddKnowledgeTab({
             </div>
           </div>
 
-          <div className="inline-flex p-1 bg-background border border-border rounded-xl shrink-0">
+          <div className="inline-flex p-0.5 bg-muted/50 border border-border/70 rounded-md shrink-0 gap-0.5">
             <button
               type="button"
               onClick={() => setEntryMode("UPLOAD")}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium transition-all cursor-pointer",
                 entryMode === "UPLOAD"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <UploadCloud className="w-3.5 h-3.5" />
@@ -113,10 +113,10 @@ export function AiAddKnowledgeTab({
               type="button"
               onClick={() => setEntryMode("MANUAL")}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium transition-all cursor-pointer",
                 entryMode === "MANUAL"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-foreground/75 dark:text-muted-foreground hover:text-foreground"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <FileText className="w-3.5 h-3.5" />

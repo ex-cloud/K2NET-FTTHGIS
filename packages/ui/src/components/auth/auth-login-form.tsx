@@ -94,7 +94,7 @@ export function AuthLoginForm({
     <div className="w-full space-y-4">
       {/* Error Message */}
       {errorMessage && (
-        <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in">
+        <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs font-medium text-destructive animate-in fade-in">
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
@@ -102,7 +102,7 @@ export function AuthLoginForm({
 
       {/* Subscription Inactive / Suspended Warning */}
       {isSuspended && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in">
+        <div className="flex items-start gap-2.5 rounded-md border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive animate-in fade-in">
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <strong className="block font-semibold">Masa Berlaku Langganan Berakhir</strong>
@@ -114,7 +114,7 @@ export function AuthLoginForm({
       )}
 
       {/* Main Login Card */}
-      <div className="bg-card/60 border border-border/70 rounded-2xl p-6 shadow-lg backdrop-blur-md space-y-4">
+      <div className="bg-card/60 border border-border/70 rounded-lg p-6 shadow-sm backdrop-blur-md space-y-4">
         {/* Tenant Identity & Subscription Tier Header */}
         {(orgName || title) && (
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
@@ -123,10 +123,10 @@ export function AuthLoginForm({
                 <img
                   src={logoUrl}
                   alt={orgName || "Logo"}
-                  className="size-7 rounded-lg object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
+                  className="size-7 rounded-md object-contain border border-border/60 bg-background/50 p-0.5 shrink-0"
                 />
               ) : (
-                <div className="size-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <div className="size-7 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                   <Building2 className="size-3.5" />
                 </div>
               )}
@@ -184,7 +184,7 @@ export function AuthLoginForm({
                 placeholder="e.g. admin@isp.net or admin.username"
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
-                className="pl-10 h-11 bg-background/60 border-border/70 rounded-xl text-sm focus-visible:ring-primary"
+                className="pl-10 h-9 bg-background/60 border-border/70 rounded-md text-sm focus-visible:ring-primary"
                 disabled={isLoading || isSuspended}
               />
             </div>
@@ -194,14 +194,14 @@ export function AuthLoginForm({
           <Button
             type="submit"
             disabled={isLoading || isSuspended}
-            className="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all duration-200 group"
+            className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-md shadow-xs flex items-center justify-center gap-2 transition-all duration-200 group"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <>
                 <span>{resolvedSubmitLabel}</span>
-                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
               </>
             )}
           </Button>
@@ -209,7 +209,7 @@ export function AuthLoginForm({
 
         {/* Tier UX Guidance Box */}
         {isInternal && (
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
+          <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-amber-500 text-[10px] font-semibold">
                 <Lock className="size-3" /> ACCESS MODE
@@ -223,7 +223,7 @@ export function AuthLoginForm({
         )}
 
         {isFreePlan && (
-          <div className="rounded-xl border border-border/70 bg-background/40 p-3 space-y-1">
+          <div className="rounded-md border border-border/70 bg-background/40 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-muted-foreground text-[10px] font-semibold">
                 <KeyRound className="size-3 text-primary" /> LOGIN METHOD
@@ -237,7 +237,7 @@ export function AuthLoginForm({
         )}
 
         {isProPlan && (
-          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
+          <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-cyan-500 text-[10px] font-semibold">
                 <Sparkles className="size-3" /> LOGIN METHODS
@@ -251,7 +251,7 @@ export function AuthLoginForm({
         )}
 
         {isEnterprisePlan && (
-          <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-3 space-y-1">
+          <div className="rounded-md border border-purple-500/20 bg-purple-500/5 p-3 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="flex items-center gap-1.5 font-mono text-purple-500 text-[10px] font-semibold">
                 <Lock className="size-3" /> ENTERPRISE IAM
@@ -281,7 +281,7 @@ export function AuthLoginForm({
                   key={method.id}
                   type="button"
                   variant="outline"
-                  className="w-full h-9 text-xs font-medium justify-center gap-2 border-border/80 bg-background/40 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs"
+                  className="w-full h-8 text-xs font-medium justify-center gap-2 border-border/80 bg-background/40 hover:bg-accent hover:text-foreground rounded-md transition-all shadow-xs"
                   onClick={() => onContinueWithProvider && onContinueWithProvider(method.id)}
                   disabled={isLoading || isSuspended}
                 >
@@ -299,7 +299,7 @@ export function AuthLoginForm({
       </div>
 
       {/* Compliance / Security Notice Banner */}
-      <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
+      <div className="flex items-start gap-2.5 rounded-md border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary leading-relaxed">
         <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <span>
           Akses terisolasi multi-tenant. Seluruh aktivitas login dipantau dan diaudit secara kriptografis sesuai standar kepatuhan ISP K2NET.

@@ -35,8 +35,8 @@ export function CustomersPage() {
           </p>
         </div>
 
-        <Button size="sm" className="h-9 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shadow-xs cursor-pointer">
-          <Plus className="h-4 w-4" />
+        <Button size="sm" className="h-7 px-2.5 text-xs font-medium gap-1.5 shadow-xs cursor-pointer rounded-md">
+          <Plus className="h-3.5 w-3.5" />
           <span>Tambah Pelanggan Baru</span>
         </Button>
       </div>
@@ -44,13 +44,13 @@ export function CustomersPage() {
       {/* Filter & Search Bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Cari nama, user PPPoE, atau kode ODP..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-4 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            className="h-8 w-full rounded-md border border-border bg-card pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
           />
         </div>
       </div>

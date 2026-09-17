@@ -114,7 +114,7 @@ export function AlertsFirewallCard({
               placeholder="e.g. 103.111.12.5 or 192.168.1.0/24"
               value={ipInput}
               onChange={(e) => setIpInput(e.target.value)}
-              className="bg-background/60 border-border text-foreground text-xs h-9"
+              className="bg-background/60 border-border text-foreground text-xs h-8 rounded-md"
             />
           </div>
           <div className="space-y-1">
@@ -126,14 +126,15 @@ export function AlertsFirewallCard({
               placeholder="Reason for suspension"
               value={reasonInput}
               onChange={(e) => setReasonInput(e.target.value)}
-              className="bg-background/60 border-border text-foreground text-xs h-9"
+              className="bg-background/60 border-border text-foreground text-xs h-8 rounded-md"
             />
           </div>
           <ActionTooltip label="Tambahkan Rule Blokir Firewall" shortcut="Enter">
             <Button
               type="submit"
+              size="sm"
               disabled={isBlockingIp}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 font-medium transition-all shadow-md gap-2"
+              className="w-full text-xs h-8 font-medium transition-all shadow-xs gap-1.5 rounded-md"
             >
               <Plus className="w-3.5 h-3.5" /> Block Network IP
             </Button>

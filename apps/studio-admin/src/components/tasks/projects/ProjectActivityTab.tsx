@@ -33,14 +33,14 @@ export function ProjectActivityTab({
       {/* Update Composer */}
       <Card className="border border-border/60 bg-card/60 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-border/40 pb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 bg-muted/50 p-0.5 rounded-md border border-border/70">
             <button
               type="button"
               onClick={() => setUpdateMode("update")}
               className={cn(
-                "text-xs px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer",
+                "text-xs px-2.5 h-6 rounded font-medium transition-colors cursor-pointer",
                 updateMode === "update"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -50,9 +50,9 @@ export function ProjectActivityTab({
               type="button"
               onClick={() => setUpdateMode("comment")}
               className={cn(
-                "text-xs px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer",
+                "text-xs px-2.5 h-6 rounded font-medium transition-colors cursor-pointer",
                 updateMode === "comment"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -84,7 +84,7 @@ export function ProjectActivityTab({
             type="button"
             onClick={onPostUpdate}
             disabled={!updateText.trim() || postingUpdate}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
           >
             {postingUpdate && <Loader2 className="w-3 h-3 animate-spin" />}
             <span>Post update</span>

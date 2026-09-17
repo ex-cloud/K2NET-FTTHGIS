@@ -93,7 +93,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 1: Semantic Color Token Compliance (Hardcoded Tailwind Colors)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [1/6] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
+echo -e "${CYAN}▶ [1/9] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
 COLOR_REGEX="text-zinc-|bg-zinc-|border-zinc-|text-slate-|bg-slate-|border-slate-|text-gray-|bg-gray-|border-gray-|text-neutral-|bg-neutral-|border-neutral-|text-emerald-|bg-emerald-|border-emerald-"
 
 COLOR_VIOLATIONS=$(grep -rnE "$COLOR_REGEX" "${VALID_DIRS[@]}" \
@@ -125,7 +125,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 2: Button & Control Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [2/6] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
+echo -e "${CYAN}▶ [2/9] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
 BTN_FONT_VIOLATIONS=$(grep -rnE '(<Button|<button|<SelectTrigger)[^>]*font-(bold|black|extrabold|semibold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -149,7 +149,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 3: Badge Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [3/6] Memeriksa Standar Tipografi Badge (Supabase: font-medium)...${NC}"
+echo -e "${CYAN}▶ [3/9] Memeriksa Standar Tipografi Badge (Supabase: font-medium)...${NC}"
 BADGE_FONT_VIOLATIONS=$(grep -rnE '<Badge[^>]*font-(bold|black|extrabold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -173,7 +173,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 4: Control Sizing & Oversized Elements (Supabase: h-6, h-7, h-8, h-9)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [4/6] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
+echo -e "${CYAN}▶ [4/9] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
 OVERSIZED_VIOLATIONS=$(grep -rnE '(<Button[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<Input[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<SelectTrigger[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" \
@@ -198,7 +198,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 5: Inline Hex & RGB Styles Audit (Zero Hardcoded Inline Color Styles)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [5/6] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
+echo -e "${CYAN}▶ [5/9] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
 INLINE_COLOR_VIOLATIONS=$(grep -rnE 'style=\{\{[^}]*(color|backgroundColor|borderColor|background):[[:space:]]*["\x27]#[0-9a-fA-F]{3,8}' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" \
@@ -224,7 +224,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 6: Heavy Shadow Degradation (Supabase uses flat border-driven elevation)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [6/6] Memeriksa Konsistensi Elevation & Border-Driven Surface...${NC}"
+echo -e "${CYAN}▶ [6/9] Memeriksa Konsistensi Elevation & Border-Driven Surface...${NC}"
 SHADOW_VIOLATIONS=$(grep -rnE 'className=[^>]*shadow-(2xl|3xl)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -248,6 +248,78 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
+# ATURAN 7: Control Corner Radius Standard (Supabase: rounded-md / 6px)
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [7/9] Memeriksa Standar Corner Radius Kontrol (Supabase: rounded-md / 6px)...${NC}"
+RADIUS_VIOLATIONS=$(grep -rnE '(<Button|<button|<Input|<SelectTrigger)[^>]*\brounded-(xl|2xl|3xl)\b' "${VALID_DIRS[@]}" \
+  --include="*.tsx" --include="*.ts" 2>/dev/null \
+  | grep -v "node_modules" || true)
+
+RADIUS_COUNT=0
+if [ -n "$RADIUS_VIOLATIONS" ]; then
+  RADIUS_COUNT=$(echo "$RADIUS_VIOLATIONS" | wc -l | tr -d ' ')
+fi
+
+if [ "$RADIUS_COUNT" -gt 0 ]; then
+  echo -e "  ${RED}❌ Ditemukan $RADIUS_COUNT kontrol dengan corner radius non-standar (Gunakan 'rounded-md'):${NC}"
+  echo "$RADIUS_VIOLATIONS" | head -n 5 | while read -r line; do
+    echo -e "     ${RED}•${NC} $line"
+  done
+  FATAL_ERRORS=$((FATAL_ERRORS + RADIUS_COUNT))
+else
+  echo -e "  ${GREEN}✓ 0 kontrol dengan corner radius oversized (100% rounded-md standard).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
+# ATURAN 8: Segmented Filter & Switcher Active State (Supabase Standard)
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [8/9] Memeriksa Standar Segmented Filter & Tabs Active State...${NC}"
+FILTER_STATE_VIOLATIONS=$(grep -rnE '(segmented|tab-filter|filter-pill)[^>]*bg-primary text-primary-foreground' "${VALID_DIRS[@]}" \
+  --include="*.tsx" --include="*.ts" 2>/dev/null \
+  | grep -v "node_modules" || true)
+
+FILTER_STATE_COUNT=0
+if [ -n "$FILTER_STATE_VIOLATIONS" ]; then
+  FILTER_STATE_COUNT=$(echo "$FILTER_STATE_VIOLATIONS" | wc -l | tr -d ' ')
+fi
+
+if [ "$FILTER_STATE_COUNT" -gt 0 ]; then
+  echo -e "  ${RED}❌ Ditemukan $FILTER_STATE_COUNT filter tab dengan active state non-standar (Gunakan subtle active pill):${NC}"
+  echo "$FILTER_STATE_VIOLATIONS" | head -n 5 | while read -r line; do
+    echo -e "     ${RED}•${NC} $line"
+  done
+  FATAL_ERRORS=$((FATAL_ERRORS + FILTER_STATE_COUNT))
+else
+  echo -e "  ${GREEN}✓ 0 pelanggaran active state segmented filter (100% subtle standard).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
+# ATURAN 9: Dense Toolbar & Table Header Scale Standard (Supabase: h-7 / h-8)
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [9/9] Memeriksa Standar Skala Dense Toolbar & Action Bar (Supabase: h-7/h-8)...${NC}"
+TOOLBAR_SCALE_VIOLATIONS=$(grep -rnE '(Toolbar|HeaderBar|ActionBar)[^>]*<Button[^>]*className=[^>]*\bh-(10|11|12|14)\b' "${VALID_DIRS[@]}" \
+  --include="*.tsx" --include="*.ts" 2>/dev/null \
+  | grep -v "node_modules" || true)
+
+TOOLBAR_SCALE_COUNT=0
+if [ -n "$TOOLBAR_SCALE_VIOLATIONS" ]; then
+  TOOLBAR_SCALE_COUNT=$(echo "$TOOLBAR_SCALE_VIOLATIONS" | wc -l | tr -d ' ')
+fi
+
+if [ "$TOOLBAR_SCALE_COUNT" -gt 0 ]; then
+  echo -e "  ${RED}❌ Ditemukan $TOOLBAR_SCALE_COUNT tombol toolbar dengan tinggi oversized (Gunakan h-7 atau h-8):${NC}"
+  echo "$TOOLBAR_SCALE_VIOLATIONS" | head -n 5 | while read -r line; do
+    echo -e "     ${RED}•${NC} $line"
+  done
+  FATAL_ERRORS=$((FATAL_ERRORS + TOOLBAR_SCALE_COUNT))
+else
+  echo -e "  ${GREEN}✓ 0 tombol toolbar oversized (100% dense h-7/h-8 standard).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
 # RINGKASAN HASIL AUDIT
 # ------------------------------------------------------------------------------
 echo -e "${BLUE}======================================================================${NC}"
@@ -261,7 +333,7 @@ if [ "$FATAL_ERRORS" -eq 0 ]; then
   if [ "$ADVISORY_WARNS" -gt 0 ]; then
     echo -e "${YELLOW}     (Catatan: Ada $ADVISORY_WARNS advisory warnings untuk optimasi visual)     ${NC}"
   fi
-  echo -e "${GREEN}     Codebase 100% selaras dengan Supabase Design System Standards.   ${NC}"
+  echo -e "${GREEN}     Codebase 100% selaras dengan 9 Aturan Supabase Design System.    ${NC}"
   echo -e "${BLUE}======================================================================${NC}\n"
   exit 0
 else

@@ -87,18 +87,20 @@ export default function SettingsSmtpMailPage() {
             <ActionTooltip label="Muat Ulang Pengaturan SMTP" shortcut="R">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => refresh()}
                 disabled={loading}
-                className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-3 gap-2"
+                className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 rounded-md shadow-xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Reload
               </Button>
             </ActionTooltip>
             <ActionTooltip label="Simpan Pengaturan SMTP" shortcut="Ctrl+S">
               <Button
+                size="sm"
                 onClick={handleSave}
                 disabled={isUpdating || loading}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 px-4 font-medium gap-2 shadow-sm"
+                className="text-xs h-7 px-2.5 font-medium gap-1.5 shadow-xs rounded-md cursor-pointer"
               >
                 {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save SMTP Settings

@@ -24,16 +24,16 @@ export function ProjectTimelineHeaderBar({
         <span className="text-muted-foreground/30">|</span>
 
         {/* Timescale / Granularity Switcher */}
-        <div className="flex items-center bg-card border border-border/50 rounded-lg p-0.5 shadow-xs">
+        <div className="flex items-center bg-muted/50 border border-border/70 rounded-md p-0.5 shadow-xs gap-0.5">
           {(["Month", "Quarter", "Year"] as TimelineGranularity[]).map((mode) => (
             <button
               key={mode}
               type="button"
               onClick={() => setGranularity(mode)}
               className={cn(
-                "px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors cursor-pointer",
+                "px-2.5 h-6 rounded font-medium text-xs transition-colors cursor-pointer",
                 granularity === mode
-                  ? "bg-primary text-primary-foreground shadow-xs"
+                  ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -46,7 +46,7 @@ export function ProjectTimelineHeaderBar({
         <button
           type="button"
           onClick={onScrollToToday}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground font-medium text-[11px] transition-all cursor-pointer shadow-xs active:scale-95"
+          className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md border border-border/80 bg-card hover:bg-muted text-foreground font-medium text-xs transition-all cursor-pointer shadow-xs active:scale-95"
           title="Scroll to current date"
         >
           <Crosshair className="w-3.5 h-3.5 text-primary" />

@@ -287,15 +287,15 @@ export function GraphToolbar({
   onResetZoom: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3.5 rounded-xl shadow-xs">
-      <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+    <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 rounded-lg shadow-xs">
+      <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`text-xs px-3 py-1 rounded-lg border cursor-pointer font-medium transition-all whitespace-nowrap ${
+            className={`text-xs px-2.5 h-7 rounded-md border cursor-pointer font-medium transition-all whitespace-nowrap ${
               selectedCategory === cat.id
-                ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                ? "bg-primary/10 text-primary border-primary/30 shadow-xs"
                 : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80"
             }`}
           >
@@ -312,11 +312,11 @@ export function GraphToolbar({
             placeholder="Filter node..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-xs pl-7 h-8 bg-background border-border"
+            className="text-xs pl-7 h-8 bg-background border-border rounded-md"
           />
         </div>
 
-        <div className="flex items-center bg-muted/40 border border-border rounded-lg p-0.5">
+        <div className="flex items-center bg-muted/40 border border-border rounded-md p-0.5">
           <Button
             variant="ghost"
             size="sm"

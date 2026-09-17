@@ -117,7 +117,7 @@ export function ProjectIssuesHeaderBar({
           <button
             type="button"
             onClick={onNewIssueClick}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New issue</span>
@@ -129,14 +129,14 @@ export function ProjectIssuesHeaderBar({
       {showQuickAdd && (
         <form onSubmit={onQuickSubmit} className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Plus className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Plus className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Quick add new issue to this project (type title and press Enter)..."
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
               disabled={isCreatingQuick}
-              className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-border/60 bg-card/60 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-9"
+              className="w-full pl-8 pr-8 py-1.5 text-xs rounded-md border border-border/60 bg-card/60 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all h-8"
             />
             {isCreatingQuick ? (
               <Loader2 className="absolute right-3 top-2.5 h-3.5 w-3.5 animate-spin text-primary" />

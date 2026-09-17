@@ -341,21 +341,23 @@ export function WizardFooter({
 
         {step < 4 ? (
           <Button
+            size="sm"
             onClick={onNext}
             disabled={isLoading || !canContinue}
-            className="bg-primary hover:bg-primary/90 text-foreground min-w-[100px] h-9 shadow-lg shadow-primary/10"
+            className="min-w-[90px] h-8 rounded-md shadow-xs"
           >
-            Continue <ChevronRight className="size-4 ml-1" />
+            Continue <ChevronRight className="size-3.5 ml-1" />
           </Button>
         ) : (
           <Button
+            size="sm"
             onClick={onSubmit}
             disabled={isSubmitting}
-            className="bg-primary hover:bg-primary/90 text-foreground min-w-[140px] h-9 shadow-lg shadow-primary/10"
+            className="min-w-[120px] h-8 rounded-md shadow-xs"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="size-4 mr-2 animate-spin" /> {creationMode === "DIRECT" ? "Creating..." : "Sending..."}
+                <Loader2 className="size-3.5 mr-1.5 animate-spin" /> {creationMode === "DIRECT" ? "Creating..." : "Sending..."}
               </>
             ) : (
               creationMode === "DIRECT" ? "Create User" : "Send Invitation"

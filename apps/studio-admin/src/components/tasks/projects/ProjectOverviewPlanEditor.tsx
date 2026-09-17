@@ -78,7 +78,7 @@ export function ProjectOverviewPlanEditor({
             size="sm"
             onClick={handleSaveDocument}
             disabled={isSavingPlan}
-            className="h-8 px-3 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-sm flex items-center gap-1.5 cursor-pointer"
+            className="h-7 px-2.5 text-xs font-medium rounded-md shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             {isSavingPlan ? (
               <>
@@ -96,7 +96,7 @@ export function ProjectOverviewPlanEditor({
       </div>
 
       {/* TipTap WYSIWYG Editor Container */}
-      <div className="rounded-xl border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
+      <div className="rounded-lg border border-border/70 overflow-hidden bg-card/40 focus-within:border-primary/50 transition-colors shadow-xs">
         <RichTextEditor
           value={description}
           onChange={setDescription}

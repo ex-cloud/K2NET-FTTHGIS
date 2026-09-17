@@ -148,10 +148,11 @@ export default function SecurityAlertsPage() {
           <div className="flex gap-3">
             <ActionTooltip label="Bersihkan Log Threat Feed" shortcut="Alt+C">
               <Button
+                size="sm"
                 onClick={handleClearLogs}
                 disabled={alerts.length === 0}
                 variant="destructive"
-                className="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-400 text-xs h-9 px-4 font-medium transition-all"
+                className="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-400 text-xs h-7 px-2.5 font-medium transition-all rounded-md shadow-xs cursor-pointer"
               >
                 Clear Live Feed
               </Button>

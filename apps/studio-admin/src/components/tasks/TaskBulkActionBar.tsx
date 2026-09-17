@@ -53,7 +53,7 @@ export function TaskBulkActionBar({
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in-0 slide-in-from-bottom-6 duration-200">
-      <div className="flex items-center gap-2 bg-popover/95 backdrop-blur-xl border border-border/80 text-foreground shadow-lg rounded-2xl px-4 py-2 text-xs">
+      <div className="flex items-center gap-2 bg-popover/95 backdrop-blur-xl border border-border/80 text-foreground shadow-lg rounded-md px-3.5 py-1.5 text-xs">
         {/* Selected Count & Clear */}
         <div className="flex items-center gap-2 pr-3 border-r border-border/60">
           <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground font-bold text-[11px] flex items-center justify-center">
@@ -80,7 +80,7 @@ export function TaskBulkActionBar({
                 <button
                   type="button"
                   disabled={!canManage}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CircleDot className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Status</span>
@@ -120,7 +120,7 @@ export function TaskBulkActionBar({
                 <button
                   type="button"
                   disabled={!canManage}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Flame className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Priority</span>
@@ -156,7 +156,7 @@ export function TaskBulkActionBar({
                 <button
                   type="button"
                   disabled={!canManage}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <User className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Assignee</span>
@@ -194,7 +194,7 @@ export function TaskBulkActionBar({
                 <button
                   type="button"
                   disabled={!canManage}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Scope</span>
@@ -220,7 +220,7 @@ export function TaskBulkActionBar({
             type="button"
             onClick={onBatchDelete}
             disabled={!canManage}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 font-medium transition-colors cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 font-medium transition-colors cursor-pointer ml-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Delete ({selectedCount})</span>

@@ -22,9 +22,10 @@ export function SmtpTestCard({ onTest, isTestingEmail, smtpTestResult }: SmtpTes
         <Button
           type="button"
           variant="outline"
+          size="sm"
           onClick={onTest}
           disabled={isTestingEmail}
-          className="border-border hover:bg-muted text-muted-foreground text-xs h-9 px-4 gap-2 shrink-0"
+          className="border-border hover:bg-muted text-muted-foreground text-xs h-7 px-2.5 gap-1.5 shrink-0 rounded-md shadow-xs cursor-pointer"
         >
           {isTestingEmail ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
           Run Connection Test

@@ -69,7 +69,7 @@ const SubIssueRow: React.FC<SubIssueRowProps> = ({ sub, onToggleStatus, onDelete
   const StatusIcon = STATUS_CONFIG[sub.status]?.icon ?? STATUS_CONFIG.TODO.icon;
 
   return (
-    <div className="group flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border/40">
+    <div className="group flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/30 transition-colors border border-transparent hover:border-border/40">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
           type="button"
@@ -98,26 +98,25 @@ const SubIssueRow: React.FC<SubIssueRowProps> = ({ sub, onToggleStatus, onDelete
         {sub.priority && sub.priority !== "NORMAL" && (
           <span
             className={cn(
-              "text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold",
-              PRIORITY_CONFIG[sub.priority]?.className ?? ""
+              "text-[10px] px-1.5 py-0.5 rounded font-mono font-medium",
+              PRIORITY_CONFIG[sub.priority]?.className ?? "bg-muted text-muted-foreground"
             )}
           >
-            {sub.priority}
+            {PRIORITY_CONFIG[sub.priority]?.label ?? sub.priority}
           </span>
         )}
 
-        <div className="w-4 h-4 rounded-full bg-muted/60 text-muted-foreground flex items-center justify-center text-[9px] font-mono">
-          {sub.assigneeId ? (
-            sub.assigneeId.substring(0, 1).toUpperCase()
-          ) : (
-            <User className="h-2.5 w-2.5" />
-          )}
-        </div>
+        {sub.assigneeId && (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded">
+            <User className="h-3 w-3" />
+            <span className="truncate max-w-[80px]">{sub.assigneeId.slice(0, 8)}</span>
+          </span>
+        )}
 
         <button
           type="button"
           onClick={() => onDelete(sub.id)}
-          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground/50 hover:text-destructive transition-all rounded"
+          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all"
           title="Delete sub-issue"
         >
           <Trash2 className="h-3 w-3" />
@@ -130,11 +129,11 @@ const SubIssueRow: React.FC<SubIssueRowProps> = ({ sub, onToggleStatus, onDelete
 interface CreationFormProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   newTitle: string;
-  setNewTitle: (t: string) => void;
+  setNewTitle: (v: string) => void;
   newStatus: string;
-  setNewStatus: (s: string) => void;
+  setNewStatus: (v: string) => void;
   newPriority: string;
-  setNewPriority: (p: string) => void;
+  setNewPriority: (v: string) => void;
   creating: boolean;
   onCreate: () => void;
   onCancel: () => void;
@@ -152,7 +151,7 @@ const CreationForm: React.FC<CreationFormProps> = ({
   onCreate,
   onCancel,
 }) => (
-  <div className="mt-2 p-2.5 rounded-xl border border-border/80 bg-card/60 space-y-2.5 shadow-sm animate-in fade-in-50 slide-in-from-top-1 duration-150">
+  <div className="mt-2 p-2.5 rounded-md border border-border bg-card/60 space-y-2.5 shadow-xs animate-in fade-in-50 slide-in-from-top-1 duration-150">
     <div className="flex items-center gap-2">
       <input
         ref={inputRef}
@@ -231,7 +230,7 @@ const CreationForm: React.FC<CreationFormProps> = ({
         <button
           type="button"
           onClick={onCancel}
-          className="px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-lg transition-colors"
+          className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-md transition-colors"
         >
           Cancel
         </button>
@@ -239,7 +238,7 @@ const CreationForm: React.FC<CreationFormProps> = ({
           type="button"
           onClick={onCreate}
           disabled={!newTitle.trim() || creating}
-          className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+          className="flex items-center gap-1 h-7 px-2.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-xs"
         >
           {creating && <Loader2 className="h-3 w-3 animate-spin" />}
           <span>Create</span>

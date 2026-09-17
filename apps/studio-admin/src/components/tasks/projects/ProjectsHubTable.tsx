@@ -245,7 +245,7 @@ export const ProjectsHubTable: React.FC<ProjectsHubTableProps> = ({
             </p>
             <button
               onClick={onNewProject}
-              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
+              className="mt-2 inline-flex items-center gap-1.5 px-2.5 h-7 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>New Project</span>

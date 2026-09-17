@@ -40,10 +40,10 @@ export const ProjectsHubHeader: React.FC<ProjectsHubHeaderProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onNewProject}
-            className="px-3.5 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-xs flex items-center gap-1.5 active:scale-[0.98] transition-all shadow-sm cursor-pointer"
+            className="px-2.5 h-7 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-xs flex items-center gap-1.5 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
             title="New Project"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span>New Project</span>
           </button>
         </div>

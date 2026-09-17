@@ -69,7 +69,7 @@ export const NewProjectPropertyPills: React.FC<NewProjectPropertyPillsProps> = (
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
           >
             <StatusIcon className={cn("w-3.5 h-3.5", activeStatusObj.color)} />
             <span>{activeStatusObj.label}</span>
@@ -97,7 +97,7 @@ export const NewProjectPropertyPills: React.FC<NewProjectPropertyPillsProps> = (
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
           >
             <PriorityIcon className={cn("w-3.5 h-3.5", activePriorityObj.color)} />
             <span>{activePriorityObj.label}</span>
@@ -125,7 +125,7 @@ export const NewProjectPropertyPills: React.FC<NewProjectPropertyPillsProps> = (
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium bg-muted/40 hover:bg-muted/80 text-foreground border border-border/50 transition-colors cursor-pointer"
           >
             <User className="w-3.5 h-3.5 text-muted-foreground" />
             <span>Lead: {leadName ? leadName.split("@")[0] : "Unassigned"}</span>

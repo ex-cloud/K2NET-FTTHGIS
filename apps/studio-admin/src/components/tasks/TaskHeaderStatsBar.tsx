@@ -100,7 +100,7 @@ export function TaskHeaderStatsBar({
             <button
               onClick={onOpenNewTask}
               disabled={!canManageTask}
-              className="h-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs font-medium text-xs"
+              className="h-7 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center gap-1.5 px-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xs font-medium text-xs"
               aria-label="New Issue"
             >
               <Plus className="size-3.5" />

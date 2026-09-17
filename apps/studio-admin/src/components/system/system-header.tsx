@@ -104,13 +104,13 @@ export function SystemHeader() {
         {/* Global Command Palette Trigger Button (Fake Search Input on Right Header) */}
         <button
           onClick={() => openCommandPalette()}
-          className="hidden md:flex items-center justify-between w-48 lg:w-56 px-3 py-1.5 text-xs rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
+          className="hidden md:flex items-center justify-between w-48 lg:w-56 h-7 px-2.5 text-xs rounded-md border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors text-muted-foreground shadow-xs cursor-pointer mr-1"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <span className="truncate">Search or jump to...</span>
           </div>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground shrink-0">
+          <kbd className="pointer-events-none inline-flex h-4.5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground shrink-0">
             ⌘K
           </kbd>
         </button>
@@ -122,30 +122,30 @@ export function SystemHeader() {
               window.dispatchEvent(new CustomEvent("k2net-toggle-ai-assistant"));
             }
           }}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary font-medium transition-all shadow-xs cursor-pointer mr-1"
+          className="flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-md border border-border/80 bg-muted/30 hover:bg-muted/60 text-foreground font-medium transition-all shadow-xs cursor-pointer mr-1"
           title="K2NET AI Copilot (Ctrl+J)"
         >
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span className="hidden sm:inline">Ask AI</span>
-          <kbd className="pointer-events-none inline-flex h-4 select-none items-center rounded border border-primary/30 bg-primary/10 px-1 font-mono text-[9px] text-primary">
+          <kbd className="pointer-events-none inline-flex h-4 select-none items-center rounded border border-border bg-muted px-1 font-mono text-[9px] text-muted-foreground">
             Ctrl+J
           </kbd>
         </button>
 
-        <div className="flex items-center gap-0">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
           >
-            <HelpCircle className="h-4 w-4" />
+            <HelpCircle className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
           >
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-3.5 w-3.5" />
           </Button>
           <Separator orientation="vertical" className="mx-1 h-4 bg-border" />
           <UserNav />

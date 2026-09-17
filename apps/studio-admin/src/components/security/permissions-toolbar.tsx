@@ -46,7 +46,7 @@ export function PermissionsToolbar({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-2.5 h-8 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-card/5 border border-border/80 transition-all disabled:opacity-40 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-border/80 transition-all disabled:opacity-40 cursor-pointer shadow-xs"
             >
               <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
               Refresh
@@ -64,7 +64,7 @@ export function PermissionsToolbar({
               id="btn-add-permission"
               onClick={onOpenCreate}
               disabled={!canManageSecurity}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Plus className="size-3.5" />
               Tambah Permission
@@ -102,20 +102,22 @@ export function PermissionsToolbar({
         </div>
         <div className="flex items-center gap-1.5">
           <Filter className="size-3.5 text-muted-foreground shrink-0" />
-          {["ALL", "SYSTEM", "TENANT"].map((s) => (
-            <button
-              key={s}
-              id={`filter-scope-${s.toLowerCase()}`}
-              onClick={() => onScopeFilterChange(s)}
-              className={`px-2.5 h-8 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                scopeFilter === s
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "border border-border/80 text-muted-foreground hover:text-foreground hover:border-border"
-              }`}
-            >
-              {s === "ALL" ? "Semua" : s}
-            </button>
-          ))}
+          <div className="flex items-center gap-0.5 bg-muted/50 p-0.5 rounded-md border border-border/70">
+            {["ALL", "SYSTEM", "TENANT"].map((s) => (
+              <button
+                key={s}
+                id={`filter-scope-${s.toLowerCase()}`}
+                onClick={() => onScopeFilterChange(s)}
+                className={`px-2.5 h-6 rounded text-xs font-medium transition-all cursor-pointer ${
+                  scopeFilter === s
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s === "ALL" ? "Semua" : s}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </>

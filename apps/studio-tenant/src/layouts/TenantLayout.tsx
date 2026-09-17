@@ -74,7 +74,7 @@ export function TenantLayout() {
           {/* Tenant Logo / Header */}
           <div className="flex h-16 items-center justify-between border-b border-border/80 px-4">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs font-bold text-sm">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs font-bold text-xs">
                 K2
               </div>
               {isSidebarOpen && (
@@ -105,9 +105,9 @@ export function TenantLayout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all ${
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                      ? "bg-muted text-foreground shadow-xs"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   } ${!isSidebarOpen ? "justify-center px-0" : ""}`}
                   title={!isSidebarOpen ? item.label : undefined}
@@ -223,7 +223,7 @@ export function TenantLayout() {
                   sessionStorage.removeItem("k2net_session_ended");
                   window.location.href = "https://system-gis.kdua.net/organizations";
                 }}
-                className="w-full text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full text-xs h-8 rounded-md font-medium"
               >
                 Kembali ke Portal Admin
               </Button>

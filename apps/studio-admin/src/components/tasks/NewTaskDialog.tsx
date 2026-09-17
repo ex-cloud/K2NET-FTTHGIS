@@ -146,7 +146,7 @@ export function NewTaskDialog({
                 type="submit"
                 disabled={!form.title.trim() || form.isSubmitting}
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer",
+                  "inline-flex items-center gap-1.5 text-xs font-medium h-8 px-3 rounded-md transition-all shadow-xs active:scale-95 cursor-pointer",
                   form.title.trim() && !form.isSubmitting
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted text-muted-foreground cursor-not-allowed"

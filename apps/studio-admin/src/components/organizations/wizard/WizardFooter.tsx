@@ -79,7 +79,7 @@ export function WizardFooter({
             size="sm"
             onClick={nextStep}
             disabled={isNextDisabled}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-8 min-w-[100px] gap-1"
+            className="text-xs font-medium h-8 min-w-[90px] gap-1 rounded-md shadow-xs"
           >
             <span>Lanjut</span>
             <ChevronRight className="size-3.5" />
@@ -89,7 +89,7 @@ export function WizardFooter({
             size="sm"
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.adminEmail}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium h-8 min-w-[130px]"
+            className="text-xs font-medium h-8 min-w-[130px] rounded-md shadow-xs"
           >
             {isSubmitting ? (
               <>

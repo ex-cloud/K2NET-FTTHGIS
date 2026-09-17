@@ -23,7 +23,7 @@ function MessageReasoningAccordion({ message, showThinking, setShowThinking }: R
   if (!hasReasoning) return null;
 
   return (
-    <div className="mb-3 rounded-xl border border-border/80 bg-card text-xs overflow-hidden w-full min-w-0 shadow-xs">
+    <div className="mb-3 rounded-md border border-border/80 bg-card text-xs overflow-hidden w-full min-w-0 shadow-xs">
       <button
         type="button"
         onClick={() => setShowThinking((prev) => !prev)}
@@ -67,7 +67,7 @@ function MessageReasoningAccordion({ message, showThinking, setShowThinking }: R
           )}
 
           {message.thought && (
-            <div className="mt-2 pt-2 border-t border-border/50 text-[11px] font-sans text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto bg-muted/30 p-2.5 rounded-lg leading-relaxed">
+            <div className="mt-2 pt-2 border-t border-border/50 text-[11px] font-sans text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto bg-muted/30 p-2.5 rounded-md leading-relaxed">
               {message.thought}
             </div>
           )}
@@ -96,7 +96,7 @@ function MessageActionToolbar({ message, feedback, copied, onFeedback, onCopy }:
         type="button"
         onClick={() => onFeedback("like")}
         className={cn(
-          "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+          "p-1.5 rounded-md hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
           feedback === "like" && "text-primary bg-primary/10"
         )}
         title="Good response (RLHF)"
@@ -107,7 +107,7 @@ function MessageActionToolbar({ message, feedback, copied, onFeedback, onCopy }:
         type="button"
         onClick={() => onFeedback("dislike")}
         className={cn(
-          "p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
+          "p-1.5 rounded-md hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer",
           feedback === "dislike" && "text-destructive bg-destructive/10"
         )}
         title="Bad response (RLHF)"
@@ -117,7 +117,7 @@ function MessageActionToolbar({ message, feedback, copied, onFeedback, onCopy }:
       <button
         type="button"
         onClick={onCopy}
-        className="p-1.5 rounded-lg hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer"
+        className="p-1.5 rounded-md hover:bg-muted/70 hover:text-foreground transition-all cursor-pointer"
         title="Copy message"
       >
         {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
@@ -208,10 +208,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm shadow-xs break-words",
+            "rounded-lg px-4 py-3 text-sm shadow-xs break-words",
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm font-medium max-w-[85%]"
-              : "bg-card text-foreground border border-border rounded-tl-sm w-full min-w-0"
+              ? "bg-primary text-primary-foreground rounded-tr-xs font-medium max-w-[85%]"
+              : "bg-card text-foreground border border-border rounded-tl-xs w-full min-w-0"
           )}
         >
           <MessageBubbleContent message={message} isUser={isUser} />

@@ -115,10 +115,10 @@ export function PayloadSimulatorCard({
                 type="button"
                 onClick={() => handleSelectEvent(schema.eventType)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5",
+                  "px-2.5 h-7 rounded-md border text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5",
                   schema.eventType === selectedEventType
-                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                    : "bg-background border-border text-foreground hover:bg-muted"
+                    ? "bg-primary/10 text-primary border-primary/30 shadow-xs"
+                    : "bg-background border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 <Sparkles className="h-3 w-3" />
@@ -129,7 +129,7 @@ export function PayloadSimulatorCard({
           </div>
 
           {activeSchema && (
-            <div className="p-3 rounded-lg bg-background/50 border border-border/80 flex items-start gap-2.5">
+            <div className="p-2.5 rounded-md bg-background/50 border border-border/80 flex items-start gap-2.5">
               <div className="text-xs text-foreground flex-1">
                 <strong>{activeSchema.displayName}</strong>: {activeSchema.description}
               </div>
@@ -140,7 +140,7 @@ export function PayloadSimulatorCard({
           )}
 
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+            <Label className="text-xs font-medium text-foreground flex items-center justify-between">
               <span>Target URL Tujuan Uji Coba (HTTPS)</span>
               <Badge variant="outline" className="text-[9px] font-mono border-primary/30 bg-primary/10 text-primary">
                 SSRF L2 GUARDED (HTTPS ONLY)
@@ -151,14 +151,15 @@ export function PayloadSimulatorCard({
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
                 placeholder="https://noc.isp.net/webhook-receiver atau pilih tombol di bawah"
-                className="h-9 text-xs font-mono bg-background border-border text-foreground flex-1"
+                className="h-8 text-xs font-mono bg-background border-border text-foreground flex-1 rounded-md"
               />
               {canManage ? (
                 <Button
                   type="button"
+                  size="sm"
                   onClick={handleDispatch}
                   disabled={!targetUrl.trim() || isSimulating}
-                  className="h-9 px-4 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0 cursor-pointer"
+                  className="h-8 px-3 text-xs font-medium gap-1.5 shrink-0 rounded-md cursor-pointer"
                 >
                   <Send className={cn("h-3.5 w-3.5", isSimulating && "animate-pulse")} />
                   <span>{isSimulating ? "Mengirim..." : "Send Sample Payload"}</span>
@@ -168,8 +169,9 @@ export function PayloadSimulatorCard({
                   <span className="inline-block">
                     <Button
                       type="button"
+                      size="sm"
                       disabled
-                      className="h-9 px-4 text-xs font-medium bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5 shrink-0"
+                      className="h-8 px-3 text-xs font-medium bg-muted text-muted-foreground opacity-50 cursor-not-allowed gap-1.5 shrink-0 rounded-md"
                     >
                       <ShieldAlert className="h-3.5 w-3.5" />
                       <span>Send Payload</span>

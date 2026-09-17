@@ -104,7 +104,7 @@ export function WebhookConfigCard({
             onChange={(e) => setWebhookUrl(e.target.value)}
             disabled={!canManage}
             placeholder="https://noc.isp.net/webhook"
-            className="h-9 text-xs font-mono bg-background border-border text-foreground disabled:opacity-60"
+            className="h-8 text-xs font-mono bg-background border-border text-foreground disabled:opacity-60 rounded-md"
           />
         </div>
 
@@ -123,7 +123,7 @@ export function WebhookConfigCard({
             <Input
               value={secretDisplay}
               readOnly
-              className="h-9 text-xs font-mono bg-background border-border text-foreground select-all"
+              className="h-8 text-xs font-mono bg-background border-border text-foreground select-all rounded-md"
             />
             {hasSecret && (
               <Button
@@ -131,7 +131,7 @@ export function WebhookConfigCard({
                 variant="outline"
                 size="sm"
                 onClick={() => onCopy(secretDisplay, "Webhook Secret")}
-                className="h-9 px-2.5 border-border shrink-0 cursor-pointer"
+                className="h-8 px-2.5 border-border shrink-0 cursor-pointer rounded-md"
                 title="Salin Masked Secret"
               >
                 <Copy className="h-3.5 w-3.5" />
@@ -144,7 +144,7 @@ export function WebhookConfigCard({
                 size="sm"
                 onClick={onRollSecret}
                 disabled={isRollingSecret}
-                className="h-9 px-2.5 border-border gap-1 shrink-0 text-xs cursor-pointer"
+                className="h-8 px-2.5 border-border gap-1 shrink-0 text-xs cursor-pointer rounded-md"
                 title="Buat Secret HMAC Baru"
               >
                 <RefreshCw className={cn("h-3 w-3", isRollingSecret && "animate-spin")} />
@@ -158,7 +158,7 @@ export function WebhookConfigCard({
                     variant="outline"
                     size="sm"
                     disabled
-                    className="h-9 px-2.5 border-border gap-1 shrink-0 text-xs opacity-50 cursor-not-allowed"
+                    className="h-8 px-2.5 border-border gap-1 shrink-0 text-xs opacity-50 cursor-not-allowed rounded-md"
                   >
                     <ShieldAlert className="h-3 w-3" />
                     <span>Roll Secret</span>

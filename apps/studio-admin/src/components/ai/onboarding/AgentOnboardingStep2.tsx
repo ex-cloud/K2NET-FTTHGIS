@@ -218,16 +218,16 @@ export function AgentOnboardingStep2({
       </div>
 
       <div className="p-4 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-        <div className="grid grid-cols-4 gap-1 p-1 bg-background rounded-xl border border-border text-xs font-semibold text-center">
+        <div className="grid grid-cols-4 gap-0.5 p-0.5 bg-muted/50 rounded-md border border-border/70 text-xs font-medium text-center">
           {(["FULL", "ROLE_PRESET", "READ_ONLY", "CUSTOM"] as const).map((tier) => (
             <button
               key={tier}
               type="button"
               onClick={() => onTierChange(tier)}
               className={cn(
-                "py-1.5 px-2 rounded-lg transition-all cursor-pointer",
+                "py-1 px-1 rounded text-xs font-medium transition-all cursor-pointer",
                 accessTier === tier
-                  ? "bg-primary text-primary-foreground shadow-xs"
+                  ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -240,7 +240,7 @@ export function AgentOnboardingStep2({
         </div>
 
         {accessTier === "ROLE_PRESET" && (
-          <div className="space-y-1.5 p-3 rounded-xl bg-primary/5 border border-primary/20">
+          <div className="space-y-1.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
             <div className="text-[10px] font-bold tracking-wider text-primary uppercase">
               PILIH PRESET SESUAI PERAN ANDA:
             </div>
@@ -251,10 +251,10 @@ export function AgentOnboardingStep2({
                   type="button"
                   onClick={() => onSelectPreset(preset.id)}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5",
+                    "px-2 py-0.5 rounded-md text-xs font-medium border transition-all cursor-pointer flex items-center gap-1",
                     selectedPreset === preset.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                      : "bg-background border-border text-foreground hover:border-primary/40"
+                      ? "bg-primary/10 text-primary border-primary/30 shadow-xs"
+                      : "bg-background border-border/80 text-muted-foreground hover:text-foreground hover:border-border"
                   )}
                 >
                   <span>{preset.name}</span>
