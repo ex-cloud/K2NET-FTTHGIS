@@ -74,6 +74,7 @@ export interface OverviewMetricCardProps {
   accentClassName?: string;
   footerLinkHref?: string;
   footerLinkLabel?: string;
+  className?: string;
 }
 
 export interface OverviewInfoCardProps {
