@@ -37,7 +37,7 @@ export function OverviewMetricCardsRow({
   resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
       <OverviewMetricCard
         eyebrow="Active Tenants"
         value={
@@ -102,27 +102,30 @@ export function OverviewMetricCardsRow({
         footerLinkLabel="Map Gateway"
       />
 
-      <OverviewMetricCard
-        eyebrow="Active Tickets"
-        value={
-          <span className="flex items-baseline gap-2">
-            {loadingTasks ? "..." : totalOpenTasks}
-            {urgentTasks > 0 ? (
-              <span className="text-xs text-destructive font-bold flex items-center gap-1 animate-pulse">
-                <span>·</span> {urgentTasks} URGENT
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground">Open</span>
-            )}
-          </span>
-        }
-        helper={<span>Resolved Today: {loadingTasks ? "..." : resolvedTasksToday}</span>}
-        footer="Operations & SLA"
-        icon={ClipboardList}
-        accentClassName={urgentTasks > 0 ? "text-destructive" : "text-primary"}
-        footerLinkHref="/tasks"
-        footerLinkLabel="Manage Tasks"
-      />
+      {/* Card 5: Active Tickets — spans full width on mobile (2 cols) to avoid orphaned layout */}
+      <div className="col-span-2 sm:col-span-1 xl:col-span-1">
+        <OverviewMetricCard
+          eyebrow="Active Tickets"
+          value={
+            <span className="flex items-baseline gap-2">
+              {loadingTasks ? "..." : totalOpenTasks}
+              {urgentTasks > 0 ? (
+                <span className="text-xs text-destructive font-bold flex items-center gap-1 animate-pulse">
+                  <span>·</span> {urgentTasks} URGENT
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Open</span>
+              )}
+            </span>
+          }
+          helper={<span>Resolved Today: {loadingTasks ? "..." : resolvedTasksToday}</span>}
+          footer="Operations & SLA"
+          icon={ClipboardList}
+          accentClassName={urgentTasks > 0 ? "text-destructive" : "text-primary"}
+          footerLinkHref="/tasks"
+          footerLinkLabel="Manage Tasks"
+        />
+      </div>
     </div>
   );
 }

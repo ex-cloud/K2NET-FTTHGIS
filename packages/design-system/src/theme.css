@@ -1,6 +1,26 @@
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/semantic.css";
+@import "./tokens/density.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-size-xs: var(--font-size-xs);
+  --font-size-sm: var(--font-size-sm);
+  --font-size-base: var(--font-size-base);
+  --font-size-lg: var(--font-size-lg);
+  --font-size-xl: var(--font-size-xl);
+  --font-size-2xl: var(--font-size-2xl);
+  --font-size-3xl: var(--font-size-3xl);
+  --font-size-4xl: var(--font-size-4xl);
+  --font-size-5xl: var(--font-size-5xl);
+  --spacing-fluid-5: var(--space-5);
+  --spacing-fluid-6: var(--space-6);
+  --spacing-fluid-8: var(--space-8);
+  --spacing-fluid-10: var(--space-10);
+  --spacing-fluid-12: var(--space-12);
+  --spacing-fluid-16: var(--space-16);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans-family);

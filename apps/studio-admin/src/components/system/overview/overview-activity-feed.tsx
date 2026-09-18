@@ -48,7 +48,7 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                   href={`/organizations/${org.slug}`}
                   className="group flex flex-col justify-between gap-4 rounded-xl border border-border bg-card/60 p-4 transition-all duration-200 hover:bg-card/95 hover:border-primary/50 hover:shadow-xs sm:flex-row sm:items-center cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors group-hover:border-primary/40 group-hover:bg-primary/10 shrink-0">
                       <Building2 className="h-4.5 w-4.5 text-primary transition-transform duration-200 group-hover:scale-105" />
                     </div>
@@ -63,17 +63,17 @@ export function OverviewActivityFeed({ loading, recentOrgs }: OverviewActivityFe
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:justify-end">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="border-border bg-card/40 px-2 py-0.5 text-[9px] uppercase font-mono text-muted-foreground">
-                        {planTier}
-                      </Badge>
-                      <Badge className={cn(
-                        "border border-border px-2 py-0.5 text-[9px] font-medium",
-                        org.status === "ACTIVE" ? "bg-primary/10 text-primary" : org.status === "SUSPENDED" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
-                      )}>
-                        {org.status}
-                      </Badge>
-                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="border-border bg-card/40 px-2 py-0.5 text-[9px] uppercase font-mono text-muted-foreground whitespace-nowrap">
+                      {planTier}
+                    </Badge>
+                    <Badge className={cn(
+                      "border border-border px-2 py-0.5 text-[9px] font-medium whitespace-nowrap",
+                      org.status === "ACTIVE" ? "bg-primary/10 text-primary" : org.status === "SUSPENDED" ? "bg-amber-500/10 text-amber-500" : "bg-muted text-muted-foreground"
+                    )}>
+                      {org.status}
+                    </Badge>
+                  </div>
                   </div>
                 </Link>
               </OrganizationContextMenu>

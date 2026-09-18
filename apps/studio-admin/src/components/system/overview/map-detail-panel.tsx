@@ -121,10 +121,18 @@ export function MapDetailPanel({ activeNodeData, activeSubNodes }: MapDetailPane
           </div>
         </div>
       ) : (
-        <div className="flex h-full flex-col items-center justify-center py-12 text-muted-foreground">
-          <Server className="mb-2 h-8 w-8 opacity-40" />
-          <span className="text-xs">Select a service to view its details.</span>
-        </div>
+        <>
+          {/* Mobile: compact hint bar — saves vertical space when no node is selected */}
+          <div className="flex sm:hidden items-center gap-2 py-4 text-muted-foreground">
+            <Server className="h-4 w-4 opacity-40 shrink-0" />
+            <span className="text-xs">Tap a service node on the map to view details.</span>
+          </div>
+          {/* Desktop: centred empty state */}
+          <div className="hidden sm:flex h-full flex-col items-center justify-center py-12 text-muted-foreground">
+            <Server className="mb-2 h-8 w-8 opacity-40" />
+            <span className="text-xs">Select a service to view its details.</span>
+          </div>
+        </>
       )}
     </Card>
   );

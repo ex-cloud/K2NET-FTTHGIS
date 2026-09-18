@@ -17,16 +17,19 @@ export function MapToolbar({
   onResetAll,
 }: MapToolbarProps) {
   return (
-    <div className="flex justify-between items-start z-20 pointer-events-none">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between z-20 pointer-events-none">
       <div>
         <h4 className="text-sm font-semibold text-foreground pointer-events-auto flex items-center gap-2">
           <span>Infrastructure Dependency Map</span>
         </h4>
-        <p className="mt-0.5 text-[10px] text-muted-foreground pointer-events-auto">
+        <p className="mt-0.5 text-[10px] text-muted-foreground pointer-events-auto hidden sm:block">
           3-Tier Enterprise SaaS Architecture. Traffic flows Edge ➔ Core/AI ➔ Storage ➔ Microservices.
         </p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground pointer-events-auto sm:hidden">
+          Tap a node to view its details.
+        </p>
       </div>
-      <div className="flex items-center gap-1 bg-popover/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl">
+      <div className="flex items-center gap-1 bg-popover/90 border border-border rounded-lg p-1 pointer-events-auto shadow-xl self-start sm:self-auto shrink-0">
         <Button
           variant="ghost"
           size="icon"

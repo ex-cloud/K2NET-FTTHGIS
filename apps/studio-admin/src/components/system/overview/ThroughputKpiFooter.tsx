@@ -46,7 +46,8 @@ export function ThroughputKpiFooter({
         </p>
       </div>
 
-      <div className="flex items-center justify-between sm:justify-end">
+      {/* Full-width button on mobile (col-span-2), right-aligned on sm+ */}
+      <div className="col-span-2 sm:col-span-1 flex items-center sm:justify-end">
         <Button
           variant="outline"
           size="sm"

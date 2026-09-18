@@ -1,0 +1,14 @@
+:root {
+  /* Typography semantic */
+  --text-body: var(--font-size-base);
+  --text-label: var(--font-size-sm);
+  --text-heading-sm: var(--font-size-xl);
+  --text-heading-md: var(--font-size-2xl);
+  --text-heading-lg: var(--font-size-4xl);
+
+  /* Spacing semantic */
+  --space-component-padding: var(--space-3);
+  --space-content-gap: var(--space-5);
+  --space-page-padding: var(--space-8);
+  --space-section-gap: var(--space-12);
+}

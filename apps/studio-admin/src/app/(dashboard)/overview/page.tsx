@@ -53,7 +53,9 @@ export default function SystemOverviewPage() {
   return (
     <SystemOverviewWrapper>
       <PageLayout variant="dashboard">
-        <div className="space-y-4 sm:space-y-6">
+        {/* pb on mobile = safe-area-inset-bottom + 88px dock height so the last
+            OverviewActivityFeed card is not hidden behind the Floating Command Dock. */}
+        <div className="space-y-4 pb-[calc(env(safe-area-inset-bottom)+88px)] sm:space-y-6 sm:pb-0">
           {/* Page header */}
           <div className="flex flex-col justify-between gap-3 border-b border-border pb-4 sm:pb-5 sm:flex-row sm:items-center">
             <div className="space-y-1">

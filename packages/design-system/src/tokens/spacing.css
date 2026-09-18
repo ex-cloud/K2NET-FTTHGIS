@@ -1,0 +1,15 @@
+:root {
+  /* Statis — grid 4px untuk padding komponen kecil (button, input, badge) */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+
+  /* Fluid — gap antar-elemen, padding container, section spacing */
+  --space-5:  clamp(1.25rem, 1.1667rem + 0.417vw, 1.5rem);    /* 20px → 24px */
+  --space-6:  clamp(1.5rem,  1.3333rem + 0.833vw, 2rem);       /* 24px → 32px */
+  --space-8:  clamp(2rem,    1.6667rem + 1.667vw, 3rem);       /* 32px → 48px */
+  --space-10: clamp(2.5rem,  2rem      + 2.5vw,   4rem);       /* 40px → 64px */
+  --space-12: clamp(3rem,    2.3333rem + 3.333vw, 5rem);       /* 48px → 80px */
+  --space-16: clamp(4rem,    3rem      + 5vw,     7rem);       /* 64px → 112px */
+}

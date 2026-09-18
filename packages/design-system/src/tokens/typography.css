@@ -1,0 +1,19 @@
+:root {
+  /* Statis — tidak perlu scaling di ukuran sekecil ini */
+  --font-size-xs: 0.75rem;      /* 12px */
+
+  /* Fluid — clamp(min, slope, max), viewport 320px→1280px */
+  --font-size-sm:   clamp(0.8125rem, 0.7917rem + 0.104vw, 0.875rem);   /* 13px → 14px */
+  --font-size-base: clamp(0.875rem,  0.8333rem + 0.208vw, 1rem);        /* 14px → 16px */
+  --font-size-lg:   clamp(1rem,      0.9583rem + 0.208vw, 1.125rem);    /* 16px → 18px */
+  --font-size-xl:   clamp(1.125rem,  1.0833rem + 0.208vw, 1.25rem);     /* 18px → 20px */
+  --font-size-2xl:  clamp(1.25rem,   1.1667rem + 0.417vw, 1.5rem);      /* 20px → 24px */
+  --font-size-3xl:  clamp(1.5rem,    1.4167rem + 0.417vw, 1.75rem);     /* 24px → 28px */
+  --font-size-4xl:  clamp(1.75rem,   1.625rem  + 0.625vw, 2.125rem);    /* 28px → 34px */
+  --font-size-5xl:  clamp(2rem,      1.7917rem + 1.042vw, 2.625rem);    /* 32px → 42px */
+
+  /* Line-height unitless ratio — otomatis mengikuti font-size */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+}

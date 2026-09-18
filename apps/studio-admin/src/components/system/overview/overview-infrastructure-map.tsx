@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+
 import { Card } from "@k2net/ui";
 import { Move } from "lucide-react";
 import type { ServiceNode } from "./overview-types";
@@ -58,6 +59,17 @@ export function OverviewInfrastructureMap({
     handleWheel,
     handleResetAll,
   } = useInfrastructureCanvas(onSelectNode, setActiveGatewayId, toggleCollapse);
+
+  // Auto-fit initial zoom for mobile screens (< 640px) so the full 3-tier
+  // architecture diagram is visible without panning on first load.
+  useEffect(() => {
+    const isMobile = window.matchMedia("(max-width: 639px)").matches;
+    if (isMobile) {
+      setZoom(0.6);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const statusMap = useMemo<Record<string, NodeStatus>>(() => {
     const map: Record<string, NodeStatus> = {};
@@ -207,10 +219,11 @@ export function OverviewInfrastructureMap({
             />
           </div>
 
-          {/* Bottom helper pill */}
+          {/* Bottom helper pill — compact on mobile */}
           <div className="absolute bottom-3 left-3 z-20 pointer-events-none flex items-center gap-1.5 rounded-full border border-border/40 bg-popover/80 px-2.5 py-1 text-[9px] font-mono text-muted-foreground backdrop-blur-sm shadow-sm">
             <Move className="h-3 w-3 text-primary animate-pulse" />
-            <span>Drag canvas to pan • Scroll to zoom • Drag nodes to move</span>
+            <span className="hidden sm:inline">Drag canvas to pan • Scroll to zoom • Drag nodes to move</span>
+            <span className="sm:hidden">Pan · Pinch/Scroll to zoom</span>
           </div>
         </div>
       </Card>

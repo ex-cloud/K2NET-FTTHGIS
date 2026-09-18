@@ -20,7 +20,11 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        "group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300",
+        // @container/card: enables child elements to use @container queries
+        // responding to THIS card's own width, not the global viewport.
+        // This allows a single card component to adapt in both 5-column desktop
+        // grids and 360px mobile layouts without per-context overrides.
+        "@container/card group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300",
         !glowingEffect && "hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10",
         className
       )}
@@ -38,10 +42,10 @@ function Card({
         />
       ) : null}
 
-      <div 
+      <div
         className={cn(
           "relative z-20 h-full w-full",
-          isFlexRow 
+          isFlexRow
             ? cn("flex flex-row items-center", gapClass || "gap-4", justifyClass)
             : cn("flex flex-col", justifyClass)
         )}

@@ -43,60 +43,62 @@ export function ThroughputToolbar({
 
       {/* Action Controls */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Service Filter Buttons */}
-        <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
-          <button
-            type="button"
-            onClick={() => setServiceFilter("ALL")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
-              serviceFilter === "ALL"
-                ? "bg-card text-foreground shadow-xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Layers className="h-3 w-3" />
-            <span>All Traffic</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setServiceFilter("MAP")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
-              serviceFilter === "MAP"
-                ? "bg-card text-foreground shadow-xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <MapPin className="h-3 w-3 text-primary" />
-            <span>Map & GIS</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setServiceFilter("API")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
-              serviceFilter === "API"
-                ? "bg-card text-foreground shadow-xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Server className="h-3 w-3 text-blue-500" />
-            <span>Core API</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setServiceFilter("MESSAGING")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
-              serviceFilter === "MESSAGING"
-                ? "bg-card text-foreground shadow-xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <MessageSquare className="h-3 w-3 text-primary" />
-            <span>Messaging</span>
-          </button>
+        {/* Service Filter Buttons — horizontally scrollable on mobile */}
+        <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5 min-w-max">
+            <button
+              type="button"
+              onClick={() => setServiceFilter("ALL")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
+                serviceFilter === "ALL"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Layers className="h-3 w-3" />
+              <span>All Traffic</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setServiceFilter("MAP")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
+                serviceFilter === "MAP"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MapPin className="h-3 w-3 text-primary" />
+              <span>Map &amp; GIS</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setServiceFilter("API")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
+                serviceFilter === "API"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Server className="h-3 w-3 text-blue-500" />
+              <span>Core API</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setServiceFilter("MESSAGING")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
+                serviceFilter === "MESSAGING"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MessageSquare className="h-3 w-3 text-primary" />
+              <span>Messaging</span>
+            </button>
+          </div>
         </div>
 
         {/* Mode Switcher: Bars vs Area */}
