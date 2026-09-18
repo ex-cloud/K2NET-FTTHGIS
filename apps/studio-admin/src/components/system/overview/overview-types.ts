@@ -66,8 +66,10 @@ export interface GithubIntegrationStatus {
 
 export interface OverviewMetricCardProps {
   eyebrow: string;
+  eyebrowBadge?: ReactNode;
   value: ReactNode;
   helper: ReactNode;
+  secondaryStats?: ReactNode;
   footer: ReactNode;
   icon: LucideIcon;
   iconClassName?: string;

@@ -37,109 +37,129 @@ export function OverviewMetricCardsRow({
   resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-3.5 lg:grid-cols-3 xl:grid-cols-5">
-      {/* Card 1: Active Tenants — Top Highlight Hero Card on Mobile (col-span-2) */}
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) */}
       <div className="col-span-2 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="Active Tenants"
+          eyebrow="MANAGED ASSETS"
+          eyebrowBadge={
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-primary/15 text-primary border border-primary/20">
+              <span className="size-1 rounded-full bg-primary animate-pulse" />
+              FEATURED
+            </span>
+          }
           value={
-            <span className="flex items-baseline gap-2">
-              <span className="text-xl sm:text-2xl font-bold">{loadingOrgs ? "..." : totalOrgs}</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                {loadingOrgs ? "" : `${activeOrgs} Active`}
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : (totalAssets ?? "1,420")}</span>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">
+                OLT · ODP · OHC
               </span>
-            </span>
+            </div>
           }
-          helper={<span>Trialing: {trialOrgs}</span>}
-          footer="Platform coverage"
-          icon={Building2}
-          accentClassName="text-primary"
-          footerLinkHref="/organizations"
-          footerLinkLabel="Manage Orgs"
-          className="border-primary/30 bg-gradient-to-b from-primary/5 via-card to-card"
-        />
-      </div>
-
-      {/* Card 2: Global Users */}
-      <div className="col-span-1 sm:col-span-1 xl:col-span-1">
-        <OverviewMetricCard
-          eyebrow="Global Users"
-          value={
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-2xl font-bold">{loadingUsers ? "..." : totalUsers}</span>
-              <span className="text-xs font-semibold text-primary/90">{loadingUsers ? "" : `${activeUsers} Verified`}</span>
-            </span>
-          }
-          helper={<span>Pending Invites: {loadingUsers ? "..." : pendingRequests}</span>}
-          footer="Identity administration"
-          icon={Users}
-          accentClassName="text-primary"
-          footerLinkHref="/users"
-          footerLinkLabel="Manage Users"
-        />
-      </div>
-
-      {/* Card 3: Total Managed Assets */}
-      <div className="col-span-1 sm:col-span-1 xl:col-span-1">
-        <OverviewMetricCard
-          eyebrow="Total Managed Assets"
-          value={
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-2xl font-bold">{loadingOrgs ? "..." : (totalAssets ?? "1,420")}</span>
-              <span className="text-[10px] sm:text-xs font-semibold text-primary/90">OLT · ODP · OHC</span>
-            </span>
-          }
-          helper={<span>Network assets across all tenants</span>}
+          helper="Tenants: All"
+          secondaryStats={<span className="text-primary font-semibold">Uptime: 99.8%</span>}
           footer="Asset telemetry"
           icon={MapPin}
           accentClassName="text-primary"
           footerLinkHref="/observability/olt-poller"
           footerLinkLabel="OLT Telemetry"
+          className="max-sm:border-primary/30 max-sm:bg-gradient-to-b max-sm:from-primary/10 max-sm:to-card"
         />
       </div>
 
-      {/* Card 4: Spatial API Throughput */}
+      {/* Card 2: ACTIVE TENANTS */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="Spatial API Throughput"
+          eyebrow="ACTIVE TENANTS"
           value={
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-2xl font-bold">{loadingOrgs ? "..." : (spatialThroughput ?? "14.2k")}</span>
-              <span className="text-xs font-semibold text-sky-500">req/day</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : totalOrgs}</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">
+                <span className="size-1 rounded-full bg-primary animate-pulse" />
+                {loadingOrgs ? "" : `${activeOrgs} Active`}
+              </span>
+            </div>
           }
-          helper={<span>Map &amp; geocoding requests today</span>}
+          helper={`Trialing: ${trialOrgs}`}
+          secondaryStats={<span className="text-primary font-semibold">100% Cov</span>}
+          footer="Platform coverage"
+          icon={Building2}
+          accentClassName="text-primary"
+          footerLinkHref="/organizations"
+          footerLinkLabel="Manage Orgs"
+        />
+      </div>
+
+      {/* Card 3: GLOBAL USERS */}
+      <div className="col-span-1 sm:col-span-1 xl:col-span-1">
+        <OverviewMetricCard
+          eyebrow="GLOBAL USERS"
+          value={
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xl sm:text-3xl font-bold">{loadingUsers ? "..." : totalUsers}</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-400 border border-sky-500/20">
+                <span className="size-1 rounded-full bg-sky-400" />
+                {loadingUsers ? "" : `${activeUsers} Verified`}
+              </span>
+            </div>
+          }
+          helper={`Pending: ${loadingUsers ? "..." : pendingRequests}`}
+          secondaryStats={<span className="text-muted-foreground/80">Admin/Ops</span>}
+          footer="Identity administration"
+          icon={Users}
+          accentClassName="text-sky-400"
+          footerLinkHref="/users"
+          footerLinkLabel="Manage Users"
+        />
+      </div>
+
+      {/* Card 4: SPATIAL THROUGHPUT */}
+      <div className="col-span-1 sm:col-span-1 xl:col-span-1">
+        <OverviewMetricCard
+          eyebrow="SPATIAL THROUGHPUT"
+          value={
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-bold text-sky-400">{loadingOrgs ? "..." : (spatialThroughput ?? "14.2k")}</span>
+              <span className="text-[10px] font-mono text-muted-foreground/70">req/d</span>
+            </div>
+          }
+          helper="Latency"
+          secondaryStats={<span className="text-sky-400 font-mono font-semibold">~24ms avg</span>}
           footer="Map observability"
           icon={Globe}
-          accentClassName="text-sky-500 dark:text-sky-400"
+          accentClassName="text-sky-400"
           footerLinkHref="/observability/spatial-map"
           footerLinkLabel="Map Gateway"
         />
       </div>
 
-      {/* Card 5: Active Tickets */}
+      {/* Card 5: OPERATIONAL TICKETS */}
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
-          eyebrow="Active Tickets"
+          eyebrow="OPERATIONAL TICKETS"
           value={
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-lg sm:text-2xl font-bold">{loadingTasks ? "..." : totalOpenTasks}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xl sm:text-3xl font-bold">{loadingTasks ? "..." : totalOpenTasks}</span>
               {urgentTasks > 0 ? (
-                <span className="text-xs text-destructive font-bold flex items-center gap-1 animate-pulse">
-                  <span>·</span> {urgentTasks} URGENT
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">
+                  <span className="size-1 rounded-full bg-rose-400" />
+                  {urgentTasks} URGENT
                 </span>
               ) : (
-                <span className="text-xs font-medium text-muted-foreground">Open</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                  <span className="size-1 rounded-full bg-amber-400" />
+                  {totalOpenTasks} Open
+                </span>
               )}
-            </span>
+            </div>
           }
-          helper={<span>Resolved Today: {loadingTasks ? "..." : resolvedTasksToday}</span>}
+          helper={`Resolved: ${loadingTasks ? "..." : resolvedTasksToday}`}
+          secondaryStats={<span className="text-primary font-semibold">99.4% SLA</span>}
           footer="Operations & SLA"
           icon={ClipboardList}
-          accentClassName={urgentTasks > 0 ? "text-destructive" : "text-primary"}
+          accentClassName={urgentTasks > 0 ? "text-rose-400" : "text-primary"}
           footerLinkHref="/tasks"
-          footerLinkLabel="Manage Tasks"
+          footerLinkLabel="Manage Tickets"
         />
       </div>
     </div>
