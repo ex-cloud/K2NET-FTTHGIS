@@ -38,12 +38,12 @@ export function OverviewMetricCardsRow({
 }: OverviewMetricCardsRowProps) {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3 xl:grid-cols-5">
-      {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) */}
+      {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) — Linear Monochrome Style */}
       <div className="col-span-2 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
           eyebrow="MANAGED ASSETS"
           eyebrowBadge={
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-primary/15 text-primary border border-primary/20">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-medium bg-muted/60 text-muted-foreground border border-border/60">
               <span className="size-1 rounded-full bg-primary animate-pulse" />
               FEATURED
             </span>
@@ -51,19 +51,19 @@ export function OverviewMetricCardsRow({
           value={
             <div className="flex items-center gap-2">
               <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : (totalAssets ?? "1,420")}</span>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-primary/10 text-primary border border-primary/20">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
                 OLT · ODP · OHC
               </span>
             </div>
           }
           helper="Tenants: All"
-          secondaryStats={<span className="text-primary font-semibold">Uptime: 99.8%</span>}
+          secondaryStats={<span className="font-mono text-muted-foreground font-medium">Uptime: <span className="text-primary font-semibold">99.8%</span></span>}
           footer="Asset telemetry"
           icon={MapPin}
-          accentClassName="text-primary"
+          accentClassName="text-foreground"
           footerLinkHref="/observability/olt-poller"
           footerLinkLabel="OLT Telemetry"
-          className="max-sm:border-primary/30 max-sm:bg-gradient-to-b max-sm:from-primary/10 max-sm:to-card"
+          className="bg-gradient-to-b from-muted/50 via-card to-card border-border/80"
         />
       </div>
 

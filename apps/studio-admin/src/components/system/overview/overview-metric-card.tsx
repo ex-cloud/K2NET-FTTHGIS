@@ -22,7 +22,7 @@ export function OverviewMetricCard({
     <Card
       glowingEffect
       className={cn(
-        "flex flex-col justify-between transition-all duration-200 p-0 overflow-hidden",
+        "flex flex-col justify-between transition-all duration-200 p-0",
         className
       )}
     >

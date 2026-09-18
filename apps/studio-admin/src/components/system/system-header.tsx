@@ -1,7 +1,5 @@
-
-
 import * as React from "react";
-import { Link, usePathname, Image } from "@/lib/navigation-compat";
+import { Link, Image } from "@/lib/navigation-compat";
 import { HelpCircle, MessageSquare, ShieldCheck, Search, Sparkles } from "lucide-react";
 import {
   Button,
@@ -11,16 +9,13 @@ import { UserNav } from "../user-nav";
 import { useCommandPalette } from "../command-palette/command-palette-provider";
 import { getLogoUrl } from "@/lib/domain";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { getRouteBreadcrumbs } from "@/lib/route-utils";
 
 export function SystemHeader() {
-  const pathname = usePathname();
   const { settings = [] } = useSystemSettings();
   const { openCommandPalette } = useCommandPalette();
 
   const appName = settings.find((s) => s.key === "app_name")?.value || "System Admin";
   const logoUrl = settings.find((s) => s.key === "logo_url")?.value || "";
-  const breadcrumbs = getRouteBreadcrumbs(pathname);
 
   return (
     <header className="flex h-12 shrink-0 w-full items-center justify-between border-b border-border bg-background px-3 sm:px-4 z-40 py-2">
@@ -46,35 +41,9 @@ export function SystemHeader() {
         <Separator orientation="vertical" className="mx-0.5 h-4 bg-border/40 shrink-0" />
 
         {/* Dynamic App Name (Visible across Desktop & Mobile) */}
-        <span className="text-[11px] font-bold uppercase tracking-widest text-primary truncate max-w-[100px] sm:max-w-none shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-primary truncate max-w-[140px] sm:max-w-none shrink-0">
           {appName}
         </span>
-
-        <Separator orientation="vertical" className="mx-0.5 h-3 bg-border/40 -rotate-12 shrink-0" />
-
-        {/* Dynamic Breadcrumbs */}
-        <div className="flex items-center gap-1.5 min-w-0 text-xs">
-          {breadcrumbs.map((crumb, idx) => {
-            const isLast = idx === breadcrumbs.length - 1;
-            return (
-              <React.Fragment key={crumb.label + idx}>
-                {idx > 0 && <span className="text-muted-foreground/50 font-mono select-none">/</span>}
-                {isLast ? (
-                  <span className="font-semibold text-foreground tracking-tight truncate max-w-[130px] sm:max-w-[220px] md:max-w-none">
-                    {crumb.label}
-                  </span>
-                ) : (
-                  <Link
-                    href={crumb.href || "#"}
-                    className="text-muted-foreground hover:text-foreground transition-colors truncate hidden md:inline max-w-[100px] sm:max-w-none"
-                  >
-                    {crumb.label}
-                  </Link>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
       </div>
 
       {/* RIGHT SECTION: Desktop Tools + User Nav (On Mobile: Avatar ONLY) */}
