@@ -93,7 +93,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 1: Semantic Color Token Compliance (Hardcoded Tailwind Colors)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [1/9] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
+echo -e "${CYAN}▶ [1/11] Memeriksa Pelanggaran Warna Hardcode (Zero Hardcoded Colors)...${NC}"
 COLOR_REGEX="text-zinc-|bg-zinc-|border-zinc-|text-slate-|bg-slate-|border-slate-|text-gray-|bg-gray-|border-gray-|text-neutral-|bg-neutral-|border-neutral-|text-emerald-|bg-emerald-|border-emerald-"
 
 COLOR_VIOLATIONS=$(grep -rnE "$COLOR_REGEX" "${VALID_DIRS[@]}" \
@@ -125,7 +125,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 2: Button & Control Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [2/9] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
+echo -e "${CYAN}▶ [2/11] Memeriksa Standar Tipografi Tombol (Supabase: font-medium)...${NC}"
 BTN_FONT_VIOLATIONS=$(grep -rnE '(<Button|<button|<SelectTrigger)[^>]*font-(bold|black|extrabold|semibold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -149,7 +149,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 3: Badge Typography Standard (Supabase: font-medium, bukan bold)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [3/9] Memeriksa Standar Tipografi Badge (Supabase: font-medium)...${NC}"
+echo -e "${CYAN}▶ [3/11] Memeriksa Standar Tipografi Badge (Supabase: font-medium)...${NC}"
 BADGE_FONT_VIOLATIONS=$(grep -rnE '<Badge[^>]*font-(bold|black|extrabold)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -173,7 +173,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 4: Control Sizing & Oversized Elements (Supabase: h-6, h-7, h-8, h-9)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [4/9] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
+echo -e "${CYAN}▶ [4/11] Memeriksa Standar Ketinggian Kontrol / Tombol (Anti Oversized Control)...${NC}"
 OVERSIZED_VIOLATIONS=$(grep -rnE '(<Button[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<Input[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b|<SelectTrigger[^>]*className=[^>]*\bh-(10|11|12|14|16|20)\b)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" \
@@ -198,7 +198,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 5: Inline Hex & RGB Styles Audit (Zero Hardcoded Inline Color Styles)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [5/9] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
+echo -e "${CYAN}▶ [5/11] Memeriksa Inline Hex/RGB Color Styles (style={{ color/bg: '#...' }})...${NC}"
 INLINE_COLOR_VIOLATIONS=$(grep -rnE 'style=\{\{[^}]*(color|backgroundColor|borderColor|background):[[:space:]]*["\x27]#[0-9a-fA-F]{3,8}' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" \
@@ -224,7 +224,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 6: Heavy Shadow Degradation (Supabase uses flat border-driven elevation)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [6/9] Memeriksa Konsistensi Elevation & Border-Driven Surface...${NC}"
+echo -e "${CYAN}▶ [6/11] Memeriksa Konsistensi Elevation & Border-Driven Surface...${NC}"
 SHADOW_VIOLATIONS=$(grep -rnE 'className=[^>]*shadow-(2xl|3xl)' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -250,7 +250,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 7: Control Corner Radius Standard (Supabase: rounded-md / 6px)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [7/9] Memeriksa Standar Corner Radius Kontrol (Supabase: rounded-md / 6px)...${NC}"
+echo -e "${CYAN}▶ [7/11] Memeriksa Standar Corner Radius Kontrol (Supabase: rounded-md / 6px)...${NC}"
 RADIUS_VIOLATIONS=$(grep -rnE '(<Button|<button|<Input|<SelectTrigger)[^>]*\brounded-(xl|2xl|3xl)\b' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -274,7 +274,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 8: Segmented Filter & Switcher Active State (Supabase Standard)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [8/9] Memeriksa Standar Segmented Filter & Tabs Active State...${NC}"
+echo -e "${CYAN}▶ [8/11] Memeriksa Standar Segmented Filter & Tabs Active State...${NC}"
 FILTER_STATE_VIOLATIONS=$(grep -rnE '(segmented|tab-filter|filter-pill)[^>]*bg-primary text-primary-foreground' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -298,7 +298,7 @@ echo ""
 # ------------------------------------------------------------------------------
 # ATURAN 9: Dense Toolbar & Table Header Scale Standard (Supabase: h-7 / h-8)
 # ------------------------------------------------------------------------------
-echo -e "${CYAN}▶ [9/9] Memeriksa Standar Skala Dense Toolbar & Action Bar (Supabase: h-7/h-8)...${NC}"
+echo -e "${CYAN}▶ [9/11] Memeriksa Standar Skala Dense Toolbar & Action Bar (Supabase: h-7/h-8)...${NC}"
 TOOLBAR_SCALE_VIOLATIONS=$(grep -rnE '(Toolbar|HeaderBar|ActionBar)[^>]*<Button[^>]*className=[^>]*\bh-(10|11|12|14)\b' "${VALID_DIRS[@]}" \
   --include="*.tsx" --include="*.ts" 2>/dev/null \
   | grep -v "node_modules" || true)
@@ -320,6 +320,64 @@ fi
 echo ""
 
 # ------------------------------------------------------------------------------
+# ATURAN 10: Fluid & Density Token Integrity Check
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [10/11] Memeriksa Integritas File Token Modular (Typography, Spacing, Semantic, Density)...${NC}"
+TOKEN_FILES=(
+  "/opt/project5/packages/design-system/src/tokens/typography.css"
+  "/opt/project5/packages/design-system/src/tokens/spacing.css"
+  "/opt/project5/packages/design-system/src/tokens/semantic.css"
+  "/opt/project5/packages/design-system/src/tokens/density.css"
+)
+
+MISSING_TOKENS=0
+for tf in "${TOKEN_FILES[@]}"; do
+  if [ ! -f "$tf" ]; then
+    echo -e "  ${RED}❌ File token tidak ditemukan: $tf${NC}"
+    MISSING_TOKENS=$((MISSING_TOKENS + 1))
+  fi
+done
+
+THEME_CSS="/opt/project5/packages/design-system/src/theme.css"
+MISSING_IMPORTS=0
+if [ -f "$THEME_CSS" ]; then
+  for tname in typography spacing semantic density; do
+    if ! grep -q "tokens/$tname.css" "$THEME_CSS"; then
+      echo -e "  ${RED}❌ $THEME_CSS tidak meng-import tokens/$tname.css${NC}"
+      MISSING_IMPORTS=$((MISSING_IMPORTS + 1))
+    fi
+  done
+fi
+
+TOTAL_TOKEN_ERRORS=$((MISSING_TOKENS + MISSING_IMPORTS))
+if [ "$TOTAL_TOKEN_ERRORS" -gt 0 ]; then
+  FATAL_ERRORS=$((FATAL_ERRORS + TOTAL_TOKEN_ERRORS))
+else
+  echo -e "  ${GREEN}✓ Integritas token modular valid (4/4 file token & theme.css @import terverifikasi).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
+# ATURAN 11: Container Queries Adoption Audit (@container/card)
+# ------------------------------------------------------------------------------
+echo -e "${CYAN}▶ [11/11] Memeriksa Adopsi Container Queries (@container)...${NC}"
+CARD_FILE="/opt/project5/packages/ui/src/components/card.tsx"
+CONTAINER_QUERY_OK=true
+
+if [ -f "$CARD_FILE" ]; then
+  if ! grep -q "@container" "$CARD_FILE"; then
+    echo -e "  ${RED}❌ Component Card di $CARD_FILE tidak memiliki class '@container'!${NC}"
+    CONTAINER_QUERY_OK=false
+    FATAL_ERRORS=$((FATAL_ERRORS + 1))
+  fi
+fi
+
+if [ "$CONTAINER_QUERY_OK" = true ]; then
+  echo -e "  ${GREEN}✓ Adopsi Container Queries valid (@container terpasang pada shared Card component).${NC}"
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
 # RINGKASAN HASIL AUDIT
 # ------------------------------------------------------------------------------
 echo -e "${BLUE}======================================================================${NC}"
@@ -333,7 +391,7 @@ if [ "$FATAL_ERRORS" -eq 0 ]; then
   if [ "$ADVISORY_WARNS" -gt 0 ]; then
     echo -e "${YELLOW}     (Catatan: Ada $ADVISORY_WARNS advisory warnings untuk optimasi visual)     ${NC}"
   fi
-  echo -e "${GREEN}     Codebase 100% selaras dengan 9 Aturan Supabase Design System.    ${NC}"
+  echo -e "${GREEN}     Codebase 100% selaras dengan 11 Aturan Supabase Design System.   ${NC}"
   echo -e "${BLUE}======================================================================${NC}\n"
   exit 0
 else

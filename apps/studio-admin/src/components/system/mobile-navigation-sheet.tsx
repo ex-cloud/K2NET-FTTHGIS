@@ -93,7 +93,7 @@ export function MobileNavigationSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="w-full h-[88vh] max-h-[90vh] sm:max-w-2xl sm:mx-auto bg-sidebar border-t border-border rounded-t-2xl p-0 dark text-foreground flex flex-col overflow-hidden shadow-2xl"
+        className="w-full h-[88vh] max-h-[90vh] sm:max-w-2xl sm:mx-auto bg-sidebar border-t border-border rounded-t-2xl p-0 dark text-foreground flex flex-col overflow-hidden shadow-xl"
       >
         {/* TOP GRAB HANDLE */}
         <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted-foreground/30 shrink-0" />
