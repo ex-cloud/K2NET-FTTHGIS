@@ -88,9 +88,11 @@ public class RecentOperationsDto {
         private String orgName;
         private String orgSlug;
         private String eventType; // UPGRADE, PAYMENT, SIGNUP, TRIAL_REMINDER
+        private String eventLabel; // Human-readable: "Paket Upgrade", "Pembayaran Xendit", "Trial Reminder"
         private String planName;
         private String amount;
-        private String status; // PAID, ACTIVE, TRIAL, OVERDUE
+        private String valueChange; // e.g. "STARTER → ENTERPRISE", "Invoice #INV-2026-0901", "Sisa 7 hari masa percobaan"
+        private String status; // PAID, ACTIVE, TRIAL, OVERDUE, UPGRADED
         private String timestamp;
     }
 

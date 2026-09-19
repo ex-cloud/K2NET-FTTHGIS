@@ -11,6 +11,7 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
+    pool: "threads",
     exclude: [...configDefaults.exclude, "**/node_modules/**", "**/dist/**"],
     coverage: {
       provider: "v8",

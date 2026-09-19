@@ -47,8 +47,10 @@ export interface BillingEventItem {
   orgName: string;
   orgSlug: string;
   eventType: string;
+  eventLabel: string; // e.g. "Paket Upgrade", "Pembayaran Xendit", "Trial Reminder", "Langganan Aktif"
   planName: string;
   amount: string;
+  valueChange: string; // e.g. "STARTER → ENTERPRISE", "Invoice #INV-2026-0901", "Sisa 7 hari masa percobaan"
   status: string;
   timestamp: string;
 }

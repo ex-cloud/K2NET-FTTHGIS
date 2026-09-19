@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./vitest.setup.ts",
+    pool: "threads",
     exclude: [...configDefaults.exclude, "e2e/**/*"],
   },
   resolve: {
