@@ -22,6 +22,80 @@ interface OverviewMetricCardsRowProps {
   resolvedTasksToday?: number;
 }
 
+function ManagedAssetsValue({ loading, totalAssets }: { loading: boolean; totalAssets: number }) {
+  if (loading && totalAssets === 0) {
+    return <div className="h-7 w-20 rounded bg-muted/60 animate-pulse my-0.5" />;
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-2xl sm:text-3xl font-bold">{totalAssets.toLocaleString()}</span>
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
+        OLT · ODP · OHC
+      </span>
+    </div>
+  );
+}
+
+function ActiveTenantsValue({ loading, totalOrgs, activeOrgs }: { loading: boolean; totalOrgs: number; activeOrgs: number }) {
+  if (loading && totalOrgs === 0) {
+    return <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-2xl sm:text-3xl font-bold">{totalOrgs}</span>
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">
+        <span className="size-1 rounded-full bg-primary animate-pulse" />
+        {`${activeOrgs} Active`}
+      </span>
+    </div>
+  );
+}
+
+function GlobalUsersValue({ loading, totalUsers, activeUsers }: { loading: boolean; totalUsers: number; activeUsers: number }) {
+  if (loading && totalUsers === 0) {
+    return <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-2xl sm:text-3xl font-bold">{totalUsers}</span>
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-400 border border-sky-500/20">
+        <span className="size-1 rounded-full bg-sky-400" />
+        {`${activeUsers} Verified`}
+      </span>
+    </div>
+  );
+}
+
+function OperationalTicketsValue({
+  loading,
+  totalOpenTasks,
+  urgentTasks,
+}: {
+  loading: boolean;
+  totalOpenTasks: number;
+  urgentTasks: number;
+}) {
+  if (loading && totalOpenTasks === 0) {
+    return <div className="h-7 w-14 rounded bg-muted/60 animate-pulse my-0.5" />;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-2xl sm:text-3xl font-bold">{totalOpenTasks}</span>
+      {urgentTasks > 0 ? (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/20">
+          <span className="size-1 rounded-full bg-rose-400 animate-ping" />
+          {urgentTasks} Urgent
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+          <span className="size-1 rounded-full bg-amber-400" />
+          {totalOpenTasks} Open
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function OverviewMetricCardsRow({
   loadingOrgs,
   loadingUsers,
@@ -55,7 +129,7 @@ export function OverviewMetricCardsRow({
 
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3 xl:grid-cols-5">
-      {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) — Linear Monochrome Style */}
+      {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) */}
       <div className="col-span-2 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
           eyebrow="MANAGED ASSETS"
@@ -65,18 +139,7 @@ export function OverviewMetricCardsRow({
               FEATURED
             </span>
           }
-          value={
-            loadingOrgs && totalAssets === 0 ? (
-              <div className="h-7 w-20 rounded bg-muted/60 animate-pulse my-0.5" />
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-2xl sm:text-3xl font-bold">{totalAssets.toLocaleString()}</span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
-                  OLT · ODP · OHC
-                </span>
-              </div>
-            )
-          }
+          value={<ManagedAssetsValue loading={loadingOrgs} totalAssets={totalAssets} />}
           helper="Tenants: All"
           secondaryStats={<span className="font-mono text-muted-foreground font-medium">Uptime: <span className="text-primary font-semibold">{uptimePercentage}</span></span>}
           footer="Asset telemetry"
@@ -92,19 +155,7 @@ export function OverviewMetricCardsRow({
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
           eyebrow="ACTIVE TENANTS"
-          value={
-            loadingOrgs && totalOrgs === 0 ? (
-              <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-2xl sm:text-3xl font-bold">{totalOrgs}</span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">
-                  <span className="size-1 rounded-full bg-primary animate-pulse" />
-                  {`${activeOrgs} Active`}
-                </span>
-              </div>
-            )
-          }
+          value={<ActiveTenantsValue loading={loadingOrgs} totalOrgs={totalOrgs} activeOrgs={activeOrgs} />}
           helper={`Trialing: ${trialOrgs}`}
           secondaryStats={<span className="text-primary font-semibold">100% Cov</span>}
           footer="Platform coverage"
@@ -119,19 +170,7 @@ export function OverviewMetricCardsRow({
       <div className="col-span-1 sm:col-span-1 xl:col-span-1">
         <OverviewMetricCard
           eyebrow="GLOBAL USERS"
-          value={
-            loadingUsers && totalUsers === 0 ? (
-              <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-2xl sm:text-3xl font-bold">{totalUsers}</span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-400 border border-sky-500/20">
-                  <span className="size-1 rounded-full bg-sky-400" />
-                  {`${activeUsers} Verified`}
-                </span>
-              </div>
-            )
-          }
+          value={<GlobalUsersValue loading={loadingUsers} totalUsers={totalUsers} activeUsers={activeUsers} />}
           helper={`Pending: ${pendingRequests}`}
           secondaryStats={<span className="font-mono text-muted-foreground">Admin/Ops</span>}
           footer="Identity administration"
@@ -171,24 +210,11 @@ export function OverviewMetricCardsRow({
         <OverviewMetricCard
           eyebrow="OPERATIONAL TICKETS"
           value={
-            loadingTasks && totalOpenTasks === 0 ? (
-              <div className="h-7 w-14 rounded bg-muted/60 animate-pulse my-0.5" />
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="text-2xl sm:text-3xl font-bold">{totalOpenTasks}</span>
-                {urgentTasks > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/20">
-                    <span className="size-1 rounded-full bg-rose-400 animate-ping" />
-                    {urgentTasks} Urgent
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                    <span className="size-1 rounded-full bg-amber-400" />
-                    {totalOpenTasks} Open
-                  </span>
-                )}
-              </div>
-            )
+            <OperationalTicketsValue
+              loading={loadingTasks}
+              totalOpenTasks={totalOpenTasks}
+              urgentTasks={urgentTasks}
+            />
           }
           helper={`Resolved: ${resolvedTasksToday}`}
           secondaryStats={<span className="font-mono text-primary font-semibold">{slaPercentage}</span>}

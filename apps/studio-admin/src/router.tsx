@@ -452,6 +452,13 @@ const trashRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayo
 // Assets 3D
 const assets3dRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/assets-3d", component: () => <Lazy><Assets3dPage /></Lazy> });
 
+// Resilient Redirects & Aliases (Anti-404 Safety Net)
+const auditRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/audit", component: () => <Navigate to="/security/audit" /> });
+const alertsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/alerts", component: () => <Navigate to="/security/alerts" /> });
+const healthRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/health", component: () => <Navigate to="/observability/overview" /> });
+const subscriptionsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/subscriptions", component: () => <Navigate to="/organizations" /> });
+const systemSettingsRedirectRoute = createRoute({ getParentRoute: () => authenticatedLayoutRoute, path: "/system/settings", component: () => <Navigate to="/settings/general" /> });
+
 // ----------------------------------------------------------------
 // Route tree
 // ----------------------------------------------------------------
@@ -481,6 +488,8 @@ const authenticatedTree = authenticatedLayoutRoute.addChildren([
   // System
   systemTrashRoute, trashRedirectRoute,
   assets3dRoute,
+  // Resilient Redirects
+  auditRedirectRoute, alertsRedirectRoute, healthRedirectRoute, subscriptionsRedirectRoute, systemSettingsRedirectRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([authenticatedTree, loginRoute]);

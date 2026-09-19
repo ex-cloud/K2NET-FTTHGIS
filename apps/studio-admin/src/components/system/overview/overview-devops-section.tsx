@@ -64,8 +64,8 @@ function GlobalStatusCard({
       icon={CheckCircle2}
       iconClassName="group-hover:text-primary"
       accentClassName="text-primary"
-      href="/health"
-      actionLabel="View Health Center"
+      href="/observability/overview"
+      actionLabel="View Observability"
       actionClassName="text-primary hover:text-primary/70"
     />
   );
@@ -102,7 +102,7 @@ function ComputeCard({ devopsStats }: { devopsStats: DevOpsStats | null }) {
       icon={HardDrive}
       iconClassName="group-hover:text-sky-500"
       accentClassName="text-sky-400"
-      href="/health"
+      href="/observability/compute"
       actionLabel="Inspect Runtime Metrics"
       actionClassName="text-sky-400 hover:text-sky-300"
     >
@@ -153,8 +153,8 @@ function GithubCard({
       icon={Github}
       iconClassName="group-hover:text-violet-500"
       accentClassName="text-violet-400"
-      href="/system/settings?tab=integrations"
-      actionLabel="Manage GitHub App"
+      href="/settings/general"
+      actionLabel="Platform Settings"
       actionClassName="text-violet-400 hover:text-violet-300"
     >
       <div className="mt-3 space-y-2 text-[11px] border-t border-border/40 pt-2.5">
@@ -218,7 +218,7 @@ function DbCacheCard({
       icon={Database}
       iconClassName="group-hover:text-primary"
       accentClassName="text-primary"
-      href="/health"
+      href="/observability/database"
       actionLabel="View System Health"
       actionClassName="text-primary hover:text-primary/70"
     >

@@ -79,71 +79,36 @@ function formatActor(actor: string): { main: string; sub?: string } {
   return { main: actor };
 }
 
+const ACTION_PATTERNS: { keywords: string[]; label: string; icon: React.ReactNode }[] = [
+  { keywords: ["IMPERSONATION_STARTED"], label: "Impersonasi Dimulai", icon: <UserCheck className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["IMPERSONATION_ENDED"], label: "Impersonasi Diakhiri", icon: <ShieldCheck className="size-3 text-sky-500 shrink-0" /> },
+  { keywords: ["NUCLEAR", "TENANT_NUCLEAR_DELETED"], label: "Hapus Tenant Permanen (Nuke)", icon: <Trash2 className="size-3 text-rose-500 shrink-0" /> },
+  { keywords: ["TENANT_CREATED"], label: "Pendaftaran Tenant Baru", icon: <Building className="size-3 text-primary shrink-0" /> },
+  { keywords: ["TENANT_RESTORED"], label: "Pemulihan Tenant (Restore)", icon: <RotateCcw className="size-3 text-primary shrink-0" /> },
+  { keywords: ["TENANT_IMPORTED"], label: "Impor Backup Tenant", icon: <Download className="size-3 text-primary shrink-0" /> },
+  { keywords: ["TOKEN_REVOKED", "SCOPED_TOKEN_REVOKED"], label: "Token Akses Dicabut", icon: <KeyRound className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["TOKEN_CREATED", "SCOPED_TOKEN_CREATED"], label: "Token Akses Dibuat", icon: <KeyRound className="size-3 text-primary shrink-0" /> },
+  { keywords: ["WEBHOOK", "SECRET_ROLLED"], label: "Webhook Secret Dirotasi", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["API_KEY"], label: "API Key Dibuat Ulang", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["AI_SOP_GENERATE"], label: "AI Generate SOP", icon: <Sparkles className="size-3 text-primary shrink-0" /> },
+  { keywords: ["AI_", "CHAT"], label: "AI Fiber Copilot Session", icon: <Bot className="size-3 text-indigo-500 shrink-0" /> },
+  { keywords: ["RATE_LIMIT"], label: "Rate Limit Gateway", icon: <AlertTriangle className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["LOGIN_SUCCESS", "LOGIN"], label: "User Login Sukses", icon: <ShieldCheck className="size-3 text-primary shrink-0" /> },
+  { keywords: ["LOGIN_FAILED", "LOGIN_ERROR"], label: "Gagal Autentikasi", icon: <ShieldAlert className="size-3 text-rose-500 shrink-0" /> },
+  { keywords: ["PASSWORD_RESET"], label: "Reset Password Akun", icon: <Lock className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["GLOBAL_SETTINGS", "SETTINGS"], label: "Konfigurasi Sistem Diperbarui", icon: <Settings className="size-3 text-sky-500 shrink-0" /> },
+  { keywords: ["OBSIDIAN"], label: "Sinkronisasi Obsidian Vault", icon: <FileCode className="size-3 text-primary shrink-0" /> },
+  { keywords: ["TASK"], label: "Manajemen Task & Work Order", icon: <CheckSquare className="size-3 text-primary shrink-0" /> },
+  { keywords: ["CACHE", "PURGE"], label: "Purge Cache Gateway", icon: <Flame className="size-3 text-amber-500 shrink-0" /> },
+  { keywords: ["SERVICE"], label: "Status Layanan Sistem", icon: <Activity className="size-3 text-sky-500 shrink-0" /> },
+];
+
 /** Format technical action name to user-friendly label with icon */
 function formatActionDisplay(action: string): { label: string; icon: React.ReactNode } {
   const a = (action ?? "").toUpperCase();
-  if (a.includes("IMPERSONATION_STARTED")) {
-    return { label: "Impersonasi Dimulai", icon: <UserCheck className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("IMPERSONATION_ENDED")) {
-    return { label: "Impersonasi Diakhiri", icon: <ShieldCheck className="size-3 text-sky-500 shrink-0" /> };
-  }
-  if (a.includes("NUCLEAR") || a.includes("TENANT_NUCLEAR_DELETED")) {
-    return { label: "Hapus Tenant Permanen (Nuke)", icon: <Trash2 className="size-3 text-rose-500 shrink-0" /> };
-  }
-  if (a.includes("TENANT_CREATED")) {
-    return { label: "Pendaftaran Tenant Baru", icon: <Building className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("TENANT_RESTORED")) {
-    return { label: "Pemulihan Tenant (Restore)", icon: <RotateCcw className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("TENANT_IMPORTED")) {
-    return { label: "Impor Backup Tenant", icon: <Download className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("TOKEN_REVOKED") || a.includes("SCOPED_TOKEN_REVOKED")) {
-    return { label: "Token Akses Dicabut", icon: <KeyRound className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("TOKEN_CREATED") || a.includes("SCOPED_TOKEN_CREATED")) {
-    return { label: "Token Akses Dibuat", icon: <KeyRound className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("WEBHOOK") || a.includes("SECRET_ROLLED")) {
-    return { label: "Webhook Secret Dirotasi", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("API_KEY")) {
-    return { label: "API Key Dibuat Ulang", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("AI_SOP_GENERATE")) {
-    return { label: "AI Generate SOP", icon: <Sparkles className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("AI_") || a.includes("CHAT")) {
-    return { label: "AI Fiber Copilot Session", icon: <Bot className="size-3 text-indigo-500 shrink-0" /> };
-  }
-  if (a.includes("RATE_LIMIT")) {
-    return { label: "Rate Limit Gateway", icon: <AlertTriangle className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("LOGIN_SUCCESS") || a === "LOGIN") {
-    return { label: "User Login Sukses", icon: <ShieldCheck className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("LOGIN_FAILED") || a.includes("LOGIN_ERROR")) {
-    return { label: "Gagal Autentikasi", icon: <ShieldAlert className="size-3 text-rose-500 shrink-0" /> };
-  }
-  if (a.includes("PASSWORD_RESET")) {
-    return { label: "Reset Password Akun", icon: <Lock className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("GLOBAL_SETTINGS") || a.includes("SETTINGS")) {
-    return { label: "Konfigurasi Sistem Diperbarui", icon: <Settings className="size-3 text-sky-500 shrink-0" /> };
-  }
-  if (a.includes("OBSIDIAN")) {
-    return { label: "Sinkronisasi Obsidian Vault", icon: <FileCode className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("TASK")) {
-    return { label: "Manajemen Task & Work Order", icon: <CheckSquare className="size-3 text-primary shrink-0" /> };
-  }
-  if (a.includes("CACHE") || a.includes("PURGE")) {
-    return { label: "Purge Cache Gateway", icon: <Flame className="size-3 text-amber-500 shrink-0" /> };
-  }
-  if (a.includes("SERVICE")) {
-    return { label: "Status Layanan Sistem", icon: <Activity className="size-3 text-sky-500 shrink-0" /> };
+  const matched = ACTION_PATTERNS.find((pattern) => pattern.keywords.some((k) => a.includes(k)));
+  if (matched) {
+    return { label: matched.label, icon: matched.icon };
   }
 
   // Dynamic fallback for any other action name
@@ -182,7 +147,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
           </p>
         </div>
         <Button variant="ghost" size="sm" asChild className="h-7 px-2.5 text-[11px] gap-1 text-muted-foreground hover:text-primary">
-          <Link href="/audit">
+          <Link href="/security/audit">
             <Info className="size-3" />
             <span>Lihat Semua Audit Logs</span>
           </Link>
@@ -293,7 +258,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                       asChild
                       className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary gap-1"
                     >
-                      <Link href="/audit">
+                      <Link href="/security/audit">
                         <span>View Logs</span>
                         <ArrowUpRight className="size-3" />
                       </Link>
