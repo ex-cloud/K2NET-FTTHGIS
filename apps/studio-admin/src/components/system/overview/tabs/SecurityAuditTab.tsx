@@ -1,4 +1,25 @@
-import { ShieldCheck, ArrowUpRight, Info } from "lucide-react";
+import { 
+  ShieldCheck, 
+  ArrowUpRight, 
+  Info, 
+  ShieldAlert, 
+  KeyRound, 
+  UserCheck, 
+  Trash2, 
+  RefreshCw, 
+  Bot, 
+  AlertTriangle,
+  Building,
+  RotateCcw,
+  Download,
+  Settings,
+  Activity,
+  Lock,
+  CheckSquare,
+  FileCode,
+  Sparkles,
+  Flame
+} from "lucide-react";
 import { Link } from "@/lib/navigation-compat";
 import { Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
@@ -36,16 +57,102 @@ function getSeverityMeta(severity: string) {
   };
 }
 
-/** Format actor: strip Keycloak internal prefixes, show human-readable form */
+/** Format actor: split human name and email cleanly */
 function formatActor(actor: string): { main: string; sub?: string } {
-  if (!actor) return { main: "system-cron" };
-  if (actor.includes("@"))
-    return { main: actor };
-  if (actor.startsWith("token-"))
-    return { main: "API Token", sub: actor.replace("token-", "") };
-  if (actor.startsWith("session-"))
+  if (!actor) return { main: "System Ingress" };
+  
+  // Format: "Super Admin (superadmin@example.com)"
+  const match = actor.match(/^([^(]+)\(([^)]+)\)$/);
+  if (match) {
+    return { main: match[1].trim(), sub: match[2].trim() };
+  }
+  if (actor.includes("@")) {
+    const parts = actor.split("@");
+    return { main: parts[0], sub: `@${parts[1]}` };
+  }
+  if (actor.startsWith("token-") || actor.startsWith("API Token")) {
+    return { main: "API Token", sub: actor.replace(/^token-|^API Token\s*/, "") };
+  }
+  if (actor.startsWith("session-")) {
     return { main: "Web Session", sub: actor.replace("session-", "") };
+  }
   return { main: actor };
+}
+
+/** Format technical action name to user-friendly label with icon */
+function formatActionDisplay(action: string): { label: string; icon: React.ReactNode } {
+  const a = (action ?? "").toUpperCase();
+  if (a.includes("IMPERSONATION_STARTED")) {
+    return { label: "Impersonasi Dimulai", icon: <UserCheck className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("IMPERSONATION_ENDED")) {
+    return { label: "Impersonasi Diakhiri", icon: <ShieldCheck className="size-3 text-sky-500 shrink-0" /> };
+  }
+  if (a.includes("NUCLEAR") || a.includes("TENANT_NUCLEAR_DELETED")) {
+    return { label: "Hapus Tenant Permanen (Nuke)", icon: <Trash2 className="size-3 text-rose-500 shrink-0" /> };
+  }
+  if (a.includes("TENANT_CREATED")) {
+    return { label: "Pendaftaran Tenant Baru", icon: <Building className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("TENANT_RESTORED")) {
+    return { label: "Pemulihan Tenant (Restore)", icon: <RotateCcw className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("TENANT_IMPORTED")) {
+    return { label: "Impor Backup Tenant", icon: <Download className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("TOKEN_REVOKED") || a.includes("SCOPED_TOKEN_REVOKED")) {
+    return { label: "Token Akses Dicabut", icon: <KeyRound className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("TOKEN_CREATED") || a.includes("SCOPED_TOKEN_CREATED")) {
+    return { label: "Token Akses Dibuat", icon: <KeyRound className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("WEBHOOK") || a.includes("SECRET_ROLLED")) {
+    return { label: "Webhook Secret Dirotasi", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("API_KEY")) {
+    return { label: "API Key Dibuat Ulang", icon: <RefreshCw className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("AI_SOP_GENERATE")) {
+    return { label: "AI Generate SOP", icon: <Sparkles className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("AI_") || a.includes("CHAT")) {
+    return { label: "AI Fiber Copilot Session", icon: <Bot className="size-3 text-indigo-500 shrink-0" /> };
+  }
+  if (a.includes("RATE_LIMIT")) {
+    return { label: "Rate Limit Gateway", icon: <AlertTriangle className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("LOGIN_SUCCESS") || a === "LOGIN") {
+    return { label: "User Login Sukses", icon: <ShieldCheck className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("LOGIN_FAILED") || a.includes("LOGIN_ERROR")) {
+    return { label: "Gagal Autentikasi", icon: <ShieldAlert className="size-3 text-rose-500 shrink-0" /> };
+  }
+  if (a.includes("PASSWORD_RESET")) {
+    return { label: "Reset Password Akun", icon: <Lock className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("GLOBAL_SETTINGS") || a.includes("SETTINGS")) {
+    return { label: "Konfigurasi Sistem Diperbarui", icon: <Settings className="size-3 text-sky-500 shrink-0" /> };
+  }
+  if (a.includes("OBSIDIAN")) {
+    return { label: "Sinkronisasi Obsidian Vault", icon: <FileCode className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("TASK")) {
+    return { label: "Manajemen Task & Work Order", icon: <CheckSquare className="size-3 text-primary shrink-0" /> };
+  }
+  if (a.includes("CACHE") || a.includes("PURGE")) {
+    return { label: "Purge Cache Gateway", icon: <Flame className="size-3 text-amber-500 shrink-0" /> };
+  }
+  if (a.includes("SERVICE")) {
+    return { label: "Status Layanan Sistem", icon: <Activity className="size-3 text-sky-500 shrink-0" /> };
+  }
+
+  // Dynamic fallback for any other action name
+  const cleanLabel = action
+    .replace(/^(POST|PUT|DELETE|GET):/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+
+  return { label: cleanLabel, icon: <Activity className="size-3 text-muted-foreground shrink-0" /> };
 }
 
 export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
@@ -91,7 +198,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
           <thead>
             <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
               <th className="py-2.5 px-3.5 whitespace-nowrap">Waktu (WIB)</th>
-              <th className="py-2.5 px-3.5">Aktor / Email</th>
+              <th className="py-2.5 px-3.5">Aktor / Akun</th>
               <th className="py-2.5 px-3.5">Target Tenant</th>
               <th className="py-2.5 px-3.5">Aksi Keamanan</th>
               <th className="py-2.5 px-3.5 whitespace-nowrap">Tingkat Risiko</th>
@@ -102,6 +209,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
             {items.map((audit) => {
               const meta = getSeverityMeta(audit.severity);
               const actor = formatActor(audit.actor);
+              const actionDisplay = formatActionDisplay(audit.action);
 
               return (
                 <tr
@@ -112,47 +220,53 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                   <td className="py-2.5 px-3.5 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <span className={cn("size-1.5 rounded-full shrink-0", meta.dot)} />
-                      <span className="font-mono text-[11px] text-muted-foreground">
-                        {/* Strip trailing "WIB" if already appended by backend */}
+                      <span className="font-mono text-[11px] text-muted-foreground font-medium">
                         {(audit.timestamp ?? "").replace(/ WIB$/, "")}
                       </span>
                       <span className="text-[9px] text-muted-foreground/50 font-mono">WIB</span>
                     </div>
                   </td>
 
-                  {/* Aktor / Email */}
+                  {/* Aktor / Akun */}
                   <td className="py-2.5 px-3.5">
-                    <span className="font-medium text-foreground block truncate max-w-[130px]">
+                    <span className="font-semibold text-foreground block truncate max-w-[150px]">
                       {actor.main}
                     </span>
                     {actor.sub && (
-                      <span className="text-[10px] font-mono text-muted-foreground/60 block truncate max-w-[130px]">
+                      <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[150px]">
                         {actor.sub}
                       </span>
                     )}
                     {audit.ipAddress && (
                       <span className="text-[9px] font-mono text-muted-foreground/50 block">
-                        {audit.ipAddress}
+                        IP: {audit.ipAddress}
                       </span>
                     )}
                   </td>
 
                   {/* Target Tenant */}
                   <td className="py-2.5 px-3.5">
-                    <span className="text-foreground/85 font-mono text-[11px] truncate block max-w-[120px]">
+                    <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[130px]">
                       {audit.targetTenant || "Platform Wide"}
                     </span>
                   </td>
 
                   {/* Aksi Keamanan */}
                   <td className="py-2.5 px-3.5">
-                    <span className="font-mono text-[11px] font-semibold text-foreground truncate block max-w-[190px]"
-                      title={audit.action}>
-                      {audit.action}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {actionDisplay.icon}
+                      <span
+                        className="font-medium text-[11px] text-foreground truncate block max-w-[200px]"
+                        title={audit.action}
+                      >
+                        {actionDisplay.label}
+                      </span>
+                    </div>
                     {audit.details && (
-                      <span className="text-[10px] text-muted-foreground/70 truncate block max-w-[190px]"
-                        title={audit.details}>
+                      <span
+                        className="text-[10px] text-muted-foreground/80 truncate block max-w-[220px] mt-0.5"
+                        title={audit.details}
+                      >
                         {audit.details}
                       </span>
                     )}
