@@ -1,40 +1,19 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { PageLayout } from "@k2net/ui";
 import { throughputData } from "@/lib/system-overview-data";
 import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
 import { useTaskSummary } from "@/hooks/useTaskSummary";
-import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
 import {
-  OverviewInfrastructureMap,
   OverviewMetricCardsRow,
   OverviewStatusBanner,
   OverviewThroughputChart,
   OverviewActivityFeed,
 } from "@/components/system/overview";
 import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
-import type { ServiceNode } from "@/components/system/overview/overview-types";
 
 export default function SystemOverviewPage() {
   const data = useSystemOverviewData();
   const { summary: taskSummary, loading: loadingTasks } = useTaskSummary();
-  const [activeNode, setActiveNode] = useState<string | null>(null);
-
-  const serviceNodes: ServiceNode[] = useServiceNodes({
-    postgresStatus: data.systemHealth.postgresStatus,
-    redisStatus: data.systemHealth.redisStatus,
-    keycloakStatus: data.systemHealth.keycloakStatus,
-    gateways: data.gateways,
-    allGatewaysHealthy: data.allGatewaysHealthy,
-    totalOrgs: data.totalOrgs,
-    postgresConns: data.systemResources.postgresConns,
-    redisCacheHit: data.systemResources.redisCacheHit,
-    redisKeysCached: data.systemHealth.redisKeysCached,
-  });
-
-  const activeNodeData = useMemo(
-    () => serviceNodes.find((n) => n.id === activeNode) ?? null,
-    [activeNode, serviceNodes]
-  );
 
   const globalHealthState = useMemo(() => {
     if (data.loadingStats) return "loading" as const;
@@ -81,15 +60,6 @@ export default function SystemOverviewPage() {
 
           {/* Combined System Throughput & Gateway Load */}
           <OverviewThroughputChart data={displayThroughput} />
-
-          {/* Interactive infrastructure map */}
-          <OverviewInfrastructureMap
-            serviceNodes={serviceNodes}
-            activeNode={activeNode}
-            onSelectNode={setActiveNode}
-            activeNodeData={activeNodeData}
-            gateways={data.gateways}
-          />
 
           {/* Activity feed */}
           <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />

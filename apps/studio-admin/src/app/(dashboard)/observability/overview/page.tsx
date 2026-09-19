@@ -24,6 +24,10 @@ import {
   ServiceCardView,
   OverviewThroughputChart,
 } from "@/components/observability/overview-service-views";
+import { useSystemOverviewData } from "@/hooks/useSystemOverviewData";
+import { useServiceNodes } from "@/components/system/overview/overview-service-nodes";
+import { OverviewInfrastructureMap } from "@/components/system/overview";
+import type { ServiceNode } from "@/components/system/overview/overview-types";
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 function KpiCard({
@@ -323,6 +327,26 @@ export default function ObservabilityOverviewPage() {
 
   const downCount = serviceRows.filter((r) => r.status === "down").length;
 
+  const overviewData = useSystemOverviewData();
+  const [activeNode, setActiveNode] = useState<string | null>(null);
+
+  const serviceNodes: ServiceNode[] = useServiceNodes({
+    postgresStatus: overviewData.systemHealth.postgresStatus,
+    redisStatus: overviewData.systemHealth.redisStatus,
+    keycloakStatus: overviewData.systemHealth.keycloakStatus,
+    gateways: overviewData.gateways,
+    allGatewaysHealthy: overviewData.allGatewaysHealthy,
+    totalOrgs: overviewData.totalOrgs,
+    postgresConns: overviewData.systemResources.postgresConns,
+    redisCacheHit: overviewData.systemResources.redisCacheHit,
+    redisKeysCached: overviewData.systemHealth.redisKeysCached,
+  });
+
+  const activeNodeData = useMemo(
+    () => serviceNodes.find((n) => n.id === activeNode) ?? null,
+    [activeNode, serviceNodes]
+  );
+
   const categories = [
     { key: "all", label: "All Services" },
     { key: "core", label: "Core" },
@@ -341,6 +365,15 @@ export default function ObservabilityOverviewPage() {
       />
 
       <OverviewKpiGrid healthData={healthData} loading={loading} />
+
+      {/* Interactive Infrastructure Dependency Map */}
+      <OverviewInfrastructureMap
+        serviceNodes={serviceNodes}
+        activeNode={activeNode}
+        onSelectNode={setActiveNode}
+        activeNodeData={activeNodeData}
+        gateways={overviewData.gateways}
+      />
 
       {/* Service Health Grid Section */}
       <Card className="border-border">
