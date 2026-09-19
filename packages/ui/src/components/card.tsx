@@ -24,7 +24,7 @@ function Card({
         // responding to THIS card's own width, not the global viewport.
         // This allows a single card component to adapt in both 5-column desktop
         // grids and 360px mobile layouts without per-context overrides.
-        "@container/card group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10",
+        "@container/card group relative flex flex-col gap-6 rounded-xl border border-border/80 bg-card/60 dark:bg-card/45 backdrop-blur-xl text-card-foreground py-6 shadow-sm transition-all duration-300 hover:bg-gradient-to-b hover:from-muted/50 hover:via-card hover:to-card",
         className
       )}
       {...props}

@@ -63,7 +63,7 @@ export function OverviewMetricCardsRow({
           accentClassName="text-foreground"
           footerLinkHref="/observability/olt-poller"
           footerLinkLabel="OLT Telemetry"
-          className="bg-gradient-to-b from-muted/50 via-card to-card border-border/80"
+          className="max-sm:bg-gradient-to-b max-sm:from-muted/50 max-sm:via-card max-sm:to-card"
         />
       </div>
 
