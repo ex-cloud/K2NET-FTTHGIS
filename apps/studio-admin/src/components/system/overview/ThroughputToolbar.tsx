@@ -82,7 +82,7 @@ export function ThroughputToolbar({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Server className="h-3 w-3 text-blue-500" />
+              <Server className="h-3 w-3 text-sky-400" />
               <span>Core API</span>
             </button>
             <button

@@ -6,6 +6,19 @@ import { useSession } from "@/lib/auth-compat";
 import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
 import { toast } from "sonner";
 import type { DevOpsStats, UserStats } from "@/components/system/overview/overview-types";
+import type { ThroughputDataPoint } from "@/components/system/overview/overview-throughput-types";
+
+export interface TrafficDistributionData {
+  totalHits: number;
+  mapHits: number;
+  coreHits: number;
+  storageHits: number;
+  iamHits: number;
+  mapPercentage: number;
+  corePercentage: number;
+  storagePercentage: number;
+  iamPercentage: number;
+}
 
 export interface SystemHealth {
   cpuUsage: number;
@@ -19,7 +32,8 @@ export interface SystemHealth {
   postgresStatus: string;
   redisStatus: string;
   keycloakStatus: string;
-  throughput: Array<{ hour: string; hits: number }>;
+  throughput: Array<ThroughputDataPoint>;
+  trafficDistribution?: TrafficDistributionData;
 }
 
 export interface GithubIntegrationState {
@@ -62,8 +76,9 @@ function parseHealthData(healthData: Record<string, unknown>): SystemHealth {
     redisStatus: typeof services.redis === "string" ? services.redis : "healthy",
     keycloakStatus: typeof services.keycloak === "string" ? services.keycloak : "healthy",
     throughput: Array.isArray(healthData.throughput)
-      ? (healthData.throughput as Array<{ hour: string; hits: number }>)
+      ? (healthData.throughput as ThroughputDataPoint[])
       : [],
+    trafficDistribution: healthData?.trafficDistribution as TrafficDistributionData | undefined,
   };
 }
 
@@ -214,6 +229,7 @@ export function useSystemOverviewData() {
       message: "",
     } as GithubIntegrationState,
     systemHealth,
+    trafficDistribution: systemHealth.trafficDistribution,
     systemResources,
     totalOrgs,
     activeOrgs,

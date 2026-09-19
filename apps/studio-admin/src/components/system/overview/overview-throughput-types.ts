@@ -1,6 +1,15 @@
 export interface ThroughputDataPoint {
   hour: string;
   hits: number;
+  mapHits?: number;
+  coreHits?: number;
+  messagingHits?: number;
+  storageHits?: number;
+  iamHits?: number;
+  successCount?: number;
+  clientErrCount?: number;
+  serverErrCount?: number;
+  avgLatency?: number;
 }
 
 export type ServiceFilterType = "ALL" | "MAP" | "API" | "MESSAGING";

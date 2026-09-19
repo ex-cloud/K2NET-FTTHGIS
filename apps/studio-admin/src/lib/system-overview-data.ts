@@ -1,26 +1,31 @@
-export const throughputData = [
-  { hour: "06:00", hits: 45 },
-  { hour: "07:00", hits: 60 },
-  { hour: "08:00", hits: 80 },
-  { hour: "09:00", hits: 110 },
-  { hour: "10:00", hits: 145 },
-  { hour: "11:00", hits: 130 },
-  { hour: "12:00", hits: 120 },
-  { hour: "13:00", hits: 140 },
-  { hour: "14:00", hits: 155 },
-  { hour: "15:00", hits: 165 },
-  { hour: "16:00", hits: 180 },
-  { hour: "17:00", hits: 175 },
-  { hour: "18:00", hits: 150 },
-  { hour: "19:00", hits: 135 },
-  { hour: "20:00", hits: 120 },
-  { hour: "21:00", hits: 115 },
-  { hour: "22:00", hits: 95 },
-  { hour: "23:00", hits: 75 },
-  { hour: "00:00", hits: 50 },
-  { hour: "01:00", hits: 35 },
-  { hour: "02:00", hits: 25 },
-  { hour: "03:00", hits: 30 },
-  { hour: "04:00", hits: 40 },
-  { hour: "05:00", hits: 45 },
-];
+import type { ThroughputDataPoint } from "@/components/system/overview/overview-throughput-types";
+
+/**
+ * Menghasilkan urutan 24 jam dinamis berdasarkan jam saat ini dengan initial value 0 hits.
+ * Digunakan sebagai fallback aman sebelum response riil dari backend diterima via API.
+ */
+export function generateInitial24hTimeline(): ThroughputDataPoint[] {
+  const points: ThroughputDataPoint[] = [];
+  const now = new Date();
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+    const hour = `${String(d.getHours()).padStart(2, "0")}:00`;
+    points.push({
+      hour,
+      hits: 0,
+      mapHits: 0,
+      coreHits: 0,
+      messagingHits: 0,
+      storageHits: 0,
+      iamHits: 0,
+      successCount: 0,
+      clientErrCount: 0,
+      serverErrCount: 0,
+      avgLatency: 0,
+    });
+  }
+  return points;
+}
+
+export const throughputData: ThroughputDataPoint[] = generateInitial24hTimeline();
+

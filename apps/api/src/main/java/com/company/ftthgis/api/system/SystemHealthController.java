@@ -64,6 +64,10 @@ public class SystemHealthController {
         List<Map<String, Object>> throughput = generateThroughputData();
         response.put("throughput", throughput);
 
+        // 6. Real Traffic Distribution by Gateway Service (Past 24 hours)
+        Map<String, Object> trafficDistribution = getTrafficDistribution();
+        response.put("trafficDistribution", trafficDistribution);
+
         return ResponseEntity.ok(response);
     }
 
@@ -212,37 +216,158 @@ public class SystemHealthController {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:00");
         
-        // Query request log counts per hour for the past 24 hours
-        Map<String, Integer> dbHits = new HashMap<>();
+        // Query request log counts per hour AND category for the past 24 hours
+        Map<String, Map<String, Integer>> dbCategoryHits = new HashMap<>();
+        Map<String, Integer> dbTotalHits = new HashMap<>();
+        Map<String, Integer> dbSuccess = new HashMap<>();
+        Map<String, Integer> dbClientErr = new HashMap<>();
+        Map<String, Integer> dbServerErr = new HashMap<>();
+        Map<String, Integer> dbLatency = new HashMap<>();
+
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT to_char(created_at, 'HH24:00') as hr, count(*) as hits " +
+                    "SELECT " +
+                    "  to_char(created_at, 'HH24:00') as hr, " +
+                    "  CASE " +
+                    "    WHEN endpoint LIKE '/api/v1/map%' OR endpoint LIKE '/api/v1/spatial%' OR endpoint LIKE '/api/v1/martin%' OR endpoint LIKE '%/map%' THEN 'map' " +
+                    "    WHEN endpoint LIKE '/api/v1/notification%' OR endpoint LIKE '/api/v1/storage%' OR endpoint LIKE '/api/v1/payment%' OR endpoint LIKE '/api/v1/export%' OR endpoint LIKE '/api/v1/whatsapp%' THEN 'messaging' " +
+                    "    WHEN endpoint LIKE '/api/v1/auth%' OR endpoint LIKE '/api/v1/users%' OR endpoint LIKE '/api/v1/roles%' THEN 'iam' " +
+                    "    ELSE 'core' " +
+                    "  END as category, " +
+                    "  count(*) as hits, " +
+                    "  count(*) FILTER (WHERE status_code >= 200 AND status_code < 400) as success_count, " +
+                    "  count(*) FILTER (WHERE status_code >= 400 AND status_code < 500) as client_err_count, " +
+                    "  count(*) FILTER (WHERE status_code >= 500) as server_err_count, " +
+                    "  round(avg(response_time_ms)) as avg_latency " +
                     "FROM api_request_logs " +
                     "WHERE created_at >= NOW() - INTERVAL '24 hours' " +
-                    "GROUP BY hr"
+                    "GROUP BY hr, category"
             );
+
             for (Map<String, Object> row : rows) {
                 String hr = (String) row.get("hr");
-                Number hits = (Number) row.get("hits");
-                if (hr != null && hits != null) {
-                    dbHits.put(hr, hits.intValue());
+                String cat = (String) row.get("category");
+                Number hitsNum = (Number) row.get("hits");
+                Number succNum = (Number) row.get("success_count");
+                Number clientErrNum = (Number) row.get("client_err_count");
+                Number serverErrNum = (Number) row.get("server_err_count");
+                Number latNum = (Number) row.get("avg_latency");
+
+                int hits = hitsNum != null ? hitsNum.intValue() : 0;
+                int succ = succNum != null ? succNum.intValue() : 0;
+                int cErr = clientErrNum != null ? clientErrNum.intValue() : 0;
+                int sErr = serverErrNum != null ? serverErrNum.intValue() : 0;
+                int lat = latNum != null ? latNum.intValue() : 0;
+
+                if (hr != null) {
+                    dbCategoryHits.computeIfAbsent(hr, k -> new HashMap<>()).put(cat, hits);
+                    dbTotalHits.merge(hr, hits, Integer::sum);
+                    dbSuccess.merge(hr, succ, Integer::sum);
+                    dbClientErr.merge(hr, cErr, Integer::sum);
+                    dbServerErr.merge(hr, sErr, Integer::sum);
+                    if (lat > 0) {
+                        dbLatency.put(hr, lat);
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to query api_request_logs from database: {}", e.getMessage());
+            log.error("Failed to query hourly throughput breakdown from api_request_logs: {}", e.getMessage());
         }
 
-        // Fill in the 24-hour sequence (mapping to 0 if no requests were logged for that hour)
+        // Fill in the 24-hour sequence
         for (int i = 23; i >= 0; i--) {
             LocalDateTime time = now.minusHours(i);
             String hourStr = time.format(formatter);
-            int hits = dbHits.getOrDefault(hourStr, 0);
-            
+            int totalHits = dbTotalHits.getOrDefault(hourStr, 0);
+            Map<String, Integer> catMap = dbCategoryHits.getOrDefault(hourStr, Collections.emptyMap());
+
+            int mapHits = catMap.getOrDefault("map", 0);
+            int coreHits = catMap.getOrDefault("core", 0);
+            int messagingHits = catMap.getOrDefault("messaging", 0);
+            int iamHits = catMap.getOrDefault("iam", 0);
+            int successCount = dbSuccess.getOrDefault(hourStr, totalHits);
+            int clientErrCount = dbClientErr.getOrDefault(hourStr, 0);
+            int serverErrCount = dbServerErr.getOrDefault(hourStr, 0);
+            int avgLatency = dbLatency.getOrDefault(hourStr, 24);
+
             Map<String, Object> dataPoint = new HashMap<>();
             dataPoint.put("hour", hourStr);
-            dataPoint.put("hits", hits);
+            dataPoint.put("hits", totalHits);
+            dataPoint.put("mapHits", mapHits);
+            dataPoint.put("coreHits", coreHits);
+            dataPoint.put("messagingHits", messagingHits);
+            dataPoint.put("iamHits", iamHits);
+            dataPoint.put("successCount", successCount);
+            dataPoint.put("clientErrCount", clientErrCount);
+            dataPoint.put("serverErrCount", serverErrCount);
+            dataPoint.put("avgLatency", avgLatency);
             list.add(dataPoint);
         }
         return list;
+    }
+
+    private Map<String, Object> getTrafficDistribution() {
+        Map<String, Object> distribution = new HashMap<>();
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT " +
+                    "  CASE " +
+                    "    WHEN endpoint LIKE '/api/v1/map%' OR endpoint LIKE '/api/v1/spatial%' OR endpoint LIKE '/api/v1/martin%' OR endpoint LIKE '%/map%' THEN 'map' " +
+                    "    WHEN endpoint LIKE '/api/v1/notification%' OR endpoint LIKE '/api/v1/storage%' OR endpoint LIKE '/api/v1/payment%' OR endpoint LIKE '/api/v1/export%' OR endpoint LIKE '/api/v1/whatsapp%' THEN 'storage' " +
+                    "    WHEN endpoint LIKE '/api/v1/auth%' OR endpoint LIKE '/api/v1/users%' OR endpoint LIKE '/api/v1/roles%' OR endpoint LIKE '/api/v1/security%' THEN 'iam' " +
+                    "    ELSE 'core' " +
+                    "  END as category, " +
+                    "  count(*) as total_hits " +
+                    "FROM api_request_logs " +
+                    "WHERE created_at >= NOW() - INTERVAL '24 hours' " +
+                    "GROUP BY category"
+            );
+
+            long mapHits = 0;
+            long coreHits = 0;
+            long storageHits = 0;
+            long iamHits = 0;
+
+            for (Map<String, Object> row : rows) {
+                String cat = (String) row.get("category");
+                Number count = (Number) row.get("total_hits");
+                long val = count != null ? count.longValue() : 0;
+                if ("map".equals(cat)) mapHits = val;
+                else if ("core".equals(cat)) coreHits = val;
+                else if ("storage".equals(cat)) storageHits = val;
+                else if ("iam".equals(cat)) iamHits = val;
+            }
+
+            long totalHits = mapHits + coreHits + storageHits + iamHits;
+            distribution.put("totalHits", totalHits);
+            distribution.put("mapHits", mapHits);
+            distribution.put("coreHits", coreHits);
+            distribution.put("storageHits", storageHits);
+            distribution.put("iamHits", iamHits);
+
+            if (totalHits > 0) {
+                distribution.put("mapPercentage", Math.round(((double) mapHits / totalHits) * 100.0));
+                distribution.put("corePercentage", Math.round(((double) coreHits / totalHits) * 100.0));
+                distribution.put("storagePercentage", Math.round(((double) storageHits / totalHits) * 100.0));
+                distribution.put("iamPercentage", Math.round(((double) iamHits / totalHits) * 100.0));
+            } else {
+                distribution.put("mapPercentage", 0);
+                distribution.put("corePercentage", 0);
+                distribution.put("storagePercentage", 0);
+                distribution.put("iamPercentage", 0);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to query traffic distribution from database: {}", e.getMessage());
+            distribution.put("totalHits", 0L);
+            distribution.put("mapHits", 0L);
+            distribution.put("coreHits", 0L);
+            distribution.put("storageHits", 0L);
+            distribution.put("iamHits", 0L);
+            distribution.put("mapPercentage", 0);
+            distribution.put("corePercentage", 0);
+            distribution.put("storagePercentage", 0);
+            distribution.put("iamPercentage", 0);
+        }
+        return distribution;
     }
 }

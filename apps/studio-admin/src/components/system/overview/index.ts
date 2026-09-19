@@ -6,4 +6,5 @@ export { OverviewActivityFeed } from "./overview-activity-feed";
 export { OverviewStatusBanner } from "./overview-status-banner";
 export { OverviewMetricCardsRow } from "./overview-metric-cards-row";
 export { OverviewThroughputChart } from "./overview-throughput-chart";
+export { OverviewTrafficDistributionCard } from "./overview-traffic-distribution-card";
 export { OverviewDevopsSection } from "./overview-devops-section";

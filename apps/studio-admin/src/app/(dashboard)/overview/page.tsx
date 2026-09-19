@@ -7,6 +7,7 @@ import {
   OverviewMetricCardsRow,
   OverviewStatusBanner,
   OverviewThroughputChart,
+  OverviewTrafficDistributionCard,
   OverviewActivityFeed,
 } from "@/components/system/overview";
 import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
@@ -58,8 +59,20 @@ export default function SystemOverviewPage() {
             resolvedTasksToday={taskSummary?.resolvedToday ?? 0}
           />
 
-          {/* Combined System Throughput & Gateway Load */}
-          <OverviewThroughputChart data={displayThroughput} />
+          {/* Section 2: Combined System Throughput & Gateway Traffic Share Grid */}
+          <div className="grid grid-cols-1 gap-3.5 sm:gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
+              <OverviewThroughputChart data={displayThroughput} className="h-full" />
+            </div>
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
+              <OverviewTrafficDistributionCard
+                data={data.trafficDistribution}
+                loading={data.loadingHealth}
+                totalHits="14.2k"
+                className="h-full"
+              />
+            </div>
+          </div>
 
           {/* Activity feed */}
           <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />

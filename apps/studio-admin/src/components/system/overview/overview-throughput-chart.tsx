@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@k2net/ui";
 import { useRouter } from "@/lib/navigation-compat";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type {
   ThroughputDataPoint,
   ServiceFilterType,
@@ -16,9 +17,10 @@ export type { ThroughputDataPoint, ServiceFilterType, ChartViewMode };
 
 interface OverviewThroughputChartProps {
   data: ThroughputDataPoint[];
+  className?: string;
 }
 
-export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) {
+export function OverviewThroughputChart({ data, className }: OverviewThroughputChartProps) {
   const router = useRouter();
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("ALL");
   const [chartMode, setChartMode] = useState<ChartViewMode>("bars");
@@ -31,23 +33,36 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
           ? data[index + 1].hour
           : `${(parseInt(d.hour.split(":")[0], 10) + 1) % 24}:00`.padStart(5, "0");
 
-      const baseHits = d.hits;
-      const mapHits = Math.round(baseHits * 0.42);
-      const coreHits = Math.round(baseHits * 0.35);
-      const messagingHits = Math.round(baseHits * 0.15);
-      const storageHits = Math.max(1, baseHits - (mapHits + coreHits + messagingHits));
+      const baseHits = d.hits ?? 0;
+      const mapHits = typeof d.mapHits === "number" ? d.mapHits : 0;
+      const coreHits = typeof d.coreHits === "number" ? d.coreHits : 0;
+      const messagingHits = typeof d.messagingHits === "number" ? d.messagingHits : 0;
+      const storageHits = typeof d.storageHits === "number" ? d.storageHits : 0;
 
       let filteredHits = baseHits;
       if (serviceFilter === "MAP") filteredHits = mapHits;
       else if (serviceFilter === "API") filteredHits = coreHits;
       else if (serviceFilter === "MESSAGING") filteredHits = messagingHits;
 
-      const successRate = 98.2 - (baseHits > 150 ? 1.2 : 0);
-      const successCount = Math.max(1, Math.round((filteredHits * successRate) / 100));
-      const clientErrCount = Math.round(filteredHits * 0.015);
-      const serverErrCount = Math.max(0, filteredHits - successCount - clientErrCount);
-      const latencyMs = Math.round(22 + (baseHits / 180) * 20);
-      const peakRpm = Math.round(filteredHits * 3.8);
+      // Real status counts from backend
+      const successCount = typeof d.successCount === "number"
+        ? (serviceFilter === "ALL" ? d.successCount : (baseHits > 0 ? Math.round((filteredHits / baseHits) * d.successCount) : 0))
+        : filteredHits;
+
+      const clientErrCount = typeof d.clientErrCount === "number"
+        ? (serviceFilter === "ALL" ? d.clientErrCount : (baseHits > 0 ? Math.round((filteredHits / baseHits) * d.clientErrCount) : 0))
+        : 0;
+
+      const serverErrCount = typeof d.serverErrCount === "number"
+        ? (serviceFilter === "ALL" ? d.serverErrCount : (baseHits > 0 ? Math.round((filteredHits / baseHits) * d.serverErrCount) : 0))
+        : 0;
+
+      const successRate = filteredHits > 0
+        ? Math.min(100, Math.max(0, parseFloat(((successCount / filteredHits) * 100).toFixed(1))))
+        : 100.0;
+
+      const latencyMs = typeof d.avgLatency === "number" ? d.avgLatency : 0;
+      const peakRpm = filteredHits > 0 ? Math.max(1, Math.round(filteredHits / 60)) : 0;
 
       return {
         hour: d.hour,
@@ -57,7 +72,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
         successCount,
         clientErrCount,
         serverErrCount,
-        successRate: parseFloat(successRate.toFixed(1)),
+        successRate,
         latencyMs,
         peakRpm,
         mapHits,
@@ -103,7 +118,7 @@ export function OverviewThroughputChart({ data }: OverviewThroughputChartProps) 
   };
 
   return (
-    <Card className="border-border bg-card p-5 md:p-6 transition-all">
+    <Card className={cn("border-border bg-card p-5 md:p-6 transition-all", className)}>
       <ThroughputToolbar
         serviceFilter={serviceFilter}
         setServiceFilter={setServiceFilter}
