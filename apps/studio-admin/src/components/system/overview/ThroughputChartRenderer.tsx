@@ -7,6 +7,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 import type {
   EnrichedThroughputPoint,
@@ -29,14 +30,14 @@ export function ThroughputChartRenderer({
   onDrilldown,
 }: ThroughputChartRendererProps) {
   return (
-    <div className="relative mt-4">
-      <div className="h-32 w-full pt-2">
+    <div className="relative mt-3 flex-1 flex flex-col justify-between min-h-[220px]">
+      <div className="h-56 sm:h-64 w-full pt-1">
         <ResponsiveContainer width="100%" height="100%">
           {chartMode === "bars" ? (
             <BarChart
               data={enrichedData}
-              margin={{ top: 5, right: 4, left: 4, bottom: 0 }}
-              barSize={14}
+              margin={{ top: 12, right: 6, left: 6, bottom: 0 }}
+              barSize={16}
               onClick={(state: unknown) => {
                 const s = state as { activePayload?: { payload?: EnrichedThroughputPoint }[] } | null;
                 if (s?.activePayload?.[0]?.payload) {
@@ -47,17 +48,23 @@ export function ThroughputChartRenderer({
               <defs>
                 <linearGradient id="throughputBarGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.2} />
                 </linearGradient>
               </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="var(--border)"
+                opacity={0.35}
+              />
               <XAxis
                 dataKey="hour"
                 tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
-                interval={3}
+                interval={2}
               />
-              <YAxis hide domain={[0, "dataMax + 20"]} />
+              <YAxis hide domain={[0, "dataMax + 15"]} />
               <Tooltip
                 content={<RechartsCustomTooltip serviceFilter={serviceFilter} />}
                 cursor={false}
@@ -67,12 +74,12 @@ export function ThroughputChartRenderer({
                 dataKey="filteredHits"
                 name="Requests"
                 fill="url(#throughputBarGradient)"
-                radius={[3, 3, 0, 0]}
-                className="cursor-pointer"
+                radius={[4, 4, 0, 0]}
+                className="cursor-pointer transition-all duration-200"
                 activeBar={{
                   fill: "var(--primary)",
                   stroke: "var(--primary)",
-                  strokeWidth: 1,
+                  strokeWidth: 1.5,
                   opacity: 1,
                 }}
               />
@@ -80,7 +87,7 @@ export function ThroughputChartRenderer({
           ) : (
             <AreaChart
               data={enrichedData}
-              margin={{ top: 5, right: 4, left: 4, bottom: 0 }}
+              margin={{ top: 12, right: 6, left: 6, bottom: 0 }}
               onClick={(state: unknown) => {
                 const s = state as { activePayload?: { payload?: EnrichedThroughputPoint }[] } | null;
                 if (s?.activePayload?.[0]?.payload) {
@@ -90,18 +97,24 @@ export function ThroughputChartRenderer({
             >
               <defs>
                 <linearGradient id="throughputAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.45} />
                   <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="var(--border)"
+                opacity={0.35}
+              />
               <XAxis
                 dataKey="hour"
                 tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
-                interval={3}
+                interval={2}
               />
-              <YAxis hide domain={[0, "dataMax + 20"]} />
+              <YAxis hide domain={[0, "dataMax + 15"]} />
               <Tooltip
                 content={<RechartsCustomTooltip serviceFilter={serviceFilter} />}
                 cursor={{ stroke: "var(--primary)", strokeWidth: 1, strokeDasharray: "3 3" }}
@@ -113,7 +126,7 @@ export function ThroughputChartRenderer({
                 name="Requests"
                 stroke="var(--primary)"
                 fill="url(#throughputAreaGradient)"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 className="cursor-pointer"
                 activeDot={{
                   r: 5,
@@ -128,7 +141,7 @@ export function ThroughputChartRenderer({
       </div>
 
       {/* Timeline Axis Labels */}
-      <div className="mt-2 flex justify-between px-1 text-[9px] font-mono text-muted-foreground">
+      <div className="mt-2.5 flex justify-between px-1 text-[9px] font-mono text-muted-foreground border-t border-border/30 pt-1.5">
         <span>24 Jam Lalu</span>
         <span>12 Jam Lalu</span>
         <span className="flex items-center gap-1 font-semibold text-primary">

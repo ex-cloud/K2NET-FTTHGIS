@@ -118,7 +118,7 @@ export function OverviewThroughputChart({ data, className }: OverviewThroughputC
   };
 
   return (
-    <Card className={cn("border-border bg-card p-5 md:p-6 transition-all", className)}>
+    <Card className={cn("border-border bg-card p-5 md:p-6 transition-all flex flex-col justify-between", className)}>
       <ThroughputToolbar
         serviceFilter={serviceFilter}
         setServiceFilter={setServiceFilter}

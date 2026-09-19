@@ -15,7 +15,7 @@ export function ThroughputKpiFooter({
   onNavigateObservability,
 }: ThroughputKpiFooterProps) {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+    <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3 sm:grid-cols-4 items-center">
       <div className="space-y-0.5">
         <p className="text-[10px] text-muted-foreground uppercase font-mono tracking-wider">
           Total 24h Volume
