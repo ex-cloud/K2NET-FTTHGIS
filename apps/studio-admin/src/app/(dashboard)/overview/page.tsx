@@ -79,6 +79,9 @@ export default function SystemOverviewPage() {
             resolvedTasksToday={taskSummary?.resolvedToday ?? 0}
           />
 
+          {/* Combined System Throughput & Gateway Load */}
+          <OverviewThroughputChart data={displayThroughput} />
+
           {/* Interactive infrastructure map */}
           <OverviewInfrastructureMap
             serviceNodes={serviceNodes}
@@ -87,9 +90,6 @@ export default function SystemOverviewPage() {
             activeNodeData={activeNodeData}
             gateways={data.gateways}
           />
-
-          {/* Throughput chart */}
-          <OverviewThroughputChart data={displayThroughput} />
 
           {/* Activity feed */}
           <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />
