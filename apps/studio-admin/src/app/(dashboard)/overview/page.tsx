@@ -8,7 +8,7 @@ import {
   OverviewStatusBanner,
   OverviewThroughputChart,
   OverviewTrafficDistributionCard,
-  OverviewActivityFeed,
+  OverviewRecentOperationsHub,
 } from "@/components/system/overview";
 import { SystemOverviewWrapper } from "@/components/page-guards/system-overview-wrapper";
 
@@ -77,8 +77,8 @@ export default function SystemOverviewPage() {
             </div>
           </div>
 
-          {/* Activity feed */}
-          <OverviewActivityFeed loading={data.loadingOrgs} recentOrgs={data.recentOrgs} />
+          {/* Unified Operations & Activity Hub */}
+          <OverviewRecentOperationsHub />
         </div>
       </PageLayout>
     </SystemOverviewWrapper>

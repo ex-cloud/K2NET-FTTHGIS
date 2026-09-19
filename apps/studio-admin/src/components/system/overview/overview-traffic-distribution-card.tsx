@@ -129,8 +129,8 @@ export function OverviewTrafficDistributionCard({
       }
       return data.totalHits.toLocaleString();
     }
-    return "0";
-  }, [data, loading]);
+    return totalHits || "0";
+  }, [data, loading, totalHits]);
 
   return (
     <Card

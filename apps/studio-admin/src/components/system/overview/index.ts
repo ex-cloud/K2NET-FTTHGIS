@@ -8,3 +8,4 @@ export { OverviewMetricCardsRow } from "./overview-metric-cards-row";
 export { OverviewThroughputChart } from "./overview-throughput-chart";
 export { OverviewTrafficDistributionCard } from "./overview-traffic-distribution-card";
 export { OverviewDevopsSection } from "./overview-devops-section";
+export { OverviewRecentOperationsHub } from "./overview-recent-operations-hub";
