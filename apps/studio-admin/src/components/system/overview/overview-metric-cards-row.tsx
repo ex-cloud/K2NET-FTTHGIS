@@ -12,8 +12,11 @@ interface OverviewMetricCardsRowProps {
   totalUsers: number;
   activeUsers: number;
   pendingRequests: number;
-  totalAssets?: number | string;
-  spatialThroughput?: number | string;
+  totalAssets?: number;
+  spatialThroughput?: number;
+  spatialLatency?: number | string;
+  uptimePercentage?: string;
+  slaPercentage?: string;
   loadingTasks?: boolean;
   totalOpenTasks?: number;
   urgentTasks?: number;
@@ -29,13 +32,23 @@ export function OverviewMetricCardsRow({
   totalUsers,
   activeUsers,
   pendingRequests,
-  totalAssets,
-  spatialThroughput,
+  totalAssets = 0,
+  spatialThroughput = 0,
+  spatialLatency = 24,
+  uptimePercentage = "100%",
+  slaPercentage = "100% SLA",
   loadingTasks = false,
   totalOpenTasks = 0,
   urgentTasks = 0,
   resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
+  const formattedSpatialThroughput =
+    typeof spatialThroughput === "number"
+      ? spatialThroughput >= 1000
+        ? `${(spatialThroughput / 1000).toFixed(1)}k`
+        : spatialThroughput.toLocaleString()
+      : spatialThroughput;
+
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3 xl:grid-cols-5">
       {/* Card 1: MANAGED ASSETS (Hero Card on Mobile: col-span-2) — Linear Monochrome Style */}
@@ -50,14 +63,14 @@ export function OverviewMetricCardsRow({
           }
           value={
             <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : (totalAssets ?? "1,420")}</span>
+              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : totalAssets.toLocaleString()}</span>
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
                 OLT · ODP · OHC
               </span>
             </div>
           }
           helper="Tenants: All"
-          secondaryStats={<span className="font-mono text-muted-foreground font-medium">Uptime: <span className="text-primary font-semibold">99.8%</span></span>}
+          secondaryStats={<span className="font-mono text-muted-foreground font-medium">Uptime: <span className="text-primary font-semibold">{uptimePercentage}</span></span>}
           footer="Asset telemetry"
           icon={MapPin}
           accentClassName="text-foreground"
@@ -119,12 +132,12 @@ export function OverviewMetricCardsRow({
           eyebrow="SPATIAL THROUGHPUT"
           value={
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-bold text-sky-400">{loadingOrgs ? "..." : (spatialThroughput ?? "14.2k")}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-sky-400">{loadingOrgs ? "..." : formattedSpatialThroughput}</span>
               <span className="text-[10px] font-mono text-muted-foreground/70">req/d</span>
             </div>
           }
           helper="Latency"
-          secondaryStats={<span className="text-sky-400 font-mono font-semibold">~24ms avg</span>}
+          secondaryStats={<span className="text-sky-400 font-mono font-semibold">~{spatialLatency}ms avg</span>}
           footer="Map observability"
           icon={Globe}
           accentClassName="text-sky-400"
@@ -154,7 +167,7 @@ export function OverviewMetricCardsRow({
             </div>
           }
           helper={`Resolved: ${loadingTasks ? "..." : resolvedTasksToday}`}
-          secondaryStats={<span className="text-primary font-semibold">99.4% SLA</span>}
+          secondaryStats={<span className="text-primary font-semibold">{slaPercentage}</span>}
           footer="Operations & SLA"
           icon={ClipboardList}
           accentClassName={urgentTasks > 0 ? "text-rose-400" : "text-primary"}

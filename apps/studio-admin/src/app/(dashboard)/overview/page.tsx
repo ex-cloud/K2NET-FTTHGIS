@@ -53,6 +53,10 @@ export default function SystemOverviewPage() {
             totalUsers={data.userStats.totalUsers}
             activeUsers={data.userStats.activeUsers}
             pendingRequests={data.userStats.pendingRequests}
+            totalAssets={data.totalAssets}
+            spatialThroughput={data.spatialThroughput}
+            spatialLatency={data.spatialLatency}
+            uptimePercentage={data.uptimePercentage}
             loadingTasks={loadingTasks}
             totalOpenTasks={taskSummary?.totalOpen ?? 0}
             urgentTasks={taskSummary?.urgentCount ?? 0}
@@ -68,7 +72,6 @@ export default function SystemOverviewPage() {
               <OverviewTrafficDistributionCard
                 data={data.trafficDistribution}
                 loading={data.loadingHealth}
-                totalHits="14.2k"
                 className="h-full"
               />
             </div>

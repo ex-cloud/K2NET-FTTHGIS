@@ -32,6 +32,8 @@ export interface SystemHealth {
   postgresStatus: string;
   redisStatus: string;
   keycloakStatus: string;
+  totalAssets: number;
+  spatialLatency: number;
   throughput: Array<ThroughputDataPoint>;
   trafficDistribution?: TrafficDistributionData;
 }
@@ -56,6 +58,8 @@ const DEFAULT_HEALTH: SystemHealth = {
   postgresStatus: "healthy",
   redisStatus: "healthy",
   keycloakStatus: "healthy",
+  totalAssets: 0,
+  spatialLatency: 24,
   throughput: [],
 };
 
@@ -63,6 +67,7 @@ function parseHealthData(healthData: Record<string, unknown>): SystemHealth {
   const system = (healthData?.system ?? {}) as Record<string, unknown>;
   const redis = (healthData?.redis ?? {}) as Record<string, unknown>;
   const services = (healthData?.services ?? {}) as Record<string, unknown>;
+  const networkAssets = (healthData?.networkAssets ?? {}) as Record<string, unknown>;
   return {
     cpuUsage: typeof system.cpuUsage === "number" ? system.cpuUsage : 15,
     memoryUsage: typeof system.memoryUsage === "number" ? system.memoryUsage : 50,
@@ -75,6 +80,8 @@ function parseHealthData(healthData: Record<string, unknown>): SystemHealth {
     postgresStatus: typeof services.postgres === "string" ? services.postgres : "healthy",
     redisStatus: typeof services.redis === "string" ? services.redis : "healthy",
     keycloakStatus: typeof services.keycloak === "string" ? services.keycloak : "healthy",
+    totalAssets: typeof networkAssets.totalAssets === "number" ? networkAssets.totalAssets : 0,
+    spatialLatency: typeof healthData.spatialLatency === "number" ? healthData.spatialLatency : 24,
     throughput: Array.isArray(healthData.throughput)
       ? (healthData.throughput as ThroughputDataPoint[])
       : [],
@@ -216,6 +223,12 @@ export function useSystemOverviewData() {
     return `${Math.round(sum / activeGws.length)}ms`;
   }, [gateways]);
 
+  const uptimePercentage = useMemo(() => {
+    if (gateways.length === 0) return "100%";
+    const activeCount = gateways.filter((g) => g.active).length;
+    return `${Math.round((activeCount / gateways.length) * 100)}%`;
+  }, [gateways]);
+
   return {
     organizations,
     userStats,
@@ -237,6 +250,10 @@ export function useSystemOverviewData() {
     totalGatewaysCount,
     activeGatewaysCount,
     allGatewaysHealthy,
+    totalAssets: systemHealth.totalAssets,
+    spatialThroughput: systemHealth.trafficDistribution?.mapHits ?? 0,
+    spatialLatency: systemHealth.spatialLatency,
+    uptimePercentage,
     recentOrgs,
     avgLatency,
     loadingOrgs,

@@ -39,21 +39,21 @@ const LogoWatermark = () => (
   >
     {/* Concentric WiFi waves originating from bottom-left dot */}
     <circle cx="38" cy="112" r="4" fill="currentColor" className="opacity-50" />
-    
+
     <path
       d="M 38 84 A 28 28 0 0 1 66 112"
       stroke="currentColor"
       strokeWidth="1.5"
       className="opacity-50"
     />
-    
+
     <path
       d="M 38 56 A 56 56 0 0 1 94 112"
       stroke="currentColor"
       strokeWidth="2.0"
       className="opacity-35"
     />
-    
+
     <path
       d="M 38 28 A 84 84 0 0 1 122 112"
       stroke="currentColor"
@@ -97,7 +97,7 @@ export function PageLayout({
 
   // Dashboard variant (scrollable, standard dashboard pages)
   return (
-    <div className="relative flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-16">
+    <div className="relative flex h-full flex-1 flex-col overflow-y-auto bg-background px-6 md:px-12 xl:px-16 pt-8">
       {showLogoWatermark && <LogoWatermark />}
 
       <div
