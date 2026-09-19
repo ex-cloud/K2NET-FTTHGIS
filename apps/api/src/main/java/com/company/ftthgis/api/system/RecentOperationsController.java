@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.cache.annotation.Cacheable;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.NumberFormat;
@@ -42,6 +43,7 @@ public class RecentOperationsController {
 
     @GetMapping
     @Transactional(readOnly = true)
+    @Cacheable(value = "recent_operations_stream", key = "'global'", unless = "#result == null")
     public ResponseEntity<RecentOperationsDto> getRecentOperations() {
         log.info("Fetching unified recent operations & activity stream...");
 

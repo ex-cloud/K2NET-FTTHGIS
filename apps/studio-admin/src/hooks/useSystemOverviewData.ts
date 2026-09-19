@@ -1,6 +1,5 @@
-
-
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useSession } from "@/lib/auth-compat";
 import { getGatewayStatus, type GatewayServiceStatus } from "@/lib/actions/gateways";
@@ -63,6 +62,12 @@ const DEFAULT_HEALTH: SystemHealth = {
   throughput: [],
 };
 
+const DEFAULT_USER_STATS: UserStats = {
+  totalUsers: 0,
+  activeUsers: 0,
+  pendingRequests: 0,
+};
+
 function parseHealthData(healthData: Record<string, unknown>): SystemHealth {
   const system = (healthData?.system ?? {}) as Record<string, unknown>;
   const redis = (healthData?.redis ?? {}) as Record<string, unknown>;
@@ -90,102 +95,92 @@ function parseHealthData(healthData: Record<string, unknown>): SystemHealth {
 }
 
 export function useSystemOverviewData() {
+  const queryClient = useQueryClient();
   const { organizations, loading: loadingOrgs, refresh: refreshOrgs } = useOrganizations();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
-  const [userStats, setUserStats] = useState<UserStats>({ totalUsers: 14, activeUsers: 12, pendingRequests: 0 });
-  const [gateways, setGateways] = useState<GatewayServiceStatus[]>([]);
-  const [systemHealth, setSystemHealth] = useState<SystemHealth>(DEFAULT_HEALTH);
+  // 1. User stats query with in-memory caching & background refresh
+  const {
+    data: userStats = DEFAULT_USER_STATS,
+    isLoading: loadingUsers,
+  } = useQuery<UserStats>({
+    queryKey: ["users-stats", session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return DEFAULT_USER_STATS;
+      const res = await fetch("/api/v1/users/stats", {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (!res.ok) return DEFAULT_USER_STATS;
+      return res.json();
+    },
+    enabled: status === "authenticated" && !!session?.accessToken,
+    staleTime: 30_000,
+    gcTime: 300_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [loadingHealth, setLoadingHealth] = useState(false);
-  const [loadingGateways, setLoadingGateways] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  // 2. System health metrics query
+  const {
+    data: systemHealth = DEFAULT_HEALTH,
+    isLoading: loadingHealth,
+  } = useQuery<SystemHealth>({
+    queryKey: ["system-health-metrics", session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return DEFAULT_HEALTH;
+      const res = await fetch("/api/v1/system/health-metrics", {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      if (!res.ok) return DEFAULT_HEALTH;
+      const json = await res.json();
+      return parseHealthData(json);
+    },
+    enabled: status === "authenticated" && !!session?.accessToken,
+    staleTime: 30_000,
+    gcTime: 300_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
-  const isFetchingRef = useRef(false);
-  const fetchedTokenRef = useRef<string | null>(null);
+  // 3. Go Gateway statuses query
+  const {
+    data: gateways = [],
+    isLoading: loadingGateways,
+  } = useQuery<GatewayServiceStatus[]>({
+    queryKey: ["gateways-status", session?.accessToken],
+    queryFn: async () => {
+      try {
+        const gwRes = await getGatewayStatus();
+        return gwRes?.status === "ok" ? gwRes.services : [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: status === "authenticated" && !!session?.accessToken,
+    staleTime: 30_000,
+    gcTime: 300_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   const loadingStats = loadingUsers || loadingHealth || loadingGateways;
 
-  const loadData = useCallback(async (showToast = false) => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-
-    if (showToast) setRefreshing(true);
-    setLoadingUsers(true);
-    setLoadingHealth(true);
-    setLoadingGateways(true);
-
-    refreshOrgs().catch(() => {});
-
-    getGatewayStatus()
-      .then((gwRes) => {
-        if (gwRes?.status === "ok") setGateways(gwRes.services);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingGateways(false));
-
-    if (session?.accessToken) {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
-
+  // Manual refresh callback that invalidates all Overview queries
+  const loadData = useCallback(
+    async (showToast = false) => {
       await Promise.allSettled([
-        fetch("/api/v1/users/stats", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              setUserStats(await res.json());
-            } else {
-              setUserStats({ totalUsers: 14, activeUsers: 12, pendingRequests: 0 });
-            }
-          })
-          .catch(() => setUserStats({ totalUsers: 14, activeUsers: 12, pendingRequests: 0 }))
-          .finally(() => setLoadingUsers(false)),
-
-        fetch("/api/v1/system/health-metrics", { headers })
-          .then(async (res) => {
-            if (res.ok) {
-              setSystemHealth(parseHealthData(await res.json()));
-            }
-          })
-          .catch(() => {})
-          .finally(() => setLoadingHealth(false)),
+        refreshOrgs(),
+        queryClient.invalidateQueries({ queryKey: ["users-stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["system-health-metrics"] }),
+        queryClient.invalidateQueries({ queryKey: ["gateways-status"] }),
+        queryClient.invalidateQueries({ queryKey: ["recent-operations"] }),
       ]);
-
-      if (showToast) toast.success("Statistik sistem berhasil diperbarui!");
-      setRefreshing(false);
-    } else {
-      setLoadingUsers(false);
-      setLoadingHealth(false);
-      setRefreshing(false);
-    }
-
-    isFetchingRef.current = false;
-  }, [session?.accessToken, refreshOrgs]);
-
-  // Initial load — runs ONLY ONCE per access token
-  useEffect(() => {
-    if (session?.accessToken && fetchedTokenRef.current !== session.accessToken) {
-      fetchedTokenRef.current = session.accessToken;
-      loadData();
-    }
-  }, [session?.accessToken, loadData]);
-
-  // Periodic polling — every 60 seconds (prevents server spam)
-  useEffect(() => {
-    if (!session?.accessToken) return;
-    const interval = setInterval(() => {
-      if (isFetchingRef.current) return;
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
-      fetch("/api/v1/system/health-metrics", { headers })
-        .then((res) => { if (res.ok) return res.json(); })
-        .then((d) => { if (d) setSystemHealth(parseHealthData(d)); })
-        .catch(() => {});
-
-      getGatewayStatus()
-        .then((gwRes) => { if (gwRes?.status === "ok") setGateways(gwRes.services); })
-        .catch(() => {});
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [session?.accessToken]);
+      if (showToast) {
+        toast.success("Statistik sistem berhasil diperbarui!");
+      }
+    },
+    [queryClient, refreshOrgs]
+  );
 
   // Derived computed values
   const systemResources = useMemo(() => ({
@@ -263,7 +258,7 @@ export function useSystemOverviewData() {
     loadingHealth,
     loadingGateways,
     loadingStats,
-    refreshing,
+    refreshing: false,
     loadData,
   };
 }

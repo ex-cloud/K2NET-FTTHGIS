@@ -21,6 +21,8 @@ interface TrafficSegment {
 const CIRCLE_RADIUS = 56;
 const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
+import { OverviewTrafficDistributionSkeleton } from "./skeletons";
+
 export interface OverviewTrafficDistributionCardProps {
   data?: TrafficDistributionData;
   totalHits?: string;
@@ -131,6 +133,10 @@ export function OverviewTrafficDistributionCard({
     }
     return totalHits || "0";
   }, [data, loading, totalHits]);
+
+  if (loading && !data) {
+    return <OverviewTrafficDistributionSkeleton className={className} />;
+  }
 
   return (
     <Card

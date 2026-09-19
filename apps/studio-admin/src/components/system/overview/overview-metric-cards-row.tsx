@@ -1,7 +1,6 @@
-
-
 import { Building2, Users, MapPin, Globe, ClipboardList } from "lucide-react";
 import { OverviewMetricCard } from "./overview-metric-card";
+import { OverviewMetricCardsSkeleton } from "./skeletons";
 
 interface OverviewMetricCardsRowProps {
   loadingOrgs: boolean;
@@ -42,6 +41,11 @@ export function OverviewMetricCardsRow({
   urgentTasks = 0,
   resolvedTasksToday = 0,
 }: OverviewMetricCardsRowProps) {
+  // If initial cold start, show full skeleton grid
+  if (loadingOrgs && loadingUsers && totalOrgs === 0 && totalUsers === 0) {
+    return <OverviewMetricCardsSkeleton />;
+  }
+
   const formattedSpatialThroughput =
     typeof spatialThroughput === "number"
       ? spatialThroughput >= 1000
@@ -62,12 +66,16 @@ export function OverviewMetricCardsRow({
             </span>
           }
           value={
-            <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : totalAssets.toLocaleString()}</span>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
-                OLT · ODP · OHC
-              </span>
-            </div>
+            loadingOrgs && totalAssets === 0 ? (
+              <div className="h-7 w-20 rounded bg-muted/60 animate-pulse my-0.5" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-2xl sm:text-3xl font-bold">{totalAssets.toLocaleString()}</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/40 text-foreground/85 border border-border/60">
+                  OLT · ODP · OHC
+                </span>
+              </div>
+            )
           }
           helper="Tenants: All"
           secondaryStats={<span className="font-mono text-muted-foreground font-medium">Uptime: <span className="text-primary font-semibold">{uptimePercentage}</span></span>}
@@ -85,13 +93,17 @@ export function OverviewMetricCardsRow({
         <OverviewMetricCard
           eyebrow="ACTIVE TENANTS"
           value={
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl sm:text-3xl font-bold">{loadingOrgs ? "..." : totalOrgs}</span>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">
-                <span className="size-1 rounded-full bg-primary animate-pulse" />
-                {loadingOrgs ? "" : `${activeOrgs} Active`}
-              </span>
-            </div>
+            loadingOrgs && totalOrgs === 0 ? (
+              <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-bold">{totalOrgs}</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/15 text-primary border border-primary/20">
+                  <span className="size-1 rounded-full bg-primary animate-pulse" />
+                  {`${activeOrgs} Active`}
+                </span>
+              </div>
+            )
           }
           helper={`Trialing: ${trialOrgs}`}
           secondaryStats={<span className="text-primary font-semibold">100% Cov</span>}
@@ -108,16 +120,20 @@ export function OverviewMetricCardsRow({
         <OverviewMetricCard
           eyebrow="GLOBAL USERS"
           value={
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl sm:text-3xl font-bold">{loadingUsers ? "..." : totalUsers}</span>
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-400 border border-sky-500/20">
-                <span className="size-1 rounded-full bg-sky-400" />
-                {loadingUsers ? "" : `${activeUsers} Verified`}
-              </span>
-            </div>
+            loadingUsers && totalUsers === 0 ? (
+              <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-bold">{totalUsers}</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-sky-500/15 text-sky-400 border border-sky-500/20">
+                  <span className="size-1 rounded-full bg-sky-400" />
+                  {`${activeUsers} Verified`}
+                </span>
+              </div>
+            )
           }
-          helper={`Pending: ${loadingUsers ? "..." : pendingRequests}`}
-          secondaryStats={<span className="text-muted-foreground/80">Admin/Ops</span>}
+          helper={`Pending: ${pendingRequests}`}
+          secondaryStats={<span className="font-mono text-muted-foreground">Admin/Ops</span>}
           footer="Identity administration"
           icon={Users}
           accentClassName="text-sky-400"
@@ -131,13 +147,17 @@ export function OverviewMetricCardsRow({
         <OverviewMetricCard
           eyebrow="SPATIAL THROUGHPUT"
           value={
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-bold text-sky-400">{loadingOrgs ? "..." : formattedSpatialThroughput}</span>
-              <span className="text-[10px] font-mono text-muted-foreground/70">req/d</span>
-            </div>
+            loadingOrgs && spatialThroughput === 0 ? (
+              <div className="h-7 w-16 rounded bg-muted/60 animate-pulse my-0.5" />
+            ) : (
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-bold">{formattedSpatialThroughput}</span>
+                <span className="text-xs text-muted-foreground font-mono">req/d</span>
+              </div>
+            )
           }
           helper="Latency"
-          secondaryStats={<span className="text-sky-400 font-mono font-semibold">~{spatialLatency}ms avg</span>}
+          secondaryStats={<span className="font-mono text-sky-400 font-medium">~{spatialLatency}ms avg</span>}
           footer="Map observability"
           icon={Globe}
           accentClassName="text-sky-400"
@@ -151,26 +171,30 @@ export function OverviewMetricCardsRow({
         <OverviewMetricCard
           eyebrow="OPERATIONAL TICKETS"
           value={
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl sm:text-3xl font-bold">{loadingTasks ? "..." : totalOpenTasks}</span>
-              {urgentTasks > 0 ? (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">
-                  <span className="size-1 rounded-full bg-rose-400" />
-                  {urgentTasks} URGENT
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                  <span className="size-1 rounded-full bg-amber-400" />
-                  {totalOpenTasks} Open
-                </span>
-              )}
-            </div>
+            loadingTasks && totalOpenTasks === 0 ? (
+              <div className="h-7 w-14 rounded bg-muted/60 animate-pulse my-0.5" />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xl sm:text-3xl font-bold">{totalOpenTasks}</span>
+                {urgentTasks > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/20">
+                    <span className="size-1 rounded-full bg-rose-400 animate-ping" />
+                    {urgentTasks} Urgent
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                    <span className="size-1 rounded-full bg-amber-400" />
+                    {totalOpenTasks} Open
+                  </span>
+                )}
+              </div>
+            )
           }
-          helper={`Resolved: ${loadingTasks ? "..." : resolvedTasksToday}`}
-          secondaryStats={<span className="text-primary font-semibold">{slaPercentage}</span>}
+          helper={`Resolved: ${resolvedTasksToday}`}
+          secondaryStats={<span className="font-mono text-primary font-semibold">{slaPercentage}</span>}
           footer="Operations & SLA"
           icon={ClipboardList}
-          accentClassName={urgentTasks > 0 ? "text-rose-400" : "text-primary"}
+          accentClassName="text-amber-400"
           footerLinkHref="/tasks"
           footerLinkLabel="Manage Tickets"
         />
@@ -178,4 +202,3 @@ export function OverviewMetricCardsRow({
     </div>
   );
 }
-

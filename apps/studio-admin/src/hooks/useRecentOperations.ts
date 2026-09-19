@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-compat";
 import type { RecentOperationsData } from "@/components/system/overview/recent-operations-types";
 
@@ -20,18 +20,19 @@ const DEFAULT_DATA: RecentOperationsData = {
 };
 
 export function useRecentOperations() {
-  const { data: session } = useSession();
-  const [data, setData] = useState<RecentOperationsData>(DEFAULT_DATA);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
 
-  const isFetchingRef = useRef(false);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery<RecentOperationsData>({
+    queryKey: ["recent-operations", session?.accessToken],
+    queryFn: async () => {
+      if (!session?.accessToken) return DEFAULT_DATA;
 
-  const fetchData = useCallback(async () => {
-    if (!session?.accessToken || isFetchingRef.current) return;
-    isFetchingRef.current = true;
-
-    try {
       const res = await fetch("/api/v1/system/recent-operations", {
         headers: {
           Authorization: `Bearer ${session.accessToken}`,
@@ -39,29 +40,24 @@ export function useRecentOperations() {
         },
       });
 
-      if (res.ok) {
-        const json: RecentOperationsData = await res.json();
-        setData(json);
-        setError(null);
+      if (!res.ok) {
+        throw new Error(`Failed to load recent operations: ${res.statusText}`);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load recent operations");
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
-    }
-  }, [session?.accessToken]);
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+      return res.json();
+    },
+    enabled: status === "authenticated" && !!session?.accessToken,
+    staleTime: 30_000, // 30 seconds stale-while-revalidate
+    gcTime: 300_000, // 5 minutes in-memory cache
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchOnWindowFocus: false,
+  });
 
   return {
-    data,
-    loading,
-    error,
-    refresh: fetchData,
+    data: data ?? DEFAULT_DATA,
+    loading: isLoading && !data,
+    isFetching,
+    error: error instanceof Error ? error.message : null,
+    refresh: refetch,
   };
 }

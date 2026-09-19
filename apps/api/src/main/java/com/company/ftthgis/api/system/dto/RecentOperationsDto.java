@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,7 +13,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RecentOperationsDto {
+public class RecentOperationsDto implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private List<OrganizationItem> organizations;
     private List<SecurityAuditItem> securityAudits;
@@ -25,7 +28,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class OrganizationItem {
+    public static class OrganizationItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String id;
         private String name;
         private String slug;
@@ -39,7 +43,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SecurityAuditItem {
+    public static class SecurityAuditItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String id;
         private String timestamp;
         private String actor;
@@ -54,7 +59,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class BackgroundJobItem {
+    public static class BackgroundJobItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String id;
         private String jobType;
         private String targetOrg;
@@ -68,7 +74,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SystemAlertItem {
+    public static class SystemAlertItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String id;
         private String title;
         private String service;
@@ -83,7 +90,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class BillingEventItem {
+    public static class BillingEventItem implements Serializable {
+        private static final long serialVersionUID = 1L;
         private String id;
         private String orgName;
         private String orgSlug;
@@ -100,7 +108,8 @@ public class RecentOperationsDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class SummaryCounts {
+    public static class SummaryCounts implements Serializable {
+        private static final long serialVersionUID = 1L;
         private int activeAlertsCount;
         private int runningJobsCount;
         private int securityWarningsCount;

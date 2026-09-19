@@ -66,7 +66,7 @@ export default function SystemOverviewPage() {
           {/* Section 2: Combined System Throughput & Gateway Traffic Share Grid */}
           <div className="grid grid-cols-1 gap-3.5 sm:gap-4 lg:grid-cols-12">
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
-              <OverviewThroughputChart data={displayThroughput} className="h-full" />
+              <OverviewThroughputChart data={displayThroughput} loading={data.loadingHealth} className="h-full" />
             </div>
             <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
               <OverviewTrafficDistributionCard

@@ -13,14 +13,17 @@ import { ThroughputToolbar } from "./ThroughputToolbar";
 import { ThroughputChartRenderer } from "./ThroughputChartRenderer";
 import { ThroughputKpiFooter } from "./ThroughputKpiFooter";
 
+import { OverviewThroughputChartSkeleton } from "./skeletons";
+
 export type { ThroughputDataPoint, ServiceFilterType, ChartViewMode };
 
 interface OverviewThroughputChartProps {
   data: ThroughputDataPoint[];
+  loading?: boolean;
   className?: string;
 }
 
-export function OverviewThroughputChart({ data, className }: OverviewThroughputChartProps) {
+export function OverviewThroughputChart({ data, loading = false, className }: OverviewThroughputChartProps) {
   const router = useRouter();
   const [serviceFilter, setServiceFilter] = useState<ServiceFilterType>("ALL");
   const [chartMode, setChartMode] = useState<ChartViewMode>("bars");
@@ -116,6 +119,10 @@ export function OverviewThroughputChart({ data, className }: OverviewThroughputC
     toast.info(`Membuka ${targetLabel} (${point.timeRange})...`);
     router.push(targetPath);
   };
+
+  if (loading && data.length === 0) {
+    return <OverviewThroughputChartSkeleton className={className} />;
+  }
 
   return (
     <Card className={cn("border-border bg-card p-5 md:p-6 transition-all flex flex-col justify-between", className)}>

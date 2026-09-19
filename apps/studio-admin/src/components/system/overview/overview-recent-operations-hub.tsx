@@ -86,6 +86,8 @@ const TABS: TabDefinition[] = [
   },
 ];
 
+import { OverviewRecentHubSkeleton } from "./skeletons";
+
 export function OverviewRecentOperationsHub() {
   const { data, loading, refresh } = useRecentOperations();
   const [activeTab, setActiveTab] = useState<RecentTabId>("organizations");
@@ -117,6 +119,16 @@ export function OverviewRecentOperationsHub() {
     await refresh();
     setTimeout(() => setIsRefreshing(false), 600);
   };
+
+  // If cold start loading, render seamless skeleton hub
+  const isColdStart = loading && 
+    data.organizations.length === 0 && 
+    data.securityAudits.length === 0 && 
+    data.backgroundJobs.length === 0;
+
+  if (isColdStart) {
+    return <OverviewRecentHubSkeleton />;
+  }
 
   const activeTabMeta = TABS.find((t) => t.id === activeTab) || TABS[0];
 
