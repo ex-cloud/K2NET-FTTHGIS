@@ -125,7 +125,6 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
       {
         title: "Monitoring",
         items: [
-          { title: "Audit Logs", url: "/security/audit", icon: "History", requiredPermission: "system.audit.view" },
           { title: "Security Alerts", url: "/security/alerts", icon: "ShieldAlert", requiredPermission: "system.security.manage" },
         ],
       },
@@ -135,6 +134,7 @@ export const SYSTEM_SIDEBAR_NAVIGATION: SidebarConfig = {
         items: [
           { title: "Password Policy", url: "/security/password-policy", icon: "ScrollText", requiredPermission: "system.security.manage" },
           { title: "Compliance", url: "/security/compliance", icon: "FileText", requiredPermission: "system.security.manage" },
+          { title: "Audit Policy & Retention", url: "/security/audit", icon: "ArchiveRestore", requiredPermission: "system.audit.view" },
         ],
       },
     ],

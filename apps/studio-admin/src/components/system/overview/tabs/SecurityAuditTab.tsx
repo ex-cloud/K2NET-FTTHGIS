@@ -147,7 +147,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
           </p>
         </div>
         <Button variant="ghost" size="sm" asChild className="h-7 px-2.5 text-[11px] gap-1 text-muted-foreground hover:text-primary">
-          <Link href="/security/audit">
+          <Link href="/logs">
             <Info className="size-3" />
             <span>Lihat Semua Audit Logs</span>
           </Link>
@@ -258,7 +258,7 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
                       asChild
                       className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary gap-1"
                     >
-                      <Link href="/security/audit">
+                      <Link href="/logs">
                         <span>View Logs</span>
                         <ArrowUpRight className="size-3" />
                       </Link>

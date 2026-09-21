@@ -51,6 +51,7 @@ import {
   FileCode,
   UserCheck,
   Trash2,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   Collapsible,
@@ -110,6 +111,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   FileCode,
   UserCheck,
   Trash2,
+  ArchiveRestore,
 };
 
 interface OrgCounts {
