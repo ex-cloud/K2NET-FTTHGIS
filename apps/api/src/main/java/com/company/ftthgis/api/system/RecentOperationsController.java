@@ -135,6 +135,8 @@ public class RecentOperationsController {
                 "    ae.actor_role, " +
                 "    ae.actor_ip, " +
                 "    ae.tenant_slug, " +
+                "    ae.resource_type, " +
+                "    ae.resource_id, " +
                 "    ae.metadata, " +
                 "    COALESCE(u.full_name || ' (' || u.email || ')', u.email, ae.actor_id) AS resolved_actor, " +
                 "    COALESCE(o.name, (SELECT name FROM organizations_aud oa WHERE oa.slug = ae.tenant_slug OR oa.id::text = ae.tenant_slug ORDER BY rev DESC LIMIT 1), ae.tenant_slug) AS resolved_org " +
@@ -148,30 +150,68 @@ public class RecentOperationsController {
             for (Map<String, Object> row : rows) {
                 Timestamp ts = (Timestamp) row.get("occurred_at");
                 String timeStr = formatEventTimestamp(ts);
+                String rawTimestamp = ts != null ? ts.toInstant().toString() : java.time.Instant.now().toString();
 
                 String rawAction = (String) row.get("action");
                 String resolvedActor = (String) row.get("resolved_actor");
+                String actorId = (String) row.get("actor_id");
                 String actorRole = (String) row.get("actor_role");
                 String actorIp = (String) row.get("actor_ip");
-                String rawMetadata = row.get("metadata") != null ? row.get("metadata").toString() : null;
+                String tenantSlug = (String) row.get("tenant_slug");
+                String resourceType = (String) row.get("resource_type");
+                String resourceId = (String) row.get("resource_id");
+                String rawMetadata = row.get("metadata") != null ? row.get("metadata").toString() : "{}";
                 String resolvedOrg = (String) row.get("resolved_org");
 
                 String formattedActor = formatActorLabel(resolvedActor, actorRole);
-                String formattedTenant = formatTargetTenant(resolvedOrg, (String) row.get("tenant_slug"));
+                String formattedTenant = formatTargetTenant(resolvedOrg, tenantSlug);
                 String severity = determineSeverity(rawAction);
                 String formattedAction = formatActionName(rawAction);
                 String details = extractAuditDetails(rawAction, rawMetadata);
                 String cleanIp = cleanIpAddress(actorIp);
 
+                String logGroup = resolveLogGroup(rawAction, resourceType, rawMetadata);
+                String logType = resolveLogType(rawAction, resourceType, rawMetadata);
+                String serviceSource = resolveServiceSource(rawMetadata);
+                String httpMethod = resolveHttpMethod(rawAction, rawMetadata);
+                Integer httpStatus = 200;
+                String requestPath = resourceId != null && !resourceId.isEmpty() ? resourceId : (tenantSlug != null ? tenantSlug : "/api/v1/system");
+                String eventMessage = rawAction != null ? rawAction + " completed" : "Audit event completed";
+                String eventId = row.get("id") != null ? row.get("id").toString() : java.util.UUID.randomUUID().toString();
+
+                String rawActor = (actorId != null && !actorId.isEmpty()) ? actorId : (resolvedActor != null ? resolvedActor : "system");
+
+                String rawJsonPayload = buildRawJsonPayload(
+                    eventId, rawTimestamp, logType, logGroup, serviceSource,
+                    tenantSlug, severity, rawActor, rawAction, eventMessage,
+                    resourceType, resourceId, httpMethod, httpStatus, requestPath,
+                    actorIp != null ? actorIp : cleanIp, rawMetadata
+                );
+
                 list.add(RecentOperationsDto.SecurityAuditItem.builder()
-                        .id(row.get("id") != null ? row.get("id").toString() : java.util.UUID.randomUUID().toString())
+                        .id(eventId)
                         .timestamp(timeStr)
+                        .rawTimestamp(rawTimestamp)
                         .actor(formattedActor)
+                        .rawActor(rawActor)
                         .targetTenant(formattedTenant)
+                        .tenantSlug(tenantSlug)
                         .action(formattedAction)
+                        .rawAction(rawAction)
                         .severity(severity)
                         .ipAddress(cleanIp)
                         .details(details)
+                        .eventMessage(eventMessage)
+                        .serviceSource(serviceSource)
+                        .logGroup(logGroup)
+                        .logType(logType)
+                        .httpMethod(httpMethod)
+                        .httpStatus(httpStatus)
+                        .requestPath(requestPath)
+                        .resourceType(resourceType)
+                        .resourceId(resourceId)
+                        .rawMetadata(rawMetadata)
+                        .rawJsonPayload(rawJsonPayload)
                         .build());
             }
         } catch (Exception e) {
@@ -194,6 +234,7 @@ public class RecentOperationsController {
                 for (Map<String, Object> row : fallbackRows) {
                     Timestamp ts = (Timestamp) row.get("timestamp");
                     String timeStr = formatEventTimestamp(ts);
+                    String rawTimestamp = ts != null ? ts.toInstant().toString() : java.time.Instant.now().toString();
                     String sev = (String) row.get("severity");
                     if (sev == null || sev.isEmpty()) sev = "INFO";
                     if ("WARN".equalsIgnoreCase(sev)) sev = "WARNING";
@@ -201,16 +242,44 @@ public class RecentOperationsController {
                     String rawUsername = (String) row.get("username");
                     String eventType = (String) row.get("event_type");
                     String orgId = (String) row.get("org_id");
+                    String eventId = row.get("id") != null ? row.get("id").toString() : java.util.UUID.randomUUID().toString();
+                    String clientIp = (String) row.get("client_ip");
+                    String cleanIp = cleanIpAddress(clientIp);
+                    String details = (String) row.get("details");
+                    String status = (String) row.get("status");
+                    int httpStatus = "SUCCESS".equalsIgnoreCase(status) ? 200 : 400;
+                    String httpMethod = resolveHttpMethod(eventType, null);
+                    String logGroup = resolveLogGroup(eventType, null, null);
+                    String eventMessage = eventType != null ? eventType + " completed" : "Audit log completed";
+
+                    String rawJsonPayload = buildRawJsonPayload(
+                        eventId, rawTimestamp, "audit", logGroup, "backend",
+                        orgId, sev.toUpperCase(), rawUsername != null ? rawUsername : "system",
+                        eventType, eventMessage, null, null, httpMethod, httpStatus,
+                        details != null ? details : "/api/v1", clientIp, null
+                    );
 
                     list.add(RecentOperationsDto.SecurityAuditItem.builder()
-                            .id(row.get("id") != null ? row.get("id").toString() : java.util.UUID.randomUUID().toString())
+                            .id(eventId)
                             .timestamp(timeStr)
+                            .rawTimestamp(rawTimestamp)
                             .actor(formatActorLabel(rawUsername, null))
+                            .rawActor(rawUsername != null ? rawUsername : "system")
                             .targetTenant(formatTargetTenant(orgId, orgId))
+                            .tenantSlug(orgId)
                             .action(formatActionName(eventType))
+                            .rawAction(eventType)
                             .severity(sev.toUpperCase())
-                            .ipAddress(cleanIpAddress((String) row.get("client_ip")))
-                            .details((String) row.get("details"))
+                            .ipAddress(cleanIp)
+                            .details(details)
+                            .eventMessage(eventMessage)
+                            .serviceSource("backend")
+                            .logGroup(logGroup)
+                            .logType("audit")
+                            .httpMethod(httpMethod)
+                            .httpStatus(httpStatus)
+                            .requestPath(details != null ? details : "/api/v1")
+                            .rawJsonPayload(rawJsonPayload)
                             .build());
                 }
             } catch (Exception ex) {
@@ -328,6 +397,116 @@ public class RecentOperationsController {
             return ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    private String resolveLogGroup(String action, String resourceType, String metadataJson) {
+        if (metadataJson != null && !metadataJson.isEmpty()) {
+            try {
+                JsonNode node = OBJECT_MAPPER.readTree(metadataJson);
+                if (node.has("logGroup") && !node.get("logGroup").asText().isEmpty()) {
+                    return node.get("logGroup").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        String act = (action != null ? action : "").toUpperCase();
+        String rt = (resourceType != null ? resourceType : "").toUpperCase();
+        if (act.contains("LOGIN") || act.contains("PASSWORD") || act.contains("SETTING") || act.contains("KEYCLOAK") ||
+            rt.contains("USER") || rt.contains("ROLE") || rt.contains("KEYCLOAK")) {
+            return "CORE";
+        }
+        if (act.contains("OLT") || act.contains("POLLER") || act.contains("MAP") ||
+            rt.contains("ODP") || rt.contains("ODC") || rt.contains("CABLE") || rt.contains("FIBER")) {
+            return "NETWORK";
+        }
+        if (act.contains("WHATSAPP") || act.contains("SMS") || act.contains("NOTIFICATION")) {
+            return "MESSAGING";
+        }
+        return "OPERATIONS";
+    }
+
+    private String resolveLogType(String action, String resourceType, String metadataJson) {
+        if (metadataJson != null && !metadataJson.isEmpty()) {
+            try {
+                JsonNode node = OBJECT_MAPPER.readTree(metadataJson);
+                if (node.has("logType") && !node.get("logType").asText().isEmpty()) {
+                    return node.get("logType").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        String act = (action != null ? action : "").toUpperCase();
+        if (act.contains("LOGIN") || act.contains("PASSWORD") || act.contains("AUTH")) return "auth";
+        if (act.contains("RATE_LIMIT") || act.contains("GATEWAY")) return "edge";
+        if (act.contains("DB") || act.contains("SQL") || act.contains("BACKUP")) return "postgres";
+        return "audit";
+    }
+
+    private String resolveServiceSource(String metadataJson) {
+        if (metadataJson != null && !metadataJson.isEmpty()) {
+            try {
+                JsonNode node = OBJECT_MAPPER.readTree(metadataJson);
+                if (node.has("serviceSource") && !node.get("serviceSource").asText().isEmpty()) {
+                    return node.get("serviceSource").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        return "backend";
+    }
+
+    private String resolveHttpMethod(String action, String metadataJson) {
+        if (metadataJson != null && !metadataJson.isEmpty()) {
+            try {
+                JsonNode node = OBJECT_MAPPER.readTree(metadataJson);
+                if (node.has("method") && !node.get("method").asText().isEmpty()) {
+                    return node.get("method").asText().toUpperCase();
+                }
+            } catch (Exception ignored) {}
+        }
+        if (action == null) return "GET";
+        String act = action.toUpperCase();
+        if (act.contains("DELETE") || act.contains("NUCLEAR") || act.contains("REMOVE")) return "DELETE";
+        if (act.contains("CREATE") || act.contains("ADD") || act.contains("LOGIN") ||
+            act.contains("START") || act.contains("REGENERATE") || act.contains("ROTAT")) return "POST";
+        if (act.contains("UPDATE") || act.contains("EDIT") || act.contains("MODIFY") || act.contains("RESTORE")) return "PUT";
+        return "GET";
+    }
+
+    private String buildRawJsonPayload(
+        String id, String timestamp, String logType, String logGroup,
+        String serviceSource, String tenantSlug, String severity,
+        String actor, String action, String message, String resourceType,
+        String resourceId, String method, Integer status, String pathname,
+        String ip, String rawMetadata
+    ) {
+        try {
+            Map<String, Object> payload = new java.util.LinkedHashMap<>();
+            payload.put("id", id);
+            payload.put("timestamp", timestamp);
+            payload.put("logType", logType);
+            payload.put("logGroup", logGroup);
+            payload.put("serviceSource", serviceSource);
+            if (tenantSlug != null && !tenantSlug.isEmpty()) payload.put("tenantSlug", tenantSlug);
+            payload.put("severity", severity);
+            payload.put("actor", actor);
+            payload.put("action", action);
+            payload.put("message", message);
+            if (resourceType != null && !resourceType.isEmpty()) payload.put("_resourceType", resourceType);
+            if (resourceId != null && !resourceId.isEmpty()) payload.put("resourceId", resourceId);
+            if (method != null && !method.isEmpty()) payload.put("method", method);
+            if (status != null) payload.put("status", status);
+            if (pathname != null && !pathname.isEmpty()) payload.put("pathname", pathname);
+            if (ip != null && !ip.isEmpty()) payload.put("ip", ip);
+
+            if (rawMetadata != null && !rawMetadata.isEmpty() && !"{}".equals(rawMetadata)) {
+                try {
+                    payload.put("metadata", OBJECT_MAPPER.readTree(rawMetadata));
+                } catch (Exception e) {
+                    payload.put("metadata", rawMetadata);
+                }
+            }
+            return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
+        } catch (Exception ex) {
+            return "{}";
+        }
     }
 
     // ── Tab 3: Background Jobs (Diversified Platform Services) ─────────────────────

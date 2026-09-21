@@ -13,12 +13,27 @@ export interface OrganizationItem {
 export interface SecurityAuditItem {
   id: string;
   timestamp: string;
+  rawTimestamp?: string;
   actor: string;
+  rawActor?: string;
   targetTenant: string;
+  tenantSlug?: string;
   action: string;
+  rawAction?: string;
   severity: "CRITICAL" | "WARNING" | "INFO";
   ipAddress: string;
   details?: string;
+  eventMessage?: string;
+  serviceSource?: string;
+  logGroup?: string;
+  logType?: string;
+  httpMethod?: string;
+  httpStatus?: number | string;
+  requestPath?: string;
+  resourceType?: string;
+  resourceId?: string;
+  rawMetadata?: string;
+  rawJsonPayload?: string;
 }
 
 export interface BackgroundJobItem {

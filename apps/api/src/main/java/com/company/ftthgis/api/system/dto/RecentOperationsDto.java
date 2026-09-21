@@ -47,12 +47,27 @@ public class RecentOperationsDto implements Serializable {
         private static final long serialVersionUID = 1L;
         private String id;
         private String timestamp;
+        private String rawTimestamp;
         private String actor;
+        private String rawActor;
         private String targetTenant;
+        private String tenantSlug;
         private String action;
+        private String rawAction;
         private String severity; // CRITICAL, WARNING, INFO
         private String ipAddress;
         private String details;
+        private String eventMessage;
+        private String serviceSource;
+        private String logGroup;
+        private String logType;
+        private String httpMethod;
+        private Integer httpStatus;
+        private String requestPath;
+        private String resourceType;
+        private String resourceId;
+        private String rawMetadata;
+        private String rawJsonPayload;
     }
 
     @Data

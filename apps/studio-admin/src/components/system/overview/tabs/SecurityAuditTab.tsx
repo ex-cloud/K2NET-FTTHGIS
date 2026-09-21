@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { 
   ShieldCheck, 
   ArrowUpRight, 
@@ -24,6 +25,7 @@ import { Link } from "@/lib/navigation-compat";
 import { Button } from "@k2net/ui";
 import { cn } from "@/lib/utils";
 import type { SecurityAuditItem } from "../recent-operations-types";
+import { SecurityAuditLogDetailModal } from "../SecurityAuditLogDetailModal";
 
 interface SecurityAuditTabProps {
   items: SecurityAuditItem[];
@@ -121,6 +123,8 @@ function formatActionDisplay(action: string): { label: string; icon: React.React
 }
 
 export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
+  const [selectedAudit, setSelectedAudit] = useState<SecurityAuditItem | null>(null);
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -157,119 +161,134 @@ export function SecurityAuditTab({ items, loading }: SecurityAuditTabProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card/60">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-              <th className="py-2.5 px-3.5 whitespace-nowrap">Waktu (WIB)</th>
-              <th className="py-2.5 px-3.5">Aktor / Akun</th>
-              <th className="py-2.5 px-3.5">Target Tenant</th>
-              <th className="py-2.5 px-3.5">Aksi Keamanan</th>
-              <th className="py-2.5 px-3.5 whitespace-nowrap">Tingkat Risiko</th>
-              <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Log Details</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40">
-            {items.map((audit) => {
-              const meta = getSeverityMeta(audit.severity);
-              const actor = formatActor(audit.actor);
-              const actionDisplay = formatActionDisplay(audit.action);
+    <>
+      <div className="overflow-hidden rounded-xl border border-border bg-card/60">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-border/80 bg-muted/40 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Waktu (WIB)</th>
+                <th className="py-2.5 px-3.5">Aktor / Akun</th>
+                <th className="py-2.5 px-3.5">Target Tenant</th>
+                <th className="py-2.5 px-3.5">Aksi Keamanan</th>
+                <th className="py-2.5 px-3.5 whitespace-nowrap">Tingkat Risiko</th>
+                <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Log Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {items.map((audit) => {
+                const meta = getSeverityMeta(audit.severity);
+                const actor = formatActor(audit.actor);
+                const actionDisplay = formatActionDisplay(audit.action);
 
-              return (
-                <tr
-                  key={audit.id}
-                  className={cn("group transition-colors duration-150", meta.row)}
-                >
-                  {/* Waktu (WIB) */}
-                  <td className="py-2.5 px-3.5 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn("size-1.5 rounded-full shrink-0", meta.dot)} />
-                      <span className="font-mono text-[11px] text-muted-foreground font-medium">
-                        {(audit.timestamp ?? "").replace(/ WIB$/, "")}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground/50 font-mono">WIB</span>
-                    </div>
-                  </td>
-
-                  {/* Aktor / Akun */}
-                  <td className="py-2.5 px-3.5">
-                    <span className="font-semibold text-foreground block truncate max-w-[150px]">
-                      {actor.main}
-                    </span>
-                    {actor.sub && (
-                      <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[150px]">
-                        {actor.sub}
-                      </span>
+                return (
+                  <tr
+                    key={audit.id}
+                    onClick={() => setSelectedAudit(audit)}
+                    className={cn(
+                      "group transition-colors duration-150 cursor-pointer",
+                      meta.row
                     )}
-                    {audit.ipAddress && (
-                      <span className="text-[9px] font-mono text-muted-foreground/50 block">
-                        IP: {audit.ipAddress}
-                      </span>
-                    )}
-                  </td>
+                  >
+                    {/* Waktu (WIB) */}
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("size-1.5 rounded-full shrink-0", meta.dot)} />
+                        <span className="font-mono text-[11px] text-muted-foreground font-medium">
+                          {(audit.timestamp ?? "").replace(/ WIB$/, "")}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground/50 font-mono">WIB</span>
+                      </div>
+                    </td>
 
-                  {/* Target Tenant */}
-                  <td className="py-2.5 px-3.5">
-                    <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[130px]">
-                      {audit.targetTenant || "Platform Wide"}
-                    </span>
-                  </td>
-
-                  {/* Aksi Keamanan */}
-                  <td className="py-2.5 px-3.5">
-                    <div className="flex items-center gap-1.5">
-                      {actionDisplay.icon}
-                      <span
-                        className="font-medium text-[11px] text-foreground truncate block max-w-[200px]"
-                        title={audit.action}
-                      >
-                        {actionDisplay.label}
+                    {/* Aktor / Akun */}
+                    <td className="py-2.5 px-3.5">
+                      <span className="font-semibold text-foreground block truncate max-w-[150px]">
+                        {actor.main}
                       </span>
-                    </div>
-                    {audit.details && (
-                      <span
-                        className="text-[10px] text-muted-foreground/80 truncate block max-w-[220px] mt-0.5"
-                        title={audit.details}
-                      >
-                        {audit.details}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Tingkat Risiko */}
-                  <td className="py-2.5 px-3.5 whitespace-nowrap">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-mono font-bold",
-                        meta.badge
+                      {actor.sub && (
+                        <span className="text-[10px] font-mono text-muted-foreground/70 block truncate max-w-[150px]">
+                          {actor.sub}
+                        </span>
                       )}
-                    >
-                      <span>{meta.emoji}</span>
-                      <span>{meta.label}</span>
-                    </span>
-                  </td>
+                      {audit.ipAddress && (
+                        <span className="text-[9px] font-mono text-muted-foreground/50 block">
+                          IP: {audit.ipAddress}
+                        </span>
+                      )}
+                    </td>
 
-                  {/* Log Details */}
-                  <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary gap-1"
-                    >
-                      <Link href="/logs">
+                    {/* Target Tenant */}
+                    <td className="py-2.5 px-3.5">
+                      <span className="text-foreground/90 font-medium text-[11px] truncate block max-w-[130px]">
+                        {audit.targetTenant || "Platform Wide"}
+                      </span>
+                    </td>
+
+                    {/* Aksi Keamanan */}
+                    <td className="py-2.5 px-3.5">
+                      <div className="flex items-center gap-1.5">
+                        {actionDisplay.icon}
+                        <span
+                          className="font-medium text-[11px] text-foreground truncate block max-w-[200px]"
+                          title={audit.action}
+                        >
+                          {actionDisplay.label}
+                        </span>
+                      </div>
+                      {audit.details && (
+                        <span
+                          className="text-[10px] text-muted-foreground/80 truncate block max-w-[220px] mt-0.5"
+                          title={audit.details}
+                        >
+                          {audit.details}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Tingkat Risiko */}
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-mono font-bold",
+                          meta.badge
+                        )}
+                      >
+                        <span>{meta.emoji}</span>
+                        <span>{meta.label}</span>
+                      </span>
+                    </td>
+
+                    {/* Log Details Action Button */}
+                    <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAudit(audit);
+                        }}
+                        className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary gap-1 cursor-pointer"
+                        title="Buka detail log event"
+                      >
                         <span>View Logs</span>
                         <ArrowUpRight className="size-3" />
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      {/* Log Details Modal Dialog */}
+      <SecurityAuditLogDetailModal
+        audit={selectedAudit}
+        isOpen={!!selectedAudit}
+        onClose={() => setSelectedAudit(null)}
+      />
+    </>
   );
 }
