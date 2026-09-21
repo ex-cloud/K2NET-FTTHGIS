@@ -24,7 +24,7 @@ export function AuthLoginLayout({
   testimonialAuthor = "Andiansyah",
   testimonialRole = "Chief Technology Officer, K2NET",
   figureComponent,
-  figureId = "fig-01",
+  figureId = "fig-07",
 }: AuthLoginLayoutProps) {
   const [activePolicyModal, setActivePolicyModal] = useState<"terms" | "privacy" | null>(null);
   const activeMeta = ISOMETRIC_FIGURES_LIST.find((f) => f.id === figureId) || ISOMETRIC_FIGURES_LIST[0];

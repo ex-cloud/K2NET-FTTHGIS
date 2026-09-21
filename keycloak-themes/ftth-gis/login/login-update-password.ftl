@@ -18,7 +18,7 @@
     <div class="ftth-login-container" style="display:flex;min-height:100vh;width:100%;font-family:'Inter',sans-serif;background:#09090b;color:#f4f4f5;overflow-x:hidden;">
 
       <!-- ─── LEFT COLUMN: Update Password Form ─────────────────────────── -->
-      <div id="ftth-left" style="width:100%;max-width:44%;min-height:100vh;max-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;padding:24px 44px;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
+      <div id="ftth-left" style="min-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
 
         <!-- Top Header Row -->
         <div id="ftth-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:20;flex-shrink:0;">
@@ -286,157 +286,416 @@
     <script>
       (function() {
         // ─── 1. Canonical 3D Figure Dispatcher & Generator (FIG 0.1 to FIG 0.7) ───
-        var activeHero = "fig-01";
+        var activeHero = "fig-07";
         try {
-          activeHero = localStorage.getItem('k2net_active_login_hero') || 
-                       localStorage.getItem('k2net_login_hero_variant') || 
+          var urlParams = new URLSearchParams(window.location.search);
+          activeHero = urlParams.get('hero') || 
                        (document.cookie.match(/k2net_global_login_hero=([^;]+)/) || [])[1] || 
-                       "fig-01";
+                       localStorage.getItem('k2net_active_login_hero') || 
+                       localStorage.getItem('k2net_login_hero_variant') || 
+                       "fig-07";
         } catch(e) {}
 
         var badgeTextEl = document.getElementById('hero-fig-badge-text');
 
+        function initQuantumOrb(canvas, orbRadius, interactiveContainer) {
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+          var startT = Date.now();
+
+          if (interactiveContainer) {
+            interactiveContainer.addEventListener('mousemove', function(e) {
+              var rect = interactiveContainer.getBoundingClientRect();
+              var nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+              var ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+              mouse.targetX = Math.max(-1.2, Math.min(1.2, nx));
+              mouse.targetY = Math.max(-1.2, Math.min(1.2, ny));
+            });
+            interactiveContainer.addEventListener('mouseleave', function() {
+              mouse.targetX = 0;
+              mouse.targetY = 0;
+            });
+          }
+
+          var particles = [];
+          for (var i = 0; i < 36; i++) {
+            particles.push({
+              angle: (Math.PI * 0.15) + (i / 36) * (Math.PI * 0.7),
+              radOffset: (Math.random() - 0.5) * 6,
+              size: 0.6 + Math.random() * 1.3,
+              speed: 0.2 + Math.random() * 0.6,
+              phase: Math.random() * Math.PI * 2,
+              alpha: 0.3 + Math.random() * 0.7
+            });
+          }
+
+          function draw() {
+            mouse.x += (mouse.targetX - mouse.x) * 0.08;
+            mouse.y += (mouse.targetY - mouse.y) * 0.08;
+            var elapsed = (Date.now() - startT) * 0.001;
+
+            var w = canvas.width;
+            var h = canvas.height;
+            var cx = w / 2;
+            var cy = h / 2;
+            var mx = mouse.x * 12;
+            var my = mouse.y * 10;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Outer Corona Glow
+            var corona = ctx.createRadialGradient(cx + mx * 0.3, cy + my * 0.3, orbRadius * 0.7, cx, cy, orbRadius * 1.45);
+            corona.addColorStop(0, 'rgba(74, 222, 128, 0.35)');
+            corona.addColorStop(0.35, 'rgba(34, 197, 94, 0.18)');
+            corona.addColorStop(0.7, 'rgba(22, 101, 52, 0.05)');
+            corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = corona;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius * 1.45, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Base Sphere Fill (Deep Obsidian Green Abyss)
+            var bodyGrad = ctx.createRadialGradient(cx - orbRadius * 0.25 + mx, cy - orbRadius * 0.25 + my, orbRadius * 0.05, cx, cy, orbRadius);
+            bodyGrad.addColorStop(0, '#07170c');
+            bodyGrad.addColorStop(0.45, '#030905');
+            bodyGrad.addColorStop(0.8, '#020503');
+            bodyGrad.addColorStop(0.95, '#0d2b14');
+            bodyGrad.addColorStop(1, '#1e5c2d');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Clip to sphere interior
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.clip();
+
+            // 3a. Deep Volumetric Fluid Ambient Glow
+            var deepGlow = ctx.createRadialGradient(cx + mx * 0.4, cy - orbRadius * 0.1 + my * 0.4, orbRadius * 0.1, cx, cy, orbRadius * 0.95);
+            deepGlow.addColorStop(0, 'rgba(101, 163, 13, 0.25)');
+            deepGlow.addColorStop(0.4, 'rgba(22, 101, 52, 0.15)');
+            deepGlow.addColorStop(0.8, 'rgba(5, 30, 14, 0.06)');
+            deepGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = deepGlow;
+            ctx.fillRect(0, 0, w, h);
+
+            // 3b. Multi-Octave Organic Fluid Plasma Wave 1 (Deep Layer)
+            ctx.beginPath();
+            var waveY1 = cy - orbRadius * 0.2 + my * 0.35;
+            ctx.moveTo(cx - orbRadius, cy);
+            for (var x = -orbRadius; x <= orbRadius; x += 2) {
+              var normX = x / orbRadius;
+              var curve = Math.sqrt(Math.max(0, 1 - normX * normX));
+              var wave = Math.sin(normX * 4.2 + elapsed * 1.4) * (orbRadius * 0.11)
+                       + Math.cos(normX * 7.8 - elapsed * 1.8) * (orbRadius * 0.055)
+                       + Math.sin(normX * 11.5 + elapsed * 2.6) * (orbRadius * 0.025);
+              ctx.lineTo(cx + x, waveY1 + wave * curve);
+            }
+            ctx.lineTo(cx + orbRadius, cy + orbRadius);
+            ctx.lineTo(cx - orbRadius, cy + orbRadius);
+            ctx.closePath();
+            var waveGrad1 = ctx.createLinearGradient(cx, waveY1 - orbRadius * 0.25, cx, cy + orbRadius * 0.6);
+            waveGrad1.addColorStop(0, 'rgba(132, 204, 22, 0.35)');
+            waveGrad1.addColorStop(0.3, 'rgba(74, 222, 128, 0.20)');
+            waveGrad1.addColorStop(0.7, 'rgba(20, 83, 45, 0.08)');
+            waveGrad1.addColorStop(1, 'rgba(1, 5, 2, 0.7)');
+            ctx.fillStyle = waveGrad1;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(163, 230, 53, 0.55)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // 3c. Multi-Octave Organic Fluid Wave 2 (Main Luminous Folds)
+            ctx.beginPath();
+            var waveY2 = cy - orbRadius * 0.08 + my * 0.55;
+            ctx.moveTo(cx - orbRadius, cy);
+            for (var x2 = -orbRadius; x2 <= orbRadius; x2 += 2) {
+              var normX2 = x2 / orbRadius;
+              var curve2 = Math.sqrt(Math.max(0, 1 - normX2 * normX2));
+              var wave2 = Math.sin(normX2 * 4.8 - elapsed * 1.6 + 1.0) * (orbRadius * 0.13)
+                        + Math.cos(normX2 * 8.6 + elapsed * 2.1) * (orbRadius * 0.065)
+                        + Math.sin(normX2 * 13.0 - elapsed * 3.1) * (orbRadius * 0.03);
+              ctx.lineTo(cx + x2, waveY2 + wave2 * curve2);
+            }
+            ctx.lineTo(cx + orbRadius, cy + orbRadius);
+            ctx.lineTo(cx - orbRadius, cy + orbRadius);
+            ctx.closePath();
+            var waveGrad2 = ctx.createLinearGradient(cx, waveY2 - orbRadius * 0.2, cx, cy + orbRadius * 0.75);
+            waveGrad2.addColorStop(0, 'rgba(190, 242, 100, 0.48)');
+            waveGrad2.addColorStop(0.25, 'rgba(134, 239, 172, 0.28)');
+            waveGrad2.addColorStop(0.6, 'rgba(21, 128, 61, 0.12)');
+            waveGrad2.addColorStop(1, 'rgba(2, 6, 3, 0.88)');
+            ctx.fillStyle = waveGrad2;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(217, 249, 157, 0.80)';
+            ctx.lineWidth = 1.4;
+            ctx.shadowColor = '#84cc16';
+            ctx.shadowBlur = 6;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 3d. Bioluminescent Micro-Particles
+            for (var p = 0; p < particles.length; p++) {
+              var pt = particles[p];
+              var cAng = pt.angle + Math.sin(elapsed * pt.speed + pt.phase) * 0.08;
+              var pr = orbRadius * 0.86 + pt.radOffset;
+              var px = cx + Math.cos(cAng) * pr;
+              var py = cy + Math.sin(cAng) * pr;
+              var pulse = 0.5 + 0.5 * Math.sin(elapsed * 2.5 + pt.phase);
+              ctx.fillStyle = 'rgba(190, 242, 100, ' + (pt.alpha * pulse).toFixed(2) + ')';
+              ctx.beginPath();
+              ctx.arc(px, py, pt.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // 3e. Smooth Fresnel Volumetric Edge Glow (Gambar 2 - No harsh white spot!)
+            var fresnel = ctx.createRadialGradient(cx, cy, orbRadius * 0.70, cx, cy, orbRadius);
+            fresnel.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            fresnel.addColorStop(0.60, 'rgba(34, 197, 94, 0.06)');
+            fresnel.addColorStop(0.84, 'rgba(132, 204, 22, 0.35)');
+            fresnel.addColorStop(0.95, 'rgba(190, 242, 100, 0.75)');
+            fresnel.addColorStop(1, 'rgba(236, 252, 203, 0.92)');
+            ctx.fillStyle = fresnel;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // 4. Luminous Outer Rim Perimeter
+            ctx.save();
+            ctx.strokeStyle = 'rgba(217, 249, 157, 0.88)';
+            ctx.lineWidth = 1.25;
+            ctx.shadowColor = '#84cc16';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            requestAnimationFrame(draw);
+          }
+          requestAnimationFrame(draw);
+        }
+
+        // Initialize Mobile Hero Orb (Active for mobile screens)
+        var mobileContainer = document.getElementById('mobile-isometric-container');
+        if (mobileContainer) {
+          mobileContainer.innerHTML = 
+            '<div style="position:relative;width:100%;max-width:180px;height:150px;display:flex;align-items:center;justify-content:center;">' +
+              '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 180 150" fill="none">' +
+                '<defs>' +
+                  '<linearGradient id="fig07-ringFadeMobile" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                    '<stop offset="0%" stop-color="#bef264" stop-opacity="0.30" />' +
+                    '<stop offset="50%" stop-color="#4ade80" stop-opacity="0.08" />' +
+                    '<stop offset="100%" stop-color="#bef264" stop-opacity="0.25" />' +
+                  '</linearGradient>' +
+                '</defs>' +
+                '<g class="k2net-hud-grid-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud 100s linear infinite;">' +
+                  '<circle cx="90" cy="75" r="70" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
+                  '<circle cx="90" cy="75" r="64" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<g id="hud-ticks-mobile" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                '</g>' +
+                '<g class="k2net-hud-inner-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
+                  '<line x1="90" y1="6" x2="90" y2="14" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="136" x2="90" y2="144" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="21" y1="75" x2="29" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="151" y1="75" x2="159" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                '</g>' +
+              '</svg>' +
+              '<canvas id="mobile-quantum-orb-canvas" width="160" height="150" style="width:160px;height:150px;filter:drop-shadow(0 0 20px rgba(74,222,128,0.3));"></canvas>' +
+            '</div>';
+
+          // Build mobile radar ticks along r=64
+          var mTicksGroup = document.getElementById('hud-ticks-mobile');
+          if (mTicksGroup) {
+            var mcx = 90, mcy = 75, mr = 64, mCount = 24;
+            for (var mi = 0; mi < mCount; mi++) {
+              if (mi % 4 === 0) continue;
+              var mAngle = (mi / mCount) * Math.PI * 2;
+              var mx1 = mcx + Math.cos(mAngle) * (mr - 2.5);
+              var my1 = mcy + Math.sin(mAngle) * (mr - 2.5);
+              var mx2 = mcx + Math.cos(mAngle) * (mr + 2.5);
+              var my2 = mcy + Math.sin(mAngle) * (mr + 2.5);
+              var mLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              mLine.setAttribute('x1', mx1.toFixed(2));
+              mLine.setAttribute('y1', my1.toFixed(2));
+              mLine.setAttribute('x2', mx2.toFixed(2));
+              mLine.setAttribute('y2', my2.toFixed(2));
+              mTicksGroup.appendChild(mLine);
+            }
+          }
+
+          var mobileCanvas = document.getElementById('mobile-quantum-orb-canvas');
+          if (mobileCanvas) {
+            initQuantumOrb(mobileCanvas, 42, mobileContainer);
+          }
+        }
+
+        // Initialize Desktop Hero
         if (activeHero === "fig-07") {
           if (badgeTextEl) badgeTextEl.textContent = "FIG 0.7: QUANTUM ORB";
           var container = document.getElementById('isometric-container');
           if (container) {
             container.innerHTML = 
               '<div style="position:relative;width:100%;max-width:340px;height:290px;display:flex;align-items:center;justify-content:center;cursor:pointer;">' +
-                '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 320 320" fill="none">' +
-                  '<circle id="orb-ring-1" cx="160" cy="160" r="140" stroke="#22c55e" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="4 6" />' +
-                  '<circle id="orb-ring-2" cx="160" cy="160" r="118" stroke="#22c55e" stroke-opacity="0.25" stroke-width="0.85" />' +
-                  '<circle id="orb-ring-3" cx="160" cy="160" r="98" stroke="#22c55e" stroke-opacity="0.35" stroke-width="0.75" />' +
+                '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 340 340" fill="none">' +
+                  '<defs>' +
+                    '<linearGradient id="fig07-ringFadeDesktop" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                      '<stop offset="0%" stop-color="#bef264" stop-opacity="0.30" />' +
+                      '<stop offset="50%" stop-color="#4ade80" stop-opacity="0.08" />' +
+                      '<stop offset="100%" stop-color="#bef264" stop-opacity="0.25" />' +
+                    '</linearGradient>' +
+                  '</defs>' +
+                  '<g class="k2net-hud-grid" style="transform-origin:170px 170px;animation:k2net-rotate-hud 100s linear infinite;">' +
+                    '<circle cx="170" cy="170" r="156" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
+                    '<circle cx="170" cy="170" r="144" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<g id="hud-ticks-desktop" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                  '</g>' +
+                  '<g class="k2net-hud-inner" style="transform-origin:170px 170px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
+                    '<line x1="170" y1="10" x2="170" y2="22" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="318" x2="170" y2="330" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="10" y1="170" x2="22" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="318" y1="170" x2="330" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '</g>' +
                 '</svg>' +
-                '<canvas id="quantum-orb-canvas" width="280" height="280" style="width:280px;height:280px;filter:drop-shadow(0 0 32px rgba(34,197,94,0.45));"></canvas>' +
+                '<canvas id="quantum-orb-canvas" width="320" height="320" style="width:320px;height:320px;filter:drop-shadow(0 0 28px rgba(74,222,128,0.3));"></canvas>' +
               '</div>';
+
+            // Build desktop radar ticks along r=144
+            var dTicksGroup = document.getElementById('hud-ticks-desktop');
+            if (dTicksGroup) {
+              var dcx = 170, dcy = 170, dr = 144, dCount = 36;
+              for (var di = 0; di < dCount; di++) {
+                if (di % 6 === 0) continue;
+                var dAngle = (di / dCount) * Math.PI * 2;
+                var dx1 = dcx + Math.cos(dAngle) * (dr - 3);
+                var dy1 = dcy + Math.sin(dAngle) * (dr - 3);
+                var dx2 = dcx + Math.cos(dAngle) * (dr + 3);
+                var dy2 = dcy + Math.sin(dAngle) * (dr + 3);
+                var dLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                dLine.setAttribute('x1', dx1.toFixed(2));
+                dLine.setAttribute('y1', dy1.toFixed(2));
+                dLine.setAttribute('x2', dx2.toFixed(2));
+                dLine.setAttribute('y2', dy2.toFixed(2));
+                dTicksGroup.appendChild(dLine);
+              }
+            }
 
             var canvas = document.getElementById('quantum-orb-canvas');
             if (canvas) {
-              var ctx = canvas.getContext('2d');
-              var orbRadius = 78;
-              var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-              var startT = Date.now();
-
-              container.addEventListener('mousemove', function(e) {
-                var rect = container.getBoundingClientRect();
-                var nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
-                var ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-                mouse.targetX = Math.max(-1.2, Math.min(1.2, nx));
-                mouse.targetY = Math.max(-1.2, Math.min(1.2, ny));
-              });
-
-              container.addEventListener('mouseleave', function() {
-                mouse.targetX = 0;
-                mouse.targetY = 0;
-              });
-
-              function drawOrb() {
-                if (!ctx) return;
-                mouse.x += (mouse.targetX - mouse.x) * 0.08;
-                mouse.y += (mouse.targetY - mouse.y) * 0.08;
-                var elapsed = (Date.now() - startT) * 0.001;
-
-                var cx = canvas.width / 2;
-                var cy = canvas.height / 2;
-                var mx = mouse.x * 18;
-                var my = mouse.y * 14;
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Corona Glow
-                var corona = ctx.createRadialGradient(cx + mx * 0.4, cy + my * 0.4, orbRadius * 0.65, cx, cy, orbRadius * 1.38);
-                corona.addColorStop(0, 'rgba(34, 197, 94, 0.45)');
-                corona.addColorStop(0.5, 'rgba(74, 222, 128, 0.2)');
-                corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = corona;
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius * 1.38, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Core Sphere
-                var core = ctx.createRadialGradient(cx - orbRadius * 0.35 + mx, cy - orbRadius * 0.35 + my, orbRadius * 0.08, cx, cy, orbRadius);
-                core.addColorStop(0, '#0a160f');
-                core.addColorStop(0.65, '#040705');
-                core.addColorStop(0.86, '#15803d');
-                core.addColorStop(0.97, '#4ade80');
-                core.addColorStop(1, '#86efac');
-                ctx.fillStyle = core;
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Fluid waves
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-                ctx.clip();
-
-                var wave = ctx.createRadialGradient(cx + Math.sin(elapsed) * 14, cy + Math.cos(elapsed * 0.8) * 14, orbRadius * 0.2, cx, cy, orbRadius);
-                wave.addColorStop(0, 'rgba(34, 197, 94, 0.18)');
-                wave.addColorStop(0.7, 'rgba(22, 101, 52, 0.06)');
-                wave.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-                ctx.fillStyle = wave;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Specular bead
-                var spec = ctx.createRadialGradient(cx - orbRadius * 0.38 + mx * 0.8, cy - orbRadius * 0.38 + my * 0.8, 1, cx - orbRadius * 0.38 + mx * 0.8, cy - orbRadius * 0.38 + my * 0.8, orbRadius * 0.28);
-                spec.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-                spec.addColorStop(0.35, 'rgba(134, 239, 172, 0.35)');
-                spec.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = spec;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.restore();
-                requestAnimationFrame(drawOrb);
-              }
-              requestAnimationFrame(drawOrb);
+              initQuantumOrb(canvas, 86, container);
             }
           }
         } else {
         // ─── Standard FIG 0.1 Isometric Slabs Generator ───
-        var K2NET_LOGO_B64 = "data:image/png;base64,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";
-        var COS30 = Math.cos(Math.PI / 6), SIN30 = Math.sin(Math.PI / 6);
+        var K2NET_LOGO_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAI8AAACVCAYAAABhLqluAAAACXBIWXMAAAsSAAALEgHS3X78AAAgAElEQVR4nO19B5gcxZX/q+oJuzubtNJqVxKKSKBMBoOxsQGDbTJ/A38bBwwmnM/5MGfO9pnzAbYJBkzyYTDJ+O4cCOYwWYgcLAkJIwQCJCQkIWm1QRtnprur7uue6dmaN6+6e9Jql9P7vv46V/z174Wq7mZSSihFFnx/ZZQxqGMMahiwWicJxoA5C2fAMvvObuaYs88zB/z2uXq/dz1nwL30OHf2Gc+cd+/l3M0GgPPMtnc955nt3PXeeZ45bzibTnqcGZl9dzt3vcGBG9y9RrmecYND5np3293PXs8M53xE2c9ek7neAHc/ktvPbHvpRQz3esNZu/vZbWI/4l3vbHvno9ntaOb48wCwKmqwZ+oAekrq5AApCjxz/+lVp1EaGYNGBizGGAwBQIoxd7GdvsyCyF0ynesectGQAUJ2nwXuOx0PeJ8NAwWyQFHOO0jJAc/Nn2cv4NR5DsxQ0+OMGdn0MsBjzOCZfYNngGtky+Ne6+xnC2hwBuq+cz7CM/d597uLAbn9iLufSS+STS9iDF/vbEey97vbhfvcu947H83sN0UMtjhqsE9EDHYkALwWNdgNdQB3jDh45nx3hdOOTU6hGECaMdj55tX7DVSyILulOrJ1yG6KGuyEiMG+EzXYbAC4pA7g2kpkFgiePb+zwlFNE8ABDUDX29fsn97dz2NTOtPiYxGDXRPNqL2z6gBWlpOeL3hmfntFMwOod/Jdd93+Q+VktFtGj+y05Y8B4MdRg51XjirTgmfGt5aPYwAxBzjrf3WAtbvvP1zSmRaLIwZ7Mmqwh+oAziqlciR4pn1zebNjvDOAzg3XHyD+rzf0h1W2DtmLogZ7LGKwvzYZ7Jxiq1kAnqnfWNaUAQ7r2njD6ANOzn0rQ2Sp8YkPoXgAAoDvj4/x3xXVF2o7TvnHZfGsR9W56cYD7V3VVJUASDnyfw1cm/qthRGDPRc12MfHx/hrYe/LgWfy15c5HTaeAfRtvunAVDULSxZkFwMmjHyYQbWp37ourrAT22uNpWGraph2pxqelwpsJYKwY+W7JvUa4zX5vQx6/tNfQ1H2v3H1zC3P3Sg/64HAAAAAElFTkSuQmCC";
+        var COS30 = Math.cos(Math.PI / 6);
+        var SIN30 = Math.sin(Math.PI / 6);
+
         function toIsoPt(x, y, z, originX, originY) {
-          return { x: originX + (x - y) * COS30, y: originY + (x + y) * SIN30 - z };
+          return {
+            x: originX + (x - y) * COS30,
+            y: originY + (x + y) * SIN30 - z
+          };
         }
+
         function isoRoundedRectPath(cx, cy, w, h, z, r, originX, originY) {
           var x1 = cx - w / 2, x2 = cx + w / 2, y1 = cy - h / 2, y2 = cy + h / 2;
           var rad = Math.min(r, w / 2 - 0.5, h / 2 - 0.5);
-          var p1 = toIsoPt(x1 + rad, y1, z, originX, originY), p2 = toIsoPt(x2 - rad, y1, z, originX, originY);
-          var c2 = toIsoPt(x2, y1, z, originX, originY), p3 = toIsoPt(x2, y1 + rad, z, originX, originY);
-          var p4 = toIsoPt(x2, y2 - rad, z, originX, originY), c3 = toIsoPt(x2, y2, z, originX, originY);
-          var p5 = toIsoPt(x2 - rad, y2, z, originX, originY), p6 = toIsoPt(x1 + rad, y2, z, originX, originY);
-          var c4 = toIsoPt(x1, y2, z, originX, originY), p7 = toIsoPt(x1, y2 - rad, z, originX, originY);
-          var p8 = toIsoPt(x1, y1 + rad, z, originX, originY), c1 = toIsoPt(x1, y1, z, originX, originY);
-          return "M " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) + " L " + p2.x.toFixed(1) + " " + p2.y.toFixed(1) + " Q " + c2.x.toFixed(1) + " " + c2.y.toFixed(1) + " " + p3.x.toFixed(1) + " " + p3.y.toFixed(1) + " L " + p4.x.toFixed(1) + " " + p4.y.toFixed(1) + " Q " + c3.x.toFixed(1) + " " + c3.y.toFixed(1) + " " + p5.x.toFixed(1) + " " + p5.y.toFixed(1) + " L " + p6.x.toFixed(1) + " " + p6.y.toFixed(1) + " Q " + c4.x.toFixed(1) + " " + c4.y.toFixed(1) + " " + p7.x.toFixed(1) + " " + p7.y.toFixed(1) + " L " + p8.x.toFixed(1) + " " + p8.y.toFixed(1) + " Q " + c1.x.toFixed(1) + " " + c1.y.toFixed(1) + " " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) + " Z";
+          var p1 = toIsoPt(x1 + rad, y1, z, originX, originY);
+          var p2 = toIsoPt(x2 - rad, y1, z, originX, originY);
+          var c2 = toIsoPt(x2, y1, z, originX, originY);
+          var p3 = toIsoPt(x2, y1 + rad, z, originX, originY);
+          var p4 = toIsoPt(x2, y2 - rad, z, originX, originY);
+          var c3 = toIsoPt(x2, y2, z, originX, originY);
+          var p5 = toIsoPt(x2 - rad, y2, z, originX, originY);
+          var p6 = toIsoPt(x1 + rad, y2, z, originX, originY);
+          var c4 = toIsoPt(x1, y2, z, originX, originY);
+          var p7 = toIsoPt(x1, y2 - rad, z, originX, originY);
+          var p8 = toIsoPt(x1, y1 + rad, z, originX, originY);
+          var c1 = toIsoPt(x1, y1, z, originX, originY);
+          return "M " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) + 
+                 " L " + p2.x.toFixed(1) + " " + p2.y.toFixed(1) + 
+                 " Q " + c2.x.toFixed(1) + " " + c2.y.toFixed(1) + " " + p3.x.toFixed(1) + " " + p3.y.toFixed(1) + 
+                 " L " + p4.x.toFixed(1) + " " + p4.y.toFixed(1) + 
+                 " Q " + c3.x.toFixed(1) + " " + c3.y.toFixed(1) + " " + p5.x.toFixed(1) + " " + p5.y.toFixed(1) + 
+                 " L " + p6.x.toFixed(1) + " " + p6.y.toFixed(1) + 
+                 " Q " + c4.x.toFixed(1) + " " + c4.y.toFixed(1) + " " + p7.x.toFixed(1) + " " + p7.y.toFixed(1) + 
+                 " L " + p8.x.toFixed(1) + " " + p8.y.toFixed(1) + 
+                 " Q " + c1.x.toFixed(1) + " " + c1.y.toFixed(1) + " " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) + " Z";
         }
 
-        var layers = [0, 1, 2, 3, 4, 5], slabSize = 50, slabThickness = 7.5, originY = 148, topSlabIndex = 5;
-        var cornerRadius = 5.5, apertureRadius = 23, apertureRx = apertureRadius * 1.2247, apertureRy = apertureRadius * 0.7071;
-        var zTopFinal = topSlabIndex * (slabThickness + 2) + slabThickness, topCenterY = originY - zTopFinal;
+        var layers = [0, 1, 2, 3, 4, 5];
+        var slabSize = 50;
+        var slabThickness = 7.5;
+        var originY = 148;
+        var topSlabIndex = 5;
+        var cornerRadius = 5.5;
+        var apertureRadius = 23;
+        var apertureRx = apertureRadius * 1.2247;
+        var apertureRy = apertureRadius * 0.7071;
+        var zTopFinal = topSlabIndex * (slabThickness + 2) + slabThickness;
+        var topCenterY = originY - zTopFinal;
+
         var slabsGroup = document.getElementById('iso-slabs-group');
         if (slabsGroup) {
           var slabsHtml = "";
           layers.forEach(function(idx) {
-            var zBase = idx * (slabThickness + 2), zTop = zBase + slabThickness, isTop = (idx === topSlabIndex);
-            var w = slabSize * 2, r = cornerRadius, x1 = -slabSize, x2 = slabSize, y1 = -slabSize, y2 = slabSize;
-            var topPath = isoRoundedRectPath(0, 0, w, w, zTop, r, 140, originY);
-            var p6Top = toIsoPt(x1 + r, y2, zTop, 140, originY), p5Top = toIsoPt(x2 - r, y2, zTop, 140, originY);
-            var c3Top = toIsoPt(x2, y2, zTop, 140, originY), p4Top = toIsoPt(x2, y2 - r, zTop, 140, originY);
-            var p3Top = toIsoPt(x2, y1 + r, zTop, 140, originY), c4Top = toIsoPt(x1, y2, zTop, 140, originY), p7Top = toIsoPt(x1, y2 - r, zTop, 140, originY);
-            var p6Base = toIsoPt(x1 + r, y2, zBase, 140, originY), p5Base = toIsoPt(x2 - r, y2, zBase, 140, originY);
-            var c3Base = toIsoPt(x2, y2, zBase, 140, originY), p4Base = toIsoPt(x2, y2 - r, zBase, 140, originY);
-            var p3Base = toIsoPt(x2, y1 + r, zBase, 140, originY), c4Base = toIsoPt(x1, y2, zBase, 140, originY), p7Base = toIsoPt(x1, y2 - r, zBase, 140, originY);
+            var zBase = idx * (slabThickness + 2);
+            var zTop = zBase + slabThickness;
+            var isTop = (idx === topSlabIndex);
+            var w = slabSize * 2;
+            var r = cornerRadius;
+            var x1 = -slabSize, x2 = slabSize, y1 = -slabSize, y2 = slabSize;
 
-            var leftFace = "M " + p7Top.x.toFixed(1) + " " + p7Top.y.toFixed(1) + " Q " + c4Top.x.toFixed(1) + " " + c4Top.y.toFixed(1) + " " + p6Top.x.toFixed(1) + " " + p6Top.y.toFixed(1) + " L " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + " L " + p5Base.x.toFixed(1) + " " + p5Base.y.toFixed(1) + " L " + p6Base.x.toFixed(1) + " " + p6Base.y.toFixed(1) + " Q " + c4Base.x.toFixed(1) + " " + c4Base.y.toFixed(1) + " " + p7Base.x.toFixed(1) + " " + p7Base.y.toFixed(1) + " Z";
-            var rightFace = "M " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + " Q " + c3Top.x.toFixed(1) + " " + c3Top.y.toFixed(1) + " " + p4Top.x.toFixed(1) + " " + p4Top.y.toFixed(1) + " L " + p3Top.x.toFixed(1) + " " + p3Top.y.toFixed(1) + " L " + p3Base.x.toFixed(1) + " " + p3Base.y.toFixed(1) + " L " + p4Base.x.toFixed(1) + " " + p4Base.y.toFixed(1) + " Q " + c3Base.x.toFixed(1) + " " + c3Base.y.toFixed(1) + " " + p5Base.x.toFixed(1) + " " + p5Base.y.toFixed(1) + " Z";
-            var ridge = "M " + p7Top.x.toFixed(1) + " " + p7Top.y.toFixed(1) + " Q " + c4Top.x.toFixed(1) + " " + c4Top.y.toFixed(1) + " " + p6Top.x.toFixed(1) + " " + p6Top.y.toFixed(1) + " L " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + " Q " + c3Top.x.toFixed(1) + " " + c3Top.y.toFixed(1) + " " + p4Top.x.toFixed(1) + " " + p4Top.y.toFixed(1);
+            var topPath = isoRoundedRectPath(0, 0, w, w, zTop, r, 140, originY);
+            var p6Top = toIsoPt(x1 + r, y2, zTop, 140, originY);
+            var p5Top = toIsoPt(x2 - r, y2, zTop, 140, originY);
+            var c3Top = toIsoPt(x2, y2, zTop, 140, originY);
+            var p4Top = toIsoPt(x2, y2 - r, zTop, 140, originY);
+            var p3Top = toIsoPt(x2, y1 + r, zTop, 140, originY);
+            var c4Top = toIsoPt(x1, y2, zTop, 140, originY);
+            var p7Top = toIsoPt(x1, y2 - r, zTop, 140, originY);
+
+            var p6Base = toIsoPt(x1 + r, y2, zBase, 140, originY);
+            var p5Base = toIsoPt(x2 - r, y2, zBase, 140, originY);
+            var c3Base = toIsoPt(x2, y2, zBase, 140, originY);
+            var p4Base = toIsoPt(x2, y2 - r, zBase, 140, originY);
+            var p3Base = toIsoPt(x2, y1 + r, zBase, 140, originY);
+            var c4Base = toIsoPt(x1, y2, zBase, 140, originY);
+            var p7Base = toIsoPt(x1, y2 - r, zBase, 140, originY);
+
+            var leftFace = "M " + p7Top.x.toFixed(1) + " " + p7Top.y.toFixed(1) + 
+                           " Q " + c4Top.x.toFixed(1) + " " + c4Top.y.toFixed(1) + " " + p6Top.x.toFixed(1) + " " + p6Top.y.toFixed(1) + 
+                           " L " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + 
+                           " L " + p5Base.x.toFixed(1) + " " + p5Base.y.toFixed(1) + 
+                           " L " + p6Base.x.toFixed(1) + " " + p6Base.y.toFixed(1) + 
+                           " Q " + c4Base.x.toFixed(1) + " " + c4Base.y.toFixed(1) + " " + p7Base.x.toFixed(1) + " " + p7Base.y.toFixed(1) + " Z";
+
+            var rightFace = "M " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + 
+                            " Q " + c3Top.x.toFixed(1) + " " + c3Top.y.toFixed(1) + " " + p4Top.x.toFixed(1) + " " + p4Top.y.toFixed(1) + 
+                            " L " + p3Top.x.toFixed(1) + " " + p3Top.y.toFixed(1) + 
+                            " L " + p3Base.x.toFixed(1) + " " + p3Base.y.toFixed(1) + 
+                            " L " + p4Base.x.toFixed(1) + " " + p4Base.y.toFixed(1) + 
+                            " Q " + c3Base.x.toFixed(1) + " " + c3Base.y.toFixed(1) + " " + p5Base.x.toFixed(1) + " " + p5Base.y.toFixed(1) + " Z";
+
+            var ridge = "M " + p7Top.x.toFixed(1) + " " + p7Top.y.toFixed(1) + 
+                        " Q " + c4Top.x.toFixed(1) + " " + c4Top.y.toFixed(1) + " " + p6Top.x.toFixed(1) + " " + p6Top.y.toFixed(1) + 
+                        " L " + p5Top.x.toFixed(1) + " " + p5Top.y.toFixed(1) + 
+                        " Q " + c3Top.x.toFixed(1) + " " + c3Top.y.toFixed(1) + " " + p4Top.x.toFixed(1) + " " + p4Top.y.toFixed(1);
 
             slabsHtml += '<g class="iso-slab" data-index="' + idx + '" style="transition:transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);">' +
               '<path d="' + leftFace + '" fill="#09090b" stroke="#3f3f46" stroke-opacity="0.6" stroke-width="0.85" />' +
               '<path d="' + rightFace + '" fill="#000000" stroke="#27272a" stroke-opacity="0.45" stroke-width="0.85" />' +
               '<path d="' + topPath + '" fill="#121215" stroke="#71717a" stroke-opacity="0.85" stroke-width="' + (isTop ? '1' : '0.85') + '" />' +
               '<path d="' + ridge + '" stroke="#a1a1aa" stroke-opacity="0.85" stroke-width="1.1" fill="none" />';
+
             if (isTop) {
               slabsHtml += '<ellipse cx="140" cy="' + topCenterY.toFixed(1) + '" rx="' + apertureRx.toFixed(1) + '" ry="' + apertureRy.toFixed(1) + '" fill="url(#apertureMutedGlow)" stroke="#a1a1aa" stroke-opacity="0.9" stroke-width="1.1" />';
               slabsHtml += '<g transform="translate(140, ' + topCenterY.toFixed(1) + ') matrix(0.866025 0.5 -0.866025 0.5 0 0)">' +
@@ -455,18 +714,24 @@
             var rect = container.getBoundingClientRect();
             var svgX = ((e.clientX - rect.left) / rect.width) * 280;
             var svgY = ((e.clientY - rect.top) / rect.height) * 240;
-            var dx = svgX - 140, dy = svgY - originY;
-            var nx = Math.max(-1, Math.min(1, dx / 55)), ny = Math.max(-1, Math.min(1, dy / 50));
+            var dx = svgX - 140;
+            var dy = svgY - originY;
+            var nx = Math.max(-1, Math.min(1, dx / 55));
+            var ny = Math.max(-1, Math.min(1, dy / 50));
             var liftIntensity = Math.max(0.4, 1.2 - ny * 1.1);
+
             slabs.forEach(function(slab, idx) {
               var targetY = -idx * (5.5 * liftIntensity) - (idx === topSlabIndex ? 6 : 0);
               var targetX = nx * (idx * 2.2);
               slab.style.transform = 'translate(' + targetX.toFixed(1) + 'px, ' + targetY.toFixed(1) + 'px)';
             });
           });
+
           container.addEventListener('mouseleave', function() {
             var slabs = document.querySelectorAll('.iso-slab');
-            slabs.forEach(function(slab) { slab.style.transform = 'translate(0px, 0px)'; });
+            slabs.forEach(function(slab) {
+              slab.style.transform = 'translate(0px, 0px)';
+            });
           });
         }
       }
@@ -533,36 +798,6 @@
 
         var savedLang = localStorage.getItem('k2net_login_lang') || 'en';
         applyLanguage(savedLang);
-
-        // ─── Mobile Mini Orb Renderer ─────────────────────────────────────────
-        (function() {
-          var mc = document.getElementById('mobile-isometric-container');
-          if (!mc) return;
-          mc.innerHTML = '<canvas id="m-orb-canvas" width="120" height="120" style="width:120px;height:120px;filter:drop-shadow(0 0 20px rgba(34,197,94,0.45));"></canvas>';
-          var c = document.getElementById('m-orb-canvas');
-          if (!c) return;
-          var ctx = c.getContext('2d');
-          var r = 46, cx = 60, cy = 60, tStart = Date.now();
-          function drawMobileOrb() {
-            var el = (Date.now() - tStart) * 0.001;
-            ctx.clearRect(0, 0, 120, 120);
-            var g = ctx.createRadialGradient(cx, cy, r * 0.65, cx, cy, r * 1.35);
-            g.addColorStop(0, 'rgba(34,197,94,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.35, 0, Math.PI * 2); ctx.fill();
-            var c2 = ctx.createRadialGradient(cx - r*0.35, cy - r*0.35, r*0.08, cx, cy, r);
-            c2.addColorStop(0, '#0a160f'); c2.addColorStop(0.65, '#040705'); c2.addColorStop(0.86, '#15803d'); c2.addColorStop(1, '#4ade80');
-            ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-            ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
-            var wg = ctx.createRadialGradient(cx + Math.sin(el)*10, cy + Math.cos(el*0.8)*10, r*0.2, cx, cy, r);
-            wg.addColorStop(0, 'rgba(34,197,94,0.15)'); wg.addColorStop(1, 'rgba(0,0,0,0.35)');
-            ctx.fillStyle = wg; ctx.fillRect(0, 0, 120, 120);
-            var s = ctx.createRadialGradient(cx - r*0.38, cy - r*0.38, 1, cx - r*0.38, cy - r*0.38, r*0.28);
-            s.addColorStop(0, 'rgba(255,255,255,0.75)'); s.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = s; ctx.fillRect(0, 0, 120, 120); ctx.restore();
-            requestAnimationFrame(drawMobileOrb);
-          }
-          requestAnimationFrame(drawMobileOrb);
-        })();
 
       })();
     </script>

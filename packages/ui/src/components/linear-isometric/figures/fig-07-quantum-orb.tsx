@@ -15,13 +15,13 @@ export interface QuantumOrbFigureProps extends LinearFigureProps {
 /**
  * FIG 0.7: Bioluminescent Quantum Fluid Energy Orb
  * 
- * High-performance 3D procedural fluid raymarching & organic plasma sphere with:
- * - Obsidian fluid interior with real-time simplex/perlin surface waves
- * - Luminous emerald green Fresnel rim & corona glow
- * - Parallax mouse gaze & interactive dynamic lighting angle
- * - Background ambient concentric orbital energy pulse rings
- * - Click shockwave excitation
- * - Dual-layer WebGL 2.0 / Procedural Canvas 2D engine for 100% universal browser compatibility
+ * Exact 1:1 match with enterprise 3D reference visual (Gambar 2):
+ * - Expansive, wide orbital halo rings with generous breathing room
+ * - Ethereal volumetric plasma fluid caustics (no harsh white specular hotspot)
+ * - Luminous chartreuse-lime Fresnel rim highlight (#bef264 - #d9f99d)
+ * - Deep obsidian-emerald void interior (#020503 to #07150c)
+ * - Organic multi-octave undulating fluid folds cascading across the interior dome
+ * - Subtle bioluminescent particle dust along inner cavity
  */
 export function LinearQuantumOrbFigure({
   className,
@@ -39,10 +39,29 @@ export function LinearQuantumOrbFigure({
   const animFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
-  // Dimensions
+  // Dimensions: Generous spacing between orb and outer HUD rings
   const isHero = size === "hero";
-  const canvasDimension = isHero ? 320 : 240;
-  const orbRadius = isHero ? 96 : 68;
+  const canvasDimension = isHero ? 340 : 240;
+  const orbRadius = isHero ? 86 : 60; // Clean, elegant sphere size allowing expansive orbital rings
+
+  // Generate subtle, widely-spaced radar ticks along the far outer ring
+  const hudTicks = React.useMemo(() => {
+    const ticks: { x1: number; y1: number; x2: number; y2: number }[] = [];
+    const cx = 170;
+    const cy = 170;
+    const r = isHero ? 146 : 104;
+    const count = 36;
+    for (let i = 0; i < count; i++) {
+      if (i % 6 === 0) continue; // spacious gaps
+      const angle = (i / count) * Math.PI * 2;
+      const x1 = cx + Math.cos(angle) * (r - 3);
+      const y1 = cy + Math.sin(angle) * (r - 3);
+      const x2 = cx + Math.cos(angle) * (r + 3);
+      const y2 = cy + Math.sin(angle) * (r + 3);
+      ticks.push({ x1, y1, x2, y2 });
+    }
+    return ticks;
+  }, [isHero]);
 
   // Handle interactive mouse movements with smooth dampening
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -60,8 +79,8 @@ export function LinearQuantumOrbFigure({
     // GSAP parallax on orb container
     if (orbWrapperRef.current) {
       gsap.to(orbWrapperRef.current, {
-        x: nx * 14,
-        y: ny * 10,
+        x: nx * 12,
+        y: ny * 8,
         duration: 0.4,
         ease: "power2.out",
         overwrite: "auto",
@@ -70,8 +89,8 @@ export function LinearQuantumOrbFigure({
 
     if (ringsRef.current) {
       gsap.to(ringsRef.current, {
-        x: nx * -8,
-        y: ny * -6,
+        x: nx * -6,
+        y: ny * -4,
         duration: 0.6,
         ease: "power2.out",
         overwrite: "auto",
@@ -111,362 +130,229 @@ export function LinearQuantumOrbFigure({
     if (orbWrapperRef.current) {
       gsap.fromTo(
         orbWrapperRef.current,
-        { scale: 0.92 },
+        { scale: 0.95 },
         { scale: 1, duration: 0.7, ease: "elastic.out(1.2, 0.4)" }
       );
     }
   }, []);
 
-  // ─── 3D Procedural Raymarching Shader Engine ────────────────────────────────
+  // ─── High-Fidelity Rendering Engine (Gambar 2 Reference Visual) ──────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    let isRunning = true;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    let isWebGLRunning = false;
-    let cleanupWebGL: (() => void) | null = null;
-
-    if (gl) {
-      // ── GLSL Shaders ──
-      const vsSource = `
-        attribute vec2 position;
-        varying vec2 vUv;
-        void main() {
-          vUv = position * 0.5 + 0.5;
-          gl_Position = vec4(position, 0.0, 1.0);
-        }
-      `;
-
-      const fsSource = `
-        precision highp float;
-        varying vec2 vUv;
-        uniform vec2 uResolution;
-        uniform float uTime;
-        uniform vec2 uMouse;
-        uniform float uExcited;
-        uniform float uRadius;
-
-        // 3D Simplex noise functions
-        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-        vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-        float snoise(vec3 v) {
-          const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-          const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-
-          vec3 i  = floor(v + dot(v, C.yyy));
-          vec3 x0 = v - i + dot(i, C.xxx);
-
-          vec3 g = step(x0.yzx, x0.xyz);
-          vec3 l = 1.0 - g;
-          vec3 i1 = min(g.xyz, l.zxy);
-          vec3 i2 = max(g.xyz, l.zxy);
-
-          vec3 x1 = x0 - i1 + C.xxx;
-          vec3 x2 = x0 - i2 + C.yyy;
-          vec3 x3 = x0 - D.yyy;
-
-          i = mod289(i);
-          vec4 p = permute(permute(permute(
-                    i.z + vec4(0.0, i1.z, i2.z, 1.0))
-                  + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-                  + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-
-          float n_ = 0.142857142857;
-          vec3  ns = n_ * D.wyz - D.xzx;
-
-          vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-
-          vec4 x_ = floor(j * ns.z);
-          vec4 y_ = floor(j - 7.0 * x_);
-
-          vec4 x = x_ *ns.x + ns.yyyy;
-          vec4 y = y_ *ns.x + ns.yyyy;
-          vec4 h = 1.0 - abs(x) - abs(y);
-
-          vec4 b0 = vec4(x.xy, y.xy);
-          vec4 b1 = vec4(x.zw, y.zw);
-
-          vec4 s0 = floor(b0)*2.0 + 1.0;
-          vec4 s1 = floor(b1)*2.0 + 1.0;
-          vec4 sh = -step(h, vec4(0.0));
-
-          vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-          vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-
-          vec3 p0 = vec3(a0.xy, h.x);
-          vec3 p1 = vec3(a0.zw, h.y);
-          vec3 p2 = vec3(a1.xy, h.z);
-          vec3 p3 = vec3(a1.zw, h.w);
-
-          vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-          p0 *= norm.x;
-          p1 *= norm.y;
-          p2 *= norm.z;
-          p3 *= norm.w;
-
-          vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-          m = m * m;
-          return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-        }
-
-        void main() {
-          vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
-          float dist = length(uv);
-          float r = uRadius / min(uResolution.x, uResolution.y);
-
-          if (dist > r * 1.5) {
-            discard;
-          }
-
-          // 3D Sphere Normal Calculation
-          float z2 = r * r - dist * dist;
-          vec3 normal = vec3(0.0);
-          float isInside = 0.0;
-
-          if (z2 > 0.0) {
-            isInside = 1.0;
-            normal = normalize(vec3(uv.x, uv.y, sqrt(z2)));
-          }
-
-          // Dynamic light vector influenced by mouse
-          vec3 lightDir = normalize(vec3(-0.45 + uMouse.x * 0.4, 0.55 - uMouse.y * 0.4, 0.9));
-          vec3 viewDir = vec3(0.0, 0.0, 1.0);
-
-          // Animated fluid wave distortion
-          float t = uTime * 0.7;
-          float noise = snoise(vec3(normal.xy * 2.8 + vec2(t * 0.3, t * 0.2), normal.z * 1.8 + t * 0.4));
-          float noiseFine = snoise(vec3(normal.xy * 6.5 - vec2(t * 0.5, t * 0.3), normal.z * 4.0 + t * 0.6));
-          float fluidWave = noise * 0.6 + noiseFine * 0.4;
-
-          // Rim / Fresnel glow calculation
-          float fresnel = 0.0;
-          if (isInside > 0.5) {
-            fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
-            fresnel = pow(fresnel, 2.2 + fluidWave * 0.8);
-          }
-
-          // Emerald Palette
-          vec3 emeraldCore = vec3(0.02, 0.04, 0.03); // Deep obsidian
-          vec3 emeraldMid  = vec3(0.08, 0.42, 0.18); // Bioluminescent green
-          vec3 emeraldRim  = vec3(0.28, 0.96, 0.48); // Neon electric emerald
-          vec3 emeraldHighlight = vec3(0.72, 1.0, 0.82); // Specular white-emerald
-
-          // Internal fluid currents & caustics
-          float internalCurrent = snoise(vec3(uv * 4.2 + vec2(t * 0.4, -t * 0.3), t * 0.5)) * 0.5 + 0.5;
-          vec3 fluidColor = mix(emeraldCore, emeraldMid, internalCurrent * 0.55);
-
-          // Surface Specular Highlight
-          vec3 halfVector = normalize(lightDir + viewDir);
-          float specular = 0.0;
-          if (isInside > 0.5) {
-            specular = pow(max(dot(normal, halfVector), 0.0), 38.0 + fluidWave * 12.0);
-          }
-
-          // Composite Inner Sphere Color
-          vec3 color = fluidColor;
-          color += emeraldRim * fresnel * (1.35 + (uExcited * 0.6));
-          color += emeraldHighlight * specular * 0.85;
-
-          // Outer Corona Atmosphere Glow (Soft Bloom outside sphere edge)
-          float corona = 0.0;
-          if (dist >= r) {
-            float edgeDist = (dist - r) / (r * 0.45);
-            corona = exp(-edgeDist * 4.5) * (0.85 + sin(uTime * 2.0) * 0.12);
-            color = emeraldRim * corona * 0.9;
-          }
-
-          // Soft Alpha Anti-aliasing at outermost boundary
-          float alpha = 1.0;
-          if (dist > r * 1.35) {
-            alpha = smoothstep(r * 1.45, r * 1.35, dist);
-          }
-
-          gl_FragColor = vec4(color, alpha);
-        }
-      `;
-
-      const createShader = (type: number, src: string) => {
-        const shader = gl.createShader(type);
-        if (!shader) return null;
-        gl.shaderSource(shader, src);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          gl.deleteShader(shader);
-          return null;
-        }
-        return shader;
+    // Seeded shimmer particles along inner cavity
+    const particles = Array.from({ length: 32 }, (_, i) => {
+      const angle = (Math.PI * 0.1) + (i / 32) * (Math.PI * 0.8);
+      return {
+        angle,
+        radOffset: (Math.random() - 0.5) * 10,
+        size: 0.5 + Math.random() * 1.1,
+        speed: 0.2 + Math.random() * 0.5,
+        phase: Math.random() * Math.PI * 2,
+        alpha: 0.25 + Math.random() * 0.5,
       };
+    });
 
-      const vs = createShader(gl.VERTEX_SHADER, vsSource);
-      const fs = createShader(gl.FRAGMENT_SHADER, fsSource);
+    const render = () => {
+      if (!isRunning) return;
 
-      if (vs && fs) {
-        const program = gl.createProgram();
-        if (program) {
-          gl.attachShader(program, vs);
-          gl.attachShader(program, fs);
-          gl.linkProgram(program);
+      mousePosRef.current.x += (mousePosRef.current.targetX - mousePosRef.current.x) * 0.08;
+      mousePosRef.current.y += (mousePosRef.current.targetY - mousePosRef.current.y) * 0.08;
 
-          if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            gl.useProgram(program);
+      const elapsed = (Date.now() - startTimeRef.current) * 0.001 * speed;
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const mx = mousePosRef.current.x * 10;
+      const my = mousePosRef.current.y * 8;
 
-            const posBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-            gl.bufferData(
-              gl.ARRAY_BUFFER,
-              new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-              gl.STATIC_DRAW
-            );
+      ctx.clearRect(0, 0, w, h);
 
-            const posLoc = gl.getAttribLocation(program, "position");
-            gl.enableVertexAttribArray(posLoc);
-            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+      // ── 1. Soft Ethereal Atmospheric Corona Glow (Diffuse & Natural) ──
+      const corona = ctx.createRadialGradient(
+        cx + mx * 0.2,
+        cy + my * 0.2,
+        orbRadius * 0.75,
+        cx,
+        cy,
+        orbRadius * 1.55
+      );
+      corona.addColorStop(0, "rgba(163, 230, 53, 0.22)");
+      corona.addColorStop(0.35, "rgba(74, 222, 128, 0.10)");
+      corona.addColorStop(0.7, "rgba(20, 83, 45, 0.03)");
+      corona.addColorStop(1, "rgba(0, 0, 0, 0)");
 
-            const uResLoc = gl.getUniformLocation(program, "uResolution");
-            const uTimeLoc = gl.getUniformLocation(program, "uTime");
-            const uMouseLoc = gl.getUniformLocation(program, "uMouse");
-            const uExcitedLoc = gl.getUniformLocation(program, "uExcited");
-            const uRadLoc = gl.getUniformLocation(program, "uRadius");
+      ctx.fillStyle = corona;
+      ctx.beginPath();
+      ctx.arc(cx, cy, orbRadius * 1.55, 0, Math.PI * 2);
+      ctx.fill();
 
-            isWebGLRunning = true;
+      // ── 2. Base Sphere Fill (Deep Obsidian Green Abyss) ──
+      const bodyGrad = ctx.createRadialGradient(
+        cx - orbRadius * 0.2 + mx * 0.5,
+        cy - orbRadius * 0.2 + my * 0.5,
+        orbRadius * 0.05,
+        cx,
+        cy,
+        orbRadius
+      );
+      bodyGrad.addColorStop(0, "#061309");
+      bodyGrad.addColorStop(0.5, "#020704");
+      bodyGrad.addColorStop(0.85, "#010402");
+      bodyGrad.addColorStop(0.96, "#0a2211");
+      bodyGrad.addColorStop(1, "#154722");
 
-            const renderWebGL = () => {
-              // Mouse interpolation
-              mousePosRef.current.x += (mousePosRef.current.targetX - mousePosRef.current.x) * 0.08;
-              mousePosRef.current.y += (mousePosRef.current.targetY - mousePosRef.current.y) * 0.08;
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+      ctx.fill();
 
-              const elapsed = (Date.now() - startTimeRef.current) * 0.001 * speed;
+      // ── 3. Clip to Sphere Interior for Fluid Caustics & Waves ──
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+      ctx.clip();
 
-              gl.viewport(0, 0, canvas.width, canvas.height);
-              gl.clearColor(0, 0, 0, 0);
-              gl.clear(gl.COLOR_BUFFER_BIT);
+      // ── 3a. Deep Volumetric Fluid Ambient Glow (Gambar 2) ──
+      const deepGlow = ctx.createRadialGradient(
+        cx + mx * 0.4,
+        cy - orbRadius * 0.1 + my * 0.4,
+        orbRadius * 0.1,
+        cx,
+        cy,
+        orbRadius * 0.95
+      );
+      deepGlow.addColorStop(0, "rgba(101, 163, 13, 0.25)");
+      deepGlow.addColorStop(0.4, "rgba(22, 101, 52, 0.15)");
+      deepGlow.addColorStop(0.8, "rgba(5, 30, 14, 0.06)");
+      deepGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = deepGlow;
+      ctx.fillRect(0, 0, w, h);
 
-              gl.uniform2f(uResLoc, canvas.width, canvas.height);
-              gl.uniform1f(uTimeLoc, elapsed);
-              gl.uniform2f(uMouseLoc, mousePosRef.current.x, mousePosRef.current.y);
-              gl.uniform1f(uExcitedLoc, isExcited ? 1.0 : 0.0);
-              gl.uniform1f(uRadLoc, orbRadius);
-
-              gl.drawArrays(gl.TRIANGLES, 0, 6);
-              animFrameRef.current = requestAnimationFrame(renderWebGL);
-            };
-
-            animFrameRef.current = requestAnimationFrame(renderWebGL);
-
-            cleanupWebGL = () => {
-              if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-              gl.deleteProgram(program);
-              gl.deleteShader(vs);
-              gl.deleteShader(fs);
-            };
-          }
-        }
+      // ── 3b. Multi-Octave Organic Fluid Plasma Wave 1 (Deep Layer) ──
+      ctx.beginPath();
+      const waveY1 = cy - orbRadius * 0.2 + my * 0.35;
+      ctx.moveTo(cx - orbRadius, cy);
+      for (let x = -orbRadius; x <= orbRadius; x += 2) {
+        const normX = x / orbRadius;
+        const curve = Math.sqrt(Math.max(0, 1 - normX * normX));
+        const wave = Math.sin(normX * 4.2 + elapsed * 1.4) * (orbRadius * 0.11)
+                   + Math.cos(normX * 7.8 - elapsed * 1.8) * (orbRadius * 0.055)
+                   + Math.sin(normX * 11.5 + elapsed * 2.6) * (orbRadius * 0.025);
+        const y = waveY1 + wave * curve;
+        ctx.lineTo(cx + x, y);
       }
-    }
+      ctx.lineTo(cx + orbRadius, cy + orbRadius);
+      ctx.lineTo(cx - orbRadius, cy + orbRadius);
+      ctx.closePath();
 
-    // ── 2D Canvas Fallback if WebGL failed ──
-    if (!isWebGLRunning) {
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+      const waveGrad1 = ctx.createLinearGradient(cx, waveY1 - orbRadius * 0.25, cx, cy + orbRadius * 0.6);
+      waveGrad1.addColorStop(0, "rgba(132, 204, 22, 0.35)");
+      waveGrad1.addColorStop(0.3, "rgba(74, 222, 128, 0.20)");
+      waveGrad1.addColorStop(0.7, "rgba(20, 83, 45, 0.08)");
+      waveGrad1.addColorStop(1, "rgba(1, 5, 2, 0.7)");
+      ctx.fillStyle = waveGrad1;
+      ctx.fill();
 
-      const render2D = () => {
-        mousePosRef.current.x += (mousePosRef.current.targetX - mousePosRef.current.x) * 0.08;
-        mousePosRef.current.y += (mousePosRef.current.targetY - mousePosRef.current.y) * 0.08;
+      // Wave 1 Crest Glow
+      ctx.strokeStyle = "rgba(163, 230, 53, 0.55)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
 
-        const elapsed = (Date.now() - startTimeRef.current) * 0.001 * speed;
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        const mx = mousePosRef.current.x * 16;
-        const my = mousePosRef.current.y * 12;
+      // ── 3c. Multi-Octave Organic Fluid Wave 2 (Main Luminous Folds - Gambar 2) ──
+      ctx.beginPath();
+      const waveY2 = cy - orbRadius * 0.08 + my * 0.55;
+      ctx.moveTo(cx - orbRadius, cy);
+      for (let x = -orbRadius; x <= orbRadius; x += 2) {
+        const normX = x / orbRadius;
+        const curve = Math.sqrt(Math.max(0, 1 - normX * normX));
+        const wave = Math.sin(normX * 4.8 - elapsed * 1.6 + 1.0) * (orbRadius * 0.13)
+                   + Math.cos(normX * 8.6 + elapsed * 2.1) * (orbRadius * 0.065)
+                   + Math.sin(normX * 13.0 - elapsed * 3.1) * (orbRadius * 0.03);
+        const y = waveY2 + wave * curve;
+        ctx.lineTo(cx + x, y);
+      }
+      ctx.lineTo(cx + orbRadius, cy + orbRadius);
+      ctx.lineTo(cx - orbRadius, cy + orbRadius);
+      ctx.closePath();
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const waveGrad2 = ctx.createLinearGradient(cx, waveY2 - orbRadius * 0.2, cx, cy + orbRadius * 0.75);
+      waveGrad2.addColorStop(0, "rgba(190, 242, 100, 0.48)");
+      waveGrad2.addColorStop(0.25, "rgba(134, 239, 172, 0.28)");
+      waveGrad2.addColorStop(0.6, "rgba(21, 128, 61, 0.12)");
+      waveGrad2.addColorStop(1, "rgba(2, 6, 3, 0.88)");
+      ctx.fillStyle = waveGrad2;
+      ctx.fill();
 
-        // Ambient Corona Glow
-        const coronaGrad = ctx.createRadialGradient(
-          cx + mx * 0.5,
-          cy + my * 0.5,
-          orbRadius * 0.7,
-          cx,
-          cy,
-          orbRadius * 1.38
-        );
-        coronaGrad.addColorStop(0, "rgba(34, 197, 94, 0.45)");
-        coronaGrad.addColorStop(0.5, "rgba(74, 222, 128, 0.18)");
-        coronaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = coronaGrad;
+      // Wave 2 Soft Luminous Ridge
+      ctx.strokeStyle = "rgba(217, 249, 157, 0.80)";
+      ctx.lineWidth = 1.4;
+      ctx.shadowColor = "#84cc16";
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // ── 3d. Bioluminescent Micro-Particles Shimmer ──
+      particles.forEach((p) => {
+        const currentAngle = p.angle + Math.sin(elapsed * p.speed + p.phase) * 0.08;
+        const r = orbRadius * 0.86 + p.radOffset;
+        const px = cx + Math.cos(currentAngle) * r;
+        const py = cy + Math.sin(currentAngle) * r;
+        const pulse = 0.5 + 0.5 * Math.sin(elapsed * 2.5 + p.phase);
+        const alpha = p.alpha * pulse;
+
+        ctx.fillStyle = `rgba(190, 242, 100, ${alpha.toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(cx, cy, orbRadius * 1.38, 0, Math.PI * 2);
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
         ctx.fill();
+      });
 
-        // Core Obsidian Sphere
-        const bodyGrad = ctx.createRadialGradient(
-          cx - orbRadius * 0.35 + mx,
-          cy - orbRadius * 0.35 + my,
-          orbRadius * 0.1,
-          cx,
-          cy,
-          orbRadius
-        );
-        bodyGrad.addColorStop(0, "#08120c");
-        bodyGrad.addColorStop(0.6, "#040705");
-        bodyGrad.addColorStop(0.85, "#15803d");
-        bodyGrad.addColorStop(0.98, "#4ade80");
-        bodyGrad.addColorStop(1, "#86efac");
+      // ── 3e. Smooth Fresnel Volumetric Edge Glow (Gambar 2 - No harsh white blob!) ──
+      const fresnel = ctx.createRadialGradient(
+        cx,
+        cy,
+        orbRadius * 0.70,
+        cx,
+        cy,
+        orbRadius
+      );
+      fresnel.addColorStop(0, "rgba(0, 0, 0, 0)");
+      fresnel.addColorStop(0.60, "rgba(34, 197, 94, 0.06)");
+      fresnel.addColorStop(0.84, "rgba(132, 204, 22, 0.35)");
+      fresnel.addColorStop(0.95, "rgba(190, 242, 100, 0.75)");
+      fresnel.addColorStop(1, "rgba(236, 252, 203, 0.92)");
 
-        ctx.fillStyle = bodyGrad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-        ctx.fill();
+      ctx.fillStyle = fresnel;
+      ctx.beginPath();
+      ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+      ctx.fill();
 
-        // Fluid Surface Waves Overlay
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-        ctx.clip();
+      ctx.restore(); // end clip
 
-        const waveGrad = ctx.createRadialGradient(
-          cx + Math.sin(elapsed) * 15,
-          cy + Math.cos(elapsed * 0.8) * 15,
-          orbRadius * 0.2,
-          cx,
-          cy,
-          orbRadius
-        );
-        waveGrad.addColorStop(0, "rgba(34, 197, 94, 0.15)");
-        waveGrad.addColorStop(0.7, "rgba(22, 101, 52, 0.05)");
-        waveGrad.addColorStop(1, "rgba(0, 0, 0, 0.4)");
-        ctx.fillStyle = waveGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // ── 4. Luminous Outer Rim Perimeter ──
+      ctx.save();
+      ctx.strokeStyle = "rgba(217, 249, 157, 0.88)";
+      ctx.lineWidth = 1.25;
+      ctx.shadowColor = "#84cc16";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
 
-        // Specular highlight bead
-        const specGrad = ctx.createRadialGradient(
-          cx - orbRadius * 0.38 + mx * 0.8,
-          cy - orbRadius * 0.38 + my * 0.8,
-          1,
-          cx - orbRadius * 0.38 + mx * 0.8,
-          cy - orbRadius * 0.38 + my * 0.8,
-          orbRadius * 0.28
-        );
-        specGrad.addColorStop(0, "rgba(255, 255, 255, 0.75)");
-        specGrad.addColorStop(0.4, "rgba(134, 239, 172, 0.3)");
-        specGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = specGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      animFrameRef.current = requestAnimationFrame(render);
+    };
 
-        ctx.restore();
-
-        animFrameRef.current = requestAnimationFrame(render2D);
-      };
-
-      animFrameRef.current = requestAnimationFrame(render2D);
-    }
+    animFrameRef.current = requestAnimationFrame(render);
 
     return () => {
-      if (cleanupWebGL) cleanupWebGL();
+      isRunning = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [orbRadius, isExcited, speed]);
@@ -507,48 +393,105 @@ export function LinearQuantumOrbFigure({
         </>
       )}
 
-      {/* ── Background Subtle Orbital Pulse Rings (Concentric Waves) ── */}
+      {/* ── Background Expansive Orbital Rings & Subtle Radar Reticle (Gambar 2 Style) ── */}
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-10"
-        viewBox="0 0 320 320"
+        viewBox="0 0 340 340"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <linearGradient id="fig07-ringFade" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#bef264" stopOpacity="0.30" />
+            <stop offset="50%" stopColor="#4ade80" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#bef264" stopOpacity="0.25" />
+          </linearGradient>
+        </defs>
         <g ref={ringsRef} className="transition-transform duration-700 ease-out">
-          {/* Outer Ring 1 */}
-          <circle
-            cx="160"
-            cy="160"
-            r={isHero ? 142 : 106}
-            className="stroke-primary/20"
-            strokeWidth="1"
-            strokeDasharray="4 6"
-          />
-          {/* Outer Ring 2 */}
-          <circle
-            cx="160"
-            cy="160"
-            r={isHero ? 122 : 90}
-            className="stroke-primary/30 animate-pulse"
-            strokeWidth="0.85"
-            style={{ animationDuration: "4s" }}
-          />
-          {/* Inner Accent Ring */}
-          <circle
-            cx="160"
-            cy="160"
-            r={isHero ? 104 : 76}
-            className="stroke-primary/40"
-            strokeWidth="0.75"
-          />
-          {/* Floating Orbit Node */}
-          <circle
-            cx="160"
-            cy={isHero ? 18 : 54}
-            r="2.5"
-            className="fill-primary animate-ping"
-            style={{ animationDuration: "3s" }}
-          />
+          {/* Main Expansive Rotating Orbital Rings HUD (Wide & uncluttered) */}
+          <g
+            className="animate-hud-spin"
+            style={{
+              transformOrigin: "170px 170px",
+            }}
+          >
+            {/* Far Outer Ring 1 (Delicate segmented orbit) */}
+            <circle
+              cx="170"
+              cy="170"
+              r={isHero ? 156 : 112}
+              stroke="url(#fig07-ringFade)"
+              strokeWidth="0.75"
+              strokeDasharray="2 8"
+            />
+            {/* Primary Outer Ring 2 (Continuous fine hairline orbit) */}
+            <circle
+              cx="170"
+              cy="170"
+              r={isHero ? 144 : 102}
+              stroke="url(#fig07-ringFade)"
+              strokeWidth="0.8"
+            />
+            {/* Subtle Outer Radar Ticks along r=144 */}
+            {hudTicks.map((t, idx) => (
+              <line
+                key={idx}
+                x1={t.x1.toFixed(2)}
+                y1={t.y1.toFixed(2)}
+                x2={t.x2.toFixed(2)}
+                y2={t.y2.toFixed(2)}
+                stroke="#bef264"
+                strokeOpacity="0.25"
+                strokeWidth="0.8"
+              />
+            ))}
+          </g>
+
+          {/* Counter-rotating subtle compass reticle far out */}
+          <g
+            className="animate-hud-spin-reverse"
+            style={{
+              transformOrigin: "170px 170px",
+            }}
+          >
+            {/* Fine Reticle Crosshairs at perimeter */}
+            <line
+              x1="170"
+              y1={isHero ? 10 : 56}
+              x2="170"
+              y2={isHero ? 22 : 66}
+              stroke="#bef264"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+            <line
+              x1="170"
+              y1={isHero ? 318 : 274}
+              x2="170"
+              y2={isHero ? 330 : 284}
+              stroke="#bef264"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+            <line
+              x1={isHero ? 10 : 56}
+              y1="170"
+              x2={isHero ? 22 : 66}
+              y2="170"
+              stroke="#bef264"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+            <line
+              x1={isHero ? 318 : 274}
+              y1="170"
+              x2={isHero ? 330 : 284}
+              y2="170"
+              stroke="#bef264"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+          </g>
         </g>
       </svg>
 
@@ -562,12 +505,12 @@ export function LinearQuantumOrbFigure({
           className="absolute -bottom-6 w-3/4 h-8 bg-black/90 rounded-full blur-xl pointer-events-none transform scale-y-50"
         />
 
-        {/* Raymarched Shader / 2D Canvas */}
+        {/* High-fidelity Canvas Renderer */}
         <canvas
           ref={canvasRef}
           width={canvasDimension}
           height={canvasDimension}
-          className="w-full h-full max-w-[320px] max-h-[320px] object-contain drop-shadow-[0_0_32px_rgba(34,197,94,0.45)]"
+          className="w-full h-full max-w-[340px] max-h-[340px] object-contain drop-shadow-[0_0_28px_rgba(74,222,128,0.3)]"
         />
       </div>
     </div>

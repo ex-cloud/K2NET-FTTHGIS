@@ -184,62 +184,138 @@ html, body {
 }
 
 @media (max-width: 1023px) {
+  .ftth-login-container {
+    width: 100% !important;
+    min-height: 100vh !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+  }
   #ftth-left {
-    max-width: 100%;
-    padding: 24px 20px;
-    border-right: none;
-    overflow-x: hidden;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px 16px !important;
+    border-right: none !important;
+    overflow-x: hidden !important;
+    min-height: 100vh !important;
+    max-height: none !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+  #ftth-form-area {
+    width: 100% !important;
+    max-width: 390px !important;
+    margin: auto !important;
+    padding: 12px 0 !important;
+    box-sizing: border-box !important;
+  }
+  #ftth-welcome {
+    text-align: center !important;
+    margin-bottom: 20px !important;
+  }
+  #ftth-welcome h1 {
+    text-align: center !important;
+  }
+  #ftth-welcome p {
+    text-align: center !important;
+  }
+  #ftth-footer {
+    text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-top: 24px !important;
+  }
+  #ftth-footer div, #ftth-footer p {
+    text-align: center !important;
   }
   #ftth-right {
     display: none !important;
   }
   #ftth-mobile-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    width: 100%;
-    position: relative;
-    z-index: 20;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    position: relative !important;
+    z-index: 20 !important;
   }
   #mobile-isometric-container {
-    width: 100%;
-    max-width: 170px;
-    height: 150px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100% !important;
+    max-width: 200px !important;
+    height: 160px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   #ftth-mobile-glow {
-    display: block;
-    position: absolute;
-    top: 130px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(34, 197, 94, 0.22) 0%, rgba(16, 185, 129, 0.08) 45%, transparent 70%);
-    filter: blur(40px);
-    pointer-events: none;
-    z-index: 1;
+    display: block !important;
+    position: absolute !important;
+    top: 130px !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 320px !important;
+    height: 320px !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, rgba(16, 185, 129, 0.08) 45%, transparent 70%) !important;
+    filter: blur(40px) !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
   }
   #ftth-mobile-grid {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 300px;
-    opacity: 0.32;
-    pointer-events: none;
-    background-image: radial-gradient(circle, rgba(74, 222, 128, 0.4) 1.1px, transparent 1.1px);
-    background-size: 18px 18px;
-    -webkit-mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
-    mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
-    z-index: 1;
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 320px !important;
+    opacity: 0.32 !important;
+    pointer-events: none !important;
+    background-image: radial-gradient(circle, rgba(74, 222, 128, 0.4) 1.1px, transparent 1.1px) !important;
+    background-size: 18px 18px !important;
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%) !important;
+    mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%) !important;
+    z-index: 1 !important;
   }
+}
+
+/* ---------- HUD Radar Grid Animations ---------- */
+@keyframes k2net-rotate-hud {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes k2net-rotate-hud-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.k2net-hud-grid {
+  transform-origin: 170px 170px;
+  animation: k2net-rotate-hud 80s linear infinite;
+}
+
+.k2net-hud-grid-mobile {
+  transform-origin: 90px 75px;
+  animation: k2net-rotate-hud 80s linear infinite;
+}
+
+.k2net-hud-inner {
+  transform-origin: 170px 170px;
+  animation: k2net-rotate-hud-reverse 120s linear infinite;
+}
+
+.k2net-hud-inner-mobile {
+  transform-origin: 90px 75px;
+  animation: k2net-rotate-hud-reverse 120s linear infinite;
 }
 
 /* ---------- Tier Badges ---------- */
@@ -469,3 +545,23 @@ html, body {
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* ---------- 3D HUD & Radar Animations ---------- */
+@keyframes k2net-rotate-hud {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes k2net-rotate-hud-reverse {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+

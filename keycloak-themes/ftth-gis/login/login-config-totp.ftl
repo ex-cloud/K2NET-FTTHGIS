@@ -18,7 +18,7 @@
     <div class="ftth-login-container" style="display:flex;min-height:100vh;width:100%;font-family:'Inter',sans-serif;background:#09090b;color:#f4f4f5;overflow-x:hidden;">
 
       <!-- ─── LEFT COLUMN: TOTP Setup Form ─────────────────────────────── -->
-      <div id="ftth-left" style="width:100%;max-width:44%;min-height:100vh;max-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;padding:24px 44px;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
+      <div id="ftth-left" style="min-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
 
         <!-- Top Header Row -->
         <div id="ftth-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:20;flex-shrink:0;">
@@ -243,144 +243,314 @@
     <!-- Scripts -->
     <script>
       (function() {
-        var activeHero = "fig-01";
+        // ─── 1. Canonical 3D Figure Dispatcher & Generator (FIG 0.1 to FIG 0.7) ───
+        var activeHero = "fig-07";
         try {
-          activeHero = localStorage.getItem('k2net_active_login_hero') || 
-                       localStorage.getItem('k2net_login_hero_variant') || 
+          var urlParams = new URLSearchParams(window.location.search);
+          activeHero = urlParams.get('hero') || 
                        (document.cookie.match(/k2net_global_login_hero=([^;]+)/) || [])[1] || 
-                       "fig-01";
+                       localStorage.getItem('k2net_active_login_hero') || 
+                       localStorage.getItem('k2net_login_hero_variant') || 
+                       "fig-07";
         } catch(e) {}
 
         var badgeTextEl = document.getElementById('hero-fig-badge-text');
 
+        function initQuantumOrb(canvas, orbRadius, interactiveContainer) {
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+          var startT = Date.now();
+
+          if (interactiveContainer) {
+            interactiveContainer.addEventListener('mousemove', function(e) {
+              var rect = interactiveContainer.getBoundingClientRect();
+              var nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+              var ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+              mouse.targetX = Math.max(-1.2, Math.min(1.2, nx));
+              mouse.targetY = Math.max(-1.2, Math.min(1.2, ny));
+            });
+            interactiveContainer.addEventListener('mouseleave', function() {
+              mouse.targetX = 0;
+              mouse.targetY = 0;
+            });
+          }
+
+          var particles = [];
+          for (var i = 0; i < 36; i++) {
+            particles.push({
+              angle: (Math.PI * 0.15) + (i / 36) * (Math.PI * 0.7),
+              radOffset: (Math.random() - 0.5) * 6,
+              size: 0.6 + Math.random() * 1.3,
+              speed: 0.2 + Math.random() * 0.6,
+              phase: Math.random() * Math.PI * 2,
+              alpha: 0.3 + Math.random() * 0.7
+            });
+          }
+
+          function draw() {
+            mouse.x += (mouse.targetX - mouse.x) * 0.08;
+            mouse.y += (mouse.targetY - mouse.y) * 0.08;
+            var elapsed = (Date.now() - startT) * 0.001;
+
+            var w = canvas.width;
+            var h = canvas.height;
+            var cx = w / 2;
+            var cy = h / 2;
+            var mx = mouse.x * 12;
+            var my = mouse.y * 10;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Outer Corona Glow
+            var corona = ctx.createRadialGradient(cx + mx * 0.3, cy + my * 0.3, orbRadius * 0.7, cx, cy, orbRadius * 1.45);
+            corona.addColorStop(0, 'rgba(74, 222, 128, 0.35)');
+            corona.addColorStop(0.35, 'rgba(34, 197, 94, 0.18)');
+            corona.addColorStop(0.7, 'rgba(22, 101, 52, 0.05)');
+            corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = corona;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius * 1.45, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Base Sphere Fill (Deep Obsidian Green Abyss)
+            var bodyGrad = ctx.createRadialGradient(cx - orbRadius * 0.25 + mx, cy - orbRadius * 0.25 + my, orbRadius * 0.05, cx, cy, orbRadius);
+            bodyGrad.addColorStop(0, '#07170c');
+            bodyGrad.addColorStop(0.45, '#030905');
+            bodyGrad.addColorStop(0.8, '#020503');
+            bodyGrad.addColorStop(0.95, '#0d2b14');
+            bodyGrad.addColorStop(1, '#1e5c2d');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Clip to sphere interior
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.clip();
+
+            // 3a. Deep Volumetric Fluid Ambient Glow
+            var deepGlow = ctx.createRadialGradient(cx + mx * 0.4, cy - orbRadius * 0.1 + my * 0.4, orbRadius * 0.1, cx, cy, orbRadius * 0.95);
+            deepGlow.addColorStop(0, 'rgba(101, 163, 13, 0.25)');
+            deepGlow.addColorStop(0.4, 'rgba(22, 101, 52, 0.15)');
+            deepGlow.addColorStop(0.8, 'rgba(5, 30, 14, 0.06)');
+            deepGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = deepGlow;
+            ctx.fillRect(0, 0, w, h);
+
+            // 3b. Multi-Octave Organic Fluid Plasma Wave 1 (Deep Layer)
+            ctx.beginPath();
+            var waveY1 = cy - orbRadius * 0.2 + my * 0.35;
+            ctx.moveTo(cx - orbRadius, cy);
+            for (var x = -orbRadius; x <= orbRadius; x += 2) {
+              var normX = x / orbRadius;
+              var curve = Math.sqrt(Math.max(0, 1 - normX * normX));
+              var wave = Math.sin(normX * 4.2 + elapsed * 1.4) * (orbRadius * 0.11)
+                       + Math.cos(normX * 7.8 - elapsed * 1.8) * (orbRadius * 0.055)
+                       + Math.sin(normX * 11.5 + elapsed * 2.6) * (orbRadius * 0.025);
+              ctx.lineTo(cx + x, waveY1 + wave * curve);
+            }
+            ctx.lineTo(cx + orbRadius, cy + orbRadius);
+            ctx.lineTo(cx - orbRadius, cy + orbRadius);
+            ctx.closePath();
+            var waveGrad1 = ctx.createLinearGradient(cx, waveY1 - orbRadius * 0.25, cx, cy + orbRadius * 0.6);
+            waveGrad1.addColorStop(0, 'rgba(132, 204, 22, 0.35)');
+            waveGrad1.addColorStop(0.3, 'rgba(74, 222, 128, 0.20)');
+            waveGrad1.addColorStop(0.7, 'rgba(20, 83, 45, 0.08)');
+            waveGrad1.addColorStop(1, 'rgba(1, 5, 2, 0.7)');
+            ctx.fillStyle = waveGrad1;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(163, 230, 53, 0.55)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // 3c. Multi-Octave Organic Fluid Wave 2 (Main Luminous Folds)
+            ctx.beginPath();
+            var waveY2 = cy - orbRadius * 0.08 + my * 0.55;
+            ctx.moveTo(cx - orbRadius, cy);
+            for (var x2 = -orbRadius; x2 <= orbRadius; x2 += 2) {
+              var normX2 = x2 / orbRadius;
+              var curve2 = Math.sqrt(Math.max(0, 1 - normX2 * normX2));
+              var wave2 = Math.sin(normX2 * 4.8 - elapsed * 1.6 + 1.0) * (orbRadius * 0.13)
+                        + Math.cos(normX2 * 8.6 + elapsed * 2.1) * (orbRadius * 0.065)
+                        + Math.sin(normX2 * 13.0 - elapsed * 3.1) * (orbRadius * 0.03);
+              ctx.lineTo(cx + x2, waveY2 + wave2 * curve2);
+            }
+            ctx.lineTo(cx + orbRadius, cy + orbRadius);
+            ctx.lineTo(cx - orbRadius, cy + orbRadius);
+            ctx.closePath();
+            var waveGrad2 = ctx.createLinearGradient(cx, waveY2 - orbRadius * 0.2, cx, cy + orbRadius * 0.75);
+            waveGrad2.addColorStop(0, 'rgba(190, 242, 100, 0.48)');
+            waveGrad2.addColorStop(0.25, 'rgba(134, 239, 172, 0.28)');
+            waveGrad2.addColorStop(0.6, 'rgba(21, 128, 61, 0.12)');
+            waveGrad2.addColorStop(1, 'rgba(2, 6, 3, 0.88)');
+            ctx.fillStyle = waveGrad2;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(217, 249, 157, 0.80)';
+            ctx.lineWidth = 1.4;
+            ctx.shadowColor = '#84cc16';
+            ctx.shadowBlur = 6;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 3d. Bioluminescent Micro-Particles
+            for (var p = 0; p < particles.length; p++) {
+              var pt = particles[p];
+              var cAng = pt.angle + Math.sin(elapsed * pt.speed + pt.phase) * 0.08;
+              var pr = orbRadius * 0.86 + pt.radOffset;
+              var px = cx + Math.cos(cAng) * pr;
+              var py = cy + Math.sin(cAng) * pr;
+              var pulse = 0.5 + 0.5 * Math.sin(elapsed * 2.5 + pt.phase);
+              ctx.fillStyle = 'rgba(190, 242, 100, ' + (pt.alpha * pulse).toFixed(2) + ')';
+              ctx.beginPath();
+              ctx.arc(px, py, pt.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // 3e. Smooth Fresnel Volumetric Edge Glow (Gambar 2 - No harsh white spot!)
+            var fresnel = ctx.createRadialGradient(cx, cy, orbRadius * 0.70, cx, cy, orbRadius);
+            fresnel.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            fresnel.addColorStop(0.60, 'rgba(34, 197, 94, 0.06)');
+            fresnel.addColorStop(0.84, 'rgba(132, 204, 22, 0.35)');
+            fresnel.addColorStop(0.95, 'rgba(190, 242, 100, 0.75)');
+            fresnel.addColorStop(1, 'rgba(236, 252, 203, 0.92)');
+            ctx.fillStyle = fresnel;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // 4. Luminous Outer Rim Perimeter
+            ctx.save();
+            ctx.strokeStyle = 'rgba(217, 249, 157, 0.88)';
+            ctx.lineWidth = 1.25;
+            ctx.shadowColor = '#84cc16';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            requestAnimationFrame(draw);
+          }
+          requestAnimationFrame(draw);
+        }
+
+        // Initialize Mobile Hero Orb (Active for mobile screens)
+        var mobileContainer = document.getElementById('mobile-isometric-container');
+        if (mobileContainer) {
+          mobileContainer.innerHTML = 
+            '<div style="position:relative;width:100%;max-width:180px;height:150px;display:flex;align-items:center;justify-content:center;">' +
+              '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 180 150" fill="none">' +
+                '<defs>' +
+                  '<linearGradient id="fig07-ringFadeMobile" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                    '<stop offset="0%" stop-color="#bef264" stop-opacity="0.30" />' +
+                    '<stop offset="50%" stop-color="#4ade80" stop-opacity="0.08" />' +
+                    '<stop offset="100%" stop-color="#bef264" stop-opacity="0.25" />' +
+                  '</linearGradient>' +
+                '</defs>' +
+                '<g class="k2net-hud-grid-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud 100s linear infinite;">' +
+                  '<circle cx="90" cy="75" r="70" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
+                  '<circle cx="90" cy="75" r="64" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<g id="hud-ticks-mobile" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                '</g>' +
+                '<g class="k2net-hud-inner-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
+                  '<line x1="90" y1="6" x2="90" y2="14" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="136" x2="90" y2="144" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="21" y1="75" x2="29" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="151" y1="75" x2="159" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                '</g>' +
+              '</svg>' +
+              '<canvas id="mobile-quantum-orb-canvas" width="160" height="150" style="width:160px;height:150px;filter:drop-shadow(0 0 20px rgba(74,222,128,0.3));"></canvas>' +
+            '</div>';
+
+          // Build mobile radar ticks along r=64
+          var mTicksGroup = document.getElementById('hud-ticks-mobile');
+          if (mTicksGroup) {
+            var mcx = 90, mcy = 75, mr = 64, mCount = 24;
+            for (var mi = 0; mi < mCount; mi++) {
+              if (mi % 4 === 0) continue;
+              var mAngle = (mi / mCount) * Math.PI * 2;
+              var mx1 = mcx + Math.cos(mAngle) * (mr - 2.5);
+              var my1 = mcy + Math.sin(mAngle) * (mr - 2.5);
+              var mx2 = mcx + Math.cos(mAngle) * (mr + 2.5);
+              var my2 = mcy + Math.sin(mAngle) * (mr + 2.5);
+              var mLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              mLine.setAttribute('x1', mx1.toFixed(2));
+              mLine.setAttribute('y1', my1.toFixed(2));
+              mLine.setAttribute('x2', mx2.toFixed(2));
+              mLine.setAttribute('y2', my2.toFixed(2));
+              mTicksGroup.appendChild(mLine);
+            }
+          }
+
+          var mobileCanvas = document.getElementById('mobile-quantum-orb-canvas');
+          if (mobileCanvas) {
+            initQuantumOrb(mobileCanvas, 42, mobileContainer);
+          }
+        }
+
+        // Initialize Desktop Hero
         if (activeHero === "fig-07") {
           if (badgeTextEl) badgeTextEl.textContent = "FIG 0.7: QUANTUM ORB";
           var container = document.getElementById('isometric-container');
           if (container) {
             container.innerHTML = 
               '<div style="position:relative;width:100%;max-width:340px;height:290px;display:flex;align-items:center;justify-content:center;cursor:pointer;">' +
-                '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 320 320" fill="none">' +
-                  '<circle id="orb-ring-1" cx="160" cy="160" r="140" stroke="#22c55e" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="4 6" />' +
-                  '<circle id="orb-ring-2" cx="160" cy="160" r="118" stroke="#22c55e" stroke-opacity="0.25" stroke-width="0.85" />' +
-                  '<circle id="orb-ring-3" cx="160" cy="160" r="98" stroke="#22c55e" stroke-opacity="0.35" stroke-width="0.75" />' +
+                '<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;" viewBox="0 0 340 340" fill="none">' +
+                  '<defs>' +
+                    '<linearGradient id="fig07-ringFadeDesktop" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                      '<stop offset="0%" stop-color="#bef264" stop-opacity="0.30" />' +
+                      '<stop offset="50%" stop-color="#4ade80" stop-opacity="0.08" />' +
+                      '<stop offset="100%" stop-color="#bef264" stop-opacity="0.25" />' +
+                    '</linearGradient>' +
+                  '</defs>' +
+                  '<g class="k2net-hud-grid" style="transform-origin:170px 170px;animation:k2net-rotate-hud 100s linear infinite;">' +
+                    '<circle cx="170" cy="170" r="156" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
+                    '<circle cx="170" cy="170" r="144" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<g id="hud-ticks-desktop" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                  '</g>' +
+                  '<g class="k2net-hud-inner" style="transform-origin:170px 170px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
+                    '<line x1="170" y1="10" x2="170" y2="22" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="318" x2="170" y2="330" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="10" y1="170" x2="22" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="318" y1="170" x2="330" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '</g>' +
                 '</svg>' +
-                '<canvas id="quantum-orb-canvas" width="280" height="280" style="width:280px;height:280px;filter:drop-shadow(0 0 32px rgba(34,197,94,0.45));"></canvas>' +
+                '<canvas id="quantum-orb-canvas" width="320" height="320" style="width:320px;height:320px;filter:drop-shadow(0 0 28px rgba(74,222,128,0.3));"></canvas>' +
               '</div>';
+
+            // Build desktop radar ticks along r=144
+            var dTicksGroup = document.getElementById('hud-ticks-desktop');
+            if (dTicksGroup) {
+              var dcx = 170, dcy = 170, dr = 144, dCount = 36;
+              for (var di = 0; di < dCount; di++) {
+                if (di % 6 === 0) continue;
+                var dAngle = (di / dCount) * Math.PI * 2;
+                var dx1 = dcx + Math.cos(dAngle) * (dr - 3);
+                var dy1 = dcy + Math.sin(dAngle) * (dr - 3);
+                var dx2 = dcx + Math.cos(dAngle) * (dr + 3);
+                var dy2 = dcy + Math.sin(dAngle) * (dr + 3);
+                var dLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                dLine.setAttribute('x1', dx1.toFixed(2));
+                dLine.setAttribute('y1', dy1.toFixed(2));
+                dLine.setAttribute('x2', dx2.toFixed(2));
+                dLine.setAttribute('y2', dy2.toFixed(2));
+                dTicksGroup.appendChild(dLine);
+              }
+            }
 
             var canvas = document.getElementById('quantum-orb-canvas');
             if (canvas) {
-              var ctx = canvas.getContext('2d');
-              var orbRadius = 78;
-              var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-              var startT = Date.now();
-
-              container.addEventListener('mousemove', function(e) {
-                var rect = container.getBoundingClientRect();
-                var nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
-                var ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-                mouse.targetX = Math.max(-1.2, Math.min(1.2, nx));
-                mouse.targetY = Math.max(-1.2, Math.min(1.2, ny));
-              });
-
-              container.addEventListener('mouseleave', function() {
-                mouse.targetX = 0;
-                mouse.targetY = 0;
-              });
-
-              function drawOrb() {
-                if (!ctx) return;
-                mouse.x += (mouse.targetX - mouse.x) * 0.08;
-                mouse.y += (mouse.targetY - mouse.y) * 0.08;
-                var elapsed = (Date.now() - startT) * 0.001;
-
-                var cx = canvas.width / 2;
-                var cy = canvas.height / 2;
-                var mx = mouse.x * 18;
-                var my = mouse.y * 14;
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Corona Glow
-                var corona = ctx.createRadialGradient(cx + mx * 0.4, cy + my * 0.4, orbRadius * 0.65, cx, cy, orbRadius * 1.38);
-                corona.addColorStop(0, 'rgba(34, 197, 94, 0.45)');
-                corona.addColorStop(0.5, 'rgba(74, 222, 128, 0.2)');
-                corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = corona;
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius * 1.38, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Core Sphere
-                var core = ctx.createRadialGradient(cx - orbRadius * 0.35 + mx, cy - orbRadius * 0.35 + my, orbRadius * 0.08, cx, cy, orbRadius);
-                core.addColorStop(0, '#0a160f');
-                core.addColorStop(0.65, '#040705');
-                core.addColorStop(0.86, '#15803d');
-                core.addColorStop(0.97, '#4ade80');
-                core.addColorStop(1, '#86efac');
-                ctx.fillStyle = core;
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Fluid waves
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-                ctx.clip();
-
-                var wave = ctx.createRadialGradient(cx + Math.sin(elapsed) * 14, cy + Math.cos(elapsed * 0.8) * 14, orbRadius * 0.2, cx, cy, orbRadius);
-                wave.addColorStop(0, 'rgba(34, 197, 94, 0.18)');
-                wave.addColorStop(0.7, 'rgba(22, 101, 52, 0.06)');
-                wave.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-                ctx.fillStyle = wave;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Specular bead
-                var spec = ctx.createRadialGradient(cx - orbRadius * 0.38 + mx * 0.8, cy - orbRadius * 0.38 + my * 0.8, 1, cx - orbRadius * 0.38 + mx * 0.8, cy - orbRadius * 0.38 + my * 0.8, orbRadius * 0.28);
-                spec.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-                spec.addColorStop(0.35, 'rgba(134, 239, 172, 0.35)');
-                spec.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = spec;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.restore();
-                requestAnimationFrame(drawOrb);
-              }
-              requestAnimationFrame(drawOrb);
+              initQuantumOrb(canvas, 86, container);
             }
           }
         }
-
-        // ─── Mobile Mini Orb Renderer ─────────────────────────────────────────
-        (function() {
-          var mc = document.getElementById('mobile-isometric-container');
-          if (!mc) return;
-          mc.innerHTML = '<canvas id="m-orb-canvas" width="120" height="120" style="width:120px;height:120px;filter:drop-shadow(0 0 20px rgba(34,197,94,0.45));"></canvas>';
-          var c = document.getElementById('m-orb-canvas');
-          if (!c) return;
-          var ctx = c.getContext('2d');
-          var r = 46, cx = 60, cy = 60, tStart = Date.now();
-          function drawMobileOrb() {
-            var el = (Date.now() - tStart) * 0.001;
-            ctx.clearRect(0, 0, 120, 120);
-            var g = ctx.createRadialGradient(cx, cy, r * 0.65, cx, cy, r * 1.35);
-            g.addColorStop(0, 'rgba(34,197,94,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.35, 0, Math.PI * 2); ctx.fill();
-            var c2 = ctx.createRadialGradient(cx - r*0.35, cy - r*0.35, r*0.08, cx, cy, r);
-            c2.addColorStop(0, '#0a160f'); c2.addColorStop(0.65, '#040705'); c2.addColorStop(0.86, '#15803d'); c2.addColorStop(1, '#4ade80');
-            ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-            ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
-            var wg = ctx.createRadialGradient(cx + Math.sin(el)*10, cy + Math.cos(el*0.8)*10, r*0.2, cx, cy, r);
-            wg.addColorStop(0, 'rgba(34,197,94,0.15)'); wg.addColorStop(1, 'rgba(0,0,0,0.35)');
-            ctx.fillStyle = wg; ctx.fillRect(0, 0, 120, 120);
-            var s = ctx.createRadialGradient(cx - r*0.38, cy - r*0.38, 1, cx - r*0.38, cy - r*0.38, r*0.28);
-            s.addColorStop(0, 'rgba(255,255,255,0.75)'); s.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = s; ctx.fillRect(0, 0, 120, 120); ctx.restore();
-            requestAnimationFrame(drawMobileOrb);
-          }
-          requestAnimationFrame(drawMobileOrb);
-        })();
-
       })();
     </script>
 

@@ -249,6 +249,33 @@
   animation: border-rotate var(--beam-duration, 4s) linear infinite;
 }
 
+/* Animated HUD Radar Grid rotation keyframes */
+@keyframes hud-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hud-rotate-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-hud-spin {
+  animation: hud-rotate 90s linear infinite;
+}
+
+.animate-hud-spin-reverse {
+  animation: hud-rotate-reverse 120s linear infinite;
+}
+
 /* ==========================================
    🎨 Brand Styles (Dynamic Selectors - End of file for override specificity)
    ========================================== */

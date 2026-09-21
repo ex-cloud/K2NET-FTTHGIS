@@ -23,7 +23,7 @@ export const useUIStore = create<UIState>()(
       setOrganizationSuspended: (suspended) => set({ organizationSuspended: suspended }),
       activeTenantId: null,
       setActiveTenantId: (id) => set({ activeTenantId: id }),
-      activeLoginHeroId: "fig-01",
+      activeLoginHeroId: "fig-07",
       setActiveLoginHeroId: (id) => set({ activeLoginHeroId: id }),
     }),
     {

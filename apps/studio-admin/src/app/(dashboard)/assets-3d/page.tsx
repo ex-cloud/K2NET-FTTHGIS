@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { useUIStore, type LoginHeroFigureId } from "@/store/ui-store";
 
 export default function Assets3DPage() {
-  const activeLoginHeroId = useUIStore((state) => state.activeLoginHeroId) || "fig-01";
+  const activeLoginHeroId = useUIStore((state) => state.activeLoginHeroId) || "fig-07";
   const setActiveLoginHeroId = useUIStore((state) => state.setActiveLoginHeroId);
   const [previewKey, setPreviewKey] = useState(0);
 
@@ -58,8 +58,13 @@ export default function Assets3DPage() {
       // Ignored: LocalStorage might be disabled or full
     }
 
-    // 2. Set domain cookie for all browsers
+    // 2. Set domain cookie for all subdomains (*.kdua.net) and local host
     try {
+      const hostname = window.location.hostname;
+      const isKduaNet = hostname.endsWith("kdua.net");
+      if (isKduaNet) {
+        document.cookie = `k2net_global_login_hero=${heroId}; domain=.kdua.net; path=/; max-age=31536000; SameSite=Lax`;
+      }
       document.cookie = `k2net_global_login_hero=${heroId}; path=/; max-age=31536000; SameSite=Lax`;
     } catch {
       // Ignored: Cookies might be restricted in some environments
