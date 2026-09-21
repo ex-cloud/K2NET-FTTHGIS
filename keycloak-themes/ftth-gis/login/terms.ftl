@@ -118,9 +118,12 @@
       </div>
 
       <!-- RIGHT COLUMN: BRAND & QUOTE -->
-      <div id="ftth-right" style="flex:1;min-height:100vh;background:#000000;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px 56px;">
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:460px;height:460px;border-radius:50%;background:radial-gradient(circle, rgba(34,197,94,0.16) 0%, rgba(6,182,212,0.06) 45%, transparent 70%);filter:blur(60px);pointer-events:none;"></div>
-        <div style="position:absolute;inset:0;opacity:0.12;pointer-events:none;background-image:radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px);background-size:28px 28px;"></div>
+      <div id="ftth-right" style="flex:1;min-height:100vh;background:#050a07;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px 56px;">
+        <!-- Global Ambient Center Emerald Glow spot -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:560px;height:560px;border-radius:50%;background:radial-gradient(circle, rgba(34,197,94,0.2) 0%, rgba(16,185,129,0.08) 40%, transparent 70%);filter:blur(60px);pointer-events:none;"></div>
+
+        <!-- Global Tech Dot-Matrix pattern background overlay -->
+        <div style="position:absolute;inset:0;opacity:0.32;pointer-events:none;background-image:radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px);background-size:18px 18px;-webkit-mask-image:radial-gradient(circle at 50% 45%, black 45%, transparent 92%);mask-image:radial-gradient(circle at 50% 45%, black 45%, transparent 92%);"></div>
 
         <div style="width:100%;display:flex;justify-content:flex-end;z-index:10;">
           <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:9999px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.6);backdrop-filter:blur(12px);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;color:#a1a1aa;text-transform:uppercase;">

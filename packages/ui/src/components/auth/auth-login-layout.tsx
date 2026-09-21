@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ShieldCheck, BookOpen, Quote, Sparkles, X, CheckCircle2, Lock } from "lucide-react";
 import { ModeToggle } from "../mode-toggle";
-import { LinearPurposeBuiltFigure } from "../linear-isometric/figures/fig-01-purpose-built";
+import { renderIsometricFigureById, ISOMETRIC_FIGURES_LIST } from "../linear-isometric/figure-registry";
 
 export interface AuthLoginLayoutProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ export interface AuthLoginLayoutProps {
   testimonialAuthor?: string;
   testimonialRole?: string;
   figureComponent?: React.ReactNode;
+  figureId?: string;
 }
 
 export function AuthLoginLayout({
@@ -23,8 +24,10 @@ export function AuthLoginLayout({
   testimonialAuthor = "Andiansyah",
   testimonialRole = "Chief Technology Officer, K2NET",
   figureComponent,
+  figureId = "fig-01",
 }: AuthLoginLayoutProps) {
   const [activePolicyModal, setActivePolicyModal] = useState<"terms" | "privacy" | null>(null);
+  const activeMeta = ISOMETRIC_FIGURES_LIST.find((f) => f.id === figureId) || ISOMETRIC_FIGURES_LIST[0];
 
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
@@ -59,8 +62,33 @@ export function AuthLoginLayout({
           </div>
         </div>
 
+        {/* Ambient Mobile Emerald Glow & Grid (visible only on mobile) */}
+        <div 
+          className="lg:hidden absolute top-36 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-3xl pointer-events-none opacity-85"
+          style={{
+            background: "radial-gradient(circle, rgba(34,197,94,0.22) 0%, rgba(16,185,129,0.08) 45%, transparent 70%)"
+          }}
+        />
+        <div
+          className="lg:hidden absolute top-0 left-0 right-0 h-[320px] pointer-events-none opacity-[0.32]"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px)",
+            backgroundSize: "18px 18px",
+            maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
+            WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
+          }}
+        />
+
         {/* Center Form Area */}
         <div className="w-full max-w-sm mx-auto my-auto py-8 z-20 space-y-6">
+          
+          {/* Mobile 3D Hero (visible only on mobile) */}
+          <div className="lg:hidden flex flex-col items-center justify-center -mt-2 mb-2">
+            <div className="w-full max-w-[170px] flex items-center justify-center">
+              {figureComponent || renderIsometricFigureById(figureId, "card")}
+            </div>
+          </div>
+
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               Welcome back
@@ -103,16 +131,22 @@ export function AuthLoginLayout({
       {/* ─── RIGHT COLUMN: 3D Isometric Figure & Testimonial ───────────── */}
       <div className="hidden lg:flex flex-1 bg-background flex-col justify-between p-10 xl:p-14 relative overflow-hidden">
         
-        {/* Subtle Ambient Glowing Background Blobs */}
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Grid pattern background overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.12] pointer-events-none"
+        {/* Global Ambient Radial Emerald Illumination */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-3xl pointer-events-none opacity-85"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px)",
-            backgroundSize: "28px 28px",
+            background: "radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.07) 38%, transparent 70%)"
+          }}
+        />
+
+        {/* Global Tech Dot-Matrix Pattern Background Overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.32]"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px)",
+            backgroundSize: "18px 18px",
+            maskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
+            WebkitMaskImage: "radial-gradient(circle at 50% 45%, black 45%, transparent 92%)",
           }}
         />
 
@@ -120,14 +154,14 @@ export function AuthLoginLayout({
         <div className="w-full flex justify-end z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-[10px] font-mono font-medium tracking-wider text-muted-foreground uppercase shadow-xs">
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>FIG 0.1: PURPOSE-BUILT ARCHITECTURE</span>
+            <span>{activeMeta ? `${activeMeta.fig}: ${activeMeta.tag}` : "FIG 0.1: PURPOSE-BUILT"}</span>
           </div>
         </div>
 
         {/* Center Isometric 3D Figure */}
         <div className="my-auto flex flex-col items-center justify-center py-6 scale-100 xl:scale-110 transition-transform duration-500 z-10">
           <div className="w-full max-w-[440px]">
-            {figureComponent || <LinearPurposeBuiltFigure size="card" interactive={true} />}
+            {figureComponent || renderIsometricFigureById(figureId, "hero")}
           </div>
         </div>
 

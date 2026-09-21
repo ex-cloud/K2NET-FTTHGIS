@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type LoginHeroFigureId = "fig-01" | "fig-02" | "fig-03" | "fig-04" | "fig-05" | "fig-06";
+export type LoginHeroFigureId = "fig-01" | "fig-02" | "fig-03" | "fig-04" | "fig-05" | "fig-06" | "fig-07";
 
 interface UIState {
   sidebarOpen: boolean;

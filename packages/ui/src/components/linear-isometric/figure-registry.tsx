@@ -8,6 +8,7 @@ import { LinearSpeedArrayFigure } from "./figures/fig-03-speed-array";
 import { LinearSpatialTopologyFigure } from "./figures/fig-04-spatial-topology";
 import { LinearVectorMatrixFigure } from "./figures/fig-05-vector-matrix";
 import { LinearMicroserviceBusFigure } from "./figures/fig-06-microservice-bus";
+import { LinearQuantumOrbFigure } from "./figures/fig-07-quantum-orb";
 
 export const ISOMETRIC_FIGURES_LIST: IsometricFigureMeta[] = [
   {
@@ -58,6 +59,14 @@ export const ISOMETRIC_FIGURES_LIST: IsometricFigureMeta[] = [
     desc: "Decoupled Go microservice gateways processing asynchronous notification queues, payment webhooks, and SNMP telemetry.",
     component: <LinearMicroserviceBusFigure />,
   },
+  {
+    id: "fig-07",
+    fig: "FIG 0.7",
+    tag: "QUANTUM ORB",
+    title: "Quantum fluid energy matrix",
+    desc: "Self-stabilizing organic plasma sphere running real-time raymarched fluid simulations with dynamic Fresnel corona glow.",
+    component: <LinearQuantumOrbFigure />,
+  },
 ];
 
 // Helper to render by ID for Login or Hero viewports
@@ -73,6 +82,8 @@ export function renderIsometricFigureById(id: string, size: "card" | "hero" = "h
       return <LinearVectorMatrixFigure size={size} interactive={true} />;
     case "fig-06":
       return <LinearMicroserviceBusFigure size={size} interactive={true} />;
+    case "fig-07":
+      return <LinearQuantumOrbFigure size={size} interactive={true} />;
     case "fig-01":
     default:
       return <LinearPurposeBuiltFigure size={size} interactive={true} />;

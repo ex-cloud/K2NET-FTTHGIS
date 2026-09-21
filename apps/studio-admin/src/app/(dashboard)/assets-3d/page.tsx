@@ -198,8 +198,8 @@ export default function Assets3DPage() {
               <span className="text-xs text-muted-foreground font-mono">0% GPU Overhead &bull; Muted Silver-Zinc Wireframe &bull; Linear Style</span>
             </div>
             <h3 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
-              <span>Technical Isometric Architecture Gallery</span>
-              <span className="text-xs text-muted-foreground font-mono font-normal">(FIG 0.1 — FIG 0.6)</span>
+              <span>Technical Isometric &amp; 3D Quantum Gallery</span>
+              <span className="text-xs text-muted-foreground font-mono font-normal">(FIG 0.1 — FIG 0.7)</span>
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Klik tombol &quot;Set as Login Hero&quot; pada salah satu figur di bawah untuk menjadikannya visual aktif di halaman login untuk semua browser.

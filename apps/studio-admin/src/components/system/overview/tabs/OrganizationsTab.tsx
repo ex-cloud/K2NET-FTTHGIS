@@ -11,7 +11,7 @@ import { useOverviewTableControls, type FilterPillOption } from "../use-overview
 import { OverviewTabToolbar } from "../OverviewTabToolbar";
 import { OverviewSortableHeader } from "../OverviewSortableHeader";
 import { OrganizationContextMenu } from "@/components/organizations/OrganizationContextMenu";
-import { enrichOrganization } from "@/components/organizations/types";
+import { enrichOrganization, type OrganizationStatus } from "@/components/organizations/types";
 
 interface OrganizationsTabProps {
   items: OrganizationItem[];
@@ -257,7 +257,7 @@ export function OrganizationsTab({ items, loading }: OrganizationsTabProps) {
                     id: org.id,
                     name: org.name,
                     slug: org.slug,
-                    status: (org.status as any) || "ACTIVE",
+                    status: (org.status as OrganizationStatus) || "ACTIVE",
                     subscriptionPlan: { name: org.planTier },
                     trialExpiresAt: org.isTrial ? new Date(Date.now() + 7 * 86400000).toISOString() : undefined,
                   });

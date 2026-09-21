@@ -50,8 +50,17 @@
           </a>
         </div>
 
+        <!-- Ambient Mobile Emerald Glow & Grid (visible only on mobile) -->
+        <div id="ftth-mobile-glow"></div>
+        <div id="ftth-mobile-grid"></div>
+
         <!-- Center Form Area -->
         <div id="ftth-form-area" style="width:100%;max-width:390px;margin:auto;padding:12px 0;z-index:20;">
+
+          <!-- Mobile 3D Hero (visible only on mobile) -->
+          <div id="ftth-mobile-hero">
+            <div id="mobile-isometric-container"></div>
+          </div>
 
           <!-- Welcome text -->
           <div id="ftth-welcome" style="margin-bottom:16px;">
@@ -121,16 +130,21 @@
       </div><!-- /#ftth-left -->
 
       <!-- ─── RIGHT COLUMN: 3D Isometric Figure & Testimonial ───────────── -->
-      <div id="ftth-right" style="flex:1;min-height:100vh;background:#000000;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px 56px;">
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:460px;height:460px;border-radius:50%;background:radial-gradient(circle, rgba(34,197,94,0.16) 0%, rgba(6,182,212,0.06) 45%, transparent 70%);filter:blur(60px);pointer-events:none;"></div>
-        <div style="position:absolute;inset:0;opacity:0.12;pointer-events:none;background-image:radial-gradient(circle, rgba(255,255,255,0.2) 1.2px, transparent 1.2px);background-size:28px 28px;"></div>
+      <div id="ftth-right" style="flex:1;min-height:100vh;background:#050a07;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px 56px;">
 
+        <!-- Global Ambient Center Emerald Glow spot -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:560px;height:560px;border-radius:50%;background:radial-gradient(circle, rgba(34,197,94,0.2) 0%, rgba(16,185,129,0.08) 40%, transparent 70%);filter:blur(60px);pointer-events:none;"></div>
+
+        <!-- Global Tech Dot-Matrix pattern background overlay -->
+        <div style="position:absolute;inset:0;opacity:0.32;pointer-events:none;background-image:radial-gradient(circle, rgba(74,222,128,0.4) 1.1px, transparent 1.1px);background-size:18px 18px;-webkit-mask-image:radial-gradient(circle at 50% 45%, black 45%, transparent 92%);mask-image:radial-gradient(circle at 50% 45%, black 45%, transparent 92%);"></div>
+
+        <!-- Top Right Figure Pill Badge -->
         <div style="width:100%;display:flex;justify-content:flex-end;z-index:10;">
           <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:9999px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.6);backdrop-filter:blur(12px);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;color:#a1a1aa;text-transform:uppercase;">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
               <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
             </svg>
-            <span>FIG 0.1: PURPOSE-BUILT ARCHITECTURE</span>
+            <span id="hero-fig-badge-text">FIG 0.1: PURPOSE-BUILT ARCHITECTURE</span>
           </div>
         </div>
 
@@ -164,6 +178,37 @@
       </div><!-- /#ftth-right -->
 
     </div><!-- split-screen wrapper -->
+
+    <script>
+      (function() {
+        var mc = document.getElementById('mobile-isometric-container');
+        if (!mc) return;
+        mc.innerHTML = '<canvas id="m-orb-canvas" width="120" height="120" style="width:120px;height:120px;filter:drop-shadow(0 0 20px rgba(34,197,94,0.45));"></canvas>';
+        var c = document.getElementById('m-orb-canvas');
+        if (!c) return;
+        var ctx = c.getContext('2d');
+        var r = 46, cx = 60, cy = 60, tStart = Date.now();
+        function drawMobileOrb() {
+          var el = (Date.now() - tStart) * 0.001;
+          ctx.clearRect(0, 0, 120, 120);
+          var g = ctx.createRadialGradient(cx, cy, r * 0.65, cx, cy, r * 1.35);
+          g.addColorStop(0, 'rgba(34,197,94,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.35, 0, Math.PI * 2); ctx.fill();
+          var c2 = ctx.createRadialGradient(cx - r*0.35, cy - r*0.35, r*0.08, cx, cy, r);
+          c2.addColorStop(0, '#0a160f'); c2.addColorStop(0.65, '#040705'); c2.addColorStop(0.86, '#15803d'); c2.addColorStop(1, '#4ade80');
+          ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+          ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+          var wg = ctx.createRadialGradient(cx + Math.sin(el)*10, cy + Math.cos(el*0.8)*10, r*0.2, cx, cy, r);
+          wg.addColorStop(0, 'rgba(34,197,94,0.15)'); wg.addColorStop(1, 'rgba(0,0,0,0.35)');
+          ctx.fillStyle = wg; ctx.fillRect(0, 0, 120, 120);
+          var s = ctx.createRadialGradient(cx - r*0.38, cy - r*0.38, 1, cx - r*0.38, cy - r*0.38, r*0.28);
+          s.addColorStop(0, 'rgba(255,255,255,0.75)'); s.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = s; ctx.fillRect(0, 0, 120, 120); ctx.restore();
+          requestAnimationFrame(drawMobileOrb);
+        }
+        requestAnimationFrame(drawMobileOrb);
+      })();
+    </script>
 
     </#if>
 </@layout.registrationLayout>

@@ -6,5 +6,6 @@ export * from "./figures/fig-03-speed-array";
 export * from "./figures/fig-04-spatial-topology";
 export * from "./figures/fig-05-vector-matrix";
 export * from "./figures/fig-06-microservice-bus";
+export * from "./figures/fig-07-quantum-orb";
 export * from "./figure-registry";
 export * from "./linear-isometric-showcase";

@@ -14,7 +14,7 @@
 
 :root {
   --bg-left: #09090b;
-  --bg-right: #000000;
+  --bg-right: #050a07;
   --border: rgba(39, 39, 42, 0.8);
   --border-subtle: rgba(39, 39, 42, 0.5);
   --emerald: #22c55e;
@@ -67,7 +67,7 @@ html, body {
 #ftth-right {
   flex: 1;
   min-height: 100vh;
-  background: #000000;
+  background: #050a07;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -77,14 +77,168 @@ html, body {
   z-index: 1;
 }
 
+#ftth-right-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+#ftth-right-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.32;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(74, 222, 128, 0.4) 1.1px, transparent 1.1px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
+  mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
+}
+
+#ftth-quote-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid rgba(63, 63, 70, 0.7);
+  background: rgba(18, 18, 21, 0.75);
+  padding: 24px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
+  z-index: 10;
+}
+
+#ftth-quote-text {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(244, 244, 245, 0.9);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+#ftth-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(63, 63, 70, 0.4);
+}
+
+#ftth-author-avatar {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+#ftth-author-avatar.is-system {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+#ftth-author-avatar.is-tenant {
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+#ftth-author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+#ftth-author-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+#ftth-author-role {
+  font-size: 10px;
+  color: #a1a1aa;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#ftth-mobile-hero {
+  display: none;
+}
+
+#ftth-mobile-glow {
+  display: none;
+}
+
+#ftth-mobile-grid {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   #ftth-left {
     max-width: 100%;
-    padding: 32px 24px;
+    padding: 24px 20px;
     border-right: none;
+    overflow-x: hidden;
   }
   #ftth-right {
     display: none !important;
+  }
+  #ftth-mobile-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    width: 100%;
+    position: relative;
+    z-index: 20;
+  }
+  #mobile-isometric-container {
+    width: 100%;
+    max-width: 170px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #ftth-mobile-glow {
+    display: block;
+    position: absolute;
+    top: 130px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.22) 0%, rgba(16, 185, 129, 0.08) 45%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  #ftth-mobile-grid {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    opacity: 0.32;
+    pointer-events: none;
+    background-image: radial-gradient(circle, rgba(74, 222, 128, 0.4) 1.1px, transparent 1.1px);
+    background-size: 18px 18px;
+    -webkit-mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
+    mask-image: radial-gradient(circle at 50% 45%, black 45%, transparent 92%);
+    z-index: 1;
   }
 }
 
