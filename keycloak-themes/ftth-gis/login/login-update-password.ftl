@@ -74,18 +74,25 @@
             <div id="mobile-isometric-container"></div>
           </div>
 
-          <!-- Welcome text -->
-          <div id="ftth-welcome" style="margin-bottom:16px;">
-            <h1 style="font-size:24px;font-weight:700;letter-spacing:-0.025em;color:#fafafa;margin-bottom:4px;" data-i18n="updateTitle">
-              Update Password
-            </h1>
-            <p style="font-size:12px;color:#a1a1aa;line-height:1.4;" data-i18n="updateSubtitle">
-              Set a strong, new password to secure your ISP workspace account.
-            </p>
-          </div>
-
           <!-- Main Card -->
-          <div style="background:rgba(24,24,27,0.6);border:1px solid rgba(63,63,70,0.7);border-radius:16px;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);backdrop-filter:blur(12px);">
+          <div class="ftth-card">
+            <!-- Responsive Card Header with Tier Badge -->
+            <div class="ftth-card-header">
+              <div class="ftth-card-header-left">
+                <div class="ftth-card-header-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <div class="ftth-card-header-text">
+                  <span class="ftth-card-title">${orgName}</span>
+                  <span class="ftth-card-subtitle">Password Update & IAM Self-Service</span>
+                </div>
+              </div>
+              <div class="ftth-tier-badge">
+                <span>${planDisplayName}</span>
+              </div>
+            </div>
 
             <#-- Error message -->
             <#if (messagesPerField.existsError('password','password-confirm'))!false>
@@ -236,49 +243,70 @@
 
     </div><!-- split-screen wrapper -->
 
-    <!-- Interactive Policy Modal -->
-    <div id="ftth-policy-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-      <div id="ftth-policy-modal-card" style="background:#0e0e11;border:1px solid rgba(63,63,70,0.8);border-radius:18px;width:100%;max-width:820px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 60px -12px rgba(0,0,0,0.9);overflow:hidden;position:relative;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.7);flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;color:#22c55e;">
+    <!-- ============================================================
+         Interactive Enterprise Legal Terms & Privacy Modal
+         ============================================================ -->
+    <div id="ftth-policy-modal">
+      <div id="ftth-policy-modal-card">
+
+        <!-- Modal Header -->
+        <div class="ftth-modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.7);flex-shrink:0;gap:16px;">
+          <div class="ftth-modal-header-left" style="display:flex;flex-direction:row;align-items:center;gap:12px;min-width:0;flex:1;">
+            <div class="ftth-modal-header-icon" style="width:32px;height:32px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;color:#22c55e;flex-shrink:0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <path d="m9 12 2 2 4-4"/>
               </svg>
             </div>
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <h2 id="ftth-modal-title" style="font-size:16px;font-weight:700;color:#fff;margin:0;">Terms of Service</h2>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);padding:1px 6px;border-radius:4px;">v2026.3</span>
+            <div class="ftth-modal-header-info" style="min-width:0;flex:1;">
+              <div class="ftth-modal-title-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <h2 id="ftth-modal-title" class="ftth-modal-title" style="font-size:16px;font-weight:700;color:#ffffff;margin:0;line-height:1.25;">Terms of Service</h2>
+                <span class="ftth-modal-version-tag" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);padding:1px 6px;border-radius:4px;white-space:nowrap;">v2026.3</span>
               </div>
-              <p style="font-size:11px;color:#a1a1aa;margin:2px 0 0 0;font-family:'JetBrains Mono',monospace;">K2NET Enterprise SaaS Platform Governance</p>
+              <p class="ftth-modal-subtitle" style="font-size:11px;color:#a1a1aa;margin:2px 0 0 0;font-family:'JetBrains Mono',monospace;line-height:1.3;">K2NET Enterprise SaaS Platform Governance</p>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="display:inline-flex;background:rgba(9,9,11,0.8);border:1px solid rgba(63,63,70,0.6);border-radius:8px;padding:3px;">
-              <button type="button" id="tab-btn-terms" class="active" style="padding:4px 12px;font-size:11px;font-weight:600;border-radius:6px;border:none;cursor:pointer;background:#22c55e;color:#09090b;transition:all 0.15s ease;">Terms</button>
-              <button type="button" id="tab-btn-privacy" style="padding:4px 12px;font-size:11px;font-weight:600;border-radius:6px;border:none;cursor:pointer;background:transparent;color:#a1a1aa;transition:all 0.15s ease;">Privacy</button>
+
+          <div class="ftth-modal-header-right" style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+            <!-- Modal Segmented Tab Switcher -->
+            <div class="ftth-modal-tab-group" style="display:inline-flex;background:rgba(9,9,11,0.8);border:1px solid rgba(63,63,70,0.6);border-radius:8px;padding:3px;flex-shrink:0;">
+              <button type="button" id="tab-btn-terms" class="ftth-modal-tab-btn active-terms">
+                Terms
+              </button>
+              <button type="button" id="tab-btn-privacy" class="ftth-modal-tab-btn">
+                Privacy
+              </button>
             </div>
-            <button type="button" id="btn-close-policy-modal" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.5);color:#a1a1aa;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s ease;">
+
+            <!-- Close (X) button -->
+            <button type="button" id="btn-close-policy-modal" class="ftth-modal-close-btn" aria-label="Close modal" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.5);color:#a1a1aa;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
           </div>
         </div>
-        <div id="ftth-policy-content-body" style="padding:24px 28px;overflow-y:auto;max-height:calc(88vh - 140px);color:#d4d4d8;font-size:13px;line-height:1.7;"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid rgba(63,63,70,0.6);background:rgba(18,18,21,0.9);flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#71717a;font-family:'JetBrains Mono',monospace;">
+
+        <!-- Scrollable Modal Content -->
+        <div id="ftth-policy-content-body">
+          <!-- Dynamic injected HTML -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="ftth-modal-footer">
+          <div class="ftth-modal-footer-info">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <span>TLS 1.3 &bull; AES-256 GCM &bull; ISO/IEC 27001</span>
           </div>
-          <button type="button" id="btn-policy-acknowledge" style="padding:7px 18px;border-radius:8px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all 0.15s ease;">
+          <button type="button" id="btn-policy-acknowledge" class="ftth-modal-footer-btn">
             <span data-i18n="acknowledgeBtn">I Understand & Close</span>
           </button>
         </div>
+
       </div>
     </div>
 
@@ -497,24 +525,25 @@
                   '</linearGradient>' +
                 '</defs>' +
                 '<g class="k2net-hud-grid-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                  '<circle cx="90" cy="75" r="70" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
-                  '<circle cx="90" cy="75" r="64" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<circle cx="90" cy="75" r="78" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
+                  '<circle cx="90" cy="75" r="66" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<circle cx="90" cy="75" r="54" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.65" stroke-dasharray="1 5" />' +
                   '<g id="hud-ticks-mobile" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
                 '</g>' +
                 '<g class="k2net-hud-inner-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
-                  '<line x1="90" y1="6" x2="90" y2="14" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="90" y1="136" x2="90" y2="144" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="21" y1="75" x2="29" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="151" y1="75" x2="159" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="2" x2="90" y2="10" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="140" x2="90" y2="148" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="17" y1="75" x2="25" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="155" y1="75" x2="163" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
                 '</g>' +
               '</svg>' +
               '<canvas id="mobile-quantum-orb-canvas" width="160" height="150" style="width:160px;height:150px;filter:drop-shadow(0 0 20px rgba(74,222,128,0.3));"></canvas>' +
             '</div>';
 
-          // Build mobile radar ticks along r=64
+          // Build mobile radar ticks along r=66
           var mTicksGroup = document.getElementById('hud-ticks-mobile');
           if (mTicksGroup) {
-            var mcx = 90, mcy = 75, mr = 64, mCount = 24;
+            var mcx = 90, mcy = 75, mr = 66, mCount = 24;
             for (var mi = 0; mi < mCount; mi++) {
               if (mi % 4 === 0) continue;
               var mAngle = (mi / mCount) * Math.PI * 2;
@@ -553,24 +582,25 @@
                     '</linearGradient>' +
                   '</defs>' +
                   '<g class="k2net-hud-grid" style="transform-origin:170px 170px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                    '<circle cx="170" cy="170" r="156" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
-                    '<circle cx="170" cy="170" r="144" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<circle cx="170" cy="170" r="160" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
+                    '<circle cx="170" cy="170" r="136" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<circle cx="170" cy="170" r="112" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.65" stroke-dasharray="1 6" />' +
                     '<g id="hud-ticks-desktop" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
                   '</g>' +
                   '<g class="k2net-hud-inner" style="transform-origin:170px 170px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
-                    '<line x1="170" y1="10" x2="170" y2="22" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="170" y1="318" x2="170" y2="330" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="10" y1="170" x2="22" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="318" y1="170" x2="330" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="6" x2="170" y2="18" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="322" x2="170" y2="334" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="6" y1="170" x2="18" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="322" y1="170" x2="334" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
                   '</g>' +
                 '</svg>' +
                 '<canvas id="quantum-orb-canvas" width="320" height="320" style="width:320px;height:320px;filter:drop-shadow(0 0 28px rgba(74,222,128,0.3));"></canvas>' +
               '</div>';
 
-            // Build desktop radar ticks along r=144
+            // Build desktop radar ticks along r=136
             var dTicksGroup = document.getElementById('hud-ticks-desktop');
             if (dTicksGroup) {
-              var dcx = 170, dcy = 170, dr = 144, dCount = 36;
+              var dcx = 170, dcy = 170, dr = 136, dCount = 36;
               for (var di = 0; di < dCount; di++) {
                 if (di % 6 === 0) continue;
                 var dAngle = (di / dCount) * Math.PI * 2;
@@ -736,7 +766,105 @@
         }
       }
 
-        // i18n
+        // ─── 2. Complete Enterprise Legal Documents (Bilingual Supabase Standard) ─
+        var legalDocs = {
+          en: {
+            termsTitle: "Terms of Service",
+            privacyTitle: "Privacy Policy",
+            acknowledgeBtn: "I Understand & Acknowledge",
+            termsHtml: [
+              '<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;">',
+                '<strong style="color:#22c55e;font-size:12px;font-family:\'JetBrains Mono\',monospace;display:block;margin-bottom:4px;">ENTERPRISE SAAS MASTER AGREEMENT</strong>',
+                '<p style="margin:0;font-size:12px;color:#a1a1aa;">These Terms of Service govern your access to and use of the K2NET FTTH GIS Enterprise SaaS Platform, including all associated microservices, spatial geodata engines, OLT telemetry pollers, and client portal applications.</p>',
+              '</div>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">1. SaaS Platform License & Workspace Provisioning</h3>',
+              '<p>Subject to compliance with this Agreement and active subscription tier commitments (Starter, Professional, Enterprise Core, or System Admin), K2NET grants your organization a non-exclusive, non-transferable, worldwide license to access and utilize the FTTH GIS platform for designing, mapping, managing, and maintaining fiber-to-the-home and optical distribution network infrastructure.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">2. Identity, Access Management (IAM) & Credential Security</h3>',
+              '<p>Authentication is enforced via Keycloak IAM with mandatory Multi-Factor Authentication (MFA) and Policy-Based Access Control (PBAC). You are solely responsible for maintaining the confidentiality of administrative credentials, OAuth2 tokens, and API secret keys. Any unauthorized activity originating from your tenant credentials must be reported to <code style="color:#22c55e;background:#18181b;padding:2px 6px;border-radius:4px;">security@k2net.id</code> within 24 hours.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">3. Customer Data & Spatial Sovereignty (You Own Your Data)</h3>',
+              '<p>You retain 100% full intellectual property rights, title, and ownership of all customer data, geospatial vector geometries (ODP, ODC, Closure, Slack, Pole nodes), fiber core topologies, customer address records, and billing metadata uploaded or created within your tenant workspace. K2NET does not claim ownership or sell your proprietary spatial geodata.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">4. Acceptable Use Policy & Zero-Abuse Safeguards</h3>',
+              '<p>You agree not to: (a) reverse engineer, decompile, or extract the source code of the platform engines; (b) conduct unauthorized automated stress testing, vulnerability scans, or denial-of-service simulations against Kong gateways or backend APIs without prior written authorization; (c) bypass multi-tenant isolation boundaries; or (d) transmit malicious payloads.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">5. Service Level Agreement (SLA) & High Availability</h3>',
+              '<p>K2NET commits to an operational uptime SLA of <strong style="color:#22c55e;">99.9%</strong> for Enterprise tiers, backed by automated 3-tier disaster recovery replication (Local SSD, On-Premise MinIO S3, and Offsite Encrypted Cloud WebDAV). Scheduled maintenance windows will be communicated with at least 48 hours advance notice.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">6. Data Portability & Termination Rights</h3>',
+              '<p>You may export your complete geospatial dataset at any time in industry-standard open GIS formats (GeoJSON, ESRI Shapefile, PostGIS SQL dumps, and CSV). Upon subscription termination, a 30-day export grace period is provided before tenant database partition and MinIO storage buckets are cryptographically purged.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">7. Limitation of Liability & Governing Law</h3>',
+              '<p>To the maximum extent permitted by applicable law, K2NET shall not be liable for indirect, incidental, or consequential damages. Total liability is capped at the total amount paid by your organization in the preceding twelve (12) months. This agreement is governed by the laws of the Republic of Indonesia.</p>'
+            ].join(''),
+            privacyHtml: [
+              '<div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;">',
+                '<strong style="color:#38bdf8;font-size:12px;font-family:\'JetBrains Mono\',monospace;display:block;margin-bottom:4px;">PRIVACY & DATA PROTECTION STANDARDS</strong>',
+                '<p style="margin:0;font-size:12px;color:#a1a1aa;">This Privacy Policy explains how K2NET collects, processes, encrypts, and protects organizational telemetry, user credentials, and geospatial data in strict compliance with Indonesian Personal Data Protection Law (UU PDP No. 27/2022) and international privacy frameworks.</p>',
+              '</div>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">1. Information We Collect</h3>',
+              '<ul style="margin:0 0 14px 20px;padding:0;">',
+                '<li style="margin-bottom:6px;"><strong>Account & IAM Metadata:</strong> Work email, user identifier, PBAC role assignments, cryptographic password hashes (bcrypt/Argon2id), and MFA device registrations.</li>',
+                '<li style="margin-bottom:6px;"><strong>Infrastructure & OLT Telemetry:</strong> Device IP addresses, SNMP query responses, optical power levels (dBm), interface operational status, and Kong edge API traffic logs.</li>',
+                '<li style="margin-bottom:6px;"><strong>Audit Trail Logs:</strong> Nonce timestamps, IP addresses, HTTP user-agent headers, and mutation history recorded by the asynchronous Audit Gateway (:5009).</li>',
+              '</ul>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">2. Zero-Trust Multi-Tenant Isolation & Storage Security</h3>',
+              '<p>All tenant data is strictly partitioned at the PostgreSQL schema/database level with tenant-scoped connection pooling. All data in transit is encrypted using mandatory <strong style="color:#22c55e;">TLS 1.3</strong>, and all persisted data (PostgreSQL tables, WAL logs, and MinIO S3 object blocks) is encrypted at rest using <strong style="color:#22c55e;">AES-256-GCM</strong>.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">3. Third-Party Gateways & Sub-processors</h3>',
+              '<p>To deliver core platform capabilities, we interface with specialized secure microservices: (a) <em>Notification Gateway (:5001)</em> for automated SMS/WhatsApp alerts; (b) <em>Payment Gateway (:5002)</em> integrating PCI-DSS compliant payment providers (Xendit); (c) <em>Map Gateway (:5003)</em> for vector tile and geocoding services; and (d) <em>Storage Gateway (:5004)</em> for isolated MinIO S3 bucket asset storage.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">4. Cookies & Session State</h3>',
+              '<p>We only utilize strictly necessary, cryptographic HttpOnly session cookies and JWT Bearer tokens to maintain authenticated state across Kong API gateways. We do not deploy third-party advertising, marketing trackers, or cross-site tracking pixels.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">5. Your Rights & Data Portability</h3>',
+              '<p>In accordance with UU PDP and GDPR principles, you maintain the right to access, rectify, export, and delete your personal and organizational records. For inquiries, contact our Data Protection Officer at <code style="color:#38bdf8;background:#18181b;padding:2px 6px;border-radius:4px;">dpo@k2net.id</code>.</p>'
+            ].join('')
+          },
+          id: {
+            termsTitle: "Ketentuan Layanan",
+            privacyTitle: "Kebijakan Privasi",
+            acknowledgeBtn: "Saya Mengerti & Tutup",
+            termsHtml: [
+              '<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;">',
+                '<strong style="color:#22c55e;font-size:12px;font-family:\'JetBrains Mono\',monospace;display:block;margin-bottom:4px;">PERJANJIAN UTAMA SAAS ENTERPRISE</strong>',
+                '<p style="margin:0;font-size:12px;color:#a1a1aa;">Ketentuan Layanan ini mengatur hak akses dan penggunaan Platform Enterprise SaaS FTTH GIS K2NET, termasuk seluruh microservice terkait, engine geospasial, poller telemetri OLT, dan aplikasi portal tenant.</p>',
+              '</div>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">1. Lisensi Platform SaaS & Penyediaan Ruang Kerja</h3>',
+              '<p>Sesuai dengan kepatuhan terhadap Perjanjian ini dan paket langganan aktif (Starter, Professional, Enterprise Core, atau System Admin), K2NET memberikan lisensi non-eksklusif dan non-dapat dialihkan bagi organisasi Anda untuk mengoperasikan platform FTTH GIS guna merancang, memetakan, dan memelihara infrastruktur jaringan fiber optik (FTTH).</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">2. Manajemen Identitas (IAM), PBAC & Keamanan Kredensial</h3>',
+              '<p>Otentikasi ditegakkan melalui Keycloak IAM dengan Multi-Factor Authentication (MFA) wajib dan Policy-Based Access Control (PBAC). Anda bertanggung jawab penuh menjaga kerahasiaan kredensial admin, token OAuth2, dan API key. Segala insiden keamanan wajib dilaporkan ke <code style="color:#22c55e;background:#18181b;padding:2px 6px;border-radius:4px;">security@k2net.id</code> dalam waktu 24 jam.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">3. Kedaulatan & Kepemilikan Data Spasial (Data Adalah Milik Anda 100%)</h3>',
+              '<p>Organisasi Anda memegang 100% hak kekayaan intelektual dan kepemilikan mutlak atas seluruh data pelanggan, koordinat geospasial (titik ODP, ODC, Closure, Tiang, Pelanggan), topologi kabel fiber, dan metadata operasional. K2NET tidak memiliki hak milik dan tidak memperjualbelikan data geospasial tenant.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">4. Kebijakan Penggunaan Wajar & Perlindungan Platform</h3>',
+              '<p>Anda dilarang: (a) melakukan rekayasa balik (reverse engineering) atau dekompilasi kode sumber platform; (b) melakukan uji penetrasi / pemindaian kerentanan otomatis tanpa izin tertulis resmi; (c) membypass isolasi multi-tenant; atau (d) mengirimkan muatan berbahaya yang mengganggu gateway API Kong.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">5. Perjanjian Tingkat Layanan (SLA) & Ketersediaan Tinggi</h3>',
+              '<p>K2NET berkomitmen terhadap uptime SLA operasional sebesar <strong style="color:#22c55e;">99.9%</strong> untuk tier Enterprise, didukung pemulihan bencana 3-lapis otomatis (SSD Lokal, MinIO S3 On-Premise, dan Offsite Cloud WebDAV). Jadwal pemeliharaan berkala akan diberitahukan minimal 48 jam sebelumnya.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">6. Portabilitas Data & Hak Pengakhiran Layanan</h3>',
+              '<p>Anda dapat mengunduh dan mengekspor seluruh dataset geospasial Anda kapan saja dalam format GIS terbuka standar (GeoJSON, ESRI Shapefile, dump SQL PostGIS, dan CSV). Masa tenggang 30 hari diberikan setelah penghentian langganan sebelum data dihapus secara kriptografis.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">7. Batasan Tanggung Jawab & Hukum yang Berlaku</h3>',
+              '<p>Batasan tanggung jawab maksimum K2NET dibatasi hingga total biaya langganan yang telah dibayarkan oleh organisasi Anda dalam dua belas (12) bulan terakhir. Perjanjian ini tunduk dan ditafsirkan berdasarkan hukum Negara Republik Indonesia.</p>'
+            ].join(''),
+            privacyHtml: [
+              '<div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;">',
+                '<strong style="color:#38bdf8;font-size:12px;font-family:\'JetBrains Mono\',monospace;display:block;margin-bottom:4px;">STANDAR PRIVASI & PERLINDUNGAN DATA</strong>',
+                '<p style="margin:0;font-size:12px;color:#a1a1aa;">Kebijakan Privasi ini menjelaskan bagaimana K2NET mengumpulkan, memproses, mengenkripsi, dan melindungi data telemetri, kredensial pengguna, serta data spasial sesuai Undang-Undang Perlindungan Data Pribadi (UU PDP No. 27/2022).</p>',
+              '</div>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">1. Informasi yang Kami Kumpulkan</h3>',
+              '<ul style="margin:0 0 14px 20px;padding:0;">',
+                '<li style="margin-bottom:6px;"><strong>Data Akun & IAM:</strong> Email kerja, ID pengguna, peran PBAC, hash sandi kriptografis (Argon2id/bcrypt), dan kunci MFA.</li>',
+                '<li style="margin-bottom:6px;"><strong>Telemetri OLT & Jaringan:</strong> Alamat IP perangkat, respon query SNMP, nilai redaman optik (dBm), status antarmuka OLT, dan log API gateway Kong.</li>',
+                '<li style="margin-bottom:6px;"><strong>Log Jejak Audit:</strong> Catatan mutasi database, alamat IP pemanggil, user-agent, dan timestamp kriptografis yang dikelola Audit Gateway (:5009).</li>',
+              '</ul>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">2. Isolasi Zero-Trust & Keamanan Penyimpanan Data</h3>',
+              '<p>Setiap data tenant terisolasi secara ketat pada partisi PostgreSQL terpisah. Seluruh transmisi data dienkripsi dengan standar wajib <strong style="color:#22c55e;">TLS 1.3</strong>, dan seluruh data tersimpan (database PostgreSQL, WAL log, dan object bucket MinIO S3) dienkripsi menggunakan <strong style="color:#22c55e;">AES-256-GCM</strong>.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">3. Gateway Layanan & Sub-prosesor Pihak Ketiga</h3>',
+              '<p>Kami menghubungkan platform dengan gateway mikroservis aman: (a) <em>Notification Gateway (:5001)</em> untuk pengiriman WhatsApp/SMS; (b) <em>Payment Gateway (:5002)</em> integrasi pembayaran PCI-DSS (Xendit); (c) <em>Map Gateway (:5003)</em> untuk peta vektor dan geocoding; serta (d) <em>Storage Gateway (:5004)</em> untuk penyimpanan aset berkas S3 MinIO.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">4. Penggunaan Cookie & Sesi</h3>',
+              '<p>Platform hanya menggunakan cookie HttpOnly dan token Bearer JWT yang mutlak diperlukan untuk otentikasi sesi Keycloak. Kami tidak memasang pelacak iklan pihak ketiga atau piksel pemasaran.</p>',
+              '<h3 style="color:#fff;font-size:14px;font-weight:700;margin:18px 0 8px 0;">5. Hak Pengguna & Kontak Perlindungan Data (DPO)</h3>',
+              '<p>Anda berhak mengakses, memperbaiki, mengekspor (GeoJSON/CSV), dan meminta penghapusan permanen akun Anda sesuai ketentuan UU PDP. Hubungi Petugas Perlindungan Data kami melalui <code style="color:#38bdf8;background:#18181b;padding:2px 6px;border-radius:4px;">dpo@k2net.id</code>.</p>'
+            ].join('')
+          }
+        };
+
+        // ─── 3. Instant i18n Translation Engine ───
+        var isSystem = ${isSystem?then('true', 'false')};
+        var currentLang = "en";
+        var currentModalTab = "terms";
+
         var dictionary = {
           en: {
             updateTitle: "Update Password",
@@ -770,7 +898,52 @@
           }
         };
 
+        function renderPolicyModalContent() {
+          var docs = legalDocs[currentLang] || legalDocs.en;
+          var titleEl = document.getElementById('ftth-modal-title');
+          var bodyEl = document.getElementById('ftth-policy-content-body');
+          var tabTermsBtn = document.getElementById('tab-btn-terms');
+          var tabPrivacyBtn = document.getElementById('tab-btn-privacy');
+
+          if (currentModalTab === "terms") {
+            if (titleEl) titleEl.textContent = docs.termsTitle;
+            if (bodyEl) bodyEl.innerHTML = docs.termsHtml;
+            if (tabTermsBtn) {
+              tabTermsBtn.className = "ftth-modal-tab-btn active-terms";
+            }
+            if (tabPrivacyBtn) {
+              tabPrivacyBtn.className = "ftth-modal-tab-btn";
+            }
+          } else {
+            if (titleEl) titleEl.textContent = docs.privacyTitle;
+            if (bodyEl) bodyEl.innerHTML = docs.privacyHtml;
+            if (tabTermsBtn) {
+              tabTermsBtn.className = "ftth-modal-tab-btn";
+            }
+            if (tabPrivacyBtn) {
+              tabPrivacyBtn.className = "ftth-modal-tab-btn active-privacy";
+            }
+          }
+        }
+
+        function openPolicyModal(tab) {
+          currentModalTab = tab || "terms";
+          renderPolicyModalContent();
+          var modal = document.getElementById('ftth-policy-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+          }
+        }
+
+        function closePolicyModal() {
+          var modal = document.getElementById('ftth-policy-modal');
+          if (modal) {
+            modal.style.display = 'none';
+          }
+        }
+
         function applyLanguage(lang) {
+          currentLang = lang;
           var dict = dictionary[lang] || dictionary.en;
           document.querySelectorAll('[data-i18n]').forEach(function(el) {
             var key = el.getAttribute('data-i18n');
@@ -784,6 +957,7 @@
               btn.style.background = 'transparent'; btn.style.color = '#a1a1aa'; btn.classList.remove('active');
             }
           });
+          renderPolicyModalContent();
           localStorage.setItem('k2net_login_lang', lang);
           document.documentElement.setAttribute('lang', lang);
         }
@@ -795,6 +969,66 @@
             if (btn) { e.preventDefault(); applyLanguage(btn.getAttribute('data-lang')); }
           });
         }
+
+        // Policy Modal Event Bindings
+        var btnTerms = document.getElementById('btn-open-terms');
+        if (btnTerms) {
+          btnTerms.addEventListener('click', function(e) {
+            e.preventDefault();
+            openPolicyModal('terms');
+          });
+        }
+
+        var btnPrivacy = document.getElementById('btn-open-privacy');
+        if (btnPrivacy) {
+          btnPrivacy.addEventListener('click', function(e) {
+            e.preventDefault();
+            openPolicyModal('privacy');
+          });
+        }
+
+        var btnCloseModal = document.getElementById('btn-close-policy-modal');
+        if (btnCloseModal) {
+          btnCloseModal.addEventListener('click', closePolicyModal);
+        }
+
+        var btnAcknowledge = document.getElementById('btn-policy-acknowledge');
+        if (btnAcknowledge) {
+          btnAcknowledge.addEventListener('click', closePolicyModal);
+        }
+
+        var tabBtnTerms = document.getElementById('tab-btn-terms');
+        if (tabBtnTerms) {
+          tabBtnTerms.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentModalTab = 'terms';
+            renderPolicyModalContent();
+          });
+        }
+
+        var tabBtnPrivacy = document.getElementById('tab-btn-privacy');
+        if (tabBtnPrivacy) {
+          tabBtnPrivacy.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentModalTab = 'privacy';
+            renderPolicyModalContent();
+          });
+        }
+
+        var modalEl = document.getElementById('ftth-policy-modal');
+        if (modalEl) {
+          modalEl.addEventListener('click', function(e) {
+            if (e.target === modalEl) {
+              closePolicyModal();
+            }
+          });
+        }
+
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' || e.key === 'Esc') {
+            closePolicyModal();
+          }
+        });
 
         var savedLang = localStorage.getItem('k2net_login_lang') || 'en';
         applyLanguage(savedLang);

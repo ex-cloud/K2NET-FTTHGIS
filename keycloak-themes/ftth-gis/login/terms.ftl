@@ -18,7 +18,7 @@
     <div class="ftth-login-container" style="display:flex;min-height:100vh;width:100%;font-family:'Inter',sans-serif;background:#09090b;color:#f4f4f5;overflow-x:hidden;">
 
       <!-- LEFT COLUMN -->
-      <div id="ftth-left" style="width:100%;max-width:48%;min-height:100vh;max-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;padding:24px 44px;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
+      <div id="ftth-left" style="min-height:100vh;overflow-y:auto;background:#09090b;display:flex;flex-direction:column;justify-content:space-between;position:relative;border-right:1px solid rgba(39,39,42,0.8);z-index:10;">
 
         <!-- Header -->
         <div id="ftth-header" style="display:flex;align-items:center;justify-content:space-between;width:100%;z-index:20;flex-shrink:0;">
@@ -63,21 +63,33 @@
           </div>
         </div>
 
+        <!-- Ambient Mobile Emerald Glow & Grid (visible only on mobile) -->
+        <div id="ftth-mobile-glow"></div>
+        <div id="ftth-mobile-grid"></div>
+
         <!-- Center Content Area -->
         <div id="ftth-form-area" style="width:100%;max-width:440px;margin:auto;padding:12px 0;z-index:20;">
 
-          <!-- Welcome / Header text -->
-          <div id="ftth-welcome" style="margin-bottom:16px;">
-            <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.025em;color:#fafafa;margin-bottom:4px;">
-              Terms of Service & Privacy
-            </h1>
-            <p style="font-size:12px;color:#a1a1aa;line-height:1.4;">
-              Please review and acknowledge the K2NET Enterprise SaaS Platform terms and spatial sovereignty governance.
-            </p>
-          </div>
-
           <!-- Legal Content Card -->
-          <div style="background:rgba(24,24,27,0.6);border:1px solid rgba(63,63,70,0.7);border-radius:16px;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);backdrop-filter:blur(12px);">
+          <div class="ftth-card">
+            <!-- Responsive Card Header with Tier Badge -->
+            <div class="ftth-card-header">
+              <div class="ftth-card-header-left">
+                <div class="ftth-card-header-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                </div>
+                <div class="ftth-card-header-text">
+                  <span class="ftth-card-title">${orgName}</span>
+                  <span class="ftth-card-subtitle">Terms of Service & Privacy</span>
+                </div>
+              </div>
+              <div class="ftth-tier-badge">
+                <span>${planDisplayName}</span>
+              </div>
+            </div>
 
             <div style="max-height:280px;overflow-y:auto;background:rgba(9,9,11,0.7);border:1px solid rgba(63,63,70,0.5);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.6;color:#d4d4d8;margin-bottom:16px;">
               <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(63,63,70,0.5);">

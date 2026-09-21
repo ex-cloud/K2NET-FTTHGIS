@@ -75,18 +75,26 @@
             <div id="mobile-isometric-container"></div>
           </div>
 
-          <!-- Welcome text -->
-          <div id="ftth-welcome" style="margin-bottom:16px;">
-            <h1 style="font-size:24px;font-weight:700;letter-spacing:-0.025em;color:#fafafa;margin-bottom:4px;">
-              Setup Authenticator
-            </h1>
-            <p style="font-size:12px;color:#a1a1aa;line-height:1.4;">
-              Scan the QR code with Google Authenticator, Microsoft Authenticator, or Authy app.
-            </p>
-          </div>
-
           <!-- Main Card -->
-          <div style="background:rgba(24,24,27,0.6);border:1px solid rgba(63,63,70,0.7);border-radius:16px;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);backdrop-filter:blur(12px);">
+          <div class="ftth-card">
+            <!-- Responsive Card Header with Tier Badge -->
+            <div class="ftth-card-header">
+              <div class="ftth-card-header-left">
+                <div class="ftth-card-header-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                </div>
+                <div class="ftth-card-header-text">
+                  <span class="ftth-card-title">${orgName}</span>
+                  <span class="ftth-card-subtitle">Authenticator TOTP Device Setup</span>
+                </div>
+              </div>
+              <div class="ftth-tier-badge">
+                <span>${planDisplayName}</span>
+              </div>
+            </div>
 
             <#if (messagesPerField.existsError('totp','userLabel'))!false>
               <div class="ftth-alert-error" style="margin-bottom:14px;">
@@ -455,24 +463,25 @@
                   '</linearGradient>' +
                 '</defs>' +
                 '<g class="k2net-hud-grid-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                  '<circle cx="90" cy="75" r="70" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
-                  '<circle cx="90" cy="75" r="64" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<circle cx="90" cy="75" r="78" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
+                  '<circle cx="90" cy="75" r="66" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<circle cx="90" cy="75" r="54" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.65" stroke-dasharray="1 5" />' +
                   '<g id="hud-ticks-mobile" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
                 '</g>' +
                 '<g class="k2net-hud-inner-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
-                  '<line x1="90" y1="6" x2="90" y2="14" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="90" y1="136" x2="90" y2="144" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="21" y1="75" x2="29" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                  '<line x1="151" y1="75" x2="159" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="2" x2="90" y2="10" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="90" y1="140" x2="90" y2="148" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="17" y1="75" x2="25" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                  '<line x1="155" y1="75" x2="163" y2="75" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
                 '</g>' +
               '</svg>' +
               '<canvas id="mobile-quantum-orb-canvas" width="160" height="150" style="width:160px;height:150px;filter:drop-shadow(0 0 20px rgba(74,222,128,0.3));"></canvas>' +
             '</div>';
 
-          // Build mobile radar ticks along r=64
+          // Build mobile radar ticks along r=66
           var mTicksGroup = document.getElementById('hud-ticks-mobile');
           if (mTicksGroup) {
-            var mcx = 90, mcy = 75, mr = 64, mCount = 24;
+            var mcx = 90, mcy = 75, mr = 66, mCount = 24;
             for (var mi = 0; mi < mCount; mi++) {
               if (mi % 4 === 0) continue;
               var mAngle = (mi / mCount) * Math.PI * 2;
@@ -511,24 +520,25 @@
                     '</linearGradient>' +
                   '</defs>' +
                   '<g class="k2net-hud-grid" style="transform-origin:170px 170px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                    '<circle cx="170" cy="170" r="156" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
-                    '<circle cx="170" cy="170" r="144" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<circle cx="170" cy="170" r="160" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
+                    '<circle cx="170" cy="170" r="136" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<circle cx="170" cy="170" r="112" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.65" stroke-dasharray="1 6" />' +
                     '<g id="hud-ticks-desktop" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
                   '</g>' +
                   '<g class="k2net-hud-inner" style="transform-origin:170px 170px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
-                    '<line x1="170" y1="10" x2="170" y2="22" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="170" y1="318" x2="170" y2="330" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="10" y1="170" x2="22" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
-                    '<line x1="318" y1="170" x2="330" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="6" x2="170" y2="18" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="170" y1="322" x2="170" y2="334" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="6" y1="170" x2="18" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
+                    '<line x1="322" y1="170" x2="334" y2="170" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
                   '</g>' +
                 '</svg>' +
                 '<canvas id="quantum-orb-canvas" width="320" height="320" style="width:320px;height:320px;filter:drop-shadow(0 0 28px rgba(74,222,128,0.3));"></canvas>' +
               '</div>';
 
-            // Build desktop radar ticks along r=144
+            // Build desktop radar ticks along r=136
             var dTicksGroup = document.getElementById('hud-ticks-desktop');
             if (dTicksGroup) {
-              var dcx = 170, dcy = 170, dr = 144, dCount = 36;
+              var dcx = 170, dcy = 170, dr = 136, dCount = 36;
               for (var di = 0; di < dCount; di++) {
                 if (di % 6 === 0) continue;
                 var dAngle = (di / dCount) * Math.PI * 2;

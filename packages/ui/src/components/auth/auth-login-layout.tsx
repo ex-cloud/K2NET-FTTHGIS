@@ -33,7 +33,7 @@ export function AuthLoginLayout({
     <div className="min-h-screen w-full flex bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans">
       
       {/* ─── LEFT COLUMN: Login Form & Header ─────────────────────────── */}
-      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-6 sm:p-10 md:p-14 relative bg-sidebar border-r border-border z-10">
+      <div className="w-full lg:w-[48%] xl:w-[44%] flex flex-col justify-between p-4 sm:p-10 md:p-14 relative bg-sidebar border-r border-border z-10">
         
         {/* Top Header Row (Logo + Docs + Theme Toggle) */}
         <div className="flex items-center justify-between w-full z-20">
@@ -192,7 +192,7 @@ export function AuthLoginLayout({
       {/* ─── INTERACTIVE POLICY MODAL DIALOG ──────────────────────────── */}
       {activePolicyModal && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActivePolicyModal(null)}
         >
           <div 
@@ -200,32 +200,42 @@ export function AuthLoginLayout({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-border/60 bg-muted/30">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center text-primary">
-                  <ShieldCheck className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold text-foreground">
-                      {activePolicyModal === "terms" ? "Terms of Service" : "Privacy Policy"}
-                    </h2>
-                    <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
-                      v2026.3
-                    </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 border-b border-border/60 bg-muted/30 gap-3">
+              <div className="flex items-center justify-between w-full sm:w-auto">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+                    <ShieldCheck className="h-4 w-4" />
                   </div>
-                  <p className="text-[11px] text-muted-foreground font-mono">
-                    K2NET Enterprise SaaS Platform Governance
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-foreground truncate">
+                        {activePolicyModal === "terms" ? "Terms of Service" : "Privacy Policy"}
+                      </h2>
+                      <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded shrink-0">
+                        v2026.3
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground font-mono truncate">
+                      K2NET Enterprise SaaS Platform Governance
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActivePolicyModal(null)}
+                  className="sm:hidden p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 ml-2"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="inline-flex bg-background border border-border rounded-lg p-0.5 text-xs font-medium">
+              <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
+                <div className="inline-flex w-full sm:w-auto bg-background border border-border rounded-lg p-0.5 text-xs font-medium">
                   <button
                     type="button"
                     onClick={() => setActivePolicyModal("terms")}
-                    className={`px-3 py-1 rounded-md transition-all ${
+                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md transition-all ${
                       activePolicyModal === "terms" 
                         ? "bg-primary text-primary-foreground font-semibold shadow-xs" 
                         : "text-muted-foreground hover:text-foreground"
@@ -236,7 +246,7 @@ export function AuthLoginLayout({
                   <button
                     type="button"
                     onClick={() => setActivePolicyModal("privacy")}
-                    className={`px-3 py-1 rounded-md transition-all ${
+                    className={`flex-1 sm:flex-initial px-3 py-1 rounded-md transition-all ${
                       activePolicyModal === "privacy" 
                         ? "bg-cyan-500 text-white font-semibold shadow-xs" 
                         : "text-muted-foreground hover:text-foreground"
@@ -249,7 +259,7 @@ export function AuthLoginLayout({
                 <button
                   type="button"
                   onClick={() => setActivePolicyModal(null)}
-                  className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  className="hidden sm:flex p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -335,15 +345,15 @@ export function AuthLoginLayout({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between p-4 border-t border-border/60 bg-muted/30">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between p-4 border-t border-border/60 bg-muted/30 gap-3">
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                <span>TLS 1.3 &bull; AES-256 GCM &bull; UU PDP & ISO/IEC 27001</span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="truncate">TLS 1.3 &bull; AES-256 GCM &bull; UU PDP & ISO/IEC 27001</span>
               </div>
               <button
                 type="button"
                 onClick={() => setActivePolicyModal(null)}
-                className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-colors cursor-pointer text-center"
               >
                 I Understand & Close
               </button>

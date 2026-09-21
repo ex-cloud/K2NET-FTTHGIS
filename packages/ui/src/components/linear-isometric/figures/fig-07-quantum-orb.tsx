@@ -42,14 +42,14 @@ export function LinearQuantumOrbFigure({
   // Dimensions: Generous spacing between orb and outer HUD rings
   const isHero = size === "hero";
   const canvasDimension = isHero ? 340 : 240;
-  const orbRadius = isHero ? 86 : 60; // Clean, elegant sphere size allowing expansive orbital rings
+  const orbRadius = isHero ? 88 : 58; // Clean, elegant sphere size allowing expansive orbital rings
 
-  // Generate subtle, widely-spaced radar ticks along the far outer ring
+  // Generate subtle, widely-spaced radar ticks along the middle ring (r=136 for hero)
   const hudTicks = React.useMemo(() => {
     const ticks: { x1: number; y1: number; x2: number; y2: number }[] = [];
     const cx = 170;
     const cy = 170;
-    const r = isHero ? 146 : 104;
+    const r = isHero ? 136 : 95;
     const count = 36;
     for (let i = 0; i < count; i++) {
       if (i % 6 === 0) continue; // spacious gaps
@@ -408,31 +408,32 @@ export function LinearQuantumOrbFigure({
           </linearGradient>
         </defs>
         <g ref={ringsRef} className="transition-transform duration-700 ease-out">
-          {/* Main Expansive Rotating Orbital Rings HUD (Wide & uncluttered) */}
+          {/* Main Expansive Rotating Orbital Rings HUD (3 distinct spaced rings) */}
           <g
             className="animate-hud-spin"
             style={{
               transformOrigin: "170px 170px",
             }}
           >
-            {/* Far Outer Ring 1 (Delicate segmented orbit) */}
+            {/* Inner Ring 1 (Delicate segmented orbit, 24px gap from orb) */}
             <circle
               cx="170"
               cy="170"
-              r={isHero ? 156 : 112}
+              r={isHero ? 112 : 76}
               stroke="url(#fig07-ringFade)"
               strokeWidth="0.75"
-              strokeDasharray="2 8"
+              strokeDasharray="3 6"
             />
-            {/* Primary Outer Ring 2 (Continuous fine hairline orbit) */}
+
+            {/* Middle Ring 2 (Continuous fine hairline orbit with radar ticks, 24px gap from Ring 1) */}
             <circle
               cx="170"
               cy="170"
-              r={isHero ? 144 : 102}
+              r={isHero ? 136 : 95}
               stroke="url(#fig07-ringFade)"
               strokeWidth="0.8"
             />
-            {/* Subtle Outer Radar Ticks along r=144 */}
+            {/* Subtle Radar Ticks along Middle Ring (r=136) */}
             {hudTicks.map((t, idx) => (
               <line
                 key={idx}
@@ -445,6 +446,16 @@ export function LinearQuantumOrbFigure({
                 strokeWidth="0.8"
               />
             ))}
+
+            {/* Outer Ring 3 (Far outer segmented orbit, 24px gap from Ring 2) */}
+            <circle
+              cx="170"
+              cy="170"
+              r={isHero ? 160 : 114}
+              stroke="url(#fig07-ringFade)"
+              strokeWidth="0.75"
+              strokeDasharray="2 8"
+            />
           </g>
 
           {/* Counter-rotating subtle compass reticle far out */}

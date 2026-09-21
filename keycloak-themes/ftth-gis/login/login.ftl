@@ -85,12 +85,12 @@
           </div>
 
           <!-- Main Login Card (Matching AuthLoginForm.tsx) -->
-          <div style="background:rgba(24,24,27,0.6);border:1px solid rgba(63,63,70,0.7);border-radius:16px;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);backdrop-filter:blur(12px);">
+          <div class="ftth-card">
 
             <!-- Tenant / Platform Identity Header Row -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid rgba(63,63,70,0.5);margin-bottom:14px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;color:#22c55e;overflow:hidden;">
+            <div class="ftth-card-header">
+              <div class="ftth-card-header-left">
+                <div class="ftth-card-header-icon">
                   <#if logoUrl?has_content>
                     <img src="${logoUrl}" alt="${orgName}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;" />
                   <#elseif isSystem>
@@ -103,11 +103,11 @@
                     </svg>
                   </#if>
                 </div>
-                <div>
-                  <div style="font-size:12px;font-weight:700;color:#fff;">
+                <div class="ftth-card-header-text">
+                  <div class="ftth-card-title">
                     ${isSystem?then('K2NET Platform Admin', orgName)}
                   </div>
-                  <div style="font-size:10px;color:#a1a1aa;font-family:'JetBrains Mono',monospace;" data-i18n="identitySubtitle">
+                  <div class="ftth-card-subtitle" data-i18n="identitySubtitle">
                     ${isSystem?then('Master IAM & Platform Operations', 'ISP Workspace & Operations')}
                   </div>
                 </div>
@@ -449,40 +449,40 @@
     <!-- ============================================================
          Interactive Enterprise Legal Terms & Privacy Modal
          ============================================================ -->
-    <div id="ftth-policy-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-      <div id="ftth-policy-modal-card" style="background:#0e0e11;border:1px solid rgba(63,63,70,0.8);border-radius:18px;width:100%;max-width:820px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 60px -12px rgba(0,0,0,0.9);overflow:hidden;position:relative;">
+    <div id="ftth-policy-modal">
+      <div id="ftth-policy-modal-card">
 
         <!-- Modal Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.7);flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;color:#22c55e;">
+        <div class="ftth-modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.7);flex-shrink:0;gap:16px;">
+          <div class="ftth-modal-header-left" style="display:flex;flex-direction:row;align-items:center;gap:12px;min-width:0;flex:1;">
+            <div class="ftth-modal-header-icon" style="width:32px;height:32px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;color:#22c55e;flex-shrink:0;">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <path d="m9 12 2 2 4-4"/>
               </svg>
             </div>
-            <div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <h2 id="ftth-modal-title" style="font-size:16px;font-weight:700;color:#fff;margin:0;">Terms of Service</h2>
-                <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);padding:1px 6px;border-radius:4px;">v2026.3</span>
+            <div class="ftth-modal-header-info" style="min-width:0;flex:1;">
+              <div class="ftth-modal-title-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <h2 id="ftth-modal-title" class="ftth-modal-title" style="font-size:16px;font-weight:700;color:#ffffff;margin:0;line-height:1.25;">Terms of Service</h2>
+                <span class="ftth-modal-version-tag" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);padding:1px 6px;border-radius:4px;white-space:nowrap;">v2026.3</span>
               </div>
-              <p style="font-size:11px;color:#a1a1aa;margin:2px 0 0 0;font-family:'JetBrains Mono',monospace;">K2NET Enterprise SaaS Platform Governance</p>
+              <p class="ftth-modal-subtitle" style="font-size:11px;color:#a1a1aa;margin:2px 0 0 0;font-family:'JetBrains Mono',monospace;line-height:1.3;">K2NET Enterprise SaaS Platform Governance</p>
             </div>
           </div>
 
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div class="ftth-modal-header-right" style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
             <!-- Modal Segmented Tab Switcher -->
-            <div style="display:inline-flex;background:rgba(9,9,11,0.8);border:1px solid rgba(63,63,70,0.6);border-radius:8px;padding:3px;">
-              <button type="button" id="tab-btn-terms" class="active" style="padding:4px 12px;font-size:11px;font-weight:600;border-radius:6px;border:none;cursor:pointer;background:#22c55e;color:#09090b;transition:all 0.15s ease;">
+            <div class="ftth-modal-tab-group" style="display:inline-flex;background:rgba(9,9,11,0.8);border:1px solid rgba(63,63,70,0.6);border-radius:8px;padding:3px;flex-shrink:0;">
+              <button type="button" id="tab-btn-terms" class="ftth-modal-tab-btn active-terms">
                 Terms
               </button>
-              <button type="button" id="tab-btn-privacy" style="padding:4px 12px;font-size:11px;font-weight:600;border-radius:6px;border:none;cursor:pointer;background:transparent;color:#a1a1aa;transition:all 0.15s ease;">
+              <button type="button" id="tab-btn-privacy" class="ftth-modal-tab-btn">
                 Privacy
               </button>
             </div>
 
             <!-- Close (X) button -->
-            <button type="button" id="btn-close-policy-modal" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.5);color:#a1a1aa;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s ease;">
+            <button type="button" id="btn-close-policy-modal" class="ftth-modal-close-btn" aria-label="Close modal" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(63,63,70,0.6);background:rgba(24,24,27,0.5);color:#a1a1aa;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -492,20 +492,20 @@
         </div>
 
         <!-- Modal Scrollable Content Container -->
-        <div id="ftth-policy-content-body" style="padding:24px 28px;overflow-y:auto;max-height:calc(88vh - 140px);color:#d4d4d8;font-size:13px;line-height:1.7;">
+        <div id="ftth-policy-content-body">
           <!-- Dynamically populated by JS dictionary based on active tab & locale -->
         </div>
 
         <!-- Modal Footer -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid rgba(63,63,70,0.6);background:rgba(18,18,21,0.9);flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#71717a;font-family:'JetBrains Mono',monospace;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
+        <div class="ftth-modal-footer">
+          <div class="ftth-modal-footer-info">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="flex-shrink:0;">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <span>TLS 1.3 &bull; AES-256 GCM &bull; ISO/IEC 27001 & UU PDP Compliant</span>
           </div>
 
-          <button type="button" id="btn-policy-acknowledge" style="padding:7px 18px;border-radius:8px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all 0.15s ease;">
+          <button type="button" id="btn-policy-acknowledge" class="ftth-modal-footer-btn">
             <span data-i18n="acknowledgeBtn">I Understand & Close</span>
           </button>
         </div>
@@ -532,91 +532,6 @@
         } catch(e) {}
 
         var badgeTextEl = document.getElementById('hero-fig-badge-text');
-
-        function initQuantumOrb(canvas, orbRadius, interactiveContainer) {
-          if (!canvas) return;
-          var ctx = canvas.getContext('2d');
-          if (!ctx) return;
-
-          var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
-          var startT = Date.now();
-
-          if (interactiveContainer) {
-            interactiveContainer.addEventListener('mousemove', function(e) {
-              var rect = interactiveContainer.getBoundingClientRect();
-              var nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
-              var ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-              mouse.targetX = Math.max(-1.2, Math.min(1.2, nx));
-              mouse.targetY = Math.max(-1.2, Math.min(1.2, ny));
-            });
-            interactiveContainer.addEventListener('mouseleave', function() {
-              mouse.targetX = 0;
-              mouse.targetY = 0;
-            });
-          }
-
-          var particles = [];
-          for (var i = 0; i < 36; i++) {
-            particles.push({
-              angle: (Math.PI * 0.15) + (i / 36) * (Math.PI * 0.7),
-              radOffset: (Math.random() - 0.5) * 6,
-              size: 0.6 + Math.random() * 1.3,
-              speed: 0.2 + Math.random() * 0.6,
-              phase: Math.random() * Math.PI * 2,
-              alpha: 0.3 + Math.random() * 0.7
-            });
-          }
-
-          function draw() {
-            mouse.x += (mouse.targetX - mouse.x) * 0.08;
-            mouse.y += (mouse.targetY - mouse.y) * 0.08;
-            var elapsed = (Date.now() - startT) * 0.001;
-
-            var w = canvas.width;
-            var h = canvas.height;
-            var cx = w / 2;
-            var cy = h / 2;
-            var mx = mouse.x * 12;
-            var my = mouse.y * 10;
-
-            ctx.clearRect(0, 0, w, h);
-
-            // 1. Outer Corona Glow
-            var corona = ctx.createRadialGradient(cx + mx * 0.3, cy + my * 0.3, orbRadius * 0.7, cx, cy, orbRadius * 1.45);
-            corona.addColorStop(0, 'rgba(74, 222, 128, 0.35)');
-            corona.addColorStop(0.35, 'rgba(34, 197, 94, 0.18)');
-            corona.addColorStop(0.7, 'rgba(22, 101, 52, 0.05)');
-            corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = corona;
-            ctx.beginPath();
-            ctx.arc(cx, cy, orbRadius * 1.45, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 2. Base Sphere Fill (Deep Obsidian Green Abyss)
-            var bodyGrad = ctx.createRadialGradient(cx - orbRadius * 0.25 + mx, cy - orbRadius * 0.25 + my, orbRadius * 0.05, cx, cy, orbRadius);
-            bodyGrad.addColorStop(0, '#07170c');
-            bodyGrad.addColorStop(0.45, '#030905');
-            bodyGrad.addColorStop(0.8, '#020503');
-            bodyGrad.addColorStop(0.95, '#0d2b14');
-            bodyGrad.addColorStop(1, '#1e5c2d');
-            ctx.fillStyle = bodyGrad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 3. Clip to sphere interior
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(cx, cy, orbRadius, 0, Math.PI * 2);
-            ctx.clip();
-
-            // 3a. Deep Central Caustics
-            var deepGlow = ctx.createRadialGradient(cx + mx * 0.5, cy + orbRadius * 0.2 + my * 0.5, orbRadius * 0.1, cx, cy, orbRadius * 0.95);
-            deepGlow.addColorStop(0, 'rgba(22, 101, 52, 0.22)');
-            deepGlow.addColorStop(0.6, 'rgba(6, 40, 18, 0.1)');
-            deepGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = deepGlow;
-            ctx.fillRect(0, 0, w, h);
 
         function initQuantumOrb(canvas, orbRadius, interactiveContainer) {
           if (!canvas) return;
@@ -817,9 +732,10 @@
                   '</linearGradient>' +
                 '</defs>' +
                 '<g class="k2net-hud-grid-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                  '<circle cx="90" cy="75" r="70" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
-                  '<circle cx="90" cy="75" r="64" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
+                  '<circle cx="90" cy="75" r="54" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
+                  '<circle cx="90" cy="75" r="66" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.8" />' +
                   '<g id="hud-ticks-mobile" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                  '<circle cx="90" cy="75" r="78" stroke="url(#fig07-ringFadeMobile)" stroke-width="0.75" stroke-dasharray="2 6" />' +
                 '</g>' +
                 '<g class="k2net-hud-inner-mobile" style="transform-origin:90px 75px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
                   '<line x1="90" y1="6" x2="90" y2="14" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
@@ -831,10 +747,10 @@
               '<canvas id="mobile-quantum-orb-canvas" width="160" height="150" style="width:160px;height:150px;filter:drop-shadow(0 0 20px rgba(74,222,128,0.3));"></canvas>' +
             '</div>';
 
-          // Build mobile radar ticks along r=64
+          // Build mobile radar ticks along r=66
           var mTicksGroup = document.getElementById('hud-ticks-mobile');
           if (mTicksGroup) {
-            var mcx = 90, mcy = 75, mr = 64, mCount = 24;
+            var mcx = 90, mcy = 75, mr = 66, mCount = 24;
             for (var mi = 0; mi < mCount; mi++) {
               if (mi % 4 === 0) continue;
               var mAngle = (mi / mCount) * Math.PI * 2;
@@ -873,9 +789,10 @@
                     '</linearGradient>' +
                   '</defs>' +
                   '<g class="k2net-hud-grid" style="transform-origin:170px 170px;animation:k2net-rotate-hud 100s linear infinite;">' +
-                    '<circle cx="170" cy="170" r="156" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
-                    '<circle cx="170" cy="170" r="144" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
+                    '<circle cx="170" cy="170" r="112" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="3 6" />' +
+                    '<circle cx="170" cy="170" r="136" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.8" />' +
                     '<g id="hud-ticks-desktop" stroke="#bef264" stroke-opacity="0.25" stroke-width="0.8"></g>' +
+                    '<circle cx="170" cy="170" r="160" stroke="url(#fig07-ringFadeDesktop)" stroke-width="0.75" stroke-dasharray="2 8" />' +
                   '</g>' +
                   '<g class="k2net-hud-inner" style="transform-origin:170px 170px;animation:k2net-rotate-hud-reverse 140s linear infinite;">' +
                     '<line x1="170" y1="10" x2="170" y2="22" stroke="#bef264" stroke-opacity="0.4" stroke-width="1" />' +
@@ -887,10 +804,10 @@
                 '<canvas id="quantum-orb-canvas" width="320" height="320" style="width:320px;height:320px;filter:drop-shadow(0 0 28px rgba(74,222,128,0.3));"></canvas>' +
               '</div>';
 
-            // Build desktop radar ticks along r=144
+            // Build desktop radar ticks along r=136
             var dTicksGroup = document.getElementById('hud-ticks-desktop');
             if (dTicksGroup) {
-              var dcx = 170, dcy = 170, dr = 144, dCount = 36;
+              var dcx = 170, dcy = 170, dr = 136, dCount = 36;
               for (var di = 0; di < dCount; di++) {
                 if (di % 6 === 0) continue;
                 var dAngle = (di / dCount) * Math.PI * 2;
@@ -909,7 +826,7 @@
 
             var canvas = document.getElementById('quantum-orb-canvas');
             if (canvas) {
-              initQuantumOrb(canvas, 86, container);
+              initQuantumOrb(canvas, 88, container);
             }
           }
         } else {
@@ -1212,23 +1129,19 @@
             if (titleEl) titleEl.textContent = docs.termsTitle;
             if (bodyEl) bodyEl.innerHTML = docs.termsHtml;
             if (tabTermsBtn) {
-              tabTermsBtn.style.background = '#22c55e';
-              tabTermsBtn.style.color = '#09090b';
+              tabTermsBtn.className = "ftth-modal-tab-btn active-terms";
             }
             if (tabPrivacyBtn) {
-              tabPrivacyBtn.style.background = 'transparent';
-              tabPrivacyBtn.style.color = '#a1a1aa';
+              tabPrivacyBtn.className = "ftth-modal-tab-btn";
             }
           } else {
             if (titleEl) titleEl.textContent = docs.privacyTitle;
             if (bodyEl) bodyEl.innerHTML = docs.privacyHtml;
             if (tabTermsBtn) {
-              tabTermsBtn.style.background = 'transparent';
-              tabTermsBtn.style.color = '#a1a1aa';
+              tabTermsBtn.className = "ftth-modal-tab-btn";
             }
             if (tabPrivacyBtn) {
-              tabPrivacyBtn.style.background = '#38bdf8';
-              tabPrivacyBtn.style.color = '#09090b';
+              tabPrivacyBtn.className = "ftth-modal-tab-btn active-privacy";
             }
           }
         }
