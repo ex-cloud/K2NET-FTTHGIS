@@ -7,6 +7,8 @@
 !.env.example
 docker/certs/
 /scripts/
+.agents/mcp_config.json
+.agents/*.json
 
 # Java/Spring Boot properties dengan secrets
 apps/api/src/main/resources/application-local.properties
